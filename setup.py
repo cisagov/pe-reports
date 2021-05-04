@@ -42,9 +42,9 @@ def get_version(version_file):
 
 
 setup(
-    name="example",
+    name="pe-reports",
     # Versions should comply with PEP440
-    version=get_version("src/example/_version.py"),
+    version=get_version("src/pe-reports/_version.py"),
     description="Example Python library",
     long_description=readme(),
     long_description_content_type="text/markdown",
@@ -87,7 +87,7 @@ setup(
     package_data={"example": ["data/*.txt"]},
     py_modules=[splitext(basename(path))[0] for path in glob("src/*.py")],
     include_package_data=True,
-    install_requires=["docopt", "schema", "setuptools >= 24.2.0"],
+    install_requires=["docopt", "schema", "setuptools >= 24.2.0", "pandas", "python-pptx"],
     extras_require={
         "test": [
             "coverage",
@@ -104,5 +104,5 @@ setup(
         ]
     },
     # Conveniently allows one to run the CLI tool as `example`
-    entry_points={"console_scripts": ["example = example.example:main"]},
+    entry_points={"console_scripts": ["pe-reports = pereports.report_generation:main"]},
 )
