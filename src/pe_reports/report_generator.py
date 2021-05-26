@@ -1,4 +1,5 @@
-"""Need to insert docstring here."""
+"""ciagov/pe-reports: A tool for creating Posture & Exposure reports."""
+
 # Standard Python Libraries
 import os
 import sys
@@ -13,33 +14,26 @@ REPORT_SHELL = "src/pe_reports/data/shell/pe_shell.pptx"
 
 
 def load_template():
-    """Need to insert docstring here."""
+    """Load PowerPoint template into memory."""
     prs = Presentation(REPORT_SHELL)
     return prs
 
 
 def export_set(prs):
-    """Need to insert docstring here."""
+    """Export PowerPoint report set to output directory."""
     pptx_out = "Customer_ID_Posture_Exposure.pptx"
     prs.save(os.path.join(SAVE_PATH, pptx_out))
     return
 
 
 def main():
-    """Need to insert docstring here."""
+    """Generate PDF reports."""
     print("\n [Info] Loading Posture & Exposure Report Template")
     prs = load_template()
 
     print("\n [Info] Generating Graphs ")
     Pages.cover(prs)
     Pages.overview(prs)
-    # Pages.credential(prs)
-    # Pages.masquerading(prs)
-    # Pages.mal_vul(prs, data)
-    # Pages.dark_web((prs, data)
-    # Pages.supplimental(prs, data)
-
-    print("\n [Info] File Saved: ../output/Customer_ID_Posture_Exposure.pptx")
     export_set(prs)
 
 

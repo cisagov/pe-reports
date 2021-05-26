@@ -1,4 +1,5 @@
-"""Need to insert docstring here."""
+"""Collect and distribute graphical data to readable charts in the presentation."""
+
 # Third-Party Libraries
 import pandas as pd
 from pptx.chart.data import CategoryChartData
@@ -6,15 +7,15 @@ from pptx.enum.chart import XL_CHART_TYPE
 from pptx.util import Inches
 from stylesheet import Graph, Paragraph
 
-# Use the folloing fuction to locate "Text Box" element in slide.
+# Use the following fuction to locate "Text Box" element in slide.
 # find_shape = Paragraph.shapes_find(prs, slide)
 
 
 class Pages:
-    """Need to insert docstring here."""
+    """Class containing the presentation page information."""
 
     def cover(prs):
-        """Need to insert docstring here."""
+        """Page 1: Cover page of presentation."""
         slide = prs.slides[0]
         shape = Paragraph.shapes(prs, slide)
         text_frame = Paragraph.text_frame(prs, shape)
@@ -35,7 +36,7 @@ class Pages:
         return prs
 
     def overview(prs):
-        """Need to insert docstring here."""
+        """Page 2: Posture & Exposure Report Overview."""
         slide = prs.slides[1]
         shape = Paragraph.shapes(prs, slide)
 
