@@ -1,4 +1,5 @@
-"""Need to insert docstring here."""
+"""Models to manage grahical attributes of presentation layouts, paragraphs, and charts."""
+
 # Third-Party Libraries
 from pptx.dml.color import RGBColor
 from pptx.enum.chart import XL_LEGEND_POSITION
@@ -6,29 +7,29 @@ from pptx.util import Pt
 
 
 class Paragraph:
-    """Need to insert docstring here."""
+    """Simple class to call text frame atributes."""
 
     def shapes(self, slide):
-        """Need to insert docstring here."""
+        """Create a text frame."""
         for shape in slide.shapes:
             if not shape.has_text_frame:
                 continue
         return shape
 
     def shapes_find(self, slide):
-        """Need to insert docstring here."""
+        """Find text frames."""
         for shape in slide.shapes:
             print(shape.name)
         return
 
     def text_frame(self, shape):
-        """Need to insert docstring here."""
+        """Clear the content of a text frame."""
         text_frame = shape.text_frame
         text_frame.clear()
         return text_frame
 
     def text_frame_ov_val(self, slide, shape, name):
-        """Need to insert docstring here."""
+        """Text style for overview page values."""
         for shape in slide.shapes:
             if shape.name == name:
                 text_frame = shape.text_frame
@@ -36,7 +37,7 @@ class Paragraph:
         return text_frame
 
     def text_frame_key_metric(self, slide, shape, name):
-        """Need to insert docstring here."""
+        """Text style for metrics."""
         for shape in slide.shapes:
             if shape.name == name:
                 text_frame = shape.text_frame
@@ -44,7 +45,7 @@ class Paragraph:
         return text_frame
 
     def text_style_title(self, font):
-        """Need to insert docstring here."""
+        """Text style for cover page title."""
         font.name = "Calibri"
         font.size = Pt(28)
         font.color.rgb = RGBColor(255, 255, 255)
@@ -58,7 +59,7 @@ class Paragraph:
         return font
 
     def text_style_ov_val(self, font):
-        """Need to insert docstring here."""
+        """Text style for overview page values."""
         font.name = "Calibri"
         font.size = Pt(28)
         font.color.rgb = RGBColor(3, 37, 126)
@@ -66,10 +67,10 @@ class Paragraph:
 
 
 class Graph:
-    """Need to insert docstring here."""
+    """Simple class to call chart attributes."""
 
     def bar(self, slide, chart):
-        """Need to insert docstring here."""
+        """Medium bar chart."""
         chart.font.size = Pt(10)
         chart.font.rgb = (20, 200, 100)
         chart.has_legend = True
@@ -78,19 +79,19 @@ class Graph:
         return
 
     def bar_sm(self, slide, chart):
-        """Need to insert docstring here."""
+        """Small bar chart."""
         chart.font.size = Pt(10)
         chart.font.rgb = (20, 200, 100)
         return
 
     def bar_med_100(self, slide, chart):
-        """Need to insert docstring here."""
+        """Medium bar chart with percentages."""
         chart.font.size = Pt(10)
         chart.font.rgb = (20, 200, 100)
         return
 
     def line_med(self, slide, chart):
-        """Need to insert docstring here."""
+        """Medium line chart."""
         chart.font.size = Pt(10)
         chart.font.rgb = (20, 200, 100)
         chart.has_legend = True
