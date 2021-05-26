@@ -1,35 +1,33 @@
-"""This module contains the tests for the report_generator test."""
+"""File to be used to create test for pe-reports."""
 
+# Standard Python Libraries
 import unittest
-import os
-import sys
-import shutil
-import subprocess
-
-sys.path.append("../src")
 
 
-class Test(unittest.TestCase):
-    """The tests for the report_generator tool."""
+class TestingStringMethods(unittest.TestCase):
+    """Simple test for first-commit only."""
 
-    def test_agency(self):
-        """Test the tool on a single agency."""
-        datestring = "2020-06-01"
-        _id = "agency"
-        cwd = os.getcwd()
-        output_directory = f"{cwd}/temp_{datestring}_{_id}"
+    def test_string_equality(self):
+        """Calculates the string output."""
+        # if both arguments are equal then it's success
+        self.assertEqual("ttp" * 5, "ttpttpttpttpttp")
 
-        # Create output directory
-        subprocess.call(["mkdir", output_directory])
-        print("[INFO]: ", output_directory)
+    def test_string_case(self):
+        """Compare two strings."""
+        # if both arguments are equal then it's success
+        self.assertEqual("tutorialspoint".upper(), "TUTORIALSPOINT")
 
-        # Delete output directory
-        try:
-            shutil.rmtree(output_directory)
-            print("Temporary output directory and files successfully deleted")
-        except OSError as e:
-            print("Error: %s : %s" % (output_directory, e.strerror))
+    # checking whether a string is upper or not
+
+    def test_is_string_upper(self):
+        """Checks whether a string is upper or not."""
+        # used to check whether the statement is True or False
+        # the result of expression inside the **assertTrue** must be True to pass the test case
+        # the result of expression inside the **assertFalse** must be False to pass the test case
+        self.assertTrue("TUTORIALSPOINT".isupper())
+        self.assertFalse("TUTORIALSpoint".isupper())
 
 
 if __name__ == "__main__":
+    """Runs the simple test."""
     unittest.main()
