@@ -5,6 +5,7 @@ import os
 import sys
 
 # Third-Party Libraries
+from _version import __version__
 from pages import Pages
 from pptx import Presentation
 
@@ -28,7 +29,7 @@ def export_set(prs):
 
 def main():
     """Generate PDF reports."""
-    print("\n [Info] Loading Posture & Exposure Report Template")
+    print("\n [Info] Loading Posture & Exposure Report Template, Version:", __version__)
     prs = load_template()
 
     print("\n [Info] Generating Graphs ")
