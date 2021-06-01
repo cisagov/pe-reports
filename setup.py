@@ -95,7 +95,7 @@ setup(
         "schema",
         "setuptools >= 24.2.0",
         "pymongo",
-        "pymupdf"
+        "pymupdf",
     ],
     extras_require={
         "test": [
@@ -113,6 +113,5 @@ setup(
         ]
     },
     # Conveniently allows one to run the CLI tool as `example`
-    entry_points={"console_scripts": [
-        "pe-reports = pe_reports.report_generator:main"]},
+    entry_points={"console_scripts": ["pe-reports = pe_reports.report_generator:main"]},
 )
