@@ -45,7 +45,7 @@ setup(
     name="pe_reports",
     # Versions should comply with PEP440
     version=get_version("src/pe_reports/_version.py"),
-    description="Posture % Exposure Report's library",
+    description="Posture and Exposure Report's library",
     long_description=readme(),
     long_description_content_type="text/markdown",
     # Landing page for CISA's cybersecurity mission
@@ -114,6 +114,5 @@ setup(
         ]
     },
     # Conveniently allows one to run the CLI tool as `example`
-    entry_points={"console_scripts": [
-        "pe-reports = pe_reports.report_generator:main"]},
+    entry_points={"console_scripts": ["pe-reports = pe_reports.report_generator:main"]},
 )
