@@ -45,7 +45,7 @@ setup(
     name="pe_reports",
     # Versions should comply with PEP440
     version=get_version("src/pe_reports/_version.py"),
-    description="Example Python library",
+    description="Posture % Exposure Report's library",
     long_description=readme(),
     long_description_content_type="text/markdown",
     # Landing page for CISA's cybersecurity mission
@@ -81,7 +81,7 @@ setup(
     ],
     python_requires=">=3.6",
     # What does your project relate to?
-    keywords="Posture and Exposure Reports",
+    keywords="posture and exposure report",
     packages=find_packages(where="src"),
     package_dir={"": "src"},
     package_data={"pe_reports": ["data/*.txt"]},
@@ -114,5 +114,6 @@ setup(
         ]
     },
     # Conveniently allows one to run the CLI tool as `example`
-    entry_points={"console_scripts": ["pe-reports = pe_reports.report_generator:main"]},
+    entry_points={"console_scripts": [
+        "pe-reports = pe_reports.report_generator:main"]},
 )
