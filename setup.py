@@ -89,14 +89,13 @@ setup(
     include_package_data=True,
     install_requires=[
         "docopt",
+        "glob2",
+        "openpyxl",
+        "pandas",
         "schema",
         "setuptools >= 24.2.0",
-        "openpyxl",
         "pymongo",
-        "pymupdf",
-        "docopt",
-        "glob2",
-        "pandas",
+        "pymupdf"
     ],
     extras_require={
         "test": [
@@ -114,5 +113,6 @@ setup(
         ]
     },
     # Conveniently allows one to run the CLI tool as `example`
-    entry_points={"console_scripts": ["pe-reports = pe_reports.report_generator:main"]},
+    entry_points={"console_scripts": [
+        "pe-reports = pe_reports.report_generator:main"]},
 )
