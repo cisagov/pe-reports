@@ -7,7 +7,7 @@ from pptx.enum.chart import XL_CHART_TYPE
 from pptx.util import Inches
 from stylesheet import Graph, Paragraph
 
-# Use the following fuction to locate "Text Box" element in slide.
+# Use the following function to locate "Text Box" element in slide.
 # find_shape = Paragraph.shapes_find(prs, slide)
 
 
