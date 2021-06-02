@@ -1,4 +1,4 @@
-"""ciagov/pe-reports: A tool for creating Posture & Exposure reports."""
+"""A tool for creating Posture & Exposure reports."""
 
 # Standard Python Libraries
 import os
