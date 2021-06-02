@@ -6,7 +6,7 @@
 [![Language grade: Python](https://img.shields.io/lgtm/grade/python/g/cisagov/pe-reports.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/cisagov/pe-reports/context:python)
 [![Known Vulnerabilities](https://snyk.io/test/github/cisagov/pe-reports/develop/badge.svg)](https://snyk.io/test/github/cisagov/pe-reports)
 
-This package is used to generate encrypted Posture and Exposure (P&E) pdf
+This package is used to generate encrypted Posture and Exposure (P&E) PDF
 reports using raw_data.xlsx files.
 
 ## Device Setup ##
@@ -25,13 +25,6 @@ Please see the
 [Creating the Python virtual environment](CONTRIBUTING.md#creating-the-python-virtual-environment)
 section of the [CONTRIBUTING](CONTRIBUTING.md) document for information about
 setting up a Python virtual environment.
-
-Required third party libraries: openpyxl, pymongo, pymupdf, pandas, python-pptx
-Install third party libraries using:
-
-```console
-python3 -m pip install LIBRARY
-```
 
 Required configurations:
 *You must have access to the cyhy database
