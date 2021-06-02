@@ -112,6 +112,6 @@ setup(
             "pytest",
         ]
     },
-    # Conveniently allows one to run the CLI tool as `example`
+    # Conveniently allows one to run the CLI tool as `pe-reports`
     entry_points={"console_scripts": ["pe-reports = pe_reports.report_generator:main"]},
 )
