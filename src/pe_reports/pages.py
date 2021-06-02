@@ -40,7 +40,7 @@ class Pages:
         slide = prs.slides[1]
         shape = Paragraph.shapes(prs, slide)
 
-        # Overeview Value - Credentials exposed in recent posts
+        # Overview Value - Credentials exposed in recent posts
         ov_val_01 = Paragraph.text_frame_ov_val(prs, slide, shape, "TextBox 2")
         frame = ov_val_01.paragraphs[0]
         run = frame.add_run()
@@ -49,7 +49,7 @@ class Pages:
         font = run.font
         font = Paragraph.text_style_ov_val(prs, font)
 
-        # Overeview Value - Suspected domain masquerading alerts
+        # Overview Value - Suspected domain masquerading alerts
         ov_val_02 = Paragraph.text_frame_ov_val(prs, slide, shape, "TextBox 82")
         frame = ov_val_02.paragraphs[0]
         run = frame.add_run()
@@ -58,7 +58,7 @@ class Pages:
         font = run.font
         font = Paragraph.text_style_ov_val(prs, font)
 
-        # Overeview Value - Active malware associations
+        # Overview Value - Active malware associations
         ov_val_03 = Paragraph.text_frame_ov_val(prs, slide, shape, "TextBox 86")
         frame = ov_val_03.paragraphs[0]
         run = frame.add_run()
@@ -67,7 +67,7 @@ class Pages:
         font = run.font
         font = Paragraph.text_style_ov_val(prs, font)
 
-        # Overeview Value - Web and dark web mentions
+        # Overview Value - Web and dark web mentions
         ov_val_04 = Paragraph.text_frame_ov_val(prs, slide, shape, "TextBox 87")
         frame = ov_val_04.paragraphs[0]
         run = frame.add_run()
@@ -76,7 +76,7 @@ class Pages:
         font = run.font
         font = Paragraph.text_style_ov_val(prs, font)
 
-        # Overeview Value - Credentials exposed in recent posts
+        # Overview Value - Credentials exposed in recent posts
         ov_val_05 = Paragraph.text_frame_ov_val(prs, slide, shape, "TextBox 90")
         frame = ov_val_05.paragraphs[0]
         run = frame.add_run()

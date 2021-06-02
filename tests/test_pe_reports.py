@@ -3,6 +3,8 @@
 # Standard Python Libraries
 import unittest
 
+# TODO: Replace current dummy test with useful tests - https://github.com/cisagov/pe-reports/issues/3#issue-909531010
+
 
 class TestingStringMethods(unittest.TestCase):
     """Simple test for first-commit only."""
@@ -16,8 +18,6 @@ class TestingStringMethods(unittest.TestCase):
         """Compare two strings."""
         # if both arguments are equal then it's success
         self.assertEqual("tutorialspoint".upper(), "TUTORIALSPOINT")
-
-    # checking whether a string is upper or not
 
     def test_is_string_upper(self):
         """Checks whether a string is upper or not."""

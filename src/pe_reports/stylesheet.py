@@ -1,4 +1,4 @@
-"""Models to manage grahical attributes of presentation layouts, paragraphs, and charts."""
+"""Models to manage graphical attributes of presentation layouts, paragraphs, and charts."""
 
 # Third-Party Libraries
 from pptx.dml.color import RGBColor
@@ -7,7 +7,7 @@ from pptx.util import Pt
 
 
 class Paragraph:
-    """Simple class to call text frame atributes."""
+    """Simple class to call text frame attributes."""
 
     def shapes(self, slide):
         """Create a text frame."""
@@ -52,7 +52,7 @@ class Paragraph:
         return font
 
     def text_style_key_metric(self, font):
-        """Need to insert docstring here."""
+        """Text style for key metrics."""
         font.name = "Calibri"
         font.size = Pt(12)
         font.color.rgb = RGBColor(255, 255, 255)
