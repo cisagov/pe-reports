@@ -11,13 +11,12 @@ reports using raw_data.xlsx files.
 
 ## Device Setup ##
 
-Install LibreOffice for powerpoint to pdf conversion
-<https://www.libreoffice.org/get-help/install-howto/macos/>.
+Install [LibreOffice](https://www.libreoffice.org/get-help/install-howto/macos/) 
+for PowerPoint to PDF conversion.
 
 Install python 3
 
-(Optional) Setting up your Mac:
-<https://github.com/cisagov/development-guide/blob/develop/dev_envs/mac-env-setup.md>
+(Optional) [Setting up your Mac](https://github.com/cisagov/development-guide/blob/develop/dev_envs/mac-env-setup.md)
 
 ## Installation ##
 
@@ -28,7 +27,7 @@ setting up a Python virtual environment.
 
 Required configurations:
 *You must have access to the cyhy database
-Install mongo-db-from-config (<https://github.com/cisagov/mongo-db-from-config>)
+Install [cisagov/mongo-db-from-config](https://github.com/cisagov/mongo-db-from-config)
 and follow the instructions to create the yaml file.
 The report generator will read `/secrets/database_creds.yml` by default if no
 yaml filepath is provided.
@@ -42,13 +41,13 @@ python3 /pe-reports/src/pe_reports YYYY-MM-DD DATA_DIRECTORY OUTPUT_DIRECTORY [O
 ## Making Changes ##
 
 To change any general report format/standard visuals edit
-/src/data/shell/pe_shell.pptx
+`/src/data/shell/pe_shell.pptx`
 
-To make any style changes, edit /src/pe_reports/stylesheet.py
+To make any style changes, edit `/src/pe_reports/stylesheet.py`
 
-To change metrics, edit /src/pe_reports/report_metrics.py
+To change metrics, edit `/src/pe_reports/report_metrics.py`
 
-To change page setups/graphs, edit /src/pe_reports/pages.py
+To change page setups/graphs, edit `/src/pe_reports/pages.py`
 
 ## Contributing ##
 
