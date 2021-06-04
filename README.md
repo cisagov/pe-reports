@@ -1,4 +1,4 @@
-# pe-reports #
+# Posture and Exposure (P&E) Reports #
 
 [![GitHub Build Status](https://github.com/cisagov/pe-reports/workflows/build/badge.svg)](https://github.com/cisagov/pe-reports/actions)
 [![Coverage Status](https://coveralls.io/repos/github/cisagov/pe-reports/badge.svg?branch=develop)](https://coveralls.io/github/cisagov/pe-reports?branch=develop)
@@ -6,20 +6,48 @@
 [![Language grade: Python](https://img.shields.io/lgtm/grade/python/g/cisagov/pe-reports.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/cisagov/pe-reports/context:python)
 [![Known Vulnerabilities](https://snyk.io/test/github/cisagov/pe-reports/develop/badge.svg)](https://snyk.io/test/github/cisagov/pe-reports)
 
-This is a generic skeleton project that can be used to quickly get a
-new [cisagov](https://github.com/cisagov) Python library GitHub
-project started.  This skeleton project contains [licensing
-information](LICENSE), as well as
-[pre-commit hooks](https://pre-commit.com) and
-[GitHub Actions](https://github.com/features/actions) configurations
-appropriate for a Python library project.
+This package is used to generate encrypted Posture and Exposure (P&E) PDF
+reports using raw_data.xlsx files.
 
-## New Repositories from a Skeleton ##
+## Device Setup ##
 
-Please see our [Project Setup guide](https://github.com/cisagov/development-guide/tree/develop/project_setup)
-for step-by-step instructions on how to start a new repository from
-a skeleton. This will save you time and effort when configuring a
-new repository!
+Install [LibreOffice](https://www.libreoffice.org/get-help/install-howto/macos/)
+for PowerPoint to PDF conversion.
+
+Install python 3
+
+(Optional) [Setting up your Mac](https://github.com/cisagov/development-guide/blob/develop/dev_envs/mac-env-setup.md)
+
+## Installation ##
+
+Please see the
+[Creating the Python virtual environment](CONTRIBUTING.md#creating-the-python-virtual-environment)
+section of the [CONTRIBUTING](CONTRIBUTING.md) document for information about
+setting up a Python virtual environment.
+
+Required configurations:
+*You must have access to the cyhy database
+Install [cisagov/mongo-db-from-config](https://github.com/cisagov/mongo-db-from-config)
+and follow the instructions to create the yaml file.
+The report generator will read `/secrets/database_creds.yml` by default if no
+yaml filepath is provided.
+
+To generate a P&E report:
+
+```console
+python3 /pe-reports/src/pe_reports YYYY-MM-DD DATA_DIRECTORY OUTPUT_DIRECTORY [OPTIONS]
+```
+
+## Making Changes ##
+
+To change any general report format/standard visuals edit
+`/src/data/shell/pe_shell.pptx`
+
+To make any style changes, edit `/src/pe_reports/stylesheet.py`
+
+To change metrics, edit `/src/pe_reports/report_metrics.py`
+
+To change page setups/graphs, edit `/src/pe_reports/pages.py`
 
 ## Contributing ##
 
