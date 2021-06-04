@@ -11,7 +11,7 @@ reports using raw_data.xlsx files.
 
 ## Device Setup ##
 
-Install [LibreOffice](https://www.libreoffice.org/get-help/install-howto/macos/) 
+Install [LibreOffice](https://www.libreoffice.org/get-help/install-howto/macos/)
 for PowerPoint to PDF conversion.
 
 Install python 3
