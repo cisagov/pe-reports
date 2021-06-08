@@ -37,7 +37,7 @@ class Pages:
                 + str(dates)
             )
             font = run.font
-            font = Paragraph.text_style_title(prs, font)
+            Paragraph.text_style_title(prs, font)
         except Exception:
             print("There is no customer data.")
 
@@ -57,7 +57,7 @@ class Pages:
             df_creds = pd.read_csv("src/pe_reports/data/csv/dhs_creds.csv")
             run.text = str(int(df_creds.iloc[0]["count"]))
             font = run.font
-            font = Paragraph.text_style_ov_val(prs, font)
+            Paragraph.text_style_ov_val(prs, font)
         except Exception:
             print("There is no credentials data.")
 
@@ -69,7 +69,7 @@ class Pages:
             df_domains = pd.read_csv("src/pe_reports/data/csv/dhs_domains.csv")
             run.text = str(int(df_domains.iloc[0]["count"]))
             font = run.font
-            font = Paragraph.text_style_ov_val(prs, font)
+            Paragraph.text_style_ov_val(prs, font)
         except Exception:
             print("There is no domain data.")
 
@@ -81,7 +81,7 @@ class Pages:
             df_malware = pd.read_csv("src/pe_reports/data/csv/dhs_malware.csv")
             run.text = str(int(df_malware.iloc[0]["count"]))
             font = run.font
-            font = Paragraph.text_style_ov_val(prs, font)
+            Paragraph.text_style_ov_val(prs, font)
         except Exception:
             print("There is no malware data.")
 
@@ -93,7 +93,7 @@ class Pages:
             df_vulns = pd.read_csv("src/pe_reports/data/csv/dhs_vulns.csv")
             run.text = str(int(df_vulns.iloc[0]["count"]))
             font = run.font
-            font = Paragraph.text_style_ov_val(prs, font)
+            Paragraph.text_style_ov_val(prs, font)
         except Exception:
             print("There is no vulnerability data.")
 
@@ -105,7 +105,7 @@ class Pages:
             df_web = pd.read_csv("src/pe_reports/data/csv/dhs_web.csv")
             run.text = str(int(df_web.iloc[0]["count"]))
             font = run.font
-            font = Paragraph.text_style_ov_val(prs, font)
+            Paragraph.text_style_ov_val(prs, font)
         except Exception:
             print("There is no web data.")
 
@@ -119,7 +119,7 @@ class Pages:
             chart = slide.shapes.add_chart(
                 XL_CHART_TYPE.COLUMN_STACKED, x, y, cx, cy, chart
             ).chart
-            chart = Graph.bar_sm(prs, slide, chart)
+            Graph.bar_sm(prs, slide, chart)
         except Exception:
             print("There is no tld chart data.")
 
@@ -133,7 +133,7 @@ class Pages:
             chart = slide.shapes.add_chart(
                 XL_CHART_TYPE.COLUMN_STACKED, x, y, cx, cy, chart
             ).chart
-            chart = Graph.bar_sm(prs, slide, chart)
+            Graph.bar_sm(prs, slide, chart)
         except Exception:
             print("There is no ce_df chart data.")
 
@@ -149,7 +149,7 @@ class Pages:
             chart = slide.shapes.add_chart(
                 XL_CHART_TYPE.LINE, x, y, cx, cy, chart
             ).chart
-            chart = Graph.line_med(prs, slide, chart)
+            Graph.line_med(prs, slide, chart)
         except Exception:
             print("There is no web_df chart data.")
 
@@ -164,7 +164,7 @@ class Pages:
             chart = slide.shapes.add_chart(
                 XL_CHART_TYPE.COLUMN_STACKED_100, x, y, cx, cy, chart
             ).chart
-            chart = Graph.bar_med_100(prs, slide, chart)
+            Graph.bar_med_100(prs, slide, chart)
         except Exception:
             print("There is no ma_df chart data.")
 
@@ -180,7 +180,7 @@ class Pages:
             chart = slide.shapes.add_chart(
                 XL_CHART_TYPE.COLUMN_STACKED_100, x, y, cx, cy, chart
             ).chart
-            chart = Graph.bar_med_100(prs, slide, chart)
+            Graph.bar_med_100(prs, slide, chart)
         except Exception:
             print("There is no dhs_iv_df chart data.")
         return prs
