@@ -92,10 +92,11 @@ setup(
         "glob2",
         "openpyxl",
         "pandas",
-        "schema",
-        "setuptools >= 24.2.0",
         "pymongo",
         "pymupdf",
+        "python-pptx",
+        "schema",
+        "setuptools >= 24.2.0",
     ],
     extras_require={
         "test": [
