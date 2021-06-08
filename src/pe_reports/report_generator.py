@@ -1,10 +1,25 @@
-"""A tool for creating Posture & Exposure reports."""
+"""A tool for creating Posture & Exposure reports.
+Usage:
+  pe-reports REPORT_DATE  DATA_DIRECTORY OUTPUT_DIRECTORY
+
+Options:
+  -h --help                         Show this message.
+  REPORT_DATE                       Date of the report, format YYYY-MM-DD
+  DATA_DIRECTORY                    The directory where the excel data
+                                    files are located. Organized by
+                                    owner.
+  OUTPUT_DIRECTORY                  The directory where the final PDF
+                                    reports should be saved.
+ """
+# TODO Update code to handle docopt args. Docopts applied to handle minimum required tests.
 
 # Standard Python Libraries
 import os
 import sys
+from typing import Any, Dict
 
 # Third-Party Libraries
+import docopt
 from pptx import Presentation
 
 from ._version import __version__
@@ -32,6 +47,11 @@ def export_set(prs):
 
 
 def main():
+    """Set up logging and call the pe_reprots function."""
+    args: Dict[str, str] = docopt.docopt(__doc__, version=__version__)
+
+    # TODO Add generate_reports func to handle cmd line arguments.
+
     """Generate PDF reports."""
     print("\n [Info] Loading Posture & Exposure Report Template, Version:", __version__)
     prs = load_template()

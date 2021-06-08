@@ -17,7 +17,7 @@ PROJECT_VERSION = pe_reports.__version__
 
 
 def test_output(capsys):
-    """Testing captured output."""
+    """Routine to test captured output."""
     print("hello")
     sys.stderr.write("world\n")
     captured = capsys.readouterr()
