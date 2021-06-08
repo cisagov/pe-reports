@@ -69,32 +69,27 @@ class Paragraph:
 class Graph:
     """Simple class to call chart attributes."""
 
-    def bar(self, slide, chart):
-        """Medium bar chart."""
-        chart.font.size = Pt(10)
-        chart.font.rgb = (20, 200, 100)
+    def ch_font_size(self, chart):
+        """Font size set."""
+        ch_font_sm = chart.font.size = Pt(10)
+        ch_font_lg = chart.font.size = Pt(28)
+        return ch_font_sm, ch_font_lg
+
+    def ch_font_color(self, chart):
+        """Font color set."""
+        ch_font_blue = chart.font.rgb = (20, 200, 100)
+        ch_font_white = chart.font.rgb = (255, 255, 255)
+        return ch_font_blue, ch_font_white
+
+    def chart_med(self, slide, chart, ch_font_sm, ch_font_blue):
+        """Medium chart."""
+        chart.font = ch_font_sm, ch_font_blue
         chart.has_legend = True
         chart.legend.position = XL_LEGEND_POSITION.BOTTOM
         chart.legend.include_in_layout = False
         return
 
-    def bar_sm(self, slide, chart):
-        """Small bar chart."""
-        chart.font.size = Pt(10)
-        chart.font.rgb = (20, 200, 100)
-        return
-
-    def bar_med_100(self, slide, chart):
-        """Medium bar chart with percentages."""
-        chart.font.size = Pt(10)
-        chart.font.rgb = (20, 200, 100)
-        return
-
-    def line_med(self, slide, chart):
-        """Medium line chart."""
-        chart.font.size = Pt(10)
-        chart.font.rgb = (20, 200, 100)
-        chart.has_legend = True
-        chart.legend.position = XL_LEGEND_POSITION.BOTTOM
-        chart.legend.include_in_layout = False
+    def chart_sm(self, slide, chart, ch_font_sm, ch_font_blue):
+        """Small chart."""
+        chart.font = ch_font_sm, ch_font_blue
         return

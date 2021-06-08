@@ -119,7 +119,7 @@ class Pages:
             chart = slide.shapes.add_chart(
                 XL_CHART_TYPE.COLUMN_STACKED, x, y, cx, cy, chart
             ).chart
-            Graph.bar_sm(prs, slide, chart)
+            Graph.chart_sm(prs, slide, chart)
         except Exception:
             print("There is no tld chart data.")
 
@@ -133,7 +133,7 @@ class Pages:
             chart = slide.shapes.add_chart(
                 XL_CHART_TYPE.COLUMN_STACKED, x, y, cx, cy, chart
             ).chart
-            Graph.bar_sm(prs, slide, chart)
+            Graph.chart_sm(prs, slide, chart)
         except Exception:
             print("There is no ce_df chart data.")
 
@@ -149,7 +149,7 @@ class Pages:
             chart = slide.shapes.add_chart(
                 XL_CHART_TYPE.LINE, x, y, cx, cy, chart
             ).chart
-            Graph.line_med(prs, slide, chart)
+            Graph.chart_med(prs, slide, chart)
         except Exception:
             print("There is no web_df chart data.")
 
@@ -164,7 +164,7 @@ class Pages:
             chart = slide.shapes.add_chart(
                 XL_CHART_TYPE.COLUMN_STACKED_100, x, y, cx, cy, chart
             ).chart
-            Graph.bar_med_100(prs, slide, chart)
+            Graph.chart_sm(prs, slide, chart)
         except Exception:
             print("There is no ma_df chart data.")
 
@@ -180,7 +180,7 @@ class Pages:
             chart = slide.shapes.add_chart(
                 XL_CHART_TYPE.COLUMN_STACKED_100, x, y, cx, cy, chart
             ).chart
-            Graph.bar_med_100(prs, slide, chart)
+            Graph.chart_sm(prs, slide, chart)
         except Exception:
             print("There is no dhs_iv_df chart data.")
         return prs
