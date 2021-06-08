@@ -69,27 +69,22 @@ class Paragraph:
 class Graph:
     """Simple class to call chart attributes."""
 
-    def ch_font_size(self, chart):
-        """Font size set."""
-        ch_font_sm = chart.font.size = Pt(10)
-        ch_font_lg = chart.font.size = Pt(28)
-        return ch_font_sm, ch_font_lg
+    def ch_font_attr(self, chart):
+        """Font attr set."""
+        self.sm = chart.font.size = Pt(10)
+        self.lg = chart.font.size = Pt(28)
+        self.blue = chart.font.rgb = (20, 200, 100)
+        self.white = chart.font.rgb = (255, 255, 255)
 
-    def ch_font_color(self, chart):
-        """Font color set."""
-        ch_font_blue = chart.font.rgb = (20, 200, 100)
-        ch_font_white = chart.font.rgb = (255, 255, 255)
-        return ch_font_blue, ch_font_white
-
-    def chart_med(self, slide, chart, ch_font_sm, ch_font_blue):
+    def chart_med(self, slide, chart):
         """Medium chart."""
-        chart.font = ch_font_sm, ch_font_blue
+        chart.font = self.sm, self.blue
         chart.has_legend = True
         chart.legend.position = XL_LEGEND_POSITION.BOTTOM
         chart.legend.include_in_layout = False
         return
 
-    def chart_sm(self, slide, chart, ch_font_sm, ch_font_blue):
+    def chart_sm(self, slide, chart):
         """Small chart."""
-        chart.font = ch_font_sm, ch_font_blue
+        chart.font = self.sm, self.blue
         return
