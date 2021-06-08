@@ -5,9 +5,10 @@ import os
 import sys
 
 # Third-Party Libraries
-from _version import __version__
-from pages import Pages
 from pptx import Presentation
+
+from ._version import __version__
+from .pages import Pages
 
 # Configuration
 SAVE_PATH = "src/pe_reports/output"
@@ -22,8 +23,11 @@ def load_template():
 
 def export_set(prs):
     """Export PowerPoint report set to output directory."""
-    pptx_out = "Customer_ID_Posture_Exposure.pptx"
-    prs.save(os.path.join(SAVE_PATH, pptx_out))
+    try:
+        pptx_out = "Customer_ID_Posture_Exposure.pptx"
+        prs.save(os.path.join(SAVE_PATH, pptx_out))
+    except Exception:
+        print("No output available.")
     return
 
 
