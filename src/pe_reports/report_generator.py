@@ -3,14 +3,15 @@
 Usage:
     pe-reports REPORT_DATE DATA_DIRECTORY OUTPUT_DIRECTORY
 
+Arguments:
+  REPORT_DATE       Date of the report, format YYYY-MM-DD.
+  DATA_DIRECTORY    The directory where the excel data files are located.
+                    Organized by owner.
+  OUTPUT_DIRECTORY  The directory where the final PDF reports should be saved.
+
 Options:
-    -h --help                       Show this message.
-    REPORT_DATE                     Date of the report, format YYYY-MM-DD.
-    DATA_DIRECTORY                  The directory where the excel data
-                                    files are located. Organized by
-                                    owner.
-    OUTPUT_DIRECTORY                The directory where the final PDF
-                                    reports should be saved.
+  -h --help     Show this message.
+  -v --version  Show version information.
 """
 
 # Standard Python Libraries
