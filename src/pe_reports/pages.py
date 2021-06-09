@@ -38,8 +38,8 @@ class Pages:
             )
             font = run.font
             Paragraph.text_style_title(prs, font)
-        except Exception:
-            print("There is no customer data.")
+        except FileNotFoundError as not_found:
+            print(not_found, "There is no customer data.")
 
         return prs
 
@@ -58,8 +58,8 @@ class Pages:
             run.text = str(int(df_creds.iloc[0]["count"]))
             font = run.font
             Paragraph.text_style_ov_val(prs, font)
-        except Exception:
-            print("There is no credentials data.")
+        except FileNotFoundError as not_found:
+            print(not_found, "There is no credentials data.")
 
         # Overview Value - Suspected domain masquerading alerts
         ov_val_02 = Paragraph.text_frame_ov_val(prs, slide, shape, "TextBox 82")
@@ -70,8 +70,8 @@ class Pages:
             run.text = str(int(df_domains.iloc[0]["count"]))
             font = run.font
             Paragraph.text_style_ov_val(prs, font)
-        except Exception:
-            print("There is no domain data.")
+        except FileNotFoundError as not_found:
+            print(not_found, "There is no domain data.")
 
         # Overview Value - Active malware associations
         ov_val_03 = Paragraph.text_frame_ov_val(prs, slide, shape, "TextBox 86")
@@ -82,8 +82,8 @@ class Pages:
             run.text = str(int(df_malware.iloc[0]["count"]))
             font = run.font
             Paragraph.text_style_ov_val(prs, font)
-        except Exception:
-            print("There is no malware data.")
+        except FileNotFoundError as not_found:
+            print(not_found, "There is no malware data.")
 
         # Overview Value - Web and dark web mentions
         ov_val_04 = Paragraph.text_frame_ov_val(prs, slide, shape, "TextBox 87")
@@ -94,8 +94,8 @@ class Pages:
             run.text = str(int(df_vulns.iloc[0]["count"]))
             font = run.font
             Paragraph.text_style_ov_val(prs, font)
-        except Exception:
-            print("There is no vulnerability data.")
+        except FileNotFoundError as not_found:
+            print(not_found, "There is no vulnerability data.")
 
         # Overview Value - Credentials exposed in recent posts
         ov_val_05 = Paragraph.text_frame_ov_val(prs, slide, shape, "TextBox 90")
@@ -106,8 +106,8 @@ class Pages:
             run.text = str(int(df_web.iloc[0]["count"]))
             font = run.font
             Paragraph.text_style_ov_val(prs, font)
-        except Exception:
-            print("There is no web data.")
+        except FileNotFoundError as not_found:
+            print(not_found, "There is no web data.")
 
         # Bar Graph - Top Level Domains used for masquerading
         chart = CategoryChartData()
@@ -120,8 +120,8 @@ class Pages:
                 XL_CHART_TYPE.COLUMN_STACKED, x, y, cx, cy, chart
             ).chart
             Graph.chart_sm(prs, slide, chart)
-        except Exception:
-            print("There is no tld chart data.")
+        except FileNotFoundError as not_found:
+            print(not_found, "There is no tld chart data.")
 
         # Bar Graph - Sources of credential exposures
         chart = CategoryChartData()
@@ -134,8 +134,8 @@ class Pages:
                 XL_CHART_TYPE.COLUMN_STACKED, x, y, cx, cy, chart
             ).chart
             Graph.chart_sm(prs, slide, chart)
-        except Exception:
-            print("There is no ce_df chart data.")
+        except FileNotFoundError as not_found:
+            print(not_found, "There is no ce_df chart data.")
 
         # Line Graph - Sources of credential exposures
         chart = CategoryChartData()
@@ -150,8 +150,8 @@ class Pages:
                 XL_CHART_TYPE.LINE, x, y, cx, cy, chart
             ).chart
             Graph.chart_med(prs, slide, chart)
-        except Exception:
-            print("There is no web_df chart data.")
+        except FileNotFoundError as not_found:
+            print(not_found, "There is no web_df chart data.")
 
         # Bar Graph - Active malware associations
         chart = CategoryChartData()
@@ -165,8 +165,8 @@ class Pages:
                 XL_CHART_TYPE.COLUMN_STACKED_100, x, y, cx, cy, chart
             ).chart
             Graph.chart_sm(prs, slide, chart)
-        except Exception:
-            print("There is no ma_df chart data.")
+        except FileNotFoundError as not_found:
+            print(not_found, "There is no ma_df chart data.")
 
         # Bar Graph - inferred vulnerabilities found via external observation
         chart = CategoryChartData()
@@ -181,6 +181,6 @@ class Pages:
                 XL_CHART_TYPE.COLUMN_STACKED_100, x, y, cx, cy, chart
             ).chart
             Graph.chart_sm(prs, slide, chart)
-        except Exception:
-            print("There is no dhs_iv_df chart data.")
+        except FileNotFoundError as not_found:
+            print(not_found, "There is no dhs_iv_df chart data.")
         return prs
