@@ -48,14 +48,14 @@ def export_set(prs):
 
 def generate_reports(data, data_dir, out_dir):
     """Gather assets to produce reports."""
-    # TODO: build code to connect customer db, encrypt and embed pdf reports.
+    # TODO: build code to connect customer db, encrypt and embed pdf reports. Issue #7: https://github.com/cisagov/pe-reports/issues/7
 
 
 def main():
     """Set up logging and call the pe_reprots function."""
     args: Dict[str, str] = docopt.docopt(__doc__, version=__version__)
 
-    # TODO: Add generate_reports func to handle cmd line arguments and function.
+    # TODO: Add generate_reports func to handle cmd line arguments and function. Issue #8: https://github.com/cisagov/pe-reports/issues/8
     generate_reports(
         args["REPORT_DATE"], args["DATA_DIRECTORY"], args["OUTPUT_DIRECTORY"]
     )
