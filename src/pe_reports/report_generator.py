@@ -1,11 +1,11 @@
 """A tool for creating Posture & Exposure reports.
 
 Usage:
-    pe-reports REPORT_DATE  DATA_DIRECTORY OUTPUT_DIRECTORY
+    pe-reports REPORT_DATE DATA_DIRECTORY OUTPUT_DIRECTORY
 
 Options:
     -h --help                       Show this message.
-    REPORT_DATE                     Date of the report, format YYYY-MM-DD
+    REPORT_DATE                     Date of the report, format YYYY-MM-DD.
     DATA_DIRECTORY                  The directory where the excel data
                                     files are located. Organized by
                                     owner.
