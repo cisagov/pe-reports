@@ -29,7 +29,7 @@ from ._version import __version__
 from .pages import Pages
 
 # Configuration
-REPORT_SHELL = pkg_resources.resource_filename("pe_reports", "pe_shell.pptx")
+REPORT_SHELL = pkg_resources.resource_filename("pe_reports", "data/shell/pe_shell.pptx")
 
 
 def load_template():
