@@ -17,7 +17,9 @@ Options:
 # Standard Python Libraries
 import os
 import sys
+import pkg_resources
 from typing import Dict
+
 
 # Third-Party Libraries
 import docopt
@@ -27,8 +29,7 @@ from ._version import __version__
 from .pages import Pages
 
 # Configuration
-SAVE_PATH = "src/pe_reports/output"
-REPORT_SHELL = "src/pe_reports/data/shell/pe_shell.pptx"
+REPORT_SHELL = pkg_resources.resource_filename("pe_reports", "pe_shell.pptx")
 
 
 def load_template():
@@ -41,8 +42,8 @@ def export_set(prs):
     """Export PowerPoint report set to output directory."""
     try:
         pptx_out = "Customer_ID_Posture_Exposure.pptx"
-        prs.save(os.path.join(SAVE_PATH, pptx_out))
-    except Exception:
+        prs.save(os.path.join("/output", pptx_out))
+    except OSError:
         print("No output available.")
     return
 
