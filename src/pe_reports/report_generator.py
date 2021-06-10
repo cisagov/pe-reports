@@ -17,12 +17,11 @@ Options:
 # Standard Python Libraries
 import os
 import sys
-import pkg_resources
 from typing import Dict
-
 
 # Third-Party Libraries
 import docopt
+import pkg_resources
 from pptx import Presentation
 
 from ._version import __version__
