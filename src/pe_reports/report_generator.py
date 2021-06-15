@@ -12,9 +12,13 @@ Arguments:
 Options:
   -h --help     Show this message.
   -v --version  Show version information.
+  --log-level=LEVEL     If specified, then the log level will be set to
+                        the specified value.  Valid values are "debug", "info",
+                        "warning", "error", and "critical". [default: info]
 """
 
 # Standard Python Libraries
+import logging
 import os
 import sys
 from typing import Dict
@@ -49,26 +53,38 @@ def export_set(prs):
 
 def generate_reports(data, data_dir, out_dir):
     """Gather assets to produce reports."""
-    # TODO: build code to connect customer db, encrypt and embed pdf reports. Issue #7: https://github.com/cisagov/pe-reports/issues/7
+    # TODO: build code to connect customer db, encrypt and embed pdf reports.
+    # Issue #7: https://github.com/cisagov/pe-reports/issues/7
 
 
 def main():
-    """Set up logging and call the pe_reprots function."""
+    """Set up logging and build a pe-report."""
     args: Dict[str, str] = docopt.docopt(__doc__, version=__version__)
 
-    # TODO: Add generate_reports func to handle cmd line arguments and function. Issue #8: https://github.com/cisagov/pe-reports/issues/8
+    # Set up logging
+    logging.basicConfig(
+        format="%(asctime)-15s %(levelname)s %(message)s", level=logging.INFO
+    )
+
+    # TODO: Add generate_reports func to handle cmd line arguments and function.
+    # Issue #8: https://github.com/cisagov/pe-reports/issues/8
     generate_reports(
         args["REPORT_DATE"], args["DATA_DIRECTORY"], args["OUTPUT_DIRECTORY"]
     )
 
     """Generate PDF reports."""
-    print("\n [Info] Loading Posture & Exposure Report Template, Version:", __version__)
+    logging.info(
+        f"[Info] Loading Posture & Exposure Report Template, Version :, {__version__}"
+    )
     prs = load_template()
 
-    print("\n [Info] Generating Graphs ")
+    logging.info("[Info] Generating Graphs ")
     Pages.cover(prs)
     Pages.overview(prs)
     export_set(prs)
+
+    # Stop logging and clean up
+    logging.shutdown()
 
 
 if __name__ == "__main__":

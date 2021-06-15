@@ -1,5 +1,8 @@
 """Collect and distribute graphical data to readable charts in the presentation."""
 
+# Standard Python Libraries
+import logging
+
 # Third-Party Libraries
 import pandas as pd
 from pptx.chart.data import CategoryChartData
@@ -24,6 +27,8 @@ class Pages:
         frame = text_frame.paragraphs[0]
         run = frame.add_run()
         try:
+            # TODO: Remove hard-coded file locations
+            # See https://github.com/cisagov/pe-reports/issues/8
             df_customer = pd.read_csv("src/pe_reports/data/csv/dhs_customer.csv")
             dates = (
                 df_customer.iloc[0]["start_date"]
@@ -39,7 +44,7 @@ class Pages:
             font = run.font
             Paragraph.text_style_title(prs, font)
         except FileNotFoundError as not_found:
-            print(not_found, "There is no customer data.")
+            logging.info(f"{not_found} : There is no customer data.")
 
         return prs
 
@@ -54,48 +59,56 @@ class Pages:
         frame = ov_val_01.paragraphs[0]
         run = frame.add_run()
         try:
+            # TODO: Remove hard-coded file locations
+            # See https://github.com/cisagov/pe-reports/issues/8
             df_creds = pd.read_csv("src/pe_reports/data/csv/dhs_creds.csv")
             run.text = str(int(df_creds.iloc[0]["count"]))
             font = run.font
             Paragraph.text_style_ov_val(prs, font)
         except FileNotFoundError as not_found:
-            print(not_found, "There is no credentials data.")
+            logging.info(f"{not_found} : There is no customer data.")
 
         # Overview Value - Suspected domain masquerading alerts
         ov_val_02 = Paragraph.text_frame_ov_val(prs, slide, shape, "TextBox 82")
         frame = ov_val_02.paragraphs[0]
         run = frame.add_run()
         try:
+            # TODO: Remove hard-coded file locations
+            # See https://github.com/cisagov/pe-reports/issues/8
             df_domains = pd.read_csv("src/pe_reports/data/csv/dhs_domains.csv")
             run.text = str(int(df_domains.iloc[0]["count"]))
             font = run.font
             Paragraph.text_style_ov_val(prs, font)
         except FileNotFoundError as not_found:
-            print(not_found, "There is no domain data.")
+            logging.info(f"{not_found} : There is no customer data.")
 
         # Overview Value - Active malware associations
         ov_val_03 = Paragraph.text_frame_ov_val(prs, slide, shape, "TextBox 86")
         frame = ov_val_03.paragraphs[0]
         run = frame.add_run()
         try:
+            # TODO: Remove hard-coded file locations
+            # See https://github.com/cisagov/pe-reports/issues/8
             df_malware = pd.read_csv("src/pe_reports/data/csv/dhs_malware.csv")
             run.text = str(int(df_malware.iloc[0]["count"]))
             font = run.font
             Paragraph.text_style_ov_val(prs, font)
         except FileNotFoundError as not_found:
-            print(not_found, "There is no malware data.")
+            logging.info(f"{not_found} : There is no customer data.")
 
         # Overview Value - Web and dark web mentions
         ov_val_04 = Paragraph.text_frame_ov_val(prs, slide, shape, "TextBox 87")
         frame = ov_val_04.paragraphs[0]
         run = frame.add_run()
         try:
+            # TODO: Remove hard-coded file locations
+            # See https://github.com/cisagov/pe-reports/issues/8
             df_vulns = pd.read_csv("src/pe_reports/data/csv/dhs_vulns.csv")
             run.text = str(int(df_vulns.iloc[0]["count"]))
             font = run.font
             Paragraph.text_style_ov_val(prs, font)
         except FileNotFoundError as not_found:
-            print(not_found, "There is no vulnerability data.")
+            logging.info(f"{not_found} : There is no customer data.")
 
         # Overview Value - Credentials exposed in recent posts
         ov_val_05 = Paragraph.text_frame_ov_val(prs, slide, shape, "TextBox 90")
@@ -107,11 +120,13 @@ class Pages:
             font = run.font
             Paragraph.text_style_ov_val(prs, font)
         except FileNotFoundError as not_found:
-            print(not_found, "There is no web data.")
+            logging.info(f"{not_found} : There is no customer data.")
 
         # Bar Graph - Top Level Domains used for masquerading
         chart = CategoryChartData()
         try:
+            # TODO: Remove hard-coded file locations
+            # See https://github.com/cisagov/pe-reports/issues/8
             tld_df = pd.read_csv("src/pe_reports/data/csv/dhs_tld_df.csv").fillna(0)
             chart.categories = list(tld_df.columns.values)
             chart.add_series("Top Level Domains", list(tld_df.loc[0]))
@@ -121,11 +136,13 @@ class Pages:
             ).chart
             Graph.chart_sm(prs, slide, chart)
         except FileNotFoundError as not_found:
-            print(not_found, "There is no tld chart data.")
+            logging.info(f"{not_found} : There is no customer data.")
 
         # Bar Graph - Sources of credential exposures
         chart = CategoryChartData()
         try:
+            # TODO: Remove hard-coded file locations
+            # See https://github.com/cisagov/pe-reports/issues/8
             ce_df = pd.read_csv("src/pe_reports/data/csv/dhs_ce_df.csv").fillna(0)
             chart.categories = list(ce_df.columns.values)
             chart.add_series("Top Level Domains", list(ce_df.loc[0]))
@@ -135,11 +152,13 @@ class Pages:
             ).chart
             Graph.chart_sm(prs, slide, chart)
         except FileNotFoundError as not_found:
-            print(not_found, "There is no ce_df chart data.")
+            logging.info(f"{not_found} : There is no customer data.")
 
         # Line Graph - Sources of credential exposures
         chart = CategoryChartData()
         try:
+            # TODO: Remove hard-coded file locations
+            # See https://github.com/cisagov/pe-reports/issues/8
             web_df = pd.read_csv("src/pe_reports/data/csv/dhs_web_df.csv").fillna(0)
             chart.categories = list(web_df.columns.values)
             chart.add_series("Web", list(web_df.loc[0]))
@@ -151,11 +170,13 @@ class Pages:
             ).chart
             Graph.chart_med(prs, slide, chart)
         except FileNotFoundError as not_found:
-            print(not_found, "There is no web_df chart data.")
+            logging.info(f"{not_found} : There is no customer data.")
 
         # Bar Graph - Active malware associations
         chart = CategoryChartData()
         try:
+            # TODO: Remove hard-coded file locations
+            # See https://github.com/cisagov/pe-reports/issues/8
             ma_df = pd.read_csv("src/pe_reports/data/csv/dhs_ma_df.csv").fillna(0)
             chart.categories = list(ma_df.columns.values)
             chart.add_series("Sources", list(ma_df.loc[0]))
@@ -166,11 +187,13 @@ class Pages:
             ).chart
             Graph.chart_sm(prs, slide, chart)
         except FileNotFoundError as not_found:
-            print(not_found, "There is no ma_df chart data.")
+            logging.info(f"{not_found} : There is no customer data.")
 
         # Bar Graph - inferred vulnerabilities found via external observation
         chart = CategoryChartData()
         try:
+            # TODO: Remove hard-coded file locations
+            # See https://github.com/cisagov/pe-reports/issues/8
             iv_df = pd.read_csv("src/pe_reports/data/csv/dhs_iv_df.csv").fillna(0)
 
             chart.categories = list(iv_df.columns.values)
@@ -182,5 +205,5 @@ class Pages:
             ).chart
             Graph.chart_sm(prs, slide, chart)
         except FileNotFoundError as not_found:
-            print(not_found, "There is no dhs_iv_df chart data.")
+            logging.info(f"{not_found} : There is no customer data.")
         return prs
