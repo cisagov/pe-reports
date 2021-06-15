@@ -58,7 +58,7 @@ def generate_reports(data, data_dir, out_dir):
 
 
 def main():
-    """Set up logging and build a pe-report."""
+    """Set up logging and call the generate_reports function."""
     args: Dict[str, str] = docopt.docopt(__doc__, version=__version__)
 
     # Set up logging
