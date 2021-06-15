@@ -10,7 +10,7 @@ SMALL = Pt(10)
 LARGE = Pt(28)
 BLUE = RGBColor(3, 37, 126)
 GREEN = RGBColor(20, 200, 100)
-WHITE= RGBColor(255, 255, 255)
+WHITE = RGBColor(255, 255, 255)
 
 
 class Paragraph:
@@ -60,13 +60,13 @@ class Paragraph:
     def text_style_key_metric(self, font):
         """Text style for key metrics."""
         font.name = "Calibri"
-        font.size, font.color  = SMALL, BLUE
+        font.size, font.color = SMALL, BLUE
         return font
 
     def text_style_ov_val(self, font):
         """Text style for overview page values."""
         font.name = "Calibri"
-        font.size, font.color  = LARGE, BLUE
+        font.size, font.color = LARGE, BLUE
         return font
 
 
