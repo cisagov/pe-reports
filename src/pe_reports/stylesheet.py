@@ -5,6 +5,13 @@ from pptx.dml.color import RGBColor
 from pptx.enum.chart import XL_LEGEND_POSITION
 from pptx.util import Pt
 
+# Font Attributes
+SMALL = size = Pt(10)
+LARGE = size = Pt(28)
+BLUE = rgb = RGBColor(3, 37, 126)
+GREEN = rgb = RGBColor(20, 200, 100)
+WHITE = rgb = RGBColor(255, 255, 255)
+
 
 class Paragraph:
     """Simple class to call text frame attributes."""
@@ -47,38 +54,28 @@ class Paragraph:
     def text_style_title(self, font):
         """Text style for cover page title."""
         font.name = "Calibri"
-        font.size = Pt(28)
-        font.color.rgb = RGBColor(255, 255, 255)
+        font = LARGE, WHITE
         return font
 
     def text_style_key_metric(self, font):
         """Text style for key metrics."""
         font.name = "Calibri"
-        font.size = Pt(12)
-        font.color.rgb = RGBColor(255, 255, 255)
+        font = SMALL, BLUE
         return font
 
     def text_style_ov_val(self, font):
         """Text style for overview page values."""
         font.name = "Calibri"
-        font.size = Pt(28)
-        font.color.rgb = RGBColor(3, 37, 126)
+        font = LARGE, BLUE
         return font
 
 
 class Graph:
     """Simple class to call chart attributes."""
 
-    def ch_font_attr(self, chart):
-        """Font attr set."""
-        self.sm = chart.font.size = Pt(10)
-        self.lg = chart.font.size = Pt(28)
-        self.blue = chart.font.rgb = (20, 200, 100)
-        self.white = chart.font.rgb = (255, 255, 255)
-
     def chart_med(self, slide, chart):
         """Medium chart."""
-        chart.font = self.sm, self.blue
+        chart.font = SMALL, GREEN
         chart.has_legend = True
         chart.legend.position = XL_LEGEND_POSITION.BOTTOM
         chart.legend.include_in_layout = False
@@ -86,5 +83,5 @@ class Graph:
 
     def chart_sm(self, slide, chart):
         """Small chart."""
-        chart.font = self.sm, self.blue
+        chart.font = SMALL, GREEN
         return
