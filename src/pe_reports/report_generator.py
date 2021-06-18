@@ -10,11 +10,11 @@ Arguments:
   OUTPUT_DIRECTORY  The directory where the final PDF reports should be saved.
 
 Options:
-  -h --help     Show this message.
-  -v --version  Show version information.
-  --log-level=LEVEL     If specified, then the log level will be set to
-                        the specified value.  Valid values are "debug", "info",
-                        "warning", "error", and "critical". [default: info]
+  -h --help          Show this message.
+  -v --version       Show version information.
+  --log-level=LEVEL  If specified, then the log level will be set to
+                     the specified value.  Valid values are "debug", "info",
+                     "warning", "error", and "critical". [default: info]
 """
 
 # Standard Python Libraries
