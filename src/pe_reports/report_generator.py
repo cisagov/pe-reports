@@ -98,11 +98,11 @@ def main():
 
     """Generate PDF reports."""
     logging.info(
-        f"[Info] Loading Posture & Exposure Report Template, Version :, {__version__}"
+        f"Loading Posture & Exposure Report Template, Version :, {__version__}"
     )
     prs = load_template()
 
-    logging.info("[Info] Generating Graphs ")
+    logging.info("Generating Graphs ")
     Pages.cover(prs)
     Pages.overview(prs)
     export_set(prs)
