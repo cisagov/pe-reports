@@ -62,6 +62,7 @@ def main():
     """Set up logging and call the generate_reports function."""
     args: Dict[str, str] = docopt.docopt(__doc__, version=__version__)
     # Validate and convert arguments as needed
+    print(sys.argv)
     schema: Schema = Schema(
         {
             "--log-level": And(
@@ -109,6 +110,7 @@ def main():
 
     # Stop logging and clean up
     logging.shutdown()
+    return 0
 
 
 if __name__ == "__main__":

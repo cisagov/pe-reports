@@ -57,8 +57,17 @@ def test_running_as_module(capsys):
 @pytest.mark.parametrize("level", log_levels)
 def test_log_levels(level):
     """Validate commandline log-level arguments."""
-    print(level)
-    with patch.object(sys, "argv", ["bogus", f"--log-level={level}", "1", "1"]):
+    with patch.object(
+        sys,
+        "argv",
+        [
+            "pe_reports",
+            "2021-01-01",
+            "input/",
+            "output/",
+            f"--log-level={level}",
+        ],
+    ):
         with patch.object(logging.root, "handlers", []):
             assert (
                 logging.root.hasHandlers() is False
