@@ -44,7 +44,7 @@ class Pages:
             font = run.font
             Paragraph.text_style_title(prs, font)
         except FileNotFoundError as not_found:
-            logging.info(f"{not_found} : There is no customer data.")
+            logging.error(f"{not_found} : There is no customer data.")
 
         return prs
 
@@ -66,7 +66,7 @@ class Pages:
             font = run.font
             Paragraph.text_style_ov_val(prs, font)
         except FileNotFoundError as not_found:
-            logging.info(f"{not_found} : There is no customer data.")
+            logging.error(f"{not_found} : There is no customer data.")
 
         # Overview Value - Suspected domain masquerading alerts
         ov_val_02 = Paragraph.text_frame_ov_val(prs, slide, shape, "TextBox 82")
@@ -80,7 +80,7 @@ class Pages:
             font = run.font
             Paragraph.text_style_ov_val(prs, font)
         except FileNotFoundError as not_found:
-            logging.info(f"{not_found} : There is no customer data.")
+            logging.error(f"{not_found} : There is no customer data.")
 
         # Overview Value - Active malware associations
         ov_val_03 = Paragraph.text_frame_ov_val(prs, slide, shape, "TextBox 86")
@@ -94,7 +94,7 @@ class Pages:
             font = run.font
             Paragraph.text_style_ov_val(prs, font)
         except FileNotFoundError as not_found:
-            logging.info(f"{not_found} : There is no customer data.")
+            logging.error(f"{not_found} : There is no customer data.")
 
         # Overview Value - Web and dark web mentions
         ov_val_04 = Paragraph.text_frame_ov_val(prs, slide, shape, "TextBox 87")
@@ -108,7 +108,7 @@ class Pages:
             font = run.font
             Paragraph.text_style_ov_val(prs, font)
         except FileNotFoundError as not_found:
-            logging.info(f"{not_found} : There is no customer data.")
+            logging.error(f"{not_found} : There is no customer data.")
 
         # Overview Value - Credentials exposed in recent posts
         ov_val_05 = Paragraph.text_frame_ov_val(prs, slide, shape, "TextBox 90")
@@ -120,7 +120,7 @@ class Pages:
             font = run.font
             Paragraph.text_style_ov_val(prs, font)
         except FileNotFoundError as not_found:
-            logging.info(f"{not_found} : There is no customer data.")
+            logging.error(f"{not_found} : There is no customer data.")
 
         # Bar Graph - Top Level Domains used for masquerading
         chart = CategoryChartData()
@@ -136,7 +136,7 @@ class Pages:
             ).chart
             Graph.chart_sm(prs, slide, chart)
         except FileNotFoundError as not_found:
-            logging.info(f"{not_found} : There is no customer data.")
+            logging.error(f"{not_found} : There is no customer data.")
 
         # Bar Graph - Sources of credential exposures
         chart = CategoryChartData()
@@ -152,7 +152,7 @@ class Pages:
             ).chart
             Graph.chart_sm(prs, slide, chart)
         except FileNotFoundError as not_found:
-            logging.info(f"{not_found} : There is no customer data.")
+            logging.error(f"{not_found} : There is no customer data.")
 
         # Line Graph - Sources of credential exposures
         chart = CategoryChartData()
@@ -170,7 +170,7 @@ class Pages:
             ).chart
             Graph.chart_med(prs, slide, chart)
         except FileNotFoundError as not_found:
-            logging.info(f"{not_found} : There is no customer data.")
+            logging.error(f"{not_found} : There is no customer data.")
 
         # Bar Graph - Active malware associations
         chart = CategoryChartData()
@@ -187,7 +187,7 @@ class Pages:
             ).chart
             Graph.chart_sm(prs, slide, chart)
         except FileNotFoundError as not_found:
-            logging.info(f"{not_found} : There is no customer data.")
+            logging.error(f"{not_found} : There is no customer data.")
 
         # Bar Graph - inferred vulnerabilities found via external observation
         chart = CategoryChartData()
@@ -205,5 +205,5 @@ class Pages:
             ).chart
             Graph.chart_sm(prs, slide, chart)
         except FileNotFoundError as not_found:
-            logging.info(f"{not_found} : There is no customer data.")
+            logging.error(f"{not_found} : There is no customer data.")
         return prs

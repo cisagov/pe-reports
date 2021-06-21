@@ -48,7 +48,7 @@ def export_set(prs):
         pptx_out = "Customer_ID_Posture_Exposure.pptx"
         prs.save(os.path.join("/output", pptx_out))
     except FileNotFoundError as not_found:
-        logging.info(f"{not_found} : Missing input data. No report generated.")
+        logging.error(f"{not_found} : Missing input data. No report generated.")
     return
 
 
