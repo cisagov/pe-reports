@@ -1,7 +1,7 @@
 """A tool for creating Posture & Exposure reports.
 
 Usage:
-    pe-reports REPORT_DATE DATA_DIRECTORY OUTPUT_DIRECTORY
+    pe-reports REPORT_DATE DATA_DIRECTORY OUTPUT_DIRECTORY [--log-level=LEVEL]
 
 Arguments:
   REPORT_DATE       Date of the report, format YYYY-MM-DD.
@@ -21,12 +21,13 @@ Options:
 import logging
 import os
 import sys
-from typing import Dict
+from typing import Any, Dict
 
 # Third-Party Libraries
 import docopt
 import pkg_resources
 from pptx import Presentation
+from schema import And, Schema, SchemaError, Use
 
 from ._version import __version__
 from .pages import Pages
@@ -60,10 +61,33 @@ def generate_reports(data, data_dir, out_dir):
 def main():
     """Set up logging and call the generate_reports function."""
     args: Dict[str, str] = docopt.docopt(__doc__, version=__version__)
+    # Validate and convert arguments as needed
+    schema: Schema = Schema(
+        {
+            "--log-level": And(
+                str,
+                Use(str.lower),
+                lambda n: n in ("debug", "info", "warning", "error", "critical"),
+                error="Possible values for --log-level are "
+                + "debug, info, warning, error, and critical.",
+            ),
+            str: object,  # Don't care about other keys, if any
+        }
+    )
+
+    try:
+        validated_args: Dict[str, Any] = schema.validate(args)
+    except SchemaError as err:
+        # Exit because one or more of the arguments were invalid
+        print(err, file=sys.stderr)
+        return 1
+
+    # Assign validated arguments to variables
+    log_level: str = validated_args["--log-level"]
 
     # Set up logging
     logging.basicConfig(
-        format="%(asctime)-15s %(levelname)s %(message)s", level=logging.INFO
+        format="%(asctime)-15s %(levelname)s %(message)s", level=log_level.upper()
     )
 
     # TODO: Add generate_reports func to handle cmd line arguments and function.
