@@ -34,6 +34,7 @@ from .pages import Pages
 
 # Configuration
 REPORT_SHELL = pkg_resources.resource_filename("pe_reports", "data/shell/pe_shell.pptx")
+REPORT_OUT = "Customer_ID_Posture_Exposure.pptx"
 
 
 def load_template():
@@ -42,13 +43,12 @@ def load_template():
     return prs
 
 
-def export_set(prs):
+def export_set(prs, out_dir):
     """Export PowerPoint report set to output directory."""
     try:
-        pptx_out = "Customer_ID_Posture_Exposure.pptx"
-        prs.save(os.path.join("/output", pptx_out))
+        prs.save(os.path.join(out_dir, REPORT_OUT))
     except FileNotFoundError as not_found:
-        logging.error(f"{not_found} : Missing input data. No report generated.")
+        logging.error("%s : Missing input data. No report generated.", not_found)
     return
 
 
@@ -93,19 +93,20 @@ def main():
     # TODO: Add generate_reports func to handle cmd line arguments and function.
     # Issue #8: https://github.com/cisagov/pe-reports/issues/8
     generate_reports(
-        args["REPORT_DATE"], args["DATA_DIRECTORY"], args["OUTPUT_DIRECTORY"]
+        validated_args["REPORT_DATE"],
+        validated_args["DATA_DIRECTORY"],
+        validated_args["OUTPUT_DIRECTORY"],
     )
 
     """Generate PDF reports."""
-    logging.info(
-        f"Loading Posture & Exposure Report Template, Version :, {__version__}"
-    )
+    logging.info(f"Loading Posture & Exposure Report Template, Version : {__version__}")
     prs = load_template()
 
-    logging.info("Generating Graphs ")
+    logging.info("Generating Graphs")
     Pages.cover(prs)
     Pages.overview(prs)
-    export_set(prs)
+
+    export_set(prs, validated_args["OUTPUT_DIRECTORY"])
 
     # Stop logging and clean up
     logging.shutdown()
