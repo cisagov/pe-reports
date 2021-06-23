@@ -77,3 +77,20 @@ def test_log_levels(level):
                 logging.root.hasHandlers() is True
             ), "root logger should now have a handler"
             assert return_code == 0, "main() should return success (0)"
+
+
+def test_bad_log_level():
+    """Validate bad log-level argument returns error."""
+    with patch.object(
+        sys,
+        "argv",
+        [
+            "pe_reports",
+            "2021-01-01",
+            "input/",
+            "output/",
+            "--log-level=emergency",
+        ],
+    ):
+        return_code = pe_reports.report_generator.main()
+        assert return_code == 1, "main() should return failure"
