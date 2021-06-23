@@ -130,6 +130,9 @@ class Pages:
             tld_df = pd.read_csv("src/pe_reports/data/csv/dhs_tld_df.csv").fillna(0)
             chart.categories = list(tld_df.columns.values)
             chart.add_series("Top Level Domains", list(tld_df.loc[0]))
+
+            # TODO: Remove hard-coded graph size and postioning values
+            # See https://github.com/cisagov/pe-reports/issues/9
             x, y, cx, cy = Inches(3.5), Inches(2.9), Inches(2), Inches(1.5)
             chart = slide.shapes.add_chart(
                 XL_CHART_TYPE.COLUMN_STACKED, x, y, cx, cy, chart
@@ -146,6 +149,9 @@ class Pages:
             ce_df = pd.read_csv("src/pe_reports/data/csv/dhs_ce_df.csv").fillna(0)
             chart.categories = list(ce_df.columns.values)
             chart.add_series("Top Level Domains", list(ce_df.loc[0]))
+
+            # TODO: Remove hard-coded graph size and postioning values
+            # See https://github.com/cisagov/pe-reports/issues/9
             x, y, cx, cy = Inches(5.75), Inches(2.9), Inches(2), Inches(1.5)
             chart = slide.shapes.add_chart(
                 XL_CHART_TYPE.COLUMN_STACKED, x, y, cx, cy, chart
@@ -164,6 +170,8 @@ class Pages:
             chart.add_series("Web", list(web_df.loc[0]))
             chart.add_series("Dark Web", list(web_df.loc[1]))
 
+            # TODO: Remove hard-coded graph size and postioning values
+            # See https://github.com/cisagov/pe-reports/issues/9
             x, y, cx, cy = Inches(3.5), Inches(5), Inches(4.8), Inches(2.15)
             chart = slide.shapes.add_chart(
                 XL_CHART_TYPE.LINE, x, y, cx, cy, chart
@@ -181,6 +189,8 @@ class Pages:
             chart.categories = list(ma_df.columns.values)
             chart.add_series("Sources", list(ma_df.loc[0]))
 
+            # TODO: Remove hard-coded graph size and postioning values
+            # See https://github.com/cisagov/pe-reports/issues/9
             x, y, cx, cy = Inches(8.25), Inches(2.9), Inches(4.5), Inches(2.0)
             chart = slide.shapes.add_chart(
                 XL_CHART_TYPE.COLUMN_STACKED_100, x, y, cx, cy, chart
@@ -199,6 +209,8 @@ class Pages:
             chart.categories = list(iv_df.columns.values)
             chart.add_series("Sources", list(iv_df.loc[0]))
 
+            # TODO: Remove hard-coded graph size and postioning values
+            # See https://github.com/cisagov/pe-reports/issues/9
             x, y, cx, cy = Inches(8.25), Inches(4.9), Inches(4.5), Inches(2.0)
             chart = slide.shapes.add_chart(
                 XL_CHART_TYPE.COLUMN_STACKED_100, x, y, cx, cy, chart
