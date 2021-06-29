@@ -79,9 +79,7 @@ class Graph:
         chart.has_legend = True
         chart.legend.position = XL_LEGEND_POSITION.BOTTOM
         chart.legend.include_in_layout = False
-        return
 
     def chart_sm(self, slide, chart):
         """Small chart."""
         chart.font.size, chart.font.color = SMALL, GREEN
-        return
