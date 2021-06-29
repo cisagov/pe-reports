@@ -49,7 +49,6 @@ def export_set(prs, out_dir):
         prs.save(os.path.join(out_dir, REPORT_OUT))
     except FileNotFoundError as not_found:
         logging.error("%s : Missing input data. No report generated.", not_found)
-    return
 
 
 def generate_reports(data, data_dir, out_dir):
@@ -98,8 +97,9 @@ def main():
         validated_args["OUTPUT_DIRECTORY"],
     )
 
-    """Generate PDF reports."""
-    logging.info(f"Loading Posture & Exposure Report Template, Version : {__version__}")
+    logging.info(
+        "Loading Posture & Exposure Report Template, Version : %s", __version__
+    )
     prs = load_template()
 
     logging.info("Generating Graphs")
