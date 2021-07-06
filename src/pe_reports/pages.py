@@ -22,8 +22,8 @@ class Pages:
     def cover(prs):
         """Page 1: Cover page of presentation."""
         slide = prs.slides[0]
-        shape = Paragraph.shapes(prs, slide)
-        text_frame = Paragraph.text_frame(prs, shape)
+        shape = Paragraph.shapes(slide)
+        text_frame = Paragraph.text_frame(shape)
         frame = text_frame.paragraphs[0]
         run = frame.add_run()
         try:
@@ -42,7 +42,7 @@ class Pages:
                 + str(dates)
             )
             font = run.font
-            Paragraph.text_style_title(prs, font)
+            Paragraph.text_style_title(font)
         except FileNotFoundError as not_found:
             logging.error("%s : There is no customer data.", not_found)
 
@@ -52,10 +52,9 @@ class Pages:
     def overview(prs):
         """Page 2: Posture & Exposure Report Overview."""
         slide = prs.slides[1]
-        shape = Paragraph.shapes(prs, slide)
 
         # Overview Value - Credentials exposed in recent posts
-        ov_val_01 = Paragraph.text_frame_ov_val(prs, slide, shape, "TextBox 2")
+        ov_val_01 = Paragraph.text_frame_ov_val(slide, "TextBox 2")
         frame = ov_val_01.paragraphs[0]
         run = frame.add_run()
         try:
@@ -64,12 +63,12 @@ class Pages:
             df_creds = pd.read_csv("src/pe_reports/data/csv/dhs_creds.csv")
             run.text = str(int(df_creds.iloc[0]["count"]))
             font = run.font
-            Paragraph.text_style_ov_val(prs, font)
+            Paragraph.text_style_ov_val(font)
         except FileNotFoundError as not_found:
             logging.error("%s : There is no customer data.", not_found)
 
         # Overview Value - Suspected domain masquerading alerts
-        ov_val_02 = Paragraph.text_frame_ov_val(prs, slide, shape, "TextBox 82")
+        ov_val_02 = Paragraph.text_frame_ov_val(slide, "TextBox 82")
         frame = ov_val_02.paragraphs[0]
         run = frame.add_run()
         try:
@@ -78,12 +77,12 @@ class Pages:
             df_domains = pd.read_csv("src/pe_reports/data/csv/dhs_domains.csv")
             run.text = str(int(df_domains.iloc[0]["count"]))
             font = run.font
-            Paragraph.text_style_ov_val(prs, font)
+            Paragraph.text_style_ov_val(font)
         except FileNotFoundError as not_found:
             logging.error("%s : There is no customer data.", not_found)
 
         # Overview Value - Active malware associations
-        ov_val_03 = Paragraph.text_frame_ov_val(prs, slide, shape, "TextBox 86")
+        ov_val_03 = Paragraph.text_frame_ov_val(slide, "TextBox 86")
         frame = ov_val_03.paragraphs[0]
         run = frame.add_run()
         try:
@@ -92,12 +91,12 @@ class Pages:
             df_malware = pd.read_csv("src/pe_reports/data/csv/dhs_malware.csv")
             run.text = str(int(df_malware.iloc[0]["count"]))
             font = run.font
-            Paragraph.text_style_ov_val(prs, font)
+            Paragraph.text_style_ov_val(font)
         except FileNotFoundError as not_found:
             logging.error("%s : There is no customer data.", not_found)
 
         # Overview Value - Web and dark web mentions
-        ov_val_04 = Paragraph.text_frame_ov_val(prs, slide, shape, "TextBox 87")
+        ov_val_04 = Paragraph.text_frame_ov_val(slide, "TextBox 87")
         frame = ov_val_04.paragraphs[0]
         run = frame.add_run()
         try:
@@ -106,19 +105,19 @@ class Pages:
             df_vulns = pd.read_csv("src/pe_reports/data/csv/dhs_vulns.csv")
             run.text = str(int(df_vulns.iloc[0]["count"]))
             font = run.font
-            Paragraph.text_style_ov_val(prs, font)
+            Paragraph.text_style_ov_val(font)
         except FileNotFoundError as not_found:
             logging.error("%s : There is no customer data.", not_found)
 
         # Overview Value - Credentials exposed in recent posts
-        ov_val_05 = Paragraph.text_frame_ov_val(prs, slide, shape, "TextBox 90")
+        ov_val_05 = Paragraph.text_frame_ov_val(slide, "TextBox 90")
         frame = ov_val_05.paragraphs[0]
         run = frame.add_run()
         try:
             df_web = pd.read_csv("src/pe_reports/data/csv/dhs_web.csv")
             run.text = str(int(df_web.iloc[0]["count"]))
             font = run.font
-            Paragraph.text_style_ov_val(prs, font)
+            Paragraph.text_style_ov_val(font)
         except FileNotFoundError as not_found:
             logging.error("%s : There is no customer data.", not_found)
 
@@ -137,7 +136,7 @@ class Pages:
             chart = slide.shapes.add_chart(
                 XL_CHART_TYPE.COLUMN_STACKED, x, y, cx, cy, chart
             ).chart
-            Graph.chart_sm(prs, slide, chart)
+            Graph.chart_sm(chart)
         except FileNotFoundError as not_found:
             logging.error("%s : There is no customer data.", not_found)
 
@@ -156,7 +155,7 @@ class Pages:
             chart = slide.shapes.add_chart(
                 XL_CHART_TYPE.COLUMN_STACKED, x, y, cx, cy, chart
             ).chart
-            Graph.chart_sm(prs, slide, chart)
+            Graph.chart_sm(chart)
         except FileNotFoundError as not_found:
             logging.error("%s : There is no customer data.", not_found)
 
@@ -176,7 +175,7 @@ class Pages:
             chart = slide.shapes.add_chart(
                 XL_CHART_TYPE.LINE, x, y, cx, cy, chart
             ).chart
-            Graph.chart_med(prs, slide, chart)
+            Graph.chart_med(chart)
         except FileNotFoundError as not_found:
             logging.error("%s : There is no customer data.", not_found)
 
@@ -195,7 +194,7 @@ class Pages:
             chart = slide.shapes.add_chart(
                 XL_CHART_TYPE.COLUMN_STACKED_100, x, y, cx, cy, chart
             ).chart
-            Graph.chart_sm(prs, slide, chart)
+            Graph.chart_sm(chart)
         except FileNotFoundError as not_found:
             logging.error("%s : There is no customer data.", not_found)
 
@@ -215,7 +214,7 @@ class Pages:
             chart = slide.shapes.add_chart(
                 XL_CHART_TYPE.COLUMN_STACKED_100, x, y, cx, cy, chart
             ).chart
-            Graph.chart_sm(prs, slide, chart)
+            Graph.chart_sm(chart)
         except FileNotFoundError as not_found:
             logging.error("%s : There is no customer data.", not_found)
         return prs
