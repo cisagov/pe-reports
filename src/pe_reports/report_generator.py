@@ -54,7 +54,7 @@ def export_set(prs, out_dir):
 def generate_reports(data, data_dir, out_dir):
     """Gather assets to produce reports."""
     # TODO: build code to connect customer db, encrypt and embed pdf reports.
-    # Issue #7: https://github.com/cisagov/pe-reports/issues/7
+    # Issue 7: https://github.com/cisagov/pe-reports/issues/7
 
 
 def main():
@@ -90,8 +90,10 @@ def main():
     )
 
     # TODO: Add generate_reports func to handle cmd line arguments and function.
-    # Issue #8: https://github.com/cisagov/pe-reports/issues/8
+    # Issue 8: https://github.com/cisagov/pe-reports/issues/8
     generate_reports(
+        # TODO: Improve use of schema to validate arguments.
+        # Issue 19: https://github.com/cisagov/pe-reports/issues/19
         validated_args["REPORT_DATE"],
         validated_args["DATA_DIRECTORY"],
         validated_args["OUTPUT_DIRECTORY"],
