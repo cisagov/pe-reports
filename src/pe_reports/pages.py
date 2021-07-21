@@ -28,7 +28,7 @@ class Pages:
         run = frame.add_run()
         try:
             # TODO: Remove hard-coded file locations
-            # See https://github.com/cisagov/pe-reports/issues/8
+            # Issue 8: https://github.com/cisagov/pe-reports/issues/8
             df_customer = pd.read_csv("src/pe_reports/data/csv/dhs_customer.csv")
             dates = (
                 df_customer.iloc[0]["start_date"]
@@ -59,8 +59,11 @@ class Pages:
         run = frame.add_run()
         try:
             # TODO: Remove hard-coded file locations
-            # See https://github.com/cisagov/pe-reports/issues/8
+            # Issue 8: https://github.com/cisagov/pe-reports/issues/8
             df_creds = pd.read_csv("src/pe_reports/data/csv/dhs_creds.csv")
+
+            # TODO: Dry out this code
+            # Issue 8: https://github.com/cisagov/pe-reports/issues/18
             run.text = str(int(df_creds.iloc[0]["count"]))
             font = run.font
             Paragraph.text_style_ov_val(font)
@@ -73,8 +76,11 @@ class Pages:
         run = frame.add_run()
         try:
             # TODO: Remove hard-coded file locations
-            # See https://github.com/cisagov/pe-reports/issues/8
+            # Issue 8: https://github.com/cisagov/pe-reports/issues/8
             df_domains = pd.read_csv("src/pe_reports/data/csv/dhs_domains.csv")
+
+            # TODO: Dry out this code
+            # Issue 18: https://github.com/cisagov/pe-reports/issues/18
             run.text = str(int(df_domains.iloc[0]["count"]))
             font = run.font
             Paragraph.text_style_ov_val(font)
@@ -87,8 +93,11 @@ class Pages:
         run = frame.add_run()
         try:
             # TODO: Remove hard-coded file locations
-            # See https://github.com/cisagov/pe-reports/issues/8
+            # Issue 8: https://github.com/cisagov/pe-reports/issues/8
             df_malware = pd.read_csv("src/pe_reports/data/csv/dhs_malware.csv")
+
+            # TODO: Dry out this code
+            # Issue 18: https://github.com/cisagov/pe-reports/issues/18
             run.text = str(int(df_malware.iloc[0]["count"]))
             font = run.font
             Paragraph.text_style_ov_val(font)
@@ -101,8 +110,11 @@ class Pages:
         run = frame.add_run()
         try:
             # TODO: Remove hard-coded file locations
-            # See https://github.com/cisagov/pe-reports/issues/8
+            # Issue 8: https://github.com/cisagov/pe-reports/issues/8
             df_vulns = pd.read_csv("src/pe_reports/data/csv/dhs_vulns.csv")
+
+            # TODO: Dry out this code
+            # Issue 18: https://github.com/cisagov/pe-reports/issues/18
             run.text = str(int(df_vulns.iloc[0]["count"]))
             font = run.font
             Paragraph.text_style_ov_val(font)
@@ -115,6 +127,9 @@ class Pages:
         run = frame.add_run()
         try:
             df_web = pd.read_csv("src/pe_reports/data/csv/dhs_web.csv")
+
+            # TODO: Dry out this code
+            # Issue 18: https://github.com/cisagov/pe-reports/issues/18
             run.text = str(int(df_web.iloc[0]["count"]))
             font = run.font
             Paragraph.text_style_ov_val(font)
@@ -123,15 +138,18 @@ class Pages:
 
         # Bar Graph - Top Level Domains used for masquerading
         chart = CategoryChartData()
+
+        # TODO: Dry out this code
+        # Issue 18: https://github.com/cisagov/pe-reports/issues/18
         try:
             # TODO: Remove hard-coded file locations
-            # See https://github.com/cisagov/pe-reports/issues/8
+            # Issue 8: https://github.com/cisagov/pe-reports/issues/8
             tld_df = pd.read_csv("src/pe_reports/data/csv/dhs_tld_df.csv").fillna(0)
             chart.categories = list(tld_df.columns.values)
             chart.add_series("Top Level Domains", list(tld_df.loc[0]))
 
             # TODO: Remove hard-coded graph size and positioning values
-            # See https://github.com/cisagov/pe-reports/issues/9
+            # Issue 9: https://github.com/cisagov/pe-reports/issues/9
             x, y, cx, cy = Inches(3.5), Inches(2.9), Inches(2), Inches(1.5)
             chart = slide.shapes.add_chart(
                 XL_CHART_TYPE.COLUMN_STACKED, x, y, cx, cy, chart
@@ -142,15 +160,18 @@ class Pages:
 
         # Bar Graph - Sources of credential exposures
         chart = CategoryChartData()
+
+        # TODO: Dry out this code
+        # Issue 18: https://github.com/cisagov/pe-reports/issues/18
         try:
             # TODO: Remove hard-coded file locations
-            # See https://github.com/cisagov/pe-reports/issues/8
+            # Issue 8: https://github.com/cisagov/pe-reports/issues/8
             ce_df = pd.read_csv("src/pe_reports/data/csv/dhs_ce_df.csv").fillna(0)
             chart.categories = list(ce_df.columns.values)
             chart.add_series("Top Level Domains", list(ce_df.loc[0]))
 
             # TODO: Remove hard-coded graph size and positioning values
-            # See https://github.com/cisagov/pe-reports/issues/9
+            # Issue 9: https://github.com/cisagov/pe-reports/issues/9
             x, y, cx, cy = Inches(5.75), Inches(2.9), Inches(2), Inches(1.5)
             chart = slide.shapes.add_chart(
                 XL_CHART_TYPE.COLUMN_STACKED, x, y, cx, cy, chart
@@ -161,16 +182,19 @@ class Pages:
 
         # Line Graph - Sources of credential exposures
         chart = CategoryChartData()
+
+        # TODO: Dry out this code
+        # Issue 18: https://github.com/cisagov/pe-reports/issues/18
         try:
             # TODO: Remove hard-coded file locations
-            # See https://github.com/cisagov/pe-reports/issues/8
+            # Issue 8: https://github.com/cisagov/pe-reports/issues/8
             web_df = pd.read_csv("src/pe_reports/data/csv/dhs_web_df.csv").fillna(0)
             chart.categories = list(web_df.columns.values)
             chart.add_series("Web", list(web_df.loc[0]))
             chart.add_series("Dark Web", list(web_df.loc[1]))
 
             # TODO: Remove hard-coded graph size and positioning values
-            # See https://github.com/cisagov/pe-reports/issues/9
+            # Issue 9: https://github.com/cisagov/pe-reports/issues/9
             x, y, cx, cy = Inches(3.5), Inches(5), Inches(4.8), Inches(2.15)
             chart = slide.shapes.add_chart(
                 XL_CHART_TYPE.LINE, x, y, cx, cy, chart
@@ -181,15 +205,18 @@ class Pages:
 
         # Bar Graph - Active malware associations
         chart = CategoryChartData()
+
+        # TODO: Dry out this code
+        # Issue 18: https://github.com/cisagov/pe-reports/issues/18
         try:
             # TODO: Remove hard-coded file locations
-            # See https://github.com/cisagov/pe-reports/issues/8
+            # Issue 8: https://github.com/cisagov/pe-reports/issues/8
             ma_df = pd.read_csv("src/pe_reports/data/csv/dhs_ma_df.csv").fillna(0)
             chart.categories = list(ma_df.columns.values)
             chart.add_series("Sources", list(ma_df.loc[0]))
 
             # TODO: Remove hard-coded graph size and positioning values
-            # See https://github.com/cisagov/pe-reports/issues/9
+            # Issue 9: https://github.com/cisagov/pe-reports/issues/9
             x, y, cx, cy = Inches(8.25), Inches(2.9), Inches(4.5), Inches(2.0)
             chart = slide.shapes.add_chart(
                 XL_CHART_TYPE.COLUMN_STACKED_100, x, y, cx, cy, chart
@@ -200,16 +227,19 @@ class Pages:
 
         # Bar Graph - inferred vulnerabilities found via external observation
         chart = CategoryChartData()
+
+        # TODO: Dry out this code
+        # Issue 18: https://github.com/cisagov/pe-reports/issues/18
         try:
             # TODO: Remove hard-coded file locations
-            # See https://github.com/cisagov/pe-reports/issues/8
+            # Issue 8: https://github.com/cisagov/pe-reports/issues/8
             iv_df = pd.read_csv("src/pe_reports/data/csv/dhs_iv_df.csv").fillna(0)
 
             chart.categories = list(iv_df.columns.values)
             chart.add_series("Sources", list(iv_df.loc[0]))
 
             # TODO: Remove hard-coded graph size and positioning values
-            # See https://github.com/cisagov/pe-reports/issues/9
+            # Issue 9: https://github.com/cisagov/pe-reports/issues/9
             x, y, cx, cy = Inches(8.25), Inches(4.9), Inches(4.5), Inches(2.0)
             chart = slide.shapes.add_chart(
                 XL_CHART_TYPE.COLUMN_STACKED_100, x, y, cx, cy, chart
