@@ -1,5 +1,8 @@
 """Models to manage graphical attributes of presentation layouts, paragraphs, and charts."""
 
+# TODO: Replace python-pptx graphs with Matplotlib graphing libraries #14
+# Issue 14: https://github.com/cisagov/pe-reports/issues/14
+
 # Third-Party Libraries
 from pptx.dml.color import RGBColor
 from pptx.enum.chart import XL_LEGEND_POSITION
@@ -19,6 +22,8 @@ class Paragraph:
     @staticmethod
     def shapes(slide):
         """Create a text frame."""
+        # TODO: Define variable for empty iterations
+        # Issue 21: https://github.com/cisagov/pe-reports/issues/21
         for shape in slide.shapes:
             if not shape.has_text_frame:
                 continue
@@ -27,6 +32,8 @@ class Paragraph:
     @staticmethod
     def shapes_find(slide):
         """Find text frames."""
+        # TODO: Define variable for empty iterations
+        # Issue 21: https://github.com/cisagov/pe-reports/issues/21
         for shape in slide.shapes:
             print(shape.name)
         return shape
@@ -50,6 +57,8 @@ class Paragraph:
     @staticmethod
     def text_frame_key_metric(slide, name):
         """Text style for metrics."""
+        # TODO: Define variable for empty iterations
+        # Issue 21: https://github.com/cisagov/pe-reports/issues/21
         for shape in slide.shapes:
             if shape.name == name:
                 text_frame = shape.text_frame
