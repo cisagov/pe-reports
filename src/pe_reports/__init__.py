@@ -3,6 +3,7 @@
 # although this import is not directly used, it populates the value
 # package_name.__version__, which is used to get version information about this
 # Python package.
-# Third-Party Libraries
-from _version import __version__  # noqa: F401
-from report_generator import main  # noqa: F401
+
+from ._version import __version__  # noqa: F401
+
+__all__ = ["pages", "report_generator", "stylesheet"]

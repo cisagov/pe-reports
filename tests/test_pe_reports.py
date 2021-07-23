@@ -1,33 +1,96 @@
 """File to be used to create test for pe-reports."""
 
 # Standard Python Libraries
-import unittest
+import logging
+import sys
+from unittest.mock import patch
+
+# Third-Party Libraries
+import pytest
+
+# cisagov Libraries
+import pe_reports.report_generator
+
+log_levels = (
+    "debug",
+    "info",
+    "warning",
+    "error",
+    "critical",
+)
+
+
+PROJECT_VERSION = pe_reports.__version__
+
 
 # TODO: Replace current dummy test with useful tests - https://github.com/cisagov/pe-reports/issues/3#issue-909531010
 
 
-class TestingStringMethods(unittest.TestCase):
-    """Simple test for first-commit only."""
-
-    def test_string_equality(self):
-        """Calculates the string output."""
-        # if both arguments are equal then it's success
-        self.assertEqual("ttp" * 5, "ttpttpttpttpttp")
-
-    def test_string_case(self):
-        """Compare two strings."""
-        # if both arguments are equal then it's success
-        self.assertEqual("tutorialspoint".upper(), "TUTORIALSPOINT")
-
-    def test_is_string_upper(self):
-        """Checks whether a string is upper or not."""
-        # used to check whether the statement is True or False
-        # the result of expression inside the **assertTrue** must be True to pass the test case
-        # the result of expression inside the **assertFalse** must be False to pass the test case
-        self.assertTrue("TUTORIALSPOINT".isupper())
-        self.assertFalse("TUTORIALSpoint".isupper())
+def test_stdout_version(capsys):
+    """Verify that version string sent to stdout agrees with the module version."""
+    with pytest.raises(SystemExit):
+        with patch.object(sys, "argv", ["bogus", "--version"]):
+            pe_reports.report_generator.main()
+    captured = capsys.readouterr()
+    assert (
+        captured.out == f"{PROJECT_VERSION}\n"
+    ), "standard output by '--version' should agree with module.__version__"
 
 
-if __name__ == "__main__":
-    """Runs the simple test."""
-    unittest.main()
+def test_running_as_module(capsys):
+    """Verify that the __main__.py file loads correctly."""
+    with pytest.raises(SystemExit):
+        with patch.object(sys, "argv", ["bogus", "--version"]):
+            # F401 is a "Module imported but unused" warning. This import
+            # emulates how this project would be run as a module. The only thing
+            # being done by __main__ is importing the main entrypoint of the
+            # package and running it, so there is nothing to use from this
+            # import. As a result, we can safely ignore this warning.
+            # cisagov Libraries
+            import pe_reports.__main__  # noqa: F401
+    captured = capsys.readouterr()
+    assert (
+        captured.out == f"{PROJECT_VERSION}\n"
+    ), "standard output by '--version' should agree with module.__version__"
+
+
+@pytest.mark.parametrize("level", log_levels)
+def test_log_levels(level):
+    """Validate commandline log-level arguments."""
+    with patch.object(
+        sys,
+        "argv",
+        [
+            "pe_reports",
+            "2021-01-01",
+            "input/",
+            "output/",
+            f"--log-level={level}",
+        ],
+    ):
+        with patch.object(logging.root, "handlers", []):
+            assert (
+                logging.root.hasHandlers() is False
+            ), "root logger should not have handlers yet"
+            return_code = pe_reports.report_generator.main()
+            assert (
+                logging.root.hasHandlers() is True
+            ), "root logger should now have a handler"
+            assert return_code == 0, "main() should return success (0)"
+
+
+def test_bad_log_level():
+    """Validate bad log-level argument returns error."""
+    with patch.object(
+        sys,
+        "argv",
+        [
+            "pe_reports",
+            "2021-01-01",
+            "input/",
+            "output/",
+            "--log-level=emergency",
+        ],
+    ):
+        return_code = pe_reports.report_generator.main()
+        assert return_code == 1, "main() should return failure"
