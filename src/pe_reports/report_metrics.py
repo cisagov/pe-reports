@@ -187,7 +187,6 @@ def malware_vuln_metrics(m_df, v_df, start_date, end_date):
         classifications = []
         name = []
         asset_type = []
-        """
         for index, row in m_df.iterrows():
             # k = eval(row["right"])
             classifications.append(", ".join(k["classifications"]))
@@ -195,7 +194,6 @@ def malware_vuln_metrics(m_df, v_df, start_date, end_date):
             # lft = eval(row["left"])
             asset_type.append(lft["type"])
             asset.append(lft["name"])
-        """
         m_df["Asset"] = asset
         m_df["Asset Type"] = asset_type
         m_df["Name"] = name
@@ -257,7 +255,6 @@ def malware_vuln_metrics(m_df, v_df, start_date, end_date):
         classifications = []
         name = []
         asset_type = []
-        """
         for index, row in v_df.iterrows():
             k = eval(row["right"])
             classifications.append(k["classifications"])
@@ -265,7 +262,6 @@ def malware_vuln_metrics(m_df, v_df, start_date, end_date):
             lft = eval(row["left"])
             asset_type.append(lft["type"])
             asset.append(lft["name"])
-        """
         v_df["Asset"] = asset
         v_df["Asset Type"] = asset_type
         v_df["Name"] = name
