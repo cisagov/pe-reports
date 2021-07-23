@@ -6,4 +6,4 @@
 
 from ._version import __version__  # noqa: F401
 
-__all__ = ["pages", "report_generator", "stylesheet"]
+__all__ = ["charts", "pages", "report_generator", "report_metrics"]
