@@ -1,100 +1,106 @@
 """Models to manage graphical attributes of presentation layouts, paragraphs, and charts."""
 
+# TODO: Replace python-pptx graphs with Matplotlib graphing libraries #14
+# Issue 14: https://github.com/cisagov/pe-reports/issues/14
+
 # Third-Party Libraries
 from pptx.dml.color import RGBColor
 from pptx.enum.chart import XL_LEGEND_POSITION
 from pptx.util import Pt
 
+# Font Attributes
+SMALL = Pt(10)
+LARGE = Pt(28)
+BLUE = RGBColor(3, 37, 126)
+GREEN = RGBColor(20, 200, 100)
+WHITE = RGBColor(255, 255, 255)
+
 
 class Paragraph:
     """Simple class to call text frame attributes."""
 
-    def shapes(self, slide):
+    @staticmethod
+    def shapes(slide):
         """Create a text frame."""
+        # TODO: Define variable for empty iterations
+        # Issue 21: https://github.com/cisagov/pe-reports/issues/21
         for shape in slide.shapes:
             if not shape.has_text_frame:
                 continue
         return shape
 
-    def shapes_find(self, slide):
+    @staticmethod
+    def shapes_find(slide):
         """Find text frames."""
+        # TODO: Define variable for empty iterations
+        # Issue 21: https://github.com/cisagov/pe-reports/issues/21
         for shape in slide.shapes:
             print(shape.name)
-        return
+        return shape
 
-    def text_frame(self, shape):
+    @staticmethod
+    def text_frame(shape):
         """Clear the content of a text frame."""
         text_frame = shape.text_frame
         text_frame.clear()
         return text_frame
 
-    def text_frame_ov_val(self, slide, shape, name):
+    @staticmethod
+    def text_frame_ov_val(slide, name):
         """Text style for overview page values."""
+        # TODO: Define variable for empty iterations
+        # Issue 21: https://github.com/cisagov/pe-reports/issues/21
         for shape in slide.shapes:
             if shape.name == name:
                 text_frame = shape.text_frame
                 text_frame.clear()
         return text_frame
 
-    def text_frame_key_metric(self, slide, shape, name):
+    @staticmethod
+    def text_frame_key_metric(slide, name):
         """Text style for metrics."""
+        # TODO: Define variable for empty iterations
+        # Issue 21: https://github.com/cisagov/pe-reports/issues/21
         for shape in slide.shapes:
             if shape.name == name:
                 text_frame = shape.text_frame
                 text_frame.clear()
         return text_frame
 
-    def text_style_title(self, font):
+    @staticmethod
+    def text_style_title(font):
         """Text style for cover page title."""
         font.name = "Calibri"
-        font.size = Pt(28)
-        font.color.rgb = RGBColor(255, 255, 255)
+        font.size, font.color = LARGE, WHITE
         return font
 
-    def text_style_key_metric(self, font):
+    @staticmethod
+    def text_style_key_metric(font):
         """Text style for key metrics."""
         font.name = "Calibri"
-        font.size = Pt(12)
-        font.color.rgb = RGBColor(255, 255, 255)
+        font.size, font.color = SMALL, BLUE
         return font
 
-    def text_style_ov_val(self, font):
+    @staticmethod
+    def text_style_ov_val(font):
         """Text style for overview page values."""
         font.name = "Calibri"
-        font.size = Pt(28)
-        font.color.rgb = RGBColor(3, 37, 126)
+        font.size, font.color = LARGE, BLUE
         return font
 
 
 class Graph:
     """Simple class to call chart attributes."""
 
-    def bar(self, slide, chart):
-        """Medium bar chart."""
-        chart.font.size = Pt(10)
-        chart.font.rgb = (20, 200, 100)
+    @staticmethod
+    def chart_med(chart):
+        """Medium chart."""
+        chart.font.size, chart.font.color = SMALL, GREEN
         chart.has_legend = True
         chart.legend.position = XL_LEGEND_POSITION.BOTTOM
         chart.legend.include_in_layout = False
-        return
 
-    def bar_sm(self, slide, chart):
-        """Small bar chart."""
-        chart.font.size = Pt(10)
-        chart.font.rgb = (20, 200, 100)
-        return
-
-    def bar_med_100(self, slide, chart):
-        """Medium bar chart with percentages."""
-        chart.font.size = Pt(10)
-        chart.font.rgb = (20, 200, 100)
-        return
-
-    def line_med(self, slide, chart):
-        """Medium line chart."""
-        chart.font.size = Pt(10)
-        chart.font.rgb = (20, 200, 100)
-        chart.has_legend = True
-        chart.legend.position = XL_LEGEND_POSITION.BOTTOM
-        chart.legend.include_in_layout = False
-        return
+    @staticmethod
+    def chart_sm(chart):
+        """Small chart."""
+        chart.font.size, chart.font.color = SMALL, GREEN

@@ -84,7 +84,7 @@ setup(
     keywords="posture and exposure report",
     packages=find_packages(where="src"),
     package_dir={"": "src"},
-    package_data={"pe_reports": ["data/*.txt"]},
+    package_data={"pe_reports": ["data/shell/*.pptx"]},
     py_modules=[splitext(basename(path))[0] for path in glob("src/*.py")],
     include_package_data=True,
     install_requires=[
@@ -92,10 +92,11 @@ setup(
         "glob2",
         "openpyxl",
         "pandas",
-        "schema",
-        "setuptools >= 24.2.0",
         "pymongo",
         "pymupdf",
+        "python-pptx",
+        "schema",
+        "setuptools >= 24.2.0",
     ],
     extras_require={
         "test": [
