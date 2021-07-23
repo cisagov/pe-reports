@@ -48,6 +48,8 @@ class Paragraph:
     @staticmethod
     def text_frame_ov_val(slide, name):
         """Text style for overview page values."""
+        # TODO: Define variable for empty iterations
+        # Issue 21: https://github.com/cisagov/pe-reports/issues/21
         for shape in slide.shapes:
             if shape.name == name:
                 text_frame = shape.text_frame

@@ -63,7 +63,7 @@ class Pages:
             df_creds = pd.read_csv("src/pe_reports/data/csv/dhs_creds.csv")
 
             # TODO: Dry out this code
-            # Issue 8: https://github.com/cisagov/pe-reports/issues/18
+            # Issue 18: https://github.com/cisagov/pe-reports/issues/18
             run.text = str(int(df_creds.iloc[0]["count"]))
             font = run.font
             Paragraph.text_style_ov_val(font)
