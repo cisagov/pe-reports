@@ -11,6 +11,13 @@ import pytest
 # cisagov Libraries
 import pe_reports.report_generator
 
+div_params = [
+    (1, 1, 1),
+    (2, 2, 1),
+    (0, 1, 0),
+    (8, 2, 4),
+]
+
 log_levels = (
     "debug",
     "info",
@@ -72,7 +79,12 @@ def test_log_levels(level):
             assert (
                 logging.root.hasHandlers() is False
             ), "root logger should not have handlers yet"
-            return_code = pe_reports.report_generator.main()
+            return_code = None
+            try:
+                pe_reports.report_generator.main()
+            except SystemExit as sys_exit:
+                return_code = sys_exit.code
+            assert return_code is None, "main() should return success"
             assert (
                 logging.root.hasHandlers() is True
             ), "root logger should now have a handler"
@@ -95,5 +107,37 @@ def test_bad_log_level():
             "--log-level=emergency",
         ],
     ):
-        return_code = pe_reports.report_generator.main()
-        assert return_code == 1, "main() should return failure"
+        return_code = None
+        try:
+            pe_reports.report_generator.main()
+        except SystemExit as sys_exit:
+            return_code = sys_exit.code
+        assert return_code == 1, "main() should exit with error"
+
+
+@pytest.mark.parametrize("dividend, divisor, quotient", div_params)
+def test_division(dividend, divisor, quotient):
+    """Verify division results."""
+    result = pe_reports.report_generator.example_div(dividend, divisor)
+    assert result == quotient, "result should equal quotient"
+
+
+@pytest.mark.slow
+def test_slow_division():
+    """Example of using a custom marker.
+
+    This test will only be run if --runslow is passed to pytest.
+    Look in conftest.py to see how this is implemented.
+    """
+    # Standard Python Libraries
+    import time
+
+    result = pe_reports.report_generator.example_div(256, 16)
+    time.sleep(4)
+    assert result == 16, "result should equal be 16"
+
+
+def test_zero_division():
+    """Verify that division by zero throws the correct exception."""
+    with pytest.raises(ZeroDivisionError):
+        pe_reports.report_generator.example_div(1, 0)
