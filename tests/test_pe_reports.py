@@ -76,7 +76,10 @@ def test_log_levels(level):
             assert (
                 logging.root.hasHandlers() is True
             ), "root logger should now have a handler"
-            assert return_code == 0, "main() should return success (0)"
+            assert (
+                logging.getLevelName(logging.root.getEffectiveLevel()) == level.upper()
+            ), f"root logger level should be set to {level.upper()}"
+            assert return_code is None, "main() should return success"
 
 
 def test_bad_log_level():
