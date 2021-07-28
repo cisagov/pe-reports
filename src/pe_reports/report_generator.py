@@ -37,16 +37,6 @@ REPORT_SHELL = pkg_resources.resource_filename("pe_reports", "data/shell/pe_shel
 REPORT_OUT = "Customer_ID_Posture_Exposure.pptx"
 
 
-def example_div(dividend: int, divisor: int) -> float:
-    """Print some logging messages."""
-    logging.debug("This is a debug message")
-    logging.info("This is an info message")
-    logging.warning("This is a warning message")
-    logging.error("This is an error message")
-    logging.critical("This is a critical message")
-    return dividend / divisor
-
-
 def load_template():
     """Load PowerPoint template into memory."""
     prs = Presentation(REPORT_SHELL)
