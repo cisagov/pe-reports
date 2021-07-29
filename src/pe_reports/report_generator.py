@@ -26,7 +26,7 @@ import json
 import logging
 import os
 import re
-import subprocess
+import subprocess  # nosec
 import sys
 from typing import Any, Dict
 
@@ -76,9 +76,9 @@ def convert_to(folder, source, timeout=None):
         folder,
         source,
     ]
-    process = subprocess.run(
-        args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=timeout
-    )
+    process = subprocess.run(  # nosec
+        args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=timeout  # nosec
+    )  # nosec
     filename = re.search("-> (.*?) using filter", process.stdout.decode())
     return filename.group(1)
 
@@ -353,8 +353,8 @@ def generate_reports(db, datestring, data_directory, output_directory):
             file = filenames[-1]
 
             # Create folders in output directory
-            subprocess.call(["mkdir", f"{output_directory}/ppt"])
-            subprocess.call(["mkdir", f"{output_directory}/{_id}"])
+            subprocess.call(["mkdir", f"{output_directory}/ppt"])  # nosec
+            subprocess.call(["mkdir", f"{output_directory}/{_id}"])  # nosec
 
             # Extract data from each sheet
             cred_df, dom_df, mal_df, inferred_df, men_df = read_excel(file)
@@ -521,7 +521,7 @@ def main():
     logging.info("Generating Graphs")
 
     # Create output directory
-    subprocess.call(["mkdir", args["OUTPUT_DIRECTORY"]])
+    subprocess.call(["mkdir", args["OUTPUT_DIRECTORY"]])  # nosec
 
     # Connect to cyhy database
     db_creds_file = args["--db-creds-file"]
