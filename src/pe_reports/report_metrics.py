@@ -1,5 +1,6 @@
 """Gather report metrics to load into reports."""
 # Standard Python Libraries
+import ast
 from datetime import datetime
 import json
 import re
@@ -188,10 +189,10 @@ def malware_vuln_metrics(m_df, v_df, start_date, end_date):
         name = []
         asset_type = []
         for index, row in m_df.iterrows():
-            # k = eval(row["right"])
+            k = ast.literal_eval(row["right"])
             classifications.append(", ".join(k["classifications"]))
             name.append(k["name"])
-            # lft = eval(row["left"])
+            lft = ast.literal_eval(row["left"])
             asset_type.append(lft["type"])
             asset.append(lft["name"])
         m_df["Asset"] = asset
@@ -256,10 +257,10 @@ def malware_vuln_metrics(m_df, v_df, start_date, end_date):
         name = []
         asset_type = []
         for index, row in v_df.iterrows():
-            k = eval(row["right"])
+            k = ast.literal_eval(row["right"])
             classifications.append(k["classifications"])
             name.append(k["name"])
-            lft = eval(row["left"])
+            lft = ast.literal_eval(row["left"])
             asset_type.append(lft["type"])
             asset.append(lft["name"])
         v_df["Asset"] = asset
