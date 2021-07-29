@@ -57,7 +57,7 @@ def generate_reports(data, data_dir, out_dir):
     # Issue 7: https://github.com/cisagov/pe-reports/issues/7
 
 
-def main():
+def main() -> None:
     """Set up logging and call the generate_reports function."""
     args: Dict[str, str] = docopt.docopt(__doc__, version=__version__)
     # Validate and convert arguments as needed
@@ -79,7 +79,7 @@ def main():
     except SchemaError as err:
         # Exit because one or more of the arguments were invalid
         print(err, file=sys.stderr)
-        return 1
+        sys.exit(1)
 
     # Assign validated arguments to variables
     log_level: str = validated_args["--log-level"]
@@ -112,8 +112,3 @@ def main():
 
     # Stop logging and clean up
     logging.shutdown()
-    return 0
-
-
-if __name__ == "__main__":
-    sys.exit(main())
