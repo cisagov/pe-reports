@@ -11,6 +11,8 @@ class Paragraph:
 
     def shapes(self, slide):
         """Define a text frame."""
+        shape = None
+
         for shape in slide.shapes:
             if not shape.has_text_frame:
                 continue
