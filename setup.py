@@ -98,6 +98,9 @@ setup(
         "schema",
         "setuptools >= 24.2.0",
     ],
+    dependency_links=[
+        "https://github.com/cisagov/mongo-db-from-config/tarball/develop",
+    ],
     extras_require={
         "test": [
             "coverage",
