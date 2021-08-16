@@ -65,6 +65,7 @@ def test_log_levels(level):
             "2021-01-01",
             "input/",
             "output/",
+            "--db-creds-file=input/",
             f"--log-level={level}",
         ],
     ):
@@ -89,6 +90,7 @@ def test_bad_log_level():
             "2021-01-01",
             "input/",
             "output/",
+            "--db-creds-file=input/",
             "--log-level=emergency",
         ],
     ):
