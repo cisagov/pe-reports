@@ -537,6 +537,7 @@ def main():
         logging.error("%s : Missing input data. No report generated.", not_found)
         print("")
         return 0
+
     except yaml.YAMLError:
         logging.critical(
             f"Database configuration file {db_creds_file} does not contain valid YAML",
