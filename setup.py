@@ -90,7 +90,7 @@ setup(
     install_requires=[
         "docopt",
         "glob2",
-        "mongo-db-from-config",
+        "mongo-db-from-config @ https://github.com/cisagov/mongo-db-from-config/tarball/develop",
         "openpyxl",
         "pandas",
         "pymongo",
