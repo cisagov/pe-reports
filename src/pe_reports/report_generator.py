@@ -57,7 +57,7 @@ def load_template():
 
 
 def load_customers():
-    """Load customer data."""
+    """Export PowerPoint report set to output directory."""
     try:
         file = open(CUSTOMERS)
         names_obj = json.load(file)
