@@ -47,6 +47,7 @@ from .report_metrics import generate_metrics
 
 # Configuration
 REPORT_SHELL = pkg_resources.resource_filename("pe_reports", "data/shell/pe_shell.pptx")
+CUSTOMERS = pkg_resources.resource_filename("pe_reports", "data/org_names.json")
 
 
 def load_template():
@@ -55,8 +56,20 @@ def load_template():
     return prs
 
 
+def load_customers():
+    """Export PowerPoint report set to output directory."""
+    names_obj = None
+    try:
+        file = open(CUSTOMERS)
+        names_obj = json.load(file)
+    except FileNotFoundError as not_found:
+        logging.error("%s : Missing input data. No report generated.", not_found)
+    return names_obj
+
+
 def export_set(output_directory, _id, datestring, prs):
     """Export PowerPoint report set to output directory."""
+    pptx_out = None
     try:
         pptx_out = f"{output_directory}/ppt/{_id}-Posture_and_Exposure_Report-{datestring}.pptx"
         prs.save(pptx_out)
@@ -295,12 +308,7 @@ def generate_reports(db, datestring, data_directory, output_directory):
     """Process steps for generating report data."""
     agencies = []
     contents = os.walk(data_directory)
-
-    # ISSUE - Pathing Error???
-    f = open(
-        "/Users/schmelzs/Repos/PE_Report_Scripts/pe-reports_v1.0/pe-reports/src/pe_reports/org_names.json"
-    )
-    names_obj = json.load(f)
+    names_obj = load_customers()
 
     for root, folders, files in contents:
         for folder_name in folders:
@@ -527,6 +535,10 @@ def main():
     db_creds_file = args["--db-creds-file"]
     try:
         db = db_from_config(db_creds_file)
+    except FileNotFoundError as not_found:
+        logging.error("%s : Missing input data. No report generated.", not_found)
+        print("")
+        return 0
     except OSError:
         logging.critical(
             f"Database configuration file {db_creds_file} does not exist", exc_info=True
