@@ -19,6 +19,10 @@ Options:
                                 the specified value.  Valid values are "debug", "info",
                                 "warning", "error", and "critical". [default: info]
 """
+# To open a file
+# thefile = '/Users/duhnc/Documents/craig.duhn.csv'
+# os.system(f"open -a /Applications/Microsoft\ Excel.app {thefile}")
+
 
 # Standard Python Libraries
 import glob
@@ -60,8 +64,8 @@ def load_customers():
     """Export PowerPoint report set to output directory."""
     names_obj = None
     try:
-        file = open(CUSTOMERS)
-        names_obj = json.load(file)
+        with open(CUSTOMERS) as file:
+            names_obj = json.load(file)
     except FileNotFoundError as not_found:
         logging.error("%s : Missing input data. No report generated.", not_found)
     return names_obj
@@ -361,8 +365,10 @@ def generate_reports(db, datestring, data_directory, output_directory):
             file = filenames[-1]
 
             # Create folders in output directory
-            subprocess.call(["mkdir", f"{output_directory}/ppt"])  # nosec
-            subprocess.call(["mkdir", f"{output_directory}/{_id}"])  # nosec
+            # subprocess.call(["mkdir", f"{output_directory}/ppt"])  # nosec
+            # subprocess.call(["mkdir", f"{output_directory}/{_id}"])  # nosec
+            os.mkdir(f"{output_directory}/ppt")
+            os.mkdir(f"{output_directory}/_id")
 
             # Extract data from each sheet
             cred_df, dom_df, mal_df, inferred_df, men_df = read_excel(file)
@@ -529,16 +535,15 @@ def main():
     logging.info("Generating Graphs")
 
     # Create output directory
-    subprocess.call(["mkdir", args["OUTPUT_DIRECTORY"]])  # nosec
-
+    # subprocess.call(["mkdir", args["OUTPUT_DIRECTORY"]])  # nosec
+    os.mkdir(f"{args['OUTPUT_DIRECTORY']}")
     # Connect to cyhy database
     db_creds_file = args["--db-creds-file"]
     try:
         db = db_from_config(db_creds_file)
     except FileNotFoundError as not_found:
         logging.error("%s : Missing input data. No report generated.", not_found)
-        print("")
-        return 0
+        return 1
     except OSError:
         logging.critical(
             f"Database configuration file {db_creds_file} does not exist", exc_info=True
