@@ -59,8 +59,8 @@ def load_template():
 def load_customers():
     """Export PowerPoint report set to output directory."""
     try:
-        file = open(CUSTOMERS)
-        names_obj = json.load(file)
+        with open(CUSTOMERS) as customers_file:
+            names_obj = json.load(customers_file)
     except FileNotFoundError as not_found:
         logging.error("%s : Missing input data. No report generated.", not_found)
     return names_obj
