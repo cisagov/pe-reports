@@ -367,9 +367,13 @@ def generate_reports(db, datestring, data_directory, output_directory):
             # Create folders in output directory
             # subprocess.call(["mkdir", f"{output_directory}/ppt"])  # nosec
             # subprocess.call(["mkdir", f"{output_directory}/{_id}"])  # nosec
-            os.mkdir(f"{output_directory}/ppt")
-            os.mkdir(f"{output_directory}/_id")
+            try:
+                os.mkdir(f"{output_directory}/ppt")
+                os.mkdir(f"{output_directory}/_id")
+            except FileExistsError as err:
+                logging.error(f"The output directory exists {err}", exc_info=True)
 
+                return 0
             # Extract data from each sheet
             cred_df, dom_df, mal_df, inferred_df, men_df = read_excel(file)
 
@@ -535,8 +539,12 @@ def main():
     logging.info("Generating Graphs")
 
     # Create output directory
-    # subprocess.call(["mkdir", args["OUTPUT_DIRECTORY"]])  # nosec
-    os.mkdir(f"{args['OUTPUT_DIRECTORY']}")
+    try:
+        os.mkdir(f"{args['OUTPUT_DIRECTORY']}")
+    except FileExistsError as err:
+        logging.error(f"The output directory exists {err}", exc_info=True)
+
+        return 0
     # Connect to cyhy database
     db_creds_file = args["--db-creds-file"]
     try:
