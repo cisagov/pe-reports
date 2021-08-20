@@ -359,7 +359,7 @@ def generate_reports(db, datestring, data_directory, output_directory):
             file = filenames[-1]
 
             # Create folders in output directory
-            subprocess.call(["mkdir", f"{output_directory}/ppt"])  # nosec
+            os.mkdir(f"{output_directory}/ppt")
             os.mkdir(f"{output_directory}/_id")
 
             # Extract data from each sheet
