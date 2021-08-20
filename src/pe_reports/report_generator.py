@@ -527,7 +527,7 @@ def main():
     logging.info("Generating Graphs")
 
     # Create output directory
-    subprocess.call(["mkdir", args["OUTPUT_DIRECTORY"]])  # nosec
+    os.mkdir(f"{args['OUTPUT_DIRECTORY']}")
 
     # Connect to cyhy database
     db_creds_file = args["--db-creds-file"]
