@@ -360,7 +360,7 @@ def generate_reports(db, datestring, data_directory, output_directory):
 
             # Create folders in output directory
             subprocess.call(["mkdir", f"{output_directory}/ppt"])  # nosec
-            subprocess.call(["mkdir", f"{output_directory}/{_id}"])  # nosec
+            os.mkdir(f"{output_directory}/_id")
 
             # Extract data from each sheet
             cred_df, dom_df, mal_df, inferred_df, men_df = read_excel(file)
