@@ -532,7 +532,11 @@ def main():
     logging.info("Generating Graphs")
 
     # Create output directory
-    os.mkdir(f"{args['OUTPUT_DIRECTORY']}")
+    try:
+        os.mkdir(f"{args['OUTPUT_DIRECTORY']}")
+    except FileExistsError as err:
+        logging.error(f"The output directory exists {err}", exc_info=True)
+        return 0
 
     # Connect to cyhy database
     db_creds_file = args["--db-creds-file"]
