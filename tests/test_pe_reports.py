@@ -65,7 +65,7 @@ def test_log_levels(level):
             "2021-01-01",
             "input/",
             "output/",
-            "--db-creds-file=input/",
+            "--db-creds-file=/secrests/database_creds.yml",
             f"--log-level={level}",
         ],
     ):
