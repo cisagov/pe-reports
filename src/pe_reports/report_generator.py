@@ -545,7 +545,7 @@ def main():
     except FileNotFoundError as not_found:
         logging.error("%s : Missing input data. No report generated.", not_found)
         print("")
-        return 0
+        return 1
 
     except yaml.YAMLError:
         logging.critical(
