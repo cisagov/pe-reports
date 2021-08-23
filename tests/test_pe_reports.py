@@ -90,7 +90,7 @@ def test_bad_log_level():
             "2021-01-01",
             "input/",
             "output/",
-            "--db-creds-file=input/",
+            "--db-creds-file=/secrests/database_creds.yml",
             "--log-level=emergency",
         ],
     ):
