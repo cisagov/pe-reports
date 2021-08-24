@@ -87,9 +87,12 @@ def convert_to(folder, source, timeout=None):
         folder,
         source,
     ]
-    process = subprocess.run(
+
+    # TODO:
+    process = subprocess.run(  # nosec
         args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=timeout  # nosec
-    )
+    )  # nosec
+
     filename = re.search("-> (.*?) using filter", process.stdout.decode())
     return filename.group(1)
 
@@ -365,7 +368,6 @@ def generate_reports(db, datestring, data_directory, output_directory):
             except FileExistsError as err:
                 logging.error(f"The output directory exists {err}", exc_info=True)
                 return 0
-            
 
             # Extract data from each sheet
             cred_df, dom_df, mal_df, inferred_df, men_df = read_excel(file)

@@ -65,7 +65,6 @@ def test_log_levels(level):
             "2021-01-01",
             "input/",
             "output/",
-            "--db-creds-file=/secrests/database_creds.yml",
             f"--log-level={level}",
         ],
     ):
@@ -90,7 +89,6 @@ def test_bad_log_level():
             "2021-01-01",
             "input/",
             "output/",
-            "--db-creds-file=/secrests/database_creds.yml",
             "--log-level=emergency",
         ],
     ):
