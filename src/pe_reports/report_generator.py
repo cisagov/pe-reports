@@ -88,10 +88,13 @@ def convert_to(folder, source, timeout=None):
         source,
     ]
 
-    # TODO:
-    process = subprocess.run(  # nosec
-        args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=timeout  # nosec
-    )  # nosec
+    process = subprocess.run(
+        args,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        timeout=timeout,
+        shell=False,  # nosec
+    )
 
     filename = re.search("-> (.*?) using filter", process.stdout.decode())
     return filename.group(1)
