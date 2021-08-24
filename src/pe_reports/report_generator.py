@@ -540,7 +540,7 @@ def main():
     try:
         os.mkdir(f"{args['OUTPUT_DIRECTORY']}")
     except FileExistsError as err:
-        logging.error(f"The output directory exists {err}", exc_info=True)
+        logging.error(f"The output directory does not exists. {err}")
         return 0
 
     # Connect to cyhy database
@@ -549,8 +549,7 @@ def main():
         db = db_from_config(db_creds_file)
     except FileNotFoundError as not_found:
         logging.error("%s : Missing input data. No report generated.", not_found)
-        print("")
-        return 1
+        return 0
 
     except yaml.YAMLError:
         logging.critical(
