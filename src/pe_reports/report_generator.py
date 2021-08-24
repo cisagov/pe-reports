@@ -526,11 +526,6 @@ def main():
     logging.basicConfig(
         format="%(asctime)-15s %(levelname)s %(message)s", level=log_level.upper()
     )
-
-    # TODO: Add generate_reports func to handle cmd line arguments and function.
-    # Issue #8: https://github.com/cisagov/pe-reports/issues/8
-    # def generate_reports(db, datestring, data_directory, output_directory):
-
     logging.info(
         "Loading Posture & Exposure Report Template, Version : %s", __version__
     )
@@ -540,7 +535,7 @@ def main():
     try:
         os.mkdir(f"{args['OUTPUT_DIRECTORY']}")
     except FileExistsError as err:
-        logging.error(f"The output directory does not exists. {err}")
+        logging.error(f"The output directory cannot be created. {err}")
         return 0
 
     # Connect to cyhy database
