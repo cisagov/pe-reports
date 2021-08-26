@@ -6,13 +6,17 @@
 -- Includes Domain Masquerading, Credentals Exposed, Inffered Vulns, and Dark Web data
 
 -- Domain Masquerading Table
-CREATE TABLE "DNSTwist" (
-    "domain-name" character varying(200),
-    "dns-a" character varying(100),
-    "dns-aaaa" character varying(100)
+CREATE TABLE IF NOT EXISTS pe_report."DNSTwist"
+(
+    id serial NOT NULL,
+    original_domain text NOT NULL,
+    dnstwist_domain text NOT NULL,
+    "dns-a" character(100) NOT NULL,
+    "dns-aaaa" character(100),
     "dns-mx" text,
     "dns-ns" text,
-    "fuzzer" text,
+    fuzzer text NOT NULL,
     "ssdeep-score" smallint,
-    "date-observed" date not null,
+    "date-observed" date NOT NULL,
+    PRIMARY KEY (id)
 );
