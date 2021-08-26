@@ -26,6 +26,7 @@ import json
 import logging
 import os
 import re
+
 # Bandit triggers B603 here, but we're using subprocess.run()
 # safely here, since the variable content in link_cmd comes
 # directly from SSM Parameter Store.  For more details on B603 see
@@ -92,7 +93,7 @@ def convert_to(folder, source, timeout=None):
         folder,
         source,
     ]
-    
+
     # Bandit triggers B603 here, but we're using subprocess.run()
     # safely here, since the variable content in link_cmd comes
     # directly from SSM Parameter Store.  For more details on B603 see
