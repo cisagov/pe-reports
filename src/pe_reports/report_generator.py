@@ -24,12 +24,17 @@ Options:
 # os.system(f"open -a /Applications/Microsoft\ Excel.app {thefile}")
 
 
+
+
 # Standard Python Libraries
 import glob
 import json
 import logging
 import os
 import re
+# Bandit triggers B404 here, but we're only using subprocess.run() and
+# doing so safely.  For more details on B404 see here:
+# https://bandit.readthedocs.io/en/latest/blacklists/blacklist_imports.html#b404-import-subprocess
 import subprocess  # nosec
 import sys
 from typing import Any, Dict
@@ -93,6 +98,9 @@ def convert_to(folder, source, timeout=None):
         folder,
         source,
     ]
+    # Bandit triggers B404 here, but we're only using subprocess.run() and
+    # doing so safely.  For more details on B404 see here:
+    # https://bandit.readthedocs.io/en/latest/blacklists/blacklist_imports.html#b404-import-subprocess
     process = subprocess.run(  # nosec
         args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=timeout  # nosec
     )  # nosec
@@ -364,9 +372,6 @@ def generate_reports(db, datestring, data_directory, output_directory):
             # results.)
             file = filenames[-1]
 
-            # Create folders in output directory
-            # subprocess.call(["mkdir", f"{output_directory}/ppt"])  # nosec
-            # subprocess.call(["mkdir", f"{output_directory}/{_id}"])  # nosec
             try:
                 os.mkdir(f"{output_directory}/ppt")
                 os.mkdir(f"{output_directory}/_id")
