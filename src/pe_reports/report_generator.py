@@ -26,6 +26,11 @@ import json
 import logging
 import os
 import re
+# Bandit triggers B603 here, but we're using subprocess.run()
+# safely here, since the variable content in link_cmd comes
+# directly from SSM Parameter Store.  For more details on B603 see
+# here:
+# https://bandit.readthedocs.io/en/latest/plugins/b603_subprocess_without_shell_equals_true.html
 import subprocess  # nosec
 import sys
 from typing import Any, Dict
@@ -87,6 +92,12 @@ def convert_to(folder, source, timeout=None):
         folder,
         source,
     ]
+    
+    # Bandit triggers B603 here, but we're using subprocess.run()
+    # safely here, since the variable content in link_cmd comes
+    # directly from SSM Parameter Store.  For more details on B603 see
+    # here:
+    # https://bandit.readthedocs.io/en/latest/plugins/b603_subprocess_without_shell_equals_true.html
 
     process = subprocess.run(
         args,
