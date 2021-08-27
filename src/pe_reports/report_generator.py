@@ -27,11 +27,10 @@ import logging
 import os
 import re
 
-# Bandit triggers B603 here, but we're using subprocess.run()
-# safely here, since the variable content in link_cmd comes
-# directly from SSM Parameter Store.  For more details on B603 see
+# Bandit triggers B404 here, but we're using subprocess.run()
+# safely here, since the variable only provides mechanism for stdout and stderr.  For more details on B404 see
 # here:
-# https://bandit.readthedocs.io/en/latest/plugins/b603_subprocess_without_shell_equals_true.html
+# https://bandit.readthedocs.io/en/latest/blacklists/blacklist_imports.html#b404-import-subprocess
 import subprocess  # nosec
 import sys
 from typing import Any, Dict
@@ -94,11 +93,10 @@ def convert_to(folder, source, timeout=None):
         source,
     ]
 
-    # Bandit triggers B603 here, but we're using subprocess.run()
-    # safely here, since the variable content in link_cmd comes
-    # directly from SSM Parameter Store.  For more details on B603 see
+    # Bandit triggers B404 here, but we're using subprocess.run()
+    # safely here, since the variable only provides mechanism for stdout and stderr.  For more details on B404 see
     # here:
-    # https://bandit.readthedocs.io/en/latest/plugins/b603_subprocess_without_shell_equals_true.html
+    # https://bandit.readthedocs.io/en/latest/blacklists/blacklist_imports.html#b404-import-subprocess
 
     process = subprocess.run(
         args,
