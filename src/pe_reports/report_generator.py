@@ -27,8 +27,9 @@ import logging
 import os
 import re
 
-# Bandit triggers B404 here, but we're using subprocess.run()
-# safely here, since the variable only provides mechanism for stdout and stderr.  For more details on B404 see
+# Bandit triggers B404 here, but we're using subprocess.run(). The action to import subprocess is safe as there is no function
+# call here that would provide a way to inject an operation that would produce hazardous results.
+# For more details on B404 see
 # here:
 # https://bandit.readthedocs.io/en/latest/blacklists/blacklist_imports.html#b404-import-subprocess
 import subprocess  # nosec
@@ -93,10 +94,12 @@ def convert_to(folder, source, timeout=None):
         source,
     ]
 
-    # Bandit triggers B404 here, but we're using subprocess.run()
-    # safely here, since the variable only provides mechanism for stdout and stderr.  For more details on B404 see
+    # Bandit triggers B603 here, but we're using subprocess.run()
+    # safely here, since the process variable only provides mechanism for stdout and stderr. The posibility for injection is low
+    # as the operation that is carried out by the variable 'process' is output only. The associated commnication comes directly from the local OS 
+    # For more details on B404 see
     # here:
-    # https://bandit.readthedocs.io/en/latest/blacklists/blacklist_imports.html#b404-import-subprocess
+    # https://bandit.readthedocs.io/en/latest/plugins/b603_subprocess_without_shell_equals_true.html
 
     process = subprocess.run(
         args,
