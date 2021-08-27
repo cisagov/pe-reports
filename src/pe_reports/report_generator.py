@@ -95,12 +95,9 @@ def convert_to(folder, source, timeout=None):
     ]
 
     # Bandit triggers B603 here, but we're using subprocess.run()
-    # safely here, since the process variable only provides mechanism
-    # for stdout and stderr. The possibility for injection is low as the
-    # operation that is # carried out by the variable
-    # 'process' is output only. The associated communication comes
-    # directly from the local OS. For more details on B404 see
-    # here:
+    # safely here, since the args input variable to subprocess.run is sanitized
+    # and secure. Since that value is hard-coded, the risks mentioned by B603
+    # are minimal For more details on B603 see here:
     # https://bandit.readthedocs.io/en/latest/plugins/b603_subprocess_without_shell_equals_true.html
 
     process = subprocess.run(
