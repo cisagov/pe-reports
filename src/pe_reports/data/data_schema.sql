@@ -26,6 +26,24 @@ CREATE TABLE IF NOT EXISTS public.domains
     PRIMARY KEY (domain_id)
 );
 
+-- Alias table
+CREATE TABLE IF NOT EXISTS public.alias
+(
+    alias_id text NOT NULL,
+    organization_id text NOT NULL,
+    alias text NOT NULL,
+    PRIMARY KEY (alias_id)
+);
+
+-- Aliases table : Postgres
+CREATE TABLE IF NOT EXISTS public.alias
+(
+    alias_id serial NOT NULL PRIMARY KEY,
+    organization_id text NOT NULL,
+    alias text NOT NULL,
+);
+
+
 -- Domain Masquerading Table
 CREATE TABLE IF NOT EXISTS public."DNSTwist"
 (
