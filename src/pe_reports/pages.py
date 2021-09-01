@@ -18,12 +18,14 @@ from .stylesheet import Graph, Paragraph
 class Pages:
     """Class containing the presentation page information."""
 
+    @staticmethod
     def add_overview_value(run, df):
         """Add summary stats to the overview page."""
         run.text = str(int(df.iloc[0]["count"]))
         font = run.font
         Paragraph.text_style_ov_val(font)
 
+    @staticmethod
     def insert_chart(slide, df_loc, col_names, chart_type, size, x, y, cx, cy, stacked):
         """Insert charts into the PowerPoint."""
         chart = CategoryChartData()
