@@ -161,6 +161,8 @@ class Pages:
         )
 
         # Bar Graph - Sources of credential exposures
+        # TODO: Remove hard-coded file locations
+        # Issue 45: https://github.com/cisagov/pe-reports/issues/45
         df_loc = "src/pe_reports/data/csv/dhs_ce_df.csv"
         col_names = ["Top Level Domains"]
         chart_type = XL_CHART_TYPE.COLUMN_STACKED
