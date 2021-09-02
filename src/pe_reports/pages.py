@@ -174,6 +174,8 @@ class Pages:
         )
 
         # Line Graph - Sources of credential exposures
+        # TODO: Remove hard-coded file locations
+        # Issue 45: https://github.com/cisagov/pe-reports/issues/45
         df_loc = "src/pe_reports/data/csv/dhs_web_df.csv"
         col_names = ["Web", "Dark Web"]
         chart_type = XL_CHART_TYPE.LINE
