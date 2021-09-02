@@ -77,23 +77,31 @@ setup(
         "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
-        "Programming Language :: Python :: 3.9",
+        # TODO: PyYAML is not compatable with 3.9
+        # Create Issue
+        # "Programming Language :: Python :: 3.9",
     ],
     python_requires=">=3.6",
     # What does your project relate to?
     keywords="posture and exposure report",
     packages=find_packages(where="src"),
     package_dir={"": "src"},
-    package_data={"pe_reports": ["data/shell/*.pptx"]},
+    package_data={"pe_reports": ["data/shell/*.pptx"], "pe_mailer": ["data/*"]},
     py_modules=[splitext(basename(path))[0] for path in glob("src/*.py")],
     include_package_data=True,
     install_requires=[
+        "boto3",
+        "botocore",
         "docopt",
         "glob2",
+        "mongo-db-from-config @ http://github.com/cisagov/mongo-db-from-config/tarball/develop",
         "openpyxl",
         "pandas",
+        "pyyaml",
+        "types-PyYAML",
         "pymongo",
         "pymupdf",
+        "pystache",
         "python-pptx",
         "schema",
         "setuptools >= 24.2.0",
@@ -113,6 +121,11 @@ setup(
             "pytest",
         ]
     },
-    # Conveniently allows one to run the CLI tool as `pe-reports`
-    entry_points={"console_scripts": ["pe-reports = pe_reports.report_generator:main"]},
+    # Conveniently allows one to run the CLI tool as `pe-reports` or 'pe-mailer'
+    entry_points={
+        "console_scripts": [
+            "pe-reports = pe_reports.report_generator:main",
+            "pe-mailer = pe_mailer.email_reports:main",
+        ]
+    },
 )
