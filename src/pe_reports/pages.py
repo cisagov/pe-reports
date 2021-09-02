@@ -30,8 +30,6 @@ class Pages:
         """Insert charts into the PowerPoint."""
         chart = CategoryChartData()
         try:
-            # TODO: Remove hard-coded file locations
-            # Issue 8: https://github.com/cisagov/pe-reports/issues/8
             df = pd.read_csv(df_loc).fillna(0)
             chart.categories = list(df.columns.values)
             chart.add_series(col_names[0], list(df.loc[0]))
