@@ -140,6 +140,8 @@ class Pages:
         frame = ov_val_05.paragraphs[0]
         run = frame.add_run()
         try:
+            # TODO: Remove hard-coded file locations
+            # Issue 45: https://github.com/cisagov/pe-reports/issues/45
             df_web = pd.read_csv("src/pe_reports/data/csv/dhs_web.csv")
             Pages.add_overview_value(run, df_web)
         except FileNotFoundError as not_found:
