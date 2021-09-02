@@ -187,6 +187,8 @@ class Pages:
         )
 
         # Bar Graph - Active malware associations
+        # TODO: Remove hard-coded file locations
+        # Issue 45: https://github.com/cisagov/pe-reports/issues/45
         df_loc = "src/pe_reports/data/csv/dhs_ma_df.csv"
         col_names = ["Sources"]
         chart_type = XL_CHART_TYPE.COLUMN_STACKED_100
