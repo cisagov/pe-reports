@@ -19,6 +19,35 @@ class Pages:
     """Class containing the presentation page information."""
 
     @staticmethod
+    def add_overview_value(run, df):
+        """Add summary stats to the overview page."""
+        run.text = str(int(df.iloc[0]["count"]))
+        font = run.font
+        Paragraph.text_style_ov_val(font)
+
+    @staticmethod
+    def insert_chart(slide, df_loc, col_names, chart_type, size, x, y, cx, cy, stacked):
+        """Insert charts into the PowerPoint."""
+        chart = CategoryChartData()
+        try:
+            df = pd.read_csv(df_loc).fillna(0)
+            chart.categories = list(df.columns.values)
+            chart.add_series(col_names[0], list(df.loc[0]))
+            if stacked:
+                chart.add_series(col_names[1], list(df.loc[1]))
+
+            # TODO: Remove hard-coded graph size and positioning values
+            # Issue 9: https://github.com/cisagov/pe-reports/issues/9
+            chart = slide.shapes.add_chart(chart_type, x, y, cx, cy, chart).chart
+            if size == "small":
+                Graph.chart_sm(chart)
+            elif size == "medium":
+                Graph.chart_med(chart)
+
+        except FileNotFoundError as not_found:
+            logging.error("%s : There is no customer data.", not_found)
+
+    @staticmethod
     def cover(prs):
         """Page 1: Cover page of presentation."""
         slide = prs.slides[0]
@@ -62,11 +91,7 @@ class Pages:
             # Issue 8: https://github.com/cisagov/pe-reports/issues/8
             df_creds = pd.read_csv("src/pe_reports/data/csv/dhs_creds.csv")
 
-            # TODO: Dry out this code
-            # Issue 18: https://github.com/cisagov/pe-reports/issues/18
-            run.text = str(int(df_creds.iloc[0]["count"]))
-            font = run.font
-            Paragraph.text_style_ov_val(font)
+            Pages.add_overview_value(run, df_creds)
         except FileNotFoundError as not_found:
             logging.error("%s : There is no customer data.", not_found)
 
@@ -79,11 +104,7 @@ class Pages:
             # Issue 8: https://github.com/cisagov/pe-reports/issues/8
             df_domains = pd.read_csv("src/pe_reports/data/csv/dhs_domains.csv")
 
-            # TODO: Dry out this code
-            # Issue 18: https://github.com/cisagov/pe-reports/issues/18
-            run.text = str(int(df_domains.iloc[0]["count"]))
-            font = run.font
-            Paragraph.text_style_ov_val(font)
+            Pages.add_overview_value(run, df_domains)
         except FileNotFoundError as not_found:
             logging.error("%s : There is no customer data.", not_found)
 
@@ -96,11 +117,7 @@ class Pages:
             # Issue 8: https://github.com/cisagov/pe-reports/issues/8
             df_malware = pd.read_csv("src/pe_reports/data/csv/dhs_malware.csv")
 
-            # TODO: Dry out this code
-            # Issue 18: https://github.com/cisagov/pe-reports/issues/18
-            run.text = str(int(df_malware.iloc[0]["count"]))
-            font = run.font
-            Paragraph.text_style_ov_val(font)
+            Pages.add_overview_value(run, df_malware)
         except FileNotFoundError as not_found:
             logging.error("%s : There is no customer data.", not_found)
 
@@ -112,12 +129,7 @@ class Pages:
             # TODO: Remove hard-coded file locations
             # Issue 8: https://github.com/cisagov/pe-reports/issues/8
             df_vulns = pd.read_csv("src/pe_reports/data/csv/dhs_vulns.csv")
-
-            # TODO: Dry out this code
-            # Issue 18: https://github.com/cisagov/pe-reports/issues/18
-            run.text = str(int(df_vulns.iloc[0]["count"]))
-            font = run.font
-            Paragraph.text_style_ov_val(font)
+            Pages.add_overview_value(run, df_vulns)
         except FileNotFoundError as not_found:
             logging.error("%s : There is no customer data.", not_found)
 
@@ -126,125 +138,76 @@ class Pages:
         frame = ov_val_05.paragraphs[0]
         run = frame.add_run()
         try:
+            # TODO: Remove hard-coded file locations
+            # Issue 45: https://github.com/cisagov/pe-reports/issues/45
             df_web = pd.read_csv("src/pe_reports/data/csv/dhs_web.csv")
-
-            # TODO: Dry out this code
-            # Issue 18: https://github.com/cisagov/pe-reports/issues/18
-            run.text = str(int(df_web.iloc[0]["count"]))
-            font = run.font
-            Paragraph.text_style_ov_val(font)
+            Pages.add_overview_value(run, df_web)
         except FileNotFoundError as not_found:
             logging.error("%s : There is no customer data.", not_found)
 
         # Bar Graph - Top Level Domains used for masquerading
-        chart = CategoryChartData()
-
-        # TODO: Dry out this code
-        # Issue 18: https://github.com/cisagov/pe-reports/issues/18
-        try:
-            # TODO: Remove hard-coded file locations
-            # Issue 8: https://github.com/cisagov/pe-reports/issues/8
-            tld_df = pd.read_csv("src/pe_reports/data/csv/dhs_tld_df.csv").fillna(0)
-            chart.categories = list(tld_df.columns.values)
-            chart.add_series("Top Level Domains", list(tld_df.loc[0]))
-
-            # TODO: Remove hard-coded graph size and positioning values
-            # Issue 9: https://github.com/cisagov/pe-reports/issues/9
-            x, y, cx, cy = Inches(3.5), Inches(2.9), Inches(2), Inches(1.5)
-            chart = slide.shapes.add_chart(
-                XL_CHART_TYPE.COLUMN_STACKED, x, y, cx, cy, chart
-            ).chart
-            Graph.chart_sm(chart)
-        except FileNotFoundError as not_found:
-            logging.error("%s : There is no customer data.", not_found)
+        # TODO: Remove hard-coded file locations
+        # Issue 45: https://github.com/cisagov/pe-reports/issues/45
+        df_loc = "src/pe_reports/data/csv/dhs_tld_df.csv"
+        col_names = ["Top Level Domains"]
+        chart_type = XL_CHART_TYPE.COLUMN_STACKED
+        size = "small"
+        x, y, cx, cy = Inches(3.5), Inches(2.9), Inches(2), Inches(1.5)
+        stacked = False
+        Pages.insert_chart(
+            slide, df_loc, col_names, chart_type, size, x, y, cx, cy, stacked
+        )
 
         # Bar Graph - Sources of credential exposures
-        chart = CategoryChartData()
-
-        # TODO: Dry out this code
-        # Issue 18: https://github.com/cisagov/pe-reports/issues/18
-        try:
-            # TODO: Remove hard-coded file locations
-            # Issue 8: https://github.com/cisagov/pe-reports/issues/8
-            ce_df = pd.read_csv("src/pe_reports/data/csv/dhs_ce_df.csv").fillna(0)
-            chart.categories = list(ce_df.columns.values)
-            chart.add_series("Top Level Domains", list(ce_df.loc[0]))
-
-            # TODO: Remove hard-coded graph size and positioning values
-            # Issue 9: https://github.com/cisagov/pe-reports/issues/9
-            x, y, cx, cy = Inches(5.75), Inches(2.9), Inches(2), Inches(1.5)
-            chart = slide.shapes.add_chart(
-                XL_CHART_TYPE.COLUMN_STACKED, x, y, cx, cy, chart
-            ).chart
-            Graph.chart_sm(chart)
-        except FileNotFoundError as not_found:
-            logging.error("%s : There is no customer data.", not_found)
+        # TODO: Remove hard-coded file locations
+        # Issue 45: https://github.com/cisagov/pe-reports/issues/45
+        df_loc = "src/pe_reports/data/csv/dhs_ce_df.csv"
+        col_names = ["Top Level Domains"]
+        chart_type = XL_CHART_TYPE.COLUMN_STACKED
+        size = "small"
+        x, y, cx, cy = Inches(5.75), Inches(2.9), Inches(2), Inches(1.5)
+        stacked = False
+        Pages.insert_chart(
+            slide, df_loc, col_names, chart_type, size, x, y, cx, cy, stacked
+        )
 
         # Line Graph - Sources of credential exposures
-        chart = CategoryChartData()
-
-        # TODO: Dry out this code
-        # Issue 18: https://github.com/cisagov/pe-reports/issues/18
-        try:
-            # TODO: Remove hard-coded file locations
-            # Issue 8: https://github.com/cisagov/pe-reports/issues/8
-            web_df = pd.read_csv("src/pe_reports/data/csv/dhs_web_df.csv").fillna(0)
-            chart.categories = list(web_df.columns.values)
-            chart.add_series("Web", list(web_df.loc[0]))
-            chart.add_series("Dark Web", list(web_df.loc[1]))
-
-            # TODO: Remove hard-coded graph size and positioning values
-            # Issue 9: https://github.com/cisagov/pe-reports/issues/9
-            x, y, cx, cy = Inches(3.5), Inches(5), Inches(4.8), Inches(2.15)
-            chart = slide.shapes.add_chart(
-                XL_CHART_TYPE.LINE, x, y, cx, cy, chart
-            ).chart
-            Graph.chart_med(chart)
-        except FileNotFoundError as not_found:
-            logging.error("%s : There is no customer data.", not_found)
+        # TODO: Remove hard-coded file locations
+        # Issue 45: https://github.com/cisagov/pe-reports/issues/45
+        df_loc = "src/pe_reports/data/csv/dhs_web_df.csv"
+        col_names = ["Web", "Dark Web"]
+        chart_type = XL_CHART_TYPE.LINE
+        size = "medium"
+        x, y, cx, cy = Inches(3.5), Inches(5), Inches(4.8), Inches(2.15)
+        stacked = True
+        Pages.insert_chart(
+            slide, df_loc, col_names, chart_type, size, x, y, cx, cy, stacked
+        )
 
         # Bar Graph - Active malware associations
-        chart = CategoryChartData()
-
-        # TODO: Dry out this code
-        # Issue 18: https://github.com/cisagov/pe-reports/issues/18
-        try:
-            # TODO: Remove hard-coded file locations
-            # Issue 8: https://github.com/cisagov/pe-reports/issues/8
-            ma_df = pd.read_csv("src/pe_reports/data/csv/dhs_ma_df.csv").fillna(0)
-            chart.categories = list(ma_df.columns.values)
-            chart.add_series("Sources", list(ma_df.loc[0]))
-
-            # TODO: Remove hard-coded graph size and positioning values
-            # Issue 9: https://github.com/cisagov/pe-reports/issues/9
-            x, y, cx, cy = Inches(8.25), Inches(2.9), Inches(4.5), Inches(2.0)
-            chart = slide.shapes.add_chart(
-                XL_CHART_TYPE.COLUMN_STACKED_100, x, y, cx, cy, chart
-            ).chart
-            Graph.chart_sm(chart)
-        except FileNotFoundError as not_found:
-            logging.error("%s : There is no customer data.", not_found)
+        # TODO: Remove hard-coded file locations
+        # Issue 45: https://github.com/cisagov/pe-reports/issues/45
+        df_loc = "src/pe_reports/data/csv/dhs_ma_df.csv"
+        col_names = ["Sources"]
+        chart_type = XL_CHART_TYPE.COLUMN_STACKED_100
+        size = "small"
+        x, y, cx, cy = Inches(8.25), Inches(2.9), Inches(4.5), Inches(2.0)
+        stacked = False
+        Pages.insert_chart(
+            slide, df_loc, col_names, chart_type, size, x, y, cx, cy, stacked
+        )
 
         # Bar Graph - inferred vulnerabilities found via external observation
-        chart = CategoryChartData()
+        # TODO: Remove hard-coded file locations
+        # Issue 45: https://github.com/cisagov/pe-reports/issues/45
+        df_loc = "src/pe_reports/data/csv/dhs_iv_df.csv"
+        col_names = ["Sources"]
+        chart_type = XL_CHART_TYPE.COLUMN_STACKED_100
+        size = "small"
+        x, y, cx, cy = Inches(8.25), Inches(4.9), Inches(4.5), Inches(2.0)
+        stacked = False
+        Pages.insert_chart(
+            slide, df_loc, col_names, chart_type, size, x, y, cx, cy, stacked
+        )
 
-        # TODO: Dry out this code
-        # Issue 18: https://github.com/cisagov/pe-reports/issues/18
-        try:
-            # TODO: Remove hard-coded file locations
-            # Issue 8: https://github.com/cisagov/pe-reports/issues/8
-            iv_df = pd.read_csv("src/pe_reports/data/csv/dhs_iv_df.csv").fillna(0)
-
-            chart.categories = list(iv_df.columns.values)
-            chart.add_series("Sources", list(iv_df.loc[0]))
-
-            # TODO: Remove hard-coded graph size and positioning values
-            # Issue 9: https://github.com/cisagov/pe-reports/issues/9
-            x, y, cx, cy = Inches(8.25), Inches(4.9), Inches(4.5), Inches(2.0)
-            chart = slide.shapes.add_chart(
-                XL_CHART_TYPE.COLUMN_STACKED_100, x, y, cx, cy, chart
-            ).chart
-            Graph.chart_sm(chart)
-        except FileNotFoundError as not_found:
-            logging.error("%s : There is no customer data.", not_found)
         return prs
