@@ -13,13 +13,14 @@ from botocore.exceptions import ClientError
 from mongo_db_from_config import db_from_config
 import pymongo.errors
 
-# TODO: mypy check: PyYAML is not supported with Python 3.9 -
-# Added to mypy hook - additional_dependencies: [types-all]
-# https://github.com/asottile/types-all
-# Create Issue to confirm with Fusion Dev that this is acceptable.
+# TODO: mypy hook: PyYAML not supported with Python 3.9
+# Issue: https://github.com/cisagov/pe-reports/issues/52
 import yaml
 
 from .pe_message import PandEMessage
+
+# TODO: Update pe-mailer error handling
+# Issue: https://github.com/cisagov/pe-reports/issues/53
 
 
 class Error(Exception):
@@ -437,8 +438,8 @@ def send_reports(
     ###
 
     if summary_to is not None and all_stats_strings:
-        # TODO: StatsMessage needs defined
-        # Create Issue
+        # TODO: Define StatsMessage in pe-mailer module
+        # Issue: https://github.com/cisagov/pe-reports/issues/50
         StatsMessage = "Needs Defined!!"
         message = StatsMessage(summary_to.split(","), all_stats_strings)
         try:
@@ -459,8 +460,8 @@ def send_reports(
 
 def main():
     """Run mailer."""
-    # TODO: Reestablish arguments for pande_report_dir and db_creds_file
-    # Create Issue
+    # TODO: Reestablish args for pande_dir and db_creds_file in pe-mailer module
+    # Issue: https://github.com/cisagov/pe-reports/issues/51
     pande_report_dir = "/input"
     db_creds_file = "/creds"
     send_reports(
