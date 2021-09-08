@@ -137,57 +137,56 @@ CREATE TABLE IF NOT EXISTS public.top_cves
 
 -- Database Relationships
 -- One to many relation between Organization and Domains
-ALTER TABLE public.organizations
-    ADD FOREIGN KEY (organization_id)
-    REFERENCES public.domains (organization_id)
-    NOT VALID;
+ALTER TABLE public.domains
+ ADD FOREIGN KEY (organization_id)
+ REFERENCES public.organizations (organization_id)
+ NOT VALID;
 
 -- One to many relation between Organization and DNSTwist results
-ALTER TABLE public.organizations
-    ADD FOREIGN KEY (organization_id)
-    REFERENCES public."DNSTwist" (organization_id)
-    NOT VALID;
+ALTER TABLE public."DNSTwist"
+ ADD FOREIGN KEY (organization_id)
+ REFERENCES public.organizations (organization_id)
+ NOT VALID;
 
 -- One to many relation between Domains and DNSTwist results
-ALTER TABLE public.domains
-    ADD FOREIGN KEY (domain_id)
-    REFERENCES public."DNSTwist" ("discoveredBy")
-    NOT VALID;
+ALTER TABLE public."DNSTwist"
+ ADD FOREIGN KEY ("discoveredBy")
+ REFERENCES public.domains ("domain_id")
+ NOT VALID;
 
--- One to many relation between Organization and Aliases
-ALTER TABLE public.organizations
-    ADD FOREIGN KEY (executives_id)
-    REFERENCES public.executives (organization_id)
-    NOT VALID;
+-- HIBP breaches table
+CREATE TABLE IF NOT EXISTS public.hibp_breaches
+(
+    breach_name text NOT NULL,
+    description text,
+    breach_date date,
+    added_date timestamp without time zone,
+    modified_date timestamp without time zone,
+    data_classes text[],
+    password_included boolean,
+    is_verified boolean,
+    is_fabricated boolean,
+    is_sensitive boolean,
+    is_retired boolean,
+    is_spam_list boolean,
+    PRIMARY KEY (breach_name)
+);
 
--- One to many relation between Organization and Aliases
-ALTER TABLE public.organization
-    ADD FOREIGN KEY (organization_id)
-    REFERENCES public.alias (organization_id)
-    NOT VALID;
+-- HIBP exposed credentials table
+CREATE TABLE IF NOT EXISTS public.hibp_exposed_credentials
+(
+    credential_id serial,
+    email text NOT NULL,
+    root_domain text,
+    sub_domain text,
+    breach_name text,
+    UNIQUE (email, breach_name),
+    PRIMARY KEY (credential_id)
+);
 
--- One to many relation between Mention "sites" and Forumns
-ALTER TABLE public.mentions
-    ADD FOREIGN KEY (site)
-    REFERENCES public.forums (site)
-    NOT VALID;
-
--- One to many relation between Mention "aliases" and Alias
-ALTER TABLE public.alias
-    ADD FOREIGN KEY (aliases)
-    REFERENCES public.mentions (query)
-    NOT VALID;
-
--- One to many relation between Organization and Alerts
-ALTER TABLE public.organization
-    ADD FOREIGN KEY (organization_id)
-    REFERENCES public.alerts (organization_id)
-    NOT VALID;
-
--- One to many relation between Alerts "threats" and Alerts
-ALTER TABLE public.alerts
-    ADD FOREIGN KEY (threats)
-    REFERENCES public.threats (threat)
+ALTER TABLE public.hibp_exposed_credentials
+    ADD FOREIGN KEY (breach_name)
+    REFERENCES public.hibp_breaches (breach_name)
     NOT VALID;
 
 END;
