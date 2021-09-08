@@ -66,11 +66,13 @@ def load_customers():
     """Export PowerPoint report set to output directory."""
     try:
         names_obj = {}
-        with open(CUSTOMERS) as customers_file:
-            names_obj = json.load(customers_file)
+        if os.path.getsize(CUSTOMERS) != 0 and os.path.exists(CUSTOMERS):
+            with open(CUSTOMERS) as customers_file:
+                names_obj = json.load(customers_file)
+            return names_obj
     except FileNotFoundError as not_found:
         logging.error("%s : Missing input data. No report generated.", not_found)
-    return names_obj
+        return 1
 
 
 def export_set(output_directory, _id, datestring, prs):
@@ -377,7 +379,7 @@ def generate_reports(db, datestring, data_directory, output_directory):
             # results.)
             file = filenames[-1]
 
-            # Create folders in output directory
+            # Create folders in output directory if folders dont exists. If the folders exists remove them and create new directory.
             try:
                 if not os.path.exists(f"{output_directory}/ppt") or not os.path.exists(
                     f"{output_directory}/_id"
@@ -394,7 +396,7 @@ def generate_reports(db, datestring, data_directory, output_directory):
                     f"The output directory exists or there was a problem during directory creation. {err}",
                     exc_info=True,
                 )
-                return 0
+                return 1
 
             # Extract data from each sheet
             cred_df, dom_df, mal_df, inferred_df, men_df = read_excel(file)
