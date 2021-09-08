@@ -72,7 +72,8 @@ def load_customers():
             return names_obj
     except FileNotFoundError as not_found:
         logging.error("%s : Missing input data. No report generated.", not_found)
-        return 1
+        return
+
 
 
 def export_set(output_directory, _id, datestring, prs):
