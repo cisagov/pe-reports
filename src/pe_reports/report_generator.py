@@ -29,7 +29,7 @@ import re
 
 # Bandit triggers B404 here, but we're using subprocess.run() safely.
 # The action to import subprocess is safe as there is no function call here
-# that would provide a way to inject an operation that would produce 
+# that would provide a way to inject an operation that would produce
 # hazardous results.  For more details on B404 see here:
 # https://bandit.readthedocs.io/en/latest/blacklists/blacklist_imports.html#b404-import-subprocess
 import subprocess  # nosec
@@ -65,6 +65,7 @@ def load_template():
 def load_customers():
     """Export PowerPoint report set to output directory."""
     try:
+        names_obj = {}
         with open(CUSTOMERS) as customers_file:
             names_obj = json.load(customers_file)
     except FileNotFoundError as not_found:
