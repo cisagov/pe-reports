@@ -209,11 +209,11 @@ ALTER TABLE public.organizations
     REFERENCES public.alerts (organization_id)
     NOT VALID;
 
--- One to Many Relationship for Mentions 
--- Represented in complex SixGill "query: API.
+-- One to Many Relationship for Mentions
+-- Represented in complex SixGill "query": API.
 
 
--- Views -- 
+-- Views --
 -- HIBP complete breach view
 Create View vw_breach_complete
 AS
