@@ -379,10 +379,21 @@ def generate_reports(db, datestring, data_directory, output_directory):
 
             # Create folders in output directory
             try:
-                os.mkdir(f"{output_directory}/ppt")
-                os.mkdir(f"{output_directory}/_id")
+                if not os.path.exists(f"{output_directory}/ppt") or not os.path.exists(
+                    f"{output_directory}/_id"
+                ):
+                    os.mkdir(f"{output_directory}/ppt")
+                    os.mkdir(f"{output_directory}/_id")
+                else:
+                    os.remove(f"{output_directory}/ppt")
+                    os.remove(f"{output_directory}/_id")
+                    os.mkdir(f"{output_directory}/ppt")
+                    os.mkdir(f"{output_directory}/_id")
             except FileExistsError as err:
-                logging.error(f"The output directory exists {err}", exc_info=True)
+                logging.error(
+                    f"The output directory exists or there was a problem during directory creation. {err}",
+                    exc_info=True,
+                )
                 return 0
 
             # Extract data from each sheet
