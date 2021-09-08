@@ -189,4 +189,36 @@ ALTER TABLE public.hibp_exposed_credentials
     REFERENCES public.hibp_breaches (breach_name)
     NOT VALID;
 
+-- HIBP complete breach view
+Create View vw_breach_complete
+AS
+SELECT creds.credential_id,creds.email, creds.breach_name, creds.root_domain, creds.sub_domain,
+    b.description, b.breach_date, b.added_date, b.modified_date,  b.data_classes,
+    b.password_included, b.is_verified, b.is_fabricated, b.is_sensitive, b.is_retired, b.is_spam_list
+
+    FROM hibp_exposed_credentials as creds
+
+    JOIN hibp_breaches as b
+    ON creds.breach_name = b.breach_name;
+
+
+-- Cyber Six Gill exposed credentials table
+CREATE TABLE IF NOT EXISTS public.cybersix_exposed_credentials
+(
+    credential_id serial,
+    breach_date date,
+    "breach_id " integer,
+    breach_name text NOT NULL,
+    create_time timestamp without time zone[],
+    description text,
+    domain text,
+    email text NOT NULL,
+    password text,
+    hash_type text,
+    login_id text,
+    name text,
+    phone text,
+    PRIMARY KEY (credential_id)
+);
+
 END;
