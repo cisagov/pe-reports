@@ -110,6 +110,8 @@ repos:
       - id: mypy
         additional_dependencies:
           - types-requests
+          - types-PyYAML
+          - types-setuptools
   - repo: https://github.com/asottile/pyupgrade
     rev: v2.23.3
     hooks:
