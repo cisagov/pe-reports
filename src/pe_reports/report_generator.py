@@ -75,7 +75,6 @@ def load_customers():
         return
 
 
-
 def export_set(output_directory, _id, datestring, prs):
     """Export PowerPoint report set to output directory."""
     try:
