@@ -68,8 +68,7 @@ def load_customers():
         names_obj = dict()
         if os.path.getsize(CUSTOMERS) != 0 and os.path.exists(CUSTOMERS):
             with open(CUSTOMERS) as customers_file:
-                names_obj = json.load(customers_file)
-            return names_obj
+                return json.load(customers_file)
     except FileNotFoundError as not_found:
         logging.error("%s : Missing input data. No report generated.", not_found)
         return
