@@ -1,6 +1,9 @@
 """This module contains the StatsMessage class."""
 
+# Standard Python Libraries
 import datetime
+
+# Third-Party Libraries
 import pystache
 
 from .message import Message
