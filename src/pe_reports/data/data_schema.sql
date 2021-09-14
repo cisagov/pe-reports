@@ -132,6 +132,7 @@ CREATE TABLE IF NOT EXISTS public.hibp_exposed_credentials
 (
     credential_id uuid default uuid_generate_v1() NOT NULL,
     email text NOT NULL,
+    organization text,
     root_domain text,
     sub_domain text,
     breach_name text,
@@ -220,7 +221,7 @@ ALTER TABLE public.organizations
 -- HIBP complete breach view
 Create View vw_breach_complete
 AS
-SELECT creds.credential_id,creds.email, creds.breach_name, creds.root_domain, creds.sub_domain,
+SELECT creds.credential_id,creds.email, creds.breach_name, creds.organization, creds.root_domain, creds.sub_domain,
     b.description, b.breach_date, b.added_date, b.modified_date,  b.data_classes,
     b.password_included, b.is_verified, b.is_fabricated, b.is_sensitive, b.is_retired, b.is_spam_list
 
