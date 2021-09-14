@@ -4,4 +4,4 @@
 # package_name.__version__, which is used to get version information about this
 # Python package.
 
-__all__ = ["email_reports", "message", "pe_message", "report_message"]
+__all__ = ["email_reports", "message", "pe_message", "report_message", "stats_message"]

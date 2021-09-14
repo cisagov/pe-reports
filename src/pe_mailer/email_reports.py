@@ -12,12 +12,10 @@ import boto3
 from botocore.exceptions import ClientError
 from mongo_db_from_config import db_from_config
 import pymongo.errors
-
-# TODO: mypy hook: PyYAML not supported with Python 3.9
-# Issue: https://github.com/cisagov/pe-reports/issues/52
 import yaml
 
 from .pe_message import PandEMessage
+from .stats_message import StatsMessage
 
 # TODO: Update pe-mailer error handling
 # Issue: https://github.com/cisagov/pe-reports/issues/53
@@ -438,9 +436,6 @@ def send_reports(
     ###
 
     if summary_to is not None and all_stats_strings:
-        # TODO: Define StatsMessage in pe-mailer module
-        # Issue: https://github.com/cisagov/pe-reports/issues/50
-        StatsMessage = "Needs Defined!!"
         message = StatsMessage(summary_to.split(","), all_stats_strings)
         try:
             send_message(ses_client, message)
