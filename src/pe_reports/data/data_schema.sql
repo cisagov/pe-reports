@@ -6,11 +6,13 @@
 -- Includes Domain Masquerading, Credentals Exposed, Inffered Vulns, and Dark Web data
 
 BEGIN;
+-- Enable uuid extension in Postgres
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 -- Organization Assets --
 -- Organization's Table
 CREATE TABLE IF NOT EXISTS public.organizations
 (
-    organization_id text NOT NULL,
+    organization_id uuid default uuid_generate_v1() NOT NULL,
     name text NOT NULL,
     root_domains text[],
     PRIMARY KEY (organization_id)
@@ -19,7 +21,7 @@ CREATE TABLE IF NOT EXISTS public.organizations
 -- Organization's Domains Table
 CREATE TABLE IF NOT EXISTS public.domains
 (
-    domain_id text NOT NULL,
+    domain_id uuid default uuid_generate_v1() NOT NULL,
     organization_id text NOT NULL,
     root_domain text NOT NULL,
     ip_address text,
@@ -29,7 +31,7 @@ CREATE TABLE IF NOT EXISTS public.domains
 -- Organization's Aliases Table
 CREATE TABLE public.alias
 (
-    alias_id text NOT NULL,
+    alias_id uuid default uuid_generate_v1() NOT NULL,
     organization_id text NOT NULL,
     alias text NOT NULL,
     PRIMARY KEY (alias_id)
@@ -38,7 +40,7 @@ CREATE TABLE public.alias
 -- Organization's Evecutives Table
 CREATE TABLE public.executives
 (
-    executives_id text NOT NULL,
+    executives_id uuid default uuid_generate_v1() NOT NULL,
     organization_id text NOT NULL,
     executives text NOT NULL,
     PRIMARY KEY (executives_id)
@@ -49,7 +51,7 @@ CREATE TABLE public.executives
 -- Domain Masquerading Table
 CREATE TABLE IF NOT EXISTS public."DNSTwist"
 (
-    id text NOT NULL,
+    id uuid default uuid_generate_v1() NOT NULL,
     "discoveredBy" text NOT NULL,
     "domain-name" text,
     "dns-a" text,
@@ -66,7 +68,7 @@ CREATE TABLE IF NOT EXISTS public."DNSTwist"
 -- Dark Web Alerts Table
 CREATE TABLE public.alerts
 (
-    id text NOT NULL,
+    id uuid default uuid_generate_v1() NOT NULL,
     alert_name text,
     content text,
     date text,
@@ -85,7 +87,7 @@ CREATE TABLE public.alerts
 -- Dark Web Mentions Table
 CREATE TABLE public.mentions
 (
-    id text NOT NULL,
+    id uuid default uuid_generate_v1() NOT NULL,
     category text,
     collection_date text,
     content text,
@@ -109,6 +111,7 @@ CREATE TABLE public.mentions
 -- HIBP breaches Table
 CREATE TABLE IF NOT EXISTS public.hibp_breaches
 (
+    breach_id uuid default uuid_generate_v1() NOT NULL,
     breach_name text NOT NULL,
     description text,
     breach_date date,
@@ -121,13 +124,13 @@ CREATE TABLE IF NOT EXISTS public.hibp_breaches
     is_sensitive boolean,
     is_retired boolean,
     is_spam_list boolean,
-    PRIMARY KEY (breach_name)
+    PRIMARY KEY (breach_id)
 );
 
 -- HIBP Exposed Credentials Table
 CREATE TABLE IF NOT EXISTS public.hibp_exposed_credentials
 (
-    credential_id serial,
+    credential_id uuid default uuid_generate_v1() NOT NULL,
     email text NOT NULL,
     root_domain text,
     sub_domain text,
@@ -139,7 +142,7 @@ CREATE TABLE IF NOT EXISTS public.hibp_exposed_credentials
 -- Cyber Six Gill Exposed Credentials Table
 CREATE TABLE IF NOT EXISTS public.cybersix_exposed_credentials
 (
-    credential_id serial,
+    credential_id uuid default uuid_generate_v1() NOT NULL,
     breach_date date,
     "breach_id " integer,
     breach_name text NOT NULL,
@@ -158,7 +161,7 @@ CREATE TABLE IF NOT EXISTS public.cybersix_exposed_credentials
 -- Top CVEs
 CREATE TABLE public.top_cves
 (
-    id text NOT NULL,
+    id uuid default uuid_generate_v1() NOT NULL,
     type text,
     cve text,
     description text,
@@ -187,8 +190,8 @@ ALTER TABLE public."DNSTwist"
 
 -- One to many relation between Organization and Domains
 ALTER TABLE public.hibp_exposed_credentials
-    ADD FOREIGN KEY (breach_name)
-    REFERENCES public.hibp_breaches (breach_name)
+    ADD FOREIGN KEY (breach_id)
+    REFERENCES public.hibp_breaches (breach_id)
     NOT VALID;
 
 -- One to many relation between Organization and Aliases
