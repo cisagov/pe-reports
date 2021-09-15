@@ -5,6 +5,14 @@
 -- Draft Database Schema to store scan data
 -- Includes Domain Masquerading, Credentals Exposed, Inffered Vulns, and Dark Web data
 
+
+
+
+# TODO commit these changes
+
+
+
+
 BEGIN;
 -- Enable uuid extension in Postgres
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
@@ -12,38 +20,38 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 -- Organization's Table
 CREATE TABLE IF NOT EXISTS public.organizations
 (
-    organization_id uuid default uuid_generate_v1() NOT NULL,
+    organizations_uid uuid default uuid_generate_v1() NOT NULL,
     name text NOT NULL,
     root_domains text[],
-    PRIMARY KEY (organization_id)
+    PRIMARY KEY (organizations_uid)
 );
 
 -- Organization's Domains Table
 CREATE TABLE IF NOT EXISTS public.domains
 (
-    domain_id uuid default uuid_generate_v1() NOT NULL,
+    domain_uid uuid default uuid_generate_v1() NOT NULL,
     organization_id text NOT NULL,
     root_domain text NOT NULL,
     ip_address text,
-    PRIMARY KEY (domain_id)
+    PRIMARY KEY (domain_uid)
 );
 
 -- Organization's Aliases Table
 CREATE TABLE public.alias
 (
-    alias_id uuid default uuid_generate_v1() NOT NULL,
+    alias_uid uuid default uuid_generate_v1() NOT NULL,
     organization_id text NOT NULL,
     alias text NOT NULL,
-    PRIMARY KEY (alias_id)
+    PRIMARY KEY (alias_uid)
 );
 
 -- Organization's Evecutives Table
 CREATE TABLE public.executives
 (
-    executives_id uuid default uuid_generate_v1() NOT NULL,
+    executives_uid uuid default uuid_generate_v1() NOT NULL,
     organization_id text NOT NULL,
     executives text NOT NULL,
-    PRIMARY KEY (executives_id)
+    PRIMARY KEY (executives_uid)
 );
 
 
@@ -51,7 +59,7 @@ CREATE TABLE public.executives
 -- Domain Masquerading Table
 CREATE TABLE IF NOT EXISTS public."DNSTwist"
 (
-    id uuid default uuid_generate_v1() NOT NULL,
+    dnstwist_uid uuid default uuid_generate_v1() NOT NULL,
     "discoveredBy" text NOT NULL,
     "domain-name" text,
     "dns-a" text,
@@ -62,13 +70,13 @@ CREATE TABLE IF NOT EXISTS public."DNSTwist"
     "date-observed" text,
     "ssdeep-score" text,
     organization_id text NOT NULL,
-    PRIMARY KEY (id)
+    PRIMARY KEY (dnstwist_uid)
 );
 
 -- Dark Web Alerts Table
 CREATE TABLE public.alerts
 (
-    id uuid default uuid_generate_v1() NOT NULL,
+    alerts_uid uuid default uuid_generate_v1() NOT NULL,
     alert_name text,
     content text,
     date text,
@@ -81,13 +89,13 @@ CREATE TABLE public.alerts
     title text,
     user_id text,
     organization_id text NOT NULL,
-    PRIMARY KEY (id)
+    PRIMARY KEY (alerts_uid)
 );
 
 -- Dark Web Mentions Table
 CREATE TABLE public.mentions
 (
-    id uuid default uuid_generate_v1() NOT NULL,
+    mentions_uid uuid default uuid_generate_v1() NOT NULL,
     category text,
     collection_date text,
     content text,
@@ -105,13 +113,13 @@ CREATE TABLE public.mentions
     sub_category text,
     query text,
     organization_id text NOT NULL,
-    PRIMARY KEY (id)
+    PRIMARY KEY (mentions_uid)
 );
 
 -- HIBP breaches Table
 CREATE TABLE IF NOT EXISTS public.hibp_breaches
 (
-    breach_id uuid default uuid_generate_v1() NOT NULL,
+    hibp_breaches_uid uuid default uuid_generate_v1() NOT NULL,
     breach_name text NOT NULL,
     description text,
     breach_date date,
@@ -124,26 +132,26 @@ CREATE TABLE IF NOT EXISTS public.hibp_breaches
     is_sensitive boolean,
     is_retired boolean,
     is_spam_list boolean,
-    PRIMARY KEY (breach_id)
+    PRIMARY KEY (hibp_breaches_uid)
 );
 
 -- HIBP Exposed Credentials Table
 CREATE TABLE IF NOT EXISTS public.hibp_exposed_credentials
 (
-    credential_id uuid default uuid_generate_v1() NOT NULL,
+    hibp_exposed_credentials_uid uuid default uuid_generate_v1() NOT NULL,
     email text NOT NULL,
     organization text,
     root_domain text,
     sub_domain text,
     breach_name text,
     UNIQUE (email, breach_name),
-    PRIMARY KEY (credential_id)
+    PRIMARY KEY (hibp_exposed_credentials_uid)
 );
 
 -- Cyber Six Gill Exposed Credentials Table
 CREATE TABLE IF NOT EXISTS public.cybersix_exposed_credentials
 (
-    credential_id uuid default uuid_generate_v1() NOT NULL,
+    csg_exposed_credentials_uid uuid default uuid_generate_v1() NOT NULL,
     breach_date date,
     "breach_id " integer,
     breach_name text NOT NULL,
@@ -156,61 +164,61 @@ CREATE TABLE IF NOT EXISTS public.cybersix_exposed_credentials
     login_id text,
     name text,
     phone text,
-    PRIMARY KEY (credential_id)
+    PRIMARY KEY (csg_exposed_credentials_uid)
 );
 
 -- Top CVEs
 CREATE TABLE public.top_cves
 (
-    id uuid default uuid_generate_v1() NOT NULL,
+   top_cves_uid uuid default uuid_generate_v1() NOT NULL,
     type text,
     cve text,
     description text,
-    PRIMARY KEY (id)
+    PRIMARY KEY (top_cves_uid)
 );
 
 
--- Table Relatinships --
+-- Table Relationships --
 -- One to many relation between Organization and Domains
 ALTER TABLE public.domains
- ADD FOREIGN KEY (organization_id)
- REFERENCES public.organizations (organization_id)
+ ADD FOREIGN KEY (organizations_uid)
+ REFERENCES public.organizations (organizations_uid)
  NOT VALID;
 
 -- One to many relation between Organization and DNSTwist results
 ALTER TABLE public."DNSTwist"
- ADD FOREIGN KEY (organization_id)
- REFERENCES public.organizations (organization_id)
+ ADD FOREIGN KEY (organization_uid)
+ REFERENCES public.organizations (organization_uid)
  NOT VALID;
 
 -- One to many relation between Domains and DNSTwist results
 ALTER TABLE public."DNSTwist"
  ADD FOREIGN KEY ("discoveredBy")
- REFERENCES public.domains ("domain_id")
+ REFERENCES public.domains ("domain_uid")
  NOT VALID;
 
 -- One to many relation between Organization and Domains
 ALTER TABLE public.hibp_exposed_credentials
     ADD FOREIGN KEY (breach_id)
-    REFERENCES public.hibp_breaches (breach_id)
+    REFERENCES public.hibp_breaches (hibp_breaches_uid)
     NOT VALID;
 
 -- One to many relation between Organization and Aliases
 ALTER TABLE public.alias
-    ADD FOREIGN KEY (organization_id)
-    REFERENCES public.organizations (organization_id)
+    ADD FOREIGN KEY (organizations_uid)
+    REFERENCES public.organizations (organizations_uid)
     NOT VALID;
 
 -- One to many relation between Organization and Executives
 ALTER TABLE public.executives
-    ADD FOREIGN KEY (organization_id)
-    REFERENCES public.organizations (organization_id)
+    ADD FOREIGN KEY (organizations_uid)
+    REFERENCES public.organizations (organizations_uid)
     NOT VALID;
 
 -- One to many relation between Organization and SixGill Alert API
 ALTER TABLE public.organizations
-    ADD FOREIGN KEY (organization_id)
-    REFERENCES public.alerts (organization_id)
+    ADD FOREIGN KEY (organizations_uid)
+    REFERENCES public.alerts (organizations_uid)
     NOT VALID;
 
 -- One to Many Relationship for Mentions
@@ -221,7 +229,7 @@ ALTER TABLE public.organizations
 -- HIBP complete breach view
 Create View vw_breach_complete
 AS
-SELECT creds.credential_id,creds.email, creds.breach_name, creds.organization, creds.root_domain, creds.sub_domain,
+SELECT creds.hibp_exposed_credentials_uid,creds.email, creds.breach_name, creds.organization, creds.root_domain, creds.sub_domain,
     b.description, b.breach_date, b.added_date, b.modified_date,  b.data_classes,
     b.password_included, b.is_verified, b.is_fabricated, b.is_sensitive, b.is_retired, b.is_spam_list
 
