@@ -71,7 +71,7 @@ def load_customers():
                 return json.load(customers_file)
     except FileNotFoundError as not_found:
         logging.error("%s : Missing input data. No report generated.", not_found)
-        return
+        return dict()
 
 
 def export_set(output_directory, _id, datestring, prs):
