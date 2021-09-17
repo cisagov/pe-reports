@@ -65,8 +65,7 @@ def load_template():
 def load_customers():
     """Export PowerPoint report set to output directory."""
     try:
-
-        if os.path.getsize(CUSTOMERS) != 0 and os.path.exists(CUSTOMERS):
+        if os.path.exists(CUSTOMERS) and os.path.getsize(CUSTOMERS) != 0:
             with open(CUSTOMERS) as customers_file:
                 return json.load(customers_file)
     except FileNotFoundError as not_found:
