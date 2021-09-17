@@ -561,11 +561,8 @@ def main():
     try:
         db = db_from_config(db_creds_file)
     except FileNotFoundError as not_found:
-        logging.error(
-            f"The output directory exists or there was a problem during directory creation. {not_found}",
-            exc_info=True,
-        )
-        return 1
+        logging.error("%s : Missing input data. No report generated.", not_found)
+        return 0
 
     except yaml.YAMLError:
         logging.critical(
