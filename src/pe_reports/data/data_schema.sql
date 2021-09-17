@@ -8,7 +8,7 @@
 
 
 
-# TODO commit these changes
+-- TODO commit these changes
 
 
 
@@ -30,7 +30,7 @@ CREATE TABLE IF NOT EXISTS public.organizations
 CREATE TABLE IF NOT EXISTS public.domains
 (
     domain_uid uuid default uuid_generate_v1() NOT NULL,
-    organization_id text NOT NULL,
+    organizations_uid uuid NOT NULL,
     root_domain text NOT NULL,
     ip_address text,
     PRIMARY KEY (domain_uid)
@@ -40,7 +40,7 @@ CREATE TABLE IF NOT EXISTS public.domains
 CREATE TABLE public.alias
 (
     alias_uid uuid default uuid_generate_v1() NOT NULL,
-    organization_id text NOT NULL,
+    organizations_uid uuid NOT NULL,
     alias text NOT NULL,
     PRIMARY KEY (alias_uid)
 );
@@ -49,7 +49,7 @@ CREATE TABLE public.alias
 CREATE TABLE public.executives
 (
     executives_uid uuid default uuid_generate_v1() NOT NULL,
-    organization_id text NOT NULL,
+    organizations_uid uuid NOT NULL,
     executives text NOT NULL,
     PRIMARY KEY (executives_uid)
 );
@@ -60,7 +60,7 @@ CREATE TABLE public.executives
 CREATE TABLE IF NOT EXISTS public."DNSTwist"
 (
     dnstwist_uid uuid default uuid_generate_v1() NOT NULL,
-    "discoveredBy" text NOT NULL,
+    "discoveredBy" uuid NOT NULL,
     "domain-name" text,
     "dns-a" text,
     "dns-aaaa" text,
@@ -69,7 +69,7 @@ CREATE TABLE IF NOT EXISTS public."DNSTwist"
     fuzzer text,
     "date-observed" text,
     "ssdeep-score" text,
-    organization_id text NOT NULL,
+    organizations_uid uuid NOT NULL,
     PRIMARY KEY (dnstwist_uid)
 );
 
@@ -88,7 +88,7 @@ CREATE TABLE public.alerts
     threats text,
     title text,
     user_id text,
-    organization_id text NOT NULL,
+    organizations_uid uuid NOT NULL,
     PRIMARY KEY (alerts_uid)
 );
 
@@ -112,7 +112,7 @@ CREATE TABLE public.mentions
     comments_count text,
     sub_category text,
     query text,
-    organization_id text NOT NULL,
+    organizations_uid uuid NOT NULL,
     PRIMARY KEY (mentions_uid)
 );
 
@@ -120,7 +120,7 @@ CREATE TABLE public.mentions
 CREATE TABLE IF NOT EXISTS public.hibp_breaches
 (
     hibp_breaches_uid uuid default uuid_generate_v1() NOT NULL,
-    breach_name text NOT NULL,
+    breach_id uuid NOT NULL,
     description text,
     breach_date date,
     added_date timestamp without time zone,
@@ -144,6 +144,7 @@ CREATE TABLE IF NOT EXISTS public.hibp_exposed_credentials
     root_domain text,
     sub_domain text,
     breach_name text,
+	breach_id uuid NOT NULL,
     UNIQUE (email, breach_name),
     PRIMARY KEY (hibp_exposed_credentials_uid)
 );
@@ -153,7 +154,7 @@ CREATE TABLE IF NOT EXISTS public.cybersix_exposed_credentials
 (
     csg_exposed_credentials_uid uuid default uuid_generate_v1() NOT NULL,
     breach_date date,
-    "breach_id " integer,
+    breach_id integer,
     breach_name text NOT NULL,
     create_time timestamp without time zone[],
     description text,
@@ -177,7 +178,6 @@ CREATE TABLE public.top_cves
     PRIMARY KEY (top_cves_uid)
 );
 
-
 -- Table Relationships --
 -- One to many relation between Organization and Domains
 ALTER TABLE public.domains
@@ -187,8 +187,8 @@ ALTER TABLE public.domains
 
 -- One to many relation between Organization and DNSTwist results
 ALTER TABLE public."DNSTwist"
- ADD FOREIGN KEY (organization_uid)
- REFERENCES public.organizations (organization_uid)
+ ADD FOREIGN KEY (organizations_uid)
+ REFERENCES public.organizations (organizations_uid)
  NOT VALID;
 
 -- One to many relation between Domains and DNSTwist results
@@ -216,14 +216,13 @@ ALTER TABLE public.executives
     NOT VALID;
 
 -- One to many relation between Organization and SixGill Alert API
-ALTER TABLE public.organizations
+ALTER TABLE public.alerts
     ADD FOREIGN KEY (organizations_uid)
-    REFERENCES public.alerts (organizations_uid)
+    REFERENCES public.organizations (organizations_uid)
     NOT VALID;
 
 -- One to Many Relationship for Mentions
 -- Represented in complex SixGill "query": API.
-
 
 -- Views --
 -- HIBP complete breach view
@@ -236,7 +235,6 @@ SELECT creds.hibp_exposed_credentials_uid,creds.email, creds.breach_name, creds.
     FROM hibp_exposed_credentials as creds
 
     JOIN hibp_breaches as b
-    ON creds.breach_name = b.breach_name;
-
+    ON creds.breach_id = b.breach_id;
 
 END;
