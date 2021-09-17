@@ -379,16 +379,10 @@ def generate_reports(db, datestring, data_directory, output_directory):
 
             # Create folders in output directory if folders dont exists. If the folders exists remove them and create new directory.
             try:
-                if not os.path.exists(f"{output_directory}/ppt") or not os.path.exists(
-                    f"{output_directory}/_id"
-                ):
-                    os.mkdir(f"{output_directory}/ppt")
-                    os.mkdir(f"{output_directory}/_id")
-                else:
-                    os.remove(f"{output_directory}/ppt")
-                    os.remove(f"{output_directory}/_id")
-                    os.mkdir(f"{output_directory}/ppt")
-                    os.mkdir(f"{output_directory}/_id")
+                for subdir in ("_id", "ppt"):
+                    if os.path.exists(f"{output_directory}/{subdir}"):
+                        os.remove(f"{output_directory}/{subdir}")
+                    os.mkdir(f"{output_directory}/{subdir}")
             except FileExistsError as err:
                 logging.error(
                     f"The output directory exists or there was a problem during directory creation. {err}",
