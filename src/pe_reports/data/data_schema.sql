@@ -6,13 +6,6 @@
 -- Includes Domain Masquerading, Credentals Exposed, Inffered Vulns, and Dark Web data
 
 
-
-
--- TODO commit these changes
-
-
-
-
 BEGIN;
 -- Enable uuid extension in Postgres
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
