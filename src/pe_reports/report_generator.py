@@ -332,8 +332,9 @@ def generate_reports(db, datestring, data_directory, output_directory):
             agencies.append(names_obj[folder_name][0])
 
     try:
-        requests = get_requests(db, agency_list=agencies)
-        request_data = list(requests)
+        if agencies:
+            requests = get_requests(db, agency_list=agencies)
+            request_data = list(requests)
 
     except TypeError:
         return 4
@@ -553,7 +554,7 @@ def main():
     try:
         os.mkdir(f"{args['OUTPUT_DIRECTORY']}")
     except FileExistsError as err:
-        logging.error(f"The output directory cannot be created. {err}")
+        logging.info(f"The output directory exists. {err}", exc_info=True)
         return 0
 
     # Connect to cyhy database
