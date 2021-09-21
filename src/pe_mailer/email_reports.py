@@ -1,17 +1,50 @@
-"""This module contains functions for sending Posture and Exposure reports using AWS SES."""
+# TODO: Add cc Address To CyHy Mailer Module (Option)
+# Issue: https://github.com/cisagov/pe-reports/issues/62
+
+"""
+A module to send Posture and Exposure reports using AWS SES.
+
+Usage:
+    pe-mailer [--pande-report-dir=DIR] [--db-creds-file=FILE] [--log-level=LEVEL]
+
+Arguments:
+  -p --pande-report-dir=DIRECTORY   Directory containing the pe-reports output.
+  -c --db-creds-file=FILENAME       A YAML file containing the Cyber
+                                    Hygiene database credentials.
+                                    [default: /secrets/database_creds.yml]
+
+Options:
+  -h --help                         Show this message.
+  -v --version                      Show version information.
+  -s --summary-to=EMAILS            A comma-separated list of email addresses
+                                    to which the summary statistics should be
+                                    sent at the end of the run.  If not
+                                    specified then no summary will be sent.
+  -t --test_emails=EMAILS           A comma-separated list of email addresses
+                                    to which to test email send process. If not
+                                    specified then no test will be sent.
+  -l --log-level=LEVEL              If specified, then the log level will be set to
+                                    the specified value.  Valid values are "debug", "info",
+                                    "warning", "error", and "critical". [default: info]
+"""
 
 # Standard Python Libraries
 import datetime
 import glob
 import logging
 import os
+import pprint
 import re
+import sys
+from typing import Any, Dict
 
 # Third-Party Libraries
 import boto3
 from botocore.exceptions import ClientError
+import docopt
 from mongo_db_from_config import db_from_config
 import pymongo.errors
+from schema import And, Schema, SchemaError, Use
 import yaml
 
 from .pe_message import PandEMessage
@@ -371,18 +404,8 @@ def send_pande_reports(db, ses_client, pande_report_dir, to):
     return pande_stats_string
 
 
-def send_reports(
-    pande_report_dir, db_creds_file, summary_to=None, test_emails=None, debug=None
-):
+def send_reports(pande_report_dir, db_creds_file, summary_to=None, test_emails=None):
     """Send emails."""
-    # Set up logging
-    log_level = logging.WARNING
-    if debug is not None:
-        log_level = logging.DEBUG
-    logging.basicConfig(
-        format="%(asctime)-15s %(levelname)s %(message)s", level=log_level
-    )
-
     try:
         db = db_from_config(db_creds_file)
     except OSError:
@@ -454,11 +477,49 @@ def send_reports(
 
 
 def main():
-    """Run mailer."""
-    # TODO: Reestablish args for pande_dir and db_creds_file in pe-mailer module
-    # Issue: https://github.com/cisagov/pe-reports/issues/51
-    pande_report_dir = "/input"
-    db_creds_file = "/creds"
-    send_reports(
-        pande_report_dir, db_creds_file, summary_to=None, test_emails=None, debug=None
+    """Send emails."""
+    # Parse command line arguments
+    args: Dict[str, str] = docopt.docopt(__doc__)
+    pprint.pprint(args)
+
+    # Validate and convert arguments as needed
+    schema: Schema = Schema(
+        {
+            "--log-level": And(
+                str,
+                Use(str.lower),
+                lambda n: n in ("debug", "info", "warning", "error", "critical"),
+                error="Possible values for --log-level are "
+                + "debug, info, warning, error, and critical.",
+            ),
+            str: object,  # Don't care about other keys, if any
+        }
     )
+
+    try:
+        validated_args: Dict[str, Any] = schema.validate(args)
+    except SchemaError as err:
+        # Exit because one or more of the arguments were invalid
+        print(err, file=sys.stderr)
+        sys.exit(1)
+
+    # Assign validated arguments to variables
+    log_level: str = validated_args["--log-level"]
+
+    # Set up logging
+    logging.basicConfig(
+        format="%(asctime)-15s %(levelname)s %(message)s", level=log_level.upper()
+    )
+
+    send_reports(
+        # TODO: Improve use of schema to validate arguments.
+        # Issue 19: https://github.com/cisagov/pe-reports/issues/19
+        validated_args["--pande-report-dir"],
+        validated_args["--db-creds-file"],
+        summary_to=None,
+        test_emails=None,
+    )
+    logging.info("Sending Posture & Exposure Reports, Version : %s")
+
+    # Stop logging and clean up
+    logging.shutdown()
