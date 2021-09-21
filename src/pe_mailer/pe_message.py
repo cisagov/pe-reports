@@ -1,4 +1,4 @@
-"""This module contains the PandEMessage class."""
+"""This module contains the PEMessage class."""
 
 # Third-Party Libraries
 import pystache
@@ -7,7 +7,7 @@ from .message import Message
 from .report_message import ReportMessage
 
 
-class PandEMessage(ReportMessage):
+class PEMessage(ReportMessage):
     """An email message with the Posture and Exposure Report attachment.
 
     Static attributes
@@ -120,9 +120,9 @@ Cybersecurity and Infrastructure Security Agency<br>
         mustache_data = {"report_date": report_date}
 
         # Render the templates
-        subject = pystache.render(PandEMessage.Subject, mustache_data)
-        text_body = pystache.render(PandEMessage.TextBody, mustache_data)
-        html_body = pystache.render(PandEMessage.HtmlBody, mustache_data)
+        subject = pystache.render(PEMessage.Subject, mustache_data)
+        text_body = pystache.render(PEMessage.TextBody, mustache_data)
+        html_body = pystache.render(PEMessage.HtmlBody, mustache_data)
 
         ReportMessage.__init__(
             self,
