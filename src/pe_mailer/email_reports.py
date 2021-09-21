@@ -5,10 +5,10 @@
 A module to send Posture and Exposure reports using AWS SES.
 
 Usage:
-    pe-mailer [--pande-report-dir=DIR] [--db-creds-file=FILE] [--log-level=LEVEL]
+    pe-mailer [--pe-report-dir=DIR] [--db-creds-file=FILE] [--log-level=LEVEL]
 
 Arguments:
-  -p --pande-report-dir=DIRECTORY   Directory containing the pe-reports output.
+  -p --pe-report-dir=DIRECTORY   Directory containing the pe-reports output.
   -c --db-creds-file=FILENAME       A YAML file containing the Cyber
                                     Hygiene database credentials.
                                     [default: /secrets/database_creds.yml]
@@ -291,7 +291,7 @@ def send_message(ses_client, message, counter=None):
     return counter
 
 
-def send_pande_reports(db, ses_client, pande_report_dir, to):
+def send_pe_reports(db, ses_client, pe_report_dir, to):
     """Send out Posture and Exposure reports.
 
     Parameters
@@ -303,7 +303,7 @@ def send_pande_reports(db, ses_client, pande_report_dir, to):
     ses_client : boto3.client
         The boto3 SES client via which the message is to be sent.
 
-    pande_report_dir : str
+    pe_report_dir : str
         The directory where the Posture and Exposure reports can be found.
         If None then no Posture and Exposure reports will be sent.
 
@@ -314,18 +314,18 @@ def send_pande_reports(db, ses_client, pande_report_dir, to):
     """
     agencies = []
 
-    contents = os.walk(pande_report_dir)
+    contents = os.walk(pe_report_dir)
     for root, folders, files in contents:
         for folder_name in folders:
             agencies.append(folder_name)
 
     try:
-        pande_requests = get_requests(db, agency_list=agencies)
+        pe_requests = get_requests(db, agency_list=agencies)
     except TypeError:
         return 4
 
     try:
-        cyhy_agencies = pande_requests.count()
+        cyhy_agencies = pe_requests.count()
         logging.debug(f"{cyhy_agencies} agencies found in CyHy")
     except pymongo.errors.OperationFailure:
         logging.critical(
@@ -333,13 +333,13 @@ def send_pande_reports(db, ses_client, pande_report_dir, to):
             exc_info=True,
         )
 
-    agencies_emailed_pande_reports = 0
+    agencies_emailed_pe_reports = 0
 
     ###
     # Iterate over cyhy_requests, if necessary
     ###
-    if pande_report_dir:
-        for request in pande_requests:
+    if pe_report_dir:
+        for request in pe_requests:
             id = request["_id"]
             if to is not None:
                 to_emails = to
@@ -353,25 +353,25 @@ def send_pande_reports(db, ses_client, pande_report_dir, to):
             # Find and mail the Posture and Exposure report, if necessary
             ###
 
-            pande_report_glob = f"{pande_report_dir}/{id}/*.pdf"
-            pande_report_filenames = sorted(glob.glob(pande_report_glob))
+            pe_report_glob = f"{pe_report_dir}/{id}/*.pdf"
+            pe_report_filenames = sorted(glob.glob(pe_report_glob))
 
             # At most one Cybex report and CSV should match
-            if len(pande_report_filenames) > 1:
+            if len(pe_report_filenames) > 1:
                 logging.warn("More than one PDF report found")
-            elif not pande_report_filenames:
+            elif not pe_report_filenames:
                 logging.error("No PDF report found")
 
-            if pande_report_filenames:
+            if pe_report_filenames:
                 # We take the last filename since, if there happens to be more than
                 # one, it should the latest.  (This is because we sorted the glob
                 # results.)
-                pande_report_filename = pande_report_filenames[-1]
+                pe_report_filename = pe_report_filenames[-1]
 
                 # Extract the report date from the report filename
                 match = re.search(
                     r"-(?P<date>\d{4}-[01]\d-[0-3]\d)",
-                    pande_report_filename,
+                    pe_report_filename,
                 )
                 print(match)
                 report_date = datetime.datetime.strptime(
@@ -379,15 +379,15 @@ def send_pande_reports(db, ses_client, pande_report_dir, to):
                 ).strftime("%B %d, %Y")
 
                 # Construct the Posture and Exposure message to send
-                message = PandEMessage(pande_report_filename, report_date, to_emails)
+                message = PandEMessage(pe_report_filename, report_date, to_emails)
 
                 print(to_emails)
-                print(pande_report_filename)
+                print(pe_report_filename)
                 print(report_date)
 
                 try:
-                    agencies_emailed_pande_reports = send_message(
-                        ses_client, message, agencies_emailed_pande_reports
+                    agencies_emailed_pe_reports = send_message(
+                        ses_client, message, agencies_emailed_pe_reports
                     )
                 except (UnableToSendError, ClientError):
                     logging.error(
@@ -397,14 +397,14 @@ def send_pande_reports(db, ses_client, pande_report_dir, to):
                     )
 
     # Print out and log some statistics
-    pande_stats_string = f"Out of {cyhy_agencies} agencies with Posture and Exposure reports, {agencies_emailed_pande_reports} ({100.0 * agencies_emailed_pande_reports / cyhy_agencies:.2f}%) were emailed."
-    logging.info(pande_stats_string)
-    print(pande_stats_string)
+    pe_stats_string = f"Out of {cyhy_agencies} agencies with Posture and Exposure reports, {agencies_emailed_pe_reports} ({100.0 * agencies_emailed_pe_reports / cyhy_agencies:.2f}%) were emailed."
+    logging.info(pe_stats_string)
+    print(pe_stats_string)
 
-    return pande_stats_string
+    return pe_stats_string
 
 
-def send_reports(pande_report_dir, db_creds_file, summary_to=None, test_emails=None):
+def send_reports(pe_report_dir, db_creds_file, summary_to=None, test_emails=None):
     """Send emails."""
     try:
         db = db_from_config(db_creds_file)
@@ -451,7 +451,7 @@ def send_reports(pande_report_dir, db_creds_file, summary_to=None, test_emails=N
     ###
     all_stats_strings = []
 
-    stats = send_pande_reports(db, ses_client, pande_report_dir, to)
+    stats = send_pe_reports(db, ses_client, pe_report_dir, to)
     all_stats_strings.extend(stats)
 
     ###
@@ -514,7 +514,7 @@ def main():
     send_reports(
         # TODO: Improve use of schema to validate arguments.
         # Issue 19: https://github.com/cisagov/pe-reports/issues/19
-        validated_args["--pande-report-dir"],
+        validated_args["--pe-report-dir"],
         validated_args["--db-creds-file"],
         summary_to=None,
         test_emails=None,
