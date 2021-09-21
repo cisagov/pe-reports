@@ -36,7 +36,7 @@ class Message(MIMEMultipart):
 
     DefaultCc = None
 
-    DefaultBcc = ["cyhy_reports@hq.dhs.gov"]
+    DefaultBcc = ["cyhy_reports@hq.dhs.gov", "reports@cyber.dhs.gov"]
 
     DefaultReplyTo = "vulnerability@cisa.dhs.gov"
 
