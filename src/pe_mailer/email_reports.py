@@ -1,11 +1,7 @@
-# TODO: Add cc Address To CyHy Mailer Module (Option)
-# Issue: https://github.com/cisagov/pe-reports/issues/62
-
-"""
-A module to send Posture and Exposure reports using AWS SES.
+"""A module to send Posture and Exposure reports using AWS SES.
 
 Usage:
-    pe-mailer [--pe-report-dir=DIR] [--db-creds-file=FILE] [--log-level=LEVEL]
+    pe-mailer [--pe-report-dir=DIRECTORY] [--db-creds-file=FILENAME] [--log-level=LEVEL]
 
 Arguments:
   -p --pe-report-dir=DIRECTORY   Directory containing the pe-reports output.
@@ -33,7 +29,6 @@ import datetime
 import glob
 import logging
 import os
-import pprint
 import re
 import sys
 from typing import Any, Dict
@@ -47,17 +42,8 @@ import pymongo.errors
 from schema import And, Schema, SchemaError, Use
 import yaml
 
-from .pe_message import PandEMessage
+from .pe_message import PEMessage
 from .stats_message import StatsMessage
-
-# TODO: Update pe-mailer error handling
-# Issue: https://github.com/cisagov/pe-reports/issues/53
-
-
-class Error(Exception):
-    """A base class for exceptions used in this module."""
-
-    pass
 
 
 def get_emails_from_request(request):
@@ -209,7 +195,6 @@ def get_requests(db, agency_list):
         A list of agency IDs (e.g. DOE, DOJ, DHS). If None then no such
         restriction is placed on the query.
 
-
     Returns
     -------
     pymongo.cursor.Cursor: A cursor that can be used to iterate over
@@ -225,7 +210,6 @@ def get_requests(db, agency_list):
 
     """
     query = {"retired": {"$ne": True}}
-
     query["_id"] = {"$in": agency_list}
 
     return get_requests_raw(db, query)
@@ -275,8 +259,7 @@ def send_message(ses_client, message, counter=None):
     anything other than 200.
 
     """
-    # "Are you silly?  I'm still gonna send it!"
-    #   -- Larry Enticer
+    # Send Email
     response = ses_client.send_raw_email(RawMessage={"Data": message.as_string()})
 
     # Check for errors
@@ -315,7 +298,8 @@ def send_pe_reports(db, ses_client, pe_report_dir, to):
     agencies = []
 
     contents = os.walk(pe_report_dir)
-    for root, folders, files in contents:
+
+    for folders in contents:
         for folder_name in folders:
             agencies.append(folder_name)
 
@@ -326,12 +310,10 @@ def send_pe_reports(db, ses_client, pe_report_dir, to):
 
     try:
         cyhy_agencies = pe_requests.count()
-        logging.debug(f"{cyhy_agencies} agencies found in CyHy")
-    except pymongo.errors.OperationFailure:
-        logging.critical(
-            "Mongo database error while counting the number of request documents returned",
-            exc_info=True,
-        )
+        1 / cyhy_agencies
+    except ZeroDivisionError:
+        logging.critical(f"No report data is found in {pe_report_dir}")
+        sys.exit(1)
 
     agencies_emailed_pe_reports = 0
 
@@ -379,7 +361,7 @@ def send_pe_reports(db, ses_client, pe_report_dir, to):
                 ).strftime("%B %d, %Y")
 
                 # Construct the Posture and Exposure message to send
-                message = PandEMessage(pe_report_filename, report_date, to_emails)
+                message = PEMessage(pe_report_filename, report_date, to_emails)
 
                 print(to_emails)
                 print(pe_report_filename)
@@ -399,7 +381,6 @@ def send_pe_reports(db, ses_client, pe_report_dir, to):
     # Print out and log some statistics
     pe_stats_string = f"Out of {cyhy_agencies} agencies with Posture and Exposure reports, {agencies_emailed_pe_reports} ({100.0 * agencies_emailed_pe_reports / cyhy_agencies:.2f}%) were emailed."
     logging.info(pe_stats_string)
-    print(pe_stats_string)
 
     return pe_stats_string
 
@@ -407,12 +388,17 @@ def send_pe_reports(db, ses_client, pe_report_dir, to):
 def send_reports(pe_report_dir, db_creds_file, summary_to=None, test_emails=None):
     """Send emails."""
     try:
+        os.stat(pe_report_dir)
+    except FileNotFoundError:
+        logging.critical("Directory to send reports does not exist")
+        return 1
+
+    try:
         db = db_from_config(db_creds_file)
     except OSError:
-        logging.critical(
-            f"Database configuration file {db_creds_file} does not exist", exc_info=True
-        )
+        logging.critical(f"Database configuration file {db_creds_file} does not exist")
         return 1
+
     except yaml.YAMLError:
         logging.critical(
             f"Database configuration file {db_creds_file} does not contain valid YAML",
@@ -436,6 +422,7 @@ def send_reports(pe_report_dir, db_creds_file, summary_to=None, test_emails=None
             f"The database in {db_creds_file} does not exist", exc_info=True
         )
         return 1
+
     ses_client = boto3.client("ses", region_name="us-east-1")
 
     ###
@@ -480,9 +467,8 @@ def main():
     """Send emails."""
     # Parse command line arguments
     args: Dict[str, str] = docopt.docopt(__doc__)
-    pprint.pprint(args)
 
-    # Validate and convert arguments as needed
+    # Validate and convert arguments
     schema: Schema = Schema(
         {
             "--log-level": And(
@@ -511,6 +497,8 @@ def main():
         format="%(asctime)-15s %(levelname)s %(message)s", level=log_level.upper()
     )
 
+    logging.info("Sending Posture & Exposure Reports")
+
     send_reports(
         # TODO: Improve use of schema to validate arguments.
         # Issue 19: https://github.com/cisagov/pe-reports/issues/19
@@ -519,7 +507,6 @@ def main():
         summary_to=None,
         test_emails=None,
     )
-    logging.info("Sending Posture & Exposure Reports, Version : %s")
 
     # Stop logging and clean up
     logging.shutdown()
