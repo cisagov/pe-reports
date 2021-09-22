@@ -1,20 +1,23 @@
 """A tool for creating Posture & Exposure reports.
 
 Usage:
-    pe-reports REPORT_DATE DATA_DIRECTORY OUTPUT_DIRECTORY [--log-level=LEVEL]
+    pe-reports REPORT_DATE DATA_DIRECTORY OUTPUT_DIRECTORY [--db-creds-file=FILENAME] [--log-level=LEVEL]
 
 Arguments:
-  REPORT_DATE       Date of the report, format YYYY-MM-DD.
-  DATA_DIRECTORY    The directory where the excel data files are located.
-                    Organized by owner.
-  OUTPUT_DIRECTORY  The directory where the final PDF reports should be saved.
+  REPORT_DATE                   Date of the report, format YYYY-MM-DD.
+  DATA_DIRECTORY                The directory where the excel data files are located.
+                                Organized by owner.
+  OUTPUT_DIRECTORY              The directory where the final PDF reports should be saved.
+  -c --db-creds-file=FILENAME   A YAML file containing the Cyber
+                                Hygiene database credentials.
+                                [default: /secrets/database_creds.yml]
 
 Options:
-  -h --help          Show this message.
-  -v --version       Show version information.
-  --log-level=LEVEL  If specified, then the log level will be set to
-                     the specified value.  Valid values are "debug", "info",
-                     "warning", "error", and "critical". [default: info]
+  -h --help                     Show this message.
+  -v --version                  Show version information.
+  -l --log-level=LEVEL          If specified, then the log level will be set to
+                                the specified value.  Valid values are "debug", "info",
+                                "warning", "error", and "critical". [default: info]
 """
 
 # Standard Python Libraries
@@ -51,13 +54,13 @@ def export_set(prs, out_dir):
         logging.error("%s : Missing input data. No report generated.", not_found)
 
 
-def generate_reports(data, data_dir, out_dir):
+def generate_reports(data, data_dir, out_dir, db_creds_file):
     """Gather assets to produce reports."""
     # TODO: build code to connect customer db, encrypt and embed pdf reports.
     # Issue 7: https://github.com/cisagov/pe-reports/issues/7
 
 
-def main() -> None:
+def main():
     """Set up logging and call the generate_reports function."""
     args: Dict[str, str] = docopt.docopt(__doc__, version=__version__)
     # Validate and convert arguments as needed
@@ -97,6 +100,7 @@ def main() -> None:
         validated_args["REPORT_DATE"],
         validated_args["DATA_DIRECTORY"],
         validated_args["OUTPUT_DIRECTORY"],
+        validated_args["--db-creds-file"],
     )
 
     logging.info(
