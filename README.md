@@ -20,9 +20,9 @@ is gathered on the 1st and 15th of each month.
 
 - [Python Environment](CONTRIBUTING.md#creating-the-python-virtual-environment)
 
-- [CISA MongoDB Access](https://github.com/cisagov/mongo-db-from-config)
+- [cisagov MongoDB](https://github.com/cisagov/mongo-db-from-config)
 
-- [CISA AWS SES Permissions](https://docs.aws.amazon.com/ses/latest/DeveloperGuide/Welcome.html)
+- [cisagov AWS SES](https://github.com/cisagov/cool-dns-cyber.dhs.gov)
 
 ## Installation ##
 
@@ -31,6 +31,8 @@ is gathered on the 1st and 15th of each month.
 - `pip install -e .`
 
 ## Create P&E Reports ##
+
+- Connect to [cisagov MongoDB](https://github.com/cisagov/mongo-db-from-config)
 
 ```consol
 Usage:
@@ -53,6 +55,10 @@ Options:
 ```
 
 ## Deliver P&E Reports ##
+
+- Connect to [cisagov MongoDB](https://github.com/cisagov/mongo-db-from-config)
+
+- Load [AWS Profile](https://github.com/cisagov/cool-dns-cyber.dhs.gov)
 
 ```consol
 Usage:
