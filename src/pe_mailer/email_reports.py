@@ -4,7 +4,7 @@ Usage:
     pe-mailer [--pe-report-dir=DIRECTORY] [--db-creds-file=FILENAME] [--log-level=LEVEL]
 
 Arguments:
-  -p --pe-report-dir=DIRECTORY   Directory containing the pe-reports output.
+  -p --pe-report-dir=DIRECTORY      Directory containing the pe-reports output.
   -c --db-creds-file=FILENAME       A YAML file containing the Cyber
                                     Hygiene database credentials.
                                     [default: /secrets/database_creds.yml]
@@ -42,6 +42,7 @@ import pymongo.errors
 from schema import And, Schema, SchemaError, Use
 import yaml
 
+from ._version import __version__
 from .pe_message import PEMessage
 from .stats_message import StatsMessage
 
@@ -65,30 +66,27 @@ def get_emails_from_request(request):
 
     """
     id = request["_id"]
-    # Drop any contacts that do not have both a type and a non-empty email
-    # attribute...
+    # Drop any contacts that do not have a type and a non-empty email attribute
     contacts = [
         c
         for c in request["agency"]["contacts"]
         if "type" in c and "email" in c and c["email"].split()
     ]
-    # ...but let's log a warning about them.
+
     for c in request["agency"]["contacts"]:
         if "type" not in c or "email" not in c or not c["email"].split():
-            logging.warn(
+            logging.warning(
                 f"Agency with ID {id} has a contact that is missing an email and/or type attribute!"
             )
 
     distro_emails = [c["email"] for c in contacts if c["type"] == "DISTRO"]
     technical_emails = [c["email"] for c in contacts if c["type"] == "TECHNICAL"]
 
-    # There should be zero or one distro email, so log a warning if
-    # there are multiple.
+    # There should be zero or one distro email
     if len(distro_emails) > 1:
-        logging.warn(f"More than one DISTRO email address for agency with ID {id}")
+        logging.warning(f"More than one DISTRO email address for agency with ID {id}")
 
-    # Send to the distro email, if it exists.  Otherwise, send to the
-    # technical emails.
+    # Send to the distro email, else send to the technical emails.
     to_emails = distro_emails
     if not to_emails:
         to_emails = technical_emails
@@ -147,7 +145,6 @@ def get_requests_raw(db, query):
 
     query : dict
         The query to perform.
-
 
     Returns
     -------
@@ -309,6 +306,7 @@ def send_pe_reports(db, ses_client, pe_report_dir, to):
         return 4
 
     try:
+        # The directory must containe one usable report
         cyhy_agencies = pe_requests.count()
         1 / cyhy_agencies
     except ZeroDivisionError:
@@ -317,9 +315,7 @@ def send_pe_reports(db, ses_client, pe_report_dir, to):
 
     agencies_emailed_pe_reports = 0
 
-    ###
     # Iterate over cyhy_requests, if necessary
-    ###
     if pe_report_dir:
         for request in pe_requests:
             id = request["_id"]
@@ -331,16 +327,13 @@ def send_pe_reports(db, ses_client, pe_report_dir, to):
             if not to_emails:
                 continue
 
-            ###
             # Find and mail the Posture and Exposure report, if necessary
-            ###
-
             pe_report_glob = f"{pe_report_dir}/{id}/*.pdf"
             pe_report_filenames = sorted(glob.glob(pe_report_glob))
 
             # At most one Cybex report and CSV should match
             if len(pe_report_filenames) > 1:
-                logging.warn("More than one PDF report found")
+                logging.warning("More than one PDF report found")
             elif not pe_report_filenames:
                 logging.error("No PDF report found")
 
@@ -425,26 +418,19 @@ def send_reports(pe_report_dir, db_creds_file, summary_to=None, test_emails=None
 
     ses_client = boto3.client("ses", region_name="us-east-1")
 
-    ###
     # Email the summary statistics, if necessary
-    ###
     if test_emails is not None:
         to = test_emails.split(",")
     else:
         to = None
 
-    ###
     # Send reports and gather summary statistics
-    ###
     all_stats_strings = []
 
     stats = send_pe_reports(db, ses_client, pe_report_dir, to)
     all_stats_strings.extend(stats)
 
-    ###
     # Email the summary statistics, if necessary
-    ###
-
     if summary_to is not None and all_stats_strings:
         message = StatsMessage(summary_to.split(","), all_stats_strings)
         try:
@@ -456,7 +442,7 @@ def send_reports(pe_report_dir, db_creds_file, summary_to=None, test_emails=None
                 stack_info=True,
             )
     else:
-        logging.warn("Nothing was emailed.")
+        logging.warning("Nothing was emailed.")
         print("Nothing was emailed.")
 
     # Stop logging and clean up
@@ -466,7 +452,7 @@ def send_reports(pe_report_dir, db_creds_file, summary_to=None, test_emails=None
 def main():
     """Send emails."""
     # Parse command line arguments
-    args: Dict[str, str] = docopt.docopt(__doc__)
+    args: Dict[str, str] = docopt.docopt(__doc__, version=__version__)
 
     # Validate and convert arguments
     schema: Schema = Schema(
@@ -497,7 +483,7 @@ def main():
         format="%(asctime)-15s %(levelname)s %(message)s", level=log_level.upper()
     )
 
-    logging.info("Sending Posture & Exposure Reports")
+    logging.info("Sending Posture & Exposure Reports, Version : %s", __version__)
 
     send_reports(
         # TODO: Improve use of schema to validate arguments.
