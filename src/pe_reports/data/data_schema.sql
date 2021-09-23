@@ -109,6 +109,84 @@ CREATE TABLE IF NOT EXISTS public.mentions
     PRIMARY KEY (mentions_uid)
 );
 
+-- Shodan Insecure protocols and unverified vulnerabilities table
+CREATE TABLE IF NOT EXISTS public.shodan_insecure_protocols_unverified_vulns
+(
+    insecure_product_uid uuid default uuid_generate_v1() NOT NULL,
+    organization_uid uuid NOT NULL,
+    organization text,
+    ip text,
+    port integer,
+    protocol text,
+    type text,
+    name text,
+    potential_vulns text[],
+    mitigation text,
+    timestamp timestamp,
+    product text,
+    server text,
+    tags text[],
+    domains text[],
+    hostnames text[],
+    isn text,
+    asn integer,
+    UNIQUE (root_org, ip, port, protocol, timestamp),
+    PRIMARY KEY (insecure_product_uid)
+);
+--Shodan Veriried Vulnerabilities table
+CREATE TABLE IF NOT EXISTS public.shodan_verified_vulns
+(
+    verified_vuln_uid uuid default uuid_generate_v1() NOT NULL,
+    organization_uid uuid NOT NULL,
+    organization text,
+    ip text,
+    port text,
+    protocol text,
+    timestamp timestamp,
+    cve text,
+    severity text,
+    cvss numeric,
+    summary text,
+    product text,
+    attack_vector text,
+    av_description text,
+    attack_complexity text,
+    ac_description text,
+    confidentiality_impact text,
+    ci_description text,
+    integrity_impact text,
+    ii_description text,
+    availability_impact text,
+    ai_description text,
+    tags text[],
+    domains text[],
+    hostnames text[],
+    isn text,
+    asn integer,
+    UNIQUE (root_org, ip, port, protocol, timestamp),
+    PRIMARY KEY (verified_vuln_uid)
+);
+--Shodan Assets and IPs table
+CREATE TABLE IF NOT EXISTS public.shodan_assets
+(
+    shodan_asset_uid uuid default uuid_generate_v1() NOT NULL,
+    organization_uid uuid NOT NULL,
+    organization text,
+    ip text,
+    port integer,
+    protocol text,
+    timestamp timestamp,
+    product text,
+    server text,
+    tags text[],
+    domains text[],
+    hostnames text[],
+    isn text,
+    asn integer,
+    UNIQUE (root_org, ip, port, protocol, timestamp),
+    PRIMARY KEY (shodan_asset_uid)
+);
+
 -- HIBP breaches Table
 CREATE TABLE IF NOT EXISTS public.hibp_breaches
 (
@@ -192,6 +270,24 @@ ALTER TABLE public."DNSTwist"
  REFERENCES public.domains ("domain_uid")
  NOT VALID;
 
+-- One to many relation between Organization and Shodan Assets
+ALTER TABLE public.shodan_assets
+    ADD FOREIGN KEY (organizations_uid)
+    REFERENCES public.organizations (organizations_uid)
+    NOT VALID;
+
+-- One to many relation between Organization and Shodan Unverified Vulns
+ALTER TABLE public.shodan_insecure_protocols_unverified_vulns
+    ADD FOREIGN KEY (organizations_uid)
+    REFERENCES public.organizations (organizations_uid)
+    NOT VALID;
+
+-- One to many relation between Organization and Shodan Verified Vulns
+ALTER TABLE public.shodan_verified_vulns
+    ADD FOREIGN KEY (organizations_uid)
+    REFERENCES public.organizations (organizations_uid)
+    NOT VALID;
+
 -- One to many relation between Breaches and HIBP Exposed Credentials
 ALTER TABLE public.hibp_exposed_credentials
     ADD FOREIGN KEY (breach_id)
@@ -200,6 +296,12 @@ ALTER TABLE public.hibp_exposed_credentials
 
 -- One to many relation between Organization and HIBP Exposed Credentials
 ALTER TABLE public.hibp_exposed_credentials
+    ADD FOREIGN KEY (organizations_uid)
+    REFERENCES public.organizations (organizations_uid)
+    NOT VALID;
+
+-- One to many relation between Organization and SixGill Exposed Credentials
+ALTER TABLE public.cybersix_exposed_credentials
     ADD FOREIGN KEY (organizations_uid)
     REFERENCES public.organizations (organizations_uid)
     NOT VALID;
