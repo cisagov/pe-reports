@@ -39,7 +39,7 @@ CREATE TABLE IF NOT EXISTS public.alias
 );
 
 -- Organization's Evecutives Table
-CREATE TABLE public.executives
+CREATE TABLE IF NOT EXISTS public.executives
 (
     executives_uid uuid default uuid_generate_v1() NOT NULL,
     organizations_uid uuid NOT NULL,
