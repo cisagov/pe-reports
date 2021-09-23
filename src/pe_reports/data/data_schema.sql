@@ -195,6 +195,7 @@ CREATE TABLE IF NOT EXISTS public.hibp_breaches
     breach_id uuid NOT NULL,
     breach_name text NOT NULL
     description text,
+    exposed_cred_count integer,
     breach_date date,
     added_date timestamp without time zone,
     modified_date timestamp without time zone,
