@@ -67,7 +67,7 @@ CREATE TABLE IF NOT EXISTS public."DNSTwist"
 );
 
 -- Dark Web Alerts Table
-CREATE TABLE public.alerts
+CREATE TABLE IF NOT EXISTS public.alerts
 (
     alerts_uid uuid default uuid_generate_v1() NOT NULL,
     alert_name text,
@@ -86,7 +86,7 @@ CREATE TABLE public.alerts
 );
 
 -- Dark Web Mentions Table
-CREATE TABLE public.mentions
+CREATE TABLE IF NOT EXISTS public.mentions
 (
     mentions_uid uuid default uuid_generate_v1() NOT NULL,
     category text,
@@ -114,6 +114,7 @@ CREATE TABLE IF NOT EXISTS public.hibp_breaches
 (
     hibp_breaches_uid uuid default uuid_generate_v1() NOT NULL,
     breach_id uuid NOT NULL,
+    breach_name text NOT NULL
     description text,
     breach_date date,
     added_date timestamp without time zone,
@@ -162,7 +163,7 @@ CREATE TABLE IF NOT EXISTS public.cybersix_exposed_credentials
 );
 
 -- Top CVEs
-CREATE TABLE public.top_cves
+CREATE TABLE IF NOT EXISTS public.top_cves
 (
    top_cves_uid uuid default uuid_generate_v1() NOT NULL,
     type text,
