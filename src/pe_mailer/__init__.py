@@ -4,4 +4,6 @@
 # package_name.__version__, which is used to get version information about this
 # Python package.
 
+from ._version import __version__  # noqa: F401
+
 __all__ = ["email_reports", "message", "pe_message", "report_message", "stats_message"]
