@@ -30,7 +30,7 @@ CREATE TABLE IF NOT EXISTS public.domains
 );
 
 -- Organization's Aliases Table
-CREATE TABLE public.alias
+CREATE TABLE IF NOT EXISTS public.alias
 (
     alias_uid uuid default uuid_generate_v1() NOT NULL,
     organizations_uid uuid NOT NULL,
