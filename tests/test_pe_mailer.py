@@ -9,7 +9,7 @@
 # import pytest
 
 # cisagov Libraries
-import pe_mailer.email_reports
+# import pe_mailer.email_reports
 
 log_levels = (
     "debug",
