@@ -23,10 +23,11 @@ log_levels = (
 PROJECT_VERSION = pe_reports.__version__
 
 
-# TODO: Replace current dummy test with useful tests - https://github.com/cisagov/pe-reports/issues/3#issue-909531010
+# TODO: Replace current dummy test with useful tests
+# Issue - https://github.com/cisagov/pe-reports/issues/3#issue-909531010
 
 
-def test_stdout_version(capsys):
+def test_reports_stdout_version(capsys):
     """Verify that version string sent to stdout agrees with the module version."""
     with pytest.raises(SystemExit):
         with patch.object(sys, "argv", ["bogus", "--version"]):
@@ -37,7 +38,7 @@ def test_stdout_version(capsys):
     ), "standard output by '--version' should agree with module.__version__"
 
 
-def test_running_as_module(capsys):
+def test_reports_running_as_module(capsys):
     """Verify that the __main__.py file loads correctly."""
     with pytest.raises(SystemExit):
         with patch.object(sys, "argv", ["bogus", "--version"]):
@@ -55,13 +56,13 @@ def test_running_as_module(capsys):
 
 
 @pytest.mark.parametrize("level", log_levels)
-def test_log_levels(level):
+def test_reports_log_levels(level):
     """Validate commandline log-level arguments."""
     with patch.object(
         sys,
         "argv",
         [
-            "pe_reports",
+            "pe-reports",
             "2021-01-01",
             "input/",
             "output/",
@@ -86,13 +87,13 @@ def test_log_levels(level):
             assert return_code is None, "main() should return success"
 
 
-def test_bad_log_level():
+def test_reports_bad_log_level():
     """Validate bad log-level argument returns error."""
     with patch.object(
         sys,
         "argv",
         [
-            "pe_reports",
+            "pe-reports",
             "2021-01-01",
             "input/",
             "output/",
