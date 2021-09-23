@@ -134,7 +134,7 @@ CREATE TABLE IF NOT EXISTS public.hibp_exposed_credentials
 (
     hibp_exposed_credentials_uid uuid default uuid_generate_v1() NOT NULL,
     email text NOT NULL,
-    organization text,
+    organizations_uid uuid NOT NULL,
     root_domain text,
     sub_domain text,
     breach_name text,
@@ -147,6 +147,7 @@ CREATE TABLE IF NOT EXISTS public.hibp_exposed_credentials
 CREATE TABLE IF NOT EXISTS public.cybersix_exposed_credentials
 (
     csg_exposed_credentials_uid uuid default uuid_generate_v1() NOT NULL,
+    organizations_uid uuid NOT NULL,
     breach_date date,
     breach_id integer,
     breach_name text NOT NULL,
@@ -191,10 +192,16 @@ ALTER TABLE public."DNSTwist"
  REFERENCES public.domains ("domain_uid")
  NOT VALID;
 
--- One to many relation between Organization and Domains
+-- One to many relation between Breaches and HIBP Exposed Credentials
 ALTER TABLE public.hibp_exposed_credentials
     ADD FOREIGN KEY (breach_id)
     REFERENCES public.hibp_breaches (hibp_breaches_uid)
+    NOT VALID;
+
+-- One to many relation between Organization and HIBP Exposed Credentials
+ALTER TABLE public.hibp_exposed_credentials
+    ADD FOREIGN KEY (organizations_uid)
+    REFERENCES public.organizations (organizations_uid)
     NOT VALID;
 
 -- One to many relation between Organization and Aliases
