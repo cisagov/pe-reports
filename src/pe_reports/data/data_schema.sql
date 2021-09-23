@@ -16,6 +16,7 @@ CREATE TABLE IF NOT EXISTS public.organizations
     organizations_uid uuid default uuid_generate_v1() NOT NULL,
     name text NOT NULL,
     root_domains text[],
+    cyhy_db_name text,
     PRIMARY KEY (organizations_uid)
 );
 
