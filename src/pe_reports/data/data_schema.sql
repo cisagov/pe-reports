@@ -134,6 +134,7 @@ CREATE TABLE IF NOT EXISTS public.shodan_insecure_protocols_unverified_vulns
     UNIQUE (organizations_uid, ip, port, protocol, timestamp),
     PRIMARY KEY (insecure_product_uid)
 );
+
 --Shodan Veriried Vulnerabilities table
 CREATE TABLE IF NOT EXISTS public.shodan_verified_vulns
 (
@@ -167,6 +168,7 @@ CREATE TABLE IF NOT EXISTS public.shodan_verified_vulns
     UNIQUE (organizations_uid, ip, port, protocol, timestamp),
     PRIMARY KEY (verified_vuln_uid)
 );
+
 --Shodan Assets and IPs table
 CREATE TABLE IF NOT EXISTS public.shodan_assets
 (
@@ -253,6 +255,7 @@ CREATE TABLE IF NOT EXISTS public.top_cves
     PRIMARY KEY (top_cves_uid)
 );
 
+
 -- Table Relationships --
 -- One to many relation between Organization and Domains
 ALTER TABLE public.domains
@@ -326,8 +329,10 @@ ALTER TABLE public.alerts
     REFERENCES public.organizations (organizations_uid)
     NOT VALID;
 
+
 -- One to Many Relationship for Mentions
 -- Represented in complex SixGill "query": API.
+
 
 -- Views --
 -- HIBP complete breach view
