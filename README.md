@@ -19,9 +19,7 @@ is gathered on the 1st and 15th of each month.
 ## Requirements ##
 
 - [Python Environment](CONTRIBUTING.md#creating-the-python-virtual-environment)
-
 - [cisagov MongoDB](https://github.com/cisagov/mongo-db-from-config)
-
 - [cisagov AWS SES](https://github.com/cisagov/cool-dns-cyber.dhs.gov)
 
 ## Installation ##
@@ -36,13 +34,10 @@ is gathered on the 1st and 15th of each month.
 
 ```consol
 Usage:
-  pe-reports REPORT_DATE DATA_DIRECTORY OUTPUT_DIRECTORY [--db-creds-file=FILENAME] [--log-level=LEVEL]
+  pe-reports [--pe-report-dir=DIRECTORY] [--db-creds-file=FILENAME] [--log-level=LEVEL]
 
 Arguments:
-  REPORT_DATE                   Date of the report, format YYYY-MM-DD.
-  DATA_DIRECTORY                The directory where the excel data files are located.
-                                Organized by owner.
-  OUTPUT_DIRECTORY              The directory where the final PDF reports should be saved.
+  -r --pe-report-dir=DIRECTORY  Directory containing the pe-reports output.
   -c --db-creds-file=FILENAME   A YAML file containing the Cyber
                                 Hygiene database credentials.
                                 [default: /secrets/database_creds.yml]
@@ -65,7 +60,7 @@ Usage:
   pe-mailer [--pe-report-dir=DIRECTORY] [--db-creds-file=FILENAME] [--log-level=LEVEL]
 
 Arguments:
-  -p --pe-report-dir=DIRECTORY  Directory containing the pe-reports output.
+  -r --pe-report-dir=DIRECTORY  Directory containing the pe-reports output.
   -c --db-creds-file=FILENAME   A YAML file containing the Cyber
                                 Hygiene database credentials.
                                 [default: /secrets/database_creds.yml]
