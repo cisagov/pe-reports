@@ -15,19 +15,39 @@ CREATE TABLE IF NOT EXISTS public.organizations
 (
     organizations_uid uuid default uuid_generate_v1() NOT NULL,
     name text NOT NULL,
-    root_domains text[],
     cyhy_db_name text,
     PRIMARY KEY (organizations_uid)
 );
 
--- Organization's Domains Table
-CREATE TABLE IF NOT EXISTS public.domains
+-- Organization's Root Domains Table
+CREATE TABLE IF NOT EXISTS public.root_domains
 (
-    domain_uid uuid default uuid_generate_v1() NOT NULL,
+    root_domain_uid uuid default uuid_generate_v1() NOT NULL,
     organizations_uid uuid NOT NULL,
+    organization_name text, NOT NULL,
     root_domain text NOT NULL,
     ip_address text,
-    PRIMARY KEY (domain_uid)
+    PRIMARY KEY (root_domain_uid)
+);
+
+-- Organization's Sub Domains Table
+CREATE TABLE IF NOT EXISTS public.sub_domains
+(
+    sub_domain_uid uuid default uuid_generate_v1() NOT NULL,
+    sub_domain text NOT NULL,
+    root_domain_uid uuid NOT NULL,
+    root_domain text NOT NULL,
+    PRIMARY KEY (sub_domain_uid)
+);
+
+-- Organization's Root Domains Table
+CREATE TABLE IF NOT EXISTS public.ip_addresses
+(
+    ip_address_uid uuid default uuid_generate_v1() NOT NULL,
+    ip_address text NOT NULL,
+    sub_domain_uid uuid NOT NULL,
+    sub_domain text NOT NULL,
+    PRIMARY KEY (ip_address_uid)
 );
 
 -- Organization's Aliases Table
@@ -257,11 +277,24 @@ CREATE TABLE IF NOT EXISTS public.top_cves
 
 
 -- Table Relationships --
--- One to many relation between Organization and Domains
-ALTER TABLE public.domains
+-- One to many relation between Organization and Root Domains
+ALTER TABLE public.root_domains
  ADD FOREIGN KEY (organizations_uid)
  REFERENCES public.organizations (organizations_uid)
  NOT VALID;
+
+ -- One to many relation between root domains and sub Domains
+ALTER TABLE public.sub_domains
+ ADD FOREIGN KEY (root_domain_uid)
+ REFERENCES public.root_domains (root_domain_uid)
+ NOT VALID;
+
+ -- One to many relation between sub domains and IPs
+ALTER TABLE public.ip_addresses
+ ADD FOREIGN KEY (sub_domain_uid)
+ REFERENCES public.sub_domains (sub_domain_uid)
+ NOT VALID;
+
 
 -- One to many relation between Organization and DNSTwist results
 ALTER TABLE public."DNSTwist"
@@ -272,7 +305,7 @@ ALTER TABLE public."DNSTwist"
 -- One to many relation between Domains and DNSTwist results
 ALTER TABLE public."DNSTwist"
  ADD FOREIGN KEY ("discoveredBy")
- REFERENCES public.domains ("domain_uid")
+ REFERENCES public.sub_domains ("sub_domain_uid")
  NOT VALID;
 
 -- One to many relation between Organization and Shodan Assets
