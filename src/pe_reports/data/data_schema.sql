@@ -40,7 +40,7 @@ CREATE TABLE IF NOT EXISTS public.sub_domains
     PRIMARY KEY (sub_domain_uid)
 );
 
--- Organization's Root Domains Table
+-- Organization's IPs Table
 CREATE TABLE IF NOT EXISTS public.ip_addresses
 (
     ip_address_uid uuid default uuid_generate_v1() NOT NULL,
