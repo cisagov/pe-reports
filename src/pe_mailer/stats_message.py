@@ -28,11 +28,11 @@ class StatsMessage(Message):
 
     """
 
-    Subject = "cyhy-mailer summary from {{date}}"
+    Subject = "pe-mailer summary from {{date}}"
 
     TextBody = """Greetings!
 
-Here is the cyhy-mailer summary from the run ending at {{date}}:
+Here is the pe-mailer summary from the run ending at {{date}}:
 {{#strings}}
 * {{string}}
 {{/strings}}
@@ -52,7 +52,7 @@ ncats-dev@beta.dhs.gov
 <p>Greetings!</p>
 
 <p>
-Here is the cyhy-mailer summary from {{date}}:
+Here is the pe-mailer summary from {{date}}:
 <ul>
 {{#strings}}
 <li>{{string}}</li>
