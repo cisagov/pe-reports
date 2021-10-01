@@ -92,6 +92,7 @@ setup(
     install_requires=[
         "boto3",
         "botocore",
+        "chevron",
         "docopt",
         "glob2",
         "mongo-db-from-config @ http://github.com/cisagov/mongo-db-from-config/tarball/develop",
@@ -101,7 +102,6 @@ setup(
         "types-PyYAML",
         "pymongo",
         "pymupdf",
-        "pystache",
         "python-pptx",
         "schema",
         "setuptools >= 24.2.0",

@@ -4,7 +4,7 @@
 import datetime
 
 # Third-Party Libraries
-import pystache
+import chevron
 
 from .message import Message
 
@@ -102,8 +102,8 @@ Cybersecurity and Infrastructure Security Agency<br>
         }
 
         # Render the templates
-        subject = pystache.render(StatsMessage.Subject, mustache_data)
-        text_body = pystache.render(StatsMessage.TextBody, mustache_data)
-        html_body = pystache.render(StatsMessage.HtmlBody, mustache_data)
+        subject = chevron.render(StatsMessage.Subject, mustache_data)
+        text_body = chevron.render(StatsMessage.TextBody, mustache_data)
+        html_body = chevron.render(StatsMessage.HtmlBody, mustache_data)
 
         Message.__init__(self, to_addrs, subject, text_body, html_body)

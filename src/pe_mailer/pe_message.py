@@ -1,7 +1,7 @@
 """This module contains the PEMessage class."""
 
 # Third-Party Libraries
-import pystache
+import chevron
 
 from .message import Message
 from .report_message import ReportMessage
@@ -119,9 +119,9 @@ Cybersecurity and Infrastructure Security Agency<br>
         mustache_data = {"report_date": report_date}
 
         # Render the templates
-        subject = pystache.render(PEMessage.Subject, mustache_data)
-        text_body = pystache.render(PEMessage.TextBody, mustache_data)
-        html_body = pystache.render(PEMessage.HtmlBody, mustache_data)
+        subject = chevron.render(PEMessage.Subject, mustache_data)
+        text_body = chevron.render(PEMessage.TextBody, mustache_data)
+        html_body = chevron.render(PEMessage.HtmlBody, mustache_data)
 
         ReportMessage.__init__(
             self,
