@@ -77,9 +77,7 @@ setup(
         "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
-        # TODO: PyYAML is not compatable with 3.9
-        # Create Issue
-        # "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.9",
     ],
     python_requires=">=3.6",
     # What does your project relate to?
@@ -99,12 +97,12 @@ setup(
         "openpyxl",
         "pandas",
         "pyyaml",
-        "types-PyYAML",
         "pymongo",
         "pymupdf",
         "python-pptx",
         "schema",
         "setuptools >= 24.2.0",
+        "types-PyYAML",
     ],
     extras_require={
         "test": [
