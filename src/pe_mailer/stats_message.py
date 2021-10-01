@@ -37,12 +37,12 @@ Here is the pe-mailer summary from the run ending at {{date}}:
 * {{string}}
 {{/strings}}
 
-Please direct feedback and questions to ncats-dev@beta.dhs.gov and/or the cyhy-mailer GitHub project.
+Please direct feedback and questions to vulnerability@cisa.dhs.gov and/or the pe-reports GitHub project.
 
 Regards,
-The VM Development Team
+The P&E Development Team
 Cybersecurity and Infrastructure Security Agency (CISA)
-ncats-dev@beta.dhs.gov
+vulnerability@cisa.dhs.gov
 """
 
     HtmlBody = """<html>
@@ -61,16 +61,16 @@ Here is the pe-mailer summary from {{date}}:
 </p>
 
 <p> Please direct feedback and questions to <a
-href="mailto:ncats-dev@beta.dhs.gov">the VM Development Team</a>
+href="mailto:vulnerability@cisa.dhs.gov">the P&E Development Team</a>
 and/or the <a
-href="https://github.com/cisagov/cyhy-mailer">cyhy-mailer GitHub
+href="https://github.com/cisagov/pe-reports">pe-mailer GitHub
 project</a>.</p>
 
 <p>
 Regards,<br>
 The VM Development Team<br><br>
 Cybersecurity and Infrastructure Security Agency<br>
-<a href="mailto:ncats-dev@beta.dhs.gov">ncats-dev@beta.dhs.gov</a>
+<a href="mailto:vulnerability@cisa.dhs.gov">vulnerability@cisa.dhs.gov</a>
 </div>
 </body>
 </html>
