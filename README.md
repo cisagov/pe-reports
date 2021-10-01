@@ -59,7 +59,7 @@ Options:
 
 - Configure [cisagov MongoDB connection](https://github.com/cisagov/mongo-db-from-config)
 
-- Load [AWS Profile](https://github.com/cisagov/cool-dns-cyber.dhs.gov)
+- Load an AWS profile that assumes [this role](https://github.com/cisagov/cool-dns-cyber.dhs.gov/blob/develop/sessendemail_rolerole.tf#L33-L39)
 
 ```console
 Usage:
