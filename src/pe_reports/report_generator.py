@@ -56,8 +56,6 @@ def export_set(prs, out_dir):
 
 def generate_reports(data, data_dir, out_dir, db_creds_file):
     """Gather assets to produce reports."""
-    # TODO: build code to connect customer db, encrypt and embed pdf reports.
-    # Issue 7: https://github.com/cisagov/pe-reports/issues/7
 
 
 def main() -> None:
