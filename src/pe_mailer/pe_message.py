@@ -97,8 +97,7 @@ Cybersecurity and Infrastructure Security Agency<br>
 
         report_date : str
             The date corresponding to the Posture and Exposure
-            report attachment. We have been using dates of the
-            form December 12, 2017.
+            report attachment. Specify dates using the format "December 12, 2017".
 
         to_addrs : array of str
             An array of string objects, each of which is an email
