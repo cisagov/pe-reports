@@ -560,7 +560,7 @@ def main():
     try:
         os.mkdir(f"{args['OUTPUT_DIRECTORY']}")
     except FileExistsError as err:
-        logging.info(f"The output directory exists. {err}", exc_info=True)
+        logging.info(f"The output directory exists. {err}")
         return 0
 
     # Connect to cyhy database
