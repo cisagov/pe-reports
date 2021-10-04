@@ -325,11 +325,17 @@ def generate_reports(db, datestring, data_directory, output_directory):
     """Process steps for generating report data."""
     agencies = []
     contents = os.walk(data_directory)
-    names_obj = load_customers()
+    try:
+        if load_customers():
 
-    for root, folders, files in contents:
-        for folder_name in folders:
-            agencies.append(names_obj[folder_name][0])
+            names_obj = load_customers()
+            for root, folders, files in contents:
+                for folder_name in folders:
+                    agencies.append(names_obj[folder_name][0])
+        else:
+            raise KeyError("The return data from load_customer was empty.")
+    except KeyError as ke:
+        logging.critical(ke)
 
     try:
         if agencies:
