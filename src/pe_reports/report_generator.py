@@ -325,6 +325,7 @@ def generate_reports(db, datestring, data_directory, output_directory):
     """Process steps for generating report data."""
     agencies = []
     contents = os.walk(data_directory)
+    request_data = []
     try:
         if load_customers():
 
@@ -558,7 +559,8 @@ def main():
 
     # Create output directory
     try:
-        os.mkdir(f"{args['OUTPUT_DIRECTORY']}")
+        os.makedirs(f"{args['OUTPUT_DIRECTORY']}", exist_ok=True)
+
     except FileExistsError as err:
         logging.info(f"The output directory exists. {err}")
         return 0
