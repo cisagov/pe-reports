@@ -4,12 +4,13 @@
 [![Coverage Status](https://coveralls.io/repos/github/cisagov/pe-reports/badge.svg?branch=develop)](https://coveralls.io/github/cisagov/pe-reports?branch=develop)
 [![Total alerts](https://img.shields.io/lgtm/alerts/g/cisagov/pe-reports.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/cisagov/pe-reports/alerts/)
 [![Language grade: Python](https://img.shields.io/lgtm/grade/python/g/cisagov/pe-reports.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/cisagov/pe-reports/context:python)
+[![Known Vulnerabilities](https://snyk.io/test/github/cisagov/pe-reports/develop/badge.svg)](https://snyk.io/test/github/cisagov/pe-reports)
 
 This package is used to generate and deliver CISA Posture & Exposure Reports
 (P&E Reports). Reports are delivered by email and include an encrypted PDF
 attachment with a series of embedded raw-data files of the collected materials.
 The reports are delivered in a two step process. First the `pe_reports` module
-collects the raw-data and creates the encrypted PDFs. The `pe_mailer` then
+collects the raw data and creates the encrypted PDFs. The `pe_mailer` then
 securely delivers the content.
 
 Topics of interest include *Exposed Credentials, Domain Masquerading, Malware,
@@ -32,15 +33,15 @@ is gathered on the 1st and 15th of each month.
 
 ## Create P&E Reports ##
 
-- Connect to [cisagov MongoDB](https://github.com/cisagov/mongo-db-from-config)
+- Configure [cisagov MongoDB connection](https://github.com/cisagov/mongo-db-from-config)
 
-```consol
+```console
 Usage:
   pe-reports REPORT_DATE DATA_DIRECTORY OUTPUT_DIRECTORY [--db-creds-file=FILENAME] [--log-level=LEVEL]
 
 Arguments:
   REPORT_DATE                   Date of the report, format YYYY-MM-DD.
-  DATA_DIRECTORY                The directory where the excel data files are located.
+  DATA_DIRECTORY                The directory where the Excel data files are located.
                                 Organized by owner.
   OUTPUT_DIRECTORY              The directory where the final PDF reports should be saved.
   -c --db-creds-file=FILENAME   A YAML file containing the Cyber
@@ -56,11 +57,11 @@ Options:
 
 ## Deliver P&E Reports ##
 
-- Connect to [cisagov MongoDB](https://github.com/cisagov/mongo-db-from-config)
+- Configure [cisagov MongoDB connection](https://github.com/cisagov/mongo-db-from-config)
 
-- Load [AWS Profile](https://github.com/cisagov/cool-dns-cyber.dhs.gov)
+- Load an AWS profile that assumes [this role](https://github.com/cisagov/cool-dns-cyber.dhs.gov/blob/develop/sessendemail_rolerole.tf#L33-L39)
 
-```consol
+```console
 Usage:
   pe-mailer [--pe-report-dir=DIRECTORY] [--db-creds-file=FILENAME] [--log-level=LEVEL]
 
