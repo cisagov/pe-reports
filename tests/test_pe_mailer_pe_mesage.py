@@ -1,4 +1,4 @@
-"""This module contains the tests for the PandEMessage class."""
+"""This module contains the tests for the PEMessage class."""
 
 # Standard Python Libraries
 import unittest
@@ -8,18 +8,18 @@ from pe_mailer.pe_message import PEMessage
 
 
 class Test(unittest.TestCase):
-    """The tests for the PandEMessage class."""
+    """The tests for the PEMessage class."""
 
     def test_four_params_single_recipient(self):
         """Test the 4-parameter version of the constructor."""
         to = ["recipient@example.com"]
         pdf = "./tests/data/pdf-sample.pdf"
-        report_date = "December 15, 2001"
+        report_date = "December 15, 2020"
 
         message = PEMessage(pdf, report_date, to)
         self.assertEqual(message["From"], "reports@cyber.dhs.gov")
         self.assertEqual(
-            message["Subject"], "Posture and Exposure Report - December 15, 2001"
+            message["Subject"], "Posture and Exposure Report - December 15, 2020"
         )
         self.assertEqual(message.get("CC"), None)
         self.assertEqual(
@@ -93,13 +93,13 @@ Cybersecurity and Infrastructure Security Agency<br>
         """Test the 4-parameter version of the constructor."""
         to = ["recipient@example.com", "recipient2@example.com"]
         pdf = "./tests/data/pdf-sample.pdf"
-        report_date = "December 15, 2001"
+        report_date = "December 15, 2020"
 
         message = PEMessage(pdf, report_date, to)
 
         self.assertEqual(message["From"], "reports@cyber.dhs.gov")
         self.assertEqual(
-            message["Subject"], "Posture and Exposure Report - December 15, 2001"
+            message["Subject"], "Posture and Exposure Report - December 15, 2020"
         )
         self.assertEqual(message.get("CC"), None)
         self.assertEqual(
@@ -177,7 +177,7 @@ Cybersecurity and Infrastructure Security Agency<br>
         cc = ["cc@example.com"]
         bcc = ["bcc@example.com", "bcc2@example.com"]
 
-        report_date = "December 15, 2001"
+        report_date = "December 15, 2020"
 
         message = PEMessage(
             pdf, report_date, to, from_addr=fm, cc_addrs=cc, bcc_addrs=bcc
@@ -185,7 +185,7 @@ Cybersecurity and Infrastructure Security Agency<br>
 
         self.assertEqual(message["From"], fm)
         self.assertEqual(
-            message["Subject"], "Posture and Exposure Report - December 15, 2001"
+            message["Subject"], "Posture and Exposure Report - December 15, 2020"
         )
         self.assertEqual(message["CC"], "cc@example.com")
         self.assertEqual(message["BCC"], "bcc@example.com,bcc2@example.com")
@@ -261,7 +261,7 @@ Cybersecurity and Infrastructure Security Agency<br>
         cc = ["cc@example.com", "cc2@example.com"]
         bcc = ["bcc@example.com", "bcc2@example.com"]
 
-        report_date = "December 15, 2001"
+        report_date = "December 15, 2020"
 
         message = PEMessage(
             pdf, report_date, to, from_addr=fm, cc_addrs=cc, bcc_addrs=bcc
@@ -269,7 +269,7 @@ Cybersecurity and Infrastructure Security Agency<br>
 
         self.assertEqual(message["From"], fm)
         self.assertEqual(
-            message["Subject"], "Posture and Exposure Report - December 15, 2001"
+            message["Subject"], "Posture and Exposure Report - December 15, 2020"
         )
         self.assertEqual(message["CC"], "cc@example.com,cc2@example.com")
         self.assertEqual(message["BCC"], "bcc@example.com,bcc2@example.com")
