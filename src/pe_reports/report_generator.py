@@ -5,7 +5,7 @@ Usage:
 
 Arguments:
   REPORT_DATE                   Date of the report, format YYYY-MM-DD.
-  DATA_DIRECTORY                The directory where the excel data files are located.
+  DATA_DIRECTORY                The directory where the Excel data files are located.
                                 Organized by owner.
   OUTPUT_DIRECTORY              The directory where the final PDF reports should be saved.
   -c --db-creds-file=FILENAME   A YAML file containing the Cyber
@@ -56,11 +56,9 @@ def export_set(prs, out_dir):
 
 def generate_reports(data, data_dir, out_dir, db_creds_file):
     """Gather assets to produce reports."""
-    # TODO: build code to connect customer db, encrypt and embed pdf reports.
-    # Issue 7: https://github.com/cisagov/pe-reports/issues/7
 
 
-def main():
+def main() -> None:
     """Set up logging and call the generate_reports function."""
     args: Dict[str, str] = docopt.docopt(__doc__, version=__version__)
     # Validate and convert arguments as needed

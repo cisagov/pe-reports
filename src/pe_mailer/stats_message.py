@@ -4,7 +4,7 @@
 import datetime
 
 # Third-Party Libraries
-import pystache
+import chevron
 
 from .message import Message
 
@@ -28,21 +28,21 @@ class StatsMessage(Message):
 
     """
 
-    Subject = "cyhy-mailer summary from {{date}}"
+    Subject = "pe-mailer summary from {{date}}"
 
     TextBody = """Greetings!
 
-Here is the cyhy-mailer summary from the run ending at {{date}}:
+Here is the pe-mailer summary from the run ending at {{date}}:
 {{#strings}}
 * {{string}}
 {{/strings}}
 
-Please direct feedback and questions to ncats-dev@beta.dhs.gov and/or the cyhy-mailer GitHub project.
+Please direct feedback and questions to vulnerability@cisa.dhs.gov and/or the pe-reports GitHub project.
 
 Regards,
-The VM Development Team
+The P&E Development Team
 Cybersecurity and Infrastructure Security Agency (CISA)
-ncats-dev@beta.dhs.gov
+vulnerability@cisa.dhs.gov
 """
 
     HtmlBody = """<html>
@@ -52,7 +52,7 @@ ncats-dev@beta.dhs.gov
 <p>Greetings!</p>
 
 <p>
-Here is the cyhy-mailer summary from {{date}}:
+Here is the pe-mailer summary from {{date}}:
 <ul>
 {{#strings}}
 <li>{{string}}</li>
@@ -61,16 +61,16 @@ Here is the cyhy-mailer summary from {{date}}:
 </p>
 
 <p> Please direct feedback and questions to <a
-href="mailto:ncats-dev@beta.dhs.gov">the VM Development Team</a>
+href="mailto:vulnerability@cisa.dhs.gov">the P&E Development Team</a>
 and/or the <a
-href="https://github.com/cisagov/cyhy-mailer">cyhy-mailer GitHub
+href="https://github.com/cisagov/pe-reports">pe-mailer GitHub
 project</a>.</p>
 
 <p>
 Regards,<br>
 The VM Development Team<br><br>
 Cybersecurity and Infrastructure Security Agency<br>
-<a href="mailto:ncats-dev@beta.dhs.gov">ncats-dev@beta.dhs.gov</a>
+<a href="mailto:vulnerability@cisa.dhs.gov">vulnerability@cisa.dhs.gov</a>
 </div>
 </body>
 </html>
@@ -102,8 +102,8 @@ Cybersecurity and Infrastructure Security Agency<br>
         }
 
         # Render the templates
-        subject = pystache.render(StatsMessage.Subject, mustache_data)
-        text_body = pystache.render(StatsMessage.TextBody, mustache_data)
-        html_body = pystache.render(StatsMessage.HtmlBody, mustache_data)
+        subject = chevron.render(StatsMessage.Subject, mustache_data)
+        text_body = chevron.render(StatsMessage.TextBody, mustache_data)
+        html_body = chevron.render(StatsMessage.HtmlBody, mustache_data)
 
         Message.__init__(self, to_addrs, subject, text_body, html_body)
