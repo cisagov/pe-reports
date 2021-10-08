@@ -1,4 +1,4 @@
-"""File to be used to create test for pe-reports."""
+"""File to be used to create test for pe-mailer module."""
 
 # Standard Python Libraries
 import logging
