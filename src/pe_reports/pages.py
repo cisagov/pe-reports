@@ -138,97 +138,56 @@ def mal_vul(
 
 def dark_web(
     chevron_dict,
-    dark_web_mentions,
+    darkWeb,
+    dark_web_date,
+    dark_web_sites,
     alerts_threats,
+    dark_web_bad_actors,
+    dark_web_tags,
+    dark_web_content,
+    alerts_exec,
+    dark_web_most_act,
     top_cves,
 ):
     """Page 6: Web & Dark Web Mentions."""
-    # Key Metric Output
-    # key_metric_frame = Paragraph.text_frame_key_metric(prs, slide, shape, "TextBox 39")
-    # frame = key_metric_frame.paragraphs[0]
-    # run = frame.add_run()
-    # run.text = (
-    #     str(web)
-    #     + " web and dark web mentions"
-    #     + "\n"
-    #     + "\n"
-    #     + str(dark)
-    #     + " mentions from tor or i2p associated sources"
-    # )
-    # font = run.font
-    # font = Paragraph.text_style_key_metric(prs, font)
-
     # Line Chart - Web and “dark” web mentions over time
-    # showAxis = True
-    # small = False
-    # barCharts.line_chart(dark_web_mentions, 19, 9, "web_only_df2", showAxis, small)
-    # darkWeb = dark_web_mentions["date"].sum()
-    # print(dark_web_mentions)
-
-    # Bar Chart - Mentions categorized by source
-    # title = ""
-    # xAxisLabel = "Source of Mention"
-    # yAxisLabel = "Mentions Count"
-    # barCharts.simple_bar(
-    #     web_source_df,
-    #     title,
-    #     xAxisLabel,
-    #     yAxisLabel,
-    #     18,
-    #     5,
-    #     "web_source_df",
-    #     web,
-    #     rotate_axis=True,
-    #     grid=True,
-    # )
+    showAxis = True
+    small = False
+    barCharts.line_chart(dark_web_date, 19, 9, "web_only_df2", showAxis, small)
 
     # Pie Chart - Forum Type / Conversation Content
-
-    # title = ""
-    # xAxisLabel = ""
-    # yAxisLabel = ""
-    # barCharts.pie(
-    #     dark_web_content,
-    #     title,
-    #     xAxisLabel,
-    #     yAxisLabel,
-    #     19,
-    #     9,
-    #     "dark_web_forum_pie",
-    #     len(dark_web_content),
-    # )
+    title = ""
+    xAxisLabel = ""
+    yAxisLabel = ""
+    barCharts.pie(
+        dark_web_content,
+        title,
+        xAxisLabel,
+        yAxisLabel,
+        19,
+        9,
+        "dark_web_forum_pie",
+        len(dark_web_content),
+    )
 
     # build tables
-
-    # Clean data
-    # dark_web_bad_actors = dark_web_bad_actors[["creator", "rep_grade"]]
-
-    # alerts_exec = alerts_exec.sort_values(by="alert_name.1", ascending=False)
-    # alerts_exec = alerts_exec[["site", "title", "alert_name.1"]]
-
-    # dark_web_act = dark_web_act[["comments_count", "title", "content"]]
-    # dark_web_act = dark_web_act.sort_values(by="comments_count", ascending=False)
-    # dark_web_act = dark_web_act.rename(columns={"comments_count": "Events"})
-
-    # top_cves = top_cves[["cve_id", "nvd_base_score"]]
-
-    # dark_web_sites_table = buildTable(dark_web_sites, ["table"], [50, 50])
-    # alerts_threats_table = buildTable(alerts_threats, ["table"], [40, 40, 20])
-    # dark_web_actors_table = buildTable(dark_web_bad_actors[:10], ["table"], [50, 50])
-    # dark_web_tags_table = buildTable(dark_web_tags, ["table"], [60, 40])
-    # alerts_exec_table = buildTable(alerts_exec[:10], ["table"], [15, 70, 15])
-    # dark_web_act_table = buildTable(dark_web_act[:4], ["table"], [10, 20, 70])
-    # top_cves_table = buildTable(top_cves, ["table"], [30, 70])
+    dark_web_sites_table = buildTable(dark_web_sites, ["table"], [50, 50])
+    alerts_threats_table = buildTable(alerts_threats, ["table"], [40, 40, 20])
+    dark_web_actors_table = buildTable(dark_web_bad_actors[:10], ["table"], [50, 50])
+    dark_web_tags_table = buildTable(dark_web_tags, ["table"], [60, 40])
+    alerts_exec_table = buildTable(alerts_exec[:10], ["table"], [15, 70, 15])
+    dark_web_act_table = buildTable(dark_web_most_act[:1], ["table"], [10, 20, 70])
+    top_cves_table = buildTable(top_cves, ["table"], [30, 70])
 
     dark_web_dict = {
-        # "darkWeb": darkWeb,
-        # "dark_web_sites": dark_web_sites_table,
-        # "alerts_threats": alerts_threats_table,
-        # "dark_web_actors": dark_web_actors_table,
-        # "dark_web_tags": dark_web_tags_table,
-        # "alerts_exec": alerts_exec_table,
-        # "dark_web_act": dark_web_act_table,
-        # "top_cves": top_cves_table,
+        "darkWeb": darkWeb,
+        "dark_web_sites": dark_web_sites_table,
+        "alerts_threats": alerts_threats_table,
+        "dark_web_actors": dark_web_actors_table,
+        "dark_web_tags": dark_web_tags_table,
+        "alerts_exec": alerts_exec_table,
+        "dark_web_act": dark_web_act_table,
+        "top_cves": top_cves_table,
     }
 
     chevron_dict.update(dark_web_dict)
@@ -259,8 +218,15 @@ def init(
     riskyPortsCount,
     verifVulns,
     unverifVulnAssets,
-    dark_web_mentions,
+    darkWeb,
+    dark_web_date,
+    dark_web_sites,
     alerts_threats,
+    dark_web_bad_actors,
+    dark_web_tags,
+    dark_web_content,
+    alerts_exec,
+    dark_web_most_act,
     top_cves,
 ):
     """Initialize pages."""
@@ -300,8 +266,15 @@ def init(
     )
     chevron_dict = dark_web(
         chevron_dict,
-        dark_web_mentions,
+        darkWeb,
+        dark_web_date,
+        dark_web_sites,
         alerts_threats,
+        dark_web_bad_actors,
+        dark_web_tags,
+        dark_web_content,
+        alerts_exec,
+        dark_web_most_act,
         top_cves,
     )
     html = chevron.render(source_html, chevron_dict)

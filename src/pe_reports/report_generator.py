@@ -168,8 +168,15 @@ def generate_reports(datestring, data_directory, output_directory):
             riskyPortsCount,
             verifVulns,
             unverifVulnAssets,
-            dark_web_mentions,
+            darkWeb,
+            dark_web_date,
+            dark_web_sites,
             alerts_threats,
+            dark_web_bad_actors,
+            dark_web_tags,
+            dark_web_content,
+            alerts_exec,
+            dark_web_most_act,
             top_cves,
         ) = generate_metrics(datestring, org_uid)
 
@@ -201,8 +208,15 @@ def generate_reports(datestring, data_directory, output_directory):
             riskyPortsCount,
             verifVulns,
             unverifVulnAssets,
-            dark_web_mentions,
+            darkWeb,
+            dark_web_date,
+            dark_web_sites,
             alerts_threats,
+            dark_web_bad_actors,
+            dark_web_tags,
+            dark_web_content,
+            alerts_exec,
+            dark_web_most_act,
             top_cves,
         )
 

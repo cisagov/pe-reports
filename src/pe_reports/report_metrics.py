@@ -247,7 +247,7 @@ def mention_metrics(org_uid, start_date, end_date):
         end_date,
         "mentions",
     )
-    alerts_threats = query_darkweb(
+    alerts = query_darkweb(
         conn,
         org_uid,
         start_date,
@@ -260,11 +260,104 @@ def mention_metrics(org_uid, start_date, end_date):
         end_date,
         "top_cves",
     )
-    print(top_cves)
-    print(dark_web_mentions.head(5))
-    print(alerts_threats.head(5))
+    close(conn)
 
-    return dark_web_mentions, alerts_threats, top_cves
+    # Get total number of Dark Web mentions
+    darkWeb = len(dark_web_mentions.index)
+
+    # Get dark web mentions by date
+    dark_web_date = dark_web_mentions[["date"]]
+    dark_web_date = (
+        dark_web_date.groupby(["date"])["date"].count().reset_index(name="Count")
+    )
+
+    # Get mentions by dark web sites (top 10)
+    dark_web_sites = dark_web_mentions[["site"]]
+    dark_web_sites = (
+        dark_web_sites.groupby(["site"])["site"]
+        .count()
+        .nlargest(10)
+        .reset_index(name="count")
+    )
+
+    # Get alert threats
+    alerts_threats = alerts[["site", "threats"]]
+    alerts_threats = alerts_threats[alerts_threats["site"] != "NaN"]
+    alerts_threats = alerts_threats[alerts_threats["site"] != ""]
+    alerts_threats = (
+        alerts_threats.groupby(["site", "threats"])["threats"]
+        .count()
+        .nlargest(10)
+        .reset_index(name="Events")
+    )
+    alerts_threats["threats"] = alerts_threats["threats"].str.strip("{}")
+
+    # Get dark web bad actors
+    dark_web_bad_actors = dark_web_mentions[["creator", "rep_grade"]]
+    dark_web_bad_actors = dark_web_bad_actors.groupby("creator", as_index=False).max()
+    dark_web_bad_actors = dark_web_bad_actors.sort_values(
+        by=["rep_grade"], ascending=False
+    )[:10]
+    dark_web_bad_actors["rep_grade"] = (
+        dark_web_bad_actors["rep_grade"].astype(float).round(decimals=3)
+    )
+
+    # Get dark web notable tags
+    dark_web_tags = dark_web_mentions[["tags"]]
+    dark_web_tags = dark_web_tags[dark_web_tags["tags"] != "NaN"]
+    dark_web_tags = (
+        dark_web_tags.groupby(["tags"])["tags"]
+        .count()
+        .nlargest(10)
+        .reset_index(name="Events")
+    )
+    dark_web_tags["tags"] = dark_web_tags["tags"].str.strip("{}")
+
+    # Get dark web categories
+    dark_web_content = dark_web_mentions[["category"]]
+    dark_web_content = (
+        dark_web_content.groupby(["category"])["category"]
+        .count()
+        .nlargest(10)
+        .reset_index(name="count")
+    )
+
+    # Get top executive mentions
+    alerts_exec = alerts[["site", "title"]]
+    alerts_exec = alerts_exec[alerts_exec["site"] != "NaN"]
+    alerts_exec = alerts_exec[alerts_exec["site"] != ""]
+    alerts_exec = (
+        alerts_exec.groupby(["site", "title"])["title"]
+        .count()
+        .nlargest(10)
+        .reset_index(name="Events")
+    )
+
+    # Get most active posts
+    dark_web_most_act = dark_web_mentions[["comments_count", "title", "content"]]
+    dark_web_most_act = dark_web_most_act[dark_web_most_act["comments_count"] != "NaN"]
+    dark_web_most_act = dark_web_most_act.sort_values(
+        by="comments_count", ascending=False
+    )
+    dark_web_most_act = dark_web_most_act.rename(columns={"comments_count": "Events"})
+    dark_web_most_act = dark_web_most_act[:5]
+    dark_web_most_act["Events"] = dark_web_most_act["Events"].astype(float).astype(int)
+
+    # Get top cves
+    top_cves = top_cves[["cve_id", "nvd_base_score"]]
+
+    return (
+        darkWeb,
+        dark_web_date,
+        dark_web_sites,
+        alerts_threats,
+        dark_web_bad_actors,
+        dark_web_tags,
+        dark_web_content,
+        alerts_exec,
+        dark_web_most_act,
+        top_cves,
+    )
 
 
 def generate_metrics(datestring, org_uid):
@@ -300,9 +393,18 @@ def generate_metrics(datestring, org_uid):
         unverifVulnAssets,
     ) = malware_vuln_metrics(org_uid, start_date, end_date)
 
-    (dark_web_mentions, alerts_threats, top_cves) = mention_metrics(
-        org_uid, start_date, end_date
-    )
+    (
+        darkWeb,
+        dark_web_date,
+        dark_web_sites,
+        alerts_threats,
+        dark_web_bad_actors,
+        dark_web_tags,
+        dark_web_content,
+        alerts_exec,
+        dark_web_most_act,
+        top_cves,
+    ) = mention_metrics(org_uid, start_date, end_date)
 
     return (
         creds,
@@ -323,7 +425,14 @@ def generate_metrics(datestring, org_uid):
         riskyPortsCount,
         verifVulns,
         unverifVulnAssets,
-        dark_web_mentions,
+        darkWeb,
+        dark_web_date,
+        dark_web_sites,
         alerts_threats,
+        dark_web_bad_actors,
+        dark_web_tags,
+        dark_web_content,
+        alerts_exec,
+        dark_web_most_act,
         top_cves,
     )

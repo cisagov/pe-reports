@@ -318,7 +318,7 @@ class barCharts:
         ax.spines.right.set_visible(False)
         ax.spines.top.set_visible(False)
 
-        plt.plot(df[df.columns[0]], Value_column, label="Web only")
+        plt.plot(df[df.columns[0]], Value_column, label="Dark Web Mentions")
         if small:
             pad = 1.4
         else:
