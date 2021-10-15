@@ -1,116 +1,268 @@
-"""A tool for creating Posture & Exposure reports.
+"""ciagov/pe-reports: A tool for creating Posture & Exposure reports.
 
 Usage:
-    pe-reports REPORT_DATE DATA_DIRECTORY OUTPUT_DIRECTORY [--db-creds-file=FILENAME] [--log-level=LEVEL]
-
-Arguments:
-  REPORT_DATE                   Date of the report, format YYYY-MM-DD.
-  DATA_DIRECTORY                The directory where the Excel data files are located.
-                                Organized by owner.
-  OUTPUT_DIRECTORY              The directory where the final PDF reports should be saved.
-  -c --db-creds-file=FILENAME   A YAML file containing the Cyber
-                                Hygiene database credentials.
-                                [default: /secrets/database_creds.yml]
+  pe-reports REPORT_DATE  DATA_DIRECTORY OUTPUT_DIRECTORY [--db-creds-file=FILENAME]
 
 Options:
-  -h --help                     Show this message.
-  -v --version                  Show version information.
-  -l --log-level=LEVEL          If specified, then the log level will be set to
-                                the specified value.  Valid values are "debug", "info",
-                                "warning", "error", and "critical". [default: info]
+  -h --help                         Show this message.
+  REPORT_DATE                       Date of the report, format YYYY-MM-DD
+  DATA_DIRECTORY                    The directory where the excel data
+                                    files are located. Organized by
+                                    owner.
+  OUTPUT_DIRECTORY                  The directory where the final PDF
+                                    reports should be saved.
+  -c --db-creds-file=FILENAME       A YAML file containing the Cyber
+                                    Hygiene database credentials.
+                                    [default: /secrets/database_creds.yml]
 """
 
 # Standard Python Libraries
-import logging
 import os
 import sys
-from typing import Any, Dict
 
 # Third-Party Libraries
-import docopt
-import pkg_resources
-from pptx import Presentation
-from schema import And, Schema, SchemaError, Use
-
-from ._version import __version__
-from .pages import Pages
-
-# Configuration
-REPORT_SHELL = pkg_resources.resource_filename("pe_reports", "data/shell/pe_shell.pptx")
-REPORT_OUT = "Customer_ID_Posture_Exposure.pptx"
+from _version import __version__
+from docopt import docopt
+import fitz
+from pages import init
+from pe_db.query import connect, get_orgs
+from report_metrics import generate_metrics
+from xhtml2pdf import pisa
 
 
-def load_template():
-    """Load PowerPoint template into memory."""
-    prs = Presentation(REPORT_SHELL)
-    return prs
+def embed_and_encrypt(
+    output_directory,
+    _id,
+    datestring,
+    file,
+    cc_csv,
+    da_csv,
+    ma_csv,
+    # iv_csv,
+    mi_csv,
+    password,
+):
+    """Embeds raw data into pdf and encrypts file."""
+    doc = fitz.open(file)
+    page = doc[-1]
+    output = f"{output_directory}/{_id}/Posture_and_Exposure_Report-{datestring}.pdf"
 
+    # Open csv data as binary
+    cc = open(cc_csv, "rb").read()
+    da = open(da_csv, "rb").read()
+    ma = open(ma_csv, "rb").read()
+    # iv = open(iv_csv, "rb").read()
+    mi = open(mi_csv, "rb").read()
 
-def export_set(prs, out_dir):
-    """Export PowerPoint report set to output directory."""
-    try:
-        prs.save(os.path.join(out_dir, REPORT_OUT))
-    except FileNotFoundError as not_found:
-        logging.error("%s : Missing input data. No report generated.", not_found)
+    # Insert link to csv data in last page of pdf
+    p1 = fitz.Point(100, 280)
+    p2 = fitz.Point(100, 305)
+    p3 = fitz.Point(100, 330)
+    # p4 = fitz.Point(100, 355)
+    p5 = fitz.Point(100, 380)
 
-
-def generate_reports(data, data_dir, out_dir, db_creds_file):
-    """Gather assets to produce reports."""
-
-
-def main() -> None:
-    """Set up logging and call the generate_reports function."""
-    args: Dict[str, str] = docopt.docopt(__doc__, version=__version__)
-    # Validate and convert arguments as needed
-    schema: Schema = Schema(
-        {
-            "--log-level": And(
-                str,
-                Use(str.lower),
-                lambda n: n in ("debug", "info", "warning", "error", "critical"),
-                error="Possible values for --log-level are "
-                + "debug, info, warning, error, and critical.",
-            ),
-            str: object,  # Don't care about other keys, if any
-        }
+    # Embedd and add push-pin graphic
+    page.add_file_annot(
+        p1, cc, "compromised_credentials.csv", desc="Open up csv", icon="PushPin"
     )
-
-    try:
-        validated_args: Dict[str, Any] = schema.validate(args)
-    except SchemaError as err:
-        # Exit because one or more of the arguments were invalid
-        print(err, file=sys.stderr)
-        sys.exit(1)
-
-    # Assign validated arguments to variables
-    log_level: str = validated_args["--log-level"]
-
-    # Set up logging
-    logging.basicConfig(
-        format="%(asctime)-15s %(levelname)s %(message)s", level=log_level.upper()
+    page.add_file_annot(p2, da, "domain_alerts.csv", desc="Open up csv", icon="PushPin")
+    page.add_file_annot(
+        p3, ma, "malware_associations.csv", desc="Open up csv", icon="PushPin"
     )
+    # page.add_file_annot(
+    #     p4,
+    #     iv,
+    #     "inferred_vulnerability_associations.csv",
+    #     desc="Open up csv",
+    #     icon="PushPin",
+    # )
+    page.add_file_annot(
+        p5, mi, "mention_incidents.csv", desc="Open up csv", icon="PushPin"
+    )
+    # Add encryption
+    perm = int(
+        fitz.PDF_PERM_ACCESSIBILITY
+        | fitz.PDF_PERM_PRINT  # permit printing
+        | fitz.PDF_PERM_COPY  # permit copying
+        | fitz.PDF_PERM_ANNOTATE  # permit annotations
+    )
+    encrypt_meth = fitz.PDF_ENCRYPT_AES_256
+    doc.save(
+        output,
+        encryption=encrypt_meth,  # set the encryption method
+        user_pw=password,  # set the user password
+        permissions=perm,  # set permissions
+        garbage=4,
+        deflate=True,
+    )
+    tooLarge = False
+    # Throw error if file size is greater than 20MB
+    filesize = os.path.getsize(output)
+    if filesize >= 20000000:
+        tooLarge = True
 
-    # TODO: Add generate_reports func to handle cmd line arguments and function.
-    # Issue 8: https://github.com/cisagov/pe-reports/issues/8
+    return filesize, tooLarge
+
+
+def convert_html_to_pdf(source_html, output_filename):
+    """Convert html to pdf."""
+    # open output file for writing (truncated binary)
+    result_file = open(output_filename, "w+b")
+
+    # convert HTML to PDF
+    pisa_status = pisa.CreatePDF(
+        source_html, dest=result_file  # the HTML to convert
+    )  # file handle to recieve result
+
+    # close output file
+    result_file.close()  # close output file
+
+    # return False on success and True on errors
+    return pisa_status.err
+
+
+def generate_reports(datestring, data_directory, output_directory):
+    """Process steps for generating report data."""
+    # Get PE orgs from PE db
+    conn = connect()
+    pe_orgs = get_orgs(conn)
+    print(pe_orgs)
+
+    generated_reports = 0
+
+    # Iterate over organizations
+    for org in pe_orgs:
+
+        # Assign organization values
+        org_uid = org[0]
+        org_name = org[1]
+        org_code = org[2]
+        folder_name = org_code
+
+        print(f"Running on {org_code}...")
+
+        # Create folders in output directory
+        if not os.path.exists(f"{output_directory}/ppt"):
+            os.mkdir(f"{output_directory}/ppt")
+
+        if not os.path.exists(f"{output_directory}/{org_code}"):
+            os.mkdir(f"{output_directory}/{org_code}")
+
+        # Generate metrics
+        (
+            creds,
+            breach,
+            pw_creds,
+            ce_date_df,
+            breach_det_df,
+            creds_attach,
+            breach_appendix,
+            domain_sum,
+            domain_count,
+            utlds,
+            pro_count,
+            unverif_df,
+            risky_assets,
+            verif_vulns,
+            verif_vulns_summary,
+            riskyPortsCount,
+            verifVulns,
+            unverifVulnAssets,
+            dark_web_mentions,
+            alerts_threats,
+            top_cves,
+        ) = generate_metrics(datestring, org_uid)
+
+        # Load source html
+        file = open("template2.html")
+        source_html = file.read().replace("\n", " ")
+
+        # Insert Charts and Metrics into pdf
+        source_html = init(
+            source_html,
+            datestring,
+            org_name,
+            folder_name,
+            creds,
+            breach,
+            pw_creds,
+            ce_date_df,
+            breach_det_df,
+            creds_attach,
+            breach_appendix,
+            domain_sum,
+            domain_count,
+            utlds,
+            pro_count,
+            unverif_df,
+            risky_assets,
+            verif_vulns,
+            verif_vulns_summary,
+            riskyPortsCount,
+            verifVulns,
+            unverifVulnAssets,
+            dark_web_mentions,
+            alerts_threats,
+            top_cves,
+        )
+
+        # Close pdf
+        file.close()
+
+        # Convert to HTML to PDF
+        output_filename = f"{output_directory}/{org_code}-Posture_and_Exposure_Report-{datestring}.pdf"
+        convert_html_to_pdf(source_html, output_filename)
+
+        # Embed csvdata and encrypt PDF
+        # cc_csv = f"{output_directory}/{_id}/compromised_credentials.csv"
+        # creds_attach.to_csv(cc_csv)
+        # da_csv = f"{output_directory}/{_id}/domain_alerts.csv"
+        # domain_masq.to_csv(da_csv)
+        # ma_csv = f"{output_directory}/{_id}/malware_alerts.csv"
+        # output_df.to_csv(ma_csv)
+        # iv_csv = f"{output_directory}/{_id}/inferred_vulnerability_associations.csv"
+        # iv_attach.to_csv(iv_csv)
+        # mi_csv = f"{output_directory}/{_id}/mention_incidents.csv"
+        # dark_web_mentions.to_csv(mi_csv)
+
+        # grab the pdf
+        # pdf = f"{output_directory}/{org_code}-Posture_and_Exposure_Report-{datestring}.pdf"
+
+        # (filesize, tooLarge) = embed_and_encrypt(
+        #     output_directory,
+        #     org_code,
+        #     datestring,
+        #     pdf,
+        #     cc_csv,
+        #     da_csv,
+        #     ma_csv,
+        #     # iv_csv,
+        #     mi_csv,
+        #     password,
+        # )
+        # Need to make sure Cyhy Mailer doesn't send files that are too large
+        # if tooLarge:
+        #     print(f"{_id} is too large. File size: {filesize} Limit: 20MB")
+
+        generated_reports = generated_reports + 1
+
+    print(f"{generated_reports} reports generated")
+
+
+def main():
+    """Generate PDF reports."""
+    # Parse command line arguments
+    args = docopt(__doc__, version=__version__)
+
+    # Create output directory
+    if not os.path.exists(args["OUTPUT_DIRECTORY"]):
+        os.mkdir(args["OUTPUT_DIRECTORY"])
+
+    # Generate reports
     generate_reports(
-        # TODO: Improve use of schema to validate arguments.
-        # Issue 19: https://github.com/cisagov/pe-reports/issues/19
-        validated_args["REPORT_DATE"],
-        validated_args["DATA_DIRECTORY"],
-        validated_args["OUTPUT_DIRECTORY"],
-        validated_args["--db-creds-file"],
+        args["REPORT_DATE"], args["DATA_DIRECTORY"], args["OUTPUT_DIRECTORY"]
     )
 
-    logging.info(
-        "Loading Posture & Exposure Report Template, Version : %s", __version__
-    )
-    prs = load_template()
 
-    logging.info("Generating Graphs")
-    Pages.cover(prs)
-    Pages.overview(prs)
-
-    export_set(prs, validated_args["OUTPUT_DIRECTORY"])
-
-    # Stop logging and clean up
-    logging.shutdown()
+if __name__ == "__main__":
+    sys.exit(main())
