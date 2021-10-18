@@ -131,3 +131,16 @@ def query_darkweb_cves(conn, start_date, end_date, table):
         },
     )
     return df
+
+
+def query_cyberSix_creds(conn, org_uid, start_date, end_date):
+    """Query hibp table."""
+    sql = """SELECT * FROM public.cybersix_exposed_credentials as creds
+    WHERE organizations_uid = %(org_uid)s
+    AND create_time BETWEEN %(start)s AND %(end)s"""
+    df = pd.read_sql(
+        sql,
+        conn,
+        params={"org_uid": org_uid, "start": start_date, "end": end_date},
+    )
+    return df

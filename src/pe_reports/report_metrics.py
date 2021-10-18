@@ -3,10 +3,12 @@
 from datetime import datetime
 
 # Third-Party Libraries
+import numpy as np
 import pandas as pd
 from pe_db.query import (
     close,
     connect,
+    query_cyberSix_creds,
     query_darkweb,
     query_darkweb_cves,
     query_domMasq,
@@ -14,38 +16,52 @@ from pe_db.query import (
     query_shodan,
 )
 
+# from pe_reports.pe_db.query import query_cyberSix_creds
+
 
 def credential_metrics(start_date, end_date, org_uid):
     """Calculate compromised credentials metrics and return variables and dataframes."""
     conn = connect()
     view_df = query_hibp_view(conn, org_uid, start_date, end_date)
-    hibp_df = view_df[["added_date", "password_included", "email"]]
-    hibp_df["added_date"] = pd.to_datetime(hibp_df["added_date"]).dt.date
-    # hibp_df = hibp_df.append(c6_df, ignore_index=True)
+    print(view_df)
+    conn = connect()
+
+    c6_df = query_cyberSix_creds(conn, org_uid, start_date, end_date)
+    c6_df["password_included"] = np.where(c6_df["password"] != "", True, False)
+    c6_df_2 = c6_df[["create_time", "password_included", "email"]]
+    c6_df_2 = c6_df_2.rename(columns={"create_time": "modified_date"})
+
+    print(c6_df)
+    hibp_df = view_df[["modified_date", "password_included", "email"]]
+    hibp_df["added_date"] = pd.to_datetime(hibp_df["modified_date"]).dt.date
+    hibp_df = hibp_df.append(c6_df, ignore_index=True)
     creds = len(hibp_df)
+
     pw_creds = len(hibp_df[hibp_df["password_included"]])
 
-    hibp_df = hibp_df.groupby(["added_date", "password_included"], as_index=False).agg(
-        {"email": ["count"]}
-    )
+    hibp_df = hibp_df.groupby(
+        ["modified_date", "password_included"], as_index=False
+    ).agg({"email": ["count"]})
     idx = pd.date_range(start_date, end_date)
     hibp_df.columns = hibp_df.columns.droplevel(1)
     hibp_df = (
-        hibp_df.pivot(index="added_date", columns="password_included", values="email")
+        hibp_df.pivot(
+            index="modified_date", columns="password_included", values="email"
+        )
         .fillna(0)
         .reset_index()
         .rename_axis(None)
     )
     hibp_df.columns.name = None
     hibp_df = (
-        hibp_df.set_index("added_date")
+        hibp_df.set_index("modified_date")
         .reindex(idx)
         .fillna(0.0)
         .rename_axis("added_date")
     )
-    hibp_df["added_date"] = hibp_df.index
-    hibp_df["added_date"] = hibp_df["added_date"].dt.strftime("%m/%d/%y")
-    hibp_df = hibp_df.set_index("added_date")
+    hibp_df["modified_date"] = hibp_df.index
+    hibp_df["modified_date"] = hibp_df["modified_date"].dt.strftime("%m/%d/%y")
+    hibp_df = hibp_df.set_index("modified_date")
 
     ce_date_df = hibp_df.rename(
         columns={True: "Passwords Included", False: "No Password"}
@@ -54,14 +70,25 @@ def credential_metrics(start_date, end_date, org_uid):
         ce_date_df["Passwords Included"] = 0
 
     print(ce_date_df)
+    c6_df_3 = c6_df[
+        [
+            "breach_name",
+            "create_time",
+            "description",
+            "breach_date",
+            "password_included",
+            "email",
+        ]
+    ]
+    c6_df_3 = c6_df_3.rename(columns={"create_time": "modified_date"})
+    combined_creds = view_df.append(c6_df_3, ignore_index=True)
 
-    breach_df = view_df.groupby(
+    breach_df = combined_creds.groupby(
         [
             "breach_name",
             "modified_date",
             "description",
             "breach_date",
-            "added_date",
             "password_included",
         ],
         as_index=False,
