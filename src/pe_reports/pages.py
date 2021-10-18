@@ -117,7 +117,6 @@ def mal_vul(
     risky_assets = risky_assets[:7]
     risky_assets.columns = ["IP", "Protocol"]
     risky_assets_table = buildTable(risky_assets, ["table"], [50, 50])
-    # print(verif_vulns)
     verif_vulns.columns = ["CVE", "IP", "Port"]
     verif_vulns_table = buildTable(verif_vulns, ["table"], [40, 40, 20])
     verif_vulns_summary_table = buildTable(

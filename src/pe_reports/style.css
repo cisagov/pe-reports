@@ -332,14 +332,14 @@
     left: 1.5cm;
     width: 9cm;
     height: 2.2cm;
-    top: 12.5cm;
+    top: 13cm;
   }
 
   @frame content3 {
     left: 11cm;
     width: 9cm;
     height: 2.2cm;
-    top: 12.5cm;
+    top: 13cm;
   }
 
   @frame graph3 {
@@ -347,7 +347,7 @@
     left: 11cm;
     width: 9cm;
     height: 9cm;
-    top: 14.7cm;
+    top: 15.2cm;
   }
 
   @frame table {
@@ -355,7 +355,7 @@
     left: 1.5cm;
     width: 9cm;
     height: 9cm;
-    top: 14.7cm;
+    top: 15.2cm;
   }
 }
 

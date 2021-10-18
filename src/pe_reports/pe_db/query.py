@@ -72,9 +72,18 @@ def query_hibp_view(conn, org_uid, start_date, end_date):
 def query_domMasq(conn, org_uid, start_date, end_date):
     """Query domain masquerading table."""
     sql = """SELECT * FROM dnstwist_domain_masq
-    WHERE organizations_uid = %(org_uid)s"""
+    WHERE organizations_uid = %(org_uid)s
+    AND date_observed BETWEEN %(start_date)s AND %(end_date)s"""
     print(sql)
-    df = pd.read_sql(sql, conn, params={"org_uid": org_uid})
+    df = pd.read_sql(
+        sql,
+        conn,
+        params={
+            "org_uid": org_uid,
+            "start_date": start_date,
+            "end_date": end_date,
+        },
+    )
     return df
 
 

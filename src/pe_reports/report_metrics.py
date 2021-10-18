@@ -69,21 +69,7 @@ def credential_metrics(start_date, end_date, org_uid):
     if len(ce_date_df.columns) == 0:
         ce_date_df["Passwords Included"] = 0
 
-    print(ce_date_df)
-    c6_df_3 = c6_df[
-        [
-            "breach_name",
-            "create_time",
-            "description",
-            "breach_date",
-            "password_included",
-            "email",
-        ]
-    ]
-    c6_df_3 = c6_df_3.rename(columns={"create_time": "modified_date"})
-    combined_creds = view_df.append(c6_df_3, ignore_index=True)
-
-    breach_df = combined_creds.groupby(
+    breach_df = view_df.groupby(
         [
             "breach_name",
             "modified_date",
@@ -148,22 +134,42 @@ def domain_metrics(idx, org_uid, start_date, end_date):
     # Get domain masq data from PE database
     conn = connect()
     df = query_domMasq(conn, org_uid, start_date, end_date)
-
-    print(df)
-
-    domain_sum = df[
-        ["domain_permutation", "ipv4", "ipv6", "mail_server", "name_server", "fuzzer"]
-    ]
-    df["tld"] = df["domain_permutation"].str.split(".").str[-1].str.split("/").str[0]
-    utlds = len(df["tld"].unique())
-    print(utlds)
-    domain_count = len(domain_sum.index)
-    print(domain_count)
-    domain_sum = domain_sum[:25]
-    print(domain_sum)
     close(conn)
-
-    return domain_sum, domain_count, utlds
+    # Filter to domains that were blocklisted
+    df_mal = df[df["malicious"]]
+    malCount = len(df_mal)
+    if malCount > 0:
+        domain_sum = df_mal[
+            [
+                "domain_permutation",
+                "ipv4",
+                "ipv6",
+                "mail_server",
+                "name_server",
+                "fuzzer",
+            ]
+        ]
+        df_mal["tld"] = (
+            df_mal["domain_permutation"].str.split(".").str[-1].str.split("/").str[0]
+        )
+        utlds = len(df_mal["tld"].unique())
+        domain_count = len(domain_sum.index)
+        domain_sum = domain_sum[:25]
+    else:
+        df_mal = pd.DataFrame(columns=df.columns.values)
+        domain_sum = pd.DataFrame(
+            columns=[
+                "domain_permutation",
+                "ipv4",
+                "ipv6",
+                "mail_server",
+                "name_server",
+                "fuzzer",
+            ]
+        )
+        domain_count = 0
+        utlds = 0
+    return df_mal, domain_sum, domain_count, utlds
 
 
 def malware_vuln_metrics(org_uid, start_date, end_date):
@@ -180,7 +186,8 @@ def malware_vuln_metrics(org_uid, start_date, end_date):
         conn, org_uid, start_date, end_date, "shodan_verified_vulns"
     )
     print(vulns_df)
-    # output_df = query_shodan(conn, org_uid, start_date, end_date, "shodan_assets")
+    output_df = query_shodan(conn, org_uid, start_date, end_date, "shodan_assets")
+
     close(conn)
     # Table: Insecure protocols
     insecure = insecure_df[insecure_df["type"] == "Insecure Protocol"]
@@ -188,16 +195,15 @@ def malware_vuln_metrics(org_uid, start_date, end_date):
         (insecure["protocol"] != "http") & (insecure["protocol"] != "smtp")
     ]
     risky_assets = insecure[["ip", "protocol"]].drop_duplicates(keep="first")
-    # print(risky_assets)
 
     # Horizontal bar: insecure protocol count
     pro_count = risky_assets.groupby(["protocol"], as_index=False)["protocol"].agg(
         {"id_count": "count"}
     )
-    # print(pro_count)
+
     # Total Open Ports with Insecure protocols
     riskyPortsCount = pro_count["id_count"].sum()
-    # print(riskyPortsCount)
+
     # Table: Verified Vulnerabilities
     vulns_df["port"] = vulns_df["port"].astype(str)
     verif_vulns = (
@@ -218,41 +224,29 @@ def malware_vuln_metrics(org_uid, start_date, end_date):
         verif_vulns = verif_vulns.drop(["count"], axis=1)
     else:
         verifVulns = 0
-    # print(verifVulns)
-    # print(verif_vulns)
-    # print(verif_vulns_summary)
-    # Horizaontal Bar: # of unverified CVE's for each IP (TOP 15)
 
+    # Horizaontal Bar: # of unverified CVE's for each IP (TOP 15)
     unverif_df = insecure_df[insecure_df["type"] != "Insecure Protocol"]
-    print(unverif_df.columns)
-    print(unverif_df[["potential_vulns", "ip"]])
     unverif_df = unverif_df.copy()
     unverif_df["potential_vulns"] = (
-        unverif_df["potential_vulns"]
-        .sort_values()
-        .apply(lambda x: sorted(x))
-        # .reset_index(drop=True)
+        unverif_df["potential_vulns"].sort_values().apply(lambda x: sorted(x))
     )
-
     unverif_df["potential_vulns"] = unverif_df["potential_vulns"].astype("str")
-    print(unverif_df)
     unverif_df = (
         unverif_df[["potential_vulns", "ip"]]
         .drop_duplicates(keep="first")
         .reset_index(drop=True)
     )
-    # print(unverif_df)
-    # print(unverif_df[["potential_vulns", "ip"]])
     unverif_df["count"] = unverif_df["potential_vulns"].str.split(",").str.len()
     unverif_df = unverif_df[["ip", "count"]]
-    # unverifVulns = unverif_df["count"].sum()
-    print(unverif_df)
     unverif_df = unverif_df.sort_values(by=["count"], ascending=False)
     unverifVulnAssets = len(unverif_df.index)
     unverif_df = unverif_df[:15].reset_index(drop=True)
-    # print(unverifVulns)
-    # print(unverif_df)
+    print(unverif_df)
     return (
+        insecure_df,
+        vulns_df,
+        output_df,
         pro_count,
         unverif_df,
         risky_assets,
@@ -288,7 +282,14 @@ def mention_metrics(org_uid, start_date, end_date):
         "top_cves",
     )
     close(conn)
-
+    dark_web_mentions = dark_web_mentions.drop(
+        columns=["organizations_uid", "mentions_uid"],
+        errors="ignore",
+    )
+    alerts = alerts.drop(
+        columns=["organizations_uid", "alerts_uid"],
+        errors="ignore",
+    )
     # Get total number of Dark Web mentions
     darkWeb = len(dark_web_mentions.index)
 
@@ -374,6 +375,8 @@ def mention_metrics(org_uid, start_date, end_date):
     top_cves = top_cves[["cve_id", "nvd_base_score"]]
 
     return (
+        dark_web_mentions,
+        alerts,
         darkWeb,
         dark_web_date,
         dark_web_sites,
@@ -408,8 +411,13 @@ def generate_metrics(datestring, org_uid):
         breach_appendix,
     ) = credential_metrics(start_date, end_date, org_uid)
 
-    domain_sum, domain_count, utlds = domain_metrics(idx, org_uid, start_date, end_date)
+    domain_masq, domain_sum, domain_count, utlds = domain_metrics(
+        idx, org_uid, start_date, end_date
+    )
     (
+        insecure_df,
+        vulns_df,
+        output_df,
         pro_count,
         unverif_df,
         risky_assets,
@@ -421,6 +429,8 @@ def generate_metrics(datestring, org_uid):
     ) = malware_vuln_metrics(org_uid, start_date, end_date)
 
     (
+        dark_web_mentions,
+        alerts,
         darkWeb,
         dark_web_date,
         dark_web_sites,
@@ -441,9 +451,13 @@ def generate_metrics(datestring, org_uid):
         breach_det_df,
         creds_attach,
         breach_appendix,
+        domain_masq,
         domain_sum,
         domain_count,
         utlds,
+        insecure_df,
+        vulns_df,
+        output_df,
         pro_count,
         unverif_df,
         risky_assets,
@@ -452,6 +466,8 @@ def generate_metrics(datestring, org_uid):
         riskyPortsCount,
         verifVulns,
         unverifVulnAssets,
+        dark_web_mentions,
+        alerts,
         darkWeb,
         dark_web_date,
         dark_web_sites,

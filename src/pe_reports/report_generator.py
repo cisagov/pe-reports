@@ -25,6 +25,7 @@ from _version import __version__
 from docopt import docopt
 import fitz
 from pages import init
+import pandas as pd
 from pe_db.query import connect, get_orgs
 from report_metrics import generate_metrics
 from xhtml2pdf import pisa
@@ -32,66 +33,62 @@ from xhtml2pdf import pisa
 
 def embed_and_encrypt(
     output_directory,
-    _id,
+    org_code,
     datestring,
     file,
-    cc_csv,
-    da_csv,
-    ma_csv,
-    # iv_csv,
-    mi_csv,
-    password,
+    cred_xlsx,
+    da_xlsx,
+    vuln_xlsx,
+    mi_xlsx,
 ):
     """Embeds raw data into pdf and encrypts file."""
     doc = fitz.open(file)
-    page = doc[-1]
-    output = f"{output_directory}/{_id}/Posture_and_Exposure_Report-{datestring}.pdf"
+    page = doc[3]
+    output = (
+        f"{output_directory}/{org_code}/Posture_and_Exposure_Report-{datestring}.pdf"
+    )
 
     # Open csv data as binary
-    cc = open(cc_csv, "rb").read()
-    da = open(da_csv, "rb").read()
-    ma = open(ma_csv, "rb").read()
-    # iv = open(iv_csv, "rb").read()
-    mi = open(mi_csv, "rb").read()
+    cc = open(cred_xlsx, "rb").read()
+    da = open(da_xlsx, "rb").read()
+    ma = open(vuln_xlsx, "rb").read()
+    mi = open(mi_xlsx, "rb").read()
 
     # Insert link to csv data in last page of pdf
-    p1 = fitz.Point(100, 280)
-    p2 = fitz.Point(100, 305)
-    p3 = fitz.Point(100, 330)
-    # p4 = fitz.Point(100, 355)
-    p5 = fitz.Point(100, 380)
+    p1 = fitz.Point(375, 590)
+    p2 = fitz.Point(425, 590)
+    p3 = fitz.Point(475, 590)
+    p5 = fitz.Point(525, 590)
 
     # Embedd and add push-pin graphic
     page.add_file_annot(
-        p1, cc, "compromised_credentials.csv", desc="Open up csv", icon="PushPin"
+        p1, cc, "compromised_credentials.xlsx", desc="Open up csv", icon="PushPin"
     )
-    page.add_file_annot(p2, da, "domain_alerts.csv", desc="Open up csv", icon="PushPin")
     page.add_file_annot(
-        p3, ma, "malware_associations.csv", desc="Open up csv", icon="PushPin"
+        p2, da, "domain_alerts.xlsx", desc="Open up csv", icon="PushPin"
     )
-    # page.add_file_annot(
-    #     p4,
-    #     iv,
-    #     "inferred_vulnerability_associations.csv",
-    #     desc="Open up csv",
-    #     icon="PushPin",
-    # )
+    page.add_file_annot(p3, ma, "vuln_alerts.xlsx", desc="Open up xlsx", icon="PushPin")
     page.add_file_annot(
-        p5, mi, "mention_incidents.csv", desc="Open up csv", icon="PushPin"
+        p5, mi, "mention_incidents.xlsx", desc="Open up csv", icon="PushPin"
     )
     # Add encryption
-    perm = int(
-        fitz.PDF_PERM_ACCESSIBILITY
-        | fitz.PDF_PERM_PRINT  # permit printing
-        | fitz.PDF_PERM_COPY  # permit copying
-        | fitz.PDF_PERM_ANNOTATE  # permit annotations
-    )
-    encrypt_meth = fitz.PDF_ENCRYPT_AES_256
+    # perm = int(
+    #     fitz.PDF_PERM_ACCESSIBILITY
+    #     | fitz.PDF_PERM_PRINT  # permit printing
+    #     | fitz.PDF_PERM_COPY  # permit copying
+    #     | fitz.PDF_PERM_ANNOTATE  # permit annotations
+    # )
+    # encrypt_meth = fitz.PDF_ENCRYPT_AES_256
+    # doc.save(
+    #     output,
+    #     encryption=encrypt_meth,  # set the encryption method
+    #     user_pw=password,  # set the user password
+    #     permissions=perm,  # set permissions
+    #     garbage=4,
+    #     deflate=True,
+    # )
     doc.save(
         output,
-        encryption=encrypt_meth,  # set the encryption method
-        user_pw=password,  # set the user password
-        permissions=perm,  # set permissions
         garbage=4,
         deflate=True,
     )
@@ -157,9 +154,13 @@ def generate_reports(datestring, data_directory, output_directory):
             breach_det_df,
             creds_attach,
             breach_appendix,
+            domain_masq,
             domain_sum,
             domain_count,
             utlds,
+            insecure_df,
+            vulns_df,
+            output_df,
             pro_count,
             unverif_df,
             risky_assets,
@@ -168,6 +169,8 @@ def generate_reports(datestring, data_directory, output_directory):
             riskyPortsCount,
             verifVulns,
             unverifVulnAssets,
+            dark_web_mentions,
+            alerts,
             darkWeb,
             dark_web_date,
             dark_web_sites,
@@ -227,36 +230,51 @@ def generate_reports(datestring, data_directory, output_directory):
         output_filename = f"{output_directory}/{org_code}-Posture_and_Exposure_Report-{datestring}.pdf"
         convert_html_to_pdf(source_html, output_filename)
 
-        # Embed csvdata and encrypt PDF
-        # cc_csv = f"{output_directory}/{_id}/compromised_credentials.csv"
-        # creds_attach.to_csv(cc_csv)
-        # da_csv = f"{output_directory}/{_id}/domain_alerts.csv"
-        # domain_masq.to_csv(da_csv)
-        # ma_csv = f"{output_directory}/{_id}/malware_alerts.csv"
-        # output_df.to_csv(ma_csv)
-        # iv_csv = f"{output_directory}/{_id}/inferred_vulnerability_associations.csv"
-        # iv_attach.to_csv(iv_csv)
-        # mi_csv = f"{output_directory}/{_id}/mention_incidents.csv"
-        # dark_web_mentions.to_csv(mi_csv)
+        # Create Crendential Exposure excel file
+        cred_xlsx = f"{output_directory}/{org_code}/compromised_credentials.xlsx"
+        credWriter = pd.ExcelWriter(cred_xlsx, engine="xlsxwriter")
+        creds_attach.to_excel(credWriter, sheet_name="Credentials", index=False)
+        credWriter.save()
+
+        # Create Domain Masquerading excel file
+        da_xlsx = f"{output_directory}/{org_code}/domain_alerts.xlsx"
+        domWriter = pd.ExcelWriter(da_xlsx, engine="xlsxwriter")
+        domain_masq.to_excel(domWriter, sheet_name="Suspected Domains", index=False)
+        domWriter.save()
+
+        # Create Suspected vulnerability excel file
+        vuln_xlsx = f"{output_directory}/{org_code}/vuln_alerts.xlsx"
+        vulnWriter = pd.ExcelWriter(vuln_xlsx, engine="xlsxwriter")
+        output_df.to_excel(vulnWriter, sheet_name="Assets", index=False)
+        insecure_df.to_excel(vulnWriter, sheet_name="Insecure", index=False)
+        vulns_df.to_excel(vulnWriter, sheet_name="Verified Vulns", index=False)
+        vulnWriter.save()
+
+        # Create dark web excel file
+        mi_xlsx = f"{output_directory}/{org_code}/mention_incidents.xlsx"
+        miWriter = pd.ExcelWriter(mi_xlsx, engine="xlsxwriter")
+        dark_web_mentions.to_excel(
+            miWriter, sheet_name="Dark Web Mentions", index=False
+        )
+        alerts.to_excel(miWriter, sheet_name="Dark Web Alerts", index=False)
+        miWriter.save()
 
         # grab the pdf
-        # pdf = f"{output_directory}/{org_code}-Posture_and_Exposure_Report-{datestring}.pdf"
+        pdf = f"{output_directory}/{org_code}-Posture_and_Exposure_Report-{datestring}.pdf"
 
-        # (filesize, tooLarge) = embed_and_encrypt(
-        #     output_directory,
-        #     org_code,
-        #     datestring,
-        #     pdf,
-        #     cc_csv,
-        #     da_csv,
-        #     ma_csv,
-        #     # iv_csv,
-        #     mi_csv,
-        #     password,
-        # )
+        (filesize, tooLarge) = embed_and_encrypt(
+            output_directory,
+            org_code,
+            datestring,
+            pdf,
+            cred_xlsx,
+            da_xlsx,
+            vuln_xlsx,
+            mi_xlsx,
+        )
         # Need to make sure Cyhy Mailer doesn't send files that are too large
-        # if tooLarge:
-        #     print(f"{_id} is too large. File size: {filesize} Limit: 20MB")
+        if tooLarge:
+            print(f"{org_code} is too large. File size: {filesize} Limit: 20MB")
 
         generated_reports = generated_reports + 1
 
