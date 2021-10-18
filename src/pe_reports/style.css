@@ -108,6 +108,38 @@
     height: 20cm;
     top: 3.4cm;
   }
+
+  @frame linkHeader {
+    left: 1.6cm;
+    width: 6cm;
+    height: 1.5cm;
+    top: 23.6cm;
+  }
+  @frame linkCaption1 {
+    left: 3cm;
+    width: 6cm;
+    height: 1.5cm;
+    top: 25.45cm;
+  }
+
+  @frame linkCaption2 {
+    left: 7.5cm;
+    width: 6cm;
+    height: 1.5cm;
+    top: 25.45cm;
+  }
+  @frame linkCaption3 {
+    left: 12cm;
+    width: 6cm;
+    height: 1.5cm;
+    top: 25.45cm;
+  }
+  @frame linkCaption4 {
+    left: 17cm;
+    width: 6cm;
+    height: 1.5cm;
+    top: 25.45cm;
+  }
 }
 
 @page creds {
