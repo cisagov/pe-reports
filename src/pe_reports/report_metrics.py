@@ -101,15 +101,16 @@ def credential_metrics(start_date, end_date, org_uid):
         breach_det_df["breach_date"] = pd.to_datetime(
             breach_det_df["breach_date"]
         ).dt.strftime("%m/%d/%y")
-        breach_det_df = breach_det_df.rename(
-            columns={
-                "breach_name": "Breach Name",
-                "breach_date": "Breach Date",
-                "update_date": "Date Reported",
-                "password_included": "Password Included",
-                "number_of_creds": "Number of Creds",
-            }
-        )
+
+    breach_det_df = breach_det_df.rename(
+        columns={
+            "breach_name": "Breach Name",
+            "breach_date": "Breach Date",
+            "update_date": "Date Reported",
+            "password_included": "Password Included",
+            "number_of_creds": "Number of Creds",
+        }
+    )
 
     creds_attach = view_df
 
@@ -155,16 +156,26 @@ def domain_metrics(idx, org_uid, start_date, end_date):
         utlds = len(df_mal["tld"].unique())
         domain_count = len(domain_sum.index)
         domain_sum = domain_sum[:25]
+        domain_sum = domain_sum.rename(
+            columns={
+                "domain_permutation": "Domain",
+                "ipv4": "IPv4",
+                "ipv6": "IPv6",
+                "mail_server": "Mail Server",
+                "name_server": "Name Server",
+                "fuzzer": "Fuzzer",
+            }
+        )
     else:
         df_mal = pd.DataFrame(columns=df.columns.values)
         domain_sum = pd.DataFrame(
             columns=[
-                "domain_permutation",
-                "ipv4",
-                "ipv6",
-                "mail_server",
-                "name_server",
-                "fuzzer",
+                "Domain",
+                "IPv4",
+                "IPv6",
+                "Mail Server",
+                "Name Server",
+                "Fuzzer",
             ]
         )
         domain_count = 0
@@ -242,7 +253,16 @@ def malware_vuln_metrics(org_uid, start_date, end_date):
     unverif_df = unverif_df.sort_values(by=["count"], ascending=False)
     unverifVulnAssets = len(unverif_df.index)
     unverif_df = unverif_df[:15].reset_index(drop=True)
-    print(unverif_df)
+
+    # Rename sumamry columns
+    verif_vulns_summary = verif_vulns_summary.rename(
+        columns={
+            "cve": "CVE",
+            "ip": "IP",
+            "port": "Port",
+            "summary": "Summary",
+        }
+    )
     return (
         insecure_df,
         vulns_df,
@@ -281,6 +301,8 @@ def mention_metrics(org_uid, start_date, end_date):
         end_date,
         "top_cves",
     )
+    # Filter cves to most recent date
+    top_cves = top_cves[top_cves["date"] == top_cves["date"].max()]
     close(conn)
     dark_web_mentions = dark_web_mentions.drop(
         columns=["organizations_uid", "mentions_uid"],
@@ -298,6 +320,7 @@ def mention_metrics(org_uid, start_date, end_date):
     dark_web_date = (
         dark_web_date.groupby(["date"])["date"].count().reset_index(name="Count")
     )
+    print(dark_web_date)
 
     # Get mentions by dark web sites (top 10)
     dark_web_sites = dark_web_mentions[["site"]]
@@ -307,6 +330,7 @@ def mention_metrics(org_uid, start_date, end_date):
         .nlargest(10)
         .reset_index(name="count")
     )
+    dark_web_sites = dark_web_sites.rename(columns={"site": "Site", "count": "Count"})
 
     # Get alert threats
     alerts_threats = alerts[["site", "threats"]]
@@ -319,6 +343,9 @@ def mention_metrics(org_uid, start_date, end_date):
         .reset_index(name="Events")
     )
     alerts_threats["threats"] = alerts_threats["threats"].str.strip("{}")
+    alerts_threats = alerts_threats.rename(
+        columns={"site": "Site", "threats": "Threats"}
+    )
 
     # Get dark web bad actors
     dark_web_bad_actors = dark_web_mentions[["creator", "rep_grade"]]
@@ -328,6 +355,9 @@ def mention_metrics(org_uid, start_date, end_date):
     )[:10]
     dark_web_bad_actors["rep_grade"] = (
         dark_web_bad_actors["rep_grade"].astype(float).round(decimals=3)
+    )
+    dark_web_bad_actors = dark_web_bad_actors.rename(
+        columns={"creator": "Creator", "rep_grade": "Grade"}
     )
 
     # Get dark web notable tags
@@ -340,6 +370,7 @@ def mention_metrics(org_uid, start_date, end_date):
         .reset_index(name="Events")
     )
     dark_web_tags["tags"] = dark_web_tags["tags"].str.strip("{}")
+    dark_web_tags = dark_web_tags.rename(columns={"tags": "Tags"})
 
     # Get dark web categories
     dark_web_content = dark_web_mentions[["category"]]
@@ -360,19 +391,32 @@ def mention_metrics(org_uid, start_date, end_date):
         .nlargest(10)
         .reset_index(name="Events")
     )
+    alerts_exec = alerts_exec.rename(columns={"site": "Site", "title": "Title"})
 
     # Get most active posts
     dark_web_most_act = dark_web_mentions[["comments_count", "title", "content"]]
     dark_web_most_act = dark_web_most_act[dark_web_most_act["comments_count"] != "NaN"]
-    dark_web_most_act = dark_web_most_act.sort_values(
-        by="comments_count", ascending=False
+    dark_web_most_act = dark_web_most_act.rename(
+        columns={"comments_count": "Comments Count"}
     )
-    dark_web_most_act = dark_web_most_act.rename(columns={"comments_count": "Events"})
+    dark_web_most_act["Comments Count"] = (
+        dark_web_most_act["Comments Count"].astype(float).astype(int)
+    )
+    dark_web_most_act = dark_web_most_act.sort_values(
+        by="Comments Count", ascending=False
+    )
     dark_web_most_act = dark_web_most_act[:5]
-    dark_web_most_act["Events"] = dark_web_most_act["Events"].astype(float).astype(int)
+    dark_web_most_act["content"] = dark_web_most_act["content"].str[:150]
+    dark_web_most_act = dark_web_most_act.rename(
+        columns={"title": "Title", "content": "Content"}
+    )
 
     # Get top cves
-    top_cves = top_cves[["cve_id", "nvd_base_score"]]
+    top_cve_table = top_cves[["cve_id", "summary"]]
+    top_cve_table["summary"] = top_cve_table["summary"].str[:400]
+    top_cve_table = top_cve_table.rename(
+        columns={"cve_id": "CVE", "summary": "Description"}
+    )
 
     return (
         dark_web_mentions,
@@ -387,6 +431,7 @@ def mention_metrics(org_uid, start_date, end_date):
         alerts_exec,
         dark_web_most_act,
         top_cves,
+        top_cve_table,
     )
 
 
@@ -441,6 +486,7 @@ def generate_metrics(datestring, org_uid):
         alerts_exec,
         dark_web_most_act,
         top_cves,
+        top_cve_table,
     ) = mention_metrics(org_uid, start_date, end_date)
 
     return (
@@ -478,4 +524,5 @@ def generate_metrics(datestring, org_uid):
         alerts_exec,
         dark_web_most_act,
         top_cves,
+        top_cve_table,
     )

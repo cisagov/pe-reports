@@ -127,17 +127,12 @@ def query_darkweb(conn, org_uid, start_date, end_date, table):
 
 def query_darkweb_cves(conn, start_date, end_date, table):
     """Query Dark Web CVE Table."""
-    sql = """SELECT * FROM %(table)s
-    WHERE date BETWEEN %(start_date)s AND %(end_date)s"""
+    sql = """SELECT * FROM %(table)s"""
     print(sql)
     df = pd.read_sql(
         sql,
         conn,
-        params={
-            "table": AsIs(table),
-            "start_date": start_date,
-            "end_date": end_date,
-        },
+        params={"table": AsIs(table)},
     )
     return df
 
@@ -146,7 +141,7 @@ def query_cyberSix_creds(conn, org_uid, start_date, end_date):
     """Query hibp table."""
     sql = """SELECT * FROM public.cybersix_exposed_credentials as creds
     WHERE organizations_uid = %(org_uid)s
-    AND create_time BETWEEN %(start)s AND %(end)s"""
+    AND breach_date BETWEEN %(start)s AND %(end)s"""
     df = pd.read_sql(
         sql,
         conn,

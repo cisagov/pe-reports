@@ -55,10 +55,10 @@ def embed_and_encrypt(
     mi = open(mi_xlsx, "rb").read()
 
     # Insert link to csv data in last page of pdf
-    p1 = fitz.Point(375, 590)
-    p2 = fitz.Point(425, 590)
-    p3 = fitz.Point(475, 590)
-    p5 = fitz.Point(525, 590)
+    p1 = fitz.Point(110, 695)
+    p2 = fitz.Point(240, 695)
+    p3 = fitz.Point(375, 695)
+    p5 = fitz.Point(500, 695)
 
     # Embedd and add push-pin graphic
     page.add_file_annot(
@@ -181,6 +181,7 @@ def generate_reports(datestring, data_directory, output_directory):
             alerts_exec,
             dark_web_most_act,
             top_cves,
+            top_cve_table,
         ) = generate_metrics(datestring, org_uid)
 
         # Load source html
@@ -220,7 +221,7 @@ def generate_reports(datestring, data_directory, output_directory):
             dark_web_content,
             alerts_exec,
             dark_web_most_act,
-            top_cves,
+            top_cve_table,
         )
 
         # Close pdf
@@ -257,6 +258,7 @@ def generate_reports(datestring, data_directory, output_directory):
             miWriter, sheet_name="Dark Web Mentions", index=False
         )
         alerts.to_excel(miWriter, sheet_name="Dark Web Alerts", index=False)
+        top_cves.to_excel(miWriter, sheet_name="Top CVEs", index=False)
         miWriter.save()
 
         # grab the pdf

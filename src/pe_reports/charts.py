@@ -334,8 +334,10 @@ class barCharts:
         plt.tight_layout()
 
         for i, j in df[df.columns[1]].items():
+            print(i)
+            print(j)
             ax.annotate(
-                str(j),
+                j,
                 xy=(i, j),
                 textcoords="offset points",  # how to position the text
                 xytext=(0, 5),  # distance from text to points (x,y)
