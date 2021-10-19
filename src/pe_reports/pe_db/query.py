@@ -59,7 +59,6 @@ def query_hibp_view(conn, org_uid, start_date, end_date):
     sql = """SELECT * FROM vw_breach_complete
     WHERE organizations_uid = %(org_uid)s
     AND modified_date BETWEEN %(start_date)s AND %(end_date)s"""
-    print(sql)
     df = pd.read_sql(
         sql,
         conn,
@@ -74,7 +73,6 @@ def query_domMasq(conn, org_uid, start_date, end_date):
     sql = """SELECT * FROM dnstwist_domain_masq
     WHERE organizations_uid = %(org_uid)s
     AND date_observed BETWEEN %(start_date)s AND %(end_date)s"""
-    print(sql)
     df = pd.read_sql(
         sql,
         conn,
@@ -92,7 +90,6 @@ def query_shodan(conn, org_uid, start_date, end_date, table):
     sql = """SELECT * FROM %(table)s
     WHERE organizations_uid = %(org_uid)s
     AND timestamp BETWEEN %(start_date)s AND %(end_date)s"""
-    print(sql)
     df = pd.read_sql(
         sql,
         conn,
@@ -111,7 +108,6 @@ def query_darkweb(conn, org_uid, start_date, end_date, table):
     sql = """SELECT * FROM %(table)s
     WHERE organizations_uid = %(org_uid)s
     AND date BETWEEN %(start_date)s AND %(end_date)s"""
-    print(sql)
     df = pd.read_sql(
         sql,
         conn,
@@ -128,7 +124,6 @@ def query_darkweb(conn, org_uid, start_date, end_date, table):
 def query_darkweb_cves(conn, start_date, end_date, table):
     """Query Dark Web CVE Table."""
     sql = """SELECT * FROM %(table)s"""
-    print(sql)
     df = pd.read_sql(
         sql,
         conn,

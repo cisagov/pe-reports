@@ -205,6 +205,7 @@ def init(
     ce_date_df,
     breach_det_df,
     creds_attach,
+    creds_attach2,
     breach_appendix,
     domain_sum,
     domain_count,

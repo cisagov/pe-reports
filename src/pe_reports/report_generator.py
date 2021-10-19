@@ -153,6 +153,7 @@ def generate_reports(datestring, data_directory, output_directory):
             ce_date_df,
             breach_det_df,
             creds_attach,
+            creds_attach2,
             breach_appendix,
             domain_masq,
             domain_sum,
@@ -200,6 +201,7 @@ def generate_reports(datestring, data_directory, output_directory):
             ce_date_df,
             breach_det_df,
             creds_attach,
+            creds_attach2,
             breach_appendix,
             domain_sum,
             domain_count,
@@ -234,7 +236,8 @@ def generate_reports(datestring, data_directory, output_directory):
         # Create Crendential Exposure excel file
         cred_xlsx = f"{output_directory}/{org_code}/compromised_credentials.xlsx"
         credWriter = pd.ExcelWriter(cred_xlsx, engine="xlsxwriter")
-        creds_attach.to_excel(credWriter, sheet_name="Credentials", index=False)
+        creds_attach.to_excel(credWriter, sheet_name="HIBP_Credentials", index=False)
+        creds_attach2.to_excel(credWriter, sheet_name="Cyber6_Credentials", index=False)
         credWriter.save()
 
         # Create Domain Masquerading excel file
