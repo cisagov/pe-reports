@@ -23,18 +23,19 @@ def credential_metrics(start_date, end_date, org_uid):
     """Calculate compromised credentials metrics and return variables and dataframes."""
     conn = connect()
     view_df = query_hibp_view(conn, org_uid, start_date, end_date)
-    print(view_df)
     conn = connect()
 
     c6_df = query_cyberSix_creds(conn, org_uid, start_date, end_date)
+    c6_df["description"] = (
+        c6_df["description"].str.split("Query to find the related").str[0]
+    )
     c6_df["password_included"] = np.where(c6_df["password"] != "", True, False)
     c6_df_2 = c6_df[["create_time", "password_included", "email"]]
     c6_df_2 = c6_df_2.rename(columns={"create_time": "modified_date"})
 
-    print(c6_df)
     hibp_df = view_df[["modified_date", "password_included", "email"]]
-    hibp_df["added_date"] = pd.to_datetime(hibp_df["modified_date"]).dt.date
-    hibp_df = hibp_df.append(c6_df, ignore_index=True)
+    hibp_df = hibp_df.append(c6_df_2, ignore_index=True)
+    hibp_df["modified_date"] = pd.to_datetime(hibp_df["modified_date"]).dt.date
     creds = len(hibp_df)
 
     pw_creds = len(hibp_df[hibp_df["password_included"]])
@@ -68,8 +69,30 @@ def credential_metrics(start_date, end_date, org_uid):
     )
     if len(ce_date_df.columns) == 0:
         ce_date_df["Passwords Included"] = 0
+    c6_df_3 = c6_df[
+        [
+            "breach_name",
+            "create_time",
+            "description",
+            "breach_date",
+            "password_included",
+            "email",
+        ]
+    ]
+    c6_df_3 = c6_df_3.rename(columns={"create_time": "modified_date"})
+    view_df_2 = view_df[
+        [
+            "breach_name",
+            "modified_date",
+            "description",
+            "breach_date",
+            "password_included",
+            "email",
+        ]
+    ]
+    view_df_2 = view_df_2.append(c6_df_3, ignore_index=True)
 
-    breach_df = view_df.groupby(
+    breach_df = view_df_2.groupby(
         [
             "breach_name",
             "modified_date",
@@ -110,8 +133,8 @@ def credential_metrics(start_date, end_date, org_uid):
                 "number_of_creds": "Number of Creds",
             }
         )
-
     creds_attach = view_df
+    creds_attach2 = c6_df
 
     # count how many distinct breaches there are
     #
@@ -125,6 +148,7 @@ def credential_metrics(start_date, end_date, org_uid):
         ce_date_df,
         breach_det_df,
         creds_attach,
+        creds_attach2,
         breach_appendix,
     )
 
@@ -408,6 +432,7 @@ def generate_metrics(datestring, org_uid):
         ce_date_df,
         breach_det_df,
         creds_attach,
+        creds_attach2,
         breach_appendix,
     ) = credential_metrics(start_date, end_date, org_uid)
 
@@ -450,6 +475,7 @@ def generate_metrics(datestring, org_uid):
         ce_date_df,
         breach_det_df,
         creds_attach,
+        creds_attach2,
         breach_appendix,
         domain_masq,
         domain_sum,
