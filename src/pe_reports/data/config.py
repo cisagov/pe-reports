@@ -1,7 +1,4 @@
-#!/usr/bin/python3
-
-
-"""The module contains the postgresql dbconfig.config code."""
+"""The file contains the postgresql dbconfig.config parsing code."""
 
 # Standard Python Libraries
 from configparser import ConfigParser
