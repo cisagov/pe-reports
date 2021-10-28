@@ -1,19 +1,7 @@
-"""Generate metrics for pe-reports."""
-# Standard Python Libraries
-# from datetime import datetime
-# import logging
+"""Class methods for report metrics."""
 
-# Third-Party Libraries
-# import numpy as np
-# import pandas as pd
+# TODO: Merge PR 91 and PR 92 to test
 # from .query_db import query_hibp_view, query_cyberSix_creds
-
-# Break up running metrics into functions.
-# Document String each metric output to its report title.
-# Remove postgress connect/close from each metric function.
-
-# TODO: Create scripts to build charting metrics; credentials
-# Issue: https://github.com/cisagov/pe-reports/issues/78
 
 
 class Credentials:
@@ -25,22 +13,53 @@ class Credentials:
         self.end_date = end_date
         self.org_uid = org_uid
 
-    def total(self):
-        """Total credentials exposed."""
-        return  # creds
+    def total(self, query_hibp_view, query_cyberSix_creds):
+        """Return total number of credentials."""
+        total_creds = query_hibp_view.count()
+        total_creds_cyber = query_cyberSix_creds.count()
+        creds = total_creds + total_creds_cyber
+        return creds
 
-    def password(self):
-        """Credentials with password."""
-        return  # pw_creds
+    def password(self, query_hibp_view, query_cyberSix_creds):
+        """Password credentials."""
+        password_creds = query_hibp_view.filter(
+            query_hibp_view.password_type == "password"
+        ).count()
+        password_creds_cyber = query_cyberSix_creds.filter(
+            query_cyberSix_creds.password_type == "password"
+        ).count()
+        password_creds = password_creds + password_creds_cyber
+        return password_creds
 
-    def breaches(self):
-        """Distinct breaches."""
-        return  # breach
+    def breaches(self, query_hibp_view):
+        """Breaches."""
+        breaches = query_hibp_view.filter(
+            query_hibp_view.password_type == "breach"
+        ).count()
+        return breaches
 
-    def by_day(self):
-        """Credentials exposed by day."""
-        return  # ce_date_df
+    def by_day(self, query_hibp_view, query_cyberSix_creds):
+        """By day."""
+        by_day = (
+            query_hibp_view.filter(query_hibp_view.password_type == "password")
+            .group_by(query_hibp_view.date_added)
+            .count()
+        )
+        by_day_cyber = (
+            query_cyberSix_creds.filter(
+                query_cyberSix_creds.password_type == "password"
+            )
+            .group_by(query_cyberSix_creds.date_added)
+            .count()
+        )
+        by_day = by_day + by_day_cyber
+        return by_day
 
-    def breach_details(self):
+    def breach_details(self, query_hibp_view):
         """Breach details."""
-        return  # breach_det_df
+        breach_details = (
+            query_hibp_view.filter(query_hibp_view.password_type == "breach")
+            .group_by(query_hibp_view.breach_name)
+            .count()
+        )
+        return breach_details
