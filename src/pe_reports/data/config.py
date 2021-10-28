@@ -1,26 +1,22 @@
 #!/usr/bin/python3
 
 
-"""This module contains the postgresql dbconfig.config code."""
+"""The module contains the postgresql dbconfig.config code."""
 
+# Standard Python Libraries
 from configparser import ConfigParser
 
 # Third-Party Libraries
 import pkg_resources
 
-
 REPORT_DB_CONFIG = pkg_resources.resource_filename("pe_reports", "data/dbconfig.config")
 
 
-def config(filename=REPORT_DB_CONFIG, section='postgres'):
-
-    """Reads .config file that contains DB credentials.
-
-    """
-
+def config(filename=REPORT_DB_CONFIG, section="postgres"):
+    """Configure connection to creds file and returns creds."""
     parser = ConfigParser()
 
-    parser.read(filename, encoding='utf-8')
+    parser.read(filename, encoding="utf-8")
 
     db = {}
 
@@ -31,11 +27,6 @@ def config(filename=REPORT_DB_CONFIG, section='postgres'):
             db[param[0]] = param[1]
 
     else:
-        raise Exception(f'Section {section} not found in {filename}')
+        raise Exception(f"Section {section} not found in {filename}")
 
     return db
-
-
-
-
-
