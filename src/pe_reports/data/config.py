@@ -15,7 +15,7 @@ def config(filename=REPORT_DB_CONFIG, section="postgres"):
 
     parser.read(filename, encoding="utf-8")
 
-    db = {}
+    db = dict()
 
     if parser.has_section(section):
         for key, value in parser.items(section):
