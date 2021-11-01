@@ -4,9 +4,10 @@
 from configparser import ConfigParser
 
 # Third-Party Libraries
-import pkg_resources
+from importlib.resources import files
 
-REPORT_DB_CONFIG = pkg_resources.resource_filename("pe_reports", "data/dbconfig.config")
+REPORT_DB_CONFIG = files("pe_reports").joinpath("data/dbconfig.config")
+
 
 
 def config(filename=REPORT_DB_CONFIG, section="postgres"):
