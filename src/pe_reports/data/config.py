@@ -1,4 +1,4 @@
-"""The file contains the postgresql dbconfig.config parsing code."""
+"""Configuration to connect to a PostgreSQL database."""
 
 # Standard Python Libraries
 from configparser import ConfigParser
