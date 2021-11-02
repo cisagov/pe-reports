@@ -8,7 +8,7 @@ REPORT_DB_CONFIG = files("pe_reports").joinpath("data/dbconfig.config")
 
 
 def config(filename=REPORT_DB_CONFIG, section="postgres"):
-    """Pass credentials to access database."""
+    """Parse Postgres configuration details from database configuration file."""
     parser = ConfigParser()
 
     parser.read(filename, encoding="utf-8")
