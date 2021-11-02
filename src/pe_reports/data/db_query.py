@@ -1,16 +1,15 @@
 """Query the PE postgres database."""
 
 # Standard Python Libraries
-import sys
 import logging
+import sys
 
 # Third-Party Libraries
-import pandas as pd
 from config import config
+import pandas as pd
 import psycopg2
 from psycopg2 import OperationalError
 from psycopg2.extensions import AsIs
-
 
 logging.basicConfig(format="%(asctime)-15s %(levelname)s %(message)s", level="INFO")
 
@@ -28,7 +27,6 @@ def show_psycopg2_exception(err):
     logging.error(f"pgerror: {err}")
 
     logging.error(f"pgcode: {err}\n")
-
 
 
 def connect():
