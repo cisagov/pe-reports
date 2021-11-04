@@ -85,6 +85,7 @@ def query_hibp_view(conn, org_uid, start_date, end_date):
         if conn is not None:
             close(conn)
 
+
 def query_domMasq(conn, org_uid, start_date, end_date):
     """Query domain masquerading table."""
     try:
