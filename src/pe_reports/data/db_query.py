@@ -80,7 +80,7 @@ def query_hibp_view(conn, org_uid, start_date, end_date):
         )
         return df
     except (Exception, psycopg2.DatabaseError) as error:
-        logging.error(f"There was an problem with your database query {error}")
+        logging.error(f"There was a problem with your database query {error}")
     finally:
         if conn is not None:
             close(conn)
@@ -103,7 +103,7 @@ def query_domMasq(conn, org_uid, start_date, end_date):
         )
         return df
     except (Exception, psycopg2.DatabaseError) as error:
-        logging.error(f"There was an problem with your database query {error}")
+        logging.error(f"There was a problem with your database query {error}")
     finally:
         if conn is not None:
             close(conn)
@@ -127,7 +127,7 @@ def query_shodan(conn, org_uid, start_date, end_date, table):
         )
         return df
     except (Exception, psycopg2.DatabaseError) as error:
-        logging.error(f"There was an problem with your database query {error}")
+        logging.error(f"There was a problem with your database query {error}")
     finally:
         if conn is not None:
             close(conn)
@@ -151,7 +151,7 @@ def query_darkweb(conn, org_uid, start_date, end_date, table):
         )
         return df
     except (Exception, psycopg2.DatabaseError) as error:
-        logging.error(f"There was an problem with your database query {error}")
+        logging.error(f"There was a problem with your database query {error}")
     finally:
         if conn is not None:
             close(conn)
@@ -168,7 +168,7 @@ def query_darkweb_cves(conn, table):
         )
         return df
     except (Exception, psycopg2.DatabaseError) as error:
-        logging.error(f"There was an problem with your database query {error}")
+        logging.error(f"There was a problem with your database query {error}")
     finally:
         if conn is not None:
             close(conn)
@@ -187,7 +187,7 @@ def query_cyberSix_creds(conn, org_uid, start_date, end_date):
         )
         return df
     except (Exception, psycopg2.DatabaseError) as error:
-        logging.error(f"There was an problem with your database query {error}")
+        logging.error(f"There was a problem with your database query {error}")
     finally:
         if conn is not None:
             close(conn)
