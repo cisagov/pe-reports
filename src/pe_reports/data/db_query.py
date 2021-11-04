@@ -5,11 +5,12 @@ import logging
 import sys
 
 # Third-Party Libraries
-from .config import config
 import pandas as pd
 import psycopg2
 from psycopg2 import OperationalError
 from psycopg2.extensions import AsIs
+
+from .config import config
 
 logging.basicConfig(format="%(asctime)-15s %(levelname)s %(message)s", level="INFO")
 
@@ -157,7 +158,7 @@ def query_darkweb(conn, org_uid, start_date, end_date, table):
             close(conn)
 
 
-def query_darkweb_cves(conn, start_date, end_date, table):
+def query_darkweb_cves(conn, table):
     """Query Dark Web CVE Table."""
     try:
         sql = """SELECT * FROM %(table)s"""
