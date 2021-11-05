@@ -84,7 +84,10 @@ setup(
     keywords="posture and exposure report",
     packages=find_packages(where="src"),
     package_dir={"": "src"},
-    package_data={"pe_reports": ["data/shell/*.pptx"], "pe_mailer": ["data/*"]},
+    package_data={
+        "pe_reports": ["data/shell/*.pptx", "data/*.config"],
+        "pe_mailer": ["data/*"],
+    },
     py_modules=[splitext(basename(path))[0] for path in glob("src/*.py")],
     include_package_data=True,
     install_requires=[
@@ -94,7 +97,6 @@ setup(
         "docopt",
         "glob2",
         "mongo-db-from-config@http://github.com/cisagov/mongo-db-from-config/tarball/develop",
-        "numpy",
         "openpyxl",
         "pandas",
         "pyyaml",
