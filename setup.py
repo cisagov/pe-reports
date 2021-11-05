@@ -93,7 +93,7 @@ setup(
         "chevron",
         "docopt",
         "glob2",
-        "mongo-db-from-config @ http://github.com/cisagov/mongo-db-from-config/tarball/develop",
+        "mongo-db-from-config@http://github.com/cisagov/mongo-db-from-config/tarball/develop",
         "numpy",
         "openpyxl",
         "pandas",
