@@ -172,7 +172,6 @@ def domain_metrics(idx, org_uid, start_date, end_date):
                 "ipv6",
                 "mail_server",
                 "name_server",
-                "fuzzer",
             ]
         ]
         df_mal["tld"] = (
@@ -188,7 +187,6 @@ def domain_metrics(idx, org_uid, start_date, end_date):
                 "ipv6": "IPv6",
                 "mail_server": "Mail Server",
                 "name_server": "Name Server",
-                "fuzzer": "Fuzzer",
             }
         )
     else:
@@ -200,7 +198,6 @@ def domain_metrics(idx, org_uid, start_date, end_date):
                 "IPv6",
                 "Mail Server",
                 "Name Server",
-                "Fuzzer",
             ]
         )
         domain_count = 0
@@ -364,10 +361,11 @@ def mention_metrics(org_uid, start_date, end_date):
     alerts_threats = (
         alerts_threats.groupby(["site", "threats"])["threats"]
         .count()
-        .nlargest(10)
+        .nlargest(5)
         .reset_index(name="Events")
     )
     alerts_threats["threats"] = alerts_threats["threats"].str.strip("{}")
+    alerts_threats["threats"] = alerts_threats["threats"].str[:50]
     alerts_threats = alerts_threats.rename(
         columns={"site": "Site", "threats": "Threats"}
     )
@@ -391,10 +389,11 @@ def mention_metrics(org_uid, start_date, end_date):
     dark_web_tags = (
         dark_web_tags.groupby(["tags"])["tags"]
         .count()
-        .nlargest(10)
+        .nlargest(8)
         .reset_index(name="Events")
     )
     dark_web_tags["tags"] = dark_web_tags["tags"].str.strip("{}")
+    dark_web_tags["tags"] = dark_web_tags["tags"].str.replace(",", ", ", regex=False)
     dark_web_tags = dark_web_tags.rename(columns={"tags": "Tags"})
 
     # Get dark web categories
@@ -431,10 +430,11 @@ def mention_metrics(org_uid, start_date, end_date):
         by="Comments Count", ascending=False
     )
     dark_web_most_act = dark_web_most_act[:5]
-    dark_web_most_act["content"] = dark_web_most_act["content"].str[:150]
+    dark_web_most_act["content"] = dark_web_most_act["content"].str[:100]
     dark_web_most_act = dark_web_most_act.rename(
         columns={"title": "Title", "content": "Content"}
     )
+    dark_web_most_act["Title"] = dark_web_most_act["Title"].str[:50]
 
     # Get top cves
     top_cve_table = top_cves[["cve_id", "summary"]]

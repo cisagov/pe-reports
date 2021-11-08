@@ -5,7 +5,7 @@ from configparser import ConfigParser
 
 
 def config(
-    filename="/Users/loftusa/Documents/PE/Scripts/final_report_v1.0.0/pe-reports/src/pe_reports/pe_db/data/database.ini",
+    filename="/home/vnc/PE_Scripts/pe_reports/src/pe_reports/pe_db/data/database.ini",
     section="postgresql",
 ):
     """Configure database."""
