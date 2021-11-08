@@ -1,4 +1,4 @@
-"""File to be used to create test for pe-reports."""
+"""Tests for the pe-mailer module."""
 
 # Standard Python Libraries
 import logging
@@ -9,7 +9,7 @@ from unittest.mock import patch
 import pytest
 
 # cisagov Libraries
-import pe_reports.report_generator
+import pe_mailer.email_reports
 
 log_levels = (
     "debug",
@@ -19,26 +19,21 @@ log_levels = (
     "critical",
 )
 
-
-PROJECT_VERSION = pe_reports.__version__
-
-
-# TODO: Replace current dummy test with useful tests
-# Issue - https://github.com/cisagov/pe-reports/issues/3#issue-909531010
+PROJECT_VERSION = pe_mailer.__version__
 
 
-def test_reports_stdout_version(capsys):
+def test_mailer_stdout_version(capsys):
     """Verify that version string sent to stdout agrees with the module version."""
     with pytest.raises(SystemExit):
         with patch.object(sys, "argv", ["bogus", "--version"]):
-            pe_reports.report_generator.main()
+            pe_mailer.email_reports.main()
     captured = capsys.readouterr()
     assert (
         captured.out == f"{PROJECT_VERSION}\n"
     ), "standard output by '--version' should agree with module.__version__"
 
 
-def test_reports_running_as_module(capsys):
+def test_mailer_running_as_module(capsys):
     """Verify that the __main__.py file loads correctly."""
     with pytest.raises(SystemExit):
         with patch.object(sys, "argv", ["bogus", "--version"]):
@@ -48,7 +43,7 @@ def test_reports_running_as_module(capsys):
             # package and running it, so there is nothing to use from this
             # import. As a result, we can safely ignore this warning.
             # cisagov Libraries
-            import pe_reports.__main__  # noqa: F401
+            import pe_mailer.__main__  # noqa: F401
     captured = capsys.readouterr()
     assert (
         captured.out == f"{PROJECT_VERSION}\n"
@@ -56,16 +51,15 @@ def test_reports_running_as_module(capsys):
 
 
 @pytest.mark.parametrize("level", log_levels)
-def test_reports_log_levels(level):
+def test_mailer_log_levels(level):
     """Validate commandline log-level arguments."""
     with patch.object(
         sys,
         "argv",
         [
-            "pe-reports",
-            "2021-01-01",
-            "input/",
-            "output/",
+            "pe-mailer",
+            "--pe-report-dir=/input",
+            "--db-creds-file=/creds",
             f"--log-level={level}",
         ],
     ):
@@ -75,7 +69,7 @@ def test_reports_log_levels(level):
             ), "root logger should not have handlers yet"
             return_code = None
             try:
-                pe_reports.report_generator.main()
+                pe_mailer.email_reports.main()
             except SystemExit as sys_exit:
                 return_code = sys_exit.code
             assert (
@@ -87,22 +81,21 @@ def test_reports_log_levels(level):
             assert return_code is None, "main() should return success"
 
 
-def test_reports_bad_log_level():
+def test_bad_log_level():
     """Validate bad log-level argument returns error."""
     with patch.object(
         sys,
         "argv",
         [
-            "pe-reports",
-            "2021-01-01",
-            "input/",
-            "output/",
+            "pe_mailer",
+            "--pe-report-dir=/input",
+            "--db-creds-file=/creds",
             "--log-level=emergency",
         ],
     ):
         return_code = None
         try:
-            pe_reports.report_generator.main()
+            pe_mailer.email_reports.main()
         except SystemExit as sys_exit:
             return_code = sys_exit.code
         assert return_code == 1, "main() should exit with error"

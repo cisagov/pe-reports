@@ -1,4 +1,4 @@
-# Posture and Exposure (P&E) Reports #
+# Posture & Exposure Reports (P&E Reports) #
 
 [![GitHub Build Status](https://github.com/cisagov/pe-reports/workflows/build/badge.svg)](https://github.com/cisagov/pe-reports/actions)
 [![Coverage Status](https://coveralls.io/repos/github/cisagov/pe-reports/badge.svg?branch=develop)](https://coveralls.io/github/cisagov/pe-reports?branch=develop)
@@ -6,63 +6,97 @@
 [![Language grade: Python](https://img.shields.io/lgtm/grade/python/g/cisagov/pe-reports.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/cisagov/pe-reports/context:python)
 [![Known Vulnerabilities](https://snyk.io/test/github/cisagov/pe-reports/develop/badge.svg)](https://snyk.io/test/github/cisagov/pe-reports)
 
-This package is used to generate encrypted Posture and Exposure (P&E) PDF
-reports using raw_data.xlsx files.
+This package is used to generate and deliver CISA Posture & Exposure Reports
+(P&E Reports). Reports are delivered by email and include an encrypted PDF
+attachment with a series of embedded raw-data files of the collected materials.
+The reports are delivered in a two step process. First the `pe_reports` module
+collects the raw data and creates the encrypted PDFs. The `pe_mailer` then
+securely delivers the content.
 
-## Device Setup ##
+Topics of interest include *Exposed Credentials, Domain Masquerading, Malware,
+Inferred Vulnerabilities and the Dark Web*. The data collected for the reports
+is gathered on the 1st and 15th of each month.
 
-Install [LibreOffice](https://www.libreoffice.org/get-help/install-howto/macos/)
-for PowerPoint to PDF conversion.
+## Requirements ##
 
-Install python 3
+- [Python Environment](CONTRIBUTING.md#creating-the-python-virtual-environment)
 
-(Optional) [Setting up your Mac](https://github.com/cisagov/development-guide/blob/develop/dev_envs/mac-env-setup.md)
+- [cisagov MongoDB](https://github.com/cisagov/mongo-db-from-config)
+
+- [cisagov AWS SES](https://github.com/cisagov/cool-dns-cyber.dhs.gov)
 
 ## Installation ##
 
-Please see the
-[Creating the Python virtual environment](CONTRIBUTING.md#creating-the-python-virtual-environment)
-section of the [CONTRIBUTING](CONTRIBUTING.md) document for information about
-setting up a Python virtual environment.
+- `git clone https://github.com/cisagov/pe-reports.git`
 
-Required configurations:
-*You must have access to the cyhy database
-Install [cisagov/mongo-db-from-config](https://github.com/cisagov/mongo-db-from-config)
-and follow the instructions to create the yaml file.
-The report generator will read `/secrets/database_creds.yml` by default if no
-yaml filepath is provided.
+- `pip install -e .`
 
-To generate a P&E report:
+## Create P&E Reports ##
+
+- Configure [cisagov MongoDB connection](https://github.com/cisagov/mongo-db-from-config)
 
 ```console
-python3 /pe-reports/src/pe_reports YYYY-MM-DD DATA_DIRECTORY OUTPUT_DIRECTORY [OPTIONS]
+Usage:
+  pe-reports REPORT_DATE DATA_DIRECTORY OUTPUT_DIRECTORY [--db-creds-file=FILENAME] [--log-level=LEVEL]
+
+Arguments:
+  REPORT_DATE                   Date of the report, format YYYY-MM-DD.
+  DATA_DIRECTORY                The directory where the Excel data files are located.
+                                Organized by owner.
+  OUTPUT_DIRECTORY              The directory where the final PDF reports should be saved.
+  -c --db-creds-file=FILENAME   A YAML file containing the Cyber
+                                Hygiene database credentials.
+                                [default: /secrets/database_creds.yml]
+Options:
+  -h --help                     Show this message.
+  -v --version                  Show version information.
+  --log-level=LEVEL             If specified, then the log level will be set to
+                                the specified value.  Valid values are "debug", "info",
+                                "warning", "error", and "critical". [default: info]
 ```
 
-## Making Changes ##
+## Deliver P&E Reports ##
 
-To change any general report format/standard visuals edit
-`/src/data/shell/pe_shell.pptx`
+- Configure [cisagov MongoDB connection](https://github.com/cisagov/mongo-db-from-config)
 
-To make any style changes, edit `/src/pe_reports/stylesheet.py`
+- Load an AWS profile that assumes [this role](https://github.com/cisagov/cool-dns-cyber.dhs.gov/blob/develop/sessendemail_rolerole.tf#L33-L39)
 
-To change metrics, edit `/src/pe_reports/report_metrics.py`
+```console
+Usage:
+  pe-mailer [--pe-report-dir=DIRECTORY] [--db-creds-file=FILENAME] [--log-level=LEVEL]
 
-To change page setups/graphs, edit `/src/pe_reports/pages.py`
+Arguments:
+  -p --pe-report-dir=DIRECTORY  Directory containing the pe-reports output.
+  -c --db-creds-file=FILENAME   A YAML file containing the Cyber
+                                Hygiene database credentials.
+                                [default: /secrets/database_creds.yml]
+Options:
+  -h --help                     Show this message.
+  -v --version                  Show version information.
+  -s --summary-to=EMAILS        A comma-separated list of email addresses
+                                to which the summary statistics should be
+                                sent at the end of the run.  If not
+                                specified then no summary will be sent.
+  -t --test_emails=EMAILS       A comma-separated list of email addresses
+                                to which to test email send process. If not
+                                specified then no test will be sent.
+  -l --log-level=LEVEL          If specified, then the log level will be set to
+                                the specified value.  Valid values are "debug", "info",
+                                "warning", "error", and "critical". [default: info]
+```
 
 ## Contributing ##
 
-We welcome contributions!  Please see [`CONTRIBUTING.md`](CONTRIBUTING.md) for
-details.
+We welcome contributions!  Please see [`CONTRIBUTING.md`](CONTRIBUTING.md) for details.
 
 ## License ##
 
 This project is in the worldwide [public domain](LICENSE).
 
-This project is in the public domain within the United States, and
-copyright and related rights in the work worldwide are waived through
-the [CC0 1.0 Universal public domain
-dedication](https://creativecommons.org/publicdomain/zero/1.0/).
+This project is in the public domain within the United States, and copyright
+and related rights in the work worldwide are waived through the
+[CC0 1.0 Universal public domain dedication](https://creativecommons.org/publicdomain/zero/1.0/).
 
-All contributions to this project will be released under the CC0
-dedication. By submitting a pull request, you are agreeing to comply
-with this waiver of copyright interest.
+All contributions to this project will be released under the CC0 dedication.
+By submitting a pull request, you are agreeing to comply with this waiver
+of copyright interest.
