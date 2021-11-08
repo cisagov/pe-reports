@@ -59,6 +59,7 @@ CREATE TABLE IF NOT EXISTS public.web_assets
     ip_type text,
     verified boolean,
     organizations_uid uuid NOT NULL,
+    asset_origin text,
     report_on boolean DEFAULT TRUE,
     last_scanned timestamp,
     UNIQUE(asset),
