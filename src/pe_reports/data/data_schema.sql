@@ -42,8 +42,8 @@ CREATE TABLE IF NOT EXISTS public.sub_domains
     PRIMARY KEY (sub_domain_uid)
 );
 
--- Organization's Sub Domains IPs Link Table
-CREATE TABLE IF NOT EXISTS Sub_domains_Ips
+-- Organization's Sub Domains web_assets Link Table
+CREATE TABLE IF NOT EXISTS Sub_domains_Web_assets
 (
     sub_domain_uid uuid NOT NULL,
     asset_uid uuid NOT NULL,
@@ -316,7 +316,7 @@ ALTER TABLE public.sub_domains
  NOT VALID;
 
  -- many to many relation between sub domains and IPs
-ALTER TABLE public.Sub_domains_Ips
+ALTER TABLE public.Sub_domains_Web_assets
 ADD FOREIGN KEY (sub_domain_uid)
  REFERENCES public.sub_domains (sub_domain_uid)
  NOT VALID,
