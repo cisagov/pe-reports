@@ -23,7 +23,7 @@ def show_psycopg2_exception(err):
     line_n = traceback.tb_lineno
     logging.error(f"\npsycopg2 ERROR: {err} on line number: {line_n}")
     logging.error(f"psycopg2 traceback: {traceback} -- type: {err_type}")
-    logging.error(f"\nextensions.Diagnostivcs: {err}")
+    logging.error(f"\nextensions.Diagnostics: {err}")
 
     logging.error(f"pgerror: {err}")
 
