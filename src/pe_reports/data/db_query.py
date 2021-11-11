@@ -1,4 +1,4 @@
-"""Query the PE postgres database."""
+"""Query the PE PostgreSQL database."""
 
 # Standard Python Libraries
 import logging
@@ -18,7 +18,7 @@ CONN_PARAMS_DIC = config()
 
 
 def show_psycopg2_exception(err):
-    """Handle errors for postgres issues."""
+    """Handle errors for PostgreSQL issues."""
     err_type, traceback = sys.exc_info()
     line_n = traceback.tb_lineno
     logging.error(f"\npsycopg2 ERROR: {err} on line number: {line_n}")
@@ -31,7 +31,7 @@ def show_psycopg2_exception(err):
 
 
 def connect():
-    """Connect to postgres database."""
+    """Connect to PostgreSQL database."""
     conn = None
     try:
         logging.info("Connecting to the PostgreSQL......")
@@ -46,13 +46,13 @@ def connect():
 
 
 def close(conn):
-    """Close connection to postgres."""
+    """Close connection to PostgreSQL."""
     conn.close()
     return
 
 
 def get_orgs(conn):
-    """Query orgs table."""
+    """Query organizations table."""
     try:
         cur = conn.cursor()
         sql = """SELECT * FROM organizations"""
@@ -68,7 +68,7 @@ def get_orgs(conn):
 
 
 def query_hibp_view(conn, org_uid, start_date, end_date):
-    """Query hibp table."""
+    """Query 'Have I Been Pwned?' table."""
     try:
         sql = """SELECT * FROM vw_breach_complete
         WHERE organizations_uid = %(org_uid)s
@@ -110,7 +110,7 @@ def query_domMasq(conn, org_uid, start_date, end_date):
 
 
 def query_shodan(conn, org_uid, start_date, end_date, table):
-    """Query Shodan Table."""
+    """Query Shodan table."""
     try:
         sql = """SELECT * FROM %(table)s
         WHERE organizations_uid = %(org_uid)s
@@ -134,7 +134,7 @@ def query_shodan(conn, org_uid, start_date, end_date, table):
 
 
 def query_darkweb(conn, org_uid, start_date, end_date, table):
-    """Query Dark Web Table."""
+    """Query Dark Web table."""
     try:
         sql = """SELECT * FROM %(table)s
         WHERE organizations_uid = %(org_uid)s
@@ -158,7 +158,7 @@ def query_darkweb(conn, org_uid, start_date, end_date, table):
 
 
 def query_darkweb_cves(conn, table):
-    """Query Dark Web CVE Table."""
+    """Query Dark Web CVE table."""
     try:
         sql = """SELECT * FROM %(table)s"""
         df = pd.read_sql(
@@ -175,7 +175,7 @@ def query_darkweb_cves(conn, table):
 
 
 def query_cyberSix_creds(conn, org_uid, start_date, end_date):
-    """Query hibp table."""
+    """Query cybersix_exposed_credentials table."""
     try:
         sql = """SELECT * FROM public.cybersix_exposed_credentials as creds
         WHERE organizations_uid = %(org_uid)s
