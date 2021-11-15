@@ -109,6 +109,15 @@ def query_domMasq(conn, org_uid, start_date, end_date):
             close(conn)
 
 
+"""
+The 'table' parameter is used in query_shodan, query_darkweb and
+query_darkweb_cves functions to call specific tables that relate to the function name.
+The result of this implementation reduces the code base, the code reduction leads
+to an increase in efficiency by reusing the function by passing only a parameter to get
+the required information from the database.
+"""
+
+
 def query_shodan(conn, org_uid, start_date, end_date, table):
     """Query Shodan table."""
     try:
