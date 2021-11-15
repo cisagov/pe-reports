@@ -116,6 +116,7 @@ def query_domMasq(conn, org_uid, start_date, end_date):
 # function by passing only a parameter to get the required information from
 # the database.
 
+
 def query_shodan(conn, org_uid, start_date, end_date, table):
     """Query Shodan table."""
     try:
