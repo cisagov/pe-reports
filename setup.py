@@ -99,6 +99,7 @@ setup(
         "mongo-db-from-config@http://github.com/cisagov/mongo-db-from-config/tarball/develop",
         "openpyxl",
         "pandas",
+        "psycopg2",
         "pyyaml",
         "pymongo",
         "pymupdf",
