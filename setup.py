@@ -103,6 +103,8 @@ setup(
         "pymongo",
         "pymupdf",
         "python-pptx",
+        "pytest-cov",
+        "psycopg2-binary",
         "schema",
         "setuptools >= 24.2.0",
         "types-PyYAML",
