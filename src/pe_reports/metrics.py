@@ -21,6 +21,7 @@ class Credentials:
         df_cred_hibp = self.query_hibp_view.shape[0]
         total = df_cred_csg + df_cred_hibp
         return total
+
     # TODO the following functions correspond to functions at report_generator.py
     # TODO and will be added in follow up PR's.
     def password(self):
