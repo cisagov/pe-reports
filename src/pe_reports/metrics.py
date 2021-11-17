@@ -17,6 +17,9 @@ class Credentials:
         self.end_date = end_date
         self.org_uid = org_uid
         c6 = query_cyberSix_creds(org_uid, start_date, end_date)
+        c6.loc[c6["breach_name"] == "", "breach_name"] = "Cyber_six_" + pd.to_datetime(
+            c6["breach_date"]
+        ).dt.strftime("%m/%d/%Y")
         c6["description"] = (
             c6["description"].str.split("Query to find the related").str[0]
         )
