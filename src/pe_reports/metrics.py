@@ -100,7 +100,7 @@ class Credentials:
         """Return breach details."""
         hibp_df = self.query_hibp_view
         c6_df = self.query_cyberSix_creds
-        c6_df_3 = c6_df[
+        c6_df_2 = c6_df[
             [
                 "breach_name",
                 "create_time",
@@ -110,7 +110,7 @@ class Credentials:
                 "email",
             ]
         ]
-        c6_df_3 = c6_df_3.rename(columns={"create_time": "modified_date"})
+        c6_df_2 = c6_df_2.rename(columns={"create_time": "modified_date"})
         view_df_2 = hibp_df[
             [
                 "breach_name",
@@ -121,7 +121,7 @@ class Credentials:
                 "email",
             ]
         ]
-        view_df_2 = view_df_2.append(c6_df_3, ignore_index=True)
+        view_df_2 = view_df_2.append(c6_df_2, ignore_index=True)
 
         breach_df = view_df_2.groupby(
             [
@@ -170,7 +170,7 @@ class Credentials:
         """Return breach name and description to be added to the appendix."""
         hibp_df = self.query_hibp_view
         c6_df = self.query_cyberSix_creds
-        c6_df_3 = c6_df[
+        c6_df_2 = c6_df[
             [
                 "breach_name",
                 "create_time",
@@ -180,7 +180,7 @@ class Credentials:
                 "email",
             ]
         ]
-        c6_df_3 = c6_df_3.rename(columns={"create_time": "modified_date"})
+        c6_df_2 = c6_df_2.rename(columns={"create_time": "modified_date"})
         view_df_2 = hibp_df[
             [
                 "breach_name",
@@ -191,7 +191,7 @@ class Credentials:
                 "email",
             ]
         ]
-        view_df_2 = view_df_2.append(c6_df_3, ignore_index=True)
+        view_df_2 = view_df_2.append(c6_df_2, ignore_index=True)
 
         breach_df = view_df_2.groupby(
             [
