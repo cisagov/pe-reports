@@ -26,6 +26,10 @@ def credential_metrics(start_date, end_date, org_uid):
     conn = connect()
 
     c6_df = query_cyberSix_creds(conn, org_uid, start_date, end_date)
+    c6_df.loc[
+        c6_df["breach_name"] == "", "breach_name"
+    ] = "Cyber_six_" + pd.to_datetime(c6_df["breach_date"]).dt.strftime("%m/%d/%Y")
+
     c6_df["description"] = (
         c6_df["description"].str.split("Query to find the related").str[0]
     )
