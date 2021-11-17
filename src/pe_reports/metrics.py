@@ -170,41 +170,11 @@ class Credentials:
         """Return breach name and description to be added to the appendix."""
         hibp_df = self.query_hibp_view
         c6_df = self.query_cyberSix_creds
-        c6_df_2 = c6_df[
-            [
-                "breach_name",
-                "create_time",
-                "description",
-                "breach_date",
-                "password_included",
-                "email",
-            ]
-        ]
+        c6_df_2 = c6_df[["breach_name", "description"]]
         c6_df_2 = c6_df_2.rename(columns={"create_time": "modified_date"})
-        view_df_2 = hibp_df[
-            [
-                "breach_name",
-                "modified_date",
-                "description",
-                "breach_date",
-                "password_included",
-                "email",
-            ]
-        ]
+        view_df_2 = hibp_df[["breach_name", "description"]]
         view_df_2 = view_df_2.append(c6_df_2, ignore_index=True)
 
-        breach_df = view_df_2.groupby(
-            [
-                "breach_name",
-                "modified_date",
-                "description",
-                "breach_date",
-                "password_included",
-            ],
-            as_index=False,
-        ).agg({"email": ["count"]})
-
-        breach_df.columns = breach_df.columns.droplevel(1)
-        breach_df = breach_df.rename(columns={"email": "number_of_creds"})
-        breach_appendix = breach_df[["breach_name", "description"]]
+        view_df_2.drop_duplicates()
+        breach_appendix = view_df_2[["breach_name", "description"]]
         return breach_appendix
