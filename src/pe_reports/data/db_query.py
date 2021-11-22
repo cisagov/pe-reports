@@ -24,7 +24,9 @@ def show_psycopg2_exception(err):
     logging.error(f"\npsycopg2 ERROR: {err} on line number: {line_n}")
     logging.error(f"psycopg2 traceback: {traceback} -- type: {err_type}")
     logging.error(f"\nextensions.Diagnostics: {err}")
+
     logging.error(f"pgerror: {err}")
+
     logging.error(f"pgcode: {err}\n")
 
 
@@ -33,8 +35,10 @@ def connect():
     conn = None
     try:
         logging.info("Connecting to the PostgreSQL......")
+
         conn = psycopg2.connect(**CONN_PARAMS_DIC)
         logging.info("Connection successful................\n")
+
     except OperationalError as err:
         show_psycopg2_exception(err)
         conn = None
@@ -47,9 +51,8 @@ def close(conn):
     return
 
 
-def get_orgs():
+def get_orgs(conn):
     """Query organizations table."""
-    conn = connect()
     try:
         cur = conn.cursor()
         sql = """SELECT * FROM organizations"""
@@ -64,9 +67,8 @@ def get_orgs():
             close(conn)
 
 
-def query_hibp_view(org_uid, start_date, end_date):
+def query_hibp_view(conn, org_uid, start_date, end_date):
     """Query 'Have I Been Pwned?' table."""
-    conn = connect()
     try:
         sql = """SELECT * FROM vw_breach_complete
         WHERE organizations_uid = %(org_uid)s
@@ -84,9 +86,8 @@ def query_hibp_view(org_uid, start_date, end_date):
             close(conn)
 
 
-def query_domMasq(org_uid, start_date, end_date):
+def query_domMasq(conn, org_uid, start_date, end_date):
     """Query domain masquerading table."""
-    conn = connect()
     try:
         sql = """SELECT * FROM dnstwist_domain_masq
         WHERE organizations_uid = %(org_uid)s
@@ -116,9 +117,8 @@ def query_domMasq(org_uid, start_date, end_date):
 # the database.
 
 
-def query_shodan(org_uid, start_date, end_date, table):
+def query_shodan(conn, org_uid, start_date, end_date, table):
     """Query Shodan table."""
-    conn = connect()
     try:
         sql = """SELECT * FROM %(table)s
         WHERE organizations_uid = %(org_uid)s
@@ -141,9 +141,8 @@ def query_shodan(org_uid, start_date, end_date, table):
             close(conn)
 
 
-def query_darkweb(org_uid, start_date, end_date, table):
+def query_darkweb(conn, org_uid, start_date, end_date, table):
     """Query Dark Web table."""
-    conn = connect()
     try:
         sql = """SELECT * FROM %(table)s
         WHERE organizations_uid = %(org_uid)s
@@ -166,9 +165,8 @@ def query_darkweb(org_uid, start_date, end_date, table):
             close(conn)
 
 
-def query_darkweb_cves(table):
+def query_darkweb_cves(conn, table):
     """Query Dark Web CVE table."""
-    conn = connect()
     try:
         sql = """SELECT * FROM %(table)s"""
         df = pd.read_sql(
@@ -184,9 +182,8 @@ def query_darkweb_cves(table):
             close(conn)
 
 
-def query_cyberSix_creds(org_uid, start_date, end_date):
+def query_cyberSix_creds(conn, org_uid, start_date, end_date):
     """Query cybersix_exposed_credentials table."""
-    conn = connect()
     try:
         sql = """SELECT * FROM public.cybersix_exposed_credentials as creds
         WHERE organizations_uid = %(org_uid)s
