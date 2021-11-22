@@ -210,13 +210,6 @@ class Domains_Masqs:
                     "name_server",
                 ]
             ]
-            df_mal["tld"] = (
-                df_mal["domain_permutation"]
-                .str.split(".")
-                .str[-1]
-                .str.split("/")
-                .str[0]
-            )
             domain_sum = domain_sum[:25]
             domain_sum = domain_sum.rename(
                 columns={
@@ -228,7 +221,6 @@ class Domains_Masqs:
                 }
             )
         else:
-            df_mal = pd.DataFrame(columns=df_mal.columns.values)
             domain_sum = pd.DataFrame(
                 columns=[
                     "Domain",
@@ -542,7 +534,7 @@ class Cyber_Six:
             ",", ", ", regex=False
         )
         dark_web_tags = dark_web_tags.rename(columns={"tags": "Tags"})
-        return dark_web_mentions
+        return dark_web_tags
 
     def dark_web_content(self):
         """Get dark web categories."""
