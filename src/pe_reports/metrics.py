@@ -21,15 +21,15 @@ class Credentials:
         self.start_date = start_date
         self.end_date = end_date
         self.org_uid = org_uid
-        c6 = query_cyberSix_creds(org_uid, start_date, end_date)
-        c6.loc[c6["breach_name"] == "", "breach_name"] = "Cyber_six_" + pd.to_datetime(
-            c6["breach_date"]
-        ).dt.strftime("%m/%d/%Y")
-        c6["description"] = (
-            c6["description"].str.split("Query to find the related").str[0]
+        c6_df = query_cyberSix_creds(org_uid, start_date, end_date)
+        c6_df.loc[
+            c6_df["breach_name"] == "", "breach_name"
+        ] = "Cyber_six_" + pd.to_datetime(c6_df["breach_date"]).dt.strftime("%m/%d/%Y")
+        c6_df["description"] = (
+            c6_df["description"].str.split("Query to find the related").str[0]
         )
-        c6["password_included"] = np.where(c6["password"] != "", True, False)
-        self.query_cyberSix_creds = c6
+        c6_df["password_included"] = np.where(c6_df["password"] != "", True, False)
+        self.query_cyberSix_creds = c6_df
         self.query_hibp_view = query_hibp_view(org_uid, start_date, end_date)
 
     def total(self):
@@ -199,8 +199,8 @@ class Domains_Masqs:
     def summary(self):
         """Return domain masquerading summary information."""
         df_mal = self.df_mal
-        malCount = len(df_mal)
-        if malCount > 0:
+        mal_count = len(df_mal)
+        if mal_count > 0:
             domain_sum = df_mal[
                 [
                     "domain_permutation",
@@ -240,13 +240,17 @@ class Domains_Masqs:
 
     def utlds(self):
         """Return amount of unique top level domains."""
-        df = self.df_mal
+        mal_df = self.df_mal
 
-        if df > 0:
-            df["tld"] = (
-                df["domain_permutation"].str.split(".").str[-1].str.split("/").str[0]
+        if mal_df > 0:
+            mal_df["tld"] = (
+                mal_df["domain_permutation"]
+                .str.split(".")
+                .str[-1]
+                .str.split("/")
+                .str[0]
             )
-            utlds = len(df["tld"].unique())
+            utlds = len(mal_df["tld"].unique())
         else:
             utlds = 0
 
@@ -454,8 +458,8 @@ class Cyber_Six:
     def dark_web_count(self):
         """Get total number of Dark Web mentions."""
         dark_web_mentions = self.dark_web_mentions
-        darkWeb = len(dark_web_mentions.index)
-        return darkWeb
+        dark_web = len(dark_web_mentions.index)
+        return dark_web
 
     def dark_web_date(self):
         """Get dark web mentions by date."""
