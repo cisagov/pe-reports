@@ -36,8 +36,7 @@ class Credentials:
         """Return total number of credentials."""
         df_cred_csg = self.query_cyberSix_creds.shape[0]
         df_cred_hibp = self.query_hibp_view.shape[0]
-        total = df_cred_csg + df_cred_hibp
-        return total
+        return df_cred_csg + df_cred_hibp
 
     def password(self):
         """Return total number of credentials with passwords."""
@@ -47,8 +46,7 @@ class Credentials:
         pw_creds_hibp = len(
             self.query_hibp_view[self.query_hibp_view["password_included"]]
         )
-        password = pw_creds_csg + pw_creds_hibp
-        return password
+        return pw_creds_csg + pw_creds_hibp
 
     def breaches(self):
         """Return total number of breaches."""
@@ -56,8 +54,7 @@ class Credentials:
             self.query_hibp_view["breach_name"],
             self.query_cyberSix_creds["breach_name"],
         )
-        breaches = all_breaches.nunique()
-        return breaches
+        return all_breaches.nunique()
 
     def by_days(self):
         """Return number of credentials by day."""
@@ -181,8 +178,7 @@ class Credentials:
         view_df_2 = view_df_2.append(c6_df_2, ignore_index=True)
 
         view_df_2.drop_duplicates()
-        breach_appendix = view_df_2[["breach_name", "description"]]
-        return breach_appendix
+        return view_df_2[["breach_name", "description"]]
 
 
 class Domains_Masqs:
@@ -235,8 +231,7 @@ class Domains_Masqs:
     def count(self):
         """Return total count of malicious domains."""
         df = self.df_mal
-        domain_count = len(df.index)
-        return domain_count
+        return len(df.index)
 
     def utlds(self):
         """Return amount of unique top level domains."""
@@ -304,15 +299,12 @@ class Malware_Vulns:
         ]
         risky_assets = insecure[["ip", "protocol"]].drop_duplicates(keep="first")
 
-        # Horizontal bar: insecure protocol count
         pro_count = risky_assets.groupby(["protocol"], as_index=False)["protocol"].agg(
             {"id_count": "count"}
         )
 
         # Total Open Ports with Insecure protocols
-        riskyPortsCount = pro_count["id_count"].sum()
-
-        return riskyPortsCount
+        return pro_count["id_count"].sum()
 
     def unverified_cve(self):
         """Return top 15 unverified cves and their counts."""
@@ -409,9 +401,7 @@ class Malware_Vulns:
             .reset_index(drop=True)
         )
 
-        unverifVulnAssets = len(unverif_df.index)
-
-        return unverifVulnAssets
+        return len(unverif_df.index)
 
 
 class Cyber_Six:
