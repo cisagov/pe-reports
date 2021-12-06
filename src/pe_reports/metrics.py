@@ -33,30 +33,6 @@ class Credentials:
         self.query_cyberSix_creds = c6_df
         self.query_hibp_view = query_hibp_view(org_uid, start_date, end_date)
 
-    def total(self):
-        """Return total number of credentials."""
-        df_cred_csg = self.query_cyberSix_creds.shape[0]
-        df_cred_hibp = self.query_hibp_view.shape[0]
-        return df_cred_csg + df_cred_hibp
-
-    def password(self):
-        """Return total number of credentials with passwords."""
-        pw_creds_csg = len(
-            self.query_cyberSix_creds[self.query_cyberSix_creds["password_included"]]
-        )
-        pw_creds_hibp = len(
-            self.query_hibp_view[self.query_hibp_view["password_included"]]
-        )
-        return pw_creds_csg + pw_creds_hibp
-
-    def breaches(self):
-        """Return total number of breaches."""
-        all_breaches = pd.concat(
-            self.query_hibp_view["breach_name"],
-            self.query_cyberSix_creds["breach_name"],
-        )
-        return all_breaches.nunique()
-
     def by_days(self):
         """Return number of credentials by day."""
         c6_df = self.query_cyberSix_creds
@@ -98,6 +74,26 @@ class Credentials:
         if len(ce_date_df.columns) == 0:
             ce_date_df["Passwords Included"] = 0
         return ce_date_df
+
+    def breaches(self):
+        """Return total number of breaches."""
+        all_breaches = pd.concat(
+            self.query_hibp_view["breach_name"],
+            self.query_cyberSix_creds["breach_name"],
+        )
+        return all_breaches.nunique()
+
+    def breach_appendix(self):
+        """Return breach name and description to be added to the appendix."""
+        hibp_df = self.query_hibp_view
+        c6_df = self.query_cyberSix_creds
+        c6_df_2 = c6_df[["breach_name", "description"]]
+        c6_df_2 = c6_df_2.rename(columns={"create_time": "modified_date"})
+        view_df_2 = hibp_df[["breach_name", "description"]]
+        view_df_2 = view_df_2.append(c6_df_2, ignore_index=True)
+
+        view_df_2.drop_duplicates()
+        return view_df_2[["breach_name", "description"]]
 
     def breach_details(self):
         """Return breach details."""
@@ -170,17 +166,21 @@ class Credentials:
 
         return breach_det_df
 
-    def breach_appendix(self):
-        """Return breach name and description to be added to the appendix."""
-        hibp_df = self.query_hibp_view
-        c6_df = self.query_cyberSix_creds
-        c6_df_2 = c6_df[["breach_name", "description"]]
-        c6_df_2 = c6_df_2.rename(columns={"create_time": "modified_date"})
-        view_df_2 = hibp_df[["breach_name", "description"]]
-        view_df_2 = view_df_2.append(c6_df_2, ignore_index=True)
+    def password(self):
+        """Return total number of credentials with passwords."""
+        pw_creds_csg = len(
+            self.query_cyberSix_creds[self.query_cyberSix_creds["password_included"]]
+        )
+        pw_creds_hibp = len(
+            self.query_hibp_view[self.query_hibp_view["password_included"]]
+        )
+        return pw_creds_csg + pw_creds_hibp
 
-        view_df_2.drop_duplicates()
-        return view_df_2[["breach_name", "description"]]
+    def total(self):
+        """Return total number of credentials found in breaches."""
+        df_cred_csg = self.query_cyberSix_creds.shape[0]
+        df_cred_hibp = self.query_hibp_view.shape[0]
+        return df_cred_csg + df_cred_hibp
 
 
 class Domains_Masqs:
@@ -193,6 +193,11 @@ class Domains_Masqs:
         self.org_uid = org_uid
         df = query_domMasq(org_uid, start_date, end_date)
         self.df_mal = df[df["malicious"]]
+
+    def count(self):
+        """Return total count of malicious domains."""
+        df = self.df_mal
+        return len(df.index)
 
     def summary(self):
         """Return domain masquerading summary information."""
@@ -230,13 +235,8 @@ class Domains_Masqs:
             )
         return domain_sum
 
-    def count(self):
-        """Return total count of malicious domains."""
-        df = self.df_mal
-        return len(df.index)
-
     def utlds(self):
-        """Return amount of unique top level domains."""
+        """Return count of unique top level domains."""
         mal_df = self.df_mal
 
         if mal_df > 0:
@@ -292,8 +292,18 @@ class Malware_Vulns:
         )
         return pro_count
 
-    def riskyPortsCount(self):
-        """Return total county of insecure protocols."""
+    def risky_assets(self):
+        """Return dataframe of ip and risky protocols."""
+        insecure_df = self.insecure_df
+        insecure = insecure_df[insecure_df["type"] == "Insecure Protocol"]
+        insecure = insecure[
+            (insecure["protocol"] != "http") & (insecure["protocol"] != "smtp")
+        ]
+        risky_assets = insecure[["ip", "protocol"]].drop_duplicates(keep="first")
+        return risky_assets
+
+    def risky_ports_count(self):
+        """Return total count of insecure protocols."""
         insecure_df = self.insecure_df
         insecure = insecure_df[insecure_df["type"] == "Insecure Protocol"]
         insecure = insecure[
@@ -307,6 +317,25 @@ class Malware_Vulns:
 
         # Total Open Ports with Insecure protocols
         return pro_count["id_count"].sum()
+
+    def total_verif_vulns(self):
+        """Return total count of verified vulns."""
+        vulns_df = self.vulns_df
+        verif_vulns = (
+            vulns_df[["cve", "ip", "port"]]
+            .groupby("cve")
+            .agg(lambda x: "  ".join(set(x)))
+            .reset_index()
+        )
+
+        if len(verif_vulns) > 0:
+            verif_vulns["count"] = verif_vulns["ip"].str.split("  ").str.len()
+            verifVulns = verif_vulns["count"].sum()
+
+        else:
+            verifVulns = 0
+
+        return verifVulns
 
     def unverified_cve(self):
         """Return top 15 unverified cves and their counts."""
@@ -328,15 +357,22 @@ class Malware_Vulns:
         unverif_df = unverif_df[:15].reset_index(drop=True)
         return unverif_df
 
-    def risky_assets(self):
-        """Return dataframe of ip and risky protocols."""
+    def unverified_vuln_count(self):
+        """Return the count of ips with unverified vulnerabilities."""
         insecure_df = self.insecure_df
-        insecure = insecure_df[insecure_df["type"] == "Insecure Protocol"]
-        insecure = insecure[
-            (insecure["protocol"] != "http") & (insecure["protocol"] != "smtp")
-        ]
-        risky_assets = insecure[["ip", "protocol"]].drop_duplicates(keep="first")
-        return risky_assets
+        unverif_df = insecure_df[insecure_df["type"] != "Insecure Protocol"]
+        unverif_df = unverif_df.copy()
+        unverif_df["potential_vulns"] = (
+            unverif_df["potential_vulns"].sort_values().apply(lambda x: sorted(x))
+        )
+        unverif_df["potential_vulns"] = unverif_df["potential_vulns"].astype("str")
+        unverif_df = (
+            unverif_df[["potential_vulns", "ip"]]
+            .drop_duplicates(keep="first")
+            .reset_index(drop=True)
+        )
+
+        return len(unverif_df.index)
 
     def verif_vulns(self):
         """Return a dataframe with each CVE, the associated ips and the affected ports."""
@@ -368,42 +404,6 @@ class Malware_Vulns:
             }
         )
         return verif_vulns_summary
-
-    def total_verif_vulns(self):
-        """Return total count of verified vulns."""
-        vulns_df = self.vulns_df
-        verif_vulns = (
-            vulns_df[["cve", "ip", "port"]]
-            .groupby("cve")
-            .agg(lambda x: "  ".join(set(x)))
-            .reset_index()
-        )
-
-        if len(verif_vulns) > 0:
-            verif_vulns["count"] = verif_vulns["ip"].str.split("  ").str.len()
-            verifVulns = verif_vulns["count"].sum()
-
-        else:
-            verifVulns = 0
-
-        return verifVulns
-
-    def unverified_vuln_count(self):
-        """Return the count of ips with unverified vulnerabilities."""
-        insecure_df = self.insecure_df
-        unverif_df = insecure_df[insecure_df["type"] != "Insecure Protocol"]
-        unverif_df = unverif_df.copy()
-        unverif_df["potential_vulns"] = (
-            unverif_df["potential_vulns"].sort_values().apply(lambda x: sorted(x))
-        )
-        unverif_df["potential_vulns"] = unverif_df["potential_vulns"].astype("str")
-        unverif_df = (
-            unverif_df[["potential_vulns", "ip"]]
-            .drop_duplicates(keep="first")
-            .reset_index(drop=True)
-        )
-
-        return len(unverif_df.index)
 
 
 class Cyber_Six:
@@ -447,36 +447,23 @@ class Cyber_Six:
         top_cves = top_cves[top_cves["date"] == top_cves["date"].max()]
         self.top_cves = top_cves
 
-    def dark_web_count(self):
-        """Get total number of Dark Web mentions."""
-        return len(self.dark_web_mentions.index)
-
-    def dark_web_date(self):
-        """Get dark web mentions by date."""
-        dark_web_mentions = self.dark_web_mentions
-        dark_web_date = dark_web_mentions[["date"]]
-        dark_web_date = (
-            dark_web_date.groupby(["date"])["date"].count().reset_index(name="Count")
-        )
-        return dark_web_date
-
-    def dark_web_sites(self):
-        """Get mentions by dark web sites (top 10)."""
-        dark_web_mentions = self.dark_web_mentions
-        dark_web_sites = dark_web_mentions[["site"]]
-        dark_web_sites = (
-            dark_web_sites.groupby(["site"])["site"]
+    def alerts_exec(self):
+        """Get top executive mentions."""
+        alerts = self.alerts
+        alerts_exec = alerts[["site", "title"]]
+        alerts_exec = alerts_exec[alerts_exec["site"] != "NaN"]
+        alerts_exec = alerts_exec[alerts_exec["site"] != ""]
+        alerts_exec = (
+            alerts_exec.groupby(["site", "title"])["title"]
             .count()
             .nlargest(10)
-            .reset_index(name="count")
+            .reset_index(name="Events")
         )
-        dark_web_sites = dark_web_sites.rename(
-            columns={"site": "Site", "count": "Count"}
-        )
-        return dark_web_sites
+        alerts_exec = alerts_exec.rename(columns={"site": "Site", "title": "Title"})
+        return alerts_exec
 
-    def alert_threats(self):
-        """Get alert threats."""
+    def alerts_threats(self):
+        """Get threat alerts."""
         alerts = self.alerts
         alerts_threats = alerts[["site", "threats"]]
         alerts_threats = alerts_threats[alerts_threats["site"] != "NaN"]
@@ -512,24 +499,6 @@ class Cyber_Six:
         )
         return dark_web_bad_actors
 
-    def dark_web_tags(self):
-        """Get dark web notable tags."""
-        dark_web_mentions = self.dark_web_mentions
-        dark_web_tags = dark_web_mentions[["tags"]]
-        dark_web_tags = dark_web_tags[dark_web_tags["tags"] != "NaN"]
-        dark_web_tags = (
-            dark_web_tags.groupby(["tags"])["tags"]
-            .count()
-            .nlargest(8)
-            .reset_index(name="Events")
-        )
-        dark_web_tags["tags"] = dark_web_tags["tags"].str.strip("{}")
-        dark_web_tags["tags"] = dark_web_tags["tags"].str.replace(
-            ",", ", ", regex=False
-        )
-        dark_web_tags = dark_web_tags.rename(columns={"tags": "Tags"})
-        return dark_web_tags
-
     def dark_web_content(self):
         """Get dark web categories."""
         dark_web_mentions = self.dark_web_mentions
@@ -542,20 +511,18 @@ class Cyber_Six:
         )
         return dark_web_content
 
-    def alerts_exec(self):
-        """Get top executive mentions."""
-        alerts = self.alerts
-        alerts_exec = alerts[["site", "title"]]
-        alerts_exec = alerts_exec[alerts_exec["site"] != "NaN"]
-        alerts_exec = alerts_exec[alerts_exec["site"] != ""]
-        alerts_exec = (
-            alerts_exec.groupby(["site", "title"])["title"]
-            .count()
-            .nlargest(10)
-            .reset_index(name="Events")
+    def dark_web_count(self):
+        """Get total number of dark web mentions."""
+        return len(self.dark_web_mentions.index)
+
+    def dark_web_date(self):
+        """Get dark web mentions by date."""
+        dark_web_mentions = self.dark_web_mentions
+        dark_web_date = dark_web_mentions[["date"]]
+        dark_web_date = (
+            dark_web_date.groupby(["date"])["date"].count().reset_index(name="Count")
         )
-        alerts_exec = alerts_exec.rename(columns={"site": "Site", "title": "Title"})
-        return alerts_exec
+        return dark_web_date
 
     def dark_web_most_act(self):
         """Get most active posts."""
@@ -580,6 +547,39 @@ class Cyber_Six:
         )
         dark_web_most_act["Title"] = dark_web_most_act["Title"].str[:50]
         return dark_web_most_act
+
+    def dark_web_sites(self):
+        """Get mentions by dark web sites (top 10)."""
+        dark_web_mentions = self.dark_web_mentions
+        dark_web_sites = dark_web_mentions[["site"]]
+        dark_web_sites = (
+            dark_web_sites.groupby(["site"])["site"]
+            .count()
+            .nlargest(10)
+            .reset_index(name="count")
+        )
+        dark_web_sites = dark_web_sites.rename(
+            columns={"site": "Site", "count": "Count"}
+        )
+        return dark_web_sites
+
+    def dark_web_tags(self):
+        """Get dark web notable tags."""
+        dark_web_mentions = self.dark_web_mentions
+        dark_web_tags = dark_web_mentions[["tags"]]
+        dark_web_tags = dark_web_tags[dark_web_tags["tags"] != "NaN"]
+        dark_web_tags = (
+            dark_web_tags.groupby(["tags"])["tags"]
+            .count()
+            .nlargest(8)
+            .reset_index(name="Events")
+        )
+        dark_web_tags["tags"] = dark_web_tags["tags"].str.strip("{}")
+        dark_web_tags["tags"] = dark_web_tags["tags"].str.replace(
+            ",", ", ", regex=False
+        )
+        dark_web_tags = dark_web_tags.rename(columns={"tags": "Tags"})
+        return dark_web_tags
 
     def top_cve_table(self):
         """Get top cves."""
