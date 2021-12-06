@@ -1,5 +1,6 @@
 """Class methods for report metrics."""
 
+# Import query functions
 # Third-Party Libraries
 from data.db_query import (
     query_cyberSix_creds,
@@ -166,6 +167,7 @@ class Credentials:
                 "number_of_creds": "Number of Creds",
             }
         )
+
         return breach_det_df
 
     def breach_appendix(self):
@@ -387,7 +389,7 @@ class Malware_Vulns:
         return verifVulns
 
     def unverified_vuln_count(self):
-        """Returnt the count of ips with unverified vulnerabilities."""
+        """Return the count of ips with unverified vulnerabilities."""
         insecure_df = self.insecure_df
         unverif_df = insecure_df[insecure_df["type"] != "Insecure Protocol"]
         unverif_df = unverif_df.copy()
@@ -447,9 +449,7 @@ class Cyber_Six:
 
     def dark_web_count(self):
         """Get total number of Dark Web mentions."""
-        dark_web_mentions = self.dark_web_mentions
-        dark_web = len(dark_web_mentions.index)
-        return dark_web
+        return len(self.dark_web_mentions.index)
 
     def dark_web_date(self):
         """Get dark web mentions by date."""
