@@ -135,7 +135,8 @@ def generate_reports(datestring, data_directory, output_directory):
         org_name = org[1]
         org_code = org[2]
         folder_name = org_code
-
+        # if org_code != "DOS":
+        #    continue
         print(f"Running on {org_code}...")
 
         # Create folders in output directory
@@ -183,6 +184,7 @@ def generate_reports(datestring, data_directory, output_directory):
             dark_web_most_act,
             top_cves,
             top_cve_table,
+            alerts_site,
         ) = generate_metrics(datestring, org_uid)
 
         # Load source html
@@ -224,6 +226,7 @@ def generate_reports(datestring, data_directory, output_directory):
             alerts_exec,
             dark_web_most_act,
             top_cve_table,
+            alerts_site,
         )
 
         # Close pdf

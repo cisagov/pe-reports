@@ -28,8 +28,7 @@ def credential_metrics(start_date, end_date, org_uid):
     c6_df = query_cyberSix_creds(conn, org_uid, start_date, end_date)
     c6_df.loc[
         c6_df["breach_name"] == "", "breach_name"
-    ] = "Cyber_six_" + pd.to_datetime(c6_df["breach_date"]).dt.strftime("%m/%d/%Y")
-
+    ] = "Cyber_Six_" + pd.to_datetime(c6_df["breach_date"]).dt.strftime("%m/%d/%Y")
     c6_df["description"] = (
         c6_df["description"].str.split("Query to find the related").str[0]
     )
@@ -146,7 +145,7 @@ def credential_metrics(start_date, end_date, org_uid):
     #
     breach = breach_df["breach_name"].nunique()
     print("there are " + str(breach) + " breaches")
-
+    print(ce_date_df)
     return (
         creds,
         breach,
@@ -327,6 +326,7 @@ def mention_metrics(org_uid, start_date, end_date):
         end_date,
         "top_cves",
     )
+
     # Filter cves to most recent date
     top_cves = top_cves[top_cves["date"] == top_cves["date"].max()]
     close(conn)
@@ -422,7 +422,7 @@ def mention_metrics(org_uid, start_date, end_date):
     alerts_exec = alerts_exec.rename(columns={"site": "Site", "title": "Title"})
 
     # Get most active posts
-    dark_web_most_act = dark_web_mentions[["comments_count", "title", "content"]]
+    dark_web_most_act = dark_web_mentions[["title", "comments_count"]]
     dark_web_most_act = dark_web_most_act[dark_web_most_act["comments_count"] != "NaN"]
     dark_web_most_act = dark_web_most_act.rename(
         columns={"comments_count": "Comments Count"}
@@ -434,11 +434,22 @@ def mention_metrics(org_uid, start_date, end_date):
         by="Comments Count", ascending=False
     )
     dark_web_most_act = dark_web_most_act[:5]
-    dark_web_most_act["content"] = dark_web_most_act["content"].str[:100]
-    dark_web_most_act = dark_web_most_act.rename(
-        columns={"title": "Title", "content": "Content"}
+    dark_web_most_act = dark_web_most_act.rename(columns={"title": "Title"})
+    dark_web_most_act["Title"] = dark_web_most_act["Title"].str[:100]
+    dark_web_most_act = dark_web_most_act.replace(r"^\s*$", "Untitled", regex=True)
+
+    # Alerts by market
+    alerts_site = alerts[["site"]]
+    alerts_site = alerts_site[alerts_site["site"] != "NaN"]
+    alerts_site = alerts_site[alerts_site["site"] != ""]
+    alerts_site = alerts_site[alerts_site["site"].str.startswith("market")]
+    alerts_site = (
+        alerts_site.groupby(["site"])["site"]
+        .count()
+        .nlargest(10)
+        .reset_index(name="Alerts")
     )
-    dark_web_most_act["Title"] = dark_web_most_act["Title"].str[:50]
+    alerts_site = alerts_site.rename(columns={"site": "Site"})
 
     # Get top cves
     top_cve_table = top_cves[["cve_id", "summary"]]
@@ -461,6 +472,7 @@ def mention_metrics(org_uid, start_date, end_date):
         dark_web_most_act,
         top_cves,
         top_cve_table,
+        alerts_site,
     )
 
 
@@ -517,6 +529,7 @@ def generate_metrics(datestring, org_uid):
         dark_web_most_act,
         top_cves,
         top_cve_table,
+        alerts_site,
     ) = mention_metrics(org_uid, start_date, end_date)
 
     return (
@@ -556,4 +569,5 @@ def generate_metrics(datestring, org_uid):
         dark_web_most_act,
         top_cves,
         top_cve_table,
+        alerts_site,
     )

@@ -15,7 +15,7 @@ def buildTable(df, classList, sizingList=[]):
         average = 100 / len(df.columns)
         for x in df.columns:
             sizingList.append(average)
-    headers = """<table border="1" class="{classes}">\n<thead>\n""".format(
+    headers = """<table border="1"  class="{classes}">\n<thead>\n""".format(
         classes=", ".join(classList)
     )
     headers += '<tr style="text-align: right;">'
@@ -31,10 +31,20 @@ def buildTable(df, classList, sizingList=[]):
         else:
             body += '<tr class="odd">\n'
         for col in range(0, len(df.columns)):
+            entry = ""
+            space_count = 0
+            for letter in str(row[col]):
+                if letter != " ":
+                    space_count += 1
+                else:
+                    space_count = 0
+                entry += letter
+                if space_count > 27:
+                    entry += " "
             body += (
-                "<td style='width:{size}%'>".format(size=str(sizingList[col]))
-                + str(row[col])
-                + "</td>\n"
+                "<td style='width:{size}%'> <div>".format(size=str(sizingList[col]))
+                + entry
+                + "</div></td>\n"
             )
 
         body += "</tr>\n"
@@ -147,6 +157,7 @@ def dark_web(
     alerts_exec,
     dark_web_most_act,
     top_cve_table,
+    alerts_site,
 ):
     """Page 6: Web & Dark Web Mentions."""
     # Line Chart - Web and “dark” web mentions over time
@@ -175,7 +186,8 @@ def dark_web(
     dark_web_actors_table = buildTable(dark_web_bad_actors[:10], ["table"], [50, 50])
     dark_web_tags_table = buildTable(dark_web_tags, ["table"], [60, 40])
     alerts_exec_table = buildTable(alerts_exec[:8], ["table"], [15, 70, 15])
-    dark_web_act_table = buildTable(dark_web_most_act, ["table"], [10, 20, 70])
+    dark_web_act_table = buildTable(dark_web_most_act, ["table"], [75, 25])
+    alerts_site_table = buildTable(alerts_site, ["table"], [50, 50])
     top_cves_table = buildTable(top_cve_table, ["table"], [30, 70])
 
     dark_web_dict = {
@@ -186,6 +198,7 @@ def dark_web(
         "dark_web_tags": dark_web_tags_table,
         "alerts_exec": alerts_exec_table,
         "dark_web_act": dark_web_act_table,
+        "alerts_site": alerts_site_table,
         "top_cves": top_cves_table,
     }
 
@@ -228,6 +241,7 @@ def init(
     alerts_exec,
     dark_web_most_act,
     top_cve_table,
+    alerts_site,
 ):
     """Initialize pages."""
     end_date = datetime.strptime(datestring, "%Y-%m-%d").date()
@@ -276,6 +290,7 @@ def init(
         alerts_exec,
         dark_web_most_act,
         top_cve_table,
+        alerts_site,
     )
     html = chevron.render(source_html, chevron_dict)
     return html
