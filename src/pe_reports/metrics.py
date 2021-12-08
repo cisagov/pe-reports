@@ -582,7 +582,7 @@ class Cyber_Six:
         return dark_web_tags
 
     def top_cve_table(self):
-        """Get top cves."""
+        """Get top CVEs."""
         top_cves = self.top_cves
         top_cve_table = top_cves[["cve_id", "summary"]]
         top_cve_table["summary"] = top_cve_table["summary"].str[:400]
