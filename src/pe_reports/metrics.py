@@ -358,7 +358,7 @@ class Malware_Vulns:
         return unverif_df
 
     def unverified_vuln_count(self):
-        """Return the count of ips with unverified vulnerabilities."""
+        """Return the count of IP addresses with unverified vulnerabilities."""
         insecure_df = self.insecure_df
         unverif_df = insecure_df[insecure_df["type"] != "Insecure Protocol"]
         unverif_df = unverif_df.copy()
