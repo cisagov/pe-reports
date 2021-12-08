@@ -338,7 +338,7 @@ class Malware_Vulns:
         return verifVulns
 
     def unverified_cve(self):
-        """Return top 15 unverified cves and their counts."""
+        """Return top 15 unverified CVEs and their counts."""
         insecure_df = self.insecure_df
         unverif_df = insecure_df[insecure_df["type"] != "Insecure Protocol"]
         unverif_df = unverif_df.copy()
