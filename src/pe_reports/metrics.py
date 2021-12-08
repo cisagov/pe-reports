@@ -184,7 +184,7 @@ class Credentials:
 
 
 class Domains_Masqs:
-    """Domains Masquerading Class."""
+    """Domains Masquerading class."""
 
     def __init__(self, start_date, end_date, org_uid):
         """Initialize domains masquerading class."""
