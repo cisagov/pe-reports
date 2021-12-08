@@ -375,7 +375,7 @@ class Malware_Vulns:
         return len(unverif_df.index)
 
     def verif_vulns(self):
-        """Return a dataframe with each CVE, the associated ips and the affected ports."""
+        """Return a dataframe with each CVE, the associated IPs and the affected ports."""
         vulns_df = self.vulns_df
         verif_vulns = (
             vulns_df[["cve", "ip", "port"]]
