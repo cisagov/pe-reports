@@ -407,7 +407,7 @@ class Malware_Vulns:
 
 
 class Cyber_Six:
-    """Dark Web and Cyber Six Data Class."""
+    """Dark web and Cyber Six data class."""
 
     def __init__(self, start_date, end_date, org_uid):
         """Initialize Shodan vulns and malware class."""
