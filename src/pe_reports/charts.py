@@ -51,7 +51,6 @@ class Charts:
             frameon=False,
         )
         plt.subplots_adjust(left=0.2, wspace=0.2)
-
         plt.gcf().set_size_inches(width / 2.54, height / 2.54)
         plt.savefig("assets/" + name, transparent=True, dpi=500, bbox_inches="tight")
         plt.clf()
@@ -68,7 +67,7 @@ class Charts:
         self.height = height
         self.name = name
         self.rotate_axis = rotate_axis
-        color = color = ["#1357BE", "#D0342C"]
+        color = ["#1357BE", "#D0342C"]
         df.plot(kind="bar", stacked=True, zorder=3, color=color)
         plt.title(title, pad=15, fontsize=10)
         plt.xlabel(x_label, labelpad=10, fontdict={"size": 8})
@@ -121,7 +120,6 @@ class Charts:
         for i in range(len(df)):
             if df.loc[i, Val_1Name] > 0:
                 label = df.loc[i, Val_1Name]
-
                 plt.annotate(
                     label,  # this is the text
                     (df.loc[i, Val_1Name], i),  # this is the point to label
@@ -130,6 +128,7 @@ class Charts:
                     ha="center",  # horizontal alignment can be left, right or center
                     fontsize=8,
                 )
+
         plt.gca().xaxis.set_major_locator(MaxNLocator(integer=True))
         plt.savefig("assets/" + name, transparent=True, dpi=500, bbox_inches="tight")
         plt.clf()
@@ -147,7 +146,6 @@ class Charts:
         ax.spines.right.set_visible(False)
         ax.spines.top.set_visible(False)
         plt.plot(df[df.columns[0]], Value_column, label="Dark Web Mentions")
-
         if small:
             pad = 1.4
         else:
