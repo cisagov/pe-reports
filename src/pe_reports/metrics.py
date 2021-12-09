@@ -10,7 +10,6 @@ from data.db_query import (
     query_hibp_view,
     query_shodan,
 )
-import numpy as np
 import pandas as pd
 
 
@@ -22,15 +21,7 @@ class Credentials:
         self.start_date = start_date
         self.end_date = end_date
         self.org_uid = org_uid
-        c6_df = query_cyberSix_creds(org_uid, start_date, end_date)
-        c6_df.loc[
-            c6_df["breach_name"] == "", "breach_name"
-        ] = "Cyber_six_" + pd.to_datetime(c6_df["breach_date"]).dt.strftime("%m/%d/%Y")
-        c6_df["description"] = (
-            c6_df["description"].str.split("Query to find the related").str[0]
-        )
-        c6_df["password_included"] = np.where(c6_df["password"] != "", True, False)
-        self.query_cyberSix_creds = c6_df
+        self.query_cyberSix_creds = query_cyberSix_creds(org_uid, start_date, end_date)
         self.query_hibp_view = query_hibp_view(org_uid, start_date, end_date)
 
     def by_days(self):

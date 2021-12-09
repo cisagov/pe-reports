@@ -5,6 +5,7 @@ import logging
 import sys
 
 # Third-Party Libraries
+import numpy as np
 import pandas as pd
 import psycopg2
 from psycopg2 import OperationalError
@@ -193,6 +194,16 @@ def query_cyberSix_creds(org_uid, start_date, end_date):
             conn,
             params={"org_uid": org_uid, "start": start_date, "end": end_date},
         )
+        df["breach_date_str"] = pd.to_datetime(df["breach_date"]).dt.strftime(
+            "%m/%d/%Y"
+        )
+        df.loc[df["breach_name"] == "", "breach_name"] = (
+            "Cyber_six_" + df["breach_date_str"]
+        )
+        df["description"] = (
+            df["description"].str.split("Query to find the related").str[0]
+        )
+        df["password_included"] = np.where(df["password"] != "", True, False)
         return df
     except (Exception, psycopg2.DatabaseError) as error:
         logging.error(f"There was a problem with your database query {error}")
