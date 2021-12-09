@@ -268,15 +268,19 @@ class Malware_Vulns:
         assets_df = query_shodan(org_uid, start_date, end_date, "shodan_assets")
         self.assets_df = assets_df
 
-    def protocol_count(self):
-        """Return a count for each insecure protocol."""
-        insecure_df = self.insecure_df
-        insecure = insecure_df[insecure_df["type"] == "Insecure Protocol"]
+    @staticmethod
+    def isolate_risky_assets(df):
+        """Return risky assets from the insecure_df dataframe."""
+        insecure = df[df["type"] == "Insecure Protocol"]
         insecure = insecure[
             (insecure["protocol"] != "http") & (insecure["protocol"] != "smtp")
         ]
         risky_assets = insecure[["ip", "protocol"]].drop_duplicates(keep="first")
+        return risky_assets
 
+    def protocol_count(self):
+        """Return a count for each insecure protocol."""
+        risky_assets = self.isolate_risky_assets(self.insecure_df)
         # Horizontal bar: insecure protocol count
         pro_count = risky_assets.groupby(["protocol"], as_index=False)["protocol"].agg(
             {"id_count": "count"}
@@ -285,22 +289,12 @@ class Malware_Vulns:
 
     def risky_assets(self):
         """Return dataframe of ip and risky protocols."""
-        insecure_df = self.insecure_df
-        insecure = insecure_df[insecure_df["type"] == "Insecure Protocol"]
-        insecure = insecure[
-            (insecure["protocol"] != "http") & (insecure["protocol"] != "smtp")
-        ]
-        risky_assets = insecure[["ip", "protocol"]].drop_duplicates(keep="first")
+        risky_assets = self.isolate_risky_assets(self.insecure_df)
         return risky_assets
 
     def risky_ports_count(self):
         """Return total count of insecure protocols."""
-        insecure_df = self.insecure_df
-        insecure = insecure_df[insecure_df["type"] == "Insecure Protocol"]
-        insecure = insecure[
-            (insecure["protocol"] != "http") & (insecure["protocol"] != "smtp")
-        ]
-        risky_assets = insecure[["ip", "protocol"]].drop_duplicates(keep="first")
+        risky_assets = self.isolate_risky_assets(self.insecure_df)
 
         pro_count = risky_assets.groupby(["protocol"], as_index=False)["protocol"].agg(
             {"id_count": "count"}
