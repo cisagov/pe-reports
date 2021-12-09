@@ -192,10 +192,8 @@ class Domains_Masqs:
 
     def summary(self):
         """Return domain masquerading summary information."""
-        df_mal = self.df_mal
-        mal_count = len(df_mal)
-        if mal_count > 0:
-            domain_sum = df_mal[
+        if len(self.df_mal) > 0:
+            domain_sum = self.df_mal[
                 [
                     "domain_permutation",
                     "ipv4",
