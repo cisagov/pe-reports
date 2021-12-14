@@ -273,8 +273,7 @@ class Malware_Vulns:
         insecure = insecure[
             (insecure["protocol"] != "http") & (insecure["protocol"] != "smtp")
         ]
-        risky_assets = insecure[["ip", "protocol"]].drop_duplicates(keep="first")
-        return risky_assets
+        return insecure[["ip", "protocol"]].drop_duplicates(keep="first")
 
     def protocol_count(self):
         """Return a count for each insecure protocol."""
