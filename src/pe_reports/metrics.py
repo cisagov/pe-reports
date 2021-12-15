@@ -284,11 +284,6 @@ class Malware_Vulns:
         )
         return pro_count
 
-    def risky_assets(self):
-        """Return dataframe of ip and risky protocols."""
-        risky_assets = self.isolate_risky_assets(self.insecure_df)
-        return risky_assets
-
     def risky_ports_count(self):
         """Return total count of insecure protocols."""
         risky_assets = self.isolate_risky_assets(self.insecure_df)
