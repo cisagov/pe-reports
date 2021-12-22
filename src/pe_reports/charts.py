@@ -38,7 +38,9 @@ class Charts:
 
         # Only show the label when the value is greater than 10%.
         def autopct(pct):
-            """Get percentages for the pie chart slices."""
+            """Get percentages for the pie chart slices and only 
+            show the label when the value is greater than 10%.
+            """
             return ("%1.0f%%" % pct) if pct > 1 else ""
 
         pie = plt.pie(
