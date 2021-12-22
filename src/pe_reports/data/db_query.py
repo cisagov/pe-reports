@@ -5,6 +5,7 @@ import logging
 import sys
 
 # Third-Party Libraries
+import numpy as np
 import pandas as pd
 import psycopg2
 from psycopg2 import OperationalError
@@ -30,10 +31,8 @@ def connect():
     conn = None
     try:
         logging.info("Connecting to the PostgreSQL......")
-
         conn = psycopg2.connect(**CONN_PARAMS_DIC)
         logging.info("Connection successful................\n")
-
     except OperationalError as err:
         show_psycopg2_exception(err)
         conn = None
@@ -46,8 +45,9 @@ def close(conn):
     return
 
 
-def get_orgs(conn):
+def get_orgs():
     """Query organizations table."""
+    conn = connect()
     try:
         cur = conn.cursor()
         sql = """SELECT * FROM organizations"""
@@ -62,8 +62,9 @@ def get_orgs(conn):
             close(conn)
 
 
-def query_hibp_view(conn, org_uid, start_date, end_date):
+def query_hibp_view(org_uid, start_date, end_date):
     """Query 'Have I Been Pwned?' table."""
+    conn = connect()
     try:
         sql = """SELECT * FROM vw_breach_complete
         WHERE organizations_uid = %(org_uid)s
@@ -81,8 +82,9 @@ def query_hibp_view(conn, org_uid, start_date, end_date):
             close(conn)
 
 
-def query_domMasq(conn, org_uid, start_date, end_date):
+def query_domMasq(org_uid, start_date, end_date):
     """Query domain masquerading table."""
+    conn = connect()
     try:
         sql = """SELECT * FROM dnstwist_domain_masq
         WHERE organizations_uid = %(org_uid)s
@@ -112,8 +114,9 @@ def query_domMasq(conn, org_uid, start_date, end_date):
 # the database.
 
 
-def query_shodan(conn, org_uid, start_date, end_date, table):
+def query_shodan(org_uid, start_date, end_date, table):
     """Query Shodan table."""
+    conn = connect()
     try:
         sql = """SELECT * FROM %(table)s
         WHERE organizations_uid = %(org_uid)s
@@ -136,8 +139,9 @@ def query_shodan(conn, org_uid, start_date, end_date, table):
             close(conn)
 
 
-def query_darkweb(conn, org_uid, start_date, end_date, table):
+def query_darkweb(org_uid, start_date, end_date, table):
     """Query Dark Web table."""
+    conn = connect()
     try:
         sql = """SELECT * FROM %(table)s
         WHERE organizations_uid = %(org_uid)s
@@ -160,8 +164,9 @@ def query_darkweb(conn, org_uid, start_date, end_date, table):
             close(conn)
 
 
-def query_darkweb_cves(conn, table):
+def query_darkweb_cves(table):
     """Query Dark Web CVE table."""
+    conn = connect()
     try:
         sql = """SELECT * FROM %(table)s"""
         df = pd.read_sql(
@@ -177,8 +182,9 @@ def query_darkweb_cves(conn, table):
             close(conn)
 
 
-def query_cyberSix_creds(conn, org_uid, start_date, end_date):
+def query_cyberSix_creds(org_uid, start_date, end_date):
     """Query cybersix_exposed_credentials table."""
+    conn = connect()
     try:
         sql = """SELECT * FROM public.cybersix_exposed_credentials as creds
         WHERE organizations_uid = %(org_uid)s
@@ -188,6 +194,16 @@ def query_cyberSix_creds(conn, org_uid, start_date, end_date):
             conn,
             params={"org_uid": org_uid, "start": start_date, "end": end_date},
         )
+        df["breach_date_str"] = pd.to_datetime(df["breach_date"]).dt.strftime(
+            "%m/%d/%Y"
+        )
+        df.loc[df["breach_name"] == "", "breach_name"] = (
+            "Cyber_six_" + df["breach_date_str"]
+        )
+        df["description"] = (
+            df["description"].str.split("Query to find the related").str[0]
+        )
+        df["password_included"] = np.where(df["password"] != "", True, False)
         return df
     except (Exception, psycopg2.DatabaseError) as error:
         logging.error(f"There was a problem with your database query {error}")
