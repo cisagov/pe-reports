@@ -25,12 +25,12 @@ class Charts:
         height = self.height
         name = self.name
         plt.rcParams.update({"figure.max_open_warning": 0})
-        catName = df.columns[0]
-        Val_1Name = df.columns[1]
-        df = df.sort_values(by=Val_1Name, ascending=False)
-        Category_column = df[catName]
-        Value_column = df[df.columns[1]]
-        labels = Category_column
+        category_name = df.columns[0]
+        value_name = df.columns[1]
+        df = df.sort_values(by=value_name, ascending=False)
+        category_column = df[category_name]
+        value_column = df[df.columns[1]]
+        labels = category_column
         plt.gca().axis("equal")
 
         # Only show the label when the value is greater than 10%.
@@ -39,7 +39,7 @@ class Charts:
             return ("%1.0f%%" % pct) if pct > 1 else ""
 
         pie = plt.pie(
-            Value_column,
+            value_column,
             startangle=0,
             radius=1,
             autopct=autopct,
@@ -91,31 +91,31 @@ class Charts:
         height = self.height
         name = self.name
         plt.rcParams.update({"figure.max_open_warning": 0})
-        catName = df.columns[0]
-        Val_1Name = df.columns[1]
-        Category_column = df[catName].str.replace("Vulnerable Product - ", "")
-        Value_column = df[df.columns[1]]
+        category_name = df.columns[0]
+        value_name = df.columns[1]
+        category_column = df[category_name].str.replace("Vulnerable Product - ", "")
+        value_column = df[df.columns[1]]
         bar_width = 0.6
         fig, ax = plt.subplots()
         ax.spines.right.set_visible(False)
         ax.spines.top.set_visible(False)
-        plt.barh(df.index, Value_column, bar_width, align="center", color="#466fc6")
+        plt.barh(df.index, value_column, bar_width, align="center", color="#466fc6")
         plt.xticks(fontsize=7)
         plt.yticks(fontsize=7)
-        plt.gca().set_ylim(-1.0, len(Category_column))
+        plt.gca().set_ylim(-1.0, len(category_column))
         plt.gca().set_yticks(df.index)
-        plt.gca().set_yticklabels(Category_column)
+        plt.gca().set_yticklabels(category_column)
         plt.gca().set_xlabel(x_label, fontdict={"size": 8})
         plt.gca().set_ylabel(y_label)
         plt.gcf().set_size_inches(width / 2.54, height / 2.54)
         plt.tight_layout()
 
         for i in range(len(df)):
-            if df.loc[i, Val_1Name] > 0:
-                label = df.loc[i, Val_1Name]
+            if df.loc[i, value_name] > 0:
+                label = df.loc[i, value_name]
                 plt.annotate(
                     label,  # this is the text
-                    (df.loc[i, Val_1Name], i),  # this is the point to label
+                    (df.loc[i, value_name], i),  # this is the point to label
                     textcoords="offset points",  # how to position the text
                     xytext=(7, -3),  # distance from text to points (x,y)
                     ha="center",  # horizontal alignment can be left, right or center
@@ -132,11 +132,11 @@ class Charts:
         width = self.width
         height = self.height
         name = self.name
-        Value_column = df[df.columns[1]]
+        value_column = df[df.columns[1]]
         fig, ax = plt.subplots()
         ax.spines.right.set_visible(False)
         ax.spines.top.set_visible(False)
-        plt.plot(df[df.columns[0]], Value_column, label="Dark Web Mentions")
+        plt.plot(df[df.columns[0]], value_column, label="Dark Web Mentions")
         plt.legend(loc=9, ncol=2, framealpha=0, fontsize=8, bbox_to_anchor=(0.5, -0.5))
         plt.gcf().set_size_inches(width / 2.54, height / 2.54)
         plt.xticks(fontsize=7)
