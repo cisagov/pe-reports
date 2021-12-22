@@ -36,11 +36,8 @@ class Charts:
         labels = category_column
         plt.gca().axis("equal")
 
-        
         def autopct(pct):
-            """Get percentages for the pie chart slices and only 
-            show the label when the value is greater than 10%.
-            """
+            """Get percentages for the pie chart slices > 10%."""
             return ("%1.0f%%" % pct) if pct > 1 else ""
 
         pie = plt.pie(
