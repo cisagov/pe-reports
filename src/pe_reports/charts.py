@@ -4,6 +4,9 @@
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator
 
+# Factor to convert cm to inches
+CM_CONVERSION_FACTOR = 2.54
+
 
 class Charts:
     """Build charts."""
@@ -55,7 +58,9 @@ class Charts:
             frameon=False,
         )
         plt.subplots_adjust(left=0.2, wspace=0.2)
-        plt.gcf().set_size_inches(width / 2.54, height / 2.54)
+        plt.gcf().set_size_inches(
+            width / CM_CONVERSION_FACTOR, height / CM_CONVERSION_FACTOR
+        )
         plt.savefig("assets/" + name, transparent=True, dpi=500, bbox_inches="tight")
         plt.clf()
 
@@ -73,7 +78,9 @@ class Charts:
         plt.title(title, pad=15, fontsize=10)
         plt.xlabel(x_label, labelpad=10, fontdict={"size": 8})
         plt.ylabel(y_label, labelpad=10, fontdict={"size": 8})
-        plt.gcf().set_size_inches(width / 2.54, height / 2.54)
+        plt.gcf().set_size_inches(
+            width / CM_CONVERSION_FACTOR, height / CM_CONVERSION_FACTOR
+        )
         plt.tight_layout()
         plt.gca().yaxis.set_major_locator(MaxNLocator(integer=True))
         plt.rc("axes", axisbelow=True)
@@ -107,7 +114,9 @@ class Charts:
         plt.gca().set_yticklabels(category_column)
         plt.gca().set_xlabel(x_label, fontdict={"size": 8})
         plt.gca().set_ylabel(y_label)
-        plt.gcf().set_size_inches(width / 2.54, height / 2.54)
+        plt.gcf().set_size_inches(
+            width / CM_CONVERSION_FACTOR, height / CM_CONVERSION_FACTOR
+        )
         plt.tight_layout()
 
         for i in range(len(df)):
@@ -138,7 +147,9 @@ class Charts:
         ax.spines.top.set_visible(False)
         plt.plot(df[df.columns[0]], value_column, label="Dark Web Mentions")
         plt.legend(loc=9, ncol=2, framealpha=0, fontsize=8, bbox_to_anchor=(0.5, -0.5))
-        plt.gcf().set_size_inches(width / 2.54, height / 2.54)
+        plt.gcf().set_size_inches(
+            width / CM_CONVERSION_FACTOR, height / CM_CONVERSION_FACTOR
+        )
         plt.xticks(fontsize=7)
         plt.yticks(fontsize=7)
         plt.gca().set_ylabel("Mentions count", labelpad=10, fontdict={"size": 8})
