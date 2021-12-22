@@ -138,6 +138,8 @@ class Charts:
     def line_chart(self):
         """Build line chart."""
         df = self.df
+        x_label = self.x_label
+        y_label = self.y_label
         width = self.width
         height = self.height
         name = self.name
@@ -145,14 +147,14 @@ class Charts:
         fig, ax = plt.subplots()
         ax.spines.right.set_visible(False)
         ax.spines.top.set_visible(False)
-        plt.plot(df[df.columns[0]], value_column, label="Dark Web Mentions")
+        plt.plot(df[df.columns[0]], value_column, label=x_label)
         plt.legend(loc=9, ncol=2, framealpha=0, fontsize=8, bbox_to_anchor=(0.5, -0.5))
         plt.gcf().set_size_inches(
             width / CM_CONVERSION_FACTOR, height / CM_CONVERSION_FACTOR
         )
         plt.xticks(fontsize=7)
         plt.yticks(fontsize=7)
-        plt.gca().set_ylabel("Mentions count", labelpad=10, fontdict={"size": 8})
+        plt.gca().set_ylabel(y_label, labelpad=10, fontdict={"size": 8})
         plt.xticks(rotation=30, ha="right")
         plt.grid(axis="y")
         plt.tight_layout()
