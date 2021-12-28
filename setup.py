@@ -110,6 +110,7 @@ setup(
         "schema",
         "setuptools >= 24.2.0",
         "types-PyYAML",
+        "xhtml2pdf",
     ],
     extras_require={
         "test": [
