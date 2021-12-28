@@ -2,7 +2,9 @@
 
 # Import query functions
 # Third-Party Libraries
-from data.db_query import (
+import pandas as pd
+
+from .data.db_query import (
     query_cyberSix_creds,
     query_darkweb,
     query_darkweb_cves,
@@ -10,7 +12,6 @@ from data.db_query import (
     query_hibp_view,
     query_shodan,
 )
-import pandas as pd
 
 
 class Credentials:
