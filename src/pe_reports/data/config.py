@@ -2,9 +2,9 @@
 
 # Standard Python Libraries
 from configparser import ConfigParser
-from importlib.resources import files
+import os
 
-REPORT_DB_CONFIG = files("pe_reports").joinpath("data/dbconfig.config")
+REPORT_DB_CONFIG = os.path.basename("pe_reports").join("data/database.ini")
 
 
 def config(filename=REPORT_DB_CONFIG, section="postgres"):
