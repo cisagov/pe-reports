@@ -22,13 +22,15 @@ import os
 import sys
 
 # Third-Party Libraries
-from _version import __version__
 from data.db_query import connect, get_orgs
 from docopt import docopt
 import fitz
 from pages import init
 import pandas as pd
 from xhtml2pdf import pisa
+
+# cisagov Libraries
+from pe_reports._version import __version__
 
 
 def embed(
