@@ -31,7 +31,7 @@ def test_reports_stdout_version(capsys):
     """Verify that version string sent to stdout agrees with the module version."""
     with pytest.raises(SystemExit):
         with patch.object(sys, "argv", ["bogus", "--version"]):
-            pe_reports.report_generator_old.main()
+            pe_reports.report_generator.main()
     captured = capsys.readouterr()
     assert (
         captured.out == f"{PROJECT_VERSION}\n"
@@ -75,7 +75,7 @@ def test_reports_log_levels(level):
             ), "root logger should not have handlers yet"
             return_code = None
             try:
-                pe_reports.report_generator_old.main()
+                pe_reports.report_generator.main()
             except SystemExit as sys_exit:
                 return_code = sys_exit.code
             assert (
@@ -102,7 +102,7 @@ def test_reports_bad_log_level():
     ):
         return_code = None
         try:
-            pe_reports.report_generator_old.main()
+            pe_reports.report_generator.main()
         except SystemExit as sys_exit:
             return_code = sys_exit.code
         assert return_code == 1, "main() should exit with error"
