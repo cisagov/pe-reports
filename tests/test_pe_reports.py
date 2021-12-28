@@ -9,7 +9,7 @@ from unittest.mock import patch
 import pytest
 
 # cisagov Libraries
-import pe_reports.report_generator_old
+import pe_reports.report_generator
 
 log_levels = (
     "debug",
