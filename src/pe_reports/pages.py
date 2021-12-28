@@ -13,7 +13,7 @@ from metrics import Credentials, Cyber_Six, Domains_Masqs, Malware_Vulns
 
 # style and build tables
 def buildTable(df, classList, sizingList=[]):
-    """Build html tables."""
+    """Build html tables from a pandas dataframe."""
     if not sizingList:
         average = 100 / len(df.columns)
         for x in df.columns:
@@ -61,7 +61,7 @@ def buildAppendixList(df):
 
 
 def credential(chevron_dict, start_date, end_date, org_uid):
-    """Build credential page."""
+    """Build exposed credential page."""
     Credential = Credentials(start_date, end_date, org_uid)
     total = Credential.total()
     breach = Credential.breaches()
@@ -117,7 +117,7 @@ def mal_vuln(chevron_dict, start_date, end_date, org_uid):
     pro_count = Malware_Vuln.protocol_count()
     unverif_df = Malware_Vuln.unverified_cve()
     risky_ports_count = Malware_Vuln.risky_ports_count()
-    risky_assets = Malware_Vuln.risky_assets()
+    risky_assets = Malware_Vuln.isolate_risky_assets(Malware_Vuln.insecure_df)
     verif_vulns = Malware_Vuln.verif_vulns()
     verif_vulns_summary = Malware_Vuln.verif_vulns_summary()
     total_verif_vulns = Malware_Vuln.total_verif_vulns()
@@ -159,7 +159,7 @@ def dark_web(chevron_dict, start_date, end_date, org_uid):
     dark_web_count = Cyber6.dark_web_count()
     dark_web_date = Cyber6.dark_web_date()
     dark_web_sites = Cyber6.dark_web_sites()
-    alert_threats = Cyber6.alert_threats()
+    alert_threats = Cyber6.alerts_threats()
     dark_web_bad_actors = Cyber6.dark_web_bad_actors()
     dark_web_tags = Cyber6.dark_web_tags()
     dark_web_content = Cyber6.dark_web_content()
