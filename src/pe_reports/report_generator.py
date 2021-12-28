@@ -71,22 +71,7 @@ def embed(
     page.add_file_annot(
         p5, mi, "mention_incidents.xlsx", desc="Open up csv", icon="PushPin"
     )
-    # Add encryption
-    # perm = int(
-    #     fitz.PDF_PERM_ACCESSIBILITY
-    #     | fitz.PDF_PERM_PRINT  # permit printing
-    #     | fitz.PDF_PERM_COPY  # permit copying
-    #     | fitz.PDF_PERM_ANNOTATE  # permit annotations
-    # )
-    # encrypt_meth = fitz.PDF_ENCRYPT_AES_256
-    # doc.save(
-    #     output,
-    #     encryption=encrypt_meth,  # set the encryption method
-    #     user_pw=password,  # set the user password
-    #     permissions=perm,  # set permissions
-    #     garbage=4,
-    #     deflate=True,
-    # )
+
     doc.save(
         output,
         garbage=4,
