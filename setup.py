@@ -100,7 +100,6 @@ setup(
         "matplotlib",
         "mongo-db-from-config@http://github.com/cisagov/mongo-db-from-config/tarball/develop",
         "openpyxl",
-        "os",
         "pandas",
         "psycopg2",
         "psycopg2-binary",
