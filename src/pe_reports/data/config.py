@@ -4,7 +4,8 @@
 from configparser import ConfigParser
 import os
 
-REPORT_DB_CONFIG = os.path.basename("pe_reports").join("data/database.ini")
+basedir = os.path.abspath(os.path.dirname(__file__))
+REPORT_DB_CONFIG = os.path.join(basedir, "database.ini")
 
 
 def config(filename=REPORT_DB_CONFIG, section="postgres"):
