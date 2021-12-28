@@ -96,7 +96,7 @@ setup(
         "chevron",
         "docopt",
         "glob2",
-        "importlib",
+        "importlib-resources",
         "matplotlib",
         "mongo-db-from-config@http://github.com/cisagov/mongo-db-from-config/tarball/develop",
         "openpyxl",
