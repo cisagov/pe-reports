@@ -30,7 +30,6 @@ logging.basicConfig(
     level=logging.INFO,
 )
 
-
 # CSG credentials
 API_Client_ID = os.getenv("CSGUSER")
 API_Client_secret = os.environ.get("CSGSECRET")
