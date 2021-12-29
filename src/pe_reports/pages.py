@@ -12,7 +12,7 @@ from .charts import Charts
 from .metrics import Credentials, Cyber_Six, Domains_Masqs, Malware_Vulns
 
 
-# style and build tables
+# Style and build tables
 def buildTable(df, classList, sizingList=[]):
     """Build html tables from a pandas dataframe."""
     if not sizingList:
@@ -70,14 +70,21 @@ def credential(chevron_dict, start_date, end_date, org_uid):
     ce_date_df = Credential.by_days()
     breach_det_df = Credential.breach_details()
     breach_appendix = Credential.breach_appendix()
+    # Build exposed credential stacked bar chart
+    width = 24
+    height = 9.5
+    name = "inc_date_df"
+    title = "Reported Exposures by Day"
+    x_label = "Date Reported"
+    y_label = "Creds Exposed"
     cred_date_chart = Charts(
         ce_date_df,
-        24,
-        9.5,
-        "inc_date_df",
-        "Reported Exposures by Day",
-        "Date Reported",
-        "Creds Exposed",
+        width,
+        height,
+        name,
+        title,
+        x_label,
+        y_label,
     )
     cred_date_chart.stacked_bar()
     breach_table = buildTable(breach_det_df, ["table"])
@@ -115,20 +122,49 @@ def masquerading(chevron_dict, start_date, end_date, org_uid):
 def mal_vuln(chevron_dict, start_date, end_date, org_uid):
     """Build Malwares and Vulnerabilities page."""
     Malware_Vuln = Malware_Vulns(start_date, end_date, org_uid)
-    # TODO uncomment out once chart has been implemented
-    # pro_count = Malware_Vuln.protocol_count()
-    # unverif_df = Malware_Vuln.unverified_cve()
+    pro_count = Malware_Vuln.protocol_count()
+    unverif_df = Malware_Vuln.unverified_cve()
     risky_ports_count = Malware_Vuln.risky_ports_count()
     risky_assets = Malware_Vuln.isolate_risky_assets(Malware_Vuln.insecure_df)
     verif_vulns = Malware_Vuln.verif_vulns()
     verif_vulns_summary = Malware_Vuln.verif_vulns_summary()
     total_verif_vulns = Malware_Vuln.total_verif_vulns()
     unverified_vuln_count = Malware_Vuln.unverified_vuln_count()
-    # build charts
-    # TODO add charts implemeentation
-    # barCharts.h_bar(pro_count, "", "", 9, 4.7, "pro_count", 1)
-    # barCharts.h_bar(unverif_df, "Unverified CVEs", "", 9, 9, "unverif_vuln_count", 1)
-    # build tables
+    # Build insecure protocol horizontal bar chart
+    width = 9
+    height = 4.7
+    name = "pro_count"
+    title = ""
+    x_label = ""
+    y_label = ""
+    protocol_chart = Charts(
+        pro_count,
+        width,
+        height,
+        name,
+        title,
+        x_label,
+        y_label,
+    )
+    protocol_chart.h_bar()
+    # Build unverified vulnerability horizontal bar chart
+    width = 9
+    height = 4.7
+    name = "unverif_vuln_count"
+    title = ""
+    x_label = "Unverified CVEs"
+    y_label = ""
+    unverif_vuln_chart = Charts(
+        unverif_df,
+        width,
+        height,
+        name,
+        title,
+        x_label,
+        y_label,
+    )
+    unverif_vuln_chart.h_bar()
+    # Build tables
     risky_assets = risky_assets[:7]
     risky_assets.columns = ["IP", "Protocol"]
     risky_assets_table = buildTable(risky_assets, ["table"], [50, 50])
@@ -138,7 +174,7 @@ def mal_vuln(chevron_dict, start_date, end_date, org_uid):
         verif_vulns_summary, ["table"], [15, 15, 15, 55]
     )
 
-    # update chevrion dictionary
+    # Update chevrion dictionary
     vulns_dict = {
         "verif_vulns": verif_vulns_table,
         "verif_vulns_summary": verif_vulns_summary_table,
@@ -160,43 +196,51 @@ def dark_web(chevron_dict, start_date, end_date, org_uid):
     """Page 6: Web & Dark Web Mentions."""
     Cyber6 = Cyber_Six(start_date, end_date, org_uid)
     dark_web_count = Cyber6.dark_web_count()
-    # TODO uncomment out once chart has been implemented
-    # dark_web_date = Cyber6.dark_web_date()
+    dark_web_date = Cyber6.dark_web_date()
     dark_web_sites = Cyber6.dark_web_sites()
     alert_threats = Cyber6.alerts_threats()
     dark_web_bad_actors = Cyber6.dark_web_bad_actors()
     dark_web_tags = Cyber6.dark_web_tags()
-    # TODO uncomment out once chart has been implemented
-    # dark_web_content = Cyber6.dark_web_content()
+    dark_web_content = Cyber6.dark_web_content()
     alert_exec = Cyber6.alerts_exec()
     dark_web_most_act = Cyber6.dark_web_most_act()
     top_cve_table = Cyber6.top_cve_table
+    # Build dark web mentions over time line chart
+    width = 19
+    height = 9
+    name = "web_only_df_2"
+    title = ""
+    x_label = "Dark Web Mentions"
+    y_label = "Mentions count"
+    dark_mentions_chart = Charts(
+        dark_web_date,
+        width,
+        height,
+        name,
+        title,
+        x_label,
+        y_label,
+    )
+    dark_mentions_chart.line_chart()
+    # Build forum type / conversation content pie chart
+    width = 19
+    height = 9
+    name = "dark_web_forum_pie"
+    title = ""
+    x_label = ""
+    y_label = ""
+    pie_chart = Charts(
+        dark_web_content,
+        width,
+        height,
+        name,
+        title,
+        x_label,
+        y_label,
+    )
+    pie_chart.pie()
 
-    # Line Chart - Web and “dark” web mentions over time
-    # TODO uncomment out once chart has been implemented
-    # showAxis = True
-    # small = False
-    # TODO add charts implemeentation
-    # barCharts.line_chart(dark_web_date, 19, 9, "web_only_df2", showAxis, small)
-
-    # Pie Chart - Forum Type / Conversation Content
-    # TODO uncomment out once chart has been implemented
-    # title = ""
-    # xAxisLabel = ""
-    # yAxisLabel = ""
-    # TODO add charts implemeentation
-    # barCharts.pie(
-    #     dark_web_content,
-    #     title,
-    #     xAxisLabel,
-    #     yAxisLabel,
-    #     19,
-    #     9,
-    #     "dark_web_forum_pie",
-    #     len(dark_web_content),
-    # )
-
-    # build tables
+    # Build tables
     dark_web_sites_table = buildTable(dark_web_sites, ["table"], [50, 50])
     alerts_threats_table = buildTable(alert_threats, ["table"], [40, 40, 20])
     dark_web_actors_table = buildTable(dark_web_bad_actors[:10], ["table"], [50, 50])
