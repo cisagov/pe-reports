@@ -17,14 +17,16 @@ Options:
 """
 
 # Standard Python Libraries
-# Standard Python Librarieså
+import logging
 import os
 import sys
+from typing import Any, Dict
 
 # Third-Party Libraries
 from docopt import docopt
 import fitz
 import pandas as pd
+from schema import And, Schema, SchemaError, Use
 from xhtml2pdf import pisa
 
 # cisagov Libraries
@@ -110,8 +112,7 @@ def generate_reports(datestring, data_directory, output_directory):
     # Get PE orgs from PE db
     conn = connect()
     pe_orgs = get_orgs(conn)
-    print(pe_orgs)
-
+    logging.info(pe_orgs)
     generated_reports = 0
 
     # Iterate over organizations
@@ -122,7 +123,7 @@ def generate_reports(datestring, data_directory, output_directory):
         org_name = org[1]
         org_code = org[2]
 
-        print(f"Running on {org_code}...")
+        logging.info(f"Running on {org_code}...")
 
         # Create folders in output directory
         if not os.path.exists(f"{output_directory}/ppt"):
@@ -207,17 +208,54 @@ def generate_reports(datestring, data_directory, output_directory):
         )
         # Need to make sure Cyhy Mailer doesn't send files that are too large
         if tooLarge:
-            print(f"{org_code} is too large. File size: {filesize} Limit: 20MB")
+            logging.info(f"{org_code} is too large. File size: {filesize} Limit: 20MB")
 
         generated_reports = generated_reports + 1
 
-    print(f"{generated_reports} reports generated")
+    logging.info(f"{generated_reports} reports generated")
 
 
 def main():
     """Generate PDF reports."""
-    # Parse command line arguments
-    args = docopt(__doc__, version=__version__)
+    args: Dict[str, str] = docopt.docopt(__doc__, version=__version__)
+
+    # Validate and convert arguments as needed
+    schema: Schema = Schema(
+        {
+            "--log-level": And(
+                str,
+                Use(str.lower),
+                lambda n: n in ("debug", "info", "warning", "error", "critical"),
+                error="Possible values for --log-level are "
+                + "debug, info, warning, error, and critical.",
+            ),
+            str: object,  # Don't care about other keys, if any
+        }
+    )
+
+    try:
+        validated_args: Dict[str, Any] = schema.validate(args)
+    except SchemaError as err:
+        # Exit because one or more of the arguments were invalid
+        print(err, file=sys.stderr)
+        return 1
+
+    # Assign validated arguments to variables
+    log_level: str = validated_args["--log-level"]
+
+    # Set up logging
+    logging.basicConfig(
+        format="%(asctime)-15s %(levelname)s %(message)s", level=log_level.upper()
+    )
+
+    # TODO: Add generate_reports func to handle cmd line arguments and function.
+    # Issue #8: https://github.com/cisagov/pe-reports/issues/8
+    # def generate_reports(db, datestring, data_directory, output_directory):
+
+    logging.info(
+        "Loading Posture & Exposure Report Template, Version : %s", __version__
+    )
+    logging.info("Generating Graphs")
 
     # Create output directory
     if not os.path.exists(args["OUTPUT_DIRECTORY"]):
@@ -227,6 +265,9 @@ def main():
     generate_reports(
         args["REPORT_DATE"], args["DATA_DIRECTORY"], args["OUTPUT_DIRECTORY"]
     )
+
+    # Stop logging and clean up
+    logging.shutdown()
 
 
 if __name__ == "__main__":
