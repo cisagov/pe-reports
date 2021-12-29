@@ -98,7 +98,6 @@ setup(
         "glob2",
         "flask_wtf",
         "flask",
-        "importlib",
         "mongo-db-from-config@http://github.com/cisagov/mongo-db-from-config/tarball/develop",
         "openpyxl",
         "pandas",
