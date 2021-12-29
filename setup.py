@@ -102,6 +102,7 @@ setup(
         "openpyxl",
         "pandas",
         "psutil",
+        "psycopg2",
         "pyyaml",
         "pymongo",
         "pymupdf",
