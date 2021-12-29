@@ -1,7 +1,7 @@
 """ciagov/pe-reports: A tool for creating Posture & Exposure reports.
 
 Usage:
-  pe-reports REPORT_DATE  DATA_DIRECTORY OUTPUT_DIRECTORY [--db-creds-file=FILENAME]
+  pe-reports REPORT_DATE  DATA_DIRECTORY OUTPUT_DIRECTORY [--log-level=LEVEL]
 
 Options:
   -h --help                         Show this message.
@@ -11,9 +11,9 @@ Options:
                                     owner.
   OUTPUT_DIRECTORY                  The directory where the final PDF
                                     reports should be saved.
-  -c --db-creds-file=FILENAME       A YAML file containing the Cyber
-                                    Hygiene database credentials.
-                                    [default: /secrets/database_creds.yml]
+  -l --log-level=LEVEL              If specified, then the log level will be set to
+                                    the specified value.  Valid values are "debug", "info",
+                                    "warning", "error", and "critical". [default: info]
 """
 
 # Standard Python Libraries
@@ -110,106 +110,123 @@ def generate_reports(datestring, data_directory, output_directory):
     """Process steps for generating report data."""
     # Get PE orgs from PE db
     conn = connect()
-    pe_orgs = get_orgs(conn)
-    logging.info(pe_orgs)
+    if conn:
+        pe_orgs = get_orgs(conn)
+    else:
+        return 1
     generated_reports = 0
 
     # Iterate over organizations
-    for org in pe_orgs:
+    if pe_orgs:
+        logging.info(f"PE orgs count: {len(pe_orgs)}")
+        for org in pe_orgs:
+            # Assign organization values
+            org_uid = org[0]
+            org_name = org[1]
+            org_code = org[2]
 
-        # Assign organization values
-        org_uid = org[0]
-        org_name = org[1]
-        org_code = org[2]
+            logging.info(f"Running on {org_code}")
 
-        logging.info(f"Running on {org_code}...")
+            # Create folders in output directory
+            if not os.path.exists(f"{output_directory}/ppt"):
+                os.mkdir(f"{output_directory}/ppt")
 
-        # Create folders in output directory
-        if not os.path.exists(f"{output_directory}/ppt"):
-            os.mkdir(f"{output_directory}/ppt")
+            if not os.path.exists(f"{output_directory}/{org_code}"):
+                os.mkdir(f"{output_directory}/{org_code}")
 
-        if not os.path.exists(f"{output_directory}/{org_code}"):
-            os.mkdir(f"{output_directory}/{org_code}")
+            # Load source html
+            try:
+                file = open("template.html")
+                source_html = file.read().replace("\n", " ")
+            except FileNotFoundError:
+                logging.error(
+                    "Template cannot be found. Must be named pe-reports/src/pe_reports/template.html"
+                )
+                return 1
 
-        # Load source html
-        file = open("template2.html")
-        source_html = file.read().replace("\n", " ")
+            # Insert Charts and Metrics into pdf
+            (
+                source_html,
+                hibp_creds,
+                cyber_creds,
+                masq_df,
+                insecure_df,
+                vulns_df,
+                assets_df,
+                dark_web_mentions,
+                alerts,
+                top_cves,
+            ) = init(
+                source_html,
+                datestring,
+                org_name,
+                org_uid,
+            )
 
-        # Insert Charts and Metrics into pdf
-        (
-            source_html,
-            hibp_creds,
-            cyber_creds,
-            masq_df,
-            insecure_df,
-            vulns_df,
-            assets_df,
-            dark_web_mentions,
-            alerts,
-            top_cves,
-        ) = init(
-            source_html,
-            datestring,
-            org_name,
-            org_uid,
+            # Close pdf
+            file.close()
+
+            # Convert to HTML to PDF
+            output_filename = f"{output_directory}/{org_code}-Posture_and_Exposure_Report-{datestring}.pdf"
+            convert_html_to_pdf(source_html, output_filename)
+
+            # Create Crendential Exposure excel file
+            cred_xlsx = f"{output_directory}/{org_code}/compromised_credentials.xlsx"
+            credWriter = pd.ExcelWriter(cred_xlsx, engine="xlsxwriter")
+            hibp_creds.to_excel(credWriter, sheet_name="HIBP_Credentials", index=False)
+            cyber_creds.to_excel(
+                credWriter, sheet_name="Cyber6_Credentials", index=False
+            )
+            credWriter.save()
+
+            # Create Domain Masquerading excel file
+            da_xlsx = f"{output_directory}/{org_code}/domain_alerts.xlsx"
+            domWriter = pd.ExcelWriter(da_xlsx, engine="xlsxwriter")
+            masq_df.to_excel(domWriter, sheet_name="Suspected Domains", index=False)
+            domWriter.save()
+
+            # Create Suspected vulnerability excel file
+            vuln_xlsx = f"{output_directory}/{org_code}/vuln_alerts.xlsx"
+            vulnWriter = pd.ExcelWriter(vuln_xlsx, engine="xlsxwriter")
+            assets_df.to_excel(vulnWriter, sheet_name="Assets", index=False)
+            insecure_df.to_excel(vulnWriter, sheet_name="Insecure", index=False)
+            vulns_df.to_excel(vulnWriter, sheet_name="Verified Vulns", index=False)
+            vulnWriter.save()
+
+            # Create dark web excel file
+            mi_xlsx = f"{output_directory}/{org_code}/mention_incidents.xlsx"
+            miWriter = pd.ExcelWriter(mi_xlsx, engine="xlsxwriter")
+            dark_web_mentions.to_excel(
+                miWriter, sheet_name="Dark Web Mentions", index=False
+            )
+            alerts.to_excel(miWriter, sheet_name="Dark Web Alerts", index=False)
+            top_cves.to_excel(miWriter, sheet_name="Top CVEs", index=False)
+            miWriter.save()
+
+            # grab the pdf
+            pdf = f"{output_directory}/{org_code}-Posture_and_Exposure_Report-{datestring}.pdf"
+
+            (filesize, tooLarge) = embed(
+                output_directory,
+                org_code,
+                datestring,
+                pdf,
+                cred_xlsx,
+                da_xlsx,
+                vuln_xlsx,
+                mi_xlsx,
+            )
+            # Need to make sure Cyhy Mailer doesn't send files that are too large
+            if tooLarge:
+                logging.info(
+                    f"{org_code} is too large. File size: {filesize} Limit: 20MB"
+                )
+
+            generated_reports = generated_reports + 1
+    else:
+        logging.error(
+            "Conenction to pe database failed and/or there are 0 organizations stored."
         )
-
-        # Close pdf
-        file.close()
-
-        # Convert to HTML to PDF
-        output_filename = f"{output_directory}/{org_code}-Posture_and_Exposure_Report-{datestring}.pdf"
-        convert_html_to_pdf(source_html, output_filename)
-
-        # Create Crendential Exposure excel file
-        cred_xlsx = f"{output_directory}/{org_code}/compromised_credentials.xlsx"
-        credWriter = pd.ExcelWriter(cred_xlsx, engine="xlsxwriter")
-        hibp_creds.to_excel(credWriter, sheet_name="HIBP_Credentials", index=False)
-        cyber_creds.to_excel(credWriter, sheet_name="Cyber6_Credentials", index=False)
-        credWriter.save()
-
-        # Create Domain Masquerading excel file
-        da_xlsx = f"{output_directory}/{org_code}/domain_alerts.xlsx"
-        domWriter = pd.ExcelWriter(da_xlsx, engine="xlsxwriter")
-        masq_df.to_excel(domWriter, sheet_name="Suspected Domains", index=False)
-        domWriter.save()
-
-        # Create Suspected vulnerability excel file
-        vuln_xlsx = f"{output_directory}/{org_code}/vuln_alerts.xlsx"
-        vulnWriter = pd.ExcelWriter(vuln_xlsx, engine="xlsxwriter")
-        assets_df.to_excel(vulnWriter, sheet_name="Assets", index=False)
-        insecure_df.to_excel(vulnWriter, sheet_name="Insecure", index=False)
-        vulns_df.to_excel(vulnWriter, sheet_name="Verified Vulns", index=False)
-        vulnWriter.save()
-
-        # Create dark web excel file
-        mi_xlsx = f"{output_directory}/{org_code}/mention_incidents.xlsx"
-        miWriter = pd.ExcelWriter(mi_xlsx, engine="xlsxwriter")
-        dark_web_mentions.to_excel(
-            miWriter, sheet_name="Dark Web Mentions", index=False
-        )
-        alerts.to_excel(miWriter, sheet_name="Dark Web Alerts", index=False)
-        top_cves.to_excel(miWriter, sheet_name="Top CVEs", index=False)
-        miWriter.save()
-
-        # grab the pdf
-        pdf = f"{output_directory}/{org_code}-Posture_and_Exposure_Report-{datestring}.pdf"
-
-        (filesize, tooLarge) = embed(
-            output_directory,
-            org_code,
-            datestring,
-            pdf,
-            cred_xlsx,
-            da_xlsx,
-            vuln_xlsx,
-            mi_xlsx,
-        )
-        # Need to make sure Cyhy Mailer doesn't send files that are too large
-        if tooLarge:
-            logging.info(f"{org_code} is too large. File size: {filesize} Limit: 20MB")
-
-        generated_reports = generated_reports + 1
 
     logging.info(f"{generated_reports} reports generated")
 
@@ -247,17 +264,17 @@ def main():
         format="%(asctime)-15s %(levelname)s %(message)s", level=log_level.upper()
     )
 
-    logging.info(
-        "Loading Posture & Exposure Report Template, Version : %s", __version__
-    )
+    logging.info("Loading Posture & Exposure Report, Version : %s", __version__)
 
     # Create output directory
-    if not os.path.exists(args["OUTPUT_DIRECTORY"]):
-        os.mkdir(args["OUTPUT_DIRECTORY"])
+    if not os.path.exists(validated_args["OUTPUT_DIRECTORY"]):
+        os.mkdir(validated_args["OUTPUT_DIRECTORY"])
 
     # Generate reports
     generate_reports(
-        args["REPORT_DATE"], args["DATA_DIRECTORY"], args["OUTPUT_DIRECTORY"]
+        validated_args["REPORT_DATE"],
+        validated_args["DATA_DIRECTORY"],
+        validated_args["OUTPUT_DIRECTORY"],
     )
 
     # Stop logging and clean up
