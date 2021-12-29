@@ -1,47 +1,39 @@
 {% extends "base.html" %} {% block content %}
 
+<div class="container">
+  <img
+    src="{{ url_for('static', filename='CISAImage.png') }}"
+    alt="Cinque Terre"
+    width="200"
+    height="200"
+  />
+</div>
+<!--End of container-->
+<script>
+  function showDiv() {
+    let T = document.getElementById("TestsDiv"),
+      displayValue = "";
+    if (T.style.display == "") displayValue = "none";
+    T.style.display = displayValue;
+  }
 
-    <div class="container" >
-    <img
-            src="{{ url_for('static', filename='CISAImage.png') }}"
-            alt="Cinque Terre"
-            width="200"
-            height="200"
-    />
+  function loading() {
+    $("#loading").show();
+    $("#content").hide();
+  }
 
+  $(document).ready(function () {
+    console.log("Im ready ");
 
+    showDiv();
 
-
-    </div>
-    <!--End of container-->
-    <script>
-        function showDiv() {
-            let T = document.getElementById("TestsDiv"),
-                displayValue = "";
-            if (T.style.display == "") displayValue = "none";
-            T.style.display = displayValue;
-        }
-
-        function loading() {
-            $("#loading").show();
-            $("#content").hide();
-        }
-
-
-        $(document).ready(function () {
-            console.log("Im ready ");
-
-            showDiv();
-
-
-            setTimeout(function () {
-                $("#messageDiv").fadeOut("fast");
-            }, 5000);
-            $(window).load(function () {
-                $("#loading").hide();
-            });
-        });
-    </script>
+    setTimeout(function () {
+      $("#messageDiv").fadeOut("fast");
+    }, 5000);
+    $(window).load(function () {
+      $("#loading").hide();
+    });
+  });
+</script>
 
 {% endblock %}
-</div>

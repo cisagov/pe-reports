@@ -96,6 +96,8 @@ setup(
         "chevron",
         "docopt",
         "glob2",
+        "flask_wtf",
+        "flask",
         "mongo-db-from-config@http://github.com/cisagov/mongo-db-from-config/tarball/develop",
         "openpyxl",
         "pandas",
@@ -105,7 +107,9 @@ setup(
         "python-pptx",
         "schema",
         "setuptools >= 24.2.0",
+        "sublist3r",
         "types-PyYAML",
+        "wtforms",
     ],
     extras_require={
         "test": [

@@ -1,3 +1,5 @@
+"""Classes and associagted functions that render the UI app pages."""
+
 # Standard Python Libraries
 from datetime import date
 from ipaddress import ip_address, ip_network
@@ -7,22 +9,19 @@ import os
 import socket
 
 # Third-Party Libraries
-# Local file import
-from pe_reports.data.config import config1, config2
+from flask import Blueprint, flash, redirect, render_template, url_for
+
 # from flask import Flask, flash, redirect,request, render_template, url_for
-from flask_wtf import FlaskForm
 import psutil
 import psycopg2
 import psycopg2.extras
-from pymongo import MongoClient
-from pymongo.errors import OperationFailure, ServerSelectionTimeoutError
 import requests
-from wtforms import SelectField, StringField, SubmitField
-from wtforms.validators import DataRequired
 import sublist3r
-from flask import Blueprint,render_template,flash,redirect,url_for,Flask,get_flashed_messages
-from pe_reports.stakeholder.forms import InfoFormExternal,InfoForm
 
+# cisagov Libraries
+# Local file import
+from pe_reports.data.config import config1
+from pe_reports.stakeholder.forms import InfoForm, InfoFormExternal
 
 logging.basicConfig(
     filemode="a",
@@ -30,7 +29,6 @@ logging.basicConfig(
     datefmt="%m/%d/%Y %I:%M:%S",
     level=logging.INFO,
 )
-
 
 
 # CSG credentials
@@ -57,7 +55,7 @@ def getToken():
 
 def cyhybastionConn():
     """Check for cyhyDB connection and if not connected, make the connection."""
-    myprocess = os.popen("w")
+    myprocess = os.popen("w")  # nosec
 
     pro1 = myprocess.read()
 
@@ -81,8 +79,6 @@ def terminatecyhyssh():
             pass
 
 
-
-
 def getAgencies(org_name):
     """Get all agency names from P&E database."""
     global conn, cursor
@@ -100,10 +96,10 @@ def getAgencies(org_name):
 
             cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
 
-            cursor.execute(
-                f"select organizations_uid,name from"
-                f" organizations where name='{org_name}';"
-            )
+            query = "select organizations_uid,name from"
+            f" organizations where name='{org_name}';"
+
+            cursor.execute(query)
 
             result = cursor.fetchall()
 
@@ -140,11 +136,10 @@ def getRootID(org_UUID):
             )
 
             cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+            query = "select root_domain_uid, organization_name from"
+            f" root_domains where organizations_uid='{org_UUID}';"
 
-            cursor.execute(
-                f"select root_domain_uid, organization_name from"
-                f" root_domains where organizations_uid='{org_UUID}';"
-            )
+            cursor.execute(query)
 
             result = cursor.fetchall()
 
@@ -191,8 +186,9 @@ def setStakeholder(customer):
             return True
 
     except (Exception, psycopg2.DatabaseError) as err:
-        logging.error(f"There was a problem logging"
-                      f" into the psycopg database {err}")
+        logging.error(
+            f"There was a problem logging" f" into the psycopg database {err}"
+        )
         return False
     finally:
         if conn is not None:
@@ -234,8 +230,9 @@ def setCustRootDomain(customer, rootdomain, orgUUID):
             return True
 
     except (Exception, psycopg2.DatabaseError) as err:
-        logging.error(f"There was a problem logging"
-                      f" into the psycopg database {err}")
+        logging.error(
+            f"There was a problem logging" f" into the psycopg database {err}"
+        )
         return False
     finally:
         if conn is not None:
@@ -282,8 +279,9 @@ def setCustSubDomain(subdomain, rootUUID, rootname):
             return True
 
     except (Exception, psycopg2.DatabaseError) as err:
-        logging.error(f"There was a problem logging"
-                      f" into the psycopg database {err}")
+        logging.error(
+            f"There was a problem logging" f" into the psycopg database {err}"
+        )
         return False
     finally:
         if conn is not None:
@@ -350,46 +348,45 @@ def setCustomerExteralCSG(
             terminatecyhyssh()
     return iplist
 
+
 def getSubdomain(domain):
     """Get all sub-domains from passed in root domain."""
     allsubs = []
 
-    subdomains = sublist3r.main(domain, 40,None,None,False,False,False,None)
-    subisolated = ''
+    subdomains = sublist3r.main(domain, 40, None, None, False, False, False, None)
+    subisolated = ""
     for sub in subdomains:
 
-        if sub != f'www.{domain}':
+        if sub != f"www.{domain}":
 
             print(sub)
-            subisolated = sub.rsplit('.')[:-2]
+            subisolated = sub.rsplit(".")[:-2]
             # subisolated = sub.rsplit('.',2)[:-2]
-            print(f'The whole sub is {sub} and '
-                  f'the isolated sub is {subisolated}')
+            print(f"The whole sub is {sub} and " f"the isolated sub is {subisolated}")
         allsubs.append(subisolated)
 
-    return subdomains,allsubs
+    return subdomains, allsubs
+
 
 def theaddress(domain):
-    """Get actual IP address of domain
-
-    """
-
-    gettheAddress = ''
-
+    """Get actual IP address of domain."""
+    gettheAddress = ""
     try:
         gettheAddress = socket.gethostbyname(domain)
     except socket.gaierror:
         pass
-        logging.info('There is a problem with the Domain that you selected')
+        logging.info("There is a problem with the Domain that you selected")
 
     return gettheAddress
 
+
 def getallsubdomainIPS(domain):
-    logging.info(f'The domain at getallsubdomsinIPS is {domain}')
+    """Get a list if ip addresses associated with a subdomain."""
+    logging.info(f"The domain at getallsubdomsinIPS is {domain}")
     alladdresses = []
     for x in getSubdomain(domain)[0]:
         domainaddress = theaddress(x)
-        if domainaddress not in alladdresses and domainaddress != '':
+        if domainaddress not in alladdresses and domainaddress != "":
             alladdresses.append(domainaddress)
     return alladdresses
 
@@ -397,7 +394,7 @@ def getallsubdomainIPS(domain):
 def verifyIPv4(custIP):
     """Verify if parameter is a valid ipv4 ip address."""
     try:
-        if ip_address(custIP) :
+        if ip_address(custIP):
             return True
 
         else:
@@ -475,51 +472,55 @@ def setNewCSGOrg(newOrgName, orgAliases, orgdomainNames, orgIP, orgExecs):
         logging.info(f"Got here there is a new new org {newOrgID}")
 
         setOrganizationUsers(newOrgID)
-        setOrganizationDetails(newOrgID,
-                               orgAliases,
-                               orgdomainNames,
-                               orgIP,
-                               orgExecs)
+        setOrganizationDetails(newOrgID, orgAliases, orgdomainNames, orgIP, orgExecs)
 
     return response
 
 
-def setOrganizationUsers(org_id ):
+def setOrganizationUsers(org_id):
     """Set CSG user permissions at new stakeholder."""
     print(len(getalluserinfo()))
     for user in getalluserinfo():
-        userrole = user['role_id']
-        user_id = user['user_id']
-        username = user['user_name']
+        userrole = user["role_id"]
+        user_id = user["user_id"]
+        username = user["user_name"]
 
-
-        if (userrole == '5d23342df5feaf006a8a8929')\
-                and (user_id != '610017c216948d7efa077a52')\
-                or userrole == '5d23342df5feaf006a8a8927' and\
-                user_id != '610017c216948d7efa077a52' :
-            print(f'The userrole {userrole} and the'
-                  f' user_id {user_id} and the user {username}')
-            url = f"https://api.cybersixgill.com/multi-tenant/organization/" \
-                  f"{org_id}/user/{user_id}?role_id={userrole}"
+        if (
+            (userrole == "5d23342df5feaf006a8a8929")
+            and (user_id != "610017c216948d7efa077a52")
+            or userrole == "5d23342df5feaf006a8a8927"
+            and user_id != "610017c216948d7efa077a52"
+        ):
+            print(
+                f"The userrole {userrole} and the"
+                f" user_id {user_id} and the user {username}"
+            )
+            url = (
+                f"https://api.cybersixgill.com/multi-tenant/organization/"
+                f"{org_id}/user/{user_id}?role_id={userrole}"
+            )
 
             headers = {
-                'Content-Type': 'application/json',
-                'Cache-Control': 'no-cache',
-                'Authorization': f'Bearer {getToken()}',
+                "Content-Type": "application/json",
+                "Cache-Control": "no-cache",
+                "Authorization": f"Bearer {getToken()}",
             }
 
             response = requests.post(url, headers=headers).json()
             logging.info(response)
 
+
 def setOrganizationDetails(org_id, orgAliases, orgDomain, orgIP, orgExecs):
-    """Set stakeholder details at newly created
-    stakeholder at CSG portal via API.."""
+    """Set stakeholder details at newly created.
+
+    stakeholder at CSG portal via API.
+    """
     logging.info("The following is from setting details")
-    logging.info(f'The org_id id {org_id}')
-    logging.info(f'The org_id id {orgAliases}')
-    logging.info(f'The org_id id {orgDomain}')
-    logging.info(f'The org_id id {orgIP}')
-    logging.info(f'The org_id id {orgExecs}')
+    logging.info(f"The org_id id {org_id}")
+    logging.info(f"The org_id id {orgAliases}")
+    logging.info(f"The org_id id {orgDomain}")
+    logging.info(f"The org_id id {orgIP}")
+    logging.info(f"The org_id id {orgExecs}")
     newOrganizationDetails = json.dumps(
         {
             "organization_aliases": {"explicit": orgAliases},
@@ -528,8 +529,7 @@ def setOrganizationDetails(org_id, orgAliases, orgDomain, orgIP, orgExecs):
             "executives": {"explicit": orgExecs},
         }
     )
-    url = f"https://api.cybersixgill.com/multi-tenant/" \
-          f"organization/{org_id}/assets"
+    url = f"https://api.cybersixgill.com/multi-tenant/" f"organization/{org_id}/assets"
 
     headers = {
         "Content-Type": "application/json",
@@ -537,9 +537,7 @@ def setOrganizationDetails(org_id, orgAliases, orgDomain, orgIP, orgExecs):
         "Authorization": f"Bearer {getToken()}",
     }
 
-    response = requests.put(url,
-                            headers=headers,
-                            data=newOrganizationDetails).json()
+    response = requests.put(url, headers=headers, data=newOrganizationDetails).json()
     logging.info(f"The response is {response}")
 
 
@@ -549,13 +547,15 @@ def getalluserinfo():
 
     return userInfo
 
-stakeholder_blueprint = Blueprint('stakeholder',
-                                  __name__,
-                                  template_folder='templates/stakeholder_UI')
+
+stakeholder_blueprint = Blueprint(
+    "stakeholder", __name__, template_folder="templates/stakeholder_UI"
+)
 
 
-@stakeholder_blueprint.route('/stakeholder', methods=['GET','POST'])
+@stakeholder_blueprint.route("/stakeholder", methods=["GET", "POST"])
 def stakeholder():
+    """Process form information, instantiate form and render page template."""
     cust = False
     custDomainAliases = False
     custRootDomain = False
@@ -576,23 +576,26 @@ def stakeholder():
         try:
 
             if cust not in allDomain:
-                flash(f"You successfully submitted"
-                      f" a new customer {cust} ", "success")
+                flash(
+                    f"You successfully submitted" f" a new customer {cust} ", "success"
+                )
                 setStakeholder(cust)
             else:
                 flash(
-                    f"The customer that you selected"
-                    f" already exists. {cust} ", "warning"
+                    f"The customer that you selected" f" already exists. {cust} ",
+                    "warning",
                 )
 
         except ValueError as e:
-            flash(f"The customer IP {e} is not a"
-                  f" valid IP, please try again.", "danger")
-            return redirect(url_for("home_stakeholder.html",form=form))
-        return redirect(url_for("home_stakeholder.html",form=form))
+            flash(
+                f"The customer IP {e} is not a" f" valid IP, please try again.",
+                "danger",
+            )
+            return redirect(url_for("home_stakeholder.html", form=form))
+        return redirect(url_for("home_stakeholder.html", form=form))
 
     if formExternal.validate_on_submit():
-        logging.info('Got to the submit validate')
+        logging.info("Got to the submit validate")
         cust = formExternal.cust.data.upper()
         custDomainAliases = formExternal.custDomainAliases.data.split(",")
         custRootDomain = formExternal.custRootDomain.data.split(",")
@@ -606,12 +609,10 @@ def stakeholder():
         allSubDomain = getSubdomain(custRootDomainValue)
         allValidIP = getallsubdomainIPS(custRootDomainValue)
 
-
         try:
             # print(allDomain.values())
             if cust not in allDomain.values():
-                flash(f"You successfully submitted a new customer {cust} ",
-                      "success")
+                flash(f"You successfully submitted a new customer {cust} ", "success")
 
                 if setStakeholder(cust):
                     logging.info(f"The customer {cust} was entered.")
@@ -629,8 +630,7 @@ def stakeholder():
                         if allSubDomain:
                             for subdomain in allSubDomain:
                                 if setCustSubDomain(subdomain, rootUUID, cust):
-                                    logging.info("The subdomains "
-                                                 "have been entered.")
+                                    logging.info("The subdomains " "have been entered.")
                                     setNewCSGOrg(
                                         cust,
                                         custDomainAliases,
@@ -643,10 +643,9 @@ def stakeholder():
                 flash(f"The customer {cust} already exists.", "warning")
 
         except ValueError as e:
-            flash(f"The customer IP {e} is not a valid IP, please try again.",
-                  "danger")
-            return redirect(url_for('stakeholder.stakeholder'))
-        return redirect(url_for('stakeholder.stakeholder'))
+            flash(f"The customer IP {e} is not a valid IP, please try again.", "danger")
+            return redirect(url_for("stakeholder.stakeholder"))
+        return redirect(url_for("stakeholder.stakeholder"))
     return render_template(
         "home_stakeholder.html",
         form=form,
