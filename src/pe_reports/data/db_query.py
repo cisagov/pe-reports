@@ -20,10 +20,9 @@ CONN_PARAMS_DIC = config()
 
 def show_psycopg2_exception(err):
     """Handle errors for PostgreSQL issues."""
-    err_type, traceback = sys.exc_info()
+    err_type, err_obj, traceback = sys.exc_info()
     line_n = traceback.tb_lineno
-    logging.error(f"\npsycopg2 ERROR: {err} on line number: {line_n}")
-    logging.error(f"psycopg2 traceback: {traceback} -- type: {err_type}")
+    logging.error(f"Database connection error: {err} on line number: {line_n}")
 
 
 def connect():
@@ -32,7 +31,7 @@ def connect():
     try:
         logging.info("Connecting to the PostgreSQL......")
         conn = psycopg2.connect(**CONN_PARAMS_DIC)
-        logging.info("Connection successful................\n")
+        logging.info("Connection successful......")
     except OperationalError as err:
         show_psycopg2_exception(err)
         conn = None
@@ -45,9 +44,8 @@ def close(conn):
     return
 
 
-def get_orgs():
+def get_orgs(conn):
     """Query organizations table."""
-    conn = connect()
     try:
         cur = conn.cursor()
         sql = """SELECT * FROM organizations"""
