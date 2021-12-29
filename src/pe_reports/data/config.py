@@ -2,7 +2,9 @@
 
 # Standard Python Libraries
 from configparser import ConfigParser
-from importlib.resources import files
+
+# Third-Party Libraries
+from importlib_resources import files
 
 REPORT_DB_CONFIG = files("pe_reports").joinpath("data/dbconfig.config")
 
