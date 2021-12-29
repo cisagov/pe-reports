@@ -481,11 +481,11 @@ def setOrganizationUsers(org_id):
     role1 = os.getenv("USERROLE1")
     role2 = os.getenv("USERROLE2")
     id_role1 = os.getenv("USERID")
-    print(len(getalluserinfo()))
+    csg_role_id = os.getenv("CSGUSERROLE")
+    csg_user_id = os.getenv("CSGUSERID")
     for user in getalluserinfo():
-        userrole = user["role_id"]
-        user_id = user["user_id"]
-        username = user["user_name"]
+        userrole = user[csg_role_id]
+        user_id = user[csg_user_id]
 
         if (
             (userrole == role1)
@@ -493,10 +493,7 @@ def setOrganizationUsers(org_id):
             or userrole == role2
             and user_id != id_role1
         ):
-            print(
-                f"The userrole {userrole} and the"
-                f" user_id {user_id} and the user {username}"
-            )
+
             url = (
                 f"https://api.cybersixgill.com/multi-tenant/organization/"
                 f"{org_id}/user/{user_id}?role_id={userrole}"
