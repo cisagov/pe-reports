@@ -478,9 +478,9 @@ def setNewCSGOrg(newOrgName, orgAliases, orgdomainNames, orgIP, orgExecs):
 
 def setOrganizationUsers(org_id):
     """Set CSG user permissions at new stakeholder."""
-    role1 = os.getenv('USERROLE1')
-    role2 = os.getenv('USERROLE2')
-    id_role1 = os.getenv('USERID')
+    role1 = os.getenv("USERROLE1")
+    role2 = os.getenv("USERROLE2")
+    id_role1 = os.getenv("USERID")
     print(len(getalluserinfo()))
     for user in getalluserinfo():
         userrole = user["role_id"]
