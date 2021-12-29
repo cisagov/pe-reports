@@ -9,29 +9,6 @@
   />
   <div id="loading" class="justify-content-lg-center"></div>
   <div class="row justify-content-lg-center">
-    <div class="d-flex justify-content-center">
-      {% if cyhyConnection == True %}
-      <div class="card">
-        {% else %}
-
-        <div class="card" style="display: None">
-          {% endif %}
-          <div class="card-header text-white bg-primary mb-3">
-            Add CyHy Agency
-          </div>
-          <div class="card-body">
-            <form method="post">
-              {{ form.hidden_tag() }} {{ form.cust.label(style='font-size:
-              24px') }} {{ form.cust(class='form-control') }}
-
-              <br />
-              {{ form.submit(class='btn btn-primary') }}
-            </form>
-          </div>
-        </div>
-      </div>
-    </div>
-    <br />
     <div class="row col-lg-6 offset-lg-3">
       <button type="button" class="btn btn-primary" onclick="showDiv()">
         Add External Stakeholder

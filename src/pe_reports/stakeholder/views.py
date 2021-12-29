@@ -20,8 +20,8 @@ import sublist3r
 
 # cisagov Libraries
 # Local file import
-from pe_reports.data.config import config1
-from pe_reports.stakeholder.forms import InfoForm, InfoFormExternal
+from pe_reports.data.config import config
+from pe_reports.stakeholder.forms import InfoFormExternal
 
 logging.basicConfig(
     filemode="a",
@@ -83,7 +83,7 @@ def getAgencies(org_name):
     global conn, cursor
     resultDict = {}
     try:
-        params = config1()
+        params = config()
 
         conn = psycopg2.connect(**params)
 
@@ -125,7 +125,7 @@ def getRootID(org_UUID):
     global conn, cursor
     resultDict = {}
     try:
-        params = config1()
+        params = config()
 
         conn = psycopg2.connect(**params)
 
@@ -167,7 +167,7 @@ def setStakeholder(customer):
     try:
         logging.info("Starting insert into database...")
 
-        params = config1()
+        params = config()
 
         conn = psycopg2.connect(**params)
 
@@ -206,7 +206,7 @@ def setCustRootDomain(customer, rootdomain, orgUUID):
     try:
         logging.info("Starting insert into database...")
 
-        params = config1()
+        params = config()
 
         conn = psycopg2.connect(**params)
 
@@ -251,7 +251,7 @@ def setCustSubDomain(subdomain, rootUUID, rootname):
 
         logging.info("Starting insert into database...")
 
-        params = config1()
+        params = config()
 
         conn = psycopg2.connect(**params)
 
@@ -302,7 +302,7 @@ def setCustomerExteralCSG(
     try:
         logging.info("Starting insert into database...")
 
-        params = config1()
+        params = config()
 
         conn = psycopg2.connect(**params)
 
@@ -560,38 +560,11 @@ def stakeholder():
     custRootDomain = False
     custExecutives = False
 
-    form = InfoForm()
     formExternal = InfoFormExternal()
 
     # allCustIP = cyhyGet()[0]
     cyhyconnected = cyhybastionConn()
     # logging.info(f"The cyhy db is connected {cyhyconnected}")
-
-    if form.validate_on_submit():
-        cust = form.cust.data.upper()
-        form.cust.data = ""
-        allDomain = getAgencies(cust)
-
-        try:
-
-            if cust not in allDomain:
-                flash(
-                    f"You successfully submitted" f" a new customer {cust} ", "success"
-                )
-                setStakeholder(cust)
-            else:
-                flash(
-                    f"The customer that you selected" f" already exists. {cust} ",
-                    "warning",
-                )
-
-        except ValueError as e:
-            flash(
-                f"The customer IP {e} is not a" f" valid IP, please try again.",
-                "danger",
-            )
-            return redirect(url_for("home_stakeholder.html", form=form))
-        return redirect(url_for("home_stakeholder.html", form=form))
 
     if formExternal.validate_on_submit():
         logging.info("Got to the submit validate")
@@ -647,7 +620,6 @@ def stakeholder():
         return redirect(url_for("stakeholder.stakeholder"))
     return render_template(
         "home_stakeholder.html",
-        form=form,
         formExternal=formExternal,
         cust=cust,
         # custIP=custIP,
