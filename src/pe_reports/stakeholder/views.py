@@ -478,6 +478,9 @@ def setNewCSGOrg(newOrgName, orgAliases, orgdomainNames, orgIP, orgExecs):
 
 def setOrganizationUsers(org_id):
     """Set CSG user permissions at new stakeholder."""
+    role1 = os.getenv('USERROLE1')
+    role2 = os.getenv('USERROLE2')
+    id_role1 = os.getenv('USERID')
     print(len(getalluserinfo()))
     for user in getalluserinfo():
         userrole = user["role_id"]
@@ -485,10 +488,10 @@ def setOrganizationUsers(org_id):
         username = user["user_name"]
 
         if (
-            (userrole == "5d23342df5feaf006a8a8929")
-            and (user_id != "610017c216948d7efa077a52")
-            or userrole == "5d23342df5feaf006a8a8927"
-            and user_id != "610017c216948d7efa077a52"
+            (userrole == role1)
+            and (user_id != id_role1)
+            or userrole == role2
+            and user_id != id_role1
         ):
             print(
                 f"The userrole {userrole} and the"
