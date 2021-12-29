@@ -23,7 +23,7 @@ import sys
 from typing import Any, Dict
 
 # Third-Party Libraries
-from docopt import docopt
+import docopt
 import fitz
 import pandas as pd
 from schema import And, Schema, SchemaError, Use
@@ -217,7 +217,7 @@ def generate_reports(datestring, data_directory, output_directory):
 
 def main():
     """Generate PDF reports."""
-    args: Dict[str, str] = docopt(__doc__, version=__version__)
+    args: Dict[str, str] = docopt.docopt(__doc__, version=__version__)
 
     # Validate and convert arguments as needed
     schema: Schema = Schema(
@@ -238,7 +238,7 @@ def main():
     except SchemaError as err:
         # Exit because one or more of the arguments were invalid
         print(err, file=sys.stderr)
-        return 1
+        sys.exit(1)
 
     # Assign validated arguments to variables
     log_level: str = validated_args["--log-level"]
@@ -247,10 +247,6 @@ def main():
     logging.basicConfig(
         format="%(asctime)-15s %(levelname)s %(message)s", level=log_level.upper()
     )
-
-    # TODO: Add generate_reports func to handle cmd line arguments and function.
-    # Issue #8: https://github.com/cisagov/pe-reports/issues/8
-    # def generate_reports(db, datestring, data_directory, output_directory):
 
     logging.info(
         "Loading Posture & Exposure Report Template, Version : %s", __version__
@@ -268,8 +264,6 @@ def main():
 
     # Stop logging and clean up
     logging.shutdown()
-
-    return 0
 
 
 if __name__ == "__main__":
