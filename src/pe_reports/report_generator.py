@@ -217,7 +217,7 @@ def generate_reports(datestring, data_directory, output_directory):
 
 def main():
     """Generate PDF reports."""
-    args = docopt(__doc__, version=__version__)
+    args: Dict[str, str] = docopt(__doc__, version=__version__)
 
     # Validate and convert arguments as needed
     schema: Schema = Schema(
