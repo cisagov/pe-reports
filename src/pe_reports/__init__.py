@@ -6,4 +6,19 @@
 
 from ._version import __version__  # noqa: F401
 
+from pe_reports.stakeholder.views import stakeholder_blueprint
+
+#Third party packages
+from flask import Flask
+
 __all__ = ["pages", "report_generator", "stylesheet"]
+
+
+app = Flask(__name__)
+app.config["SECRET_KEY"] = "bozotheclown"
+app.config["SWLALCHEMY_DATABASE_URI"] = "postgresql://postgres:"
+
+
+
+# Register the apps
+app.register_blueprint(stakeholder_blueprint)
