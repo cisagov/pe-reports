@@ -1,11 +1,17 @@
+"""Create the page forms."""
+# Standard Python Libraries
 import logging
-from pe_reports.data.config import config1, config2
 
+# Third-Party Libraries
+from flask_wtf import FlaskForm
 from pymongo import MongoClient
 from pymongo.errors import OperationFailure, ServerSelectionTimeoutError
 from wtforms import SelectField, StringField, SubmitField
 from wtforms.validators import DataRequired
-from flask_wtf import FlaskForm
+
+# cisagov Libraries
+from pe_reports.data.config import config2
+
 
 def cyhyGet():
     """Make connection to cyhyDB and query/return agency information."""
@@ -48,6 +54,7 @@ def cyhyGet():
 
     return agencyInfo, agencyNames
 
+
 class InfoFormExternal(FlaskForm):
     """Create web form to take user input on organization information/details."""
 
@@ -68,7 +75,7 @@ class InfoFormExternal(FlaskForm):
     custExecutives = StringField(
         "Who are the Excutive for this stakeholder? " "*comma separate entries"
     )
-    submit = SubmitField("Submit", render_kw={'onclick': 'loading()'})
+    submit = SubmitField("Submit", render_kw={"onclick": "loading()"})
 
 
 class InfoForm(FlaskForm):
