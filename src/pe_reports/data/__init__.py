@@ -1,1 +1,1 @@
-"""Initialize database for tests to pass."""
+"""Initialize database folder for tests to pass."""
