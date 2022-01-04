@@ -204,7 +204,8 @@ def dark_web(chevron_dict, start_date, end_date, org_uid):
     dark_web_content = Cyber6.dark_web_content()
     alert_exec = Cyber6.alerts_exec()
     dark_web_most_act = Cyber6.dark_web_most_act()
-    top_cve_table = Cyber6.top_cve_table
+    alerts_site = Cyber6.alerts_site()
+    top_cve_table = Cyber6.top_cve_table()
     # Build dark web mentions over time line chart
     width = 19
     height = 9
@@ -246,7 +247,8 @@ def dark_web(chevron_dict, start_date, end_date, org_uid):
     dark_web_actors_table = buildTable(dark_web_bad_actors[:10], ["table"], [50, 50])
     dark_web_tags_table = buildTable(dark_web_tags, ["table"], [60, 40])
     alerts_exec_table = buildTable(alert_exec[:8], ["table"], [15, 70, 15])
-    dark_web_act_table = buildTable(dark_web_most_act, ["table"], [10, 20, 70])
+    dark_web_act_table = buildTable(dark_web_most_act, ["table"], [75, 25])
+    alerts_site_table = buildTable(alerts_site, ["table"], [50, 50])
     top_cves_table = buildTable(top_cve_table, ["table"], [30, 70])
 
     dark_web_dict = {
@@ -257,6 +259,7 @@ def dark_web(chevron_dict, start_date, end_date, org_uid):
         "dark_web_tags": dark_web_tags_table,
         "alerts_exec": alerts_exec_table,
         "dark_web_act": dark_web_act_table,
+        "alerts_site": alerts_site_table,
         "top_cves": top_cves_table,
     }
 
@@ -291,11 +294,11 @@ def init(source_html, datestring, org_name, org_uid):
         chevron_dict, start_date, end_date, org_uid
     )
 
-    chevron_dict = dark_web(chevron_dict, start_date, end_date, org_uid)
-
-    html, dark_web_mentions, alerts, top_cves = chevron.render(
-        source_html, chevron_dict
+    chevron_dict, dark_web_mentions, alerts, top_cves = dark_web(
+        chevron_dict, start_date, end_date, org_uid
     )
+
+    html = chevron.render(source_html, chevron_dict)
 
     return (
         html,
