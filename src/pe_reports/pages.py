@@ -17,8 +17,7 @@ def buildTable(df, classList, sizingList=[]):
     """Build html tables from a pandas dataframe."""
     if not sizingList:
         average = 100 / len(df.columns)
-        for x in df.columns:
-            sizingList.append(average)
+        sizingList = [average] * len(df.columns)
     headers = """<table border="1" class="{classes}">\n<thead>\n""".format(
         classes=", ".join(classList)
     )
