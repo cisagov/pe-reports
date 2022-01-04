@@ -69,8 +69,7 @@ class Credentials:
 
     def breaches(self):
         """Return total number of breaches."""
-        all_breaches = pd.concat(
-            self.query_hibp_view["breach_name"],
+        all_breaches = self.query_hibp_view["breach_name"].append(
             self.query_cyberSix_creds["breach_name"],
         )
         return all_breaches.nunique()
@@ -229,7 +228,7 @@ class Domains_Masqs:
         """Return count of unique top level domains."""
         mal_df = self.df_mal
 
-        if mal_df > 0:
+        if len(mal_df.index) > 0:
             mal_df["tld"] = (
                 mal_df["domain_permutation"]
                 .str.split(".")
@@ -418,8 +417,6 @@ class Cyber_Six:
         self.alerts = alerts
 
         top_cves = query_darkweb_cves(
-            start_date,
-            end_date,
             "top_cves",
         )
         top_cves = top_cves[top_cves["date"] == top_cves["date"].max()]
@@ -505,7 +502,7 @@ class Cyber_Six:
     def dark_web_most_act(self):
         """Get most active posts."""
         dark_web_mentions = self.dark_web_mentions
-        dark_web_most_act = dark_web_mentions[["comments_count", "title", "content"]]
+        dark_web_most_act = dark_web_mentions[["title", "comments_count"]]
         dark_web_most_act = dark_web_most_act[
             dark_web_most_act["comments_count"] != "NaN"
         ]
@@ -519,11 +516,9 @@ class Cyber_Six:
             by="Comments Count", ascending=False
         )
         dark_web_most_act = dark_web_most_act[:5]
-        dark_web_most_act["content"] = dark_web_most_act["content"].str[:100]
-        dark_web_most_act = dark_web_most_act.rename(
-            columns={"title": "Title", "content": "Content"}
-        )
-        dark_web_most_act["Title"] = dark_web_most_act["Title"].str[:50]
+        dark_web_most_act = dark_web_most_act.rename(columns={"title": "Title"})
+        dark_web_most_act["Title"] = dark_web_most_act["Title"].str[:100]
+        dark_web_most_act = dark_web_most_act.replace(r"^\s*$", "Untitled", regex=True)
         return dark_web_most_act
 
     def dark_web_sites(self):
@@ -559,10 +554,27 @@ class Cyber_Six:
         dark_web_tags = dark_web_tags.rename(columns={"tags": "Tags"})
         return dark_web_tags
 
+    def alerts_site(self):
+        """Get alerts in invite-only markets."""
+        alerts = self.alerts
+        alerts_site = alerts[["site"]]
+        alerts_site = alerts_site[alerts_site["site"] != "NaN"]
+        alerts_site = alerts_site[alerts_site["site"] != ""]
+        alerts_site = alerts_site[alerts_site["site"].str.startswith("market")]
+        alerts_site = (
+            alerts_site.groupby(["site"])["site"]
+            .count()
+            .nlargest(10)
+            .reset_index(name="Alerts")
+        )
+        alerts_site = alerts_site.rename(columns={"site": "Site"})
+        return alerts_site
+
     def top_cve_table(self):
         """Get top CVEs."""
         top_cves = self.top_cves
         top_cve_table = top_cves[["cve_id", "summary"]]
+        top_cve_table = top_cve_table.copy()
         top_cve_table["summary"] = top_cve_table["summary"].str[:400]
         top_cve_table = top_cve_table.rename(
             columns={"cve_id": "CVE", "summary": "Description"}
