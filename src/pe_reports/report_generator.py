@@ -1,14 +1,11 @@
 """ciagov/pe-reports: A tool for creating Posture & Exposure reports.
 
 Usage:
-  pe-reports REPORT_DATE  DATA_DIRECTORY OUTPUT_DIRECTORY [--log-level=LEVEL]
+  pe-reports REPORT_DATE OUTPUT_DIRECTORY [--log-level=LEVEL]
 
 Options:
   -h --help                         Show this message.
   REPORT_DATE                       Date of the report, format YYYY-MM-DD
-  DATA_DIRECTORY                    The directory where the excel data
-                                    files are located. Organized by
-                                    owner.
   OUTPUT_DIRECTORY                  The directory where the final PDF
                                     reports should be saved.
   -l --log-level=LEVEL              If specified, then the log level will be set to
@@ -106,7 +103,7 @@ def convert_html_to_pdf(source_html, output_filename):
     return pisa_status.err
 
 
-def generate_reports(datestring, data_directory, output_directory):
+def generate_reports(datestring, output_directory):
     """Process steps for generating report data."""
     # Get PE orgs from PE db
     conn = connect()
@@ -125,6 +122,8 @@ def generate_reports(datestring, data_directory, output_directory):
             org_name = org[1]
             org_code = org[2]
 
+            if org_code != "DOS":
+                continue
             logging.info(f"Running on {org_code}")
 
             # Create folders in output directory
@@ -136,7 +135,9 @@ def generate_reports(datestring, data_directory, output_directory):
 
             # Load source html
             try:
-                file = open("template.html")
+                basedir = os.path.abspath(os.path.dirname(__file__))
+                template = os.path.join(basedir, "template.html")
+                file = open(template)
                 source_html = file.read().replace("\n", " ")
             except FileNotFoundError:
                 logging.error(
@@ -273,7 +274,6 @@ def main():
     # Generate reports
     generate_reports(
         validated_args["REPORT_DATE"],
-        validated_args["DATA_DIRECTORY"],
         validated_args["OUTPUT_DIRECTORY"],
     )
 
