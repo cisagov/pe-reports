@@ -1,0 +1,1 @@
+"""Initialize sixgill folder."""
