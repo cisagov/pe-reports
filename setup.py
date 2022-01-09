@@ -85,8 +85,9 @@ setup(
     packages=find_packages(where="src"),
     package_dir={"": "src"},
     package_data={
-        "pe_reports": ["data/shell/*.pptx", "data/*.config"],
+        "pe_reports": ["data/shell/*.pptx", "data/*"],
         "pe_mailer": ["data/*"],
+        "pe_source": ["data/*"],
     },
     py_modules=[splitext(basename(path))[0] for path in glob("src/*.py")],
     include_package_data=True,
@@ -96,6 +97,7 @@ setup(
         "chevron",
         "docopt",
         "glob2",
+        "importlib_resources",
         "matplotlib",
         "mongo-db-from-config@http://github.com/cisagov/mongo-db-from-config/tarball/develop",
         "openpyxl",
@@ -131,6 +133,7 @@ setup(
         "console_scripts": [
             "pe-reports = pe_reports.report_generator:main",
             "pe-mailer = pe_mailer.email_reports:main",
+            "pe-source = pe_source.pe_scripts:main",
         ]
     },
 )
