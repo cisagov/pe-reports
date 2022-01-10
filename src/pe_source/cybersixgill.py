@@ -67,9 +67,6 @@ class Cybersixgill:
         for pe_org in pe_orgs:
             org_id = pe_org[2]
             pe_org_uid = pe_org[0]
-            # TODO: Take this part out
-            if org_id not in ["DOS", "DOC", "ACUS", "BGSF"]:
-                continue
             # Only run on specified orgs
             if org_id in orgs_list or orgs_list == "all":
                 count += 1
