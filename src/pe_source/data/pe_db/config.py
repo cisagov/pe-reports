@@ -6,22 +6,25 @@ import glob
 import os
 
 BASE_DIR = os.path.abspath(os.path.join(__file__, "../../../.."))
-REPORT_DB_CONFIG = glob.glob(f"{BASE_DIR}/**/*.ini", recursive=True)[0]
+REPORT_DB_CONFIG = glob.glob(f"{BASE_DIR}/**/*.ini", recursive=True)
 
 
 def config(filename=REPORT_DB_CONFIG, section="postgres"):
     """Parse Postgres configuration details from database configuration file."""
     parser = ConfigParser()
 
-    parser.read(filename, encoding="utf-8")
+    if len(filename) > 0:
+        parser.read(filename[0], encoding="utf-8")
 
-    db = dict()
+        db = dict()
 
-    if parser.has_section(section):
-        for key, value in parser.items(section):
-            db[key] = value
+        if parser.has_section(section):
+            for key, value in parser.items(section):
+                db[key] = value
 
+        else:
+            raise Exception(f"Section {section} not found in {filename}")
     else:
-        raise Exception(f"Section {section} not found in {filename}")
+        raise Exception("File of type .ini not found.")
 
     return db
