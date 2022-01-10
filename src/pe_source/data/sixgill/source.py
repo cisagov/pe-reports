@@ -59,7 +59,7 @@ def mentions(date, aliases):
             count += 1
             continue
     count_total = resp["total_intel_items"]
-    logging.info("Total Mentions: ", count_total)
+    logging.info(f"Total Mentions: {count_total}")
 
     i = 0
     all_mentions = []
@@ -68,7 +68,7 @@ def mentions(date, aliases):
             # Recommended "from" and "result_size" is 50. The maximum is 400.
             resp = intel_post(query, frm=i, scroll=False, result_size=200)
             i = i + 200
-            logging.info(f"\nGetting {i} of {count_total}....")
+            logging.info(f"Getting {i} of {count_total}....")
             intel_items = resp["intel_items"]
             df_mentions = pd.DataFrame.from_dict(intel_items)
             all_mentions.append(df_mentions)
@@ -79,13 +79,12 @@ def mentions(date, aliases):
             # Recommended "from" and "result_size" is 50. The maximum is 400.
             resp = intel_post(query, frm=i, scroll=True, result_size=400)
             i = i + 400
-            logging.info(f"\nGetting {i} of {count_total}....")
+            logging.info(f"Getting {i} of {count_total}....")
             intel_items = resp["intel_items"]
             df_mentions = pd.DataFrame.from_dict(intel_items)
             all_mentions.append(df_mentions)
             df_all_mentions = pd.concat(all_mentions).reset_index(drop=True)
 
-    df_all_mentions = pd.concat(all_mentions).reset_index(drop=True)
     return df_all_mentions
 
 

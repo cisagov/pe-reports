@@ -157,7 +157,9 @@ def insert_sixgill_mentions(df):
             ]
         ]
     df = df.apply(
-        lambda col: col.str.replace(r"[\x00|NULL]", "") if col.dtype == object else col
+        lambda col: col.str.replace(r"[\x00|NULL]", "", regex=True)
+        if col.dtype == object
+        else col
     )
     table = "mentions"
     # Create a list of tupples from the dataframe values

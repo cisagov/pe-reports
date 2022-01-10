@@ -30,6 +30,7 @@ START_DATE = str(TODAY - DAYS_BACK)
 END_DATE = str(TODAY)
 DATE_SPAN = f"[{START_DATE} TO {END_DATE}]"
 
+# Set todays date  and 30 days prior to YYY-MM-DD H:M:S format
 NOW = datetime.now()
 BACK = timedelta(days=30)
 FROM_DATE = (NOW - BACK).strftime("%Y-%m-%d %H:%M:%S")
@@ -101,7 +102,7 @@ class Cybersixgill:
 
     def get_alerts(self, org_id, sixgill_org_id, pe_org_uid):
         """Get alerts."""
-        logging.info(f"Fetching Alert data for {org_id}.")
+        logging.info(f"Fetching alert data for {org_id}.")
 
         # Fetch alert data with sixgill_org_id
         try:
@@ -126,7 +127,7 @@ class Cybersixgill:
 
     def get_mentions(self, org_id, sixgill_org_id, pe_org_uid):
         """Get mentions."""
-        logging.info(f"Fetching Mention data for {org_id}.")
+        logging.info(f"Fetching mention data for {org_id}.")
 
         # Fetch org aliases from cybersix
         try:
@@ -157,7 +158,7 @@ class Cybersixgill:
 
     def get_credentials(self, org_id, sixgill_org_id, pe_org_uid):
         """Get credentials."""
-        logging.info(f"Fetching Credential data for {org_id}.")
+        logging.info(f"Fetching credential data for {org_id}.")
 
         # Fetch org root domains from cybersix
         try:
