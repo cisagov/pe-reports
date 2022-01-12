@@ -5,6 +5,7 @@ import logging
 import sys
 
 # Third-Party Libraries
+import pandas as pd
 import psycopg2
 from psycopg2 import OperationalError
 import psycopg2.extras as extras
@@ -27,9 +28,7 @@ def connect():
     """Connect to PostgreSQL database."""
     conn = None
     try:
-        logging.info("Connecting to the PostgreSQL.....")
         conn = psycopg2.connect(**CONN_PARAMS_DIC)
-        logging.info("Connection successful.....")
     except OperationalError as err:
         show_psycopg2_exception(err)
         conn = None
@@ -57,6 +56,21 @@ def get_orgs():
     finally:
         if conn is not None:
             close(conn)
+
+
+def get_ips(org_uid):
+    """Get IP data."""
+    conn = connect()
+    sql = """SELECT wa.asset as ip_address
+            FROM web_assets wa
+            WHERE wa.organizations_uid = %(org_uid)s
+            and wa.report_on = True
+            and wa.asset_type = 'ipv4'
+            """
+    df = pd.read_sql(sql, conn, params={"org_uid": org_uid})
+    ips = list(df["ip_address"].values)
+    conn.close()
+    return ips
 
 
 def insert_sixgill_alerts(df):
@@ -249,3 +263,35 @@ def insert_sixgill_topCVEs(df):
         conn.rollback()
         cursor.close()
     cursor.close()
+
+
+def insert_shodan_data(dataframe, table, thread, org_name, failed):
+    """Insert shodan data into db."""
+    conn = connect()
+    tpls = [tuple(x) for x in dataframe.to_numpy()]
+    cols = ",".join(list(dataframe.columns))
+    sql = """INSERT INTO {}({}) VALUES %s
+    ON CONFLICT (organizations_uid, ip, port, protocol, timestamp)
+    DO NOTHING;"""
+    cursor = conn.cursor()
+    try:
+        extras.execute_values(
+            cursor,
+            sql.format(
+                table,
+                cols,
+            ),
+            tpls,
+        )
+        conn.commit()
+        logging.info(
+            f"{thread} Data inserted using execute_values() successfully - {org_name}"
+        )
+    except Exception as e:
+        logging.error(f"{org_name} failed inserting into {table}")
+        logging.error(f"{thread} {e} - {org_name}")
+        failed.append(f"{org_name} failed inserting into {table}")
+        conn.rollback()
+        cursor.close()
+    cursor.close()
+    return failed
