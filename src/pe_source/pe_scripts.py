@@ -18,8 +18,8 @@ Options:
                                     orgs in the pe database. Orgs in the list must match the
                                     IDs in the cyhy-db. E.g. DHS,DHS_ICE,DOC
                                     [default: all]
-  -csg --cybersix-methods=METHODS    A comma-seperated list of cybersixgill methods to run.
-                                    If not specified all will run. Valid values are "alerts",
+  -csg --cybersix-methods=METHODS   A comma-seperated list of cybersixgill methods.
+                                    If not specified, all will run. Valid values are "alerts",
                                     "credentials", "mentions", "topCVEs". E.g. alerts,mentions.
                                     [default: all]
 """
@@ -35,6 +35,7 @@ from schema import And, Schema, SchemaError, Use
 
 from ._version import __version__
 from .cybersixgill import Cybersixgill
+from .shodan import Shodan
 
 # Configuration
 
@@ -55,6 +56,9 @@ def run_pe_script(source, orgs_list, cybersix_methods):
     if source == "cybersixgill":
         cybersix = Cybersixgill(orgs_list, cybersix_methods)
         cybersix.run_cybersixgill()
+    elif source == "shodan":
+        shodan = Shodan(orgs_list)
+        shodan.run_shodan()
 
 
 def main():

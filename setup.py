@@ -111,6 +111,7 @@ setup(
         "pyyaml",
         "schema",
         "setuptools >= 24.2.0",
+        "shodan",
         "types-PyYAML",
     ],
     extras_require={
