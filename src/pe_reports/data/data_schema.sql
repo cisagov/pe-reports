@@ -85,6 +85,15 @@ CREATE TABLE IF NOT EXISTS public.executives
     PRIMARY KEY (executives_uid)
 );
 
+-- Data source table Table
+CREATE TABLE IF NOT EXISTS public.data_source
+(
+    data_source_uid uuid default uuid_generate_v1() NOT NULL,
+    description text NOT NULL,
+    last_run date NOT NULL,
+    PRIMARY KEY (data_source_uid)
+);
+
 
 -- Reporting Tables ----
 -- Domain Masquerading Table
