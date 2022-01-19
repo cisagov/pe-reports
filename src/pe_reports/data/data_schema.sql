@@ -23,6 +23,7 @@ CREATE TABLE IF NOT EXISTS public.organizations
 CREATE TABLE IF NOT EXISTS public.root_domains
 (
     root_domain_uid uuid default uuid_generate_v1() NOT NULL,
+    data_source_uid uuid NOT NULL,
     organizations_uid uuid NOT NULL,
     organization_name text NOT NULL,
     root_domain text NOT NULL,
@@ -35,6 +36,7 @@ CREATE TABLE IF NOT EXISTS public.root_domains
 CREATE TABLE IF NOT EXISTS public.sub_domains
 (
     sub_domain_uid uuid default uuid_generate_v1() NOT NULL,
+    data_source_uid uuid NOT NULL,
     sub_domain text NOT NULL,
     root_domain_uid uuid NOT NULL,
     root_domain text NOT NULL,
@@ -54,6 +56,7 @@ CREATE TABLE IF NOT EXISTS Sub_domains_Web_assets
 CREATE TABLE IF NOT EXISTS public.web_assets
 (
     asset_uid uuid default uuid_generate_v1() NOT NULL,
+    data_source_uid uuid NOT NULL,
     asset_type text Not NULL,
     asset text NOT NULL,
     ip_type text,
@@ -71,6 +74,7 @@ CREATE TABLE IF NOT EXISTS public.alias
 (
     alias_uid uuid default uuid_generate_v1() NOT NULL,
     organizations_uid uuid NOT NULL,
+    data_source_uid uuid NOT NULL,
     alias text NOT NULL,
     UNIQUE (alias),
     PRIMARY KEY (alias_uid)
@@ -80,18 +84,28 @@ CREATE TABLE IF NOT EXISTS public.alias
 CREATE TABLE IF NOT EXISTS public.executives
 (
     executives_uid uuid default uuid_generate_v1() NOT NULL,
+    data_source_uid uuid NOT NULL,
     organizations_uid uuid NOT NULL,
     executives text NOT NULL,
     PRIMARY KEY (executives_uid)
 );
 
+-- Data source table Table
+CREATE TABLE IF NOT EXISTS public.data_source
+(
+    data_source_uid uuid default uuid_generate_v1() NOT NULL,
+    description text NOT NULL,
+    last_run date NOT NULL,
+    PRIMARY KEY (data_source_uid)
+);
 
 -- Reporting Tables ----
 -- Domain Masquerading Table
-CREATE TABLE IF NOT EXISTS public."dnstwist_domain_masq"
+CREATE TABLE IF NOT EXISTS public."domain_permutations"
 (
     suspected_domain_uid uuid default uuid_generate_v1() NOT NULL,
-    organizations_uid uuid NOT NULL,
+    sub_domain_uid uuid NOT NULL,
+    data_source_uid uuid NOT NULL,
     "domain_permutation" text,
     "ipv4" text,
     "ipv6" text,
@@ -107,10 +121,25 @@ CREATE TABLE IF NOT EXISTS public."dnstwist_domain_masq"
     PRIMARY KEY (suspected_domain_uid)
 );
 
+CREATE TABLE IF NOT EXISTS public."domain_alerts"
+(
+    domain_alert_uid uuid default uuid_generate_v1() NOT NULL,
+    sub_domain_uid uuid NOT NULL,
+    data_source_uid uuid NOT NULL,
+    alert_type text,
+    "message" text,
+    previous_value text,
+    new_value text,
+    "date" date,
+    UNIQUE (alert_type, sub_domain_uid, date, new_value),
+    PRIMARY KEY (domain_alert_uid)
+);
+
 -- Dark Web Alerts Table
 CREATE TABLE IF NOT EXISTS public.alerts
 (
     alerts_uid uuid default uuid_generate_v1() NOT NULL,
+    data_source_uid uuid NOT NULL,
     alert_name text,
     content text,
     date date,
@@ -133,6 +162,7 @@ CREATE TABLE IF NOT EXISTS public.alerts
 CREATE TABLE IF NOT EXISTS public.mentions
 (
     mentions_uid uuid default uuid_generate_v1() NOT NULL,
+    data_source_uid uuid NOT NULL,
     category text,
     collection_date text,
     content text,
@@ -155,11 +185,12 @@ CREATE TABLE IF NOT EXISTS public.mentions
     PRIMARY KEY (mentions_uid)
 );
 
--- Shodan Insecure protocols and unverified vulnerabilities table
-CREATE TABLE IF NOT EXISTS public.shodan_insecure_protocols_unverified_vulns
+-- Insecure protocols and unverified vulnerabilities table
+CREATE TABLE IF NOT EXISTS public.insecure_protocols_unverified_vulns
 (
     insecure_product_uid uuid default uuid_generate_v1() NOT NULL,
     organizations_uid uuid NOT NULL,
+    data_source_uid uuid NOT NULL,
     organization text,
     ip text,
     port integer,
@@ -179,11 +210,12 @@ CREATE TABLE IF NOT EXISTS public.shodan_insecure_protocols_unverified_vulns
     UNIQUE (organizations_uid, ip, port, protocol, timestamp),
     PRIMARY KEY (insecure_product_uid)
 );
---Shodan Veriried Vulnerabilities table
-CREATE TABLE IF NOT EXISTS public.shodan_verified_vulns
+--Veriried Vulnerabilities table
+CREATE TABLE IF NOT EXISTS public.verified_vulns
 (
     verified_vuln_uid uuid default uuid_generate_v1() NOT NULL,
     organizations_uid uuid NOT NULL,
+    data_source_uid uuid NOT NULL,
     organization text,
     ip text,
     port text,
@@ -217,6 +249,7 @@ CREATE TABLE IF NOT EXISTS public.shodan_assets
 (
     shodan_asset_uid uuid default uuid_generate_v1() NOT NULL,
     organizations_uid uuid NOT NULL,
+    data_source_uid uuid NOT NULL,
     organization text,
     ip text,
     port integer,
@@ -233,11 +266,12 @@ CREATE TABLE IF NOT EXISTS public.shodan_assets
     PRIMARY KEY (shodan_asset_uid)
 );
 
--- HIBP breaches Table
-CREATE TABLE IF NOT EXISTS public.hibp_breaches
+-- Breaches Table
+CREATE TABLE IF NOT EXISTS public.credential_breaches
 (
-    hibp_breaches_uid uuid default uuid_generate_v1() NOT NULL,
+    credential_breaches_uid uuid default uuid_generate_v1() NOT NULL,
     breach_name text NOT NULL,
+    data_source_uid uuid NOT NULL,
     description text,
     exposed_cred_count bigint,
     breach_date date,
@@ -251,49 +285,39 @@ CREATE TABLE IF NOT EXISTS public.hibp_breaches
     is_retired boolean,
     is_spam_list boolean,
     UNIQUE (breach_name),
-    PRIMARY KEY (hibp_breaches_uid)
+    PRIMARY KEY (credential_breaches_uid)
 );
 
--- HIBP Exposed Credentials Table
-CREATE TABLE IF NOT EXISTS public.hibp_exposed_credentials
+-- Credentials Table
+CREATE TABLE IF NOT EXISTS public.credential_exposures
 (
-    hibp_exposed_credentials_uid uuid default uuid_generate_v1() NOT NULL,
+    credential_exposures_uid uuid default uuid_generate_v1() NOT NULL,
+    data_source_uid uuid NOT NULL,
     email text NOT NULL,
     organizations_uid uuid NOT NULL,
     root_domain text,
     sub_domain text,
     breach_name text,
     modified_date timestamp without time zone,
-	  breach_id uuid NOT NULL,
-    UNIQUE (email, breach_name),
-    PRIMARY KEY (hibp_exposed_credentials_uid)
-);
-
--- Cyber Six Gill Exposed Credentials Table
-CREATE TABLE IF NOT EXISTS public.cybersix_exposed_credentials
-(
-    csg_exposed_credentials_uid uuid default uuid_generate_v1() NOT NULL,
-    organizations_uid uuid NOT NULL,
+	breach_id uuid NOT NULL,
     breach_date date,
-    breach_id integer,
-    breach_name text NOT NULL,
+    sixgill_breach_id integer,
     create_time timestamp without time zone,
     description text,
-    domain text,
-    email text NOT NULL,
     password text,
     hash_type text,
     login_id text,
     name text,
     phone text,
-    UNIQUE (email, breach_id),
-    PRIMARY KEY (csg_exposed_credentials_uid)
+    UNIQUE (email, breach_name),
+    PRIMARY KEY (credential_exposures_uid)
 );
 
 -- Top CVEs
 CREATE TABLE IF NOT EXISTS public.top_cves
 (
     top_cves_uid uuid default uuid_generate_v1() NOT NULL,
+    data_source_uid uuid NOT NULL,
     cve_id text,
     dynamic_rating text,
     nvd_base_score text,
@@ -331,10 +355,16 @@ ALTER TABLE public.web_assets
  REFERENCES public.organizations (organizations_uid)
  NOT VALID;
 
--- One to many relation between Organization and DNSTwist results
-ALTER TABLE public."dnstwist_domain_masq"
- ADD FOREIGN KEY (organizations_uid)
- REFERENCES public.organizations (organizations_uid)
+-- One to many relation between sub_domain and domain permutations
+ALTER TABLE public."domain_permutations"
+ ADD FOREIGN KEY (sub_domain_uid)
+ REFERENCES public.sub_domains (sub_domain_uid)
+ NOT VALID;
+
+-- One to many relation between sub_domains and domain alerts
+ALTER TABLE public."domain_alerts"
+ ADD FOREIGN KEY (sub_domain_uid)
+ REFERENCES public.sub_domains (sub_domain_uid)
  NOT VALID;
 
 -- One to many relation between Organization and Shodan Assets
@@ -343,32 +373,26 @@ ALTER TABLE public.shodan_assets
     REFERENCES public.organizations (organizations_uid)
     NOT VALID;
 
--- One to many relation between Organization and Shodan Unverified Vulns
-ALTER TABLE public.shodan_insecure_protocols_unverified_vulns
+-- One to many relation between Organization and Unverified Vulns
+ALTER TABLE public.insecure_protocols_unverified_vulns
     ADD FOREIGN KEY (organizations_uid)
     REFERENCES public.organizations (organizations_uid)
     NOT VALID;
 
--- One to many relation between Organization and Shodan Verified Vulns
-ALTER TABLE public.shodan_verified_vulns
+-- One to many relation between Organization and Verified Vulns
+ALTER TABLE public.verified_vulns
     ADD FOREIGN KEY (organizations_uid)
     REFERENCES public.organizations (organizations_uid)
     NOT VALID;
 
--- One to many relation between Breaches and HIBP Exposed Credentials
-ALTER TABLE public.hibp_exposed_credentials
+-- One to many relation between Breaches and Exposed Credentials
+ALTER TABLE public.credential_exposures
     ADD FOREIGN KEY (breach_id)
-    REFERENCES public.hibp_breaches (hibp_breaches_uid)
+    REFERENCES public.credential_breaches (credential_breaches_uid)
     NOT VALID;
 
--- One to many relation between Organization and HIBP Exposed Credentials
-ALTER TABLE public.hibp_exposed_credentials
-    ADD FOREIGN KEY (organizations_uid)
-    REFERENCES public.organizations (organizations_uid)
-    NOT VALID;
-
--- One to many relation between Organization and SixGill Exposed Credentials
-ALTER TABLE public.cybersix_exposed_credentials
+-- One to many relation between Organization and Exposed Credentials
+ALTER TABLE public.credential_exposures
     ADD FOREIGN KEY (organizations_uid)
     REFERENCES public.organizations (organizations_uid)
     NOT VALID;
@@ -391,6 +415,68 @@ ALTER TABLE public.alerts
     REFERENCES public.organizations (organizations_uid)
     NOT VALID;
 
+-- One to many relationship with data_source and rest of the tables
+ALTER TABLE public.domain_permutations
+    ADD FOREIGN KEY (data_source_uid)
+    REFERENCES public.data_source (data_source_uid)
+    NOT VALID;
+ALTER TABLE public.domain_alerts
+    ADD FOREIGN KEY (data_source_uid)
+    REFERENCES public.data_source (data_source_uid)
+    NOT VALID;
+ALTER TABLE public.alerts
+    ADD FOREIGN KEY (data_source_uid)
+    REFERENCES public.data_source (data_source_uid)
+    NOT VALID;
+ALTER TABLE public.mentions
+    ADD FOREIGN KEY (data_source_uid)
+    REFERENCES public.data_source (data_source_uid)
+    NOT VALID;
+ALTER TABLE public.insecure_protocols_unverified_vulns
+    ADD FOREIGN KEY (data_source_uid)
+    REFERENCES public.data_source (data_source_uid)
+    NOT VALID;
+ALTER TABLE public.verified_vulns
+    ADD FOREIGN KEY (data_source_uid)
+    REFERENCES public.data_source (data_source_uid)
+    NOT VALID;
+ALTER TABLE public.shodan_assets
+    ADD FOREIGN KEY (data_source_uid)
+    REFERENCES public.data_source (data_source_uid)
+    NOT VALID;
+ALTER TABLE public.credential_breaches
+    ADD FOREIGN KEY (data_source_uid)
+    REFERENCES public.data_source (data_source_uid)
+    NOT VALID;
+ALTER TABLE public.credential_exposures
+    ADD FOREIGN KEY (data_source_uid)
+    REFERENCES public.data_source (data_source_uid)
+    NOT VALID;
+ALTER TABLE public.top_cves
+    ADD FOREIGN KEY (data_source_uid)
+    REFERENCES public.data_source (data_source_uid)
+    NOT VALID;
+ALTER TABLE public.executives
+    ADD FOREIGN KEY (data_source_uid)
+    REFERENCES public.data_source (data_source_uid)
+    NOT VALID;
+ALTER TABLE public.alias
+    ADD FOREIGN KEY (data_source_uid)
+    REFERENCES public.data_source (data_source_uid)
+    NOT VALID;
+ALTER TABLE public.web_assets
+    ADD FOREIGN KEY (data_source_uid)
+    REFERENCES public.data_source (data_source_uid)
+    NOT VALID;
+ALTER TABLE public.sub_domains
+    ADD FOREIGN KEY (data_source_uid)
+    REFERENCES public.data_source (data_source_uid)
+    NOT VALID;
+ALTER TABLE public.root_domains
+    ADD FOREIGN KEY (data_source_uid)
+    REFERENCES public.data_source (data_source_uid)
+    NOT VALID;
+
 -- One to Many Relationship for Mentions
 -- Represented in complex SixGill "query": API.
 
@@ -398,13 +484,13 @@ ALTER TABLE public.alerts
 -- HIBP complete breach view
 Create View vw_breach_complete
 AS
-SELECT creds.hibp_exposed_credentials_uid,creds.email, creds.breach_name, creds.organizations_uid, creds.root_domain, creds.sub_domain,
+SELECT creds.credential_exposures_uid,creds.email, creds.breach_name, creds.organizations_uid, creds.root_domain, creds.sub_domain,
     b.description, b.breach_date, b.added_date, b.modified_date,  b.data_classes,
     b.password_included, b.is_verified, b.is_fabricated, b.is_sensitive, b.is_retired, b.is_spam_list
 
-    FROM hibp_exposed_credentials as creds
+    FROM credential_exposures as creds
 
-    JOIN hibp_breaches as b
-    ON creds.breach_id = b.hibp_breaches_uid;
+    JOIN credential_breaches as b
+    ON creds.breach_id = b.credential_breaches_uid;
 
 END;
