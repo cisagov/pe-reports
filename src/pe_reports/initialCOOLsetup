@@ -1,0 +1,32 @@
+#!/bin/bash
+
+#All command in this file are to be run where the app.py file is located.
+#Run this first in the same dir as app.py.
+#flask db init
+
+##Modify /migrations/env.py add
+
+#def include_object(object, name, type_, reflected, compare_to):
+#    if type_ == "table" and reflected and compare_to is None:
+#        return False
+#    else:
+#        return True
+# Change from
+#context.configure(connection=connection,
+#                      target_metadata=target_metadata,
+#                      process_revision_directives=process_revision_directives,
+#                      **current_app.extensions['migrate'].configure_args)
+# Change to
+#context.configure(connection=connection,
+#                      target_metadata=target_metadata,
+#                      process_revision_directives=process_revision_directives,
+#                      include_object=include_object,<-------------Here is the added line
+#                      **current_app.extensions['migrate'].configure_args)
+
+
+
+##Run the next two commands only after the /migrations/env.py has been modified/
+#flask db migrate -m "Create users table."
+#
+#flask db upgrade
+
