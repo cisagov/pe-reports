@@ -17,6 +17,7 @@
     />
   </head>
   <body>
+
     <script
       src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"
       integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p"
@@ -56,11 +57,9 @@
                 href="{{ url_for('index') }}"
                 >Home</a
               >
-            </li>
+            </li>{% if current_user.is_authenticated %}
             <li class="nav-item">
-              <a
-                class="
-                  nav-link
+              <a class="nav-link
                   {%
                   if
                   request.endpoint=='stakeholder.stakeholder'
@@ -72,6 +71,14 @@
                 >Add Stakeholder</a
               >
             </li>
+          {% endif %}
+          {% if current_user.is_authenticated %}
+          <li class="nav-link"><a href="{{ url_for('manage_login.logout') }}">Logout</a></li>
+              {% else %}
+              <li class="nav-link"><a href="{{ url_for('manage_login.login') }}">Login</a></li>
+              <li class="nav-link"><a href="{{ url_for('manage_login.register') }}">Register</a></li>
+
+          {% endif %}
           </ul>
         </div>
       </div>
@@ -102,6 +109,22 @@
       <!-- <strong>Title</strong> -->
       {{ message }}
     </div>
-    {% endfor %} {% endif %} {% endwith %} {%block content%} {% endblock%}
+    {% endfor %} {% endif %} {% endwith %}
+    <div class="container">
+  <img
+    src="{{ url_for('static', filename='CISAImage.png') }}"
+    alt="Cinque Terre"
+    width="200"
+    height="200"
+  />
+{% if current_user.is_authenticated %}
+    <p>Welcome {{ current_user.username }}</p>
+    {% else %}
+    <p>Please Login</p>
+
+{% endif %}
+</div>
+    {%block content%} {% endblock%}
   </body>
+
 </html>

@@ -4,24 +4,43 @@
 from configparser import ConfigParser
 
 # Third-Party Libraries
+import platform
 from importlib_resources import files
+myplatform = platform.system()
 
 REPORT_DB_CONFIG = files("pe_reports").joinpath("data/dbconfig.config")
 
+if myplatform != 'Darwin':
+    def config(filename=REPORT_DB_CONFIG, section="postgres"):
+        """Parse Postgres configuration details from database configuration file."""
+        parser = ConfigParser()
 
-def config(filename=REPORT_DB_CONFIG, section="postgres"):
-    """Parse Postgres configuration details from database configuration file."""
-    parser = ConfigParser()
+        parser.read(filename, encoding="utf-8")
 
-    parser.read(filename, encoding="utf-8")
+        db = dict()
 
-    db = dict()
+        if parser.has_section(section):
+            for key, value in parser.items(section):
+                db[key] = value
 
-    if parser.has_section(section):
-        for key, value in parser.items(section):
-            db[key] = value
+        else:
+            raise Exception(f"Section {section} not found in {filename}")
 
-    else:
-        raise Exception(f"Section {section} not found in {filename}")
+        return db
+else:
+    def config(filename=REPORT_DB_CONFIG, section="postgreslocal"):
+        """Parse Postgres configuration details from database configuration file."""
+        parser = ConfigParser()
 
-    return db
+        parser.read(filename, encoding="utf-8")
+
+        db = dict()
+
+        if parser.has_section(section):
+            for key, value in parser.items(section):
+                db[key] = value
+
+        else:
+            raise Exception(f"Section {section} not found in {filename}")
+
+        return db

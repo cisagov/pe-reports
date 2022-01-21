@@ -1,13 +1,23 @@
-{% extends "base.html" %} {% block content %}
+{% extends "base.html" %}
 
-<div class="container">
-  <img
-    src="{{ url_for('static', filename='CISAImage.png') }}"
-    alt="Cinque Terre"
-    width="200"
-    height="200"
-  />
-</div>
+
+
+{% block content %}
+
+{#<div class="container">#}
+{#  <img#}
+{#    src="{{ url_for('static', filename='CISAImage.png') }}"#}
+{#    alt="Cinque Terre"#}
+{#    width="200"#}
+{#    height="200"#}
+{#  />#}
+{#{% if current_user.is_authenticated %}#}
+{#    <p>Welcome {{ current_user.username }}</p>#}
+{#    {% else %}#}
+{#    <p>Please Login</p>#}
+{##}
+{#{% endif %}#}
+{#</div>#}
 <!--End of container-->
 <script>
   function showDiv() {

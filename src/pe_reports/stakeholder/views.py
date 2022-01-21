@@ -1,5 +1,7 @@
 """Classes and associagted functions that render the UI app pages."""
-
+#PE-Reports import forms
+from pe_reports.stakeholder.forms import InfoFormExternal
+from pe_reports.data.configOriginal import config
 # Standard Python Libraries
 from datetime import date
 from ipaddress import ip_address, ip_network
@@ -7,9 +9,11 @@ import json
 import logging
 import os
 import socket
-
+import platform
+myplatform = platform.system()
 # Third-Party Libraries
 from flask import Blueprint, flash, redirect, render_template, url_for
+from flask_login import login_user, login_required, logout_user
 
 # from flask import Flask, flash, redirect,request, render_template, url_for
 import psutil
@@ -20,8 +24,12 @@ import sublist3r
 
 # cisagov Libraries
 # Local file import
-from pe_reports.data.config import config
-from pe_reports.stakeholder.forms import InfoFormExternal
+# if myplatform != 'Darwin':
+#     from pe_reports.data.config import config
+# else:
+
+
+
 
 logging.basicConfig(
     filemode="a",
@@ -78,7 +86,7 @@ def terminatecyhyssh():
             pass
 
 
-def getAgencies(org_name):
+def getAgency(org_name):
     """Get all agency names from P&E database."""
     global conn, cursor
     resultDict = {}
@@ -90,13 +98,12 @@ def getAgencies(org_name):
         if conn:
             logging.info(
                 "There was a connection made to"
-                "the database and the query was executed. "
+                "the database and the query was executed at getAgencies. "
             )
 
             cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
 
-            query = "select organizations_uid,name from"
-            f" organizations where name='{org_name}';"
+            query = f"select organizations_uid,name from organizations where name='{org_name}';"
 
             cursor.execute(query)
 
@@ -135,8 +142,8 @@ def getRootID(org_UUID):
             )
 
             cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-            query = "select root_domain_uid, organization_name from"
-            f" root_domains where organizations_uid='{org_UUID}';"
+            query = f"select root_domain_uid, organization_name from" \
+                    f" root_domains where organizations_uid='{org_UUID}';"
 
             cursor.execute(query)
 
@@ -175,8 +182,9 @@ def setStakeholder(customer):
 
             logging.info(
                 "There was a connection made to "
-                "the database and the query was executed "
+                "the database and the query was executed at setStakeholder "
             )
+            logging.info(f'The customer {customer} was inserted into the database')
 
             cursor = conn.cursor()
 
@@ -194,11 +202,11 @@ def setStakeholder(customer):
             conn.commit()
             cursor.close()
             conn.close()
-            logging.info("The connection/query was completed and closed.")
+            logging.info("The connection setStakeholder query was completed and closed.")
             terminatecyhyssh()
 
 
-def setCustRootDomain(customer, rootdomain, orgUUID):
+def setCustRootDomain(orgUUID, customer, rootdomain):
     """Insert customer into the PE-Reports database."""
     global conn, cursor
 
@@ -230,7 +238,7 @@ def setCustRootDomain(customer, rootdomain, orgUUID):
 
     except (Exception, psycopg2.DatabaseError) as err:
         logging.error(
-            f"There was a problem logging" f" into the psycopg database {err}"
+            f"There was a problem logging into the psycopg database {err}"
         )
         return False
     finally:
@@ -464,6 +472,7 @@ def setNewCSGOrg(newOrgName, orgAliases, orgdomainNames, orgIP, orgExecs):
     }
 
     response = requests.post(url, headers=headers, data=newOrganization).json()
+    print(response)
 
     newOrgID = response["id"]
 
@@ -553,6 +562,7 @@ stakeholder_blueprint = Blueprint(
 
 
 @stakeholder_blueprint.route("/stakeholder", methods=["GET", "POST"])
+# @login_required
 def stakeholder():
     """Process form information, instantiate form and render page template."""
     cust = False
@@ -566,6 +576,7 @@ def stakeholder():
     cyhyconnected = cyhybastionConn()
     # logging.info(f"The cyhy db is connected {cyhyconnected}")
 
+
     if formExternal.validate_on_submit():
         logging.info("Got to the submit validate")
         cust = formExternal.cust.data.upper()
@@ -577,32 +588,37 @@ def stakeholder():
         formExternal.custDomainAliases = ""
         formExternal.custRootDomain.data = ""
         formExternal.custExecutives.data = ""
-        allDomain = getAgencies(cust)
+        allDomain = getAgency(cust)
         allSubDomain = getSubdomain(custRootDomainValue)
         allValidIP = getallsubdomainIPS(custRootDomainValue)
 
         try:
-            # print(allDomain.values())
+
             if cust not in allDomain.values():
                 flash(f"You successfully submitted a new customer {cust} ", "success")
 
                 if setStakeholder(cust):
                     logging.info(f"The customer {cust} was entered.")
-                    allDomain = list(getAgencies(cust).keys())[0]
-                    # print(allDomain)
 
-                    if setCustRootDomain(cust, custRootDomainValue, allDomain):
-                        rootUUID = getRootID(allDomain)[cust]
+                    allDomain1 = list(getAgency(cust).keys())[0]
+                    logging.info(f'The allDomain var is {allDomain1}')
 
-                        # print(rootUUID)
+                    if setCustRootDomain(allDomain1,
+                                         cust,
+                                         custRootDomainValue):
+                        rootUUID = getRootID(allDomain1)
+
+                        # print(f'The rootUUID is {list(rootUUID.values())[0]}')
                         logging.info(
                             f"The Root Domain {custRootDomainValue} "
                             f"was entered at root_domains."
                         )
                         if allSubDomain:
                             for subdomain in allSubDomain:
-                                if setCustSubDomain(subdomain, rootUUID, cust):
-                                    logging.info("The subdomains " "have been entered.")
+                                rootUUID1 = list(rootUUID.values())[0]
+                                print(rootUUID1)
+                                if setCustSubDomain(subdomain, rootUUID1, custRootDomain):
+                                    logging.info("The subdomains have been entered.")
                                     setNewCSGOrg(
                                         cust,
                                         custDomainAliases,

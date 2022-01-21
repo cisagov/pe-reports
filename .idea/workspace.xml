@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ChangeListManager">
+    <list default="true" id="cbb1870e-dd3d-4e61-bf70-4ad4260bc573" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/src/pe_reports/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/pe_reports/__init__.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/pe_reports/app.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/pe_reports/app.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/pe_reports/data/config.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/pe_reports/data/config.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/pe_reports/data/data_schema.sql" beforeDir="false" afterPath="$PROJECT_DIR$/src/pe_reports/data/data_schema.sql" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/pe_reports/stakeholder/templates/stakeholder_UI/home_stakeholder.html" beforeDir="false" afterPath="$PROJECT_DIR$/src/pe_reports/stakeholder/templates/stakeholder_UI/home_stakeholder.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/pe_reports/stakeholder/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/pe_reports/stakeholder/views.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/pe_reports/templates/base.html" beforeDir="false" afterPath="$PROJECT_DIR$/src/pe_reports/templates/base.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/pe_reports/templates/home.html" beforeDir="false" afterPath="$PROJECT_DIR$/src/pe_reports/templates/home.html" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="ProjectId" id="241Q0mD02y15rZ33nlGUBhPdZPN" />
+  <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent">
+    <property name="RunOnceActivity.OpenProjectViewOnStart" value="true" />
+    <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
+    <property name="WebServerToolWindowFactoryState" value="false" />
+  </component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="cbb1870e-dd3d-4e61-bf70-4ad4260bc573" name="Changes" comment="" />
+      <created>1642795391934</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1642795391934</updated>
+      <workItem from="1642795393192" duration="570000" />
+      <workItem from="1642796080092" duration="428000" />
+    </task>
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+</project>

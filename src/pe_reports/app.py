@@ -11,12 +11,17 @@ import logging
 # Local file import
 # from data.config import config1, config2
 from flask import render_template
+from flask_login import login_required
+# from pe_reports.manage_login.models import User
+# from pe_reports.manage_login.forms import LoginForm, RegistrationForm
+
 
 # cisagov Libraries
-from pe_reports import app
+from pe_reports import app, db
 
 
 @app.route("/", methods=["GET", "POST"])
+# @login_required
 def index():
     """Create add customer html form.
 
@@ -25,6 +30,10 @@ def index():
     return render_template("home.html")
 
 
+
+
+
+
 if __name__ == "__main__":
     logging.info("The program has started...")
-    app.run(debug=False, port=8000)
+    app.run(debug=True, port=8000)
