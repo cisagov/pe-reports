@@ -556,8 +556,7 @@ class Cyber_Six:
 
     def alerts_site(self):
         """Get alerts in invite-only markets."""
-        alerts = self.alerts
-        alerts_site = alerts[["site"]]
+        alerts_site = self.alerts[["site"]]
         alerts_site = alerts_site[alerts_site["site"] != "NaN"]
         alerts_site = alerts_site[alerts_site["site"] != ""]
         alerts_site = alerts_site[alerts_site["site"].str.startswith("market")]
@@ -574,6 +573,7 @@ class Cyber_Six:
         """Get top CVEs."""
         top_cves = self.top_cves
         top_cve_table = top_cves[["cve_id", "summary"]]
+        # Copy dataframe to silence SettingWithCopyWarning
         top_cve_table = top_cve_table.copy()
         top_cve_table["summary"] = top_cve_table["summary"].str[:400]
         top_cve_table = top_cve_table.rename(
