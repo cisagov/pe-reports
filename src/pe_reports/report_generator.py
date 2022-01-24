@@ -1,4 +1,4 @@
-"""ciagov/pe-reports: A tool for creating Posture & Exposure reports.
+"""cisagov/pe-reports: A tool for creating Posture & Exposure reports.
 
 Usage:
   pe-reports REPORT_DATE OUTPUT_DIRECTORY [--log-level=LEVEL]
@@ -41,35 +41,35 @@ def embed(
     vuln_xlsx,
     mi_xlsx,
 ):
-    """Embeds raw data into pdf and encrypts file."""
+    """Embeds raw data into PDF and encrypts file."""
     doc = fitz.open(file)
     page = doc[3]
     output = (
         f"{output_directory}/{org_code}/Posture_and_Exposure_Report-{datestring}.pdf"
     )
 
-    # Open csv data as binary
+    # Open CSV data as binary
     cc = open(cred_xlsx, "rb").read()
     da = open(da_xlsx, "rb").read()
     ma = open(vuln_xlsx, "rb").read()
     mi = open(mi_xlsx, "rb").read()
 
-    # Insert link to csv data in summary page of pdf
+    # Insert link to CSV data in summary page of PDF
     p1 = fitz.Point(110, 695)
     p2 = fitz.Point(240, 695)
     p3 = fitz.Point(375, 695)
     p5 = fitz.Point(500, 695)
 
-    # Embedd and add push-pin graphic
+    # Embed and add push-pin graphic
     page.add_file_annot(
-        p1, cc, "compromised_credentials.xlsx", desc="Open up csv", icon="PushPin"
+        p1, cc, "compromised_credentials.xlsx", desc="Open up CSV", icon="PushPin"
     )
     page.add_file_annot(
-        p2, da, "domain_alerts.xlsx", desc="Open up csv", icon="PushPin"
+        p2, da, "domain_alerts.xlsx", desc="Open up CSV", icon="PushPin"
     )
     page.add_file_annot(p3, ma, "vuln_alerts.xlsx", desc="Open up xlsx", icon="PushPin")
     page.add_file_annot(
-        p5, mi, "mention_incidents.xlsx", desc="Open up csv", icon="PushPin"
+        p5, mi, "mention_incidents.xlsx", desc="Open up CSV", icon="PushPin"
     )
 
     doc.save(
@@ -88,18 +88,18 @@ def embed(
 
 def convert_html_to_pdf(source_html, output_filename):
     """Convert html to pdf."""
-    # open output file for writing (truncated binary)
+    # Open output file for writing (truncated binary)
     result_file = open(output_filename, "w+b")
 
-    # convert HTML to PDF
+    # Convert HTML to PDF
     pisa_status = pisa.CreatePDF(
         source_html, dest=result_file  # the HTML to convert
-    )  # file handle to recieve result
+    )  # file handle to receive result
 
-    # close output file
+    # Close output file
     result_file.close()  # close output file
 
-    # return False on success and True on errors
+    # Return False on success and True on errors
     return pisa_status.err
 
 
@@ -133,7 +133,7 @@ def generate_reports(datestring, output_directory):
             if not os.path.exists(f"{output_directory}/{org_code}"):
                 os.mkdir(f"{output_directory}/{org_code}")
 
-            # Load source html
+            # Load source HTML
             try:
                 basedir = os.path.abspath(os.path.dirname(__file__))
                 template = os.path.join(basedir, "template.html")
@@ -141,11 +141,11 @@ def generate_reports(datestring, output_directory):
                 source_html = file.read().replace("\n", " ")
             except FileNotFoundError:
                 logging.error(
-                    "Template cannot be found. Must be named pe-reports/src/pe_reports/template.html"
+                    "Template cannot be found. It must be named: '%s'", template
                 )
                 return 1
 
-            # Insert Charts and Metrics into pdf
+            # Insert Charts and Metrics into PDF
             (
                 source_html,
                 hibp_creds,
@@ -164,14 +164,14 @@ def generate_reports(datestring, output_directory):
                 org_uid,
             )
 
-            # Close pdf
+            # Close PDF
             file.close()
 
             # Convert to HTML to PDF
             output_filename = f"{output_directory}/{org_code}-Posture_and_Exposure_Report-{datestring}.pdf"
             convert_html_to_pdf(source_html, output_filename)
 
-            # Create Crendential Exposure excel file
+            # Create Crendential Exposure Excel file
             cred_xlsx = f"{output_directory}/{org_code}/compromised_credentials.xlsx"
             credWriter = pd.ExcelWriter(cred_xlsx, engine="xlsxwriter")
             hibp_creds.to_excel(credWriter, sheet_name="HIBP_Credentials", index=False)
@@ -180,13 +180,13 @@ def generate_reports(datestring, output_directory):
             )
             credWriter.save()
 
-            # Create Domain Masquerading excel file
+            # Create Domain Masquerading Excel file
             da_xlsx = f"{output_directory}/{org_code}/domain_alerts.xlsx"
             domWriter = pd.ExcelWriter(da_xlsx, engine="xlsxwriter")
             masq_df.to_excel(domWriter, sheet_name="Suspected Domains", index=False)
             domWriter.save()
 
-            # Create Suspected vulnerability excel file
+            # Create Suspected vulnerability Excel file
             vuln_xlsx = f"{output_directory}/{org_code}/vuln_alerts.xlsx"
             vulnWriter = pd.ExcelWriter(vuln_xlsx, engine="xlsxwriter")
             assets_df.to_excel(vulnWriter, sheet_name="Assets", index=False)
@@ -194,7 +194,7 @@ def generate_reports(datestring, output_directory):
             vulns_df.to_excel(vulnWriter, sheet_name="Verified Vulns", index=False)
             vulnWriter.save()
 
-            # Create dark web excel file
+            # Create dark web Excel file
             mi_xlsx = f"{output_directory}/{org_code}/mention_incidents.xlsx"
             miWriter = pd.ExcelWriter(mi_xlsx, engine="xlsxwriter")
             dark_web_mentions.to_excel(
@@ -204,7 +204,7 @@ def generate_reports(datestring, output_directory):
             top_cves.to_excel(miWriter, sheet_name="Top CVEs", index=False)
             miWriter.save()
 
-            # grab the pdf
+            # Grab the PDF
             pdf = f"{output_directory}/{org_code}-Posture_and_Exposure_Report-{datestring}.pdf"
 
             (filesize, tooLarge) = embed(
@@ -217,7 +217,8 @@ def generate_reports(datestring, output_directory):
                 vuln_xlsx,
                 mi_xlsx,
             )
-            # Need to make sure Cyhy Mailer doesn't send files that are too large
+            # Log a message if the report is too large.  Our current mailer
+            # cannot send files larger than 20MB.
             if tooLarge:
                 logging.info(
                     f"{org_code} is too large. File size: {filesize} Limit: 20MB"
