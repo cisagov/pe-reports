@@ -41,8 +41,6 @@ Usage:
 
 Arguments:
   REPORT_DATE                   Date of the report, format YYYY-MM-DD.
-  DATA_DIRECTORY                The directory where the Excel data files are located.
-                                Organized by owner.
   OUTPUT_DIRECTORY              The directory where the final PDF reports should be saved.
 Options:
   -h --help                     Show this message.
