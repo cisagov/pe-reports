@@ -21,8 +21,9 @@ CONN_PARAMS_DIC = config()
 def show_psycopg2_exception(err):
     """Handle errors for PostgreSQL issues."""
     err_type, err_obj, traceback = sys.exc_info()
-    line_n = traceback.tb_lineno
-    logging.error(f"Database connection error: {err} on line number: {line_n}")
+    logging.error(
+        f"Database connection error: {err} on line number: {traceback.tb_lineno}"
+    )
 
 
 def connect():
