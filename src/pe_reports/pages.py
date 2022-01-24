@@ -15,6 +15,9 @@ from .metrics import Credentials, Cyber_Six, Domains_Masqs, Malware_Vulns
 # Style and build tables
 def buildTable(df, classList, sizingList=[]):
     """Build HTML tables from a pandas dataframe."""
+    # SizingList specifies the proportional width of each column.
+    # The number of integers in the list must equal the number of
+    # columns in the dataframe AND add up to 100
     if not sizingList:
         average = 100 / len(df.columns)
         sizingList = [average] * len(df.columns)
@@ -245,7 +248,9 @@ def dark_web(chevron_dict, start_date, end_date, org_uid):
 
 def init(source_html, datestring, org_name, org_uid):
     """Call each page of the report."""
-    # Format start_date and end_date
+    # Format start_date and end_date for the bi-monthly reporting period.
+    # If the given end_date is the 15th, then the start_date is the 1st.
+    # Otherwise, the start_date will be the 16th of the respective month.
     end_date = datetime.strptime(datestring, "%Y-%m-%d").date()
     if end_date.day == 15:
         start_date = datetime(end_date.year, end_date.month, 1)
