@@ -72,14 +72,18 @@ def test_reports_log_levels(level):
             assert (
                 logging.root.hasHandlers() is False
             ), "root logger should not have handlers yet"
-            return_code = pe_reports.report_generator.main()
+            return_code = None
+            try:
+                pe_reports.report_generator.main()
+            except SystemExit as sys_exit:
+                return_code = sys_exit.code
             assert (
                 logging.root.hasHandlers() is True
             ), "root logger should now have a handler"
             assert (
                 logging.getLevelName(logging.root.getEffectiveLevel()) == level.upper()
             ), f"root logger level should be set to {level.upper()}"
-            assert return_code == 0, "main() should return success (0)"
+            assert return_code is None, "main() should return success (0)"
 
 
 def test_reports_bad_log_level():
@@ -94,5 +98,9 @@ def test_reports_bad_log_level():
             "--log-level=emergency",
         ],
     ):
-        return_code = pe_reports.report_generator.main()
+        return_code = None
+        try:
+            pe_reports.report_generator.main()
+        except SystemExit as sys_exit:
+            return_code = sys_exit.code
         assert return_code == 1, "main() should exit with error"
