@@ -43,7 +43,7 @@ def embed(
 ):
     """Embeds raw data into PDF and encrypts file."""
     doc = fitz.open(file)
-    # Get the the summary page of the PDF on page 4
+    # Get the summary page of the PDF on page 4
     page = doc[3]
     output = (
         f"{output_directory}/{org_code}/Posture_and_Exposure_Report-{datestring}.pdf"
