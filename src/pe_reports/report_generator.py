@@ -172,7 +172,7 @@ def generate_reports(datestring, output_directory):
             output_filename = f"{output_directory}/{org_code}-Posture_and_Exposure_Report-{datestring}.pdf"
             convert_html_to_pdf(source_html, output_filename)
 
-            # Create Crendential Exposure Excel file
+            # Create Credential Exposure Excel file
             cred_xlsx = f"{output_directory}/{org_code}/compromised_credentials.xlsx"
             credWriter = pd.ExcelWriter(cred_xlsx, engine="xlsxwriter")
             hibp_creds.to_excel(credWriter, sheet_name="HIBP_Credentials", index=False)
