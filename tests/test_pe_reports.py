@@ -83,7 +83,7 @@ def test_reports_log_levels(level):
             assert (
                 logging.getLevelName(logging.root.getEffectiveLevel()) == level.upper()
             ), f"root logger level should be set to {level.upper()}"
-            assert return_code is None, "main() should return success (0)"
+            assert return_code is None, "main() should return success"
 
 
 def test_reports_bad_log_level():
