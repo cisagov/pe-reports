@@ -43,6 +43,7 @@ def embed(
 ):
     """Embeds raw data into PDF and encrypts file."""
     doc = fitz.open(file)
+    # Get the the summary page of the PDF on page 4
     page = doc[3]
     output = (
         f"{output_directory}/{org_code}/Posture_and_Exposure_Report-{datestring}.pdf"
@@ -54,7 +55,8 @@ def embed(
     ma = open(vuln_xlsx, "rb").read()
     mi = open(mi_xlsx, "rb").read()
 
-    # Insert link to CSV data in summary page of PDF
+    # Insert link to CSV data in summary page of PDF.
+    # Use coordinates to position them on the bottom.
     p1 = fitz.Point(110, 695)
     p2 = fitz.Point(240, 695)
     p3 = fitz.Point(375, 695)
@@ -72,6 +74,9 @@ def embed(
         p5, mi, "mention_incidents.xlsx", desc="Open up CSV", icon="PushPin"
     )
 
+    # Save doc and set garbage=4 to reduce PDF size using all 4 methods:
+    # Remove unused objects, compact xref table, merge duplicate objects,
+    # and check stream objects for duplication
     doc.save(
         output,
         garbage=4,
@@ -122,16 +127,12 @@ def generate_reports(datestring, output_directory):
             org_name = org[1]
             org_code = org[2]
 
-            if org_code != "DOS":
-                continue
             logging.info(f"Running on {org_code}")
 
             # Create folders in output directory
-            if not os.path.exists(f"{output_directory}/ppt"):
-                os.mkdir(f"{output_directory}/ppt")
-
-            if not os.path.exists(f"{output_directory}/{org_code}"):
-                os.mkdir(f"{output_directory}/{org_code}")
+            for dir_name in ("ppt", org_code):
+                if not os.path.exists(f"{output_directory}/{dir_name}"):
+                    os.mkdir(f"{output_directory}/{dir_name}")
 
             # Load source HTML
             try:
@@ -224,7 +225,7 @@ def generate_reports(datestring, output_directory):
                     f"{org_code} is too large. File size: {filesize} Limit: 20MB"
                 )
 
-            generated_reports = generated_reports + 1
+            generated_reports += 1
     else:
         logging.error(
             "Conenction to pe database failed and/or there are 0 organizations stored."
