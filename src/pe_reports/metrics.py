@@ -572,11 +572,9 @@ class Cyber_Six:
     def top_cve_table(self):
         """Get top CVEs."""
         top_cves = self.top_cves
-        top_cve_table = top_cves[["cve_id", "summary"]]
-        # Copy dataframe to silence SettingWithCopyWarning
-        top_cve_table = top_cve_table.copy()
-        top_cve_table["summary"] = top_cve_table["summary"].str[:400]
+        top_cves["summary_short"] = top_cves["summary"].str[:400]
+        top_cve_table = top_cves[["cve_id", "summary_short"]]
         top_cve_table = top_cve_table.rename(
-            columns={"cve_id": "CVE", "summary": "Description"}
+            columns={"cve_id": "CVE", "summary_short": "Description"}
         )
         return top_cve_table
