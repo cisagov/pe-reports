@@ -120,14 +120,14 @@ def generate_reports(datestring, output_directory):
 
     # Iterate over organizations
     if pe_orgs:
-        logging.info(f"PE orgs count: {len(pe_orgs)}")
+        logging.info("PE orgs count: %s", len(pe_orgs))
         for org in pe_orgs:
             # Assign organization values
             org_uid = org[0]
             org_name = org[1]
             org_code = org[2]
 
-            logging.info(f"Running on {org_code}")
+            logging.info("Running on %s", org_code)
 
             # Create folders in output directory
             for dir_name in ("ppt", org_code):
@@ -222,16 +222,16 @@ def generate_reports(datestring, output_directory):
             # cannot send files larger than 20MB.
             if tooLarge:
                 logging.info(
-                    f"{org_code} is too large. File size: {filesize} Limit: 20MB"
+                    "%s is too large. File size: %s Limit: 20MB", org_code, filesize
                 )
 
             generated_reports += 1
     else:
         logging.error(
-            "Conenction to pe database failed and/or there are 0 organizations stored."
+            "Connection to pe database failed and/or there are 0 organizations stored."
         )
 
-    logging.info(f"{generated_reports} reports generated")
+    logging.info("%s reports generated", generated_reports)
 
 
 def main():

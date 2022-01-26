@@ -22,7 +22,7 @@ def show_psycopg2_exception(err):
     """Handle errors for PostgreSQL issues."""
     err_type, err_obj, traceback = sys.exc_info()
     logging.error(
-        f"Database connection error: {err} on line number: {traceback.tb_lineno}"
+        "Database connection error: %s on line number: %s", err, traceback.tb_lineno
     )
 
 
@@ -55,7 +55,7 @@ def get_orgs(conn):
         cur.close()
         return pe_orgs
     except (Exception, psycopg2.DatabaseError) as error:
-        logging.error(f"There was a problem with your database query {error}")
+        logging.error("There was a problem with your database query %s", error)
     finally:
         if conn is not None:
             close(conn)
@@ -75,7 +75,7 @@ def query_hibp_view(org_uid, start_date, end_date):
         )
         return df
     except (Exception, psycopg2.DatabaseError) as error:
-        logging.error(f"There was a problem with your database query {error}")
+        logging.error("There was a problem with your database query %s", error)
     finally:
         if conn is not None:
             close(conn)
@@ -99,7 +99,7 @@ def query_domMasq(org_uid, start_date, end_date):
         )
         return df
     except (Exception, psycopg2.DatabaseError) as error:
-        logging.error(f"There was a problem with your database query {error}")
+        logging.error("There was a problem with your database query %s", error)
     finally:
         if conn is not None:
             close(conn)
@@ -132,7 +132,7 @@ def query_shodan(org_uid, start_date, end_date, table):
         )
         return df
     except (Exception, psycopg2.DatabaseError) as error:
-        logging.error(f"There was a problem with your database query {error}")
+        logging.error("There was a problem with your database query %s", error)
     finally:
         if conn is not None:
             close(conn)
@@ -157,7 +157,7 @@ def query_darkweb(org_uid, start_date, end_date, table):
         )
         return df
     except (Exception, psycopg2.DatabaseError) as error:
-        logging.error(f"There was a problem with your database query {error}")
+        logging.error("There was a problem with your database query %s", error)
     finally:
         if conn is not None:
             close(conn)
@@ -175,7 +175,7 @@ def query_darkweb_cves(table):
         )
         return df
     except (Exception, psycopg2.DatabaseError) as error:
-        logging.error(f"There was a problem with your database query {error}")
+        logging.error("There was a problem with your database query %s", error)
     finally:
         if conn is not None:
             close(conn)
@@ -205,7 +205,7 @@ def query_cyberSix_creds(org_uid, start_date, end_date):
         df["password_included"] = np.where(df["password"] != "", True, False)
         return df
     except (Exception, psycopg2.DatabaseError) as error:
-        logging.error(f"There was a problem with your database query {error}")
+        logging.error("There was a problem with your database query %s", error)
     finally:
         if conn is not None:
             close(conn)
