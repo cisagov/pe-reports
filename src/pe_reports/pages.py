@@ -100,10 +100,9 @@ def credential(chevron_dict, start_date, end_date, org_uid):
 def masquerading(chevron_dict, start_date, end_date, org_uid):
     """Build masquerading page."""
     Domain_Masq = Domains_Masqs(start_date, end_date, org_uid)
-    domain_table = buildTable(Domain_Masq.summary(), ["table"], [])
     chevron_dict.update(
         {
-            "domain_table": domain_table,
+            "domain_table": buildTable(Domain_Masq.summary(), ["table"], []),
             "suspectedDomains": Domain_Masq.count(),
             "uniqueTlds": Domain_Masq.utlds(),
         }
