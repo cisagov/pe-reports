@@ -92,7 +92,7 @@ def embed(
 
 
 def convert_html_to_pdf(source_html, output_filename):
-    """Convert html to pdf."""
+    """Convert HTML to PDF."""
     # Open output file for writing (truncated binary)
     result_file = open(output_filename, "w+b")
 
