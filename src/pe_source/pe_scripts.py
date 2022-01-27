@@ -41,16 +41,16 @@ from .cybersixgill import Cybersixgill
 
 def run_pe_script(source, orgs_list, cybersix_methods):
     """Collect data from the source specified."""
-    # If not all, seperate orgs string into list of orgs
+    # If not "all", seperate orgs string into a list of orgs
     if orgs_list != "all":
         orgs_list = orgs_list.split(",")
-    # If not all, seperate sixgill methods string into list
+    # If not "all", seperate Cybersixgill methods string into a list
     if cybersix_methods == "all":
         cybersix_methods = ["alerts", "mentions", "credentials", "topCVEs"]
     else:
         cybersix_methods = cybersix_methods.split(",")
 
-    logging.info(f"Running {source} on these orgs: {orgs_list}")
+    logging.info("Running %s on these orgs: %s", source, orgs_list)
 
     if source == "cybersixgill":
         cybersix = Cybersixgill(orgs_list, cybersix_methods)
@@ -79,7 +79,7 @@ def main():
     except SchemaError as err:
         # Exit because one or more of the arguments were invalid
         print(err, file=sys.stderr)
-        return 1
+        sys.exit(1)
 
     # Assign validated arguments to variables
     log_level: str = validated_args["--log-level"]
@@ -98,8 +98,3 @@ def main():
 
     # Stop logging and clean up
     logging.shutdown()
-    return 0
-
-
-if __name__ == "__main__":
-    sys.exit(main())

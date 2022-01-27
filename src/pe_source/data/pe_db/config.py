@@ -23,7 +23,7 @@ def config(filename=REPORT_DB_CONFIG, section="postgres"):
                 db[key] = value
 
         else:
-            raise Exception(f"Section {section} not found in {filename}")
+            raise Exception("Section %s not found in %s", section, filename)
     else:
         raise Exception("File of type .ini not found.")
 
