@@ -1,0 +1,874 @@
+@page {
+  background-image: url("assets/Cover.png");
+  size: letter portrait;
+  left: 44pt;
+  width: 445pt;
+  top: 115pt;
+  height: 780pt;
+}
+
+@page maintmpl {
+  size: letter portrait;
+  margin: 0cm;
+  margin-bottom: 0cm;
+
+  @frame title {
+    left: 3.5cm;
+    width: 16.5cm;
+    height: 2cm;
+    top: 1cm;
+  }
+
+  @frame content {
+    left: 2.5cm;
+    width: 17cm;
+    top: 4cm;
+    height: 25cm;
+  }
+
+  @frame footer {
+    -pdf-frame-content: footerContent;
+    bottom: -0.4cm;
+    margin-left: 1cm;
+    margin-right: 1.5cm;
+    height: 1.7cm;
+    left: 1cm;
+  }
+
+  @frame header {
+    -pdf-frame-content: headerContent;
+    top: 0.5cm;
+    left: 1cm;
+
+    height: 6cm;
+  }
+}
+
+@page sum {
+  size: letter portrait;
+  margin: 1cm;
+  margin-bottom: 0cm;
+  background-image: url("assets/summary-background.png");
+
+  @frame title {
+    left: 3.5cm;
+    width: 16.5cm;
+    height: 2cm;
+    top: 1cm;
+  }
+
+  @frame footer {
+    -pdf-frame-content: footerContent;
+    bottom: -0.4cm;
+    margin-left: 1cm;
+    margin-right: 1.5cm;
+    height: 1.7cm;
+    left: 1cm;
+  }
+
+  @frame header {
+    -pdf-frame-content: headerContent;
+    top: 0.5cm;
+    left: 1cm;
+
+    height: 6cm;
+  }
+
+  @frame kpi1 {
+    left: 12.6cm;
+    width: 7.5cm;
+    height: 2.3cm;
+    top: 4.1cm;
+  }
+
+  @frame kpi2 {
+    left: 12.6cm;
+    width: 7.5cm;
+    height: 2.3cm;
+    top: 8.2cm;
+  }
+
+  @frame kpi3 {
+    left: 12.6cm;
+    width: 7.5cm;
+    height: 2.3cm;
+    top: 12.3cm;
+  }
+
+  @frame kpi4 {
+    left: 12.6cm;
+    width: 7.5cm;
+    height: 2.3cm;
+    top: 16.3cm;
+  }
+
+  @frame infoBox1 {
+    left: 1.5cm;
+    width: 10cm;
+    height: 16cm;
+    top: 3.2cm;
+  }
+
+  @frame linkHeader {
+    left: 1.6cm;
+    width: 6cm;
+    height: 1.5cm;
+    top: 23.6cm;
+  }
+  @frame linkCaption1 {
+    left: 3cm;
+    width: 6cm;
+    height: 1.5cm;
+    top: 25.45cm;
+  }
+
+  @frame linkCaption2 {
+    left: 7.5cm;
+    width: 6cm;
+    height: 1.5cm;
+    top: 25.45cm;
+  }
+  @frame linkCaption3 {
+    left: 12cm;
+    width: 6cm;
+    height: 1.5cm;
+    top: 25.45cm;
+  }
+  @frame linkCaption4 {
+    left: 17cm;
+    width: 6cm;
+    height: 1.5cm;
+    top: 25.45cm;
+  }
+}
+
+@page creds {
+  size: letter portrait;
+  margin: 1cm;
+  margin-bottom: 0cm;
+  background-image: url("assets/creds-background.png");
+
+  @frame title {
+    left: 3.5cm;
+    width: 16.5cm;
+    height: 2cm;
+    top: 1cm;
+  }
+
+  @frame footer {
+    -pdf-frame-content: footerContent;
+    bottom: -0.4cm;
+    margin-left: 1cm;
+    margin-right: 1.5cm;
+    height: 1.7cm;
+    left: 1cm;
+  }
+
+  @frame header {
+    -pdf-frame-content: headerContent;
+    top: 0.5cm;
+    left: 1cm;
+
+    height: 6cm;
+  }
+
+  @frame kpi1 {
+    left: 2cm;
+    width: 5.45cm;
+    height: 3cm;
+    top: 3.2cm;
+  }
+
+  @frame kpi2 {
+    left: 8.2cm;
+    width: 5.45cm;
+    height: 2.3cm;
+    top: 3cm;
+  }
+
+  @frame kpi3 {
+    left: 14.4cm;
+    width: 5.45cm;
+    height: 2.3cm;
+    top: 3.2cm;
+  }
+
+  @frame content1 {
+    left: 1.5cm;
+    width: 19cm;
+    height: 3cm;
+    top: 6cm;
+  }
+
+  @frame graphbox1 {
+    left: 1.5cm;
+    width: 19cm;
+    height: 8cm;
+    top: 8cm;
+  }
+
+  @frame tableName {
+    left: 1.5cm;
+    width: 11cm;
+    height: 0.75cm;
+    top: 15.2cm;
+  }
+
+  @frame table {
+    left: 1.5cm;
+    width: 19cm;
+    height: 10cm;
+    top: 15.9cm;
+  }
+}
+
+@page masq {
+  size: letter portrait;
+  margin: 1cm;
+  margin-bottom: 0cm;
+  background-image: url("assets/masq-background.png");
+  @frame title {
+    left: 3.5cm;
+    width: 16.5cm;
+    height: 2cm;
+    top: 1cm;
+  }
+  @frame footer {
+    -pdf-frame-content: footerContent;
+    bottom: -0.4cm;
+    margin-left: 1cm;
+    margin-right: 1.5cm;
+    height: 1.7cm;
+    left: 1cm;
+  }
+  @frame header {
+    -pdf-frame-content: headerContent;
+    top: 0.5cm;
+    left: 1cm;
+    height: 6cm;
+  }
+  @frame kpi1 {
+    left: 4.3cm;
+    width: 5.45cm;
+    height: 3cm;
+    top: 2.7cm;
+  }
+  @frame kpi2 {
+    left: 11.9cm;
+    width: 5.45cm;
+    height: 2.3cm;
+    top: 2.7cm;
+  }
+  @frame content1 {
+    left: 1.5cm;
+    width: 19cm;
+    height: 3cm;
+    top: 5.3cm;
+  }
+  /* @frame graphbox1 {
+    left: 1.3cm;
+    width: 9cm;
+    height: 4.5cm;
+    top: 7.8cm;
+  }
+  @frame listbox {
+    left: 11.3cm;
+    width: 9cm;
+    height: 4.5cm;
+    top: 7.8cm;
+  } */
+  @frame table {
+    -pdf-frame-content: domainTable;
+    left: 1.5cm;
+    width: 19cm;
+    height: 18.6cm;
+    top: 7.8cm;
+  }
+}
+
+@page vulns {
+  size: letter portrait;
+  margin: 1cm;
+  margin-bottom: 0cm;
+  background-image: url("assets/creds-background.png");
+
+  @frame title {
+    left: 3.5cm;
+    width: 16.5cm;
+    height: 2cm;
+    top: 1cm;
+  }
+
+  @frame footer {
+    -pdf-frame-content: footerContent;
+    bottom: -0.4cm;
+    margin-left: 1cm;
+    margin-right: 1.5cm;
+    height: 1.7cm;
+    left: 1cm;
+  }
+
+  @frame header {
+    -pdf-frame-content: headerContent;
+    top: 0.5cm;
+    left: 1cm;
+
+    height: 6cm;
+  }
+
+  @frame kpi1 {
+    left: 2cm;
+    width: 5.45cm;
+    height: 3cm;
+    top: 3cm;
+  }
+
+  @frame kpi2 {
+    left: 8.2cm;
+    width: 5.45cm;
+    height: 2.3cm;
+    top: 3cm;
+  }
+
+  @frame kpi3 {
+    left: 14.4cm;
+    width: 5.45cm;
+    height: 2.3cm;
+    top: 3cm;
+  }
+
+  @frame content1 {
+    left: 1.5cm;
+    width: 18.5cm;
+    height: 2cm;
+    top: 5.8cm;
+  }
+
+  @frame graphbox1 {
+    -pdf-frame-content: protocolCount;
+    left: 1.5cm;
+    width: 9cm;
+    height: 5cm;
+    top: 7.5cm;
+  }
+
+  @frame graphbox2 {
+    -pdf-frame-content: riskyProTable;
+    left: 11cm;
+    width: 9cm;
+    height: 5cm;
+    top: 7.5cm;
+  }
+
+  @frame content2 {
+    left: 1.5cm;
+    width: 9cm;
+    height: 2.2cm;
+    top: 13cm;
+  }
+
+  @frame content3 {
+    left: 11cm;
+    width: 9cm;
+    height: 3cm;
+    top: 13cm;
+  }
+
+  @frame graph3 {
+    -pdf-frame-content: unverifVulnGraph;
+    left: 11cm;
+    width: 9cm;
+    height: 9cm;
+    top: 15.2cm;
+  }
+
+  @frame table {
+    -pdf-frame-content: vulnsTable;
+    left: 1.5cm;
+    width: 9cm;
+    height: 9cm;
+    top: 15.2cm;
+  }
+}
+
+@page dark1 {
+  size: letter portrait;
+  margin: 1cm;
+  margin-bottom: 0cm;
+  background-image: url("assets/dark1.png");
+
+  @frame title {
+    left: 3.5cm;
+    width: 16.5cm;
+    height: 2cm;
+    top: 1cm;
+  }
+
+  @frame footer {
+    -pdf-frame-content: footerContent;
+    bottom: -0.4cm;
+    margin-left: 1cm;
+    margin-right: 1.5cm;
+    height: 1.7cm;
+    left: 1cm;
+  }
+
+  @frame header {
+    -pdf-frame-content: headerContent;
+    top: 0.5cm;
+    left: 1cm;
+
+    height: 6cm;
+  }
+
+  @frame kpi1 {
+    left: 1.1cm;
+    width: 5.45cm;
+    height: 2.3cm;
+    top: 3cm;
+  }
+
+  @frame content1 {
+    left: 6.2cm;
+    width: 14cm;
+    height: 3cm;
+    top: 3cm;
+  }
+
+  @frame graphbox1 {
+    -pdf-frame-content: darkWebMentions;
+    left: 1.5cm;
+    width: 19cm;
+    height: 9cm;
+    top: 6.5cm;
+  }
+
+  @frame content2 {
+    left: 1.5cm;
+    width: 9cm;
+    height: 1.7cm;
+    top: 15.5cm;
+  }
+
+  @frame content3 {
+    left: 11.1cm;
+    width: 9cm;
+    height: 1.7cm;
+    top: 15.5cm;
+  }
+
+  @frame graph3 {
+    -pdf-frame-content: darkWebSitesTable;
+    left: 1.5cm;
+    width: 9cm;
+    height: 9cm;
+    top: 17.3cm;
+  }
+
+  @frame graph4 {
+    -pdf-frame-content: alertsThreatsTable;
+    left: 11.1cm;
+    width: 9cm;
+    height: 9cm;
+    top: 17.3cm;
+  }
+}
+
+@page dark2 {
+  size: letter portrait;
+  margin: 1cm;
+  margin-bottom: 0cm;
+
+  @frame title {
+    left: 3.5cm;
+    width: 16.5cm;
+    height: 2cm;
+    top: 1cm;
+  }
+
+  @frame footer {
+    -pdf-frame-content: footerContent;
+    bottom: -0.4cm;
+    margin-left: 1cm;
+    margin-right: 1.5cm;
+    height: 1.7cm;
+    left: 1cm;
+  }
+
+  @frame header {
+    -pdf-frame-content: headerContent;
+    top: 0.5cm;
+    left: 1cm;
+
+    height: 6cm;
+  }
+
+  @frame TableIntro1 {
+    left: 1.5cm;
+    width: 9.4cm;
+    height: 3.8cm;
+    top: 3cm;
+  }
+
+  @frame TableIntro2 {
+    left: 11.1cm;
+    width: 9.4cm;
+    height: 3.8cm;
+    top: 3cm;
+  }
+
+  @frame Table1 {
+    -pdf-frame-content: darkWebActorsTable;
+    left: 1.5cm;
+    width: 9cm;
+    height: 9cm;
+    top: 6.9cm;
+  }
+
+  @frame Table2 {
+    -pdf-frame-content: darkWebTagsTable;
+    left: 11.1cm;
+    width: 9cm;
+    height: 9cm;
+    top: 6.9cm;
+  }
+
+  @frame PieChartIntro1 {
+    left: 1.5cm;
+    width: 19cm;
+    height: 1.2cm;
+    top: 15.2cm;
+  }
+
+  @frame graph3 {
+    -pdf-frame-content: darkWebPieChart;
+    left: 1cm;
+    width: 19cm;
+    height: 9.8cm;
+    top: 16.6cm;
+  }
+}
+
+@page dark3 {
+  size: letter portrait;
+  margin: 1cm;
+  margin-bottom: 0cm;
+
+  @frame title {
+    left: 3.5cm;
+    width: 16.5cm;
+    height: 2cm;
+    top: 1cm;
+  }
+
+  @frame footer {
+    -pdf-frame-content: footerContent;
+    bottom: -0.4cm;
+    margin-left: 1cm;
+    margin-right: 1.5cm;
+    height: 1.7cm;
+    left: 1cm;
+  }
+
+  @frame header {
+    -pdf-frame-content: headerContent;
+    top: 0.5cm;
+    left: 1cm;
+    height: 6cm;
+  }
+
+  @frame TableIntro1 {
+    left: 1.5cm;
+    width: 19cm;
+    height: 1.5cm;
+    top: 3cm;
+  }
+
+  @frame Table1 {
+    -pdf-frame-content: execAlertTable;
+    left: 1.5cm;
+    width: 19cm;
+    height: 9cm;
+    top: 4.6cm;
+  }
+
+  @frame TableIntro2 {
+    left: 1.5cm;
+    width: 9cm;
+    height: 2.2cm;
+    top: 14.2cm;
+  }
+
+  @frame Table2 {
+    -pdf-frame-content: darkWebActTable;
+    left: 1.5cm;
+    width: 9cm;
+    height: 9.6cm;
+    top: 16.5cm;
+  }
+
+  @frame TableIntro3 {
+    left: 11.1cm;
+    width: 9cm;
+    height: 2.2cm;
+    top: 14.2cm;
+  }
+
+  @frame Table3 {
+    -pdf-frame-content: alertSitesTable;
+    left: 11.1cm;
+    width: 9cm;
+    height: 9.6cm;
+    top: 16.5cm;
+  }
+}
+
+@page dark4 {
+  size: letter portrait;
+  margin: 1cm;
+  margin-bottom: 0cm;
+
+  @frame title {
+    left: 3.5cm;
+    width: 16.5cm;
+    height: 2cm;
+    top: 1cm;
+  }
+
+  @frame footer {
+    -pdf-frame-content: footerContent;
+    bottom: -0.4cm;
+    margin-left: 1cm;
+    margin-right: 1.5cm;
+    height: 1.7cm;
+    left: 1cm;
+  }
+
+  @frame header {
+    -pdf-frame-content: headerContent;
+    top: 0.5cm;
+    left: 1cm;
+
+    height: 6cm;
+  }
+
+  @frame TableIntro1 {
+    left: 1.5cm;
+    width: 19cm;
+    height: 1.7cm;
+    top: 3cm;
+  }
+
+  @frame Table1 {
+    -pdf-frame-content: cveTable;
+    left: 1.5cm;
+    width: 19cm;
+    height: 21.5cm;
+    top: 4.9cm;
+  }
+}
+@page appendix1 {
+  size: letter portrait;
+  margin: 1cm;
+  margin-bottom: 0cm;
+
+  @frame title {
+    left: 3.5cm;
+    width: 16.5cm;
+    height: 2cm;
+    top: 1cm;
+  }
+
+  @frame footer {
+    -pdf-frame-content: footerContent;
+    bottom: -0.4cm;
+    margin-left: 1cm;
+    margin-right: 1.5cm;
+    height: 1.7cm;
+    left: 1cm;
+  }
+
+  @frame header {
+    -pdf-frame-content: headerContent;
+    top: 0.5cm;
+    left: 1cm;
+
+    height: 6cm;
+  }
+
+  @frame AppendixIntro {
+    left: 1.5cm;
+    width: 19cm;
+    height: 1.7cm;
+    top: 3cm;
+  }
+
+  @frame Content {
+    left: 1.5cm;
+    width: 19cm;
+    height: 21.5cm;
+    top: 4.9cm;
+  }
+}
+@page appendix2 {
+  size: letter portrait;
+  margin: 1cm;
+  margin-bottom: 0cm;
+
+  @frame title {
+    left: 3.5cm;
+    width: 16.5cm;
+    height: 2cm;
+    top: 1cm;
+  }
+
+  @frame footer {
+    -pdf-frame-content: footerContent;
+    bottom: -0.4cm;
+    margin-left: 1cm;
+    margin-right: 1.5cm;
+    height: 1.7cm;
+    left: 1cm;
+  }
+
+  @frame header {
+    -pdf-frame-content: headerContent;
+    top: 0.5cm;
+    left: 1cm;
+
+    height: 6cm;
+  }
+
+  @frame TableIntro1 {
+    left: 1.5cm;
+    width: 19cm;
+    height: 1.7cm;
+    top: 3cm;
+  }
+
+  @frame Table1 {
+    -pdf-frame-content: verifVulnSumTable;
+    left: 1.5cm;
+    width: 19cm;
+    height: 21.5cm;
+    top: 4.9cm;
+  }
+}
+
+h1 {
+  display: block;
+  font-size: 4.5em;
+  margin-top: 0.67em;
+  margin-bottom: 0.4em;
+  margin-left: 0;
+  margin-right: 0;
+  font-weight: bold;
+  font-family: "Franklin Gothic Medium", "Arial Narrow", Arial, sans-serif;
+}
+
+h2 {
+  display: block;
+  font-size: 2.5em;
+  margin-top: 0.6em;
+  margin-bottom: 0.4em;
+  margin-left: 0;
+  margin-right: 0;
+  font-weight: bold;
+}
+
+h3 {
+  display: block;
+  font-size: 2em;
+  margin-top: 1em;
+  margin-bottom: 1em;
+  margin-left: 0;
+  margin-right: 0;
+  font-weight: bold;
+}
+
+table {
+  font-size: 15px;
+}
+
+.foot {
+  font-size: 15px;
+}
+
+.infoBox {
+  font-size: 14px;
+}
+
+.kpi {
+  font-size: 14px;
+}
+
+.content {
+  font-size: 13px;
+}
+
+.flex-item {
+  padding: 0.5cm;
+  margin-top: 0.5cm;
+  padding-top: 15px;
+  padding-bottom: 0cm;
+  font-size: 11px;
+  text-align: center;
+  min-height: 2.3cm;
+  height: inherit;
+  width: 3.5cm;
+}
+
+.sum-item {
+  padding: 0.5cm;
+  margin-top: 0.5cm;
+  padding-top: 15px;
+  padding-bottom: 0cm;
+  font-size: 14px;
+  text-align: center;
+  min-height: 2.3cm;
+  height: inherit;
+  width: 3.5cm;
+}
+.chart {
+  padding: 0.5cm;
+}
+.table {
+  font-size: 8pt;
+  text-align: center;
+  padding-top: 0.1cm;
+}
+
+.table th {
+  text-align: center;
+  background-color: #4472c4;
+  color: white;
+  padding-top: 0.1cm;
+  border-bottom-color: white;
+  border-top-color: white;
+  border-right-color: white;
+  border-left-color: white;
+}
+/* .table tr {
+    text-align: center;
+    color: black;
+    padding-top: 0.1cm;
+  } */
+
+.table tr {
+  border-bottom-color: white;
+  border-top-color: white;
+  border-right-color: white;
+  border-left-color: white;
+}
+
+.table td {
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+.even {
+  background-color: #cfd5ea;
+}
+.odd {
+  background-color: #e9ebf5;
+}
