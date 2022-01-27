@@ -120,7 +120,7 @@ def generate_reports(datestring, output_directory):
 
     # Iterate over organizations
     if pe_orgs:
-        logging.info("PE orgs count: %s", len(pe_orgs))
+        logging.info("PE orgs count: %d", len(pe_orgs))
         for org in pe_orgs:
             # Assign organization values
             org_uid = org[0]
