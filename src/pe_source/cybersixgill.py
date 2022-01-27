@@ -30,7 +30,7 @@ START_DATE = str(TODAY - DAYS_BACK)
 END_DATE = str(TODAY)
 DATE_SPAN = f"[{START_DATE} TO {END_DATE}]"
 
-# Set todays date  and 30 days prior to YYY-MM-DD H:M:S format
+# Set dates to YYY-MM-DD H:M:S format
 NOW = datetime.now()
 BACK = timedelta(days=30)
 FROM_DATE = (NOW - BACK).strftime("%Y-%m-%d %H:%M:%S")
@@ -38,22 +38,22 @@ TO_DATE = NOW.strftime("%Y-%m-%d %H:%M:%S")
 
 
 class Cybersixgill:
-    """Fetch cybersixgill data."""
+    """Fetch Cybersixgill data."""
 
     def __init__(self, orgs_list, method_list):
-        """Initialize cybersixgill class."""
+        """Initialize Cybersixgill class."""
         self.orgs_list = orgs_list
         self.method_list = method_list
 
     def run_cybersixgill(self):
-        """Run cybersixgill api calls."""
+        """Run Cybersixgill api calls."""
         orgs_list = self.orgs_list
         method_list = self.method_list
 
         # Get org info from PE database
         pe_orgs = get_orgs()
 
-        # Get sixgill org info
+        # Get Cybersixgill org info
         sixgill_orgs = get_sixgill_organizations()
         failed = []
         count = 0
@@ -76,30 +76,30 @@ class Cybersixgill:
                 except KeyError as err:
                     logging.error("PE org is not listed in Cybersixgill.")
                     print(err, file=sys.stderr)
-                    failed.append(f"{org_id} not in sixgill")
+                    failed.append("%s not in sixgill", org_id)
                     continue
 
                 # Run alerts
                 if "alerts" in method_list:
                     alert = self.get_alerts(org_id, sixgill_org_id, pe_org_uid)
                     if alert == 1:
-                        failed.append(f"{org_id} alerts")
+                        failed.append("%s alerts", org_id)
                 # Run mentions
                 if "mentions" in method_list:
                     mention = self.get_mentions(org_id, sixgill_org_id, pe_org_uid)
                     if mention == 1:
-                        failed.append(f"{org_id} mentions")
+                        failed.append("%s mentions", org_id)
                 # Run credentials
                 if "credentials" in method_list:
                     cred = self.get_credentials(org_id, sixgill_org_id, pe_org_uid)
                     if cred == 1:
-                        failed.append(f"{org_id} credentials")
+                        failed.append("%s credentials", org_id)
         if len(failed) > 0:
-            logging.error(f"Failures: {failed}")
+            logging.error("Failures: %s", failed)
 
     def get_alerts(self, org_id, sixgill_org_id, pe_org_uid):
         """Get alerts."""
-        logging.info(f"Fetching alert data for {org_id}.")
+        logging.info("Fetching alert data for %s.", org_id)
 
         # Fetch alert data with sixgill_org_id
         try:
@@ -109,7 +109,7 @@ class Cybersixgill:
             # Rename columns
             alerts_df = alerts_df.rename(columns={"id": "sixgill_id"})
         except Exception as e:
-            logging.error(f"Failed fetching alert data for {org_id}")
+            logging.error("Failed fetching alert data for %s", org_id)
             logging.error(e)
             return 1
 
@@ -117,20 +117,20 @@ class Cybersixgill:
         try:
             insert_sixgill_alerts(alerts_df)
         except Exception as e:
-            logging.error(f"Failed inserting alert data for {org_id}")
+            logging.error("Failed inserting alert data for %s", org_id)
             logging.error(e)
             return 1
         return 0
 
     def get_mentions(self, org_id, sixgill_org_id, pe_org_uid):
         """Get mentions."""
-        logging.info(f"Fetching mention data for {org_id}.")
+        logging.info("Fetching mention data for %s.", org_id)
 
-        # Fetch org aliases from cybersix
+        # Fetch org aliases from Cybersixgill
         try:
             aliases = alias_organization(sixgill_org_id)
         except Exception as e:
-            logging.error(f"Failed fetching aliases for {org_id}")
+            logging.error("Failed fetching aliases for %s", org_id)
             logging.error(e)
             return 1
 
@@ -140,7 +140,7 @@ class Cybersixgill:
             mentions_df = mentions_df.rename(columns={"id": "sixgill_mention_id"})
             mentions_df["organizations_uid"] = pe_org_uid
         except Exception as e:
-            logging.error(f"Failed fetching mentions for {org_id}")
+            logging.error("Failed fetching mentions for %s", org_id)
             logging.error(e)
             return 1
 
@@ -148,20 +148,20 @@ class Cybersixgill:
         try:
             insert_sixgill_mentions(mentions_df)
         except Exception as e:
-            logging.error(f"Failed inserting mentions for {org_id}")
+            logging.error("Failed inserting mentions for %s", org_id)
             logging.error(e)
             return 1
         return 0
 
     def get_credentials(self, org_id, sixgill_org_id, pe_org_uid):
         """Get credentials."""
-        logging.info(f"Fetching credential data for {org_id}.")
+        logging.info("Fetching credential data for %s.", org_id)
 
-        # Fetch org root domains from cybersix
+        # Fetch org root domains from Cybersixgill
         try:
             roots = root_domains(sixgill_org_id)
         except Exception as e:
-            logging.error(f"Failed fetching root domains for {org_id}")
+            logging.error("Failed fetching root domains for %s", org_id)
             logging.error(e)
             return 1
 
@@ -170,7 +170,7 @@ class Cybersixgill:
             creds_df = creds(roots, FROM_DATE, TO_DATE)
             creds_df["organizations_uid"] = pe_org_uid
         except Exception as e:
-            logging.error(f"Failed fetching credentials for {org_id}")
+            logging.error("Failed fetching credentials for %s", org_id)
             logging.error(e)
             return 1
 
@@ -178,7 +178,7 @@ class Cybersixgill:
         try:
             insert_sixgill_credentials(creds_df)
         except Exception as e:
-            logging.error(f"Failed inserting credentials for {org_id}")
+            logging.error("Failed inserting credentials for %s", org_id)
             logging.error(e)
             return 1
         return 0
@@ -192,7 +192,7 @@ class Cybersixgill:
             top_cve_df = top_cves(10)
             top_cve_df["date"] = END_DATE
             top_cve_df["nvd_base_score"] = top_cve_df["nvd_base_score"].astype("str")
-            # Get CVE description from circl.lu
+            # Get CVE summary from circl.lu
             top_cve_df["summary"] = ""
             for index, row in top_cve_df.iterrows():
                 try:
@@ -210,7 +210,7 @@ class Cybersixgill:
         try:
             insert_sixgill_topCVEs(top_cve_df)
         except Exception as e:
-            logging.error("Failed inserting topCVEs.")
+            logging.error("Failed inserting top CVEs.")
             logging.error(e)
             return 1
         return 0
