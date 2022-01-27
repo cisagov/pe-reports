@@ -1,1 +1,1 @@
-"""Initialize sixgill folder."""
+"""Initialize Cybersixgill folder."""

@@ -7,7 +7,7 @@ from .config import token
 
 
 def get_sixgill_organizations():
-    """Get list of organizations."""
+    """Get the list of organizations."""
     url = "https://api.cybersixgill.com/multi-tenant/organization"
     auth = token()
     headers = {
