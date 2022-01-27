@@ -15,7 +15,7 @@ REPORT_DB_CONFIG = glob.glob(f"{BASE_DIR}/**/*.ini", recursive=True)[0]
 
 
 def token():
-    """Retrieve bearer token from sixgill client."""
+    """Retrieve bearer token from Cybersixgill client."""
     if os.path.isfile(REPORT_DB_CONFIG):
         parser = ConfigParser()
         parser.read(REPORT_DB_CONFIG, encoding="utf-8")
@@ -29,7 +29,7 @@ def token():
                 "Section {} not found in the {} file".format(SECTION, REPORT_DB_CONFIG)
             )
     else:
-        raise Exception("Config.ini file not found.")
+        raise Exception("Database.ini file not found.")
     url = "https://api.cybersixgill.com/auth/token/"
     headers = {
         "Content-Type": "application/x-www-form-urlencoded",

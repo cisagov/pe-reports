@@ -19,8 +19,9 @@ CONN_PARAMS_DIC = config()
 def show_psycopg2_exception(err):
     """Handle errors for PostgreSQL issues."""
     err_type, err_obj, traceback = sys.exc_info()
-    line_n = traceback.tb_lineno
-    logging.error(f"Database connection error: {err} on line number: {line_n}")
+    logging.error(
+        "Database connection error: %s on line number: %s", err, traceback.tb_lineno
+    )
 
 
 def connect():
@@ -53,7 +54,7 @@ def get_orgs():
         cur.close()
         return pe_orgs
     except (Exception, psycopg2.DatabaseError) as error:
-        logging.error(f"There was a problem with your database query {error}")
+        logging.error("There was a problem with your database query %s", error)
     finally:
         if conn is not None:
             close(conn)
@@ -85,7 +86,7 @@ def insert_sixgill_alerts(df):
     tuples = [tuple(x) for x in df.to_numpy()]
     # Comma-separated dataframe columns
     cols = ",".join(list(df.columns))
-    # SQL quert to execute
+    # SQL query to execute
     query = """INSERT INTO {}({}) VALUES %s
     ON CONFLICT (sixgill_id) DO NOTHING;"""
     cursor = conn.cursor()
@@ -156,6 +157,7 @@ def insert_sixgill_mentions(df):
                 "comments_count",
             ]
         ]
+    # Remove any "[\x00|NULL]" characters
     df = df.apply(
         lambda col: col.str.replace(r"[\x00|NULL]", "", regex=True)
         if col.dtype == object
@@ -166,7 +168,7 @@ def insert_sixgill_mentions(df):
     tuples = [tuple(x) for x in df.to_numpy()]
     # Comma-separated dataframe columns
     cols = ",".join(list(df.columns))
-    # SQL quert to execute
+    # SQL query to execute
     query = """INSERT INTO {}({}) VALUES %s
     ON CONFLICT (sixgill_mention_id) DO NOTHING;"""
     cursor = conn.cursor()
@@ -196,7 +198,7 @@ def insert_sixgill_credentials(df):
     tuples = [tuple(x) for x in df.to_numpy()]
     # Comma-separated dataframe columns
     cols = ",".join(list(df.columns))
-    # SQL quert to execute
+    # SQL query to execute
     query = """INSERT INTO {}({}) VALUES %s
     ON CONFLICT (breach_id, email) DO NOTHING;"""
     cursor = conn.cursor()
