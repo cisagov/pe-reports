@@ -1,7 +1,7 @@
 """Collect and distribute graphical data to readable charts in the presentation."""
 
 # Standard Python Libraries
-from datetime import datetime
+import datetime
 
 # Third-Party Libraries
 import chevron
@@ -250,11 +250,13 @@ def init(source_html, datestring, org_name, org_uid):
     # Format start_date and end_date for the bi-monthly reporting period.
     # If the given end_date is the 15th, then the start_date is the 1st.
     # Otherwise, the start_date will be the 16th of the respective month.
-    end_date = datetime.strptime(datestring, "%Y-%m-%d").date()
-    if end_date.day == 15:
-        start_date = datetime(end_date.year, end_date.month, 1)
-    else:
-        start_date = datetime(end_date.year, end_date.month, 16)
+    end_date = datetime.datetime.strptime(datestring, "%Y-%m-%d").date()
+    days = datetime.timedelta(6)
+    start_date = end_date - days
+    # if end_date.day == 15:
+    #     start_date = datetime.datetime(end_date.year, end_date.month, 1)
+    # else:
+    #     start_date = datetime.datetime(end_date.year, end_date.month, 16)
 
     start = start_date.strftime("%m/%d/%Y")
     end = end_date.strftime("%m/%d/%Y")
