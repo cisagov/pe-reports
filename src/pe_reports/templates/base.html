@@ -43,14 +43,7 @@
           <ul class="navbar-nav">
             <li class="nav-item">
               <a
-                class="
-                  nav-link
-                  {%
-                  if
-                  request.endpoint=='index'
-                  %}active{%endif
-                  %}
-                "
+                class="nav-link {% if request.endpoint=='index' %}active{%endif %}"
                 id="home"
                 aria-current="page"
                 href="{{ url_for('index') }}"
@@ -59,14 +52,7 @@
             </li>
             <li class="nav-item">
               <a
-                class="
-                  nav-link
-                  {%
-                  if
-                  request.endpoint=='stakeholder.stakeholder'
-                  %}active{%endif
-                  %}
-                "
+                class="nav-link {% if request.endpoint=='stakeholder.stakeholder' %}active{%endif %}"
                 id="add"
                 href="{{ url_for('stakeholder.stakeholder') }}"
                 >Add Stakeholder</a
