@@ -76,7 +76,8 @@ def get_emails_from_request(request):
     for c in request["agency"]["contacts"]:
         if "type" not in c or "email" not in c or not c["email"].split():
             logging.warning(
-                f"Agency with ID {id} has a contact that is missing an email and/or type attribute!"
+                "Agency with ID %s has a contact that is missing an email and/or type attribute!",
+                id,
             )
 
     distro_emails = [c["email"] for c in contacts if c["type"] == "DISTRO"]
@@ -84,7 +85,7 @@ def get_emails_from_request(request):
 
     # There should be zero or one distro email
     if len(distro_emails) > 1:
-        logging.warning(f"More than one DISTRO email address for agency with ID {id}")
+        logging.warning("More than one DISTRO email address for agency with ID %s", id)
 
     # Send to the distro email, else send to the technical emails.
     to_emails = distro_emails
@@ -93,7 +94,7 @@ def get_emails_from_request(request):
 
     # At this point to_emails should contain at least one email
     if not to_emails:
-        logging.error(f"No emails found for ID {id}")
+        logging.error("No emails found for ID %s", id)
 
     return to_emails
 
@@ -262,7 +263,7 @@ def send_message(ses_client, message, counter=None):
     # Check for errors
     status_code = response["ResponseMetadata"]["HTTPStatusCode"]
     if status_code != 200:
-        logging.error(f"Unable to send message. Response from boto3 is: {response}")
+        logging.error("Unable to send message. Response from boto3 is: %s", response)
         raise UnableToSendError(response)
 
     if counter is not None:
@@ -310,7 +311,7 @@ def send_pe_reports(db, ses_client, pe_report_dir, to):
         cyhy_agencies = pe_requests.count()
         1 / cyhy_agencies
     except ZeroDivisionError:
-        logging.critical(f"No report data is found in {pe_report_dir}")
+        logging.critical("No report data is found in %s", pe_report_dir)
         sys.exit(1)
 
     agencies_emailed_pe_reports = 0
@@ -366,7 +367,8 @@ def send_pe_reports(db, ses_client, pe_report_dir, to):
                     )
                 except (UnableToSendError, ClientError):
                     logging.error(
-                        f"Unable to send Posture and Exposure report for agency with ID {id}",
+                        "Unable to send Posture and Exposure report for agency with ID %s",
+                        id,
                         exc_info=True,
                         stack_info=True,
                     )
@@ -389,30 +391,33 @@ def send_reports(pe_report_dir, db_creds_file, summary_to=None, test_emails=None
     try:
         db = db_from_config(db_creds_file)
     except OSError:
-        logging.critical(f"Database configuration file {db_creds_file} does not exist")
+        logging.critical("Database configuration file %s does not exist", db_creds_file)
         return 1
 
     except yaml.YAMLError:
         logging.critical(
-            f"Database configuration file {db_creds_file} does not contain valid YAML",
+            "Database configuration file %s does not contain valid YAML",
+            db_creds_file,
             exc_info=True,
         )
         return 1
     except KeyError:
         logging.critical(
-            f"Database configuration file {db_creds_file} does not contain the expected keys",
+            "Database configuration file %s does not contain the expected keys",
+            db_creds_file,
             exc_info=True,
         )
         return 1
     except pymongo.errors.ConnectionError:
         logging.critical(
-            f"Unable to connect to the database server in {db_creds_file}",
+            "Unable to connect to the database server in %s",
+            db_creds_file,
             exc_info=True,
         )
         return 1
     except pymongo.errors.InvalidName:
         logging.critical(
-            f"The database in {db_creds_file} does not exist", exc_info=True
+            "The database in %s does not exist", db_creds_file, exc_info=True
         )
         return 1
 

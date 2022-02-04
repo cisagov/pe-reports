@@ -6,7 +6,7 @@ from configparser import ConfigParser
 # Third-Party Libraries
 from importlib_resources import files
 
-REPORT_DB_CONFIG = files("pe_reports").joinpath("data/dbconfig.config")
+REPORT_DB_CONFIG = files("pe_reports").joinpath("data/database.ini")
 
 
 def config(filename=REPORT_DB_CONFIG, section="postgres"):
