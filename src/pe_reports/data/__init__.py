@@ -1,1 +1,1 @@
-"""This file is required to pass testing."""
+"""The pe-reports data directory."""

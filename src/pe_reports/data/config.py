@@ -2,15 +2,17 @@
 
 # Standard Python Libraries
 from configparser import ConfigParser
+import platform
 
 # Third-Party Libraries
-import platform
 from importlib_resources import files
+
 myplatform = platform.system()
 
-REPORT_DB_CONFIG = files("pe_reports").joinpath("data/dbconfig.config")
+REPORT_DB_CONFIG = files("pe_reports").joinpath("data/database.ini")
 
-if myplatform != 'Darwin':
+if myplatform != "Darwin":
+
     def config(filename=REPORT_DB_CONFIG, section="postgres"):
         """Parse Postgres configuration details from database configuration file."""
         parser = ConfigParser()
@@ -27,7 +29,9 @@ if myplatform != 'Darwin':
             raise Exception(f"Section {section} not found in {filename}")
 
         return db
+
 else:
+
     def config(filename=REPORT_DB_CONFIG, section="postgreslocal"):
         """Parse Postgres configuration details from database configuration file."""
         parser = ConfigParser()
