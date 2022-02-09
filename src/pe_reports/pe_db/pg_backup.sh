@@ -20,7 +20,7 @@ else
 fi
 
 # Create backup
-if pg_dump -d "$PE_DB_NAME" -p "$PE_DB_PORT" -U "$PE_DB_USER" -h "$PE_DB_HOST" -w 2> "$errfile" > "$sqlfile"; then
+if pg_dump -d "$PE_DB_NAME" -p "$PE_DB_PORT" -U "$PE_DB_USER" -h "$PE_DB_HOST" -Fc -w 2> "$errfile" > "$sqlfile"; then
   echo 'PG dump created'
 else
   echo 'pg_dump return non-zero code'

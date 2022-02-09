@@ -1,15 +1,17 @@
 #!/usr/bin/env bash
-# Set path to pg dump and globals backup files
+# Set path to pg dump and globals backup files. ex: /Users/user/Desktop/backups
 path=
 
-globalsql=$path/pgdb_globals.sql
-dumpsql=$path/pg_dump.sql
+dropdb pe -h localhost -U postgres --if-exists
 
-psql -U postgres -c "CREATE DATABASE pe;"
+globalsql=$path/pedb_globals.sql
+dumpsql=$path/pedb_dump.sql
+
+psql -U postgres -h localhost -c "CREATE DATABASE pe;"
 
 # rdsadmin database (even if empty) is required for the next script
-psql -U postgres -c "CREATE DATABASE rdsadmin;"
+psql -U postgres -h localhost -c "CREATE DATABASE rdsadmin;"
 
-psql -U postgres pe < "$globalsql"
+psql -U postgres -h localhost pe < "$globalsql"
 
-psql -U postgres pe < "$dumpsql"
+pg_restore -U postgres -h localhost -d pe "$dumpsql"
