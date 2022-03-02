@@ -98,7 +98,7 @@ setup(
         "docopt == 0.6.2",
         "glob2 == 0.7",
         "importlib-resources == 5.4.0",
-        "matplotlib == 3.5.1",
+        "matplotlib == 3.3.4",
         "mongo-db-from-config@http://github.com/cisagov/mongo-db-from-config/tarball/develop",
         "openpyxl == 3.0.9",
         "pandas == 1.4.1",
