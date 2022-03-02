@@ -61,6 +61,17 @@ def get_orgs():
             close(conn)
 
 
+def get_data_source_uid(source):
+    """Get data source uid."""
+    conn = connect()
+    cur = conn.cursor()
+    sql = """SELECT * FROM data_source WHERE name = '{}'"""
+    cur.execute(sql.format(source))
+    sources = cur.fetchone()[0]
+    cur.close()
+    return sources
+
+
 def insert_sixgill_alerts(df):
     """Insert sixgill alert data."""
     conn = connect()
@@ -80,6 +91,7 @@ def insert_sixgill_alerts(df):
             "category",
             "lang",
             "organizations_uid",
+            "data_source_uid",
         ]
     ]
     table = "alerts"
@@ -116,6 +128,7 @@ def insert_sixgill_mentions(df):
         df = df[
             [
                 "organizations_uid",
+                "data_source_uid",
                 "category",
                 "collection_date",
                 "content",
@@ -140,6 +153,7 @@ def insert_sixgill_mentions(df):
         df = df[
             [
                 "organizations_uid",
+                "data_source_uid",
                 "category",
                 "collection_date",
                 "content",
