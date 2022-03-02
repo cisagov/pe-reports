@@ -9,7 +9,8 @@ import psycopg2
 from psycopg2 import OperationalError
 import psycopg2.extras as extras
 
-from .config import config
+# cisagov Libraries
+from pe_reports.data.config import config
 
 logging.basicConfig(format="%(asctime)-15s %(levelname)s %(message)s", level="INFO")
 
