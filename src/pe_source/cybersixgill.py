@@ -6,6 +6,7 @@ import logging
 import sys
 
 from .data.pe_db.db_query import (
+    get_data_source_uid,
     get_orgs,
     insert_sixgill_alerts,
     insert_sixgill_credentials,
@@ -58,9 +59,12 @@ class Cybersixgill:
         failed = []
         count = 0
 
+        # Get data source uid
+        source_uid = get_data_source_uid("Cybersixgill")
+
         # Run top CVEs. Same for all orgs
         if "topCVEs" in method_list:
-            topCVEs = self.get_topCVEs()
+            topCVEs = self.get_topCVEs(source_uid)
             if topCVEs == 1:
                 failed.append("Top CVEs")
 
@@ -81,23 +85,29 @@ class Cybersixgill:
 
                 # Run alerts
                 if "alerts" in method_list:
-                    alert = self.get_alerts(org_id, sixgill_org_id, pe_org_uid)
+                    alert = self.get_alerts(
+                        org_id, sixgill_org_id, pe_org_uid, source_uid
+                    )
                     if alert == 1:
                         failed.append("%s alerts", org_id)
                 # Run mentions
                 if "mentions" in method_list:
-                    mention = self.get_mentions(org_id, sixgill_org_id, pe_org_uid)
+                    mention = self.get_mentions(
+                        org_id, sixgill_org_id, pe_org_uid, source_uid
+                    )
                     if mention == 1:
                         failed.append("%s mentions", org_id)
                 # Run credentials
                 if "credentials" in method_list:
-                    cred = self.get_credentials(org_id, sixgill_org_id, pe_org_uid)
+                    cred = self.get_credentials(
+                        org_id, sixgill_org_id, pe_org_uid, source_uid
+                    )
                     if cred == 1:
                         failed.append("%s credentials", org_id)
         if len(failed) > 0:
             logging.error("Failures: %s", failed)
 
-    def get_alerts(self, org_id, sixgill_org_id, pe_org_uid):
+    def get_alerts(self, org_id, sixgill_org_id, pe_org_uid, source_uid):
         """Get alerts."""
         logging.info("Fetching alert data for %s.", org_id)
 
@@ -106,6 +116,8 @@ class Cybersixgill:
             alerts_df = alerts(sixgill_org_id)
             # Add pe_org_id
             alerts_df["organizations_uid"] = pe_org_uid
+            # Add data source uid
+            alerts_df["data_source_uid"] = source_uid
             # Rename columns
             alerts_df = alerts_df.rename(columns={"id": "sixgill_id"})
         except Exception as e:
@@ -122,7 +134,7 @@ class Cybersixgill:
             return 1
         return 0
 
-    def get_mentions(self, org_id, sixgill_org_id, pe_org_uid):
+    def get_mentions(self, org_id, sixgill_org_id, pe_org_uid, source_uid):
         """Get mentions."""
         logging.info("Fetching mention data for %s.", org_id)
 
@@ -139,6 +151,8 @@ class Cybersixgill:
             mentions_df = mentions(DATE_SPAN, aliases)
             mentions_df = mentions_df.rename(columns={"id": "sixgill_mention_id"})
             mentions_df["organizations_uid"] = pe_org_uid
+            # Add data source uid
+            mentions_df["data_source_uid"] = source_uid
         except Exception as e:
             logging.error("Failed fetching mentions for %s", org_id)
             logging.error(e)
@@ -153,7 +167,7 @@ class Cybersixgill:
             return 1
         return 0
 
-    def get_credentials(self, org_id, sixgill_org_id, pe_org_uid):
+    def get_credentials(self, org_id, sixgill_org_id, pe_org_uid, source_uid):
         """Get credentials."""
         logging.info("Fetching credential data for %s.", org_id)
 
@@ -169,6 +183,8 @@ class Cybersixgill:
         try:
             creds_df = creds(roots, FROM_DATE, TO_DATE)
             creds_df["organizations_uid"] = pe_org_uid
+            # Add data source uid
+            creds_df["data_source_uid"] = source_uid
         except Exception as e:
             logging.error("Failed fetching credentials for %s", org_id)
             logging.error(e)
@@ -183,7 +199,7 @@ class Cybersixgill:
             return 1
         return 0
 
-    def get_topCVEs(self):
+    def get_topCVEs(self, source_uid):
         """Get top CVEs."""
         logging.info("Fetching top CVE data.")
 
@@ -192,6 +208,8 @@ class Cybersixgill:
             top_cve_df = top_cves(10)
             top_cve_df["date"] = END_DATE
             top_cve_df["nvd_base_score"] = top_cve_df["nvd_base_score"].astype("str")
+            # Add data source uid
+            top_cve_df["data_source_uid"] = source_uid
             # Get CVE summary from circl.lu
             top_cve_df["summary"] = ""
             for index, row in top_cve_df.iterrows():
