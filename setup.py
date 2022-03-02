@@ -109,7 +109,7 @@ setup(
         "pytest-cov == 3.0.0",
         "python-pptx == 0.6.21",
         "pyyaml == 6.0",
-        "reportlab == 3.6.8",
+        "reportlab == 3.6.6",
         "schema == 0.7.5",
         "setuptools == 24.2.0",
         "types-PyYAML == 6.0.4",
