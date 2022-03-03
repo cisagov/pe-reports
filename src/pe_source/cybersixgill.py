@@ -6,9 +6,11 @@ import logging
 import sys
 
 from .data.pe_db.db_query import (
+    get_breaches,
     get_data_source_uid,
     get_orgs,
     insert_sixgill_alerts,
+    insert_sixgill_breaches,
     insert_sixgill_credentials,
     insert_sixgill_mentions,
     insert_sixgill_topCVEs,
@@ -80,7 +82,7 @@ class Cybersixgill:
                 except KeyError as err:
                     logging.error("PE org is not listed in Cybersixgill.")
                     print(err, file=sys.stderr)
-                    failed.append("%s not in sixgill", org_id)
+                    failed.append("%s not in sixgill" % org_id)
                     continue
 
                 # Run alerts
@@ -89,21 +91,21 @@ class Cybersixgill:
                         org_id, sixgill_org_id, pe_org_uid, source_uid
                     )
                     if alert == 1:
-                        failed.append("%s alerts", org_id)
+                        failed.append("%s alerts" % org_id)
                 # Run mentions
                 if "mentions" in method_list:
                     mention = self.get_mentions(
                         org_id, sixgill_org_id, pe_org_uid, source_uid
                     )
                     if mention == 1:
-                        failed.append("%s mentions", org_id)
+                        failed.append("%s mentions" % org_id)
                 # Run credentials
                 if "credentials" in method_list:
                     cred = self.get_credentials(
                         org_id, sixgill_org_id, pe_org_uid, source_uid
                     )
                     if cred == 1:
-                        failed.append("%s credentials", org_id)
+                        failed.append("%s credentials" % org_id)
         if len(failed) > 0:
             logging.error("Failures: %s", failed)
 
@@ -190,7 +192,69 @@ class Cybersixgill:
             logging.error(e)
             return 1
 
+        # Change empty and ambiguous breach names
+        creds_df.loc[
+            creds_df["breach_name"] == "", "breach_name"
+        ] = "Cybersixgill_" + creds_df["breach_id"].astype(str)
+
+        creds_df.loc[
+            creds_df["breach_name"] == "Automatic leaked credentials detection",
+            "breach_name",
+        ] = "Cybersixgill_" + creds_df["breach_id"].astype(str)
+        creds_breach_df = creds_df[
+            ["breach_name", "description", "breach_date", "password", "data_source_uid"]
+        ].reset_index()
+
+        # Create password_included column
+        creds_breach_df["password_included"] = creds_breach_df["password"] != ""
+
+        # Group breaches and count the number of credentials
+        count_creds = creds_breach_df.groupby(
+            [
+                "breach_name",
+                "description",
+                "breach_date",
+                "password_included",
+                "data_source_uid",
+            ]
+        ).size()
+        creds_breach_df = count_creds.to_frame(name="exposed_cred_count").reset_index()
+        creds_breach_df["modified_date"] = creds_breach_df["breach_date"]
+
+        # Insert breach data into the PE database
+        try:
+            insert_sixgill_breaches(creds_breach_df)
+        except Exception as e:
+            logging.error("Failed inserting breaches for %s", org_id)
+            logging.error(e)
+            return 1
+
+        # Get breache uids and match to credentials
+        breach_dict = dict(get_breaches())
+        for i, row in creds_df.iterrows():
+            breach_uid = breach_dict[row["breach_name"]]
+            creds_df.at[i, "credential_breaches_uid"] = breach_uid
+
         # Insert credential data into the PE database
+        creds_df = creds_df.rename(
+            columns={"domain": "sub_domain", "breach_date": "modified_date"}
+        )
+        creds_df = creds_df[
+            [
+                "modified_date",
+                "sub_domain",
+                "email",
+                "hash_type",
+                "name",
+                "login_id",
+                "password",
+                "phone",
+                "breach_name",
+                "organizations_uid",
+                "data_source_uid",
+                "credential_breaches_uid",
+            ]
+        ]
         try:
             insert_sixgill_credentials(creds_df)
         except Exception as e:
