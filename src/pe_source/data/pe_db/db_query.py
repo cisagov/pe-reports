@@ -29,9 +29,7 @@ def connect():
     """Connect to PostgreSQL database."""
     conn = None
     try:
-        logging.info("Connecting to the PostgreSQL.....")
         conn = psycopg2.connect(**CONN_PARAMS_DIC)
-        logging.info("Connection successful.....")
     except OperationalError as err:
         show_psycopg2_exception(err)
         conn = None
@@ -205,17 +203,67 @@ def insert_sixgill_mentions(df):
     cursor.close()
 
 
-def insert_sixgill_credentials(df):
-    """Insert sixgill credential data."""
+def insert_sixgill_breaches(df):
+    """Insert sixgill breach data."""
     conn = connect()
-    table = "cybersix_exposed_credentials"
+    table = "credential_breaches"
     # Create a list of tupples from the dataframe values
     tuples = [tuple(x) for x in df.to_numpy()]
     # Comma-separated dataframe columns
     cols = ",".join(list(df.columns))
     # SQL query to execute
     query = """INSERT INTO {}({}) VALUES %s
-    ON CONFLICT (breach_id, email) DO NOTHING;"""
+    ON CONFLICT (breach_name) DO UPDATE SET
+    exposed_cred_count = EXCLUDED.exposed_cred_count,
+    password_included = EXCLUDED.password_included;"""
+    cursor = conn.cursor()
+    try:
+        extras.execute_values(
+            cursor,
+            query.format(
+                table,
+                cols,
+            ),
+            tuples,
+        )
+        conn.commit()
+        logging.info("Successfully inserted/updated breaches into PE database.")
+    except (Exception, psycopg2.DatabaseError) as error:
+        logging.info(error)
+        conn.rollback()
+        cursor.close()
+    cursor.close()
+
+
+def get_breaches():
+    """Get credential breaches."""
+    conn = connect()
+    try:
+        cur = conn.cursor()
+        sql = """SELECT breach_name, credential_breaches_uid FROM credential_breaches"""
+        cur.execute(sql)
+        pe_orgs = cur.fetchall()
+        cur.close()
+        return pe_orgs
+    except (Exception, psycopg2.DatabaseError) as error:
+        logging.error("There was a problem with your database query %s", error)
+    finally:
+        if conn is not None:
+            close(conn)
+
+
+def insert_sixgill_credentials(df):
+    """Insert sixgill credential data."""
+    conn = connect()
+    table = "credential_exposures"
+    # Create a list of tupples from the dataframe values
+    tuples = [tuple(x) for x in df.to_numpy()]
+    # Comma-separated dataframe columns
+    cols = ",".join(list(df.columns))
+    # SQL query to execute
+    query = """INSERT INTO {}({}) VALUES %s
+    ON CONFLICT (breach_name, email, name) DO UPDATE SET
+    modified_date = EXCLUDED.modified_date;"""
     cursor = conn.cursor()
     try:
         extras.execute_values(
