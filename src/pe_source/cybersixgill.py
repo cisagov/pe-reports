@@ -86,21 +86,28 @@ class Cybersixgill:
 
                 # Run alerts
                 if "alerts" in method_list:
-                    if self.get_alerts(
-                        org_id, sixgill_org_id, pe_org_uid, source_uid
-                    ) == 1:
+                    if (
+                        self.get_alerts(org_id, sixgill_org_id, pe_org_uid, source_uid)
+                        == 1
+                    ):
                         failed.append("%s alerts" % org_id)
                 # Run mentions
                 if "mentions" in method_list:
-                    if self.get_mentions(
-                        org_id, sixgill_org_id, pe_org_uid, source_uid
-                    ) == 1:
+                    if (
+                        self.get_mentions(
+                            org_id, sixgill_org_id, pe_org_uid, source_uid
+                        )
+                        == 1
+                    ):
                         failed.append("%s mentions" % org_id)
                 # Run credentials
                 if "credentials" in method_list:
-                    if self.get_credentials(
-                        org_id, sixgill_org_id, pe_org_uid, source_uid
-                    ) == 1:
+                    if (
+                        self.get_credentials(
+                            org_id, sixgill_org_id, pe_org_uid, source_uid
+                        )
+                        == 1
+                    ):
                         failed.append("%s credentials" % org_id)
         if len(failed) > 0:
             logging.error("Failures: %s", failed)
