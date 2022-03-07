@@ -85,8 +85,8 @@ setup(
     packages=find_packages(where="src"),
     package_dir={"": "src"},
     package_data={
-        "pe_reports": ["data/shell/*.pptx", "data/*.ini"],
         "pe_mailer": ["data/*"],
+        "pe_reports": ["data/shell/*.pptx", "data/*.ini"],
         "pe_source": ["data/*"],
     },
     py_modules=[splitext(basename(path))[0] for path in glob("src/*.py")],
@@ -133,8 +133,8 @@ setup(
     # Conveniently allows one to run the CLI tool as `pe-reports` or 'pe-mailer'
     entry_points={
         "console_scripts": [
-            "pe-reports = pe_reports.report_generator:main",
             "pe-mailer = pe_mailer.email_reports:main",
+            "pe-reports = pe_reports.report_generator:main",
             "pe-source = pe_source.pe_scripts:main",
         ]
     },
