@@ -4,7 +4,7 @@ Usage:
     pe-source DATA_SOURCE [--log-level=LEVEL] [--orgs=ORG_LIST] [--cybersix-methods=METHODS]
 
 Arguments:
-  DATA_SOURCE                       Source to colelct data from. Valid values are "cybersixgill",
+  DATA_SOURCE                       Source to collect data from. Valid values are "cybersixgill",
                                     "dnstwist", "hibp", and "shodan".
 
 Options:
@@ -13,12 +13,12 @@ Options:
   -l --log-level=LEVEL              If specified, then the log level will be set to
                                     the specified value.  Valid values are "debug", "info",
                                     "warning", "error", and "critical". [default: info]
-  -o --orgs=ORG_LIST                A comman-seperated list of orgs to collect data for.
+  -o --orgs=ORG_LIST                A comma-separated list of orgs to collect data for.
                                     If not specified, data will be collected for all
                                     orgs in the pe database. Orgs in the list must match the
                                     IDs in the cyhy-db. E.g. DHS,DHS_ICE,DOC
                                     [default: all]
-  -csg --cybersix-methods=METHODS   A comma-seperated list of cybersixgill methods to run.
+  -csg --cybersix-methods=METHODS   A comma-separated list of cybersixgill methods to run.
                                     If not specified, all will run. Valid values are "alerts",
                                     "credentials", "mentions", "topCVEs". E.g. alerts,mentions.
                                     [default: all]
@@ -41,10 +41,10 @@ from .cybersixgill import Cybersixgill
 
 def run_pe_script(source, orgs_list, cybersix_methods):
     """Collect data from the source specified."""
-    # If not "all", seperate orgs string into a list of orgs
+    # If not "all", separate orgs string into a list of orgs
     if orgs_list != "all":
         orgs_list = orgs_list.split(",")
-    # If not "all", seperate Cybersixgill methods string into a list
+    # If not "all", separate Cybersixgill methods string into a list
     if cybersix_methods == "all":
         cybersix_methods = ["alerts", "mentions", "credentials", "topCVEs"]
     else:

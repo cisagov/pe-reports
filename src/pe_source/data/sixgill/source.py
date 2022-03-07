@@ -61,18 +61,17 @@ def mentions(date, aliases):
         while i < count_total:
             # Recommended "from" and "result_size" is 50. The maximum is 400.
             resp = intel_post(query, frm=i, scroll=False, result_size=200)
-            i = i + 200
+            i += 200
             logging.info("Getting %s of %s....", i, count_total)
             intel_items = resp["intel_items"]
             df_mentions = pd.DataFrame.from_dict(intel_items)
             all_mentions.append(df_mentions)
             df_all_mentions = pd.concat(all_mentions).reset_index(drop=True)
-
     else:
         while i < count_total:
             # Recommended "from" and "result_size" is 50. The maximum is 400.
             resp = intel_post(query, frm=i, scroll=True, result_size=400)
-            i = i + 400
+            i += 400
             logging.info("Getting %s of %s....", i, count_total)
             intel_items = resp["intel_items"]
             df_mentions = pd.DataFrame.from_dict(intel_items)
