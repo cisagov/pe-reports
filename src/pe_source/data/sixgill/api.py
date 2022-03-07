@@ -23,7 +23,7 @@ def get_sixgill_organizations():
 
 def org_assets(org_id):
     """Get organization assets."""
-    url = "https://api.cybersixgill.com/multi-tenant/organization/" + org_id + "/assets"
+    url = f"https://api.cybersixgill.com/multi-tenant/organization/{org_id}/assets"
     auth = token()
     headers = {
         "Content-Type": "application/json",
