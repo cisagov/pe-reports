@@ -27,7 +27,6 @@ def show_psycopg2_exception(err):
 
 def connect():
     """Connect to PostgreSQL database."""
-    conn = None
     try:
         conn = psycopg2.connect(**CONN_PARAMS_DIC)
     except OperationalError as err:
@@ -39,7 +38,6 @@ def connect():
 def close(conn):
     """Close connection to PostgreSQL."""
     conn.close()
-    return
 
 
 def get_orgs():
@@ -93,7 +91,7 @@ def insert_sixgill_alerts(df):
         ]
     ]
     table = "alerts"
-    # Create a list of tupples from the dataframe values
+    # Create a list of tuples from the dataframe values
     tuples = [tuple(x) for x in df.to_numpy()]
     # Comma-separated dataframe columns
     cols = ",".join(list(df.columns))
@@ -115,7 +113,6 @@ def insert_sixgill_alerts(df):
     except (Exception, psycopg2.DatabaseError) as error:
         logging.error(error)
         conn.rollback()
-        cursor.close()
     cursor.close()
 
 
@@ -177,7 +174,7 @@ def insert_sixgill_mentions(df):
         else col
     )
     table = "mentions"
-    # Create a list of tupples from the dataframe values
+    # Create a list of tuples from the dataframe values
     tuples = [tuple(x) for x in df.to_numpy()]
     # Comma-separated dataframe columns
     cols = ",".join(list(df.columns))
@@ -199,7 +196,6 @@ def insert_sixgill_mentions(df):
     except (Exception, psycopg2.DatabaseError) as error:
         logging.error(error)
         conn.rollback()
-        cursor.close()
     cursor.close()
 
 
@@ -207,7 +203,7 @@ def insert_sixgill_breaches(df):
     """Insert sixgill breach data."""
     conn = connect()
     table = "credential_breaches"
-    # Create a list of tupples from the dataframe values
+    # Create a list of tuples from the dataframe values
     tuples = [tuple(x) for x in df.to_numpy()]
     # Comma-separated dataframe columns
     cols = ",".join(list(df.columns))
@@ -231,7 +227,6 @@ def insert_sixgill_breaches(df):
     except (Exception, psycopg2.DatabaseError) as error:
         logging.info(error)
         conn.rollback()
-        cursor.close()
     cursor.close()
 
 
@@ -256,7 +251,7 @@ def insert_sixgill_credentials(df):
     """Insert sixgill credential data."""
     conn = connect()
     table = "credential_exposures"
-    # Create a list of tupples from the dataframe values
+    # Create a list of tuples from the dataframe values
     tuples = [tuple(x) for x in df.to_numpy()]
     # Comma-separated dataframe columns
     cols = ",".join(list(df.columns))
@@ -281,20 +276,18 @@ def insert_sixgill_credentials(df):
     except (Exception, psycopg2.DatabaseError) as error:
         logging.info(error)
         conn.rollback()
-        cursor.close()
     cursor.close()
 
 
 def insert_sixgill_topCVEs(df):
-    """Instert sixgill top CVEs."""
+    """Insert sixgill top CVEs."""
     conn = connect()
     table = "top_cves"
-    # Create a list of tupples from the dataframe values
+    # Create a list of tuples from the dataframe values
     tuples = [tuple(x) for x in df.to_numpy()]
     # Comma-separated dataframe columns
     cols = ",".join(list(df.columns))
-    # SQL quert to execute
-    # query = "INSERT INTO {}({}) VALUES %s ON CONFLICT (CVE_id, date) DO NOTHING;"
+    # SQL query to execute
     query = """INSERT INTO {}({}) VALUES %s
     ON CONFLICT (cve_id, date) DO NOTHING;"""
     cursor = conn.cursor()
@@ -312,5 +305,4 @@ def insert_sixgill_topCVEs(df):
     except (Exception, psycopg2.DatabaseError) as error:
         logging.info(error)
         conn.rollback()
-        cursor.close()
     cursor.close()
