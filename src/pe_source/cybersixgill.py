@@ -66,8 +66,7 @@ class Cybersixgill:
 
         # Run top CVEs. Same for all orgs
         if "topCVEs" in method_list:
-            topCVEs = self.get_topCVEs(source_uid)
-            if topCVEs == 1:
+            if self.get_topCVEs(source_uid) == 1:
                 failed.append("Top CVEs")
 
         for pe_org in pe_orgs:
@@ -87,24 +86,21 @@ class Cybersixgill:
 
                 # Run alerts
                 if "alerts" in method_list:
-                    alert = self.get_alerts(
+                    if self.get_alerts(
                         org_id, sixgill_org_id, pe_org_uid, source_uid
-                    )
-                    if alert == 1:
+                    ) == 1:
                         failed.append("%s alerts" % org_id)
                 # Run mentions
                 if "mentions" in method_list:
-                    mention = self.get_mentions(
+                    if self.get_mentions(
                         org_id, sixgill_org_id, pe_org_uid, source_uid
-                    )
-                    if mention == 1:
+                    ) == 1:
                         failed.append("%s mentions" % org_id)
                 # Run credentials
                 if "credentials" in method_list:
-                    cred = self.get_credentials(
+                    if self.get_credentials(
                         org_id, sixgill_org_id, pe_org_uid, source_uid
-                    )
-                    if cred == 1:
+                    ) == 1:
                         failed.append("%s credentials" % org_id)
         if len(failed) > 0:
             logging.error("Failures: %s", failed)
