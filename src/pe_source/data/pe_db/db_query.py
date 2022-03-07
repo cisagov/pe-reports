@@ -1,6 +1,7 @@
 """Query the PE PostgreSQL database."""
 
 # Standard Python Libraries
+from datetime import datetime
 import logging
 import sys
 
@@ -65,6 +66,14 @@ def get_data_source_uid(source):
     cur.execute(sql.format(source))
     sources = cur.fetchone()[0]
     cur.close()
+    cur = conn.cursor()
+    # Update last_run in data_source table
+    date = datetime.today().strftime("%Y-%m-%d")
+    sql = """update data_source set last_run = '{}'
+            where name = '{}';"""
+    cur.execute(sql.format(date, source))
+    cur.close()
+    close(conn)
     return sources
 
 
