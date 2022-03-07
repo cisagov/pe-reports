@@ -33,7 +33,7 @@ START_DATE = str(TODAY - DAYS_BACK)
 END_DATE = str(TODAY)
 DATE_SPAN = f"[{START_DATE} TO {END_DATE}]"
 
-# Set dates to YYY-MM-DD H:M:S format
+# Set dates to YYYY-MM-DD H:M:S format
 NOW = datetime.now()
 BACK = timedelta(days=30)
 FROM_DATE = (NOW - BACK).strftime("%Y-%m-%d %H:%M:%S")
