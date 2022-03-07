@@ -225,7 +225,7 @@ class Cybersixgill:
             logging.error(e)
             return 1
 
-        # Get breache uids and match to credentials
+        # Get breach uids and match to credentials
         breach_dict = dict(get_breaches())
         for i, row in creds_df.iterrows():
             breach_uid = breach_dict[row["breach_name"]]
