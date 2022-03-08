@@ -35,9 +35,8 @@ DATE_SPAN = f"[{START_DATE} TO {END_DATE}]"
 
 # Set dates to YYYY-MM-DD H:M:S format
 NOW = datetime.now()
-BACK = timedelta(days=30)
-FROM_DATE = (NOW - BACK).strftime("%Y-%m-%d %H:%M:%S")
-TO_DATE = NOW.strftime("%Y-%m-%d %H:%M:%S")
+START_DATE_TIME = (NOW - DAYS_BACK).strftime("%Y-%m-%d %H:%M:%S")
+END_DATE_TIME = NOW.strftime("%Y-%m-%d %H:%M:%S")
 
 
 class Cybersixgill:
@@ -186,7 +185,7 @@ class Cybersixgill:
 
         # Fetch credential data
         try:
-            creds_df = creds(roots, FROM_DATE, TO_DATE)
+            creds_df = creds(roots, START_DATE_TIME, END_DATE_TIME)
             creds_df["organizations_uid"] = pe_org_uid
             # Add data source uid
             creds_df["data_source_uid"] = source_uid
