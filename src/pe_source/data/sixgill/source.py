@@ -42,10 +42,10 @@ def mentions(date, aliases):
     query = "site:forum_* AND date:" + date + " AND " + "(" + str(mentions) + ")"
     logging.info("Query:")
     logging.info(query)
-    count = 0
-    while count <= 5:
+    count = 1
+    while count < 7:
         try:
-            logging.info("Intel post try #%s", count + 1)
+            logging.info("Intel post try #%s", count)
             resp = intel_post(query, frm=0, scroll=False, result_size=1)
             break
         except Exception:
