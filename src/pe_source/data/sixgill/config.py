@@ -2,16 +2,15 @@
 
 # Standard Python Libraries
 from configparser import ConfigParser
-import glob
 import os
 
 # Third-Party Libraries
+from importlib_resources import files
 import requests
 
 # Configuration
 SECTION = "sixgill"
-BASE_DIR = os.path.abspath(os.path.join(__file__, "../../../.."))
-REPORT_DB_CONFIG = glob.glob(f"{BASE_DIR}/**/*.ini", recursive=True)[0]
+REPORT_DB_CONFIG = files("pe_reports").joinpath("data/database.ini")
 
 
 def token():
@@ -29,7 +28,9 @@ def token():
                 "Section {} not found in the {} file".format(SECTION, REPORT_DB_CONFIG)
             )
     else:
-        raise Exception("Database.ini file not found.")
+        raise Exception(
+            "Database.ini file not found at this path: {}".format(REPORT_DB_CONFIG)
+        )
     url = "https://api.cybersixgill.com/auth/token/"
     headers = {
         "Content-Type": "application/x-www-form-urlencoded",
