@@ -103,15 +103,13 @@ def alerts(org_id):
 def top_cves(size):
     """Top 10 CVEs mentioned in the dark web."""
     resp = dve_top_cves(size)
-    df_top_cves = pd.DataFrame(resp)
-    return df_top_cves
+    return pd.DataFrame(resp)
 
 
 def cve_summary(cveid):
     """Get CVE summary data."""
     url = f"https://cve.circl.lu/api/cve/{cveid}"
-    resp = requests.get(url).json()
-    return resp
+    return requests.get(url).json()
 
 
 def creds(domain, from_date, to_date):

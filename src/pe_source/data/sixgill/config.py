@@ -42,5 +42,4 @@ def token():
         "client_secret": client_secret,
     }
     resp = requests.post(url, headers=headers, data=payload).json()
-    token = resp["access_token"]
-    return token
+    return resp["access_token"]
