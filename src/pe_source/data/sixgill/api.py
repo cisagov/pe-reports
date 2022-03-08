@@ -74,7 +74,6 @@ def alerts_list(organization_id, fetch_size, offset):
         "fetch_size": fetch_size,
         "offset": offset,
     }
-
     resp = requests.get(url, headers=headers, params=payload)
     return resp
 
@@ -116,7 +115,5 @@ def credential_auth(params):
         "Cache-Control": "no-cache",
         "Authorization": "Bearer " + auth,
     }
-
-    resp = requests.get(url, headers=headers, params=params)
-    resp = resp.json()
+    resp = requests.get(url, headers=headers, params=params).json()
     return resp
