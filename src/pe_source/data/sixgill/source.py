@@ -47,7 +47,7 @@ def mentions(date, aliases):
         try:
             logging.info("Intel post try #%s", count + 1)
             resp = intel_post(query, frm=0, scroll=False, result_size=1)
-            count = 6
+            break
         except Exception:
             logging.info("Error. Trying intel_post again...")
             count += 1
