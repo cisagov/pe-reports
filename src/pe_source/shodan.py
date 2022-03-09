@@ -6,7 +6,7 @@ import threading
 # Third-Party Libraries
 import numpy
 
-from .data.pe_db.config import api_init
+from .data.pe_db.config import shodan_api_init
 from .data.pe_db.db_query import get_orgs
 from .data.shodan.shodan_search import run_shodan_thread
 
@@ -37,7 +37,7 @@ class Shodan:
                     continue
 
         # Get list of initialized API objects
-        api_list = api_init()
+        api_list = shodan_api_init()
 
         # Split orgs into chunks. # of chunks = # of valid API keys = # of threads
         chunk_size = len(api_list)
