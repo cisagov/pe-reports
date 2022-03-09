@@ -112,6 +112,7 @@ setup(
         "reportlab == 3.6.6",
         "schema == 0.7.5",
         "setuptools == 58.1.0",
+        "shodan ==1.27.0",
         "types-PyYAML == 6.0.4",
         "xhtml2pdf == 0.2.5",
     ],
