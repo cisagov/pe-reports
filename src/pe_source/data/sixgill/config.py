@@ -2,20 +2,19 @@
 
 # Standard Python Libraries
 from configparser import ConfigParser
-import glob
 import os
 
 # Third-Party Libraries
+from importlib_resources import files
 import requests
 
 # Configuration
 SECTION = "sixgill"
-BASE_DIR = os.path.abspath(os.path.join(__file__, "../../../.."))
-REPORT_DB_CONFIG = glob.glob(f"{BASE_DIR}/**/*.ini", recursive=True)[0]
+REPORT_DB_CONFIG = files("pe_reports").joinpath("data/database.ini")
 
 
 def token():
-    """Retrieve bearer token from sixgill client."""
+    """Retrieve bearer token from Cybersixgill client."""
     if os.path.isfile(REPORT_DB_CONFIG):
         parser = ConfigParser()
         parser.read(REPORT_DB_CONFIG, encoding="utf-8")
@@ -29,7 +28,9 @@ def token():
                 "Section {} not found in the {} file".format(SECTION, REPORT_DB_CONFIG)
             )
     else:
-        raise Exception("Config.ini file not found.")
+        raise Exception(
+            "Database.ini file not found at this path: {}".format(REPORT_DB_CONFIG)
+        )
     url = "https://api.cybersixgill.com/auth/token/"
     headers = {
         "Content-Type": "application/x-www-form-urlencoded",
@@ -41,5 +42,4 @@ def token():
         "client_secret": client_secret,
     }
     resp = requests.post(url, headers=headers, data=payload).json()
-    token = resp["access_token"]
-    return token
+    return resp["access_token"]
