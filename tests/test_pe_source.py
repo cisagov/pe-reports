@@ -27,7 +27,7 @@ PROJECT_VERSION = pe_source.__version__
 # Issue - https://github.com/cisagov/pe-reports/issues/3#issue-909531010
 
 
-def test_reports_stdout_version(capsys):
+def test_source_stdout_version(capsys):
     """Verify that version string sent to stdout agrees with the module version."""
     with pytest.raises(SystemExit):
         with patch.object(sys, "argv", ["bogus", "--version"]):
@@ -38,7 +38,7 @@ def test_reports_stdout_version(capsys):
     ), "standard output by '--version' should agree with module.__version__"
 
 
-def test_reports_running_as_module(capsys):
+def test_source_running_as_module(capsys):
     """Verify that the __main__.py file loads correctly."""
     with pytest.raises(SystemExit):
         with patch.object(sys, "argv", ["bogus", "--version"]):
@@ -56,7 +56,7 @@ def test_reports_running_as_module(capsys):
 
 
 @pytest.mark.parametrize("level", log_levels)
-def test_reports_log_levels(level):
+def test_source_log_levels(level):
     """Validate commandline log-level arguments."""
     with patch.object(
         sys,
@@ -71,17 +71,21 @@ def test_reports_log_levels(level):
             assert (
                 logging.root.hasHandlers() is False
             ), "root logger should not have handlers yet"
-            return_code = pe_source.pe_scripts.main()
+            return_code = None
+            try:
+                pe_source.pe_scripts.main()
+            except SystemExit as sys_exit:
+                return_code = sys_exit.code
             assert (
                 logging.root.hasHandlers() is True
             ), "root logger should now have a handler"
             assert (
                 logging.getLevelName(logging.root.getEffectiveLevel()) == level.upper()
             ), f"root logger level should be set to {level.upper()}"
-            assert return_code == 0, "main() should return success"
+            assert return_code is None, "main() should return success"
 
 
-def test_reports_bad_log_level():
+def test_source_bad_log_level():
     """Validate bad log-level argument returns error."""
     with patch.object(
         sys,
@@ -92,5 +96,9 @@ def test_reports_bad_log_level():
             "--log-level=emergency",
         ],
     ):
-        return_code = pe_source.pe_scripts.main()
+        return_code = None
+        try:
+            pe_source.pe_scripts.main()
+        except SystemExit as sys_exit:
+            return_code = sys_exit.code
         assert return_code == 1, "main() should exit with error"

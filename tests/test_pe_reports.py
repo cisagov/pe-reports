@@ -64,7 +64,6 @@ def test_reports_log_levels(level):
         [
             "pe-reports",
             "2021-01-01",
-            "input/",
             "output/",
             f"--log-level={level}",
         ],
@@ -95,7 +94,6 @@ def test_reports_bad_log_level():
         [
             "pe-reports",
             "2021-01-01",
-            "input/",
             "output/",
             "--log-level=emergency",
         ],
