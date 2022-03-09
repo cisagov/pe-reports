@@ -352,12 +352,14 @@ def insert_shodan_data(dataframe, table, thread, org_name, failed):
         )
         conn.commit()
         logging.info(
-            f"{thread} Data inserted using execute_values() successfully - {org_name}"
+            "{} Data inserted using execute_values() successfully - {}".format(
+                thread, org_name
+            )
         )
     except Exception as e:
-        logging.error(f"{org_name} failed inserting into {table}")
-        logging.error(f"{thread} {e} - {org_name}")
-        failed.append(f"{org_name} failed inserting into {table}")
+        logging.error("{} failed inserting into {}".format(org_name, table))
+        logging.error("{} {} - {}".format(thread, e, org_name))
+        failed.append("{} failed inserting into {}".format(org_name, table))
         conn.rollback()
         cursor.close()
     cursor.close()
