@@ -1,1 +1,1 @@
-"""Initialize data directory."""
+"""The pe-reports data directory."""

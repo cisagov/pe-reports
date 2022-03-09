@@ -1,11 +1,17 @@
 """Class methods for report charts."""
 
+# Standard Python Libraries
+import os
+
 # Third-Party Libraries
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator
 
 # Factor to convert cm to inches
 CM_CONVERSION_FACTOR = 2.54
+
+# Get base directory to save images
+BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 
 
 class Charts:
@@ -60,7 +66,9 @@ class Charts:
         plt.gcf().set_size_inches(
             width / CM_CONVERSION_FACTOR, height / CM_CONVERSION_FACTOR
         )
-        plt.savefig("assets/" + name, transparent=True, dpi=500, bbox_inches="tight")
+        plt.savefig(
+            BASE_DIR + "/assets/" + name, transparent=True, dpi=500, bbox_inches="tight"
+        )
         plt.clf()
 
     def stacked_bar(self):
@@ -85,7 +93,7 @@ class Charts:
         plt.rc("axes", axisbelow=True)
         plt.grid(axis="y", zorder=0)
         plt.xticks(rotation=30, ha="right")
-        plt.savefig("assets/" + name, transparent=True, dpi=500)
+        plt.savefig(BASE_DIR + "/assets/" + name, transparent=True, dpi=500)
         plt.clf()
 
     def h_bar(self):
@@ -131,7 +139,9 @@ class Charts:
                 )
 
         plt.gca().xaxis.set_major_locator(MaxNLocator(integer=True))
-        plt.savefig("assets/" + name, transparent=True, dpi=500, bbox_inches="tight")
+        plt.savefig(
+            BASE_DIR + "/assets/" + name, transparent=True, dpi=500, bbox_inches="tight"
+        )
         plt.clf()
 
     def line_chart(self):
@@ -159,8 +169,6 @@ class Charts:
         plt.tight_layout()
 
         for i, j in df[df.columns[1]].items():
-            print(i)
-            print(j)
             ax.annotate(
                 j,
                 xy=(i, j),
@@ -170,5 +178,7 @@ class Charts:
                 fontsize=7,
             )
 
-        plt.savefig("assets/" + name, transparent=True, dpi=500, bbox_inches="tight")
+        plt.savefig(
+            BASE_DIR + "/assets/" + name, transparent=True, dpi=500, bbox_inches="tight"
+        )
         plt.clf()

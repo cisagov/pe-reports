@@ -7,7 +7,7 @@ from .config import token
 
 
 def get_sixgill_organizations():
-    """Get list of organizations."""
+    """Get the list of organizations."""
     url = "https://api.cybersixgill.com/multi-tenant/organization"
     auth = token()
     headers = {
@@ -23,7 +23,7 @@ def get_sixgill_organizations():
 
 def org_assets(org_id):
     """Get organization assets."""
-    url = "https://api.cybersixgill.com/multi-tenant/organization/" + org_id + "/assets"
+    url = f"https://api.cybersixgill.com/multi-tenant/organization/{org_id}/assets"
     auth = token()
     headers = {
         "Content-Type": "application/json",
@@ -74,7 +74,6 @@ def alerts_list(organization_id, fetch_size, offset):
         "fetch_size": fetch_size,
         "offset": offset,
     }
-
     resp = requests.get(url, headers=headers, params=payload)
     return resp
 
@@ -116,7 +115,5 @@ def credential_auth(params):
         "Cache-Control": "no-cache",
         "Authorization": "Bearer " + auth,
     }
-
-    resp = requests.get(url, headers=headers, params=params)
-    resp = resp.json()
+    resp = requests.get(url, headers=headers, params=params).json()
     return resp

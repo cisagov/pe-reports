@@ -37,16 +37,11 @@ is gathered on the 1st and 15th of each month.
 
 ```console
 Usage:
-  pe-reports REPORT_DATE DATA_DIRECTORY OUTPUT_DIRECTORY [--db-creds-file=FILENAME] [--log-level=LEVEL]
+  pe-reports REPORT_DATE DATA_DIRECTORY OUTPUT_DIRECTORY [--log-level=LEVEL]
 
 Arguments:
   REPORT_DATE                   Date of the report, format YYYY-MM-DD.
-  DATA_DIRECTORY                The directory where the Excel data files are located.
-                                Organized by owner.
   OUTPUT_DIRECTORY              The directory where the final PDF reports should be saved.
-  -c --db-creds-file=FILENAME   A YAML file containing the Cyber
-                                Hygiene database credentials.
-                                [default: /secrets/database_creds.yml]
 Options:
   -h --help                     Show this message.
   -v --version                  Show version information.
@@ -94,7 +89,7 @@ Usage:
   pe-source DATA_SOURCE [--log-level=LEVEL] [--orgs=ORG_LIST] [--cybersix-methods=METHODS]
 
 Arguments:
-  DATA_SOURCE                       Source to colelct data from. Valid values are "cybersixgill",
+  DATA_SOURCE                       Source to collect data from. Valid values are "cybersixgill",
                                     "dnstwist", "hibp", and "shodan".
 Options:
   -h --help                         Show this message.
@@ -102,12 +97,12 @@ Options:
   -l --log-level=LEVEL              If specified, then the log level will be set to
                                     the specified value.  Valid values are "debug", "info",
                                     "warning", "error", and "critical". [default: info]
-  -o --orgs=ORG_LIST                A comman-seperated list of orgs to collect data for.
+  -o --orgs=ORG_LIST                A comma-separated list of orgs to collect data for.
                                     If not specified, data will be collected for all
                                     orgs in the pe database. Orgs in the list must match the
                                     IDs in the cyhy-db. E.g. DHS,DHS_ICE,DOC
                                     [default: all]
-  -csg --cybersix-methods=METHODS   A comma-seperated list of cybersixgill methods.
+  -csg --cybersix-methods=METHODS   A comma-separated list of cybersixgill methods.
                                     If not specified, all will run. Valid values are "alerts",
                                     "credentials", "mentions", "topCVEs". E.g. alerts,mentions.
                                     [default: all]
