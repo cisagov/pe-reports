@@ -24,19 +24,21 @@ def run_shodan_thread(api, org_chunk, thread_name):
     for org in org_chunk:
         org_name = org[2]
         org_uid = org[0]
-        logging.info(f"{thread_name} Runing IPs for {org_name}")
+        logging.info("{} Runing IPs for {}".format(thread_name, org_name))
         start, end = get_dates()
         try:
             ips = get_ips(org_uid)
         except Exception as e:
-            logging.error(f"{thread_name} Failed fetching IPs for {org_name}.")
-            logging.error(f"{thread_name} {e} - {org_name}")
-            failed.append(f"{org_name} fetching IPs")
+            logging.error(
+                "{} Failed fetching IPs for {}.".format(thread_name, org_name)
+            )
+            logging.error("{} {} - {}".format(thread_name, e, org_name))
+            failed.append("{} fetching IPs".format(org_name))
             continue
 
-        if len(ips) <= 0:
-            logging.error(f"{thread_name} No IPs for {org_name}.")
-            failed.append(f"{org_name} has 0 IPs")
+        if len(ips) == 0:
+            logging.error("{} No IPs for {}.".format(thread_name, org_name))
+            failed.append("{} has 0 IPs".format(org_name))
             continue
 
         failed = search_shodan(
@@ -44,16 +46,16 @@ def run_shodan_thread(api, org_chunk, thread_name):
         )
 
     if len(failed) > 0:
-        logging.critical(f"{thread_name} Failures: {failed}")
+        logging.critical("{} Failures: {}".format(thread_name, failed))
 
 
 def get_dates():
     """Get dates for the query."""
-    end = datetime.datetime.now()
+    now = datetime.datetime.now()
     days_back = datetime.timedelta(days=30)
     days_forward = datetime.timedelta(days=1)
-    start = end - days_back
-    end = end + days_forward
+    start = now - days_back
+    end = now + days_forward
     start_time = time_to_utc(start)
     end_time = time_to_utc(end)
     return start_time, end_time
@@ -90,7 +92,11 @@ def search_shodan(thread_name, ips, api, start, end, org_uid, org_name, failed):
     ip_chunks = [ips[i : i + 100] for i in range(0, len(ips), 100)]
     tot_ips = len(ips)
     tot = len(ip_chunks)
-    logging.info(f"{thread_name} Split {tot_ips} IPs into {tot} chunks - {org_name}")
+    logging.info(
+        "{} Split {} IPs into {} chunks - {}".format(
+            thread_name, tot_ips, tot, org_name
+        )
+    )
 
     # Loop through chunks and search Shodan
     for i, ip_chunk in enumerate(ip_chunks):
@@ -203,29 +209,35 @@ def search_shodan(thread_name, ips, api, start, end, org_uid, org_name, failed):
             except shodan.APIError as e:
                 if try_count == 5:
                     logging.error(
-                        f"{thread_name} Failed 5 times. Continuing to next chunk - {org_name}"
+                        "{} Failed 5 times. Continuing to next chunk - {}".format(
+                            thread_name, org_name
+                        )
                     )
                     failed.append(
-                        f"{org_name} chunk {i + 1} failed 5 times and skipped"
+                        "{} chunk {} failed 5 times and skipped".format(org_name, i + 1)
                     )
                     break
-                logging.error(f"{thread_name} {e} - {org_name}")
+                logging.error("{} {} - {}".format(thread_name, e, org_name))
                 logging.error(
-                    f"{thread_name} Try #{try_count} failed. Calling the API again. - {org_name}"
+                    "{} Try #{} failed. Calling the API again. - {}".format(
+                        thread_name, try_count, org_name
+                    )
                 )
                 try_count += 1
                 # Most likely too many API calls per second so sleep
                 time.sleep(5)
             except Exception as e:
-                logging.error(f"{thread_name} {e} - {org_name}")
+                logging.error("{} {} - {}".format(thread_name, e, org_name))
                 logging.error(
-                    f"{thread_name} Not a shodan API error. Continuing to next chunk - {org_name}"
+                    "{} Not a shodan API error. Continuing to next chunk - {}".format(
+                        thread_name, org_name
+                    )
                 )
-                failed.append(f"{org_name} chunk {i + 1} failed and skipped")
+                failed.append("{} chunk {} failed and skipped".format(org_name, i + 1))
                 break
 
         count = i + 1
-        logging.info(f"{thread_name} {count}/{tot} complete - {org_name}")
+        logging.info("{} {}/{} complete - {}".format(thread_name, count, tot, org_name))
 
     df = pd.DataFrame(
         data,
