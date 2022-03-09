@@ -14,7 +14,7 @@ import shodan
 REPORT_DB_CONFIG = files("pe_reports").joinpath("data/database.ini")
 
 
-def api_init():
+def shodan_api_init():
     """Connect to Shodan API."""
     section = "shodan"
     api_list = []
@@ -45,7 +45,7 @@ def api_init():
     return api_list
 
 
-def token():
+def cybersix_token():
     """Retrieve bearer token from Cybersixgill client."""
     section = "sixgill"
     if os.path.isfile(REPORT_DB_CONFIG):
