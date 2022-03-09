@@ -11,11 +11,15 @@ import requests
 import shodan
 
 # cisagov Libraries
-from pe_source.data.pe_db.db_query import get_ips, insert_shodan_data
+from pe_source.data.pe_db.db_query import (
+    get_data_source_uid,
+    get_ips,
+    insert_shodan_data,
+)
 
 
 def run_shodan_thread(api, org_chunk, thread_name):
-    """Run a shodan thread."""
+    """Run a Shodan thread."""
     failed = []
     for org in org_chunk:
         org_name = org[2]
@@ -90,9 +94,8 @@ def search_shodan(thread_name, ips, api, start, end, org_uid, org_name, failed):
 
     # Loop through chunks and search Shodan
     for i, ip_chunk in enumerate(ip_chunks):
-        try_again = True
         try_count = 1
-        while try_again:
+        while try_count < 7:
             try:
                 results = api.host(ip_chunk, history=True)
                 for r in results:
@@ -196,7 +199,7 @@ def search_shodan(thread_name, ips, api, start, end, org_uid, org_name, failed):
                                 ]
                             )
                 time.sleep(1)
-                try_again = False
+                break
             except shodan.APIError as e:
                 if try_count == 5:
                     logging.error(
@@ -205,7 +208,7 @@ def search_shodan(thread_name, ips, api, start, end, org_uid, org_name, failed):
                     failed.append(
                         f"{org_name} chunk {i + 1} failed 5 times and skipped"
                     )
-                    try_again = False
+                    break
                 logging.error(f"{thread_name} {e} - {org_name}")
                 logging.error(
                     f"{thread_name} Try #{try_count} failed. Calling the API again. - {org_name}"
@@ -219,7 +222,7 @@ def search_shodan(thread_name, ips, api, start, end, org_uid, org_name, failed):
                     f"{thread_name} Not a shodan API error. Continuing to next chunk - {org_name}"
                 )
                 failed.append(f"{org_name} chunk {i + 1} failed and skipped")
-                try_again = False
+                break
 
         count = i + 1
         logging.info(f"{thread_name} {count}/{tot} complete - {org_name}")
@@ -296,6 +299,12 @@ def search_shodan(thread_name, ips, api, start, end, org_uid, org_name, failed):
         ],
     )
 
+    # Grab the data source uid and add to each dataframe
+    source_uid = get_data_source_uid("Shodan")
+    df["data_source_uid"] = source_uid
+    risk_df["data_source_uid"] = source_uid
+    vuln_df["data_source_uid"] = source_uid
+
     # Insert data into the PE database
     failed = insert_shodan_data(df, "shodan_assets", thread_name, org_name, failed)
     failed = insert_shodan_data(
@@ -345,7 +354,7 @@ def is_verified(
             else:
                 severity = None
         else:
-            # Set cve info to null if circl has no results
+            # Set cve info to null if Circl has no results
             summary = ""
             product = ""
             attack_vector = ""

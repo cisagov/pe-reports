@@ -3,7 +3,8 @@
 import pandas as pd
 import requests
 
-from .config import token
+# cisagov Libraries
+from pe_source.data.pe_db.config import token
 
 
 def get_sixgill_organizations():

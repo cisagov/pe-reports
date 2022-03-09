@@ -6,20 +6,20 @@ import threading
 # Third-Party Libraries
 import numpy
 
+from .data.pe_db.config import api_init
 from .data.pe_db.db_query import get_orgs
-from .data.shodan.config import api_init
 from .data.shodan.shodan_search import run_shodan_thread
 
 
 class Shodan:
-    """Fetch shodan data."""
+    """Fetch Shodan data."""
 
     def __init__(self, orgs_list):
-        """Initialize cybersixgill class."""
+        """Initialize Shodan class."""
         self.orgs_list = orgs_list
 
     def run_shodan(self):
-        """Run shodan calls."""
+        """Run Shodan calls."""
         orgs_list = self.orgs_list
 
         # Get orgs from PE database
@@ -39,7 +39,7 @@ class Shodan:
         # Get list of initialized API objects
         api_list = api_init()
 
-        # Split orgs into groups. # of groups = # of valid API keys = # of threads
+        # Split orgs into chunks. # of chunks = # of valid API keys = # of threads
         chunk_size = len(api_list)
         chunked_orgs_list = numpy.array_split(numpy.array(pe_orgs_final), chunk_size)
 
@@ -56,6 +56,6 @@ class Shodan:
             thread_list.append(t)
             i += 1
 
-        # Wait until all threads finish to coninue
+        # Wait until all threads finish to continue
         for thread in thread_list:
             thread.join()
