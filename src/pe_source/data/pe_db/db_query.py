@@ -66,7 +66,6 @@ def get_ips(org_uid):
             FROM web_assets wa
             WHERE wa.organizations_uid = %(org_uid)s
             and wa.report_on = True
-            and wa.asset_type = 'ipv4'
             """
     df = pd.read_sql(sql, conn, params={"org_uid": org_uid})
     ips = list(df["ip_address"].values)
@@ -80,7 +79,7 @@ def get_data_source_uid(source):
     cur = conn.cursor()
     sql = """SELECT * FROM data_source WHERE name = '{}'"""
     cur.execute(sql.format(source))
-    sources = cur.fetchone()[0]
+    source = cur.fetchone()[0]
     cur.close()
     cur = conn.cursor()
     # Update last_run in data_source table
@@ -90,7 +89,7 @@ def get_data_source_uid(source):
     cur.execute(sql.format(date, source))
     cur.close()
     close(conn)
-    return sources
+    return source
 
 
 def insert_sixgill_alerts(df):

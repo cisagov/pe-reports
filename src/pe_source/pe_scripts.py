@@ -37,8 +37,6 @@ from ._version import __version__
 from .cybersixgill import Cybersixgill
 from .shodan import Shodan
 
-# Configuration
-
 
 def run_pe_script(source, orgs_list, cybersix_methods):
     """Collect data from the source specified."""
