@@ -9,6 +9,7 @@ from .data.db_query import (
     query_darkweb,
     query_darkweb_cves,
     query_domMasq,
+    query_domMasq_alerts,
     query_shodan,
 )
 
@@ -21,13 +22,10 @@ class Credentials:
         self.start_date = start_date
         self.end_date = end_date
         self.org_uid = org_uid
-        self.creds_view = pd.read_csv("new_vw_breach_complete.csv")
         self.creds_view = query_creds_vw(org_uid, start_date, end_date)
 
     def by_days(self):
         """Return number of credentials by day."""
-        # c6_df = self.query_cyberSix_creds
-        # hibp_df = self.query_hibp_view
         df = self.creds_view
         df = df[["modified_date", "password_included", "email"]]
         df["modified_date"] = pd.to_datetime(df["modified_date"]).dt.date
@@ -54,12 +52,10 @@ class Credentials:
         df["modified_date"] = df["modified_date"].dt.strftime("%m/%d/%y")
         df = df.set_index("modified_date")
 
-        ce_date_df = df.rename(
-            columns={True: "Passwords Included", False: "No Password"}
-        )
-        if len(ce_date_df.columns) == 0:
-            ce_date_df["Passwords Included"] = 0
-        return ce_date_df
+        df = df.rename(columns={True: "Passwords Included", False: "No Password"})
+        if len(df.columns) == 0:
+            df["Passwords Included"] = 0
+        return df
 
     def breaches(self):
         """Return total number of breaches."""
@@ -153,6 +149,7 @@ class Domains_Masqs:
         self.org_uid = org_uid
         df = query_domMasq(org_uid, start_date, end_date)
         self.df_mal = df[df["malicious"]]
+        self.dom_alerts_df = query_domMasq_alerts(org_uid, start_date, end_date)
 
     def count(self):
         """Return total count of malicious domains."""
@@ -171,7 +168,7 @@ class Domains_Masqs:
                     "name_server",
                 ]
             ]
-            domain_sum = domain_sum[:25]
+            domain_sum = domain_sum[:10]
             domain_sum = domain_sum.rename(
                 columns={
                     "domain_permutation": "Domain",
@@ -193,23 +190,26 @@ class Domains_Masqs:
             )
         return domain_sum
 
-    def utlds(self):
-        """Return count of unique top level domains."""
-        mal_df = self.df_mal
+    def alert_count(self):
+        """Return number of alerts."""
+        dom_alert_count = len(self.dom_alerts_df)
+        return dom_alert_count
 
-        if len(mal_df.index) > 0:
-            mal_df["tld"] = (
-                mal_df["domain_permutation"]
-                .str.split(".")
-                .str[-1]
-                .str.split("/")
-                .str[0]
-            )
-            utlds = len(mal_df["tld"].unique())
-        else:
-            utlds = 0
+    def alerts(self):
+        """Return domain alerts."""
+        dom_alerts_df = self.dom_alerts_df[["message", "date"]]
+        dom_alerts_df = dom_alerts_df.rename(
+            columns={"message": "Alert", "date": "Date"}
+        )
+        dom_alerts_df = dom_alerts_df[:10].reset_index(drop=True)
+        return dom_alerts_df
 
-        return utlds
+    def alerts_sum(self):
+        """Return domain alerts summary."""
+        dom_alerts_sum = self.dom_alerts_df[
+            ["message", "date", "previous_value", "new_value"]
+        ]
+        return dom_alerts_sum
 
 
 class Malware_Vulns:
