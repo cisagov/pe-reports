@@ -490,7 +490,7 @@ CREATE TABLE public.shodan_verified_vulns (
     ip text,
     port text,
     protocol text,
-    "timestamp" timestamp,
+    event_time timestamp,
     cve text,
     severity text,
     cvss numeric,
