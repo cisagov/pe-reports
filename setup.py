@@ -86,8 +86,8 @@ setup(
     package_dir={"": "src"},
     package_data={
         "pe_mailer": ["data/*"],
-        "pe_reports": ["data/shell/*.pptx", "data/*.ini"],
-        "pe_source": ["data/*"],
+        "pe_reports": ["*.html", "data/*.ini"],
+        "pe_source": ["data/*", "data/pe_db/*", "data/sixgill/*"],
     },
     py_modules=[splitext(basename(path))[0] for path in glob("src/*.py")],
     include_package_data=True,
