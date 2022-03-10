@@ -5,11 +5,10 @@
 import pandas as pd
 
 from .data.db_query import (
-    query_cyberSix_creds,
+    query_creds_vw,
     query_darkweb,
     query_darkweb_cves,
     query_domMasq,
-    query_hibp_view,
     query_shodan,
 )
 
@@ -22,45 +21,40 @@ class Credentials:
         self.start_date = start_date
         self.end_date = end_date
         self.org_uid = org_uid
-        self.query_cyberSix_creds = query_cyberSix_creds(org_uid, start_date, end_date)
-        self.query_hibp_view = query_hibp_view(org_uid, start_date, end_date)
+        self.creds_view = pd.read_csv("new_vw_breach_complete.csv")
+        self.creds_view = query_creds_vw(org_uid, start_date, end_date)
 
     def by_days(self):
         """Return number of credentials by day."""
-        c6_df = self.query_cyberSix_creds
-        hibp_df = self.query_hibp_view
-        c6_df_2 = c6_df[["create_time", "password_included", "email"]]
-        c6_df_2 = c6_df_2.rename(columns={"create_time": "modified_date"})
-
-        hibp_df = hibp_df[["modified_date", "password_included", "email"]]
-        hibp_df = hibp_df.append(c6_df_2, ignore_index=True)
-        hibp_df["modified_date"] = pd.to_datetime(hibp_df["modified_date"]).dt.date
-
-        hibp_df = hibp_df.groupby(
-            ["modified_date", "password_included"], as_index=False
-        ).agg({"email": ["count"]})
+        # c6_df = self.query_cyberSix_creds
+        # hibp_df = self.query_hibp_view
+        df = self.creds_view
+        df = df[["modified_date", "password_included", "email"]]
+        df["modified_date"] = pd.to_datetime(df["modified_date"]).dt.date
+        print(len(df))
+        df = df.groupby(["modified_date", "password_included"], as_index=False).agg(
+            {"email": ["count"]}
+        )
         idx = pd.date_range(self.start_date, self.end_date)
-        hibp_df.columns = hibp_df.columns.droplevel(1)
-        hibp_df = (
-            hibp_df.pivot(
-                index="modified_date", columns="password_included", values="email"
-            )
+        df.columns = df.columns.droplevel(1)
+        df = (
+            df.pivot(index="modified_date", columns="password_included", values="email")
             .fillna(0)
             .reset_index()
             .rename_axis(None)
         )
-        hibp_df.columns.name = None
-        hibp_df = (
-            hibp_df.set_index("modified_date")
+        df.columns.name = None
+        df = (
+            df.set_index("modified_date")
             .reindex(idx)
             .fillna(0.0)
             .rename_axis("added_date")
         )
-        hibp_df["modified_date"] = hibp_df.index
-        hibp_df["modified_date"] = hibp_df["modified_date"].dt.strftime("%m/%d/%y")
-        hibp_df = hibp_df.set_index("modified_date")
+        df["modified_date"] = df.index
+        df["modified_date"] = df["modified_date"].dt.strftime("%m/%d/%y")
+        df = df.set_index("modified_date")
 
-        ce_date_df = hibp_df.rename(
+        ce_date_df = df.rename(
             columns={True: "Passwords Included", False: "No Password"}
         )
         if len(ce_date_df.columns) == 0:
@@ -69,39 +63,21 @@ class Credentials:
 
     def breaches(self):
         """Return total number of breaches."""
-        all_breaches = self.query_hibp_view["breach_name"].append(
-            self.query_cyberSix_creds["breach_name"],
-        )
+        all_breaches = self.creds_view["breach_name"]
         return all_breaches.nunique()
 
     def breach_appendix(self):
         """Return breach name and description to be added to the appendix."""
-        hibp_df = self.query_hibp_view
-        c6_df = self.query_cyberSix_creds
-        c6_df_2 = c6_df[["breach_name", "description"]]
-        c6_df_2 = c6_df_2.rename(columns={"create_time": "modified_date"})
-        view_df_2 = hibp_df[["breach_name", "description"]]
-        view_df_2 = view_df_2.append(c6_df_2, ignore_index=True)
+        view_df = self.creds_view
+        view_df = view_df[["breach_name", "description"]]
 
-        view_df_2.drop_duplicates()
-        return view_df_2[["breach_name", "description"]]
+        view_df = view_df.drop_duplicates()
+        return view_df[["breach_name", "description"]]
 
     def breach_details(self):
         """Return breach details."""
-        hibp_df = self.query_hibp_view
-        c6_df = self.query_cyberSix_creds
-        c6_df_2 = c6_df[
-            [
-                "breach_name",
-                "create_time",
-                "description",
-                "breach_date",
-                "password_included",
-                "email",
-            ]
-        ]
-        c6_df_2 = c6_df_2.rename(columns={"create_time": "modified_date"})
-        view_df_2 = hibp_df[
+        view_df = self.creds_view
+        view_df = view_df[
             [
                 "breach_name",
                 "modified_date",
@@ -111,9 +87,8 @@ class Credentials:
                 "email",
             ]
         ]
-        view_df_2 = view_df_2.append(c6_df_2, ignore_index=True)
 
-        breach_df = view_df_2.groupby(
+        breach_df = view_df.groupby(
             [
                 "breach_name",
                 "modified_date",
@@ -136,7 +111,7 @@ class Credentials:
             ]
         ]
         breach_det_df = breach_df.rename(columns={"modified_date": "update_date"})
-
+        breach_det_df["update_date"] = pd.to_datetime(breach_det_df["update_date"])
         if len(breach_det_df) > 0:
             breach_det_df["update_date"] = breach_det_df["update_date"].dt.strftime(
                 "%m/%d/%y"
@@ -159,19 +134,13 @@ class Credentials:
 
     def password(self):
         """Return total number of credentials with passwords."""
-        pw_creds_csg = len(
-            self.query_cyberSix_creds[self.query_cyberSix_creds["password_included"]]
-        )
-        pw_creds_hibp = len(
-            self.query_hibp_view[self.query_hibp_view["password_included"]]
-        )
-        return pw_creds_csg + pw_creds_hibp
+        pw_creds = len(self.creds_view[self.creds_view["password_included"]])
+        return pw_creds
 
     def total(self):
         """Return total number of credentials found in breaches."""
-        df_cred_csg = self.query_cyberSix_creds.shape[0]
-        df_cred_hibp = self.query_hibp_view.shape[0]
-        return df_cred_csg + df_cred_hibp
+        df_cred = self.creds_view.shape[0]
+        return df_cred
 
 
 class Domains_Masqs:
