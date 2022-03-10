@@ -20,15 +20,14 @@ import sys
 from typing import Any, Dict
 
 # Third-Party Libraries
+from _version import __version__
+from data.db_query import connect, get_orgs
 import docopt
 import fitz
+from pages import init
 import pandas as pd
 from schema import And, Schema, SchemaError, Use
 from xhtml2pdf import pisa
-
-from ._version import __version__
-from .data.db_query import connect, get_orgs
-from .pages import init
 
 
 def embed(
@@ -281,3 +280,7 @@ def main():
 
     # Stop logging and clean up
     logging.shutdown()
+
+
+if __name__ == "__main__":
+    sys.exit(main())

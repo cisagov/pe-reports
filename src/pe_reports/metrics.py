@@ -1,10 +1,11 @@
 """Class methods for report metrics."""
 
 # Import query functions
-# Third-Party Libraries
-import pandas as pd
+# Standard Python Libraries
+import datetime
 
-from .data.db_query import (
+# Third-Party Libraries
+from data.db_query import (
     query_cyberSix_creds,
     query_darkweb,
     query_darkweb_cves,
@@ -12,23 +13,30 @@ from .data.db_query import (
     query_hibp_view,
     query_shodan,
 )
+import pandas as pd
 
 
 class Credentials:
     """Credentials class."""
 
-    def __init__(self, start_date, end_date, org_uid):
+    def __init__(self, trending_start_date, start_date, end_date, org_uid):
         """Initialize credentials class."""
-        self.start_date = start_date
         self.end_date = end_date
+        self.start_date = start_date
         self.org_uid = org_uid
+        self.trending_query_cyberSix_creds = query_cyberSix_creds(
+            org_uid, trending_start_date, end_date
+        )
+        self.trending_query_hibp_view = query_hibp_view(
+            org_uid, trending_start_date, end_date
+        )
         self.query_cyberSix_creds = query_cyberSix_creds(org_uid, start_date, end_date)
         self.query_hibp_view = query_hibp_view(org_uid, start_date, end_date)
 
     def by_days(self):
         """Return number of credentials by day."""
-        c6_df = self.query_cyberSix_creds
-        hibp_df = self.query_hibp_view
+        c6_df = self.trending_query_cyberSix_creds
+        hibp_df = self.trending_query_hibp_view
         c6_df_2 = c6_df[["create_time", "password_included", "email"]]
         c6_df_2 = c6_df_2.rename(columns={"create_time": "modified_date"})
 
@@ -56,6 +64,10 @@ class Credentials:
             .fillna(0.0)
             .rename_axis("added_date")
         )
+        group_limit = self.end_date + datetime.timedelta(1)
+        hibp_df = hibp_df.groupby(
+            pd.Grouper(level="added_date", freq="7d", origin=group_limit)
+        ).sum()
         hibp_df["modified_date"] = hibp_df.index
         hibp_df["modified_date"] = hibp_df["modified_date"].dt.strftime("%m/%d/%y")
         hibp_df = hibp_df.set_index("modified_date")
@@ -83,7 +95,7 @@ class Credentials:
         view_df_2 = hibp_df[["breach_name", "description"]]
         view_df_2 = view_df_2.append(c6_df_2, ignore_index=True)
 
-        view_df_2.drop_duplicates()
+        view_df_2 = view_df_2.drop_duplicates()
         return view_df_2[["breach_name", "description"]]
 
     def breach_details(self):
@@ -249,6 +261,7 @@ class Malware_Vulns:
     def __init__(self, start_date, end_date, org_uid):
         """Initialize Shodan vulns and malware class."""
         self.start_date = start_date
+
         self.end_date = end_date
         self.org_uid = org_uid
         insecure_df = query_shodan(
@@ -505,6 +518,18 @@ class Cyber_Six:
         dark_web_most_act = dark_web_mentions[["title", "comments_count"]]
         dark_web_most_act = dark_web_most_act[
             dark_web_most_act["comments_count"] != "NaN"
+        ]
+        dark_web_most_act = dark_web_most_act[dark_web_most_act["comments_count"] != ""]
+        dark_web_most_act = dark_web_most_act[
+            dark_web_most_act["comments_count"] != "None"
+        ]
+        dark_web_most_act = dark_web_most_act[
+            dark_web_most_act["comments_count"] != "NA"
+        ]
+        dark_web_most_act = dark_web_most_act[
+            pd.to_numeric(
+                dark_web_most_act["comments_count"], errors="coerce"
+            ).notnull()
         ]
         dark_web_most_act = dark_web_most_act.rename(
             columns={"comments_count": "Comments Count"}

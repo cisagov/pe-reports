@@ -4,12 +4,11 @@
 import datetime
 
 # Third-Party Libraries
+from charts import Charts
 import chevron
 
-from .charts import Charts
-
 # Import Classes
-from .metrics import Credentials, Cyber_Six, Domains_Masqs, Malware_Vulns
+from metrics import Credentials, Cyber_Six, Domains_Masqs, Malware_Vulns
 
 
 # Style and build tables
@@ -63,9 +62,9 @@ def buildAppendixList(df):
     return html
 
 
-def credential(chevron_dict, start_date, end_date, org_uid):
+def credential(chevron_dict, trending_start_date, start_date, end_date, org_uid):
     """Build exposed credential page."""
-    Credential = Credentials(start_date, end_date, org_uid)
+    Credential = Credentials(trending_start_date, start_date, end_date, org_uid)
     # Build exposed credential stacked bar chart
     width = 24
     height = 9.5
@@ -183,7 +182,7 @@ def dark_web(chevron_dict, start_date, end_date, org_uid):
     # Build dark web mentions over time line chart
     width = 19
     height = 9
-    name = "web_only_df_2"
+    name = "web_only_df2"
     title = ""
     x_label = "Dark Web Mentions"
     y_label = "Mentions count"
@@ -253,6 +252,8 @@ def init(source_html, datestring, org_name, org_uid):
     end_date = datetime.datetime.strptime(datestring, "%Y-%m-%d").date()
     days = datetime.timedelta(6)
     start_date = end_date - days
+    days = datetime.timedelta(27)
+    trending_start_date = end_date - days
     # if end_date.day == 15:
     #     start_date = datetime.datetime(end_date.year, end_date.month, 1)
     # else:
@@ -267,7 +268,7 @@ def init(source_html, datestring, org_name, org_uid):
     }
 
     chevron_dict, hibp_creds, cyber_creds = credential(
-        chevron_dict, start_date, end_date, org_uid
+        chevron_dict, trending_start_date, start_date, end_date, org_uid
     )
 
     chevron_dict, masq_df = masquerading(chevron_dict, start_date, end_date, org_uid)
