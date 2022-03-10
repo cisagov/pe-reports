@@ -111,8 +111,8 @@ class Charts:
         value_column = df[df.columns[1]]
         bar_width = 0.6
         fig, ax = plt.subplots()
-        ax.spines.right.set_visible(False)
-        ax.spines.top.set_visible(False)
+        # ax.spines.right.set_visible(False)
+        # ax.spines.top.set_visible(False)
         plt.barh(df.index, value_column, bar_width, align="center", color="#466fc6")
         plt.xticks(fontsize=7)
         plt.yticks(fontsize=7)
@@ -154,8 +154,8 @@ class Charts:
         name = self.name
         value_column = df[df.columns[1]]
         fig, ax = plt.subplots()
-        ax.spines.right.set_visible(False)
-        ax.spines.top.set_visible(False)
+        # ax.spines.right.set_visible(False)
+        # ax.spines.top.set_visible(False)
         plt.plot(df[df.columns[0]], value_column, label=x_label)
         plt.legend(loc=9, ncol=2, framealpha=0, fontsize=8, bbox_to_anchor=(0.5, -0.5))
         plt.gcf().set_size_inches(
@@ -168,15 +168,15 @@ class Charts:
         plt.grid(axis="y")
         plt.tight_layout()
 
-        for i, j in df[df.columns[1]].items():
-            ax.annotate(
-                j,
-                xy=(i, j),
-                textcoords="offset points",  # how to position the text
-                xytext=(0, 5),  # distance from text to points (x,y)
-                ha="center",  # horizontal alignment can be left, right or center
-                fontsize=7,
-            )
+        # for i, j in df[df.columns[1]].items():
+        #     ax.annotate(
+        #         j,
+        #         xy=(i, j),
+        #         textcoords="offset points",  # how to position the text
+        #         xytext=(0, 5),  # distance from text to points (x,y)
+        #         ha="center",  # horizontal alignment can be left, right or center
+        #         fontsize=7,
+        #     )
 
         plt.savefig(
             BASE_DIR + "/assets/" + name, transparent=True, dpi=500, bbox_inches="tight"

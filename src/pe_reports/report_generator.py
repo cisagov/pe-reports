@@ -149,9 +149,9 @@ def generate_reports(datestring, output_directory):
             # Insert Charts and Metrics into PDF
             (
                 source_html,
-                hibp_creds,
-                cyber_creds,
+                creds_sum,
                 masq_df,
+                dom_alerts_sum,
                 insecure_df,
                 vulns_df,
                 assets_df,
@@ -175,16 +175,14 @@ def generate_reports(datestring, output_directory):
             # Create Credential Exposure Excel file
             cred_xlsx = f"{output_directory}/{org_code}/compromised_credentials.xlsx"
             credWriter = pd.ExcelWriter(cred_xlsx, engine="xlsxwriter")
-            hibp_creds.to_excel(credWriter, sheet_name="HIBP_Credentials", index=False)
-            cyber_creds.to_excel(
-                credWriter, sheet_name="Cyber6_Credentials", index=False
-            )
+            creds_sum.to_excel(credWriter, sheet_name="Credentials", index=False)
             credWriter.save()
 
             # Create Domain Masquerading Excel file
             da_xlsx = f"{output_directory}/{org_code}/domain_alerts.xlsx"
             domWriter = pd.ExcelWriter(da_xlsx, engine="xlsxwriter")
             masq_df.to_excel(domWriter, sheet_name="Suspected Domains", index=False)
+            dom_alerts_sum.to_excel(domWriter, sheet_name="Domain Alerts", index=False)
             domWriter.save()
 
             # Create Suspected vulnerability Excel file
