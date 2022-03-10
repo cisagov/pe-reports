@@ -66,6 +66,7 @@ def buildAppendixList(df):
 def credential(chevron_dict, start_date, end_date, org_uid):
     """Build exposed credential page."""
     Credential = Credentials(start_date, end_date, org_uid)
+    print(Credential.by_days())
     # Build exposed credential stacked bar chart
     width = 24
     height = 9.5
@@ -94,7 +95,7 @@ def credential(chevron_dict, start_date, end_date, org_uid):
     }
     chevron_dict.update(creds_dict)
 
-    return chevron_dict, Credential.query_hibp_view, Credential.query_cyberSix_creds
+    return chevron_dict, Credential.creds_view
 
 
 def masquerading(chevron_dict, start_date, end_date, org_uid):
@@ -103,11 +104,14 @@ def masquerading(chevron_dict, start_date, end_date, org_uid):
     chevron_dict.update(
         {
             "domain_table": buildTable(Domain_Masq.summary(), ["table"], []),
+            "domain_alerts_table": buildTable(
+                Domain_Masq.alerts(), ["table"], [75, 25]
+            ),
             "suspectedDomains": Domain_Masq.count(),
-            "uniqueTlds": Domain_Masq.utlds(),
+            "domain_alerts": Domain_Masq.alert_count(),
         }
     )
-    return chevron_dict, Domain_Masq.df_mal
+    return chevron_dict, Domain_Masq.df_mal, Domain_Masq.alerts_sum()
 
 
 def mal_vuln(chevron_dict, start_date, end_date, org_uid):
@@ -264,11 +268,11 @@ def init(source_html, datestring, org_name, org_uid):
         "endDate": end,
     }
 
-    chevron_dict, hibp_creds, cyber_creds = credential(
+    chevron_dict, creds_sum = credential(chevron_dict, start_date, end_date, org_uid)
+
+    chevron_dict, masq_df, dom_alert_sum = masquerading(
         chevron_dict, start_date, end_date, org_uid
     )
-
-    chevron_dict, masq_df = masquerading(chevron_dict, start_date, end_date, org_uid)
 
     chevron_dict, insecure_df, vulns_df, assets_df = mal_vuln(
         chevron_dict, start_date, end_date, org_uid
@@ -282,9 +286,9 @@ def init(source_html, datestring, org_name, org_uid):
 
     return (
         html,
-        hibp_creds,
-        cyber_creds,
+        creds_sum,
         masq_df,
+        dom_alert_sum,
         insecure_df,
         vulns_df,
         assets_df,
