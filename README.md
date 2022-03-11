@@ -80,6 +80,34 @@ Options:
                                 "warning", "error", and "critical". [default: info]
 ```
 
+## Collect P&E Source Data ##
+
+- Add database and data source credentials to src/pe_reports/data/config.ini
+
+```console
+Usage:
+  pe-source DATA_SOURCE [--log-level=LEVEL] [--orgs=ORG_LIST] [--cybersix-methods=METHODS]
+
+Arguments:
+  DATA_SOURCE                       Source to collect data from. Valid values are "cybersixgill",
+                                    "dnstwist", "hibp", and "shodan".
+Options:
+  -h --help                         Show this message.
+  -v --version                      Show version information.
+  -l --log-level=LEVEL              If specified, then the log level will be set to
+                                    the specified value.  Valid values are "debug", "info",
+                                    "warning", "error", and "critical". [default: info]
+  -o --orgs=ORG_LIST                A comma-separated list of orgs to collect data for.
+                                    If not specified, data will be collected for all
+                                    orgs in the pe database. Orgs in the list must match the
+                                    IDs in the cyhy-db. E.g. DHS,DHS_ICE,DOC
+                                    [default: all]
+  -csg --cybersix-methods=METHODS   A comma-separated list of cybersixgill methods.
+                                    If not specified, all will run. Valid values are "alerts",
+                                    "credentials", "mentions", "topCVEs". E.g. alerts,mentions.
+                                    [default: all]
+```
+
 ## Contributing ##
 
 We welcome contributions!  Please see [`CONTRIBUTING.md`](CONTRIBUTING.md) for details.
