@@ -13,9 +13,6 @@ __pycache__
 .python-version
 *.egg-info
 src/pe_reports/template.html
-src/pe_reports/data/database.ini
-src/pe_reports/assets/dark_web_forum_pie.png
-src/pe_reports/assets/inc_date_df.png
-src/pe_reports/assets/pro_count.png
-src/pe_reports/assets/unverif_vuln_count.png
-src/pe_reports/assets/web_only_df_2.png
+src/pe_reports/assets/*.png
+build/*
+dist/*
