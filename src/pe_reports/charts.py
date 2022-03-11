@@ -168,14 +168,17 @@ class Charts:
         plt.grid(axis="y")
         plt.tight_layout()
 
+        # totals = df.sum(axis=1)
+        # for i, total in enumerate(totals):
+        #     ax.text(totals.index[i], total + 0, round(total), ha="center")
         # for i, j in df[df.columns[1]].items():
         #     ax.annotate(
         #         j,
         #         xy=(i, j),
         #         textcoords="offset points",  # how to position the text
-        #         xytext=(0, 5),  # distance from text to points (x,y)
+        #         xytext=(0, 0),  # distance from text to points (x,y)
         #         ha="center",  # horizontal alignment can be left, right or center
-        #         fontsize=7,
+        #         fontsize=2,
         #     )
 
         plt.savefig(
