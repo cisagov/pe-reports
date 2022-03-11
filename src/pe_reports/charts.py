@@ -49,16 +49,16 @@ class Charts:
         pie = plt.pie(
             value_column,
             startangle=0,
-            radius=1,
+            radius=1.75,
             autopct=autopct,
             textprops={"color": "w", "fontsize": 7},
         )
         plt.legend(
             pie[0],
             labels,
-            bbox_to_anchor=(1, 0.5),
+            bbox_to_anchor=(1, 0.75),
             loc="center right",
-            fontsize=7,
+            fontsize=6,
             bbox_transform=plt.gcf().transFigure,
             frameon=False,
         )
@@ -111,8 +111,8 @@ class Charts:
         value_column = df[df.columns[1]]
         bar_width = 0.6
         fig, ax = plt.subplots()
-        # ax.spines.right.set_visible(False)
-        # ax.spines.top.set_visible(False)
+        ax.spines["right"].set_visible(False)
+        ax.spines["top"].set_visible(False)
         plt.barh(df.index, value_column, bar_width, align="center", color="#466fc6")
         plt.xticks(fontsize=7)
         plt.yticks(fontsize=7)
@@ -154,8 +154,8 @@ class Charts:
         name = self.name
         value_column = df[df.columns[1]]
         fig, ax = plt.subplots()
-        # ax.spines.right.set_visible(False)
-        # ax.spines.top.set_visible(False)
+        ax.spines["right"].set_visible(False)
+        ax.spines["top"].set_visible(False)
         plt.plot(df[df.columns[0]], value_column, label=x_label)
         plt.legend(loc=9, ncol=2, framealpha=0, fontsize=8, bbox_to_anchor=(0.5, -0.5))
         plt.gcf().set_size_inches(
