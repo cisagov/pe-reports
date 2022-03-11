@@ -2,6 +2,7 @@
 
 # Standard Python Libraries
 from datetime import datetime
+import os
 
 # Third-Party Libraries
 import chevron
@@ -66,7 +67,6 @@ def buildAppendixList(df):
 def credential(chevron_dict, start_date, end_date, org_uid):
     """Build exposed credential page."""
     Credential = Credentials(start_date, end_date, org_uid)
-    print(Credential.by_days())
     # Build exposed credential stacked bar chart
     width = 24
     height = 9.5
@@ -260,12 +260,15 @@ def init(source_html, datestring, org_name, org_uid):
     else:
         start_date = datetime(end_date.year, end_date.month, 16)
 
+    # Get base directory to save images
+    base_dir = os.path.abspath(os.path.dirname(__file__))
     start = start_date.strftime("%m/%d/%Y")
     end = end_date.strftime("%m/%d/%Y")
     chevron_dict = {
         "department": org_name,
         "dateRange": start + " - " + end,
         "endDate": end,
+        "base_dir": base_dir,
     }
 
     chevron_dict, creds_sum = credential(chevron_dict, start_date, end_date, org_uid)
