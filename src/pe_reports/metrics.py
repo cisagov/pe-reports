@@ -27,9 +27,8 @@ class Credentials:
     def by_days(self):
         """Return number of credentials by day."""
         df = self.creds_view
-        df = df[["modified_date", "password_included", "email"]]
-        df["modified_date"] = pd.to_datetime(df["modified_date"]).dt.date
-        print(len(df))
+        df = df[["modified_date", "password_included", "email"]].copy()
+        df.loc[:, "modified_date"] = pd.to_datetime(df["modified_date"]).dt.date
         df = df.groupby(["modified_date", "password_included"], as_index=False).agg(
             {"email": ["count"]}
         )
@@ -51,10 +50,10 @@ class Credentials:
         df["modified_date"] = df.index
         df["modified_date"] = df["modified_date"].dt.strftime("%m/%d/%y")
         df = df.set_index("modified_date")
-
         df = df.rename(columns={True: "Passwords Included", False: "No Password"})
         if len(df.columns) == 0:
             df["Passwords Included"] = 0
+
         return df
 
     def breaches(self):
