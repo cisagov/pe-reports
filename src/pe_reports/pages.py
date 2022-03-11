@@ -64,9 +64,9 @@ def buildAppendixList(df):
     return html
 
 
-def credential(chevron_dict, start_date, end_date, org_uid):
+def credential(chevron_dict, trending_start_date, start_date, end_date, org_uid):
     """Build exposed credential page."""
-    Credential = Credentials(start_date, end_date, org_uid)
+    Credential = Credentials(trending_start_date, start_date, end_date, org_uid)
     # Build exposed credential stacked bar chart
     width = 24
     height = 9.5
@@ -254,12 +254,11 @@ def init(source_html, datestring, org_name, org_uid):
     # Format start_date and end_date for the bi-monthly reporting period.
     # If the given end_date is the 15th, then the start_date is the 1st.
     # Otherwise, the start_date will be the 16th of the respective month.
-    end_date = datetime.strptime(datestring, "%Y-%m-%d").date()
-    if end_date.day == 15:
-        start_date = datetime(end_date.year, end_date.month, 1)
-    else:
-        start_date = datetime(end_date.year, end_date.month, 16)
-
+    end_date = datetime.datetime.strptime(datestring, "%Y-%m-%d").date()
+    days = datetime.timedelta(6)
+    start_date = end_date - days
+    days = datetime.timedelta(27)
+    trending_start_date = end_date - days
     # Get base directory to save images
     base_dir = os.path.abspath(os.path.dirname(__file__))
     start = start_date.strftime("%m/%d/%Y")
@@ -271,7 +270,9 @@ def init(source_html, datestring, org_name, org_uid):
         "base_dir": base_dir,
     }
 
-    chevron_dict, creds_sum = credential(chevron_dict, start_date, end_date, org_uid)
+    chevron_dict, creds_sum = credential(
+        chevron_dict, trending_start_date, start_date, end_date, org_uid
+    )
 
     chevron_dict, masq_df, dom_alert_sum = masquerading(
         chevron_dict, start_date, end_date, org_uid
@@ -282,7 +283,7 @@ def init(source_html, datestring, org_name, org_uid):
     )
 
     chevron_dict, dark_web_mentions, alerts, top_cves = dark_web(
-        chevron_dict, start_date, end_date, org_uid
+        chevron_dict, trending_start_date, start_date, end_date, org_uid
     )
 
     html = chevron.render(source_html, chevron_dict)
