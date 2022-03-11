@@ -30,9 +30,7 @@ def connect():
     """Connect to PostgreSQL database."""
     conn = None
     try:
-        logging.info("Connecting to the PostgreSQL......")
         conn = psycopg2.connect(**CONN_PARAMS_DIC)
-        logging.info("Connection successful......")
     except OperationalError as err:
         show_psycopg2_exception(err)
         conn = None
