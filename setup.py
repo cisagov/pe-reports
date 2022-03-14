@@ -101,7 +101,7 @@ setup(
         "matplotlib == 3.3.4",
         "mongo-db-from-config@http://github.com/cisagov/mongo-db-from-config/tarball/develop",
         "openpyxl == 3.0.9",
-        "pandas == 1.1.5",
+        "pandas == 1.4.1",
         "psycopg2 == 2.9.3",
         "psycopg2-binary == 2.9.3",
         "pymongo == 4.0.1",
