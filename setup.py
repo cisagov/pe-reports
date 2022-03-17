@@ -44,7 +44,7 @@ def get_version(version_file):
 setup(
     name="pe_reports",
     # Versions should comply with PEP440
-    version=get_version("src/pe_reports/_version.py"),
+    version=get_version("src/_version.py"),
     description="Posture and Exposure Reports library",
     long_description=readme(),
     long_description_content_type="text/markdown",
