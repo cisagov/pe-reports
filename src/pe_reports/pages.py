@@ -14,7 +14,9 @@ from .metrics import Credentials, Cyber_Six, Domains_Masqs, Malware_Vulns
 
 
 # Style and build tables
-def buildTable(df, classList, sizingList=[]):
+def buildTable(
+    df, classList, sizingList=[], link_to_appendix=False, link_destination=False
+):
     """Build HTML tables from a pandas dataframe."""
     # SizingList specifies the proportional width of each column.
     # The number of integers in the list must equal the number of
@@ -38,11 +40,48 @@ def buildTable(df, classList, sizingList=[]):
         else:
             body += '<tr class="odd">\n'
         for col in range(0, len(df.columns)):
-            body += (
-                "<td style='width:{size}%'>".format(size=str(sizingList[col]))
-                + str(row[col])
-                + "</td>\n"
-            )
+            if link_to_appendix:
+                if col == 0:
+                    body += (
+                        "<td style='width:{size}%'><a href='#{link}'>".format(
+                            size=str(sizingList[col]),
+                            link=str(row[col]).replace(" ", "_"),
+                        )
+                        + str(row[col])
+                        + "</a></td>\n"
+                    )
+                else:
+                    body += (
+                        "<td style='width:{size}%'>".format(
+                            size=str(sizingList[col]),
+                        )
+                        + str(row[col])
+                        + "</td>\n"
+                    )
+            elif link_destination:
+                if col == 0:
+                    body += (
+                        "<td style='width:{size}%'><a name='{link}'></a>".format(
+                            size=str(sizingList[col]),
+                            link=str(row[col]).replace(" ", "_"),
+                        )
+                        + str(row[col])
+                        + "</td>\n"
+                    )
+                else:
+                    body += (
+                        "<td style='width:{size}%'>".format(
+                            size=str(sizingList[col]),
+                        )
+                        + str(row[col])
+                        + "</td>\n"
+                    )
+            else:
+                body += (
+                    "<td style='width:{size}%'>".format(size=str(sizingList[col]))
+                    + str(row[col])
+                    + "</td>\n"
+                )
 
         body += "</tr>\n"
         counter += 1
@@ -56,9 +95,9 @@ def buildAppendixList(df):
     html = "<div> \n"
 
     for row in df.itertuples(index=False):
-        html += """<p class="content"><b style="font-size: 15px;">{breach_name}</b><br>{description}
+        html += """<p class="content"><b style="font-size: 15px;"><a name="{link_name}"></a>{breach_name}</b><br>{description}
         </p>\n""".format(
-            breach_name=row[0], description=row[1]
+            breach_name=row[0], description=row[1], link_name=row[0].replace(" ", "_")
         )
     html += "\n</div>"
     return html
@@ -84,7 +123,9 @@ def credential(chevron_dict, start_date, end_date, org_uid):
         y_label,
     )
     cred_date_chart.stacked_bar()
-    breach_table = buildTable(Credential.breach_details(), ["table"])
+    breach_table = buildTable(
+        Credential.breach_details(), ["table"], link_to_appendix=True
+    )
 
     creds_dict = {
         "breach": Credential.breaches(),
@@ -158,9 +199,14 @@ def mal_vuln(chevron_dict, start_date, end_date, org_uid):
     risky_assets_table = buildTable(risky_assets, ["table"], [50, 50])
     verif_vulns = Malware_Vuln.verif_vulns()
     verif_vulns.columns = ["CVE", "IP", "Port"]
-    verif_vulns_table = buildTable(verif_vulns, ["table"], [40, 40, 20])
+    verif_vulns_table = buildTable(
+        verif_vulns, ["table"], [40, 40, 20], link_to_appendix=True
+    )
     verif_vulns_summary_table = buildTable(
-        Malware_Vuln.verif_vulns_summary(), ["table"], [15, 15, 15, 55]
+        Malware_Vuln.verif_vulns_summary(),
+        ["table"],
+        [15, 15, 15, 55],
+        link_destination=True,
     )
 
     # Update chevron dictionary
