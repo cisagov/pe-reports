@@ -185,7 +185,7 @@ def masquerading(chevron_dict, start_date, end_date, org_uid):
     return chevron_dict, Domain_Masq.df_mal, Domain_Masq.alerts_sum()
 
 
-def mal_vuln(chevron_dict, start_date, end_date, org_uid):
+def mal_vuln(chevron_dict, start_date, end_date, org_uid, source_html):
     """Build Malwares and Vulnerabilities page."""
     Malware_Vuln = Malware_Vulns(start_date, end_date, org_uid)
     # Build insecure protocol horizontal bar chart
@@ -232,28 +232,45 @@ def mal_vuln(chevron_dict, start_date, end_date, org_uid):
     verif_vulns_table = buildTable(
         verif_vulns, ["table"], [40, 40, 20], link_to_appendix=True
     )
-    verif_vulns_summary_table = buildTable(
-        Malware_Vuln.verif_vulns_summary(),
-        ["table"],
-        [15, 15, 15, 55],
-        link_destination=True,
-    )
 
     # Update chevron dictionary
     vulns_dict = {
         "verif_vulns": verif_vulns_table,
-        "verif_vulns_summary": verif_vulns_summary_table,
         "risky_assets": risky_assets_table,
         "riskyPorts": Malware_Vuln.risky_ports_count(),
         "verifVulns": Malware_Vuln.total_verif_vulns(),
         "unverifVulns": Malware_Vuln.unverified_vuln_count(),
     }
+
+    verif_vulns_summary = Malware_Vuln.verif_vulns_summary()
+    if len(verif_vulns_summary) > 0:
+
+        verif_vulns_summary_table = buildTable(
+            verif_vulns_summary,
+            ["table"],
+            [15, 15, 15, 55],
+            link_destination=True,
+        )
+        try:
+            basedir = os.path.abspath(os.path.dirname(__file__))
+            template = os.path.join(basedir, "template_vuln_app.html")
+            file = open(template)
+            vuln_html = file.read().replace("\n", " ")
+            # Close PDF
+            file.close()
+        except FileNotFoundError:
+            logging.error("Template cannot be found. It must be named: '%s'", template)
+            return 1
+        source_html = source_html + vuln_html
+        vulns_dict["verif_vulns_summary"] = verif_vulns_summary_table
+
     chevron_dict.update(vulns_dict)
     return (
         chevron_dict,
         Malware_Vuln.insecure_df,
         Malware_Vuln.vulns_df,
         Malware_Vuln.assets_df,
+        source_html,
     )
 
 
@@ -368,8 +385,8 @@ def init(datestring, org_name, org_uid):
         chevron_dict, start_date, end_date, org_uid
     )
 
-    chevron_dict, insecure_df, vulns_df, assets_df = mal_vuln(
-        chevron_dict, start_date, end_date, org_uid
+    chevron_dict, insecure_df, vulns_df, assets_df, source_html = mal_vuln(
+        chevron_dict, start_date, end_date, org_uid, source_html
     )
 
     chevron_dict, dark_web_mentions, alerts, top_cves = dark_web(
