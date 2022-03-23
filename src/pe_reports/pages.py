@@ -1,7 +1,7 @@
 """Collect and distribute graphical data to readable charts in the presentation."""
 
 # Standard Python Libraries
-from datetime import datetime
+import datetime
 import logging
 import os
 
@@ -104,15 +104,17 @@ def buildAppendixList(df):
     return html
 
 
-def credential(chevron_dict, start_date, end_date, org_uid, source_html):
+def credential(
+    chevron_dict, trending_start_date, start_date, end_date, org_uid, source_html
+):
     """Build exposed credential page."""
-    Credential = Credentials(start_date, end_date, org_uid)
+    Credential = Credentials(trending_start_date, start_date, end_date, org_uid)
     # Build exposed credential stacked bar chart
     width = 24
     height = 9.5
     name = "inc_date_df"
-    title = "Reported Exposures by Day"
-    x_label = "Date Reported"
+    title = "Reported Exposures by Week"
+    x_label = "Week Reported"
     y_label = "Creds Exposed"
     cred_date_chart = Charts(
         Credential.by_days(),
@@ -155,7 +157,6 @@ def credential(chevron_dict, start_date, end_date, org_uid, source_html):
             logging.error("Template cannot be found. It must be named: '%s'", template)
             return 1
         i = 0
-        print(frames)
         for chunk in frames:
             key = "breachAppendix" + str(i)
             appendix_html_1 = appendix_html % (key)
@@ -274,9 +275,9 @@ def mal_vuln(chevron_dict, start_date, end_date, org_uid, source_html):
     )
 
 
-def dark_web(chevron_dict, start_date, end_date, org_uid):
+def dark_web(chevron_dict, trending_start_date, start_date, end_date, org_uid):
     """Dark Web Mentions."""
-    Cyber6 = Cyber_Six(start_date, end_date, org_uid)
+    Cyber6 = Cyber_Six(trending_start_date, start_date, end_date, org_uid)
     # Build dark web mentions over time line chart
     width = 19
     height = 9
@@ -293,7 +294,7 @@ def dark_web(chevron_dict, start_date, end_date, org_uid):
         x_label,
         y_label,
     )
-    dark_mentions_chart.line_chart()
+    dark_mentions_chart.stacked_bar()
     # Build forum type / conversation content pie chart
     width = 19
     height = 9
@@ -360,12 +361,13 @@ def init(datestring, org_name, org_uid):
         logging.error("Template cannot be found. It must be named: '%s'", template)
         return 1
 
-    end_date = datetime.strptime(datestring, "%Y-%m-%d").date()
+    end_date = datetime.datetime.strptime(datestring, "%Y-%m-%d").date()
     if end_date.day == 15:
-        start_date = datetime(end_date.year, end_date.month, 1)
+        start_date = datetime.datetime(end_date.year, end_date.month, 1)
     else:
-        start_date = datetime(end_date.year, end_date.month, 16)
-
+        start_date = datetime.datetime(end_date.year, end_date.month, 16)
+    days = datetime.timedelta(27)
+    trending_start_date = end_date - days
     # Get base directory to save images
     base_dir = os.path.abspath(os.path.dirname(__file__))
     start = start_date.strftime("%m/%d/%Y")
@@ -378,7 +380,7 @@ def init(datestring, org_name, org_uid):
     }
 
     chevron_dict, creds_sum, source_html = credential(
-        chevron_dict, start_date, end_date, org_uid, source_html
+        chevron_dict, trending_start_date, start_date, end_date, org_uid, source_html
     )
 
     chevron_dict, masq_df, dom_alert_sum = masquerading(
@@ -390,7 +392,7 @@ def init(datestring, org_name, org_uid):
     )
 
     chevron_dict, dark_web_mentions, alerts, top_cves = dark_web(
-        chevron_dict, start_date, end_date, org_uid
+        chevron_dict, trending_start_date, start_date, end_date, org_uid
     )
     source_html = (
         source_html
