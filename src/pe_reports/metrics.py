@@ -1,6 +1,9 @@
 """Class methods for report metrics."""
 
 # Import query functions
+# Standard Python Libraries
+import datetime
+
 # Third-Party Libraries
 import pandas as pd
 
@@ -17,22 +20,26 @@ from .data.db_query import (
 class Credentials:
     """Credentials class."""
 
-    def __init__(self, start_date, end_date, org_uid):
+    def __init__(self, trending_start_date, start_date, end_date, org_uid):
         """Initialize credentials class."""
+        self.trending_start_date = trending_start_date
         self.start_date = start_date
         self.end_date = end_date
         self.org_uid = org_uid
+        self.trending_creds_view = query_creds_vw(
+            org_uid, trending_start_date, end_date
+        )
         self.creds_view = query_creds_vw(org_uid, start_date, end_date)
 
     def by_days(self):
         """Return number of credentials by day."""
-        df = self.creds_view
+        df = self.trending_creds_view
         df = df[["modified_date", "password_included", "email"]].copy()
         df.loc[:, "modified_date"] = pd.to_datetime(df["modified_date"]).dt.date
         df = df.groupby(["modified_date", "password_included"], as_index=False).agg(
             {"email": ["count"]}
         )
-        idx = pd.date_range(self.start_date, self.end_date)
+        idx = pd.date_range(self.trending_start_date, self.end_date)
         df.columns = df.columns.droplevel(1)
         df = (
             df.pivot(index="modified_date", columns="password_included", values="email")
@@ -47,6 +54,10 @@ class Credentials:
             .fillna(0.0)
             .rename_axis("added_date")
         )
+        group_limit = self.end_date + datetime.timedelta(1)
+        df = df.groupby(
+            pd.Grouper(level="added_date", freq="7d", origin=group_limit)
+        ).sum()
         df["modified_date"] = df.index
         df["modified_date"] = df["modified_date"].dt.strftime("%m/%d/%y")
         df = df.set_index("modified_date")
@@ -354,11 +365,24 @@ class Malware_Vulns:
 class Cyber_Six:
     """Dark web and Cyber Six data class."""
 
-    def __init__(self, start_date, end_date, org_uid):
+    def __init__(self, trending_start_date, start_date, end_date, org_uid):
         """Initialize Shodan vulns and malware class."""
+        self.trending_start_date = trending_start_date
         self.start_date = start_date
         self.end_date = end_date
         self.org_uid = org_uid
+
+        trending_dark_web_mentions = query_darkweb(
+            org_uid,
+            trending_start_date,
+            end_date,
+            "mentions",
+        )
+        trending_dark_web_mentions = trending_dark_web_mentions.drop(
+            columns=["organizations_uid", "mentions_uid"],
+            errors="ignore",
+        )
+        self.trending_dark_web_mentions = trending_dark_web_mentions
 
         dark_web_mentions = query_darkweb(
             org_uid,
@@ -460,11 +484,26 @@ class Cyber_Six:
 
     def dark_web_date(self):
         """Get dark web mentions by date."""
-        dark_web_mentions = self.dark_web_mentions
+        dark_web_mentions = self.trending_dark_web_mentions
         dark_web_date = dark_web_mentions[["date"]]
         dark_web_date = (
             dark_web_date.groupby(["date"])["date"].count().reset_index(name="Count")
         )
+        dark_web_date["date"] = pd.to_datetime(dark_web_date["date"])
+        dark_web_date = dark_web_date
+        idx = pd.date_range(self.trending_start_date, self.end_date)
+        dark_web_date = (
+            dark_web_date.set_index("date").reindex(idx).fillna(0.0).rename_axis("date")
+        )
+
+        group_limit = self.end_date + datetime.timedelta(1)
+        dark_web_date = dark_web_date.groupby(
+            pd.Grouper(level="date", freq="7d", origin=group_limit)
+        ).sum()
+        dark_web_date["date"] = dark_web_date.index
+        dark_web_date["date"] = dark_web_date["date"].dt.strftime("%m/%d/%y")
+        dark_web_date = dark_web_date[["date", "Count"]]
+        print(dark_web_date)
         return dark_web_date
 
     def dark_web_most_act(self):
