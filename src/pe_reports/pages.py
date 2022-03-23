@@ -2,6 +2,7 @@
 
 # Standard Python Libraries
 from datetime import datetime
+import logging
 import os
 
 # Third-Party Libraries
@@ -103,7 +104,7 @@ def buildAppendixList(df):
     return html
 
 
-def credential(chevron_dict, start_date, end_date, org_uid):
+def credential(chevron_dict, start_date, end_date, org_uid, source_html):
     """Build exposed credential page."""
     Credential = Credentials(start_date, end_date, org_uid)
     # Build exposed credential stacked bar chart
@@ -132,11 +133,40 @@ def credential(chevron_dict, start_date, end_date, org_uid):
         "creds": Credential.total(),
         "pw_creds": Credential.password(),
         "breach_table": breach_table,
-        "breachAppendix": buildAppendixList(Credential.breach_appendix()),
     }
+    breach_appendix = Credential.breach_appendix()
+
+    if len(breach_appendix) > 0:
+        # breach_appendix_list = np.array_split(breach_appendix.reset_index(drop=True),2)
+        S = 6
+        N = int(len(breach_appendix) / S)
+        frames = [
+            breach_appendix.iloc[i * S : (i + 1) * S].copy() for i in range(N + 1)
+        ]
+        # Load source HTML
+        try:
+            basedir = os.path.abspath(os.path.dirname(__file__))
+            template = os.path.join(basedir, "template_breach_app.html")
+            file = open(template)
+            appendix_html = file.read().replace("\n", " ")
+            # Close PDF
+            file.close()
+        except FileNotFoundError:
+            logging.error("Template cannot be found. It must be named: '%s'", template)
+            return 1
+        i = 0
+        print(frames)
+        for chunk in frames:
+            key = "breachAppendix" + str(i)
+            appendix_html_1 = appendix_html % (key)
+
+            source_html = source_html + appendix_html_1
+            creds_dict[key] = buildAppendixList(chunk)
+            i += 1
+
     chevron_dict.update(creds_dict)
 
-    return chevron_dict, Credential.creds_view
+    return chevron_dict, Credential.creds_view, source_html
 
 
 def masquerading(chevron_dict, start_date, end_date, org_uid):
@@ -295,11 +325,24 @@ def dark_web(chevron_dict, start_date, end_date, org_uid):
     return (chevron_dict, Cyber6.dark_web_mentions, Cyber6.alerts, Cyber6.top_cves)
 
 
-def init(source_html, datestring, org_name, org_uid):
+def init(datestring, org_name, org_uid):
     """Call each page of the report."""
     # Format start_date and end_date for the bi-monthly reporting period.
     # If the given end_date is the 15th, then the start_date is the 1st.
     # Otherwise, the start_date will be the 16th of the respective month.
+
+    # Load source HTML
+    try:
+        basedir = os.path.abspath(os.path.dirname(__file__))
+        template = os.path.join(basedir, "template.html")
+        file = open(template)
+        source_html = file.read().replace("\n", " ")
+        # Close PDF
+        file.close()
+    except FileNotFoundError:
+        logging.error("Template cannot be found. It must be named: '%s'", template)
+        return 1
+
     end_date = datetime.strptime(datestring, "%Y-%m-%d").date()
     if end_date.day == 15:
         start_date = datetime(end_date.year, end_date.month, 1)
@@ -317,7 +360,9 @@ def init(source_html, datestring, org_name, org_uid):
         "base_dir": base_dir,
     }
 
-    chevron_dict, creds_sum = credential(chevron_dict, start_date, end_date, org_uid)
+    chevron_dict, creds_sum, source_html = credential(
+        chevron_dict, start_date, end_date, org_uid, source_html
+    )
 
     chevron_dict, masq_df, dom_alert_sum = masquerading(
         chevron_dict, start_date, end_date, org_uid
@@ -330,7 +375,14 @@ def init(source_html, datestring, org_name, org_uid):
     chevron_dict, dark_web_mentions, alerts, top_cves = dark_web(
         chevron_dict, start_date, end_date, org_uid
     )
+    source_html = (
+        source_html
+        + """
+    </body>
 
+    </html>
+    """
+    )
     html = chevron.render(source_html, chevron_dict)
 
     return (
