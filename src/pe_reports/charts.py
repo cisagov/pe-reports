@@ -88,11 +88,12 @@ class Charts:
         plt.gcf().set_size_inches(
             width / CM_CONVERSION_FACTOR, height / CM_CONVERSION_FACTOR
         )
+        plt.ylim(ymin=0)
         plt.tight_layout()
         plt.gca().yaxis.set_major_locator(MaxNLocator(integer=True))
         plt.rc("axes", axisbelow=True)
         plt.grid(axis="y", zorder=0)
-        plt.xticks(rotation=30, ha="right")
+        plt.xticks(rotation=0)
         plt.savefig(BASE_DIR + "/assets/" + name, transparent=True, dpi=500)
         plt.clf()
 
