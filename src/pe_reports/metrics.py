@@ -59,7 +59,7 @@ class Credentials:
             pd.Grouper(level="added_date", freq="7d", origin=group_limit)
         ).sum()
         df["modified_date"] = df.index
-        df["modified_date"] = df["modified_date"].dt.strftime("%m/%d/%y")
+        df["modified_date"] = df["modified_date"].dt.strftime("%m/%d")
         df = df.set_index("modified_date")
         df = df.rename(columns={True: "Passwords Included", False: "No Password"})
         if len(df.columns) == 0:
@@ -501,8 +501,9 @@ class Cyber_Six:
             pd.Grouper(level="date", freq="7d", origin=group_limit)
         ).sum()
         dark_web_date["date"] = dark_web_date.index
-        dark_web_date["date"] = dark_web_date["date"].dt.strftime("%m/%d/%y")
-        dark_web_date = dark_web_date[["date", "Count"]]
+        dark_web_date["date"] = dark_web_date["date"].dt.strftime("%m/%d")
+        dark_web_date = dark_web_date.set_index("date")
+        dark_web_date = dark_web_date[["Count"]]
         print(dark_web_date)
         return dark_web_date
 
