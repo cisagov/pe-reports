@@ -550,6 +550,20 @@ CREATE TABLE public.top_cves (
 );
 
 --
+-- Name: topic_totals; Type: TABLE; Schema: public; Owner: pe
+--
+
+CREATE TABLE topic_totals
+(
+    cound_uuid        uuid default uuid_generate_v1() not null
+        constraint topic_totals_pk
+            primary key,
+    organizations_uid uuid                            not null,
+    content_count     integer                         not null,
+    count_date        text default to_char((CURRENT_DATE)::timestamp with time zone, 'YYYY-MM-DD'::text)
+);
+
+--
 -- Name: unique_software; Type: TABLE; Schema: public; Owner: pe
 --
 
