@@ -426,7 +426,7 @@ class Cyber_Six:
             .nlargest(10)
             .reset_index(name="Events")
         )
-        alerts_exec = alerts_exec.rename(columns={"site": "Site", "title": "Title"})
+        alerts_exec = alerts_exec.rename(columns={"site": "Site", "title": "Topic"})
         return alerts_exec
 
     def alerts_threats(self):
