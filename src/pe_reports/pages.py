@@ -215,7 +215,7 @@ def mal_vuln(chevron_dict, start_date, end_date, org_uid, source_html):
     x_label = "Unverified CVEs"
     y_label = ""
     unverif_vuln_chart = Charts(
-        Malware_Vuln.unverified_cve(),
+        Malware_Vuln.unverified_cve_count(),
         width,
         height,
         name,
@@ -225,10 +225,10 @@ def mal_vuln(chevron_dict, start_date, end_date, org_uid, source_html):
     )
     unverif_vuln_chart.h_bar()
     # Build tables
-    risky_assets = Malware_Vuln.isolate_risky_assets(Malware_Vuln.insecure_df)
-    risky_assets = risky_assets[:7]
-    risky_assets.columns = ["IP", "Protocol"]
-    risky_assets_table = buildTable(risky_assets, ["table"], [50, 50])
+    risky_assets = Malware_Vuln.insecure_protocols()
+    risky_assets = risky_assets[:5]
+    risky_assets.columns = ["Protocol", "IP", "port"]
+    risky_assets_table = buildTable(risky_assets, ["table"], [30, 40, 30])
     verif_vulns = Malware_Vuln.verif_vulns()
     verif_vulns.columns = ["CVE", "IP", "Port"]
     verif_vulns_table = buildTable(
@@ -326,7 +326,7 @@ def dark_web(chevron_dict, trending_start_date, start_date, end_date, org_uid):
     alerts_exec_table = buildTable(alert_exec, ["table"], [15, 70, 15])
     dark_web_act_table = buildTable(Cyber6.dark_web_most_act(), ["table"], [75, 25])
     alerts_site_table = buildTable(Cyber6.alerts_site(), ["table"], [50, 50])
-    top_cves_table = buildTable(Cyber6.top_cve_table(), ["table"], [30, 70])
+    top_cves_table = buildTable(Cyber6.top_cve_table(), ["table"], [15, 70, 15])
 
     dark_web_dict = {
         "darkWeb": Cyber6.dark_web_count(),
