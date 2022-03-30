@@ -252,7 +252,18 @@ class Malware_Vulns:
         insecure = insecure[
             (insecure["protocol"] != "http") & (insecure["protocol"] != "smtp")
         ]
-        return insecure[["ip", "protocol"]].drop_duplicates(keep="first")
+        insecure["port"] = insecure["port"].astype(str)
+        return insecure[["protocol", "ip", "port"]].drop_duplicates(keep="first")
+
+    def insecure_protocols(self):
+        """Get get risky assets grouped by protocol."""
+        risky_assets = self.isolate_risky_assets(self.insecure_df)
+        risky_assets = (
+            risky_assets.groupby("protocol")
+            .agg(lambda x: "  ".join(set(x)))
+            .reset_index()
+        )
+        return risky_assets
 
     def protocol_count(self):
         """Return a count for each insecure protocol."""
@@ -293,10 +304,10 @@ class Malware_Vulns:
 
         return verifVulns
 
-    def unverified_cve(self):
-        """Return top 15 unverified CVEs and their counts."""
-        insecure_df = self.insecure_df
-        unverif_df = insecure_df[insecure_df["type"] != "Insecure Protocol"]
+    @staticmethod
+    def unverified_cve(df):
+        """Subset insecure df to only potential vulnerabilities."""
+        unverif_df = df[df["type"] != "Insecure Protocol"]
         unverif_df = unverif_df.copy()
         unverif_df["potential_vulns"] = (
             unverif_df["potential_vulns"].sort_values().apply(lambda x: sorted(x))
@@ -307,11 +318,36 @@ class Malware_Vulns:
             .drop_duplicates(keep="first")
             .reset_index(drop=True)
         )
-        unverif_df["count"] = unverif_df["potential_vulns"].str.split(",").str.len()
+        unverif_df["potential_vulns_list"] = unverif_df["potential_vulns"].str.split(
+            ","
+        )
+        unverif_df["count"] = unverif_df["potential_vulns_list"].str.len()
+        return unverif_df
+
+    def unverified_cve_count(self):
+        """Return top 15 unverified CVEs and their counts."""
+        unverif_df = self.unverified_cve(self.insecure_df)
         unverif_df = unverif_df[["ip", "count"]]
         unverif_df = unverif_df.sort_values(by=["count"], ascending=False)
         unverif_df = unverif_df[:15].reset_index(drop=True)
         return unverif_df
+
+    def all_cves(self):
+        """Get all verified and unverified CVEs."""
+        unverif_df = self.unverified_cve(self.insecure_df)
+        vulns_df = self.vulns_df
+        verified_cves = vulns_df["cve"].tolist()
+        print(verified_cves)
+        all_cves = []
+        for i, r in unverif_df.iterrows():
+            for cve in r["potential_vulns_list"]:
+                cve = cve.strip("[]' ")
+                all_cves.append(cve)
+        all_cves += verified_cves
+        all_cves = list(set(all_cves))
+        print(all_cves)
+        print(len(all_cves))
+        return all_cves
 
     def unverified_vuln_count(self):
         """Return the count of IP addresses with unverified vulnerabilities."""
@@ -366,7 +402,7 @@ class Cyber_Six:
     """Dark web and Cyber Six data class."""
 
     def __init__(self, trending_start_date, start_date, end_date, org_uid):
-        """Initialize Shodan vulns and malware class."""
+        """Initialize Cybersixgill vulns and malware class."""
         self.trending_start_date = trending_start_date
         self.start_date = start_date
         self.end_date = end_date
@@ -585,4 +621,16 @@ class Cyber_Six:
         top_cve_table = top_cve_table.rename(
             columns={"cve_id": "CVE", "summary_short": "Description"}
         )
+        # Get all CVEs found in shodan
+        shodan_cves = Malware_Vulns(
+            self.start_date, self.end_date, self.org_uid
+        ).all_cves()
+        for i, r in top_cve_table.iterrows():
+            if r["CVE"] in shodan_cves:
+                print("we got a match")
+                print(r["CVE"])
+                top_cve_table.at[i, "Identified By"] = "Shodan"
+            else:
+                top_cve_table.at[i, "Identified By"] = ""
+
         return top_cve_table
