@@ -136,7 +136,7 @@ def mal_vuln(chevron_dict, start_date, end_date, org_uid):
     protocol_chart.h_bar()
     # Build unverified vulnerability horizontal bar chart
     width = 9
-    height = 4.7
+    height = 9
     name = "unverif_vuln_count"
     title = ""
     x_label = "Unverified CVEs"

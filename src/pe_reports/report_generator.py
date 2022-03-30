@@ -18,6 +18,7 @@ import logging
 import os
 import sys
 from typing import Any, Dict
+import zipfile
 
 # Third-Party Libraries
 import docopt
@@ -107,6 +108,21 @@ def convert_html_to_pdf(source_html, output_filename):
     # Return False on success and True on errors
     return pisa_status.err
 
+# Assign the name of the directory to zip
+def zip_dir(dir_name, datestring):
+    """Compress a directory."""
+    zip_file = zipfile.ZipFile(f"{dir_name}.zip", "w")
+    length = len(dir_name)
+    # Read all directory, subdirectories and file lists
+    for root, directories, files in os.walk(dir_name):
+        folder = root[length:]
+        for filename in files:
+            # Create the full filepath by using os module.
+            file_path = os.path.join(root, filename)
+            folder_path = os.path.join(folder, filename)
+            zip_file.write(file_path, folder_path)
+    logging.info("{}.zip file was created successfully!".format(dir_name))
+
 
 def generate_reports(datestring, output_directory):
     """Process steps for generating report data."""
@@ -174,20 +190,20 @@ def generate_reports(datestring, output_directory):
 
             # Create Credential Exposure Excel file
             cred_xlsx = f"{output_directory}/{org_code}/compromised_credentials.xlsx"
-            credWriter = pd.ExcelWriter(cred_xlsx, engine="xlsxwriter")
+            credWriter = pd.ExcelWriter(cred_xlsx, engine="xlsxwriter", options={'strings_to_urls': False})
             creds_sum.to_excel(credWriter, sheet_name="Credentials", index=False)
             credWriter.save()
 
             # Create Domain Masquerading Excel file
             da_xlsx = f"{output_directory}/{org_code}/domain_alerts.xlsx"
-            domWriter = pd.ExcelWriter(da_xlsx, engine="xlsxwriter")
+            domWriter = pd.ExcelWriter(da_xlsx, engine="xlsxwriter", options={'strings_to_urls': False})
             masq_df.to_excel(domWriter, sheet_name="Suspected Domains", index=False)
             dom_alerts_sum.to_excel(domWriter, sheet_name="Domain Alerts", index=False)
             domWriter.save()
 
             # Create Suspected vulnerability Excel file
             vuln_xlsx = f"{output_directory}/{org_code}/vuln_alerts.xlsx"
-            vulnWriter = pd.ExcelWriter(vuln_xlsx, engine="xlsxwriter")
+            vulnWriter = pd.ExcelWriter(vuln_xlsx, engine="xlsxwriter", options={'strings_to_urls': False})
             assets_df.to_excel(vulnWriter, sheet_name="Assets", index=False)
             insecure_df.to_excel(vulnWriter, sheet_name="Insecure", index=False)
             vulns_df.to_excel(vulnWriter, sheet_name="Verified Vulns", index=False)
@@ -195,7 +211,7 @@ def generate_reports(datestring, output_directory):
 
             # Create dark web Excel file
             mi_xlsx = f"{output_directory}/{org_code}/mention_incidents.xlsx"
-            miWriter = pd.ExcelWriter(mi_xlsx, engine="xlsxwriter")
+            miWriter = pd.ExcelWriter(mi_xlsx, engine="xlsxwriter", options={'strings_to_urls': False})
             dark_web_mentions.to_excel(
                 miWriter, sheet_name="Dark Web Mentions", index=False
             )
@@ -230,6 +246,10 @@ def generate_reports(datestring, output_directory):
         )
 
     logging.info("%s reports generated", generated_reports)
+
+    # Compress the results
+    zip_dir(output_directory, datestring)
+    
 
 
 def main():
