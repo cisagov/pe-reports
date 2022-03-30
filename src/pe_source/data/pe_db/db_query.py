@@ -65,7 +65,6 @@ def get_data_source_uid(source):
     sql = """SELECT * FROM data_source WHERE name = '{}'"""
     cur.execute(sql.format(source))
     sources = cur.fetchone()[0]
-    cur.close()
     cur = conn.cursor()
     # Update last_run in data_source table
     date = datetime.today().strftime("%Y-%m-%d")
@@ -315,3 +314,53 @@ def insert_sixgill_topCVEs(df):
         logging.info(error)
         conn.rollback()
     cursor.close()
+
+
+def execute_dnsmonitor_data(dataframe, table):
+    """Insert dnsmonitor data."""
+    conn = connect("")
+    tpls = [tuple(x) for x in dataframe.to_numpy()]
+    cols = ",".join(list(dataframe.columns))
+    print(cols)
+    sql = """INSERT INTO {}({}) VALUES %s
+    ON CONFLICT (domain_permutation)
+    DO UPDATE SET ipv4 = EXCLUDED.ipv4,
+        ipv6 = EXCLUDED.ipv6,
+        date_observed = EXCLUDED.date_observed,
+        mail_server = EXCLUDED.mail_server,
+        name_server = EXCLUDED.name_server,
+        sub_domain_uid = EXCLUDED.sub_domain_uid,
+        data_source_uid = EXCLUDED.data_source_uid;"""
+    cursor = conn.cursor()
+    extras.execute_values(
+        cursor,
+        sql.format(
+            table,
+            cols,
+        ),
+        tpls,
+    )
+    conn.commit()
+    print("DNSMonitor Data inserted using execute_values() successfully..")
+
+
+def execute_dnsmonitor_alert_data(dataframe, table):
+    """Insert dnsmonitor alert data."""
+    conn = connect("")
+    tpls = [tuple(x) for x in dataframe.to_numpy()]
+    cols = ",".join(list(dataframe.columns))
+    print(cols)
+    sql = """INSERT INTO {}({}) VALUES %s
+    ON CONFLICT (alert_type, sub_domain_uid, date, new_value)
+    DO NOTHING;"""
+    cursor = conn.cursor()
+    extras.execute_values(
+        cursor,
+        sql.format(
+            table,
+            cols,
+        ),
+        tpls,
+    )
+    conn.commit()
+    print("DNSMonitor Alert Data inserted using execute_values() successfully..")
