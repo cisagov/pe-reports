@@ -25,6 +25,7 @@ from .data.sixgill.source import (
     root_domains,
     top_cves,
 )
+from .data.sixgill.redact import redact_pii
 
 # Set todays date formatted YYYY-MM-DD and the start_date 30 days prior
 TODAY = date.today()
@@ -118,6 +119,11 @@ class Cybersixgill:
         # Fetch alert data with sixgill_org_id
         try:
             alerts_df = alerts(sixgill_org_id)
+            # Make sure both columns are strings
+            alerts_df.loc[:, "title"] = str(alerts_df["title"])
+            alerts_df.loc[:, "content"] = str(alerts_df["content"])
+            # Run redact
+            alerts_df = redact_pii(alerts_df, ["content", "title"])
             # Add pe_org_id
             alerts_df["organizations_uid"] = pe_org_uid
             # Add data source uid
@@ -125,7 +131,7 @@ class Cybersixgill:
             # Rename columns
             alerts_df = alerts_df.rename(columns={"id": "sixgill_id"})
         except Exception as e:
-            logging.error("Failed fetching alert data for %s", org_id)
+            logging.error("Failed fetching alert data or redact for %s", org_id)
             logging.error(e)
             return 1
 
@@ -153,6 +159,11 @@ class Cybersixgill:
         # Fetch mention data
         try:
             mentions_df = mentions(DATE_SPAN, aliases)
+            # Make sure both columns are strings
+            mentions_df.loc[:, "title"] = str(mentions_df["title"])
+            mentions_df.loc[:, "content"] = str(mentions_df["content"])
+            # Run redact script
+            mentions_df = redact_pii(mentions_df, ["content", "title"])
             mentions_df = mentions_df.rename(columns={"id": "sixgill_mention_id"})
             mentions_df["organizations_uid"] = pe_org_uid
             # Add data source uid
@@ -178,6 +189,7 @@ class Cybersixgill:
         # Fetch org root domains from Cybersixgill
         try:
             roots = root_domains(sixgill_org_id)
+            print(roots)
         except Exception as e:
             logging.error("Failed fetching root domains for %s", org_id)
             logging.error(e)
@@ -189,81 +201,94 @@ class Cybersixgill:
             creds_df["organizations_uid"] = pe_org_uid
             # Add data source uid
             creds_df["data_source_uid"] = source_uid
+            print(creds_df)
         except Exception as e:
             logging.error("Failed fetching credentials for %s", org_id)
             logging.error(e)
             return 1
 
-        # Change empty and ambiguous breach names
-        creds_df.loc[
-            creds_df["breach_name"] == "", "breach_name"
-        ] = "Cybersixgill_" + creds_df["breach_id"].astype(str)
 
-        creds_df.loc[
-            creds_df["breach_name"] == "Automatic leaked credentials detection",
-            "breach_name",
-        ] = "Cybersixgill_" + creds_df["breach_id"].astype(str)
-        creds_breach_df = creds_df[
-            ["breach_name", "description", "breach_date", "password", "data_source_uid"]
-        ].reset_index()
+        if not creds_df.empty: 
+            # Change empty and ambiguous breach names
+            creds_df.loc[
+                creds_df["breach_name"] == "", "breach_name"
+            ] = "Cybersixgill_" + creds_df["breach_id"].astype(str)
 
-        # Create password_included column
-        creds_breach_df["password_included"] = creds_breach_df["password"] != ""
-
-        # Group breaches and count the number of credentials
-        count_creds = creds_breach_df.groupby(
-            [
+            creds_df.loc[
+                creds_df["breach_name"] == "Automatic leaked credentials detection",
                 "breach_name",
-                "description",
-                "breach_date",
-                "password_included",
-                "data_source_uid",
-            ]
-        ).size()
-        creds_breach_df = count_creds.to_frame(name="exposed_cred_count").reset_index()
-        creds_breach_df["modified_date"] = creds_breach_df["breach_date"]
-
-        # Insert breach data into the PE database
-        try:
-            insert_sixgill_breaches(creds_breach_df)
-        except Exception as e:
-            logging.error("Failed inserting breaches for %s", org_id)
-            logging.error(e)
-            return 1
-
-        # Get breach uids and match to credentials
-        breach_dict = dict(get_breaches())
-        for i, row in creds_df.iterrows():
-            breach_uid = breach_dict[row["breach_name"]]
-            creds_df.at[i, "credential_breaches_uid"] = breach_uid
-
-        # Insert credential data into the PE database
-        creds_df = creds_df.rename(
-            columns={"domain": "sub_domain", "breach_date": "modified_date"}
-        )
-        creds_df = creds_df[
-            [
-                "modified_date",
-                "sub_domain",
-                "email",
-                "hash_type",
-                "name",
-                "login_id",
-                "password",
-                "phone",
+            ] = "Cybersixgill_" + creds_df["breach_id"].astype(str)
+            creds_df.loc[
+                creds_df["breach_name"] == "Untitled",
                 "breach_name",
-                "organizations_uid",
-                "data_source_uid",
-                "credential_breaches_uid",
+            ] = "Cybersixgill_" + creds_df["breach_id"].astype(str)
+            creds_breach_df = creds_df[
+                ["breach_name", "description", "breach_date", "password", "data_source_uid"]
+            ].reset_index()
+
+            # Create password_included column
+            creds_breach_df["password_included"] = creds_breach_df["password"] != ""
+
+            # Group breaches and count the number of credentials
+            count_creds = creds_breach_df.groupby(
+                [
+                    "breach_name",
+                    "description",
+                    "breach_date",
+                    "password_included",
+                    "data_source_uid",
+                ]
+            ).size()
+            creds_breach_df = count_creds.to_frame(name="exposed_cred_count").reset_index()
+            creds_breach_df["modified_date"] = creds_breach_df["breach_date"]
+            creds_breach_df = creds_breach_df.drop_duplicates(subset=['breach_name'], keep='last')
+
+            # Insert breach data into the PE database
+            try:
+                insert_sixgill_breaches(creds_breach_df)
+            except Exception as e:
+                logging.error("Failed inserting breaches for %s", org_id)
+                logging.error(e)
+                return 1
+
+            # Get breach uids and match to credentials
+            breach_dict = dict(get_breaches())
+            
+            for i, row in creds_df.iterrows():
+                breach_uid = breach_dict[row["breach_name"]]
+                creds_df.at[i, "credential_breaches_uid"] = breach_uid
+
+            # Insert credential data into the PE database
+            creds_df = creds_df.rename(
+                columns={"domain": "sub_domain", "breach_date": "modified_date"}
+            )
+            creds_df = creds_df[
+                [
+                    "modified_date",
+                    "sub_domain",
+                    "email",
+                    "hash_type",
+                    "name",
+                    "login_id",
+                    "password",
+                    "phone",
+                    "breach_name",
+                    "organizations_uid",
+                    "data_source_uid",
+                    "credential_breaches_uid",
+                ]
             ]
-        ]
-        try:
-            insert_sixgill_credentials(creds_df)
-        except Exception as e:
-            logging.error("Failed inserting credentials for %s", org_id)
-            logging.error(e)
-            return 1
-        return 0
+            creds_df.drop_duplicates(subset=['breach_name', 'name', 'email'], keep='last')
+            try:
+                insert_sixgill_credentials(creds_df)
+            except Exception as e:
+                logging.error("Failed inserting credentials for %s", org_id)
+                logging.error(e)
+                return 1
+            return 0
+        else:
+            logging.info("No credentials found for this org.")
+            return 0
 
     def get_topCVEs(self, source_uid):
         """Get top CVEs."""

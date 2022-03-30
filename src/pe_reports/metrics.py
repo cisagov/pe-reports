@@ -125,7 +125,7 @@ class Credentials:
             }
         )
 
-        return breach_det_df
+        return breach_det_df[:10]
 
     def password(self):
         """Return total number of credentials with passwords."""
@@ -147,7 +147,8 @@ class Domains_Masqs:
         self.end_date = end_date
         self.org_uid = org_uid
         df = query_domMasq(org_uid, start_date, end_date)
-        self.df_mal = df[df["malicious"]]
+        print(df["malicious"])
+        self.df_mal = df[df["malicious"]==True]
         self.dom_alerts_df = query_domMasq_alerts(org_uid, start_date, end_date)
 
     def count(self):
@@ -382,6 +383,7 @@ class Cyber_Six:
             columns=["organizations_uid", "alerts_uid"],
             errors="ignore",
         )
+        alerts.loc[alerts["site"].str.contains('highlight@'), "site"] = alerts["site"].str.split('@').str[2]
         self.alerts = alerts
 
         top_cves = query_darkweb_cves(
@@ -474,6 +476,7 @@ class Cyber_Six:
         dark_web_most_act = dark_web_most_act[
             dark_web_most_act["comments_count"] != "NaN"
         ]
+        dark_web_most_act = dark_web_most_act.dropna(subset=["comments_count"])
         dark_web_most_act = dark_web_most_act.rename(
             columns={"comments_count": "Comments Count"}
         )
@@ -527,6 +530,7 @@ class Cyber_Six:
         alerts_site = self.alerts[["site"]]
         alerts_site = alerts_site[alerts_site["site"] != "NaN"]
         alerts_site = alerts_site[alerts_site["site"] != ""]
+        alerts_site = alerts_site.dropna(subset=["site"])
         alerts_site = alerts_site[alerts_site["site"].str.startswith("market")]
         alerts_site = (
             alerts_site.groupby(["site"])["site"]

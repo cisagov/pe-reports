@@ -119,7 +119,7 @@ def creds(domain, from_date, to_date):
         "domain": domain,
         "from_date": from_date,
         "to_date": to_date,
-        "max_results": 100,
+        "max_results": 50,
         "skip": skip,
     }
     resp = credential_auth(params)
