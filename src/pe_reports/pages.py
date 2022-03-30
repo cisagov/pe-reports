@@ -140,10 +140,11 @@ def credential(
 
     if len(breach_appendix) > 0:
         # breach_appendix_list = np.array_split(breach_appendix.reset_index(drop=True),2)
-        S = 6
-        N = int(len(breach_appendix) / S)
+        rows = 6
+        n_pages = int(len(breach_appendix) / rows)
         frames = [
-            breach_appendix.iloc[i * S : (i + 1) * S].copy() for i in range(N + 1)
+            breach_appendix.iloc[i * rows : (i + 1) * rows].copy()
+            for i in range(n_pages + 1)
         ]
         # Load source HTML
         try:
