@@ -8,7 +8,6 @@ import pandas as pd
 import requests
 
 from .api import (
-    alerts_content,
     alerts_count,
     alerts_list,
     credential_auth,
@@ -99,10 +98,10 @@ def alerts(org_id):
         df_all_alerts = pd.concat(all_alerts).reset_index(drop=True)
 
     # Fetch the full content of each alert
-    for i, r in df_all_alerts.iterrows():
-        print(r["id"])
-        content = alerts_content(org_id, r["id"])
-        df_all_alerts.at[i, "content"] = content
+    # for i, r in df_all_alerts.iterrows():
+    #     print(r["id"])
+    #     content = alerts_content(org_id, r["id"])
+    #     df_all_alerts.at[i, "content"] = content
 
     return df_all_alerts
 
