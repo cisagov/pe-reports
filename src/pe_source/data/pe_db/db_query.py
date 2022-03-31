@@ -105,7 +105,8 @@ def insert_sixgill_alerts(df):
     cols = ",".join(list(df.columns))
     # SQL query to execute
     query = """INSERT INTO {}({}) VALUES %s
-    ON CONFLICT (sixgill_id) DO NOTHING;"""
+    ON CONFLICT (sixgill_id)
+    DO UPDATE SET content = EXCLUDED.content;"""
     cursor = conn.cursor()
     try:
         extras.execute_values(
