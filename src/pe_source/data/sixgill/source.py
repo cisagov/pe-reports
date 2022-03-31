@@ -8,6 +8,7 @@ import pandas as pd
 import requests
 
 from .api import (
+    alerts_content,
     alerts_count,
     alerts_list,
     credential_auth,
@@ -39,7 +40,7 @@ def mentions(date, aliases):
     for mention in aliases:
         mentions += '"' + mention + '"' + ","
     mentions = mentions[:-1]
-    query = "site:forum_* AND date:" + date + " AND " + "(" + str(mentions) + ")"
+    query = "date:" + date + " AND " + "(" + str(mentions) + ")"
     logging.info("Query:")
     logging.info(query)
     count = 1
@@ -96,6 +97,12 @@ def alerts(org_id):
         df_alerts = pd.DataFrame.from_dict(resp)
         all_alerts.append(df_alerts)
         df_all_alerts = pd.concat(all_alerts).reset_index(drop=True)
+
+    # Fetch the full content of each alert
+    for i, r in df_all_alerts.iterrows():
+        print(r["id"])
+        content = alerts_content(org_id, r["id"])
+        df_all_alerts.at[i, "content"] = content
 
     return df_all_alerts
 
