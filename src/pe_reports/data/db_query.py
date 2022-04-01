@@ -108,15 +108,12 @@ def query_domMasq_alerts(org_uid, start_date, end_date):
     conn = connect()
     try:
         sql = """SELECT * FROM domain_alerts
-        WHERE organizations_uid = %(org_uid)s
-        AND date BETWEEN %(start_date)s AND %(end_date)s"""
+        WHERE organizations_uid = %(org_uid)s"""
         df = pd.read_sql(
             sql,
             conn,
             params={
                 "org_uid": org_uid,
-                "start_date": start_date,
-                "end_date": end_date,
             },
         )
         return df
