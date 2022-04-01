@@ -314,17 +314,19 @@ def dark_web(chevron_dict, trending_start_date, start_date, end_date, org_uid):
     )
     pie_chart.pie()
 
-    # Limit the number of rows for large dataframes
-    dark_web_bad_actors = Cyber6.dark_web_bad_actors()[:10]
-    alert_exec = Cyber6.alerts_exec()[:8]
-
     # Build tables
     dark_web_sites_table = buildTable(Cyber6.dark_web_sites(), ["table"], [50, 50])
     alerts_threats_table = buildTable(Cyber6.alerts_threats(), ["table"], [40, 40, 20])
-    dark_web_actors_table = buildTable(dark_web_bad_actors, ["table"], [50, 50])
+    dark_web_actors_table = buildTable(
+        Cyber6.dark_web_bad_actors()[:10], ["table"], [50, 50]
+    )
     dark_web_tags_table = buildTable(Cyber6.dark_web_tags(), ["table"], [60, 40])
-    alerts_exec_table = buildTable(alert_exec, ["table"], [15, 70, 15])
+    alerts_exec_table = buildTable(Cyber6.alerts_exec()[:8], ["table"], [15, 70, 15])
+    asset_alerts_table = buildTable(Cyber6.asset_alerts()[:8], ["table"], [15, 70, 15])
     dark_web_act_table = buildTable(Cyber6.dark_web_most_act(), ["table"], [75, 25])
+    social_med_act_table = buildTable(
+        Cyber6.social_media_most_act(), ["table"], [75, 25]
+    )
     alerts_site_table = buildTable(Cyber6.alerts_site(), ["table"], [50, 50])
     top_cves_table = buildTable(Cyber6.top_cve_table(), ["table"], [15, 70, 15])
 
@@ -335,8 +337,10 @@ def dark_web(chevron_dict, trending_start_date, start_date, end_date, org_uid):
         "dark_web_actors": dark_web_actors_table,
         "dark_web_tags": dark_web_tags_table,
         "alerts_exec": alerts_exec_table,
+        "asset_alerts": asset_alerts_table,
         "dark_web_act": dark_web_act_table,
-        "alerts_site": alerts_site_table,
+        "social_med_act": social_med_act_table,
+        "markets_table": alerts_site_table,
         "top_cves": top_cves_table,
     }
 
