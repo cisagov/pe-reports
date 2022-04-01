@@ -337,7 +337,6 @@ class Malware_Vulns:
         unverif_df = self.unverified_cve(self.insecure_df)
         vulns_df = self.vulns_df
         verified_cves = vulns_df["cve"].tolist()
-        print(verified_cves)
         all_cves = []
         for i, r in unverif_df.iterrows():
             for cve in r["potential_vulns_list"]:
@@ -345,8 +344,6 @@ class Malware_Vulns:
                 all_cves.append(cve)
         all_cves += verified_cves
         all_cves = list(set(all_cves))
-        print(all_cves)
-        print(len(all_cves))
         return all_cves
 
     def unverified_vuln_count(self):
@@ -453,8 +450,10 @@ class Cyber_Six:
     def alerts_exec(self):
         """Get top executive mentions."""
         alerts = self.alerts
-        alerts_exec = alerts[["site", "title"]]
-        alerts_exec = alerts_exec[alerts_exec["site"] != "NaN"]
+        alerts_exec = alerts[alerts["alert_name"].str.contains("executive")]
+        alerts_exec = alerts_exec[["site", "title"]]
+        print(alerts_exec)
+        # alerts_exec = alerts_exec[alerts_exec["site"] != "NaN"]
         alerts_exec = alerts_exec[alerts_exec["site"] != ""]
         alerts_exec = (
             alerts_exec.groupby(["site", "title"])["title"]
@@ -463,7 +462,25 @@ class Cyber_Six:
             .reset_index(name="Events")
         )
         alerts_exec = alerts_exec.rename(columns={"site": "Site", "title": "Topic"})
+        print(alerts_exec)
         return alerts_exec
+
+    def asset_alerts(self):
+        """Get top executive mentions."""
+        alerts = self.alerts
+        asset_alerts = alerts[~alerts["alert_name"].str.contains("executive")]
+        asset_alerts = asset_alerts[["site", "title"]]
+        asset_alerts = asset_alerts[asset_alerts["site"] != "NaN"]
+        asset_alerts = asset_alerts[asset_alerts["site"] != ""]
+        asset_alerts = (
+            asset_alerts.groupby(["site", "title"])["title"]
+            .count()
+            .nlargest(10)
+            .reset_index(name="Events")
+        )
+        asset_alerts = asset_alerts.rename(columns={"site": "Site", "title": "Topic"})
+        print(asset_alerts)
+        return asset_alerts
 
     def alerts_threats(self):
         """Get threat alerts."""
@@ -540,13 +557,15 @@ class Cyber_Six:
         dark_web_date["date"] = dark_web_date["date"].dt.strftime("%m/%d")
         dark_web_date = dark_web_date.set_index("date")
         dark_web_date = dark_web_date[["Count"]]
-        print(dark_web_date)
         return dark_web_date
 
     def dark_web_most_act(self):
         """Get most active posts."""
         dark_web_mentions = self.dark_web_mentions
-        dark_web_most_act = dark_web_mentions[["title", "comments_count"]]
+        dark_web_most_act = dark_web_mentions[
+            dark_web_mentions["site"].str.startswith("forum", "market")
+        ]
+        dark_web_most_act = dark_web_most_act[["title", "comments_count"]]
         dark_web_most_act = dark_web_most_act[
             dark_web_most_act["comments_count"] != "NaN"
         ]
@@ -559,11 +578,34 @@ class Cyber_Six:
         dark_web_most_act = dark_web_most_act.sort_values(
             by="Comments Count", ascending=False
         )
-        dark_web_most_act = dark_web_most_act[:5]
+        dark_web_most_act = dark_web_most_act[:8]
         dark_web_most_act = dark_web_most_act.rename(columns={"title": "Title"})
         dark_web_most_act["Title"] = dark_web_most_act["Title"].str[:100]
         dark_web_most_act = dark_web_most_act.replace(r"^\s*$", "Untitled", regex=True)
         return dark_web_most_act
+
+    def social_media_most_act(self):
+        """Get most active posts."""
+        dark_web_mentions = self.dark_web_mentions
+        soc_med_most_act = dark_web_mentions[
+            ~dark_web_mentions["site"].str.startswith("forum", "market")
+        ]
+        soc_med_most_act = soc_med_most_act[["title", "comments_count"]]
+        soc_med_most_act = soc_med_most_act[soc_med_most_act["comments_count"] != "NaN"]
+        soc_med_most_act = soc_med_most_act.rename(
+            columns={"comments_count": "Comments Count"}
+        )
+        soc_med_most_act["Comments Count"] = (
+            soc_med_most_act["Comments Count"].astype(float).astype(int)
+        )
+        soc_med_most_act = soc_med_most_act.sort_values(
+            by="Comments Count", ascending=False
+        )
+        soc_med_most_act = soc_med_most_act[:8]
+        soc_med_most_act = soc_med_most_act.rename(columns={"title": "Title"})
+        soc_med_most_act["Title"] = soc_med_most_act["Title"].str[:100]
+        soc_med_most_act = soc_med_most_act.replace(r"^\s*$", "Untitled", regex=True)
+        return soc_med_most_act
 
     def dark_web_sites(self):
         """Get mentions by dark web sites (top 10)."""
