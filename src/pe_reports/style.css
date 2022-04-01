@@ -454,31 +454,31 @@
   }
 
   @frame content2 {
-    -pdf-frame-content: darkWebForums;
+    -pdf-frame-content: socMedCont;
     left: 1.5cm;
     width: 9cm;
-    height: 2cm;
-    top: 14.7cm;
+    height: 2.2cm;
+    top: 14.4cm;
   }
 
   @frame content3 {
-    -pdf-frame-content: potentialAlertsThreats;
+    -pdf-frame-content: mostActDarkCont;
     left: 11.1cm;
     width: 9cm;
-    height: 2cm;
-    top: 14.7cm;
+    height: 2.2cm;
+    top: 14.4cm;
   }
 
-  @frame graph3 {
-    -pdf-frame-content: darkWebSitesTable;
+  @frame table3 {
+    -pdf-frame-content: socMedActTable;
     left: 1.5cm;
     width: 9cm;
     height: 9cm;
     top: 16.5cm;
   }
 
-  @frame graph4 {
-    -pdf-frame-content: alertsThreatsTable;
+  @frame table4 {
+    -pdf-frame-content: darkWebActTable;
     left: 11.1cm;
     width: 9cm;
     height: 9cm;
@@ -514,50 +514,35 @@
 
     height: 6cm;
   }
-
   @frame TableIntro1 {
+    -pdf-frame-content: assetAlertsIntro;
     left: 1.5cm;
-    width: 9.4cm;
-    height: 3.8cm;
-    top: 3cm;
-  }
-
-  @frame TableIntro2 {
-    left: 11.1cm;
-    width: 9.4cm;
-    height: 3.8cm;
+    width: 19cm;
+    height: 1.5cm;
     top: 3cm;
   }
 
   @frame Table1 {
-    -pdf-frame-content: darkWebActorsTable;
+    -pdf-frame-content: assetAlertTable;
     left: 1.5cm;
-    width: 9cm;
+    width: 19cm;
     height: 9cm;
-    top: 6.9cm;
+    top: 4.4cm;
   }
 
+  @frame TableIntro2 {
+    -pdf-frame-content: execAlertsIntro;
+    left: 1.5cm;
+    width: 19cm;
+    height: 1.5cm;
+    top: 14.2cm;
+  }
   @frame Table2 {
-    -pdf-frame-content: darkWebTagsTable;
-    left: 11.1cm;
-    width: 9cm;
-    height: 9cm;
-    top: 6.9cm;
-  }
-
-  @frame PieChartIntro1 {
+    -pdf-frame-content: execAlertTable;
     left: 1.5cm;
     width: 19cm;
-    height: 1.2cm;
-    top: 15.2cm;
-  }
-
-  @frame graph3 {
-    -pdf-frame-content: darkWebPieChart;
-    left: 1cm;
-    width: 19cm;
-    height: 9.8cm;
-    top: 16.6cm;
+    height: 9cm;
+    top: 15.6cm;
   }
 }
 
@@ -588,50 +573,67 @@
     left: 1cm;
     height: 6cm;
   }
-
   @frame TableIntro1 {
+    -pdf-frame-content: threatActorsIntro;
     left: 1.5cm;
-    width: 19cm;
-    height: 1.5cm;
+    width: 9.4cm;
+    height: 3.8cm;
     top: 3cm;
   }
 
   @frame Table1 {
-    -pdf-frame-content: execAlertTable;
+    -pdf-frame-content: darkWebActorsTable;
     left: 1.5cm;
-    width: 19cm;
+    width: 9cm;
     height: 9cm;
-    top: 4.6cm;
+    top: 6.5cm;
   }
 
   @frame TableIntro2 {
-    left: 1.5cm;
-    width: 9cm;
-    height: 2.2cm;
-    top: 14.2cm;
+    -pdf-frame-content: alertsThreatsIntro;
+    left: 11.1cm;
+    width: 9.4cm;
+    height: 3.8cm;
+    top: 3cm;
   }
 
   @frame Table2 {
-    -pdf-frame-content: darkWebActTable;
-    left: 1.5cm;
+    -pdf-frame-content: alertsThreatsTable;
+    left: 11.1cm;
     width: 9cm;
-    height: 9.6cm;
-    top: 16.5cm;
+    height: 9cm;
+    top: 6.5cm;
   }
 
   @frame TableIntro3 {
-    left: 11.1cm;
+    -pdf-frame-content: darkWebForums;
+    left: 1.5cm;
     width: 9cm;
-    height: 2.2cm;
-    top: 14.2cm;
+    height: 2cm;
+    top: 14.7cm;
   }
 
   @frame Table3 {
-    -pdf-frame-content: alertSitesTable;
+    -pdf-frame-content: darkWebForumsTable;
+    left: 1.5cm;
+    width: 9cm;
+    height: 9.6cm;
+    top: 16.7cm;
+  }
+  @frame TableIntro4 {
+    -pdf-frame-content: inviteMarketsIntro;
+    left: 11.1cm;
+    width: 9cm;
+    height: 2cm;
+    top: 14.7cm;
+  }
+
+  @frame Table4 {
+    -pdf-frame-content: inviteMarketsTable;
     left: 11.1cm;
     width: 9cm;
     height: 9.6cm;
-    top: 16.5cm;
+    top: 16.7cm;
   }
 }
 
