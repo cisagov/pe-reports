@@ -15,6 +15,7 @@ from .data.db_query import (
     query_domMasq_alerts,
     query_shodan,
 )
+from .data.translator import translate
 
 
 class Credentials:
@@ -158,7 +159,7 @@ class Domains_Masqs:
         self.end_date = end_date
         self.org_uid = org_uid
         df = query_domMasq(org_uid, start_date, end_date)
-        self.df_mal = df[df["malicious"]]
+        self.df_mal = df[df["malicious"] is True]
         self.dom_alerts_df = query_domMasq_alerts(org_uid, start_date, end_date)
 
     def count(self):
@@ -179,6 +180,7 @@ class Domains_Masqs:
                 ]
             ]
             domain_sum = domain_sum[:10]
+            domain_sum.loc[domain_sum["ipv6"] == "", "ipv6"] = "NA"
             domain_sum = domain_sum.rename(
                 columns={
                     "domain_permutation": "Domain",
@@ -256,13 +258,19 @@ class Malware_Vulns:
         return insecure[["protocol", "ip", "port"]].drop_duplicates(keep="first")
 
     def insecure_protocols(self):
-        """Get get risky assets grouped by protocol."""
+        """Get risky assets grouped by protocol."""
         risky_assets = self.isolate_risky_assets(self.insecure_df)
         risky_assets = (
             risky_assets.groupby("protocol")
             .agg(lambda x: "  ".join(set(x)))
             .reset_index()
         )
+        if len(risky_assets.index) > 0:
+            risky_assets["ip"] = risky_assets["ip"].str[:40]
+            risky_assets.loc[risky_assets["ip"].str.len() == 40, "ip"] = risky_assets[
+                "ip"
+            ].str.cat(" ...")
+
         return risky_assets
 
     def protocol_count(self):
@@ -427,6 +435,8 @@ class Cyber_Six:
             columns=["organizations_uid", "mentions_uid"],
             errors="ignore",
         )
+        # Translate title field to english
+        dark_web_mentions = translate(dark_web_mentions, ["title"])
         self.dark_web_mentions = dark_web_mentions
 
         alerts = query_darkweb(
@@ -452,8 +462,7 @@ class Cyber_Six:
         alerts = self.alerts
         alerts_exec = alerts[alerts["alert_name"].str.contains("executive")]
         alerts_exec = alerts_exec[["site", "title"]]
-        print(alerts_exec)
-        # alerts_exec = alerts_exec[alerts_exec["site"] != "NaN"]
+        alerts_exec = alerts_exec[alerts_exec["site"] != "NaN"]
         alerts_exec = alerts_exec[alerts_exec["site"] != ""]
         alerts_exec = (
             alerts_exec.groupby(["site", "title"])["title"]
@@ -462,7 +471,6 @@ class Cyber_Six:
             .reset_index(name="Events")
         )
         alerts_exec = alerts_exec.rename(columns={"site": "Site", "title": "Topic"})
-        print(alerts_exec)
         return alerts_exec
 
     def asset_alerts(self):
@@ -479,7 +487,6 @@ class Cyber_Six:
             .reset_index(name="Events")
         )
         asset_alerts = asset_alerts.rename(columns={"site": "Site", "title": "Topic"})
-        print(asset_alerts)
         return asset_alerts
 
     def alerts_threats(self):
@@ -533,7 +540,7 @@ class Cyber_Six:
 
     def dark_web_count(self):
         """Get total number of dark web mentions."""
-        return len(self.dark_web_mentions.index)
+        return len(self.alerts.index)
 
     def dark_web_date(self):
         """Get dark web mentions by date."""
@@ -578,7 +585,7 @@ class Cyber_Six:
         dark_web_most_act = dark_web_most_act.sort_values(
             by="Comments Count", ascending=False
         )
-        dark_web_most_act = dark_web_most_act[:8]
+        dark_web_most_act = dark_web_most_act[:6]
         dark_web_most_act = dark_web_most_act.rename(columns={"title": "Title"})
         dark_web_most_act["Title"] = dark_web_most_act["Title"].str[:100]
         dark_web_most_act = dark_web_most_act.replace(r"^\s*$", "Untitled", regex=True)
@@ -588,10 +595,17 @@ class Cyber_Six:
         """Get most active posts."""
         dark_web_mentions = self.dark_web_mentions
         soc_med_most_act = dark_web_mentions[
-            ~dark_web_mentions["site"].str.startswith("forum", "market")
+            ~dark_web_mentions["site"].str.startswith(("forum", "market"))
         ]
+
+        # If the post is NaN or 0, set it to 1 for the post itself
+        soc_med_most_act.loc[
+            soc_med_most_act["comments_count"] == "NaN", "comments_count"
+        ] = 1
+        soc_med_most_act.loc[
+            soc_med_most_act["comments_count"] == 0, "comments_count"
+        ] = 1
         soc_med_most_act = soc_med_most_act[["title", "comments_count"]]
-        soc_med_most_act = soc_med_most_act[soc_med_most_act["comments_count"] != "NaN"]
         soc_med_most_act = soc_med_most_act.rename(
             columns={"comments_count": "Comments Count"}
         )
@@ -663,6 +677,8 @@ class Cyber_Six:
         top_cve_table = top_cve_table.rename(
             columns={"cve_id": "CVE", "summary_short": "Description"}
         )
+        top_cve_table["Identified By"] = "Cybersixgill"
+
         # Get all CVEs found in shodan
         shodan_cves = Malware_Vulns(
             self.start_date, self.end_date, self.org_uid
@@ -671,8 +687,6 @@ class Cyber_Six:
             if r["CVE"] in shodan_cves:
                 print("we got a match")
                 print(r["CVE"])
-                top_cve_table.at[i, "Identified By"] = "Shodan"
-            else:
-                top_cve_table.at[i, "Identified By"] = ""
+                top_cve_table.at[i, "Identified By"] += ",   Shodan"
 
         return top_cve_table
