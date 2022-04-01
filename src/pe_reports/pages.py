@@ -227,7 +227,7 @@ def mal_vuln(chevron_dict, start_date, end_date, org_uid, source_html):
     # Build tables
     risky_assets = Malware_Vuln.insecure_protocols()
     risky_assets = risky_assets[:5]
-    risky_assets.columns = ["Protocol", "IP", "port"]
+    risky_assets.columns = ["Protocol", "IP", "Port"]
     risky_assets_table = buildTable(risky_assets, ["table"], [30, 40, 30])
     verif_vulns = Malware_Vuln.verif_vulns()
     verif_vulns.columns = ["CVE", "IP", "Port"]
@@ -322,7 +322,7 @@ def dark_web(chevron_dict, trending_start_date, start_date, end_date, org_uid):
     )
     dark_web_tags_table = buildTable(Cyber6.dark_web_tags(), ["table"], [60, 40])
     alerts_exec_table = buildTable(Cyber6.alerts_exec()[:8], ["table"], [15, 70, 15])
-    asset_alerts_table = buildTable(Cyber6.asset_alerts()[:8], ["table"], [15, 70, 15])
+    asset_alerts_table = buildTable(Cyber6.asset_alerts()[:10], ["table"], [15, 70, 15])
     dark_web_act_table = buildTable(Cyber6.dark_web_most_act(), ["table"], [75, 25])
     social_med_act_table = buildTable(
         Cyber6.social_media_most_act(), ["table"], [75, 25]
