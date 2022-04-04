@@ -104,7 +104,7 @@ setup(
         "pandas == 1.1.5",
         "psycopg2 == 2.9.3",
         "psycopg2-binary == 2.9.3",
-        "pymongo == 4.0.1",
+        "pymongo == 4.1.0",
         "pymupdf == 1.19.0",
         "pytest-cov == 3.0.0",
         "python-pptx == 0.6.21",
