@@ -96,7 +96,6 @@ setup(
         "botocore == 1.24.10",
         "chevron == 0.14.0",
         "docopt == 0.6.2",
-        "googletrans == 4.0.0rc1",
         "glob2 == 0.7",
         "importlib-resources == 5.4.0",
         "matplotlib == 3.3.4",

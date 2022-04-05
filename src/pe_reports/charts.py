@@ -112,6 +112,7 @@ class Charts:
         value_column = df[df.columns[1]]
         bar_width = 0.6
         fig, ax = plt.subplots()
+        plt.set_loglevel("WARNING")
         ax.spines["right"].set_visible(False)
         ax.spines["top"].set_visible(False)
         plt.barh(df.index, value_column, bar_width, align="center", color="#466fc6")
@@ -153,34 +154,60 @@ class Charts:
         width = self.width
         height = self.height
         name = self.name
-        value_column = df[df.columns[1]]
+        value_column = df[df.columns[0]]
+        color = ["#1357BE", "#D0342C"]
         fig, ax = plt.subplots()
         ax.spines["right"].set_visible(False)
         ax.spines["top"].set_visible(False)
-        plt.plot(df[df.columns[0]], value_column, label=x_label)
-        plt.legend(loc=9, ncol=2, framealpha=0, fontsize=8, bbox_to_anchor=(0.5, -0.5))
+        plt.set_loglevel("WARNING")
+        plt.plot(df.index, value_column, color=color[0], label=df.columns[0])
+        if len(df.columns) == 2:
+            plt.plot(df.index, df[df.columns[1]], color=color[1], label=df.columns[1])
+
+        plt.ylim(ymin=0, ymax=int(df[df.columns].max().max() * 1.15))
+        # plt.legend(loc=9, ncol=2, framealpha=0, fontsize=8, bbox_to_anchor=(0.5, -0.5))
+        plt.legend(loc="upper right")
         plt.gcf().set_size_inches(
             width / CM_CONVERSION_FACTOR, height / CM_CONVERSION_FACTOR
         )
         plt.xticks(fontsize=7)
         plt.yticks(fontsize=7)
         plt.gca().set_ylabel(y_label, labelpad=10, fontdict={"size": 8})
-        plt.xticks(rotation=30, ha="right")
+        plt.xlabel(x_label, labelpad=10, fontdict={"size": 8})
+        plt.xticks(rotation=0)
         plt.grid(axis="y")
         plt.tight_layout()
 
         # totals = df.sum(axis=1)
         # for i, total in enumerate(totals):
         #     ax.text(totals.index[i], total + 0, round(total), ha="center")
-        # for i, j in df[df.columns[1]].items():
-        #     ax.annotate(
-        #         j,
-        #         xy=(i, j),
-        #         textcoords="offset points",  # how to position the text
-        #         xytext=(0, 0),  # distance from text to points (x,y)
-        #         ha="center",  # horizontal alignment can be left, right or center
-        #         fontsize=2,
-        #     )
+        for i, j in df[df.columns[0]].items():
+            if int(j):
+                plt.annotate(
+                    str(int(j)),
+                    xy=(i, j),
+                    textcoords="offset points",  # how to position the text
+                    xytext=(
+                        0,
+                        5,
+                    ),  # distance from text to points (x,y)
+                    ha="center",  # horizontal alignment can be left, right or center
+                    # fontsize=2,
+                )
+        if len(df.columns) == 2:
+            for i, j in df[df.columns[1]].items():
+                if int(j):
+                    plt.annotate(
+                        str(int(j)),
+                        xy=(i, j),
+                        textcoords="offset points",  # how to position the text
+                        xytext=(
+                            0,
+                            5,
+                        ),  # distance from text to points (x,y)
+                        ha="center",  # horizontal alignment can be left, right or center
+                        # fontsize=2,
+                    )
 
         plt.savefig(
             BASE_DIR + "/assets/" + name, transparent=True, dpi=500, bbox_inches="tight"
