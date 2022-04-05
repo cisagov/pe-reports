@@ -159,7 +159,8 @@ class Domains_Masqs:
         self.end_date = end_date
         self.org_uid = org_uid
         df = query_domMasq(org_uid, start_date, end_date)
-        self.df_mal = df[df["malicious"] is True]
+        print(df["malicious"] == True)
+        self.df_mal = df[df["malicious"] == True]
         self.dom_alerts_df = query_domMasq_alerts(org_uid, start_date, end_date)
 
     def count(self):

@@ -215,6 +215,7 @@
   }
 
   @frame table {
+    -pdf-frame-content: breachTable;
     left: 1.5cm;
     width: 19cm;
     height: 10cm;
@@ -449,7 +450,7 @@
     -pdf-frame-content: darkWebMentions;
     left: 1.5cm;
     width: 19cm;
-    height: 10cm;
+    height: 9cm;
     top: 6cm;
   }
 
