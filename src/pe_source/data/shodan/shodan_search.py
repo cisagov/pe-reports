@@ -22,8 +22,8 @@ def run_shodan_thread(api, org_chunk, thread_name):
     """Run a Shodan thread."""
     failed = []
     for org in org_chunk:
-        org_name = org[2]
-        org_uid = org[0]
+        org_name = org["cyhy_db_name"]
+        org_uid = org["org_uid"]
         logging.info("{} Running IPs for {}".format(thread_name, org_name))
         start, end = get_dates()
         try:
