@@ -88,7 +88,6 @@ def search_shodan(thread_name, ips, api, start, end, org_uid, org_name, failed):
     risky_ports, name_dict, risk_dict, av_dict, ac_dict, ci_dict = get_shodan_dicts()
 
     # Break up IPs into chunks of 100
-    # Throws flake8 E203 error which is ignored in .flake8
     tot_ips = len(ips)
     ip_chunks = [ips[i : i + 100] for i in range(0, tot_ips, 100)]
     tot = len(ip_chunks)
@@ -100,6 +99,7 @@ def search_shodan(thread_name, ips, api, start, end, org_uid, org_name, failed):
 
     # Loop through chunks and search Shodan
     for i, ip_chunk in enumerate(ip_chunks):
+        count = i + 1
         try_count = 1
         while try_count < 7:
             try:
@@ -140,25 +140,25 @@ def search_shodan(thread_name, ips, api, start, end, org_uid, org_name, failed):
                                     risk = unverified
                                     mitigation = "Verify asset is up to date, supported by the vendor, and configured securely"
                                     risk_data.append(
-                                        [
-                                            org_uid,
-                                            r["org"],
-                                            r["ip_str"],
-                                            d["port"],
-                                            d["_shodan"]["module"],
-                                            ftype,
-                                            name,
-                                            risk,
-                                            mitigation,
-                                            d["timestamp"],
-                                            prod,
-                                            serv,
-                                            r["tags"],
-                                            r["domains"],
-                                            r["hostnames"],
-                                            r["isp"],
-                                            asn,
-                                        ]
+                                        {
+                                            "organizations_uid": org_uid,
+                                            "organization": r["org"],
+                                            "ip": r["ip_str"],
+                                            "port": d["port"],
+                                            "protocol": d["_shodan"]["module"],
+                                            "type": ftype,
+                                            "name": name,
+                                            "potential_vulns": risk,
+                                            "mitigation": mitigation,
+                                            "timestamp": d["timestamp"],
+                                            "product": prod,
+                                            "server": serv,
+                                            "tags": r["tags"],
+                                            "domains": r["domains"],
+                                            "hostnames": r["hostnames"],
+                                            "isn": r["isp"],
+                                            "asn": asn,
+                                        }
                                     )
                             elif d["_shodan"]["module"] in risky_ports:
                                 ftype = "Insecure Protocol"
@@ -166,43 +166,45 @@ def search_shodan(thread_name, ips, api, start, end, org_uid, org_name, failed):
                                 risk = [risk_dict[d["_shodan"]["module"]]]
                                 mitigation = "Confirm open port has a required business use for internet exposure and ensure necessary safeguards are in place through TCP wrapping, TLS encryption, or authentication requirements"
                                 risk_data.append(
-                                    [
-                                        org_uid,
-                                        r["org"],
-                                        r["ip_str"],
-                                        d["port"],
-                                        d["_shodan"]["module"],
-                                        ftype,
-                                        name,
-                                        risk,
-                                        mitigation,
-                                        d["timestamp"],
-                                        prod,
-                                        serv,
-                                        r["tags"],
-                                        r["domains"],
-                                        r["hostnames"],
-                                        r["isp"],
-                                        asn,
-                                    ]
+                                    {
+                                        "organizations_uid": org_uid,
+                                        "organization": r["org"],
+                                        "ip": r["ip_str"],
+                                        "port": d["port"],
+                                        "protocol": d["_shodan"]["module"],
+                                        "type": ftype,
+                                        "name": name,
+                                        "potential_vulns": risk,
+                                        "mitigation": mitigation,
+                                        "timestamp": d["timestamp"],
+                                        "product": prod,
+                                        "server": serv,
+                                        "tags": r["tags"],
+                                        "domains": r["domains"],
+                                        "hostnames": r["hostnames"],
+                                        "isn": r["isp"],
+                                        "asn": asn,
+                                    }
                                 )
+
                             data.append(
-                                [
-                                    org_uid,
-                                    r["org"],
-                                    r["ip_str"],
-                                    d["port"],
-                                    d["_shodan"]["module"],
-                                    d["timestamp"],
-                                    prod,
-                                    serv,
-                                    r["tags"],
-                                    r["domains"],
-                                    r["hostnames"],
-                                    r["isp"],
-                                    asn,
-                                ]
+                                {
+                                    "organizations_uid": org_uid,
+                                    "organization": r["org"],
+                                    "ip": r["ip_str"],
+                                    "port": d["port"],
+                                    "protocol": d["_shodan"]["module"],
+                                    "timestamp": d["timestamp"],
+                                    "product": prod,
+                                    "server": serv,
+                                    "tags": r["tags"],
+                                    "domains": r["domains"],
+                                    "hostnames": r["hostnames"],
+                                    "isn": r["isp"],
+                                    "asn": asn,
+                                }
                             )
+
                 time.sleep(1)
                 break
             except shodan.APIError as e:
@@ -213,7 +215,7 @@ def search_shodan(thread_name, ips, api, start, end, org_uid, org_name, failed):
                         )
                     )
                     failed.append(
-                        "{} chunk {} failed 5 times and skipped".format(org_name, i + 1)
+                        "{} chunk {} failed 5 times and skipped".format(org_name, count)
                     )
                     break
                 logging.error("{} {} - {}".format(thread_name, e, org_name))
@@ -232,83 +234,14 @@ def search_shodan(thread_name, ips, api, start, end, org_uid, org_name, failed):
                         thread_name, org_name
                     )
                 )
-                failed.append("{} chunk {} failed and skipped".format(org_name, i + 1))
+                failed.append("{} chunk {} failed and skipped".format(org_name, count))
                 break
 
-        count = i + 1
         logging.info("{} {}/{} complete - {}".format(thread_name, count, tot, org_name))
 
-    df = pd.DataFrame(
-        data,
-        columns=[
-            "organizations_uid",
-            "organization",
-            "ip",
-            "port",
-            "protocol",
-            "timestamp",
-            "product",
-            "server",
-            "tags",
-            "domains",
-            "hostnames",
-            "isn",
-            "asn",
-        ],
-    )
-    risk_df = pd.DataFrame(
-        risk_data,
-        columns=[
-            "organizations_uid",
-            "organization",
-            "ip",
-            "port",
-            "protocol",
-            "type",
-            "name",
-            "potential_vulns",
-            "mitigation",
-            "timestamp",
-            "product",
-            "server",
-            "tags",
-            "domains",
-            "hostnames",
-            "isn",
-            "asn",
-        ],
-    )
-    vuln_df = pd.DataFrame(
-        vuln_data,
-        columns=[
-            "organizations_uid",
-            "organization",
-            "ip",
-            "port",
-            "protocol",
-            "timestamp",
-            "cve",
-            "severity",
-            "cvss",
-            "summary",
-            "product",
-            "attack_vector",
-            "av_description",
-            "attack_complexity",
-            "ac_description",
-            "confidentiality_impact",
-            "ci_description",
-            "integrity_impact",
-            "ii_Description",
-            "availability_impact",
-            "ai_description",
-            "tags",
-            "domains",
-            "hostnames",
-            "isn",
-            "asn",
-        ],
-    )
+    df = pd.DataFrame(data)
+    risk_df = pd.DataFrame(risk_data)
+    vuln_df = pd.DataFrame(vuln_data)
 
     # Grab the data source uid and add to each dataframe
     source_uid = get_data_source_uid("Shodan")
@@ -381,34 +314,34 @@ def is_verified(
             severity = ""
             cvss = None
         vuln_data.append(
-            [
-                org_uid,
-                r["org"],
-                r["ip_str"],
-                d["port"],
-                d["_shodan"]["module"],
-                d["timestamp"],
-                cve,
-                severity,
-                cvss,
-                summary,
-                product,
-                attack_vector,
-                av,
-                attack_complexity,
-                ac,
-                conf_imp,
-                ci,
-                int_imp,
-                ii,
-                avail_imp,
-                ai,
-                r["tags"],
-                r["domains"],
-                r["hostnames"],
-                r["isp"],
-                asn,
-            ]
+            {
+                "organizations_uid": org_uid,
+                "organization": r["org"],
+                "ip": r["ip_str"],
+                "port": d["port"],
+                "protocol": d["_shodan"]["module"],
+                "timestamp": d["timestamp"],
+                "cve": cve,
+                "severity": severity,
+                "cvss": cvss,
+                "summary": summary,
+                "product": product,
+                "attack_vector": attack_vector,
+                "av_description": av,
+                "attack_complexity": attack_complexity,
+                "ac_description": ac,
+                "confidentiality_impact": conf_imp,
+                "ci_description": ci,
+                "integrity_impact": int_imp,
+                "ii_Description": ii,
+                "availability_impact": avail_imp,
+                "ai_description": ai,
+                "tags": r["tags"],
+                "domains": r["domains"],
+                "hostnames": r["hostnames"],
+                "isn": r["isp"],
+                "asn": asn,
+            }
         )
     else:
         unverified.append(cve)
