@@ -31,7 +31,7 @@ class Shodan:
         else:
             pe_orgs_final = []
             for pe_org in pe_orgs:
-                if pe_org[2] in orgs_list:
+                if pe_org["cyhy_db_name"] in orgs_list:
                     pe_orgs_final.append(pe_org)
                 else:
                     continue

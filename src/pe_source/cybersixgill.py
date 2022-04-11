@@ -69,8 +69,8 @@ class Cybersixgill:
                 failed.append("Top CVEs")
 
         for pe_org in pe_orgs:
-            org_id = pe_org[2]
-            pe_org_uid = pe_org[0]
+            org_id = pe_org["cyhy_db_name"]
+            pe_org_uid = pe_org["org_uid"]
             # Only run on specified orgs
             if org_id in orgs_list or orgs_list == "all":
                 count += 1
