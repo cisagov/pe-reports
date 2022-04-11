@@ -38,10 +38,10 @@ def shodan_api_init():
             # Test api key
             api.info()
         except Exception:
-            logging.error("Invalid API key: {}".format(key))
+            logging.error("Invalid Shodan API key: {}".format(key))
             continue
         api_list.append(api)
-    logging.info("Number of valid API keys: {}".format(len(api_list)))
+    logging.info("Number of valid Shodan API keys: {}".format(len(api_list)))
     return api_list
 
 
