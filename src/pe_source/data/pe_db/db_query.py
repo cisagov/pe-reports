@@ -50,6 +50,8 @@ def get_orgs():
         sql = """SELECT * FROM organizations"""
         cur.execute(sql)
         pe_orgs = cur.fetchall()
+        keys = ("org_uid", "org_name", "cyhy_db_name")
+        pe_orgs = [dict(zip(keys, values)) for values in pe_orgs]
         cur.close()
         return pe_orgs
     except (Exception, psycopg2.DatabaseError) as error:
