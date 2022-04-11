@@ -89,8 +89,8 @@ def search_shodan(thread_name, ips, api, start, end, org_uid, org_name, failed):
 
     # Break up IPs into chunks of 100
     # Throws flake8 E203 error which is ignored in .flake8
-    ip_chunks = [ips[i : i + 100] for i in range(0, len(ips), 100)]
     tot_ips = len(ips)
+    ip_chunks = [ips[i : i + 100] for i in range(0, tot_ips, 100)]
     tot = len(ip_chunks)
     logging.info(
         "{} Split {} IPs into {} chunks - {}".format(
@@ -118,9 +118,8 @@ def search_shodan(thread_name, ips, api, start, end, org_uid, org_name, failed):
                             asn = d.get("ASN", None)
                             vulns = d.get("vulns", None)
                             if vulns is not None:
-                                cves = list(vulns.keys())
                                 unverified = []
-                                for cve in cves:
+                                for cve in list(vulns.keys()):
                                     # Check if CVEs are verified
                                     unverified, vuln_data = is_verified(
                                         vulns,
@@ -342,19 +341,19 @@ def is_verified(
         re = search_circl(cve)
         r_json = re.json()
         if r_json is not None:
-            summary = r_json.get("summary", None)
-            product = r_json.get("vulnerable_product", None)
+            summary = r_json.get("summary")
+            product = r_json.get("vulnerable_product")
             attack_vector = r_json.get("access", {}).get("vector")
-            av = av_dict.get(attack_vector, None)
+            av = av_dict.get(attack_vector)
             attack_complexity = r_json.get("access", {}).get("complexity")
-            ac = ac_dict.get(attack_complexity, None)
+            ac = ac_dict.get(attack_complexity)
             conf_imp = r_json.get("impact", {}).get("confidentiality")
-            ci = ci_dict.get(conf_imp, None)
+            ci = ci_dict.get(conf_imp)
             int_imp = r_json.get("impact", {}).get("integrity")
-            ii = ci_dict.get(int_imp, None)
+            ii = ci_dict.get(int_imp)
             avail_imp = r_json.get("impact", {}).get("availability")
-            ai = ci_dict.get(avail_imp, None)
-            cvss = r_json.get("cvss", None)
+            ai = ci_dict.get(avail_imp)
+            cvss = r_json.get("cvss")
             if cvss == 10:
                 severity = "Critical"
             elif cvss >= 7:
