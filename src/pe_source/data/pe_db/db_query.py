@@ -361,6 +361,5 @@ def insert_shodan_data(dataframe, table, thread, org_name, failed):
         logging.error("{} {} - {}".format(thread, e, org_name))
         failed.append("{} failed inserting into {}".format(org_name, table))
         conn.rollback()
-        cursor.close()
     cursor.close()
     return failed
