@@ -333,7 +333,7 @@ def insert_sixgill_topCVEs(df):
 
 
 def insert_shodan_data(dataframe, table, thread, org_name, failed):
-    """Insert shodan data into db."""
+    """Insert Shodan data into database."""
     conn = connect()
     tpls = [tuple(x) for x in dataframe.to_numpy()]
     cols = ",".join(list(dataframe.columns))

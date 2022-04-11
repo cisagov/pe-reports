@@ -24,7 +24,7 @@ def run_shodan_thread(api, org_chunk, thread_name):
     for org in org_chunk:
         org_name = org[2]
         org_uid = org[0]
-        logging.info("{} Runing IPs for {}".format(thread_name, org_name))
+        logging.info("{} Running IPs for {}".format(thread_name, org_name))
         start, end = get_dates()
         try:
             ips = get_ips(org_uid)
