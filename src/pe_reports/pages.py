@@ -111,7 +111,7 @@ def credential(
     Credential = Credentials(trending_start_date, start_date, end_date, org_uid)
     # Build exposed credential stacked bar chart
     width = 24
-    height = 9.5
+    height = 9
     name = "inc_date_df"
     title = "Trending Exposures by Week"
     x_label = "Week Reported"
@@ -125,7 +125,7 @@ def credential(
         x_label,
         y_label,
     )
-    cred_date_chart.stacked_bar()
+    cred_date_chart.line_chart()
     breach_table = buildTable(
         Credential.breach_details(), ["table"], link_to_appendix=True
     )
@@ -281,7 +281,7 @@ def dark_web(chevron_dict, trending_start_date, start_date, end_date, org_uid):
     Cyber6 = Cyber_Six(trending_start_date, start_date, end_date, org_uid)
     # Build dark web mentions over time line chart
     width = 18.5
-    height = 8.5
+    height = 8
     name = "web_only_df_2"
     title = ""
     x_label = "Dark Web Mentions"
@@ -295,24 +295,24 @@ def dark_web(chevron_dict, trending_start_date, start_date, end_date, org_uid):
         x_label,
         y_label,
     )
-    dark_mentions_chart.stacked_bar()
-    # Build forum type / conversation content pie chart
-    width = 19
-    height = 9
-    name = "dark_web_forum_pie"
-    title = ""
-    x_label = ""
-    y_label = ""
-    pie_chart = Charts(
-        Cyber6.dark_web_content(),
-        width,
-        height,
-        name,
-        title,
-        x_label,
-        y_label,
-    )
-    pie_chart.pie()
+    dark_mentions_chart.line_chart()
+    # # Build forum type / conversation content pie chart
+    # width = 19
+    # height = 9
+    # name = "dark_web_forum_pie"
+    # title = ""
+    # x_label = ""
+    # y_label = ""
+    # pie_chart = Charts(
+    #     Cyber6.dark_web_content(),
+    #     width,
+    #     height,
+    #     name,
+    #     title,
+    #     x_label,
+    #     y_label,
+    # )
+    # pie_chart.pie()
 
     # Build tables
     dark_web_sites_table = buildTable(Cyber6.dark_web_sites(), ["table"], [50, 50])
