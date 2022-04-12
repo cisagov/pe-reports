@@ -62,6 +62,10 @@ def translate(df, column_list=[]):
                         print(f"Failed translating. Trying again. Try #{count}")
                         count += 1
                         continue
+                    except Exception as e:
+                        print("Failed translating. Not an attribute error")
+                        break
+
 
         df_en[column].replace(translations, inplace=True)
     return df_en
