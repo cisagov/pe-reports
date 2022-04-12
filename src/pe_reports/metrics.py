@@ -267,10 +267,10 @@ class Malware_Vulns:
             .reset_index()
         )
         if len(risky_assets.index) > 0:
-            risky_assets["ip"] = risky_assets["ip"].str[:40]
-            risky_assets.loc[risky_assets["ip"].str.len() == 40, "ip"] = risky_assets[
+            risky_assets["ip"] = risky_assets["ip"].str[:30]
+            risky_assets.loc[risky_assets["ip"].str.len() == 30, "ip"] = risky_assets[
                 "ip"
-            ].str.cat(" ...")
+            ] + "  ..."
 
         return risky_assets
 
@@ -471,6 +471,7 @@ class Cyber_Six:
             .nlargest(10)
             .reset_index(name="Events")
         )
+        alerts_exec["title"] = alerts_exec["title"].str[:100]
         alerts_exec = alerts_exec.rename(columns={"site": "Site", "title": "Topic"})
         return alerts_exec
 
@@ -487,6 +488,7 @@ class Cyber_Six:
             .nlargest(10)
             .reset_index(name="Events")
         )
+        asset_alerts["title"] = asset_alerts["title"].str[:150]
         asset_alerts = asset_alerts.rename(columns={"site": "Site", "title": "Topic"})
         return asset_alerts
 
@@ -586,9 +588,11 @@ class Cyber_Six:
         dark_web_most_act = dark_web_most_act.sort_values(
             by="Comments Count", ascending=False
         )
-        dark_web_most_act = dark_web_most_act[:6]
+        dark_web_most_act = dark_web_most_act[:5]
+        # Translate title field to english
+        dark_web_most_act = translate(dark_web_most_act, ["title"])
         dark_web_most_act = dark_web_most_act.rename(columns={"title": "Title"})
-        dark_web_most_act["Title"] = dark_web_most_act["Title"].str[:100]
+        dark_web_most_act["Title"] = dark_web_most_act["Title"].str[:80]
         dark_web_most_act = dark_web_most_act.replace(r"^\s*$", "Untitled", regex=True)
         return dark_web_most_act
 
@@ -616,8 +620,9 @@ class Cyber_Six:
         soc_med_most_act = soc_med_most_act.sort_values(
             by="Comments Count", ascending=False
         )
-        soc_med_most_act = soc_med_most_act[:8]
-        soc_med_most_act = translate(soc_med_most_act, ["title"])
+        soc_med_most_act = soc_med_most_act[:6]
+        # Translate title field to english
+        # soc_med_most_act = translate(soc_med_most_act, ["title"])
         soc_med_most_act = soc_med_most_act.rename(columns={"title": "Title"})
         soc_med_most_act["Title"] = soc_med_most_act["Title"].str[:100]
         soc_med_most_act = soc_med_most_act.replace(r"^\s*$", "Untitled", regex=True)

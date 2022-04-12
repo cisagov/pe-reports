@@ -127,9 +127,6 @@ def generate_reports(datestring, output_directory):
             org_name = org[1]
             org_code = org[2]
 
-            if org_code not in ["DHS", "NASA"]:
-                continue
-
             logging.info("Running on %s", org_code)
 
             # Create folders in output directory
