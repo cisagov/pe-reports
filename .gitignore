@@ -17,3 +17,5 @@ src/pe_reports/assets/*.png
 src/pe_reports/data/*.ini
 build/*
 dist/*
+src/pe_reports/data/database.ini
+src/pe_reports/assets/inc_date_df.png

@@ -159,7 +159,8 @@ class Domains_Masqs:
         self.end_date = end_date
         self.org_uid = org_uid
         df = query_domMasq(org_uid, start_date, end_date)
-        self.df_mal = df[df["malicious"] is True]
+        print(df["malicious"] == True)
+        self.df_mal = df[df["malicious"] == True]
         self.dom_alerts_df = query_domMasq_alerts(org_uid, start_date, end_date)
 
     def count(self):
@@ -436,7 +437,7 @@ class Cyber_Six:
             errors="ignore",
         )
         # Translate title field to english
-        dark_web_mentions = translate(dark_web_mentions, ["title"])
+        # dark_web_mentions = translate(dark_web_mentions, ["title"])
         self.dark_web_mentions = dark_web_mentions
 
         alerts = query_darkweb(
@@ -616,6 +617,7 @@ class Cyber_Six:
             by="Comments Count", ascending=False
         )
         soc_med_most_act = soc_med_most_act[:8]
+        soc_med_most_act = translate(soc_med_most_act, ["title"])
         soc_med_most_act = soc_med_most_act.rename(columns={"title": "Title"})
         soc_med_most_act["Title"] = soc_med_most_act["Title"].str[:100]
         soc_med_most_act = soc_med_most_act.replace(r"^\s*$", "Untitled", regex=True)
