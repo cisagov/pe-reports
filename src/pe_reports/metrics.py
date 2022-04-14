@@ -1,10 +1,14 @@
 """Class methods for report metrics."""
 
-# Import query functions
+# Standard Python Libraries
+
+
 # Third-Party Libraries
+# Import query functions
 import pandas as pd
 
 from .data.db_query import (
+    getorgTopicCount,
     query_cyberSix_creds,
     query_darkweb,
     query_darkweb_cves,
@@ -489,6 +493,10 @@ class Cyber_Six:
     def dark_web_count(self):
         """Get total number of dark web mentions."""
         return len(self.dark_web_mentions.index)
+
+    def dark_web_topic_count(self, today):
+        """Get organization topic count."""
+        getorgTopicCount(today)
 
     def dark_web_date(self):
         """Get dark web mentions by date."""

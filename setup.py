@@ -73,13 +73,9 @@ setup(
         "License :: CC0 1.0 Universal (CC0 1.0) Public Domain Dedication",
         # Specify the Python versions you support here. In particular, ensure
         # that you indicate whether you support Python 2, Python 3 or both.
-        "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.6",
-        "Programming Language :: Python :: 3.7",
-        "Programming Language :: Python :: 3.8",
-        "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
     ],
-    python_requires=">=3.6",
+    python_requires=">=3.10.2",
     # What does your project relate to?
     keywords="posture and exposure report",
     packages=find_packages(where="src"),
@@ -95,6 +91,7 @@ setup(
         "boto3 == 1.21.19",
         "botocore == 1.24.19",
         "chevron == 0.14.0",
+        "click == 8.0.4",
         "docopt == 0.6.2",
         "glob2 == 0.7",
         "httpcore == 0.9.1",
@@ -115,7 +112,7 @@ setup(
         "reportlab == 3.6.6",
         "schema == 0.7.5",
         "setuptools == 58.1.0",
-        "spacy == 3.2.1",
+        "spacy == 3.2.4",
         "types-PyYAML == 6.0.4",
         "xhtml2pdf == 0.2.5",
     ],

@@ -2,6 +2,8 @@
 
 # Standard Python Libraries
 import logging
+import os
+import platform
 import sys
 
 # Third-Party Libraries
@@ -10,6 +12,8 @@ import pandas as pd
 import psycopg2
 from psycopg2 import OperationalError
 from psycopg2.extensions import AsIs
+import sshtunnel
+from sshtunnel import SSHTunnelForwarder
 
 from .config import config
 
@@ -29,14 +33,52 @@ def show_psycopg2_exception(err):
 def connect():
     """Connect to PostgreSQL database."""
     conn = None
-    try:
-        logging.info("Connecting to the PostgreSQL......")
-        conn = psycopg2.connect(**CONN_PARAMS_DIC)
-        logging.info("Connection successful......")
-    except OperationalError as err:
-        show_psycopg2_exception(err)
-        conn = None
-    return conn
+
+    if platform.system() != "Darwin":
+        try:
+            logging.info("Connecting to the PostgreSQL......")
+            conn = psycopg2.connect(**CONN_PARAMS_DIC)
+            logging.info("Connection successful......")
+        except OperationalError as err:
+            show_psycopg2_exception(err)
+            conn = None
+        return conn
+    else:
+        theport = thesshTunnel()
+        try:
+
+            logging.info("****SSH Tunnel Established****")
+
+            conn = psycopg2.connect(
+                host="127.0.0.1",
+                user=os.getenv("PE_DB_USER"),
+                password=os.getenv("PE_DB_PASSWORD"),
+                dbname=os.getenv("PE_DB_NAME"),
+                port=theport,
+            )
+
+            return conn
+        except OperationalError as err:
+            show_psycopg2_exception(err)
+            conn = None
+
+            return conn
+
+
+def thesshTunnel():
+    """SSH Tunnel to the Crossfeed database instance."""
+    server = SSHTunnelForwarder(
+        ("localhost"),
+        ssh_username="ubuntu",
+        ssh_pkey="~/Users/duhnc/.ssh/accessor_rsa",
+        remote_bind_address=(
+            "crossfeed-stage-db.c4a9ojyrk2io.us-east-1.rds.amazonaws.com",
+            5432,
+        ),
+    )
+    server.start()
+
+    return server.local_bind_port
 
 
 def close(conn):
@@ -161,6 +203,35 @@ def query_darkweb(org_uid, start_date, end_date, table):
     finally:
         if conn is not None:
             close(conn)
+
+
+def getorgTopicCount(today):
+    """Get all organizaiton names from P&E database."""
+    # global conn, cursor
+    conn = connect()
+    cursor = ""
+    resultDict = {}
+
+    try:
+        # Print all the databases
+        cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        query = """select organizations_uid, content_count from topic_totals where count_date like  %('%' + today)s"""
+        cursor.execute(query)
+        result = cursor.fetchall()
+
+        for row in result:
+            # print(row)
+            theorg = row[0]
+            thecount = row[1]
+            resultDict[theorg] = thecount
+
+        return resultDict
+    except sshtunnel.BaseSSHTunnelForwarderError:
+        logging.info(
+            "The ssh screen has not been started," " and will start momentairly."
+        )
+    finally:
+        conn.close()
 
 
 def query_darkweb_cves(table):
