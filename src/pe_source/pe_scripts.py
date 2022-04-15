@@ -35,8 +35,7 @@ from schema import And, Schema, SchemaError, Use
 
 from ._version import __version__
 from .cybersixgill import Cybersixgill
-
-# Configuration
+from .shodan import Shodan
 
 
 def run_pe_script(source, orgs_list, cybersix_methods):
@@ -55,6 +54,9 @@ def run_pe_script(source, orgs_list, cybersix_methods):
     if source == "cybersixgill":
         cybersix = Cybersixgill(orgs_list, cybersix_methods)
         cybersix.run_cybersixgill()
+    elif source == "shodan":
+        shodan = Shodan(orgs_list)
+        shodan.run_shodan()
 
 
 def main():

@@ -69,10 +69,8 @@ class Cybersixgill:
                 failed.append("Top CVEs")
 
         for pe_org in pe_orgs:
-            org_id = pe_org[2]
-            pe_org_uid = pe_org[0]
-            if org_id == "Treasury_AUC":
-                org_id = "TREASURY_AUC"
+            org_id = pe_org["cyhy_db_name"]
+            pe_org_uid = pe_org["org_uid"]
             # Only run on specified orgs
             if org_id in orgs_list or orgs_list == "all":
                 count += 1
@@ -224,8 +222,9 @@ class Cybersixgill:
         ).size()
         creds_breach_df = count_creds.to_frame(name="exposed_cred_count").reset_index()
         creds_breach_df["modified_date"] = creds_breach_df["breach_date"]
-        creds_breach_df.drop_duplicates(subset =["breach_name"],
-                     keep = "first", inplace = True)
+        creds_breach_df.drop_duplicates(
+            subset=["breach_name"], keep="first", inplace=True
+        )
 
         # Insert breach data into the PE database
         try:
