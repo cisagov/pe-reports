@@ -43,10 +43,10 @@
           <ul class="navbar-nav">
             <li class="nav-item">
               <a
-                class="nav-link {% if request.endpoint=='index' %}active{%endif %}"
+                class="nav-link {% if request.endpoint=='home.index' %}active{%endif %}"
                 id="home"
                 aria-current="page"
-                href="{{ url_for('index') }}"
+                href="{{ url_for('home.index') }}"
                 >Home</a
               >
             </li>

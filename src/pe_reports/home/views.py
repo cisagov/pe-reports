@@ -1,8 +1,3 @@
-
-
-
-
-
 """Flask application will add new stakeholder information to the PE Database.
 
 Automate the process to add stakeholder information to Cyber Sixgill portal.
@@ -16,11 +11,10 @@ Automate the process to add stakeholder information to Cyber Sixgill portal.
 # Local file import
 # from data.config import config1, config2
 
+# Third-Party Libraries
 from flask import Blueprint, render_template
 
-home_blueprint = Blueprint(
-    "home", __name__, template_folder="templates/home"
-)
+home_blueprint = Blueprint("home", __name__, template_folder="templates/home")
 
 
 @home_blueprint.route("/")

@@ -21,6 +21,7 @@ from flask_sqlalchemy import SQLAlchemy
 
 # cisagov Libraries
 from pe_reports.data.config import config
+from pe_reports.home.views import home_blueprint
 
 # Stakeholder views
 from pe_reports.stakeholder.views import stakeholder_blueprint
@@ -54,7 +55,7 @@ __all__ = ["pages", "report_generator", "stylesheet", "app"]
 # Register the flask apps
 app.register_blueprint(stakeholder_blueprint)
 # app.register_blueprint(manage_login_blueprint)
-# app.register_blueprint(home_blueprint)
+app.register_blueprint(home_blueprint)
 
 
 if __name__ == "__main__":
