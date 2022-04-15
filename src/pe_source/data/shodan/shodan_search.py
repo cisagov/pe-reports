@@ -141,23 +141,23 @@ def search_shodan(thread_name, ips, api, start, end, org_uid, org_name, failed):
                                     mitigation = "Verify asset is up to date, supported by the vendor, and configured securely"
                                     risk_data.append(
                                         {
-                                            "organizations_uid": org_uid,
-                                            "organization": r["org"],
-                                            "ip": r["ip_str"],
-                                            "port": d["port"],
-                                            "protocol": d["_shodan"]["module"],
-                                            "type": ftype,
-                                            "name": name,
-                                            "potential_vulns": risk,
-                                            "mitigation": mitigation,
-                                            "timestamp": d["timestamp"],
-                                            "product": prod,
-                                            "server": serv,
-                                            "tags": r["tags"],
+                                            "asn": asn,
                                             "domains": r["domains"],
                                             "hostnames": r["hostnames"],
+                                            "ip": r["ip_str"],
                                             "isn": r["isp"],
-                                            "asn": asn,
+                                            "mitigation": mitigation,
+                                            "name": name,
+                                            "organization": r["org"],
+                                            "organizations_uid": org_uid,
+                                            "port": d["port"],
+                                            "potential_vulns": risk,
+                                            "product": prod,
+                                            "protocol": d["_shodan"]["module"],
+                                            "server": serv,
+                                            "tags": r["tags"],
+                                            "timestamp": d["timestamp"],
+                                            "type": ftype,
                                         }
                                     )
                             elif d["_shodan"]["module"] in risky_ports:
@@ -167,41 +167,41 @@ def search_shodan(thread_name, ips, api, start, end, org_uid, org_name, failed):
                                 mitigation = "Confirm open port has a required business use for internet exposure and ensure necessary safeguards are in place through TCP wrapping, TLS encryption, or authentication requirements"
                                 risk_data.append(
                                     {
-                                        "organizations_uid": org_uid,
-                                        "organization": r["org"],
-                                        "ip": r["ip_str"],
-                                        "port": d["port"],
-                                        "protocol": d["_shodan"]["module"],
-                                        "type": ftype,
-                                        "name": name,
-                                        "potential_vulns": risk,
-                                        "mitigation": mitigation,
-                                        "timestamp": d["timestamp"],
-                                        "product": prod,
-                                        "server": serv,
-                                        "tags": r["tags"],
+                                        "asn": asn,
                                         "domains": r["domains"],
                                         "hostnames": r["hostnames"],
+                                        "ip": r["ip_str"],
                                         "isn": r["isp"],
-                                        "asn": asn,
+                                        "mitigation": mitigation,
+                                        "name": name,
+                                        "organization": r["org"],
+                                        "organizations_uid": org_uid,
+                                        "port": d["port"],
+                                        "potential_vulns": risk,
+                                        "product": prod,
+                                        "protocol": d["_shodan"]["module"],
+                                        "server": serv,
+                                        "tags": r["tags"],
+                                        "timestamp": d["timestamp"],
+                                        "type": ftype,
                                     }
                                 )
 
                             data.append(
                                 {
-                                    "organizations_uid": org_uid,
-                                    "organization": r["org"],
-                                    "ip": r["ip_str"],
-                                    "port": d["port"],
-                                    "protocol": d["_shodan"]["module"],
-                                    "timestamp": d["timestamp"],
-                                    "product": prod,
-                                    "server": serv,
-                                    "tags": r["tags"],
+                                    "asn": asn,
                                     "domains": r["domains"],
                                     "hostnames": r["hostnames"],
+                                    "ip": r["ip_str"],
                                     "isn": r["isp"],
-                                    "asn": asn,
+                                    "organization": r["org"],
+                                    "organizations_uid": org_uid,
+                                    "port": d["port"],
+                                    "product": prod,
+                                    "protocol": d["_shodan"]["module"],
+                                    "server": serv,
+                                    "tags": r["tags"],
+                                    "timestamp": d["timestamp"],
                                 }
                             )
 
@@ -297,50 +297,34 @@ def is_verified(
                 severity = "Low"
             else:
                 severity = None
-        else:
-            # Set cve info to null if Circl has no results
-            summary = ""
-            product = ""
-            attack_vector = ""
-            av = ""
-            attack_complexity = ""
-            ac = ""
-            conf_imp = ""
-            ci = ""
-            int_imp = ""
-            ii = ""
-            avail_imp = ""
-            ai = ""
-            severity = ""
-            cvss = None
         vuln_data.append(
             {
-                "organizations_uid": org_uid,
-                "organization": r["org"],
-                "ip": r["ip_str"],
-                "port": d["port"],
-                "protocol": d["_shodan"]["module"],
-                "timestamp": d["timestamp"],
+                "ac_description": ac or "",
+                "ai_description": ai or "",
+                "asn": asn,
+                "attack_complexity": attack_complexity or "",
+                "attack_vector": attack_vector or "",
+                "av_description": av or "",
+                "availability_impact": avail_imp or "",
+                "ci_description": ci or "",
+                "confidentiality_impact": conf_imp or "",
                 "cve": cve,
-                "severity": severity,
-                "cvss": cvss,
-                "summary": summary,
-                "product": product,
-                "attack_vector": attack_vector,
-                "av_description": av,
-                "attack_complexity": attack_complexity,
-                "ac_description": ac,
-                "confidentiality_impact": conf_imp,
-                "ci_description": ci,
-                "integrity_impact": int_imp,
-                "ii_Description": ii,
-                "availability_impact": avail_imp,
-                "ai_description": ai,
-                "tags": r["tags"],
+                "cvss": cvss or None,
                 "domains": r["domains"],
                 "hostnames": r["hostnames"],
+                "ii_Description": ii or "",
+                "integrity_impact": int_imp or "",
+                "ip": r["ip_str"],
                 "isn": r["isp"],
-                "asn": asn,
+                "organization": r["org"],
+                "organizations_uid": org_uid,
+                "port": d["port"],
+                "product": product or "",
+                "protocol": d["_shodan"]["module"],
+                "severity": severity or "",
+                "summary": summary or "",
+                "tags": r["tags"],
+                "timestamp": d["timestamp"],
             }
         )
     else:
