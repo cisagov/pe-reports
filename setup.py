@@ -97,8 +97,11 @@ setup(
         "chevron == 0.14.0",
         "docopt == 0.6.2",
         "glob2 == 0.7",
-        "flask_wtf",
         "flask",
+        "flask_wtf",
+        "flask_login",
+        "flask_migrate",
+        "flask_sqlalchemy"
         "importlib_resources == 5.4.0",
         "matplotlib == 3.3.4",
         "mongo-db-from-config@http://github.com/cisagov/mongo-db-from-config/tarball/develop",
