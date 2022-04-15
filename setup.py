@@ -87,12 +87,12 @@ setup(
     package_data={
         "pe_mailer": ["data/*"],
         "pe_reports": ["data/shell/*.pptx", "data/*.ini"],
-        "pe_source": ["data/*"],
+        "pe_source": ["data/*", "data/shodan/*", "data/sixgill/*", "data/pe_db/*"],
     },
     py_modules=[splitext(basename(path))[0] for path in glob("src/*.py")],
     include_package_data=True,
     install_requires=[
-        "boto3 == 1.21.10",
+        "boto3 == 1.21.41",
         "botocore == 1.24.10",
         "chevron == 0.14.0",
         "docopt == 0.6.2",
@@ -112,6 +112,7 @@ setup(
         "reportlab == 3.6.6",
         "schema == 0.7.5",
         "setuptools == 58.1.0",
+        "shodan ==1.27.0",
         "types-PyYAML == 6.0.4",
         "xhtml2pdf == 0.2.5",
     ],
