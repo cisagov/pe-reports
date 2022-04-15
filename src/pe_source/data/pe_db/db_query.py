@@ -6,6 +6,7 @@ import logging
 import sys
 
 # Third-Party Libraries
+import pandas as pd
 import psycopg2
 from psycopg2 import OperationalError
 import psycopg2.extras as extras
@@ -49,6 +50,8 @@ def get_orgs():
         sql = """SELECT * FROM organizations"""
         cur.execute(sql)
         pe_orgs = cur.fetchall()
+        keys = ("org_uid", "org_name", "cyhy_db_name")
+        pe_orgs = [dict(zip(keys, values)) for values in pe_orgs]
         cur.close()
         return pe_orgs
     except (Exception, psycopg2.DatabaseError) as error:
@@ -58,13 +61,27 @@ def get_orgs():
             close(conn)
 
 
+def get_ips(org_uid):
+    """Get IP data."""
+    conn = connect()
+    sql = """SELECT wa.asset as ip_address
+            FROM web_assets wa
+            WHERE wa.organizations_uid = %(org_uid)s
+            and wa.report_on = True
+            """
+    df = pd.read_sql(sql, conn, params={"org_uid": org_uid})
+    ips = list(df["ip_address"].values)
+    conn.close()
+    return ips
+
+
 def get_data_source_uid(source):
     """Get data source uid."""
     conn = connect()
     cur = conn.cursor()
     sql = """SELECT * FROM data_source WHERE name = '{}'"""
     cur.execute(sql.format(source))
-    sources = cur.fetchone()[0]
+    source = cur.fetchone()[0]
     cur.close()
     cur = conn.cursor()
     # Update last_run in data_source table
@@ -74,7 +91,7 @@ def get_data_source_uid(source):
     cur.execute(sql.format(date, source))
     cur.close()
     close(conn)
-    return sources
+    return source
 
 
 def insert_sixgill_alerts(df):
@@ -315,3 +332,36 @@ def insert_sixgill_topCVEs(df):
         logging.info(error)
         conn.rollback()
     cursor.close()
+
+
+def insert_shodan_data(dataframe, table, thread, org_name, failed):
+    """Insert Shodan data into database."""
+    conn = connect()
+    tpls = [tuple(x) for x in dataframe.to_numpy()]
+    cols = ",".join(list(dataframe.columns))
+    sql = """INSERT INTO {}({}) VALUES %s
+    ON CONFLICT (organizations_uid, ip, port, protocol, timestamp)
+    DO NOTHING;"""
+    cursor = conn.cursor()
+    try:
+        extras.execute_values(
+            cursor,
+            sql.format(
+                table,
+                cols,
+            ),
+            tpls,
+        )
+        conn.commit()
+        logging.info(
+            "{} Data inserted using execute_values() successfully - {}".format(
+                thread, org_name
+            )
+        )
+    except Exception as e:
+        logging.error("{} failed inserting into {}".format(org_name, table))
+        logging.error("{} {} - {}".format(thread, e, org_name))
+        failed.append("{} failed inserting into {}".format(org_name, table))
+        conn.rollback()
+    cursor.close()
+    return failed
