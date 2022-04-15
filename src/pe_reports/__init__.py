@@ -33,7 +33,7 @@ params = config()
 login_manager = LoginManager()
 # Flask implementation
 app = Flask(__name__)
-app.config["SECRET_KEY"] = os.getenv('FLASK_SECRET_KEY')
+app.config["SECRET_KEY"] = os.getenv("FLASK_SECRET_KEY")
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.config[
     "SQLALCHEMY_DATABASE_URI"
