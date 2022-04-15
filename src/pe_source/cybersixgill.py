@@ -4,6 +4,7 @@
 from datetime import date, datetime, timedelta
 import logging
 import sys
+import traceback
 
 from .data.pe_db.db_query import (
     get_breaches,
@@ -21,6 +22,7 @@ from .data.sixgill.source import (
     alias_organization,
     creds,
     cve_summary,
+    get_alerts_content,
     mentions,
     root_domains,
     top_cves,
@@ -127,6 +129,23 @@ class Cybersixgill:
         except Exception as e:
             logging.error("Failed fetching alert data for %s", org_id)
             logging.error(e)
+            return 1
+
+        # Get Alert content
+        try:
+            logging.info("Fetching alert content data for %s.", org_id)
+            for i, row in alerts_df.iterrows():
+                alert_id = row["sixgill_id"]
+                content_snip, asset_mentioned = get_alerts_content(
+                    sixgill_org_id, alert_id
+                )
+                alerts_df.at[i, "content_snip"] = content_snip
+                alerts_df.at[i, "asset_mentioned"] = asset_mentioned
+
+        except Exception as e:
+            logging.error("Failed fetching alert content for %s", org_id)
+            logging.error(e)
+            print(traceback.format_exc())
             return 1
 
         # Insert alert data into the PE database

@@ -94,7 +94,7 @@ def alerts_count(organization_id):
 
 
 def alerts_content(organization_id, alert_id):
-    """Get an alert's full content."""
+    """Get total alert content."""
     url = f"https://api.cybersixgill.com/alerts/actionable_alert_content/{alert_id}"
     auth = cybersix_token()
     headers = {
@@ -103,8 +103,15 @@ def alerts_content(organization_id, alert_id):
         "Authorization": "Bearer " + auth,
     }
     payload = {"organization_id": organization_id, "limit": 10000}
-    resp = requests.get(url, headers=headers, params=payload).json()
-    return str(resp["content"])
+    content = requests.get(url, headers=headers, params=payload).json()
+    try:
+        content = content["content"]["items"][0]["_source"]["content"]
+    except Exception as e:
+        print(e)
+        print("Falied getting content snip")
+        print(content)
+        content = ""
+    return content
 
 
 def dve_top_cves(size):
