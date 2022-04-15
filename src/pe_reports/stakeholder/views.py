@@ -16,7 +16,6 @@ import psutil
 import psycopg2
 import psycopg2.extras
 import requests
-import sublist3r
 
 # cisagov Libraries
 # Local file import
@@ -33,6 +32,7 @@ logging.basicConfig(
 # CSG credentials
 API_Client_ID = os.getenv("CSGUSER")
 API_Client_secret = os.environ.get("CSGSECRET")
+API_WHOIS = os.environ.get("WHOIS_VAR")
 
 conn = None
 cursor = None
@@ -352,7 +352,21 @@ def getSubdomain(domain):
     """Get all sub-domains from passed in root domain."""
     allsubs = []
 
-    subdomains = sublist3r.main(domain, 40, None, None, False, False, False, None)
+    url = "https://domains-subdomains-discovery.whoisxmlapi.com/api/v1"
+    payload = json.dumps(
+        {
+            "apiKey": f"{API_WHOIS}",
+            "domains": {"include": [f"{domain}"]},
+            "subdomains": {"include": ["*"], "exclude": []},
+        }
+    )
+    headers = {"Content-Type": "application/json"}
+    response = requests.request("POST", url, headers=headers, data=payload)
+    data = response.json()
+
+    subdomains = data["domainsList"]
+    print(subdomains)
+
     subisolated = ""
     for sub in subdomains:
 
