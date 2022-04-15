@@ -27,4 +27,4 @@ def index():
 
 if __name__ == "__main__":
     logging.info("The program has started...")
-    app.run(debug=False, ***REMOVED***8000)
+    app.run(debug=False, port=8000)
