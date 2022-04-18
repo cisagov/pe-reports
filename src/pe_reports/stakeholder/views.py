@@ -387,7 +387,6 @@ def theaddress(domain):
     try:
         gettheAddress = socket.gethostbyname(domain)
     except socket.gaierror:
-        pass
         logging.info("There is a problem with the Domain that you selected")
 
     return gettheAddress
