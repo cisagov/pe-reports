@@ -96,7 +96,6 @@ setup(
         "boto3 == 1.21.10",
         "botocore == 1.24.10",
         "chevron == 0.14.0",
-        "coverage == 6.3.2",
         "docopt",
         "glob2 == 0.7",
         "flask",
