@@ -12,7 +12,6 @@ import socket
 from flask import Blueprint, flash, redirect, render_template, url_for
 
 # from flask import Flask, flash, redirect,request, render_template, url_for
-import psutil
 import psycopg2
 import psycopg2.extras
 import requests
@@ -50,32 +49,6 @@ def getToken():
     r = r.text.split(":")
     r = r[1].lstrip('"').rsplit('"')[0]
     return r
-
-
-def cyhybastionConn():
-    """Check for cyhyDB connection and if not connected, make the connection."""
-    myprocess = os.popen("w")  # nosec
-
-    pro1 = myprocess.read()
-
-    if "bastion" in pro1:
-        logging.info("This application has a connection to the cyhy db...")
-        return True
-    else:
-
-        logging.info("There was a problem connecting to the cyhy bastion.")
-        return False
-
-
-def terminatecyhyssh():
-    """Terminate the cyhyDB connection."""
-    for theprocess in psutil.process_iter():
-        if theprocess.name() == "ssh":
-            logging.info("The process was found")
-            theprocess.terminate()
-            logging.info("The process was terminated")
-        else:
-            pass
 
 
 def getAgencies(org_name):
@@ -195,7 +168,6 @@ def setStakeholder(customer):
             cursor.close()
             conn.close()
             logging.info("The connection/query was completed and closed.")
-            terminatecyhyssh()
 
 
 def setCustRootDomain(customer, rootdomain, orgUUID):
@@ -239,7 +211,6 @@ def setCustRootDomain(customer, rootdomain, orgUUID):
             cursor.close()
             conn.close()
             logging.info("The connection/query was completed and closed.")
-            terminatecyhyssh()
 
 
 def setCustSubDomain(subdomain, rootUUID, rootname):
@@ -288,7 +259,6 @@ def setCustSubDomain(subdomain, rootUUID, rootname):
             cursor.close()
             conn.close()
             logging.info("The connection/query was completed and closed.")
-            terminatecyhyssh()
 
 
 def setCustomerExteralCSG(
@@ -344,7 +314,7 @@ def setCustomerExteralCSG(
             cursor.close()
             conn.close()
             logging.info("The connection/query was completed and closed.")
-            terminatecyhyssh()
+
     return iplist
 
 
@@ -575,10 +545,6 @@ def stakeholder():
 
     formExternal = InfoFormExternal()
 
-    # allCustIP = cyhyGet()[0]
-    cyhyconnected = cyhybastionConn()
-    # logging.info(f"The cyhy db is connected {cyhyconnected}")
-
     if formExternal.validate_on_submit():
         logging.info("Got to the submit validate")
         cust = formExternal.cust.data.upper()
@@ -595,19 +561,17 @@ def stakeholder():
         allValidIP = getallsubdomainIPS(custRootDomainValue)
 
         try:
-            # print(allDomain.values())
+
             if cust not in allDomain.values():
                 flash(f"You successfully submitted a new customer {cust} ", "success")
 
                 if setStakeholder(cust):
                     logging.info(f"The customer {cust} was entered.")
                     allDomain = list(getAgencies(cust).keys())[0]
-                    # print(allDomain)
 
                     if setCustRootDomain(cust, custRootDomainValue, allDomain):
                         rootUUID = getRootID(allDomain)[cust]
 
-                        # print(rootUUID)
                         logging.info(
                             f"The Root Domain {custRootDomainValue} "
                             f"was entered at root_domains."
@@ -639,6 +603,5 @@ def stakeholder():
         custRootDomain=custRootDomain,
         # custSubDomain=custSubDomain,
         custExecutives=custExecutives,
-        cyhyConnection=cyhyconnected,
         custDomainAliases=custDomainAliases,
     )
