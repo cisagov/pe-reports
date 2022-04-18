@@ -4,8 +4,6 @@ Automate the process to add stakeholder information to Cyber Sixgill portal.
 """
 # Standard Python Libraries
 
-# Standard Python Libraries
-
 
 # Third-Party Libraries
 # Local file import
