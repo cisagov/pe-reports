@@ -74,10 +74,13 @@ setup(
         # Specify the Python versions you support here. In particular, ensure
         # that you indicate whether you support Python 2, Python 3 or both.
         "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 3.6",
+        "Programming Language :: Python :: 3.7",
+        "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
     ],
-    python_requires=">=3.9",
+    python_requires=">=3.6",
     # What does your project relate to?
     keywords="posture and exposure report",
     packages=find_packages(where="src"),
@@ -93,7 +96,7 @@ setup(
         "boto3 == 1.21.10",
         "botocore == 1.24.10",
         "chevron == 0.14.0",
-        "coverage == 4.3.4"
+        "coverage == 5.2.1",
         "docopt",
         "glob2 == 0.7",
         "flask",
