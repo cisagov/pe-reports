@@ -14,7 +14,6 @@ import logging
 import os
 
 # Third-Party Libraries
-# Third party packages
 from flask import Flask
 from flask_login import LoginManager
 from flask_migrate import Migrate
@@ -22,9 +21,9 @@ from flask_sqlalchemy import SQLAlchemy
 
 # cisagov Libraries
 from pe_reports.data.config import config
-from pe_reports.home.views import home_blueprint
 
 # Stakeholder views
+from pe_reports.home.views import home_blueprint
 from pe_reports.stakeholder.views import stakeholder_blueprint
 
 from ._version import __version__  # noqa: F401

@@ -9,6 +9,7 @@ from unittest.mock import patch
 import pytest
 
 # cisagov Libraries
+from pe_reports import app as flask_app
 import pe_reports.report_generator
 
 log_levels = (
@@ -104,3 +105,24 @@ def test_reports_bad_log_level():
         except SystemExit as sys_exit:
             return_code = sys_exit.code
         assert return_code == 1, "main() should exit with error"
+
+
+@pytest.fixture
+def client():
+    """Create client to test flask application."""
+    flask_app.config.update({"TESTING": True})
+
+    with flask_app.test_client() as client:
+        yield client
+
+
+def test_home_page(client):
+    """Test flask home.html."""
+    resp = client.get("/")
+    assert resp.status_code == 200
+
+
+def test_stakeholder_page(client):
+    """Test flask home_stakeholder.html."""
+    resp = client.get("/stakeholder")
+    assert resp.status_code == 200
