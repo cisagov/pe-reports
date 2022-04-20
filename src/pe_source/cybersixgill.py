@@ -26,6 +26,13 @@ from .data.sixgill.source import (
     top_cves,
 )
 
+# Setup logging to file
+logging.basicConfig(
+    filename="pe_reports_Logging.log",
+    format="%(asctime)-15s %(levelname)s %(message)s",
+    level="INFO",
+)
+
 # Set todays date formatted YYYY-MM-DD and the start_date 30 days prior
 TODAY = date.today()
 DAYS_BACK = timedelta(days=30)

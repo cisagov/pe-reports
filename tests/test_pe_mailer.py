@@ -21,6 +21,13 @@ log_levels = (
 
 PROJECT_VERSION = pe_mailer.__version__
 
+# Setup logging to file
+logging.basicConfig(
+    filename="pe_reports_Logging.log",
+    format="%(asctime)-15s %(levelname)s %(message)s",
+    level="INFO",
+)
+
 
 def test_mailer_stdout_version(capsys):
     """Verify that version string sent to stdout agrees with the module version."""

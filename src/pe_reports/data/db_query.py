@@ -13,7 +13,11 @@ from psycopg2.extensions import AsIs
 
 from .config import config
 
-logging.basicConfig(format="%(asctime)-15s %(levelname)s %(message)s", level="INFO")
+logging.basicConfig(
+    filename="pe_reports_Logging.log",
+    format="%(asctime)-15s %(levelname)s %(message)s",
+    level="INFO",
+)
 
 CONN_PARAMS_DIC = config()
 

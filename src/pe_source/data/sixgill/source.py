@@ -16,6 +16,12 @@ from .api import (
     org_assets,
 )
 
+logging.basicConfig(
+    filename="pe_reports_Logging.log",
+    format="%(asctime)-15s %(levelname)s %(message)s",
+    level="INFO",
+)
+
 
 def alias_organization(org_id):
     """List an organization's aliases."""

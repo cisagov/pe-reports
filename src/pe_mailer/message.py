@@ -8,6 +8,12 @@ from email.mime.text import MIMEText
 import logging
 import os.path
 
+logging.basicConfig(
+    filename="pe_reports_Logging.log",
+    format="%(asctime)-15s %(levelname)s %(message)s",
+    level="INFO",
+)
+
 
 class Message(MIMEMultipart):
     """An email message sent from the CISA Cyber Assessments inbox.

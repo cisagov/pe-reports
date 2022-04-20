@@ -37,6 +37,13 @@ from ._version import __version__
 from .cybersixgill import Cybersixgill
 from .shodan import Shodan
 
+# Setup logging to file
+logging.basicConfig(
+    filename="pe_reports_Logging.log",
+    format="%(asctime)-15s %(levelname)s %(message)s",
+    level="INFO",
+)
+
 
 def run_pe_script(source, orgs_list, cybersix_methods):
     """Collect data from the source specified."""
