@@ -167,9 +167,21 @@ def search_shodan(thread_name, ips, api, start, end, org_uid, org_name, failed):
                                 mitigation = "Confirm open port has a required business use for internet exposure and ensure necessary safeguards are in place through TCP wrapping, TLS encryption, or authentication requirements"
                                 risk_data.append(
                                     {
+                                        "ac_description": None,
+                                        "ai_description": None,
                                         "asn": asn,
+                                        "attack_complexity": None,
+                                        "attack_vector": None,
+                                        "av_description": None,
+                                        "availability_impact": None,
+                                        "ci_description": None,
+                                        "confidentiality_impact": None,
+                                        "cve": None,
+                                        "cvss": None,
                                         "domains": r["domains"],
                                         "hostnames": r["hostnames"],
+                                        "ii_Description": None,
+                                        "integrity_impact": None,
                                         "ip": r["ip_str"],
                                         "isn": r["isp"],
                                         "mitigation": mitigation,
@@ -181,9 +193,12 @@ def search_shodan(thread_name, ips, api, start, end, org_uid, org_name, failed):
                                         "product": prod,
                                         "protocol": d["_shodan"]["module"],
                                         "server": serv,
+                                        "severity": None,
+                                        "summary": None,
                                         "tags": r["tags"],
                                         "timestamp": d["timestamp"],
                                         "type": ftype,
+                                        "is_verified": False,
                                     }
                                 )
 
@@ -242,24 +257,25 @@ def search_shodan(thread_name, ips, api, start, end, org_uid, org_name, failed):
     df = pd.DataFrame(data)
     risk_df = pd.DataFrame(risk_data)
     vuln_df = pd.DataFrame(vuln_data)
-
+    all_vuln_df = vuln_df.append(risk_df, ignore_index=True)
     # Grab the data source uid and add to each dataframe
     source_uid = get_data_source_uid("Shodan")
     df["data_source_uid"] = source_uid
     risk_df["data_source_uid"] = source_uid
     vuln_df["data_source_uid"] = source_uid
+    all_vuln_df["data_source_uid"] = source_uid
 
     # Insert data into the PE database
     failed = insert_shodan_data(df, "shodan_assets", thread_name, org_name, failed)
+    # failed = insert_shodan_data(
+    #     risk_df,
+    #     "shodan_insecure_protocols_unverified_vulns",
+    #     thread_name,
+    #     org_name,
+    #     failed,
+    # )
     failed = insert_shodan_data(
-        risk_df,
-        "shodan_insecure_protocols_unverified_vulns",
-        thread_name,
-        org_name,
-        failed,
-    )
-    failed = insert_shodan_data(
-        vuln_df, "shodan_verified_vulns", thread_name, org_name, failed
+        all_vuln_df, "shodan_verified_vulns", thread_name, org_name, failed
     )
 
     return failed
@@ -316,15 +332,21 @@ def is_verified(
                 "integrity_impact": int_imp or "",
                 "ip": r["ip_str"],
                 "isn": r["isp"],
+                "mitigation": None,
+                "name": None,
                 "organization": r["org"],
                 "organizations_uid": org_uid,
                 "port": d["port"],
+                "potential_vulns": None,
                 "product": product or "",
                 "protocol": d["_shodan"]["module"],
+                "server": None,
                 "severity": severity or "",
                 "summary": summary or "",
                 "tags": r["tags"],
                 "timestamp": d["timestamp"],
+                "type": None,
+                "is_verified": True,
             }
         )
     else:
