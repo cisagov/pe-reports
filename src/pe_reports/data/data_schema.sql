@@ -511,7 +511,13 @@ CREATE TABLE public.shodan_verified_vulns (
     hostnames text[],
     isn text,
     asn integer,
-    data_source_uid uuid NOT NULL
+    data_source_uid uuid NOT NULL,
+    type text,
+    name text,
+    potential_vulns text[],
+    mitigation text,
+    server text,
+    is_verified boolean
 );
 
 --
