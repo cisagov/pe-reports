@@ -1221,6 +1221,71 @@ CREATE VIEW public.new_vw_breach_complete AS
     FROM (public.credential_exposures creds
         JOIN public.credential_breaches b ON ((creds.credential_breaches_uid = b.credential_breaches_uid)));
 
+--
+-- Name: shodan_suspected_vulns_view; Type: VIEW; Schema: public; Owner: pe
+--
+
+CREATE VIEW public.shodan_suspected_vulns_view AS
+	SELECT svv.verified_vuln_uid,
+    svv.organizations_uid,
+    svv.organization,
+    svv.ip, svv.port,
+    svv.protocol,
+    svv.type,
+    svv."name",
+    svv.potential_vulns,
+	svv.mitigation,
+    svv."timestamp",
+    svv.product,
+    svv."server",
+    svv.tags,
+    svv.domains,
+    svv.hostnames,
+    svv.isn,
+    svv.asn,
+    ds."name" as "data_source"
+	FROM shodan_verified_vulns svv
+	    JOIN data_source ds
+	ON ds.data_source_uid = svv.data_source_uid
+	WHERE is_verified = false
+
+--
+-- Name: shodan_verified_vulns_view; Type: VIEW; Schema: public; Owner: pe
+--
+
+CREATE VIEW shodan_verified_vulns_view AS
+	SELECT svv.verified_vuln_uid,
+    svv.organizations_uid,
+    svv.organization,
+    svv.ip,
+    svv.port,
+    svv.protocol,
+    svv."timestamp",
+    svv.cve,
+    svv.severity,
+    svv.cvss,
+	svv.summary,
+    svv.product,
+    svv.attack_vector,
+    svv.av_description ,
+    svv.attack_complexity,
+    svv.ac_description,
+    svv.confidentiality_impact,
+    svv.ci_description,
+	svv.integrity_impact,
+    svv.ii_description,
+    svv.availability_impact,
+    svv.ai_description,
+    svv.tags,
+    svv.domains,
+    svv.hostnames,
+    svv.isn,
+    svv.asn,
+    ds."name" as "data_source"
+	FROM shodan_verified_vulns svv
+	    JOIN data_source as ds
+	ON ds.data_source_uid = svv.data_source_uid
+	WHERE is_verified = true
 
 --
 -- Name: SCHEMA public; Type: ACL; Schema: -; Owner: postgres
