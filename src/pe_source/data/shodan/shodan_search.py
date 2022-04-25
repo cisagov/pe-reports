@@ -97,7 +97,7 @@ def search_shodan(thread_name, ips, api, start, end, org_uid, org_name, failed):
         )
     )
 
-    # Loop through chunks and search Shodan
+    # Loop through chunks and query Shodan
     for i, ip_chunk in enumerate(ip_chunks):
         count = i + 1
         try_count = 1
