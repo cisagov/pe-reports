@@ -8,6 +8,7 @@ import pandas as pd
 import requests
 
 from .api import (
+    alerts_content,
     alerts_count,
     alerts_list,
     credential_auth,
@@ -23,6 +24,17 @@ def alias_organization(org_id):
     df_assets = pd.DataFrame(assets)
     aliases = df_assets["organization_aliases"].loc["explicit":].tolist()[0]
     return aliases
+
+
+def all_assets_list(org_id):
+    """List an organization's aliases."""
+    assets = org_assets(org_id)
+    df_assets = pd.DataFrame(assets)
+    aliases = df_assets["organization_aliases"].loc["explicit":].tolist()[0]
+    domain_names = df_assets["domain_names"].loc["explicit":].tolist()[0]
+    ips = df_assets["ip_addresses"].loc["explicit":].tolist()[0]
+    assets = aliases + domain_names + ips
+    return assets
 
 
 def root_domains(org_id):
@@ -104,6 +116,21 @@ def alerts(org_id):
     #     df_all_alerts.at[i, "content"] = content
 
     return df_all_alerts
+
+
+def get_alerts_content(organization_id, alert_id):
+    """Get alert content snippet."""
+    content = alerts_content(organization_id, alert_id)
+    org_assets = all_assets_list(organization_id)
+    asset_mentioned = ""
+    snip = ""
+    for asset in org_assets:
+        if asset in content:
+            index = content.index(asset)
+            snip = content[(index - 100) : (index + len(asset) + 100)]
+            snip = "..." + snip + "..."
+            asset_mentioned = asset
+    return snip, asset_mentioned
 
 
 def top_cves(size):

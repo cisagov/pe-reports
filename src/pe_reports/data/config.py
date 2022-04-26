@@ -12,7 +12,6 @@ REPORT_DB_CONFIG = files("pe_reports").joinpath("data/database.ini")
 def config(filename=REPORT_DB_CONFIG, section="postgres"):
     """Parse Postgres configuration details from database configuration file."""
     parser = ConfigParser()
-
     parser.read(filename, encoding="utf-8")
 
     db = dict()

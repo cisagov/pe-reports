@@ -4,6 +4,7 @@
 from datetime import date, datetime, timedelta
 import logging
 import sys
+import traceback
 
 from .data.pe_db.db_query import (
     get_breaches,
@@ -21,6 +22,7 @@ from .data.sixgill.source import (
     alias_organization,
     creds,
     cve_summary,
+    get_alerts_content,
     mentions,
     root_domains,
     top_cves,
@@ -69,8 +71,8 @@ class Cybersixgill:
                 failed.append("Top CVEs")
 
         for pe_org in pe_orgs:
-            org_id = pe_org[2]
-            pe_org_uid = pe_org[0]
+            org_id = pe_org["cyhy_db_name"]
+            pe_org_uid = pe_org["org_uid"]
             # Only run on specified orgs
             if org_id in orgs_list or orgs_list == "all":
                 count += 1
@@ -127,6 +129,23 @@ class Cybersixgill:
         except Exception as e:
             logging.error("Failed fetching alert data for %s", org_id)
             logging.error(e)
+            return 1
+
+        # Get Alert content
+        try:
+            logging.info("Fetching alert content data for %s.", org_id)
+            for i, row in alerts_df.iterrows():
+                alert_id = row["sixgill_id"]
+                content_snip, asset_mentioned = get_alerts_content(
+                    sixgill_org_id, alert_id
+                )
+                alerts_df.at[i, "content_snip"] = content_snip
+                alerts_df.at[i, "asset_mentioned"] = asset_mentioned
+
+        except Exception as e:
+            logging.error("Failed fetching alert content for %s", org_id)
+            logging.error(e)
+            print(traceback.format_exc())
             return 1
 
         # Insert alert data into the PE database
@@ -222,6 +241,9 @@ class Cybersixgill:
         ).size()
         creds_breach_df = count_creds.to_frame(name="exposed_cred_count").reset_index()
         creds_breach_df["modified_date"] = creds_breach_df["breach_date"]
+        creds_breach_df.drop_duplicates(
+            subset=["breach_name"], keep="first", inplace=True
+        )
 
         # Insert breach data into the PE database
         try:

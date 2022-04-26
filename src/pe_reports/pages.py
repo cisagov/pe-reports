@@ -226,7 +226,7 @@ def mal_vuln(chevron_dict, start_date, end_date, org_uid, source_html):
     unverif_vuln_chart.h_bar()
     # Build tables
     risky_assets = Malware_Vuln.insecure_protocols()
-    risky_assets = risky_assets[:5]
+    risky_assets = risky_assets[:4]
     risky_assets.columns = ["Protocol", "IP", "Port"]
     risky_assets_table = buildTable(risky_assets, ["table"], [30, 40, 30])
     verif_vulns = Malware_Vuln.verif_vulns()
