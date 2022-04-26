@@ -267,13 +267,6 @@ def search_shodan(thread_name, ips, api, start, end, org_uid, org_name, failed):
 
     # Insert data into the PE database
     failed = insert_shodan_data(df, "shodan_assets", thread_name, org_name, failed)
-    # failed = insert_shodan_data(
-    #     risk_df,
-    #     "shodan_insecure_protocols_unverified_vulns",
-    #     thread_name,
-    #     org_name,
-    #     failed,
-    # )
     failed = insert_shodan_data(
         all_vuln_df, "shodan_vulns", thread_name, org_name, failed
     )
