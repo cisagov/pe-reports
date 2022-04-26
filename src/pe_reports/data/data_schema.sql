@@ -480,11 +480,11 @@ CREATE TABLE public.shodan_insecure_protocols_unverified_vulns (
 );
 
 --
--- Name: shodan_verified_vulns; Type: TABLE; Schema: public; Owner: pe
+-- Name: shodan_vulns; Type: TABLE; Schema: public; Owner: pe
 --
 
-CREATE TABLE public.shodan_verified_vulns (
-    verified_vuln_uid uuid DEFAULT public.uuid_generate_v1() NOT NULL,
+CREATE TABLE public.shodan_vulns (
+    shodan_vuln_uid uuid DEFAULT public.uuid_generate_v1() NOT NULL,
     organizations_uid uuid NOT NULL,
     organization text,
     ip text,
@@ -841,19 +841,19 @@ ALTER TABLE ONLY public.shodan_insecure_protocols_unverified_vulns
 
 
 --
--- Name: shodan_verified_vulns shodan_verified_vulns_organizations_uid_ip_port_protocol_ti_key; Type: CONSTRAINT; Schema: public; Owner: pe
+-- Name: shodan_vulns shodan_vulns_organizations_uid_ip_port_protocol_ti_key; Type: CONSTRAINT; Schema: public; Owner: pe
 --
 
-ALTER TABLE ONLY public.shodan_verified_vulns
-    ADD CONSTRAINT shodan_verified_vulns_organizations_uid_ip_port_protocol_ti_key UNIQUE (organizations_uid, ip, port, protocol, "timestamp");
+ALTER TABLE ONLY public.shodan_vulns
+    ADD CONSTRAINT shodan_vulns_organizations_uid_ip_port_protocol_ti_key UNIQUE (organizations_uid, ip, port, protocol, "timestamp");
 
 
 --
--- Name: shodan_verified_vulns shodan_verified_vulns_pkey; Type: CONSTRAINT; Schema: public; Owner: pe
+-- Name: shodan_vulns shodan_vulns_pkey; Type: CONSTRAINT; Schema: public; Owner: pe
 --
 
-ALTER TABLE ONLY public.shodan_verified_vulns
-    ADD CONSTRAINT shodan_verified_vulns_pkey PRIMARY KEY (verified_vuln_uid);
+ALTER TABLE ONLY public.shodan_vulns
+    ADD CONSTRAINT shodan_vulns_pkey PRIMARY KEY (shodan_vuln_uid);
 
 
 --
@@ -1119,19 +1119,19 @@ ALTER TABLE ONLY public.shodan_insecure_protocols_unverified_vulns
 
 
 --
--- Name: shodan_verified_vulns shodan_verified_vulns_data_source_uid_fkey; Type: FK CONSTRAINT; Schema: public; Owner: pe
+-- Name: shodan_vulns shodan_vulns_data_source_uid_fkey; Type: FK CONSTRAINT; Schema: public; Owner: pe
 --
 
-ALTER TABLE ONLY public.shodan_verified_vulns
-    ADD CONSTRAINT shodan_verified_vulns_data_source_uid_fkey FOREIGN KEY (data_source_uid) REFERENCES public.data_source(data_source_uid) NOT VALID;
+ALTER TABLE ONLY public.shodan_vulns
+    ADD CONSTRAINT shodan_vulns_data_source_uid_fkey FOREIGN KEY (data_source_uid) REFERENCES public.data_source(data_source_uid) NOT VALID;
 
 
 --
--- Name: shodan_verified_vulns shodan_verified_vulns_organizations_uid_fkey; Type: FK CONSTRAINT; Schema: public; Owner: pe
+-- Name: shodan_vulns shodan_vulns_organizations_uid_fkey; Type: FK CONSTRAINT; Schema: public; Owner: pe
 --
 
-ALTER TABLE ONLY public.shodan_verified_vulns
-    ADD CONSTRAINT shodan_verified_vulns_organizations_uid_fkey FOREIGN KEY (organizations_uid) REFERENCES public.organizations(organizations_uid) NOT VALID;
+ALTER TABLE ONLY public.shodan_vulns
+    ADD CONSTRAINT shodan_vulns_organizations_uid_fkey FOREIGN KEY (organizations_uid) REFERENCES public.organizations(organizations_uid) NOT VALID;
 
 
 --
@@ -1222,10 +1222,10 @@ CREATE VIEW public.new_vw_breach_complete AS
         JOIN public.credential_breaches b ON ((creds.credential_breaches_uid = b.credential_breaches_uid)));
 
 --
--- Name: shodan_suspected_vulns_view; Type: VIEW; Schema: public; Owner: pe
+-- Name: vw_shodanvulns_suspected; Type: VIEW; Schema: public; Owner: pe
 --
 
-CREATE VIEW public.shodan_suspected_vulns_view AS
+CREATE VIEW vw_shodanvulns_suspected AS
 	SELECT
     svv.organizations_uid,
     svv.organization,
@@ -1244,16 +1244,16 @@ CREATE VIEW public.shodan_suspected_vulns_view AS
     svv.isn,
     svv.asn,
     ds."name" as "data_source"
-	FROM shodan_verified_vulns svv
+	FROM shodan_vulns svv
 	    JOIN data_source ds
 	ON ds.data_source_uid = svv.data_source_uid
 	WHERE is_verified = false
 
 --
--- Name: shodan_verified_vulns_view; Type: VIEW; Schema: public; Owner: pe
+-- Name: vw_shodanvulns_verified; Type: VIEW; Schema: public; Owner: pe
 --
 
-CREATE VIEW shodan_verified_vulns_view AS
+CREATE VIEW vw_shodanvulns_verifie AS
 	SELECT
     svv.organizations_uid,
     svv.organization,
@@ -1282,7 +1282,7 @@ CREATE VIEW shodan_verified_vulns_view AS
     svv.isn,
     svv.asn,
     ds."name" as "data_source"
-	FROM shodan_verified_vulns svv
+	FROM shodan_vulns svv
 	    JOIN data_source as ds
 	ON ds.data_source_uid = svv.data_source_uid
 	WHERE is_verified = true
