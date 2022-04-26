@@ -275,7 +275,7 @@ def search_shodan(thread_name, ips, api, start, end, org_uid, org_name, failed):
     #     failed,
     # )
     failed = insert_shodan_data(
-        all_vuln_df, "shodan_verified_vulns", thread_name, org_name, failed
+        all_vuln_df, "shodan_vulns", thread_name, org_name, failed
     )
 
     return failed
