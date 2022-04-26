@@ -1226,7 +1226,7 @@ CREATE VIEW public.new_vw_breach_complete AS
 --
 
 CREATE VIEW public.shodan_suspected_vulns_view AS
-	SELECT svv.verified_vuln_uid,
+	SELECT
     svv.organizations_uid,
     svv.organization,
     svv.ip, svv.port,
@@ -1254,7 +1254,7 @@ CREATE VIEW public.shodan_suspected_vulns_view AS
 --
 
 CREATE VIEW shodan_verified_vulns_view AS
-	SELECT svv.verified_vuln_uid,
+	SELECT
     svv.organizations_uid,
     svv.organization,
     svv.ip,

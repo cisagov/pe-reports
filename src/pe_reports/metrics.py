@@ -255,11 +255,13 @@ class Malware_Vulns:
             org_uid,
             start_date,
             end_date,
-            "shodan_insecure_protocols_unverified_vulns",
+            "shodan_suspected_vulns_view",
         )
         self.insecure_df = insecure_df
 
-        vulns_df = query_shodan(org_uid, start_date, end_date, "shodan_verified_vulns")
+        vulns_df = query_shodan(
+            org_uid, start_date, end_date, "shodan_verified_vulns_view"
+        )
         vulns_df["port"] = vulns_df["port"].astype(str)
         self.vulns_df = vulns_df
 
