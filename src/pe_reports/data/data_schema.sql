@@ -1227,64 +1227,65 @@ CREATE VIEW public.new_vw_breach_complete AS
 
 CREATE VIEW vw_shodanvulns_suspected AS
 	SELECT
-    svv.organizations_uid,
-    svv.organization,
-    svv.ip, svv.port,
-    svv.protocol,
-    svv.type,
-    svv."name",
-    svv.potential_vulns,
-	svv.mitigation,
-    svv."timestamp",
-    svv.product,
-    svv."server",
-    svv.tags,
-    svv.domains,
-    svv.hostnames,
-    svv.isn,
-    svv.asn,
+    sv.organizations_uid,
+    sv.organization,
+    sv.ip,
+    sv.port,
+    sv.protocol,
+    sv.type,
+    sv."name",
+    sv.potential_vulns,
+	sv.mitigation,
+    sv."timestamp",
+    sv.product,
+    sv."server",
+    sv.tags,
+    sv.domains,
+    sv.hostnames,
+    sv.isn,
+    sv.asn,
     ds."name" as "data_source"
-	FROM shodan_vulns svv
+	FROM shodan_vulns sv
 	    JOIN data_source ds
-	ON ds.data_source_uid = svv.data_source_uid
+	ON ds.data_source_uid = sv.data_source_uid
 	WHERE is_verified = false
 
 --
 -- Name: vw_shodanvulns_verified; Type: VIEW; Schema: public; Owner: pe
 --
 
-CREATE VIEW vw_shodanvulns_verifie AS
+CREATE VIEW vw_shodanvulns_verified AS
 	SELECT
-    svv.organizations_uid,
-    svv.organization,
-    svv.ip,
-    svv.port,
-    svv.protocol,
-    svv."timestamp",
-    svv.cve,
-    svv.severity,
-    svv.cvss,
-	svv.summary,
-    svv.product,
-    svv.attack_vector,
-    svv.av_description ,
-    svv.attack_complexity,
-    svv.ac_description,
-    svv.confidentiality_impact,
-    svv.ci_description,
-	svv.integrity_impact,
-    svv.ii_description,
-    svv.availability_impact,
-    svv.ai_description,
-    svv.tags,
-    svv.domains,
-    svv.hostnames,
-    svv.isn,
-    svv.asn,
+    sv.organizations_uid,
+    sv.organization,
+    sv.ip,
+    sv.port,
+    sv.protocol,
+    sv."timestamp",
+    sv.cve,
+    sv.severity,
+    sv.cvss,
+	sv.summary,
+    sv.product,
+    sv.attack_vector,
+    sv.av_description ,
+    sv.attack_complexity,
+    sv.ac_description,
+    sv.confidentiality_impact,
+    sv.ci_description,
+	sv.integrity_impact,
+    sv.ii_description,
+    sv.availability_impact,
+    sv.ai_description,
+    sv.tags,
+    sv.domains,
+    sv.hostnames,
+    sv.isn,
+    sv.asn,
     ds."name" as "data_source"
-	FROM shodan_vulns svv
+	FROM shodan_vulns sv
 	    JOIN data_source as ds
-	ON ds.data_source_uid = svv.data_source_uid
+	ON ds.data_source_uid = sv.data_source_uid
 	WHERE is_verified = true
 
 --
