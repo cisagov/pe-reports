@@ -5,11 +5,11 @@
 import pandas as pd
 
 from .data.db_query import (
+    query_creds_view,
     query_cyberSix_creds,
     query_darkweb,
     query_darkweb_cves,
     query_domMasq,
-    query_hibp_view,
     query_shodan,
 )
 
@@ -23,7 +23,7 @@ class Credentials:
         self.end_date = end_date
         self.org_uid = org_uid
         self.query_cyberSix_creds = query_cyberSix_creds(org_uid, start_date, end_date)
-        self.query_hibp_view = query_hibp_view(org_uid, start_date, end_date)
+        self.query_hibp_view = query_creds_view(org_uid, start_date, end_date)
 
     def by_days(self):
         """Return number of credentials by day."""

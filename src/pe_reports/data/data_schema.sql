@@ -1191,10 +1191,10 @@ ALTER TABLE ONLY public.web_assets
 
 
 --
--- Name: new_vw_breach_complete; Type: VIEW; Schema: public; Owner: pe
+-- Name: new_breachcomp; Type: VIEW; Schema: public; Owner: pe
 --
 
-CREATE VIEW public.new_vw_breach_complete AS
+CREATE VIEW public.vw_breachcomp AS
     SELECT creds.credential_exposures_uid,
     creds.email,
     creds.breach_name,
@@ -1220,6 +1220,20 @@ CREATE VIEW public.new_vw_breach_complete AS
     b.is_spam_list
     FROM (public.credential_exposures creds
         JOIN public.credential_breaches b ON ((creds.credential_breaches_uid = b.credential_breaches_uid)));
+
+--
+-- Name: vw_breachcomp_credsbydate; Type: VIEW; Schema: public; Owner: pe
+--
+CREATE VIEW vw_breachcomp_credsbydate AS
+SELECT
+organizations_uid,
+DATE(modified_date) mod_date,
+SUM(CASE password_included WHEN True THEN 1 ELSE 0 END) AS password_included,
+SUM(CASE password_included WHEN false THEN 1 ELSE 0 END) AS no_password
+FROM vw_breachcomp
+GROUP BY organizations_uid,
+mod_date
+ORDER BY mod_date DESC
 
 --
 -- Name: vw_shodanvulns_suspected; Type: VIEW; Schema: public; Owner: pe
