@@ -8,7 +8,7 @@ import datetime
 import pandas as pd
 
 from .data.db_query import (
-    query_creds_vw,
+    query_creds_view,
     query_darkweb,
     query_darkweb_cves,
     query_domMasq,
@@ -27,10 +27,10 @@ class Credentials:
         self.start_date = start_date
         self.end_date = end_date
         self.org_uid = org_uid
-        self.trending_creds_view = query_creds_vw(
+        self.trending_creds_view = query_creds_view(
             org_uid, trending_start_date, end_date
         )
-        self.creds_view = query_creds_vw(org_uid, start_date, end_date)
+        self.creds_view = query_creds_view(org_uid, start_date, end_date)
 
     def by_days(self):
         """Return number of credentials by day."""
@@ -237,11 +237,13 @@ class Malware_Vulns:
             org_uid,
             start_date,
             end_date,
-            "shodan_insecure_protocols_unverified_vulns",
+            "vw_shodanvulns_suspected",
         )
         self.insecure_df = insecure_df
 
-        vulns_df = query_shodan(org_uid, start_date, end_date, "shodan_verified_vulns")
+        vulns_df = query_shodan(
+            org_uid, start_date, end_date, "vw_shodanvulns_verified"
+        )
         vulns_df["port"] = vulns_df["port"].astype(str)
         self.vulns_df = vulns_df
 
@@ -267,10 +269,10 @@ class Malware_Vulns:
             .reset_index()
         )
         if len(risky_assets.index) > 0:
-            risky_assets["ip"] = risky_assets["ip"].str[:40]
-            risky_assets.loc[risky_assets["ip"].str.len() == 40, "ip"] = risky_assets[
-                "ip"
-            ].str.cat(" ...")
+            risky_assets["ip"] = risky_assets["ip"].str[:30]
+            risky_assets.loc[risky_assets["ip"].str.len() == 30, "ip"] = (
+                risky_assets["ip"] + "  ..."
+            )
 
         return risky_assets
 
@@ -437,7 +439,7 @@ class Cyber_Six:
             errors="ignore",
         )
         # Translate title field to english
-        dark_web_mentions = translate(dark_web_mentions, ["title"])
+        # dark_web_mentions = translate(dark_web_mentions, ["title"])
         self.dark_web_mentions = dark_web_mentions
 
         alerts = query_darkweb(
@@ -471,6 +473,7 @@ class Cyber_Six:
             .nlargest(10)
             .reset_index(name="Events")
         )
+        alerts_exec["title"] = alerts_exec["title"].str[:100]
         alerts_exec = alerts_exec.rename(columns={"site": "Site", "title": "Topic"})
         return alerts_exec
 
@@ -487,6 +490,7 @@ class Cyber_Six:
             .nlargest(10)
             .reset_index(name="Events")
         )
+        asset_alerts["title"] = asset_alerts["title"].str[:150]
         asset_alerts = asset_alerts.rename(columns={"site": "Site", "title": "Topic"})
         return asset_alerts
 
@@ -586,9 +590,11 @@ class Cyber_Six:
         dark_web_most_act = dark_web_most_act.sort_values(
             by="Comments Count", ascending=False
         )
-        dark_web_most_act = dark_web_most_act[:6]
+        dark_web_most_act = dark_web_most_act[:5]
+        # Translate title field to english
+        dark_web_most_act = translate(dark_web_most_act, ["title"])
         dark_web_most_act = dark_web_most_act.rename(columns={"title": "Title"})
-        dark_web_most_act["Title"] = dark_web_most_act["Title"].str[:100]
+        dark_web_most_act["Title"] = dark_web_most_act["Title"].str[:80]
         dark_web_most_act = dark_web_most_act.replace(r"^\s*$", "Untitled", regex=True)
         return dark_web_most_act
 
@@ -616,7 +622,9 @@ class Cyber_Six:
         soc_med_most_act = soc_med_most_act.sort_values(
             by="Comments Count", ascending=False
         )
-        soc_med_most_act = soc_med_most_act[:8]
+        soc_med_most_act = soc_med_most_act[:6]
+        # Translate title field to english
+        # soc_med_most_act = translate(soc_med_most_act, ["title"])
         soc_med_most_act = soc_med_most_act.rename(columns={"title": "Title"})
         soc_med_most_act["Title"] = soc_med_most_act["Title"].str[:100]
         soc_med_most_act = soc_med_most_act.replace(r"^\s*$", "Untitled", regex=True)

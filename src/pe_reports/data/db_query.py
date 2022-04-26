@@ -59,11 +59,11 @@ def get_orgs(conn):
             close(conn)
 
 
-def query_creds_vw(org_uid, start_date, end_date):
-    """Query credential exposure view."""
+def query_creds_view(org_uid, start_date, end_date):
+    """Query 'Have I Been Pwned?' table."""
     conn = connect()
     try:
-        sql = """SELECT * FROM new_vw_breach_complete
+        sql = """SELECT * FROM vw_breachcomp
         WHERE organizations_uid = %(org_uid)s
         AND modified_date BETWEEN %(start_date)s AND %(end_date)s"""
         df = pd.read_sql(
