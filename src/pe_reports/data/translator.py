@@ -64,8 +64,8 @@ def translate(df, column_list=[]):
                         continue
                     except Exception as e:
                         print("Failed translating. Not an attribute error")
+                        print(e)
                         break
-
 
         df_en[column].replace(translations, inplace=True)
     return df_en

@@ -8,7 +8,7 @@ import datetime
 import pandas as pd
 
 from .data.db_query import (
-    query_creds_vw,
+    query_creds_view,
     query_darkweb,
     query_darkweb_cves,
     query_domMasq,
@@ -27,10 +27,10 @@ class Credentials:
         self.start_date = start_date
         self.end_date = end_date
         self.org_uid = org_uid
-        self.trending_creds_view = query_creds_vw(
+        self.trending_creds_view = query_creds_view(
             org_uid, trending_start_date, end_date
         )
-        self.creds_view = query_creds_vw(org_uid, start_date, end_date)
+        self.creds_view = query_creds_view(org_uid, start_date, end_date)
 
     def by_days(self):
         """Return number of credentials by day."""
@@ -237,11 +237,13 @@ class Malware_Vulns:
             org_uid,
             start_date,
             end_date,
-            "shodan_insecure_protocols_unverified_vulns",
+            "vw_shodanvulns_suspected",
         )
         self.insecure_df = insecure_df
 
-        vulns_df = query_shodan(org_uid, start_date, end_date, "shodan_verified_vulns")
+        vulns_df = query_shodan(
+            org_uid, start_date, end_date, "vw_shodanvulns_verified"
+        )
         vulns_df["port"] = vulns_df["port"].astype(str)
         self.vulns_df = vulns_df
 
@@ -268,9 +270,9 @@ class Malware_Vulns:
         )
         if len(risky_assets.index) > 0:
             risky_assets["ip"] = risky_assets["ip"].str[:30]
-            risky_assets.loc[risky_assets["ip"].str.len() == 30, "ip"] = risky_assets[
-                "ip"
-            ] + "  ..."
+            risky_assets.loc[risky_assets["ip"].str.len() == 30, "ip"] = (
+                risky_assets["ip"] + "  ..."
+            )
 
         return risky_assets
 
