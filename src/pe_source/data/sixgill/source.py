@@ -51,7 +51,7 @@ def mentions(date, aliases):
     for mention in aliases:
         mentions += '"' + mention + '"' + ","
     mentions = mentions[:-1]
-    query = "date:" + date + " AND " + "(" + str(mentions) + ")"
+    query = "date:" + date + " AND NOT site:telegram AND NOT site:forum_4chan AND NOT site:reddit AND NOT site:forum_elhacker AND " + "(" + str(mentions) + ")"
     logging.info("Query:")
     logging.info(query)
     count = 1
@@ -82,8 +82,8 @@ def mentions(date, aliases):
     else:
         while i < count_total:
             # Recommended "from" and "result_size" is 50. The maximum is 400.
-            resp = intel_post(query, frm=i, scroll=True, result_size=400)
-            i += 400
+            resp = intel_post(query, frm=i, scroll=True, result_size=200)
+            i += 200
             logging.info("Getting %s of %s....", i, count_total)
             intel_items = resp["intel_items"]
             df_mentions = pd.DataFrame.from_dict(intel_items)

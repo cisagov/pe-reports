@@ -159,7 +159,6 @@ class Domains_Masqs:
         self.end_date = end_date
         self.org_uid = org_uid
         df = query_domMasq(org_uid, start_date, end_date)
-        print(df["malicious"] == True)
         self.df_mal = df[df["malicious"] == True]
         self.dom_alerts_df = query_domMasq_alerts(org_uid, start_date, end_date)
 
@@ -624,7 +623,7 @@ class Cyber_Six:
         )
         soc_med_most_act = soc_med_most_act[:6]
         # Translate title field to english
-        # soc_med_most_act = translate(soc_med_most_act, ["title"])
+        soc_med_most_act = translate(soc_med_most_act, ["title"])
         soc_med_most_act = soc_med_most_act.rename(columns={"title": "Title"})
         soc_med_most_act["Title"] = soc_med_most_act["Title"].str[:100]
         soc_med_most_act = soc_med_most_act.replace(r"^\s*$", "Untitled", regex=True)
