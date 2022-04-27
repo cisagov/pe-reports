@@ -3,13 +3,14 @@
 import pandas as pd
 import requests
 
-from .config import token
+# cisagov Libraries
+from pe_source.data.pe_db.config import cybersix_token
 
 
 def get_sixgill_organizations():
     """Get the list of organizations."""
     url = "https://api.cybersixgill.com/multi-tenant/organization"
-    auth = token()
+    auth = cybersix_token()
     headers = {
         "Content-Type": "application/json",
         "Cache-Control": "no-cache",
@@ -24,7 +25,7 @@ def get_sixgill_organizations():
 def org_assets(org_id):
     """Get organization assets."""
     url = f"https://api.cybersixgill.com/multi-tenant/organization/{org_id}/assets"
-    auth = token()
+    auth = cybersix_token()
     headers = {
         "Content-Type": "application/json",
         "Cache-Control": "no-cache",
@@ -38,7 +39,7 @@ def org_assets(org_id):
 def intel_post(query, frm, scroll, result_size):
     """Get intel items - advanced variation."""
     url = "https://api.cybersixgill.com/intel/intel_items"
-    auth = token()
+    auth = cybersix_token()
     headers = {
         "Content-Type": "application/json",
         "Cache-Control": "no-cache",
@@ -63,7 +64,7 @@ def intel_post(query, frm, scroll, result_size):
 def alerts_list(organization_id, fetch_size, offset):
     """Get actionable alerts by ID using organization_id with optional filters."""
     url = "https://api.cybersixgill.com/alerts/actionable-alert"
-    auth = token()
+    auth = cybersix_token()
     headers = {
         "Content-Type": "application/json",
         "Cache-Control": "no-cache",
@@ -81,7 +82,7 @@ def alerts_list(organization_id, fetch_size, offset):
 def alerts_count(organization_id):
     """Get the total read and unread actionable alerts by organization."""
     url = "https://api.cybersixgill.com/alerts/actionable_alert/count"
-    auth = token()
+    auth = cybersix_token()
     headers = {
         "Content-Type": "application/json",
         "Cache-Control": "no-cache",
@@ -93,23 +94,30 @@ def alerts_count(organization_id):
 
 
 def alerts_content(organization_id, alert_id):
-    """Get an alert's full content."""
+    """Get total alert content."""
     url = f"https://api.cybersixgill.com/alerts/actionable_alert_content/{alert_id}"
-    auth = token()
+    auth = cybersix_token()
     headers = {
         "Content-Type": "application/json",
         "Cache-Control": "no-cache",
         "Authorization": "Bearer " + auth,
     }
     payload = {"organization_id": organization_id, "limit": 10000}
-    resp = requests.get(url, headers=headers, params=payload).json()
-    return str(resp["content"])
+    content = requests.get(url, headers=headers, params=payload).json()
+    try:
+        content = content["content"]["items"][0]["_source"]["content"]
+    except Exception as e:
+        print(e)
+        print("Falied getting content snip")
+        print(content)
+        content = ""
+    return content
 
 
 def dve_top_cves(size):
     """Get data about a specific CVE."""
     url = "https://api.cybersixgill.com/dve_enrich/top_cves"
-    auth = token()
+    auth = cybersix_token()
     headers = {
         "Content-Type": "application/x-www-form-urlencoded",
         "Cache-Control": "no-cache",
@@ -123,7 +131,7 @@ def dve_top_cves(size):
 def credential_auth(params):
     """Get data about a specific CVE."""
     url = "https://api.cybersixgill.com/credentials/leaks"
-    auth = token()
+    auth = cybersix_token()
     headers = {
         "Content-Type": "application/json",
         "Cache-Control": "no-cache",
