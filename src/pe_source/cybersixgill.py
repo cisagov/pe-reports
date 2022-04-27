@@ -143,8 +143,11 @@ class Cybersixgill:
                     )
                     alerts_df.at[i, "content_snip"] = content_snip
                     alerts_df.at[i, "asset_mentioned"] = asset_mentioned
-                except:
-                    logging.error("Failed fetching a specific alert content for %s", org_id)
+                except Exception as e:
+                    logging.error(
+                        "Failed fetching a specific alert content for %s", org_id
+                    )
+                    logging.error(e)
                     alerts_df.at[i, "content_snip"] = ""
                     alerts_df.at[i, "asset_mentioned"] = ""
 
@@ -231,7 +234,13 @@ class Cybersixgill:
                 "breach_name",
             ] = "Cybersixgill_" + creds_df["breach_id"].astype(str)
             creds_breach_df = creds_df[
-                ["breach_name", "description", "breach_date", "password", "data_source_uid"]
+                [
+                    "breach_name",
+                    "description",
+                    "breach_date",
+                    "password",
+                    "data_source_uid",
+                ]
             ].reset_index()
 
             # Create password_included column
@@ -247,7 +256,9 @@ class Cybersixgill:
                     "data_source_uid",
                 ]
             ).size()
-            creds_breach_df = count_creds.to_frame(name="exposed_cred_count").reset_index()
+            creds_breach_df = count_creds.to_frame(
+                name="exposed_cred_count"
+            ).reset_index()
             creds_breach_df["modified_date"] = creds_breach_df["breach_date"]
             creds_breach_df.drop_duplicates(
                 subset=["breach_name"], keep="first", inplace=True

@@ -117,7 +117,8 @@ def insert_sixgill_alerts(df):
                 "data_source_uid",
             ]
         ]
-    except:
+    except Exception as e:
+        logging.error(e)
         df = df[
             [
                 "alert_name",
