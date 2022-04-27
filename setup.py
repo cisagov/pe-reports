@@ -87,7 +87,7 @@ setup(
     package_data={
         "pe_mailer": ["data/*"],
         "pe_reports": ["*.html", "*.css", "data/*", "assets/*"],
-        "pe_source": ["data/*", "data/pe_db/*", "data/sixgill/*"],
+        "pe_source": ["data/*", "data/shodan/*", "data/sixgill/*", "data/pe_db/*"],
     },
     py_modules=[splitext(basename(path))[0] for path in glob("src/*.py")],
     include_package_data=True,
@@ -112,6 +112,7 @@ setup(
         "reportlab == 3.6.6",
         "schema == 0.7.5",
         "setuptools == 58.1.0",
+        "shodan ==1.27.0",
         "types-PyYAML == 6.0.4",
         "xhtml2pdf == 0.2.5",
     ],
