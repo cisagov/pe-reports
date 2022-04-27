@@ -85,7 +85,7 @@ def query_domMasq(org_uid, start_date, end_date):
     try:
         sql = """SELECT * FROM domain_permutations
         WHERE organizations_uid = %(org_uid)s
-        AND date_observed BETWEEN %(start_date)s AND %(end_date)s"""
+        AND date_active BETWEEN %(start_date)s AND %(end_date)s"""
         df = pd.read_sql(
             sql,
             conn,
