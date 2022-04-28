@@ -8,14 +8,17 @@ import datetime
 import pandas as pd
 
 from .data.db_query import (
+    query_breachdetails_view,
     query_creds_view,
+    query_credsbyday_view,
     query_darkweb,
     query_darkweb_cves,
     query_domMasq,
     query_domMasq_alerts,
     query_shodan,
 )
-from .data.translator import translate
+
+# from .data.translator import translate
 
 
 class Credentials:
@@ -31,30 +34,19 @@ class Credentials:
             org_uid, trending_start_date, end_date
         )
         self.creds_view = query_creds_view(org_uid, start_date, end_date)
+        self.creds_by_day = query_credsbyday_view(
+            org_uid, trending_start_date, end_date
+        )
+        self.breach_details_view = query_breachdetails_view(
+            org_uid, start_date, end_date
+        )
 
     def by_days(self):
         """Return number of credentials by day."""
-        df = self.trending_creds_view
-        df = df[["modified_date", "password_included", "email"]].copy()
-        df.loc[:, "modified_date"] = pd.to_datetime(df["modified_date"]).dt.date
-        df = df.groupby(["modified_date", "password_included"], as_index=False).agg(
-            {"email": ["count"]}
-        )
+        df = self.creds_by_day
+        # df = df[["mod_date", "no_password", "password_included"]].copy()
         idx = pd.date_range(self.trending_start_date, self.end_date)
-        df.columns = df.columns.droplevel(1)
-        df = (
-            df.pivot(index="modified_date", columns="password_included", values="email")
-            .fillna(0)
-            .reset_index()
-            .rename_axis(None)
-        )
-        df.columns.name = None
-        df = (
-            df.set_index("modified_date")
-            .reindex(idx)
-            .fillna(0.0)
-            .rename_axis("added_date")
-        )
+        df = df.set_index("mod_date").reindex(idx).fillna(0.0).rename_axis("added_date")
         group_limit = self.end_date + datetime.timedelta(1)
         df = df.groupby(
             pd.Grouper(level="added_date", freq="7d", origin=group_limit)
@@ -62,10 +54,15 @@ class Credentials:
         df["modified_date"] = df.index
         df["modified_date"] = df["modified_date"].dt.strftime("%m/%d")
         df = df.set_index("modified_date")
-        df = df.rename(columns={True: "Passwords Included", False: "No Password"})
+        df = df.rename(
+            columns={
+                "password_included": "Passwords Included",
+                "no_password": "No Password",
+            }
+        )
         if len(df.columns) == 0:
             df["Passwords Included"] = 0
-
+        print(df)
         return df
 
     def breaches(self):
@@ -83,40 +80,8 @@ class Credentials:
 
     def breach_details(self):
         """Return breach details."""
-        view_df = self.creds_view
-        view_df = view_df[
-            [
-                "breach_name",
-                "modified_date",
-                "description",
-                "breach_date",
-                "password_included",
-                "email",
-            ]
-        ]
-
-        breach_df = view_df.groupby(
-            [
-                "breach_name",
-                "modified_date",
-                "description",
-                "breach_date",
-                "password_included",
-            ],
-            as_index=False,
-        ).agg({"email": ["count"]})
-
-        breach_df.columns = breach_df.columns.droplevel(1)
-        breach_df = breach_df.rename(columns={"email": "number_of_creds"})
-        breach_df = breach_df[
-            [
-                "breach_name",
-                "breach_date",
-                "modified_date",
-                "password_included",
-                "number_of_creds",
-            ]
-        ]
+        breach_df = self.breach_details_view
+        print(breach_df)
         breach_det_df = breach_df.rename(columns={"modified_date": "update_date"})
         breach_det_df["update_date"] = pd.to_datetime(breach_det_df["update_date"])
         if len(breach_det_df) > 0:
@@ -136,7 +101,7 @@ class Credentials:
                 "number_of_creds": "Number of Creds",
             }
         )
-
+        print(breach_det_df)
         return breach_det_df
 
     def password(self):
@@ -591,7 +556,7 @@ class Cyber_Six:
         )
         dark_web_most_act = dark_web_most_act[:5]
         # Translate title field to english
-        dark_web_most_act = translate(dark_web_most_act, ["title"])
+        # dark_web_most_act = translate(dark_web_most_act, ["title"])
         dark_web_most_act = dark_web_most_act.rename(columns={"title": "Title"})
         dark_web_most_act["Title"] = dark_web_most_act["Title"].str[:80]
         dark_web_most_act = dark_web_most_act.replace(r"^\s*$", "Untitled", regex=True)
@@ -623,7 +588,7 @@ class Cyber_Six:
         )
         soc_med_most_act = soc_med_most_act[:6]
         # Translate title field to english
-        soc_med_most_act = translate(soc_med_most_act, ["title"])
+        # soc_med_most_act = translate(soc_med_most_act, ["title"])
         soc_med_most_act = soc_med_most_act.rename(columns={"title": "Title"})
         soc_med_most_act["Title"] = soc_med_most_act["Title"].str[:100]
         soc_med_most_act = soc_med_most_act.replace(r"^\s*$", "Untitled", regex=True)

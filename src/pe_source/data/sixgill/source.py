@@ -51,7 +51,14 @@ def mentions(date, aliases):
     for mention in aliases:
         mentions += '"' + mention + '"' + ","
     mentions = mentions[:-1]
-    query = "date:" + date + " AND NOT site:telegram AND NOT site:forum_4chan AND NOT site:reddit AND NOT site:forum_elhacker AND " + "(" + str(mentions) + ")"
+    query = (
+        "date:"
+        + date
+        + " AND NOT site:telegram AND NOT site:forum_4chan AND NOT site:reddit AND NOT site:forum_elhacker AND "
+        + "("
+        + str(mentions)
+        + ")"
+    )
     logging.info("Query:")
     logging.info(query)
     count = 1
