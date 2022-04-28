@@ -52,7 +52,7 @@ class Credentials:
             pd.Grouper(level="added_date", freq="7d", origin=group_limit)
         ).sum()
         df["modified_date"] = df.index
-        df["modified_date"] = df["modified_date"].dt.strftime("%m/%d")
+        df["modified_date"] = df["modified_date"].dt.strftime("%b %d")
         df = df.set_index("modified_date")
         df = df.rename(
             columns={

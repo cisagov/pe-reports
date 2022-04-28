@@ -118,6 +118,8 @@ class Charts:
         plt.barh(df.index, value_column, bar_width, align="center", color="#466fc6")
         plt.xticks(fontsize=7)
         plt.yticks(fontsize=7)
+        plt.xlim(xmin=0)
+        plt.gca().xaxis.set_major_locator(MaxNLocator(integer=True))
         plt.gca().set_ylim(-1.0, len(category_column))
         plt.gca().set_yticks(df.index)
         plt.gca().set_yticklabels(category_column)
@@ -139,8 +141,6 @@ class Charts:
                     ha="center",  # horizontal alignment can be left, right or center
                     fontsize=8,
                 )
-
-        plt.gca().xaxis.set_major_locator(MaxNLocator(integer=True))
         plt.savefig(
             BASE_DIR + "/assets/" + name, transparent=True, dpi=500, bbox_inches="tight"
         )
