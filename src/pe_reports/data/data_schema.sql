@@ -480,11 +480,11 @@ CREATE TABLE public.shodan_insecure_protocols_unverified_vulns (
 );
 
 --
--- Name: shodan_verified_vulns; Type: TABLE; Schema: public; Owner: pe
+-- Name: shodan_vulns; Type: TABLE; Schema: public; Owner: pe
 --
 
-CREATE TABLE public.shodan_verified_vulns (
-    verified_vuln_uid uuid DEFAULT public.uuid_generate_v1() NOT NULL,
+CREATE TABLE public.shodan_vulns (
+    shodan_vuln_uid uuid DEFAULT public.uuid_generate_v1() NOT NULL,
     organizations_uid uuid NOT NULL,
     organization text,
     ip text,
@@ -511,7 +511,12 @@ CREATE TABLE public.shodan_verified_vulns (
     hostnames text[],
     isn text,
     asn integer,
-    data_source_uid uuid NOT NULL
+    data_source_uid uuid NOT NULL,
+    type text,
+    name text,
+    potential_vulns text[],
+    mitigation text,
+    is_verified boolean
 );
 
 --
@@ -835,19 +840,19 @@ ALTER TABLE ONLY public.shodan_insecure_protocols_unverified_vulns
 
 
 --
--- Name: shodan_verified_vulns shodan_verified_vulns_organizations_uid_ip_port_protocol_ti_key; Type: CONSTRAINT; Schema: public; Owner: pe
+-- Name: shodan_vulns shodan_vulns_organizations_uid_ip_port_protocol_ti_key; Type: CONSTRAINT; Schema: public; Owner: pe
 --
 
-ALTER TABLE ONLY public.shodan_verified_vulns
-    ADD CONSTRAINT shodan_verified_vulns_organizations_uid_ip_port_protocol_ti_key UNIQUE (organizations_uid, ip, port, protocol, "timestamp");
+ALTER TABLE ONLY public.shodan_vulns
+    ADD CONSTRAINT shodan_vulns_organizations_uid_ip_port_protocol_ti_key UNIQUE (organizations_uid, ip, port, protocol, "timestamp");
 
 
 --
--- Name: shodan_verified_vulns shodan_verified_vulns_pkey; Type: CONSTRAINT; Schema: public; Owner: pe
+-- Name: shodan_vulns shodan_vulns_pkey; Type: CONSTRAINT; Schema: public; Owner: pe
 --
 
-ALTER TABLE ONLY public.shodan_verified_vulns
-    ADD CONSTRAINT shodan_verified_vulns_pkey PRIMARY KEY (verified_vuln_uid);
+ALTER TABLE ONLY public.shodan_vulns
+    ADD CONSTRAINT shodan_vulns_pkey PRIMARY KEY (shodan_vuln_uid);
 
 
 --
@@ -1113,19 +1118,19 @@ ALTER TABLE ONLY public.shodan_insecure_protocols_unverified_vulns
 
 
 --
--- Name: shodan_verified_vulns shodan_verified_vulns_data_source_uid_fkey; Type: FK CONSTRAINT; Schema: public; Owner: pe
+-- Name: shodan_vulns shodan_vulns_data_source_uid_fkey; Type: FK CONSTRAINT; Schema: public; Owner: pe
 --
 
-ALTER TABLE ONLY public.shodan_verified_vulns
-    ADD CONSTRAINT shodan_verified_vulns_data_source_uid_fkey FOREIGN KEY (data_source_uid) REFERENCES public.data_source(data_source_uid) NOT VALID;
+ALTER TABLE ONLY public.shodan_vulns
+    ADD CONSTRAINT shodan_vulns_data_source_uid_fkey FOREIGN KEY (data_source_uid) REFERENCES public.data_source(data_source_uid) NOT VALID;
 
 
 --
--- Name: shodan_verified_vulns shodan_verified_vulns_organizations_uid_fkey; Type: FK CONSTRAINT; Schema: public; Owner: pe
+-- Name: shodan_vulns shodan_vulns_organizations_uid_fkey; Type: FK CONSTRAINT; Schema: public; Owner: pe
 --
 
-ALTER TABLE ONLY public.shodan_verified_vulns
-    ADD CONSTRAINT shodan_verified_vulns_organizations_uid_fkey FOREIGN KEY (organizations_uid) REFERENCES public.organizations(organizations_uid) NOT VALID;
+ALTER TABLE ONLY public.shodan_vulns
+    ADD CONSTRAINT shodan_vulns_organizations_uid_fkey FOREIGN KEY (organizations_uid) REFERENCES public.organizations(organizations_uid) NOT VALID;
 
 
 --
@@ -1185,10 +1190,10 @@ ALTER TABLE ONLY public.web_assets
 
 
 --
--- Name: new_vw_breach_complete; Type: VIEW; Schema: public; Owner: pe
+-- Name: new_breachcomp; Type: VIEW; Schema: public; Owner: pe
 --
 
-CREATE VIEW public.new_vw_breach_complete AS
+CREATE VIEW public.vw_breachcomp AS
     SELECT creds.credential_exposures_uid,
     creds.email,
     creds.breach_name,
@@ -1215,6 +1220,109 @@ CREATE VIEW public.new_vw_breach_complete AS
     FROM (public.credential_exposures creds
         JOIN public.credential_breaches b ON ((creds.credential_breaches_uid = b.credential_breaches_uid)));
 
+--
+-- Name: vw_breachcomp_credsbydate; Type: VIEW; Schema: public; Owner: pe
+--
+CREATE VIEW vw_breachcomp_credsbydate AS
+    SELECT
+    organizations_uid,
+    DATE(modified_date) mod_date,
+    SUM(CASE password_included WHEN false THEN 1 ELSE 0 END) AS no_password,
+    SUM(CASE password_included WHEN True THEN 1 ELSE 0 END) AS password_included
+    FROM vw_breachcomp
+    GROUP BY organizations_uid,
+    mod_date
+    ORDER BY mod_date DESC
+
+--
+-- Name: vw_breachcomp_breachdetails; Type: VIEW; Schema: public; Owner: pe
+--
+CREATE VIEW vw_breachcomp_breachdetails as
+    SELECT
+    vb.organizations_uid,
+    vb.breach_name,
+    DATE(vb.modified_date) mod_date,
+    vb.description,
+    vb.breach_date,
+    vb.password_included,
+    COUNT(vb.email) number_of_creds
+    FROM
+    vw_breachcomp vb
+    GROUP BY
+    vb.organizations_uid,
+    vb.breach_name,
+    mod_date,
+    vb.description,
+    vb.breach_date,
+    vb.password_included
+    ORDER BY mod_date DESC
+
+--
+-- Name: vw_shodanvulns_suspected; Type: VIEW; Schema: public; Owner: pe
+--
+
+CREATE VIEW vw_shodanvulns_suspected AS
+	SELECT
+    sv.organizations_uid,
+    sv.organization,
+    sv.ip,
+    sv.port,
+    sv.protocol,
+    sv.type,
+    sv."name",
+    sv.potential_vulns,
+    sv.mitigation,
+    sv."timestamp",
+    sv.product,
+    sv."server",
+    sv.tags,
+    sv.domains,
+    sv.hostnames,
+    sv.isn,
+    sv.asn,
+    ds."name" as "data_source"
+	FROM shodan_vulns sv
+	    JOIN data_source ds
+	ON ds.data_source_uid = sv.data_source_uid
+	WHERE is_verified = false
+
+--
+-- Name: vw_shodanvulns_verified; Type: VIEW; Schema: public; Owner: pe
+--
+
+CREATE VIEW vw_shodanvulns_verified AS
+	SELECT
+    sv.organizations_uid,
+    sv.organization,
+    sv.ip,
+    sv.port,
+    sv.protocol,
+    sv."timestamp",
+    sv.cve,
+    sv.severity,
+    sv.cvss,
+    sv.summary,
+    sv.product,
+    sv.attack_vector,
+    sv.av_description ,
+    sv.attack_complexity,
+    sv.ac_description,
+    sv.confidentiality_impact,
+    sv.ci_description,
+    sv.integrity_impact,
+    sv.ii_description,
+    sv.availability_impact,
+    sv.ai_description,
+    sv.tags,
+    sv.domains,
+    sv.hostnames,
+    sv.isn,
+    sv.asn,
+    ds."name" as "data_source"
+	FROM shodan_vulns sv
+	    JOIN data_source as ds
+	ON ds.data_source_uid = sv.data_source_uid
+	WHERE is_verified = true
 
 --
 -- Name: SCHEMA public; Type: ACL; Schema: -; Owner: postgres

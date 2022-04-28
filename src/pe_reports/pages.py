@@ -63,15 +63,17 @@ def buildAppendixList(df):
     return html
 
 
-def credential(chevron_dict, start_date, end_date, org_uid):
+def credential(
+    chevron_dict, trending_start_date, start_date, end_date, org_uid, source_html
+):
     """Build exposed credential page."""
-    Credential = Credentials(start_date, end_date, org_uid)
+    Credential = Credentials(trending_start_date, start_date, end_date, org_uid)
     # Build exposed credential stacked bar chart
     width = 24
-    height = 9.5
+    height = 9
     name = "inc_date_df"
-    title = "Reported Exposures by Day"
-    x_label = "Date Reported"
+    title = "Trending Exposures by Week"
+    x_label = "Week Reported"
     y_label = "Creds Exposed"
     cred_date_chart = Charts(
         Credential.by_days(),
@@ -82,7 +84,7 @@ def credential(chevron_dict, start_date, end_date, org_uid):
         x_label,
         y_label,
     )
-    cred_date_chart.stacked_bar()
+    cred_date_chart.line_chart()
     breach_table = buildTable(Credential.breach_details(), ["table"])
 
     creds_dict = {
@@ -177,12 +179,12 @@ def mal_vuln(chevron_dict, start_date, end_date, org_uid):
     )
 
 
-def dark_web(chevron_dict, start_date, end_date, org_uid):
+def dark_web(chevron_dict, trending_start_date, start_date, end_date, org_uid):
     """Dark Web Mentions."""
-    Cyber6 = Cyber_Six(start_date, end_date, org_uid)
+    Cyber6 = Cyber_Six(trending_start_date, start_date, end_date, org_uid)
     # Build dark web mentions over time line chart
-    width = 19
-    height = 9
+    width = 18.5
+    height = 8
     name = "web_only_df_2"
     title = ""
     x_label = "Dark Web Mentions"
@@ -251,11 +253,13 @@ def init(source_html, datestring, org_name, org_uid):
     # If the given end_date is the 15th, then the start_date is the 1st.
     # Otherwise, the start_date will be the 16th of the respective month.
     end_date = datetime.strptime(datestring, "%Y-%m-%d").date()
+    end_date = datetime.datetime.strptime(datestring, "%Y-%m-%d").date()
     if end_date.day == 15:
-        start_date = datetime(end_date.year, end_date.month, 1)
+        start_date = datetime.datetime(end_date.year, end_date.month, 1)
     else:
-        start_date = datetime(end_date.year, end_date.month, 16)
-
+        start_date = datetime.datetime(end_date.year, end_date.month, 16)
+    days = datetime.timedelta(27)
+    trending_start_date = end_date - days
     start = start_date.strftime("%m/%d/%Y")
     end = end_date.strftime("%m/%d/%Y")
     chevron_dict = {
@@ -264,8 +268,8 @@ def init(source_html, datestring, org_name, org_uid):
         "endDate": end,
     }
 
-    chevron_dict, hibp_creds, cyber_creds = credential(
-        chevron_dict, start_date, end_date, org_uid
+    chevron_dict, creds_sum, source_html = credential(
+        chevron_dict, trending_start_date, start_date, end_date, org_uid, source_html
     )
 
     chevron_dict, masq_df = masquerading(chevron_dict, start_date, end_date, org_uid)
@@ -275,15 +279,14 @@ def init(source_html, datestring, org_name, org_uid):
     )
 
     chevron_dict, dark_web_mentions, alerts, top_cves = dark_web(
-        chevron_dict, start_date, end_date, org_uid
+        chevron_dict, trending_start_date, start_date, end_date, org_uid
     )
 
     html = chevron.render(source_html, chevron_dict)
 
     return (
         html,
-        hibp_creds,
-        cyber_creds,
+        creds_sum,
         masq_df,
         insecure_df,
         vulns_df,
