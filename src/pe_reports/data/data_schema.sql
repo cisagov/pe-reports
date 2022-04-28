@@ -516,6 +516,7 @@ CREATE TABLE public.shodan_vulns (
     name text,
     potential_vulns text[],
     mitigation text,
+    server text,
     is_verified boolean
 );
 
