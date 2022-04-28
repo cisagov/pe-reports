@@ -192,10 +192,10 @@ def mal_vuln(chevron_dict, start_date, end_date, org_uid, source_html):
     Malware_Vuln = Malware_Vulns(start_date, end_date, org_uid)
     # Build insecure protocol horizontal bar chart
     width = 9
-    height = 5.2
+    height = 5.3
     name = "pro_count"
     title = ""
-    x_label = "Count"
+    x_label = "Insecure Protocols"
     y_label = ""
     protocol_chart = Charts(
         Malware_Vuln.protocol_count(),
