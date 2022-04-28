@@ -1228,11 +1228,34 @@ CREATE VIEW vw_breachcomp_credsbydate AS
 SELECT
 organizations_uid,
 DATE(modified_date) mod_date,
-SUM(CASE password_included WHEN True THEN 1 ELSE 0 END) AS password_included,
-SUM(CASE password_included WHEN false THEN 1 ELSE 0 END) AS no_password
+SUM(CASE password_included WHEN false THEN 1 ELSE 0 END) AS no_password,
+SUM(CASE password_included WHEN True THEN 1 ELSE 0 END) AS password_included
 FROM vw_breachcomp
 GROUP BY organizations_uid,
 mod_date
+ORDER BY mod_date DESC
+
+--
+-- Name: vw_breachcomp_breachdetails; Type: VIEW; Schema: public; Owner: pe
+--
+CREATE VIEW vw_breachcomp_breachdetails as
+SELECT
+vb.organizations_uid,
+vb.breach_name,
+DATE(vb.modified_date) mod_date,
+vb.description,
+vb.breach_date,
+vb.password_included,
+COUNT(vb.email) number_of_creds
+FROM
+vw_breachcomp vb
+GROUP BY
+vb.organizations_uid,
+vb.breach_name,
+mod_date,
+vb.description,
+vb.breach_date,
+vb.password_included
 ORDER BY mod_date DESC
 
 --
