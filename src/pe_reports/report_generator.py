@@ -134,18 +134,6 @@ def generate_reports(datestring, output_directory):
                 if not os.path.exists(f"{output_directory}/{dir_name}"):
                     os.mkdir(f"{output_directory}/{dir_name}")
 
-            # Load source HTML
-            try:
-                basedir = os.path.abspath(os.path.dirname(__file__))
-                template = os.path.join(basedir, "template.html")
-                file = open(template)
-                source_html = file.read().replace("\n", " ")
-            except FileNotFoundError:
-                logging.error(
-                    "Template cannot be found. It must be named: '%s'", template
-                )
-                return 1
-
             # Insert Charts and Metrics into PDF
             (
                 source_html,
@@ -159,14 +147,10 @@ def generate_reports(datestring, output_directory):
                 alerts,
                 top_cves,
             ) = init(
-                source_html,
                 datestring,
                 org_name,
                 org_uid,
             )
-
-            # Close PDF
-            file.close()
 
             # Convert to HTML to PDF
             output_filename = f"{output_directory}/{org_code}-Posture_and_Exposure_Report-{datestring}.pdf"
