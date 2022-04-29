@@ -9,6 +9,7 @@ from unittest.mock import patch
 import pytest
 
 # cisagov Libraries
+import pe_reports.data.db_query
 import pe_reports.report_generator
 
 log_levels = (
@@ -104,3 +105,12 @@ def test_reports_bad_log_level():
         except SystemExit as sys_exit:
             return_code = sys_exit.code
         assert return_code == 1, "main() should exit with error"
+
+
+def test_get_orgs_from_db():
+    """Test the get_orgs function."""
+    query_result = [("12345", "Test Org 1", "TO_ID_1")]
+    with patch("psycopg2.connect") as mock_connect:
+        mock_connect.cursor.return_value.fetchall.return_value = query_result
+        result = pe_reports.data.db_query.get_orgs(mock_connect)
+    assert result == [("12345", "Test Org 1", "TO_ID_1")]
