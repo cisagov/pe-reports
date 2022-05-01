@@ -20,6 +20,7 @@ from .data.sixgill.api import get_sixgill_organizations
 from .data.sixgill.source import (
     alerts,
     alias_organization,
+    all_assets_list,
     creds,
     cve_summary,
     get_alerts_content,
@@ -135,21 +136,28 @@ class Cybersixgill:
         # Get Alert content
         try:
             logging.info("Fetching alert content data for %s.", org_id)
+            # Fetch organization assets
+            org_assets_dict = all_assets_list(sixgill_org_id)
+            print(org_assets_dict)
             for i, row in alerts_df.iterrows():
                 try:
                     alert_id = row["sixgill_id"]
-                    content_snip, asset_mentioned = get_alerts_content(
-                        sixgill_org_id, alert_id
+                    content_snip, asset_mentioned, asset_type = get_alerts_content(
+                        sixgill_org_id, alert_id, org_assets_dict
                     )
                     alerts_df.at[i, "content_snip"] = content_snip
                     alerts_df.at[i, "asset_mentioned"] = asset_mentioned
+                    alerts_df.at[i, "asset_type"] = asset_type
                 except Exception as e:
                     logging.error(
                         "Failed fetching a specific alert content for %s", org_id
                     )
                     logging.error(e)
+                    print(traceback.format_exc())
                     alerts_df.at[i, "content_snip"] = ""
                     alerts_df.at[i, "asset_mentioned"] = ""
+                    alerts_df.at[i, "asset_type"] = ""
+            print(alerts_df["asset_mentioned"])
 
         except Exception as e:
             logging.error("Failed fetching alert content for %s", org_id)

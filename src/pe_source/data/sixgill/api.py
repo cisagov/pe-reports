@@ -1,4 +1,7 @@
 """Cybersixgill API calls."""
+# Standard Python Libraries
+import logging
+
 # Third-Party Libraries
 import pandas as pd
 import requests
@@ -105,11 +108,16 @@ def alerts_content(organization_id, alert_id):
     payload = {"organization_id": organization_id, "limit": 10000}
     content = requests.get(url, headers=headers, params=payload).json()
     try:
-        content = content["content"]["items"][0]["_source"]["content"]
+        content = content["content"]["items"][0]
+        if "_source" in content:
+            content = content["_source"]["content"]
+        elif "description" in content:
+            content = content["description"]
+            print(content)
+        else:
+            content = ""
     except Exception as e:
-        print(e)
-        print("Falied getting content snip")
-        print(content)
+        logging.error("Failed getting content snip: %s", e)
         content = ""
     return content
 

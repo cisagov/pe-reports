@@ -31,10 +31,13 @@ def all_assets_list(org_id):
     assets = org_assets(org_id)
     df_assets = pd.DataFrame(assets)
     aliases = df_assets["organization_aliases"].loc["explicit":].tolist()[0]
+    alias_dict = dict.fromkeys(aliases, "alias")
     domain_names = df_assets["domain_names"].loc["explicit":].tolist()[0]
+    domain_dict = dict.fromkeys(domain_names, "domain")
     ips = df_assets["ip_addresses"].loc["explicit":].tolist()[0]
-    assets = aliases + domain_names + ips
-    return assets
+    ip_dict = dict.fromkeys(ips, "ip")
+    assets_dict = {**alias_dict, **domain_dict, **ip_dict}
+    return assets_dict
 
 
 def root_domains(org_id):
@@ -125,19 +128,22 @@ def alerts(org_id):
     return df_all_alerts
 
 
-def get_alerts_content(organization_id, alert_id):
+def get_alerts_content(organization_id, alert_id, org_assets_dict):
     """Get alert content snippet."""
-    content = alerts_content(organization_id, alert_id)
-    org_assets = all_assets_list(organization_id)
     asset_mentioned = ""
     snip = ""
-    for asset in org_assets:
-        if asset in content:
-            index = content.index(asset)
-            snip = content[(index - 100) : (index + len(asset) + 100)]
-            snip = "..." + snip + "..."
-            asset_mentioned = asset
-    return snip, asset_mentioned
+    asset_type = ""
+    content = alerts_content(organization_id, alert_id)
+    if content:
+        for asset, type in org_assets_dict.items():
+            if asset in content:
+                index = content.index(asset)
+                snip = content[(index - 100) : (index + len(asset) + 100)]
+                snip = "..." + snip + "..."
+                asset_mentioned = asset
+                asset_type = type
+                logging.info("Asset mentioned: %s", asset_mentioned)
+    return snip, asset_mentioned, asset_type
 
 
 def top_cves(size):

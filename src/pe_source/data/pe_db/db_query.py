@@ -115,6 +115,9 @@ def insert_sixgill_alerts(df):
                 "lang",
                 "organizations_uid",
                 "data_source_uid",
+                "content_snip",
+                "asset_mentioned",
+                "asset_type",
             ]
         ]
     except Exception as e:
@@ -134,6 +137,9 @@ def insert_sixgill_alerts(df):
                 "user_id",
                 "organizations_uid",
                 "data_source_uid",
+                "content_snip",
+                "asset_mentioned",
+                "asset_type",
             ]
         ]
     table = "alerts"
@@ -143,8 +149,11 @@ def insert_sixgill_alerts(df):
     cols = ",".join(list(df.columns))
     # SQL query to execute
     query = """INSERT INTO {}({}) VALUES %s
-    ON CONFLICT (sixgill_id)
-    DO UPDATE SET content = EXCLUDED.content;"""
+    ON CONFLICT (sixgill_id) DO UPDATE SET
+    content = EXCLUDED.content,
+    content_snip = EXCLUDED.content_snip,
+    asset_mentioned = EXCLUDED.asset_mentioned,
+    asset_type = EXCLUDED.asset_type;"""
     cursor = conn.cursor()
     try:
         extras.execute_values(
