@@ -1,4 +1,7 @@
 """Cybersixgill API calls."""
+# Standard Python Libraries
+import logging
+
 # Third-Party Libraries
 import pandas as pd
 import requests
@@ -91,6 +94,32 @@ def alerts_count(organization_id):
     payload = {"organization_id": organization_id}
     resp = requests.get(url, headers=headers, params=payload).json()
     return resp
+
+
+def alerts_content(organization_id, alert_id):
+    """Get total alert content."""
+    url = f"https://api.cybersixgill.com/alerts/actionable_alert_content/{alert_id}"
+    auth = cybersix_token()
+    headers = {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache",
+        "Authorization": "Bearer " + auth,
+    }
+    payload = {"organization_id": organization_id, "limit": 10000}
+    content = requests.get(url, headers=headers, params=payload).json()
+    try:
+        content = content["content"]["items"][0]
+        if "_source" in content:
+            content = content["_source"]["content"]
+        elif "description" in content:
+            content = content["description"]
+            print(content)
+        else:
+            content = ""
+    except Exception as e:
+        logging.error("Failed getting content snip: %s", e)
+        content = ""
+    return content
 
 
 def dve_top_cves(size):
