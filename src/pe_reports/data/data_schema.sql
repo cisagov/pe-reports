@@ -1326,6 +1326,149 @@ CREATE VIEW vw_shodanvulns_verified AS
 	WHERE is_verified = true
 
 --
+-- Name: vw_darkweb_mentionsbydate; Type: VIEW; Schema: public; Owner: pe
+--
+
+CREATE VIEW vw_darkweb_mentionsbydate AS
+SELECT
+organizations_uid,
+DATE(m."date"),
+count(*) as "Count"
+FROM mentions m
+GROUP BY organizations_uid,
+m."date"
+ORDER BY m."date" desc;
+
+--
+-- Name: vw_darkweb_socmedia_mostactposts; Type: VIEW; Schema: public; Owner: pe
+--
+
+CREATE VIEW vw_darkweb_socmedia_mostactposts AS
+select m.organizations_uid,
+m."date",
+m.title "Title",
+case
+	when m.comments_count = 'NaN'
+		then 1
+	when m.comments_count = '0.0'
+		then 1
+	else m.comments_count::numeric::integer
+	end "Comments Count"
+from mentions m
+where m.site not like 'forum%' and m.site not like 'market%'
+ORDER BY "Comments Count" desc;
+
+--
+-- Name: vw_darkweb_mostactposts; Type: VIEW; Schema: public; Owner: pe
+--
+
+CREATE VIEW vw_darkweb_mostactposts AS
+select m.organizations_uid,
+m."date",
+m.title "Title",
+case
+	when m.comments_count = 'NaN'
+		then 1
+	when m.comments_count = '0.0'
+		then 1
+	when m.comments_count is null
+		then 1
+	else m.comments_count::numeric::integer
+	end "Comments Count"
+from mentions m
+where m.site like 'forum%' or m.site like 'market%'
+ORDER BY "Comments Count" desc;
+
+--
+-- Name: vw_darkweb_assetalerts; Type: VIEW; Schema: public; Owner: pe
+--
+
+CREATE VIEW vw_darkweb_assetalerts AS
+select a.organizations_uid,
+max(a."date") as "date",
+a.site as "Site",
+a.title as "Title",
+count(*) as "Events"
+from alerts a
+where a.alert_name not like '%executive%'
+and a.site notnull and a.site != 'NaN'
+GROUP BY a.site,
+a.title, a.organizations_uid
+ORDER BY "Events" desc;
+
+--
+-- Name: vw_darkweb_execalerts; Type: VIEW; Schema: public; Owner: pe
+--
+
+CREATE VIEW vw_darkweb_execalerts AS
+select a.organizations_uid,
+max(a."date") as "date",
+a.site as "Site",
+a.title as "Title",
+count(*) as "Events"
+from alerts a
+where a.alert_name like '%executive%'
+and a.site notnull and a.site != 'NaN'
+GROUP BY a.site,
+a.title, a.organizations_uid
+ORDER BY "Events" desc;
+
+--
+-- Name: vw_darkweb_threatactors; Type: VIEW; Schema: public; Owner: pe
+--
+
+CREATE VIEW vw_darkweb_threatactors AS
+select m.organizations_uid,
+m."date",
+m.creator as "Creator",
+round(m.rep_grade::numeric ,3) as "Grade"
+from mentions m
+ORDER BY "Grade" desc;
+
+--
+-- Name: vw_darkweb_potentialthreats; Type: VIEW; Schema: public; Owner: pe
+--
+
+CREATE VIEW vw_darkweb_potentialthreats AS
+select a.organizations_uid,
+a."date" as "date",
+a.site as "Site",
+btrim(a.threats,'{}') as "Threats"
+from alerts a
+where a.site notnull and a.site != 'NaN' and a.site != '';
+
+--
+-- Name: vw_darkweb_sites; Type: VIEW; Schema: public; Owner: pe
+--
+
+CREATE VIEW vw_darkweb_sites AS
+select m.organizations_uid,
+m."date",
+m.site as "Site"
+from mentions m;
+
+--
+-- Name: vw_darkweb_inviteonlymarkets; Type: VIEW; Schema: public; Owner: pe
+--
+
+CREATE VIEW vw_darkweb_inviteonlymarkets AS
+select a.organizations_uid,
+a."date" as "date",
+a.site as "Site"
+from alerts a
+where a.site like 'market%'
+and a.site notnull and a.site != 'NaN' and a.site != '';
+
+--
+-- Name: vw_darkweb_topcves; Type: VIEW; Schema: public; Owner: pe
+--
+
+CREATE VIEW vw_darkweb_topcves AS
+select *
+from top_cves tc
+ORDER BY tc."date" DESC LIMIT 10;
+
+--
 -- Name: SCHEMA public; Type: ACL; Schema: -; Owner: postgres
 --
 

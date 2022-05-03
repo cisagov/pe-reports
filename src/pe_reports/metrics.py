@@ -17,7 +17,6 @@ from .data.db_query import (
     query_domMasq_alerts,
     query_shodan,
 )
-
 from .data.translator import translate
 
 
@@ -377,18 +376,6 @@ class Cyber_Six:
         self.end_date = end_date
         self.org_uid = org_uid
 
-        trending_dark_web_mentions = query_darkweb(
-            org_uid,
-            trending_start_date,
-            end_date,
-            "mentions",
-        )
-        trending_dark_web_mentions = trending_dark_web_mentions.drop(
-            columns=["organizations_uid", "mentions_uid"],
-            errors="ignore",
-        )
-        self.trending_dark_web_mentions = trending_dark_web_mentions
-
         dark_web_mentions = query_darkweb(
             org_uid,
             start_date,
@@ -399,8 +386,6 @@ class Cyber_Six:
             columns=["organizations_uid", "mentions_uid"],
             errors="ignore",
         )
-        # Translate title field to english
-        # dark_web_mentions = translate(dark_web_mentions, ["title"])
         self.dark_web_mentions = dark_web_mentions
 
         alerts = query_darkweb(
@@ -421,107 +406,26 @@ class Cyber_Six:
         top_cves = top_cves[top_cves["date"] == top_cves["date"].max()]
         self.top_cves = top_cves
 
-    def alerts_exec(self):
-        """Get top executive mentions."""
-        alerts = self.alerts
-        alerts_exec = alerts[alerts["alert_name"].str.contains("executive")]
-        alerts_exec = alerts_exec[["site", "title"]]
-        alerts_exec = alerts_exec[alerts_exec["site"] != "NaN"]
-        alerts_exec = alerts_exec[alerts_exec["site"] != ""]
-        alerts_exec = (
-            alerts_exec.groupby(["site", "title"])["title"]
-            .count()
-            .nlargest(10)
-            .reset_index(name="Events")
-        )
-        alerts_exec["title"] = alerts_exec["title"].str[:100]
-        alerts_exec = alerts_exec.rename(columns={"site": "Site", "title": "Topic"})
-        return alerts_exec
-
-    def asset_alerts(self):
-        """Get top executive mentions."""
-        alerts = self.alerts
-        asset_alerts = alerts[~alerts["alert_name"].str.contains("executive")]
-        asset_alerts = asset_alerts[["site", "title"]]
-        asset_alerts = asset_alerts[asset_alerts["site"] != "NaN"]
-        asset_alerts = asset_alerts[asset_alerts["site"] != ""]
-        asset_alerts = (
-            asset_alerts.groupby(["site", "title"])["title"]
-            .count()
-            .nlargest(10)
-            .reset_index(name="Events")
-        )
-        asset_alerts["title"] = asset_alerts["title"].str[:150]
-        asset_alerts = asset_alerts.rename(columns={"site": "Site", "title": "Topic"})
-        return asset_alerts
-
-    def alerts_threats(self):
-        """Get threat alerts."""
-        alerts = self.alerts
-        alerts_threats = alerts[["site", "threats"]]
-        alerts_threats = alerts_threats[alerts_threats["site"] != "NaN"]
-        alerts_threats = alerts_threats[alerts_threats["site"] != ""]
-        alerts_threats = (
-            alerts_threats.groupby(["site", "threats"])["threats"]
-            .count()
-            .nlargest(5)
-            .reset_index(name="Events")
-        )
-        alerts_threats["threats"] = alerts_threats["threats"].str.strip("{}")
-        alerts_threats["threats"] = alerts_threats["threats"].str[:50]
-        alerts_threats = alerts_threats.rename(
-            columns={"site": "Site", "threats": "Threats"}
-        )
-        return alerts_threats
-
-    def dark_web_bad_actors(self):
-        """Get dark web bad actors."""
-        dark_web_mentions = self.dark_web_mentions
-        dark_web_bad_actors = dark_web_mentions[["creator", "rep_grade"]]
-        dark_web_bad_actors = dark_web_bad_actors.groupby(
-            "creator", as_index=False
-        ).max()
-        dark_web_bad_actors = dark_web_bad_actors.sort_values(
-            by=["rep_grade"], ascending=False
-        )[:10]
-        dark_web_bad_actors["rep_grade"] = (
-            dark_web_bad_actors["rep_grade"].astype(float).round(decimals=3)
-        )
-        dark_web_bad_actors = dark_web_bad_actors.rename(
-            columns={"creator": "Creator", "rep_grade": "Grade"}
-        )
-        return dark_web_bad_actors
-
-    def dark_web_content(self):
-        """Get dark web categories."""
-        dark_web_mentions = self.dark_web_mentions
-        dark_web_content = dark_web_mentions[["category"]]
-        dark_web_content = (
-            dark_web_content.groupby(["category"])["category"]
-            .count()
-            .nlargest(10)
-            .reset_index(name="count")
-        )
-        return dark_web_content
-
     def dark_web_count(self):
         """Get total number of dark web mentions."""
         return len(self.alerts.index)
 
     def dark_web_date(self):
         """Get dark web mentions by date."""
-        dark_web_mentions = self.trending_dark_web_mentions
-        dark_web_date = dark_web_mentions[["date"]]
-        dark_web_date = (
-            dark_web_date.groupby(["date"])["date"].count().reset_index(name="Count")
+        trending_dark_web_mentions = query_darkweb(
+            self.org_uid,
+            self.trending_start_date,
+            self.end_date,
+            "vw_darkweb_mentionsbydate",
         )
-        dark_web_date["date"] = pd.to_datetime(dark_web_date["date"])
-        dark_web_date = dark_web_date
+        dark_web_date = trending_dark_web_mentions.drop(
+            columns=["organizations_uid"],
+            errors="ignore",
+        )
         idx = pd.date_range(self.trending_start_date, self.end_date)
         dark_web_date = (
             dark_web_date.set_index("date").reindex(idx).fillna(0.0).rename_axis("date")
         )
-
         group_limit = self.end_date + datetime.timedelta(1)
         dark_web_date = dark_web_date.groupby(
             pd.Grouper(level="date", freq="7d", origin=group_limit)
@@ -532,112 +436,156 @@ class Cyber_Six:
         dark_web_date = dark_web_date[["Count"]]
         return dark_web_date
 
-    def dark_web_most_act(self):
-        """Get most active posts."""
-        dark_web_mentions = self.dark_web_mentions
-        dark_web_most_act = dark_web_mentions[
-            dark_web_mentions["site"].str.startswith("forum", "market")
-        ]
-        dark_web_most_act = dark_web_most_act[["title", "comments_count"]]
-        dark_web_most_act = dark_web_most_act[
-            dark_web_most_act["comments_count"] != "NaN"
-        ]
-        dark_web_most_act = dark_web_most_act.rename(
-            columns={"comments_count": "Comments Count"}
-        )
-        dark_web_most_act["Comments Count"] = (
-            dark_web_most_act["Comments Count"].astype(float).astype(int)
-        )
-        dark_web_most_act = dark_web_most_act.sort_values(
-            by="Comments Count", ascending=False
-        )
-        dark_web_most_act = dark_web_most_act[:5]
-        # Translate title field to english
-        dark_web_most_act = translate(dark_web_most_act, ["title"])
-        dark_web_most_act = dark_web_most_act.rename(columns={"title": "Title"})
-        dark_web_most_act["Title"] = dark_web_most_act["Title"].str[:80]
-        dark_web_most_act = dark_web_most_act.replace(r"^\s*$", "Untitled", regex=True)
-        return dark_web_most_act
-
     def social_media_most_act(self):
-        """Get most active posts."""
-        dark_web_mentions = self.dark_web_mentions
-        soc_med_most_act = dark_web_mentions[
-            ~dark_web_mentions["site"].str.startswith(("forum", "market"))
-        ]
-
-        # If the post is NaN or 0, set it to 1 for the post itself
-        soc_med_most_act.loc[
-            soc_med_most_act["comments_count"] == "NaN", "comments_count"
-        ] = 1
-        soc_med_most_act.loc[
-            soc_med_most_act["comments_count"] == 0, "comments_count"
-        ] = 1
-        soc_med_most_act = soc_med_most_act[["title", "comments_count"]]
-        soc_med_most_act = soc_med_most_act.rename(
-            columns={"comments_count": "Comments Count"}
+        """Get most active social media posts."""
+        soc_med_most_act = query_darkweb(
+            self.org_uid,
+            self.start_date,
+            self.end_date,
+            "vw_darkweb_socmedia_mostactposts",
         )
-        soc_med_most_act["Comments Count"] = (
-            soc_med_most_act["Comments Count"].astype(float).astype(int)
-        )
-        soc_med_most_act = soc_med_most_act.sort_values(
-            by="Comments Count", ascending=False
+        soc_med_most_act = soc_med_most_act.drop(
+            columns=["organizations_uid", "date"],
+            errors="ignore",
         )
         soc_med_most_act = soc_med_most_act[:6]
         # Translate title field to english
-        soc_med_most_act = translate(soc_med_most_act, ["title"])
-        soc_med_most_act = soc_med_most_act.rename(columns={"title": "Title"})
+        soc_med_most_act = translate(soc_med_most_act, ["Title"])
         soc_med_most_act["Title"] = soc_med_most_act["Title"].str[:100]
         soc_med_most_act = soc_med_most_act.replace(r"^\s*$", "Untitled", regex=True)
         return soc_med_most_act
 
+    def dark_web_most_act(self):
+        """Get most active dark web posts."""
+        dark_web_most_act = query_darkweb(
+            self.org_uid,
+            self.start_date,
+            self.end_date,
+            "vw_darkweb_mostactposts",
+        )
+        dark_web_most_act = dark_web_most_act.drop(
+            columns=["organizations_uid", "date"],
+            errors="ignore",
+        )
+        dark_web_most_act = dark_web_most_act[:5]
+        # Translate title field to english
+        dark_web_most_act = translate(dark_web_most_act, ["Title"])
+        dark_web_most_act["Title"] = dark_web_most_act["Title"].str[:80]
+        dark_web_most_act = dark_web_most_act.replace(r"^\s*$", "Untitled", regex=True)
+        return dark_web_most_act
+
+    def asset_alerts(self):
+        """Get top executive mentions."""
+        asset_alerts = query_darkweb(
+            self.org_uid,
+            self.start_date,
+            self.end_date,
+            "vw_darkweb_assetalerts",
+        )
+        asset_alerts = asset_alerts.drop(
+            columns=["organizations_uid", "date"],
+            errors="ignore",
+        )
+        asset_alerts = asset_alerts[:10]
+        asset_alerts["Title"] = asset_alerts["Title"].str[:150]
+        return asset_alerts
+
+    def alerts_exec(self):
+        """Get top executive alerts."""
+        alerts_exec = query_darkweb(
+            self.org_uid,
+            self.start_date,
+            self.end_date,
+            "vw_darkweb_execalerts",
+        )
+        alerts_exec = alerts_exec.drop(
+            columns=["organizations_uid", "date"],
+            errors="ignore",
+        )
+        alerts_exec = alerts_exec[:10]
+        alerts_exec["Title"] = alerts_exec["Title"].str[:100]
+        return alerts_exec
+
+    def dark_web_bad_actors(self):
+        """Get dark web bad actors."""
+        dark_web_bad_actors = query_darkweb(
+            self.org_uid,
+            self.start_date,
+            self.end_date,
+            "vw_darkweb_threatactors",
+        )
+        dark_web_bad_actors = dark_web_bad_actors.drop(
+            columns=["organizations_uid", "date"],
+            errors="ignore",
+        )
+        dark_web_bad_actors = dark_web_bad_actors.groupby(
+            "Creator", as_index=False
+        ).max()
+        dark_web_bad_actors = dark_web_bad_actors.sort_values(
+            by=["Grade"], ascending=False
+        )[:10]
+        return dark_web_bad_actors
+
+    def alerts_threats(self):
+        """Get threat alerts."""
+        alerts_threats = query_darkweb(
+            self.org_uid,
+            self.start_date,
+            self.end_date,
+            "vw_darkweb_potentialthreats",
+        )
+        alerts_threats = alerts_threats.drop(
+            columns=["organizations_uid", "date"],
+            errors="ignore",
+        )
+        alerts_threats = (
+            alerts_threats.groupby(["Site", "Threats"])["Threats"]
+            .count()
+            .nlargest(5)
+            .reset_index(name="Events")
+        )
+        alerts_threats["Threats"] = alerts_threats["Threats"].str[:50]
+        return alerts_threats
+
     def dark_web_sites(self):
         """Get mentions by dark web sites (top 10)."""
-        dark_web_mentions = self.dark_web_mentions
-        dark_web_sites = dark_web_mentions[["site"]]
+        dark_web_sites = query_darkweb(
+            self.org_uid,
+            self.start_date,
+            self.end_date,
+            "vw_darkweb_sites",
+        )
+        dark_web_sites = dark_web_sites.drop(
+            columns=["organizations_uid", "date"],
+            errors="ignore",
+        )
         dark_web_sites = (
-            dark_web_sites.groupby(["site"])["site"]
+            dark_web_sites.groupby(["Site"])["Site"]
             .count()
             .nlargest(10)
             .reset_index(name="count")
         )
-        dark_web_sites = dark_web_sites.rename(
-            columns={"site": "Site", "count": "Count"}
-        )
         return dark_web_sites
 
-    def dark_web_tags(self):
-        """Get dark web notable tags."""
-        dark_web_mentions = self.dark_web_mentions
-        dark_web_tags = dark_web_mentions[["tags"]]
-        dark_web_tags = dark_web_tags[dark_web_tags["tags"] != "NaN"]
-        dark_web_tags = (
-            dark_web_tags.groupby(["tags"])["tags"]
-            .count()
-            .nlargest(8)
-            .reset_index(name="Events")
-        )
-        dark_web_tags["tags"] = dark_web_tags["tags"].str.strip("{}")
-        dark_web_tags["tags"] = dark_web_tags["tags"].str.replace(
-            ",", ", ", regex=False
-        )
-        dark_web_tags = dark_web_tags.rename(columns={"tags": "Tags"})
-        return dark_web_tags
-
-    def alerts_site(self):
+    def invite_only_markets(self):
         """Get alerts in invite-only markets."""
-        alerts_site = self.alerts[["site"]]
-        alerts_site = alerts_site[alerts_site["site"] != "NaN"]
-        alerts_site = alerts_site[alerts_site["site"] != ""]
-        alerts_site = alerts_site[alerts_site["site"].str.startswith("market")]
-        alerts_site = (
-            alerts_site.groupby(["site"])["site"]
+        markets = query_darkweb(
+            self.org_uid,
+            self.start_date,
+            self.end_date,
+            "vw_darkweb_inviteonlymarkets",
+        )
+        markets = markets.drop(
+            columns=["organizations_uid", "date"],
+            errors="ignore",
+        )
+        markets = (
+            markets.groupby(["Site"])["Site"]
             .count()
             .nlargest(10)
             .reset_index(name="Alerts")
         )
-        alerts_site = alerts_site.rename(columns={"site": "Site"})
-        return alerts_site
+        return markets
 
     def top_cve_table(self):
         """Get top CVEs."""

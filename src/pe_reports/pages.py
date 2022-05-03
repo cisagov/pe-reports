@@ -296,23 +296,6 @@ def dark_web(chevron_dict, trending_start_date, start_date, end_date, org_uid):
         y_label,
     )
     dark_mentions_chart.line_chart()
-    # # Build forum type / conversation content pie chart
-    # width = 19
-    # height = 9
-    # name = "dark_web_forum_pie"
-    # title = ""
-    # x_label = ""
-    # y_label = ""
-    # pie_chart = Charts(
-    #     Cyber6.dark_web_content(),
-    #     width,
-    #     height,
-    #     name,
-    #     title,
-    #     x_label,
-    #     y_label,
-    # )
-    # pie_chart.pie()
 
     # Build tables
     dark_web_sites_table = buildTable(Cyber6.dark_web_sites(), ["table"], [50, 50])
@@ -320,14 +303,15 @@ def dark_web(chevron_dict, trending_start_date, start_date, end_date, org_uid):
     dark_web_actors_table = buildTable(
         Cyber6.dark_web_bad_actors()[:10], ["table"], [50, 50]
     )
-    dark_web_tags_table = buildTable(Cyber6.dark_web_tags(), ["table"], [60, 40])
     alerts_exec_table = buildTable(Cyber6.alerts_exec()[:8], ["table"], [15, 70, 15])
     asset_alerts_table = buildTable(Cyber6.asset_alerts()[:10], ["table"], [15, 70, 15])
     dark_web_act_table = buildTable(Cyber6.dark_web_most_act(), ["table"], [75, 25])
     social_med_act_table = buildTable(
         Cyber6.social_media_most_act(), ["table"], [75, 25]
     )
-    alerts_site_table = buildTable(Cyber6.alerts_site(), ["table"], [50, 50])
+    invite_only_markets_table = buildTable(
+        Cyber6.invite_only_markets(), ["table"], [50, 50]
+    )
     top_cves_table = buildTable(Cyber6.top_cve_table(), ["table"], [15, 70, 15])
 
     dark_web_dict = {
@@ -335,12 +319,11 @@ def dark_web(chevron_dict, trending_start_date, start_date, end_date, org_uid):
         "dark_web_sites": dark_web_sites_table,
         "alerts_threats": alerts_threats_table,
         "dark_web_actors": dark_web_actors_table,
-        "dark_web_tags": dark_web_tags_table,
         "alerts_exec": alerts_exec_table,
         "asset_alerts": asset_alerts_table,
         "dark_web_act": dark_web_act_table,
         "social_med_act": social_med_act_table,
-        "markets_table": alerts_site_table,
+        "markets_table": invite_only_markets_table,
         "top_cves": top_cves_table,
     }
 
