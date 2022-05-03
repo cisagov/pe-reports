@@ -2,6 +2,7 @@
 
 # Standard Python Libraries
 import logging
+import time
 
 # Third-Party Libraries
 import pandas as pd
@@ -16,6 +17,7 @@ from .api import (
     intel_post,
     org_assets,
 )
+from pe_source.data.pe_db.config import cybersix_token
 
 
 def alias_organization(org_id):
@@ -50,18 +52,27 @@ def root_domains(org_id):
 
 def mentions(date, aliases):
     """Pull dark web mentions data for an organization."""
+    token = cybersix_token()
     mentions = ""
     for mention in aliases:
         mentions += '"' + mention + '"' + ","
     mentions = mentions[:-1]
     query = "date:" + date + " AND " + "(" + str(mentions) + ")"
+    # query = (
+    #     "date:"
+    #     + date
+    #     + " AND NOT site:telegram AND NOT site:forum_4chan AND NOT site:reddit AND "
+    #     + "("
+    #     + str(mentions)
+    #     + ")"
+    # )
     logging.info("Query:")
     logging.info(query)
     count = 1
     while count < 7:
         try:
             logging.info("Intel post try #%s", count)
-            resp = intel_post(query, frm=0, scroll=False, result_size=1)
+            resp = intel_post(token, query, frm=0, scroll=False, result_size=1)
             break
         except Exception:
             logging.info("Error. Trying intel_post again...")
@@ -70,24 +81,56 @@ def mentions(date, aliases):
     count_total = resp["total_intel_items"]
     logging.info("Total Mentions: %s", count_total)
 
-    i = 0
-    all_mentions = []
-    while i < count_total:
-        # Recommended "from" and "result_size" is 50. The maximum is 400.
-        resp = intel_post(query, frm=i, scroll=False, result_size=50)
-        i += 50
-        logging.info("Getting %s of %s....", i, count_total)
-        intel_items = resp["intel_items"]
-        df_mentions = pd.DataFrame.from_dict(intel_items)
-        all_mentions.append(df_mentions)
-        df_all_mentions = pd.concat(all_mentions).reset_index(drop=True)
+    if count_total < 8000:
+        i = 0
+        all_mentions = []
+        count = 1
+        while i < count_total:
+            # Recommended "from" and "result_size" is 50. The maximum is 400.
+            while count < 7:
+                try:
+                    resp = intel_post(token, query, frm=i, scroll=False, result_size=200)
+                    i += 200
+                    logging.info("Getting %s of %s....", i, count_total)
+                    intel_items = resp["intel_items"]
+                    df_mentions = pd.DataFrame.from_dict(intel_items)
+                    all_mentions.append(df_mentions)
+                    df_all_mentions = pd.concat(all_mentions).reset_index(drop=True)
+                    break
+                except Exception:
+                    time.sleep(5)
+                    logging.info("Error. Trying query post again...")
+                    count += 1
+                    continue
+    else:
+        i = 0
+        all_mentions = []
+        count = 1
+        while i < count_total:
+            # Recommended "from" and "result_size" is 50. The maximum is 400.
+            while count < 7:
+                try:
+                    resp = intel_post(token, query, frm=i, scroll=False, result_size=300)
+                    i += 300
+                    logging.info("Getting %s of %s....", i, count_total)
+                    intel_items = resp["intel_items"]
+                    df_mentions = pd.DataFrame.from_dict(intel_items)
+                    all_mentions.append(df_mentions)
+                    df_all_mentions = pd.concat(all_mentions).reset_index(drop=True)
+                    break
+                except Exception:
+                    time.sleep(5)
+                    logging.info("Error. Trying query post again...")
+                    count += 1
+                    continue
 
     return df_all_mentions
 
 
 def alerts(org_id):
     """Get actionable alerts for an organization."""
-    count = alerts_count(org_id)
+    token = cybersix_token()
+    count = alerts_count(token, org_id)
     count_total = count["total"]
     logging.info("Total Alerts: %s", count_total)
 
@@ -96,7 +139,7 @@ def alerts(org_id):
     all_alerts = []
 
     for offset in range(0, count_total, fetch_size):
-        resp = alerts_list(org_id, fetch_size, offset).json()
+        resp = alerts_list(token, org_id, fetch_size, offset).json()
         df_alerts = pd.DataFrame.from_dict(resp)
         all_alerts.append(df_alerts)
         df_all_alerts = pd.concat(all_alerts).reset_index(drop=True)
@@ -112,10 +155,11 @@ def alerts(org_id):
 
 def get_alerts_content(organization_id, alert_id, org_assets_dict):
     """Get alert content snippet."""
+    token = cybersix_token()
     asset_mentioned = ""
     snip = ""
     asset_type = ""
-    content = alerts_content(organization_id, alert_id)
+    content = alerts_content(token, organization_id, alert_id)
     if content:
         for asset, type in org_assets_dict.items():
             if asset in content:

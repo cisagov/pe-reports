@@ -58,7 +58,6 @@ class Cybersixgill:
 
         # Get org info from PE database
         pe_orgs = get_orgs()
-
         # Get Cybersixgill org info
         sixgill_orgs = get_sixgill_organizations()
         failed = []
@@ -189,6 +188,10 @@ class Cybersixgill:
 
         # Fetch mention data
         try:
+            if "SSS" in aliases:
+                aliases.remove("SSS")
+            if "ST" in aliases:
+                aliases.remove("ST")
             mentions_df = mentions(DATE_SPAN, aliases)
             mentions_df = mentions_df.rename(columns={"id": "sixgill_mention_id"})
             mentions_df["organizations_uid"] = pe_org_uid
@@ -205,6 +208,7 @@ class Cybersixgill:
             insert_sixgill_mentions(mentions_df)
         except Exception as e:
             logging.error("Failed inserting mentions for %s", org_id)
+            print(traceback.format_exc)
             logging.error(e)
             return 1
         return 0

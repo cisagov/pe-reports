@@ -4,6 +4,7 @@
 from configparser import ConfigParser
 import logging
 import os
+import time
 
 # Third-Party Libraries
 from importlib_resources import files
@@ -74,5 +75,15 @@ def cybersix_token():
         "client_id": client_id,
         "client_secret": client_secret,
     }
-    resp = requests.post(url, headers=headers, data=payload).json()
+    count = 1
+    while count < 15:
+        try:
+            resp = requests.post(url, headers=headers, data=payload).json()
+            break
+        except Exception as e:
+            logging.info("Error. Trying token post again...")
+            time.sleep(10)
+            count += 1
+            continue
+
     return resp["access_token"]

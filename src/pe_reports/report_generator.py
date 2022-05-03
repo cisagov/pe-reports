@@ -127,7 +127,7 @@ def generate_reports(datestring, output_directory):
             org_name = org[1]
             org_code = org[2]
 
-            # if org_code not in ["DHS_FEMA","DHS"]:
+             # if org_code not in ["DHS_FEMA","DHS"]:
             #     continue
             logging.info("Running on %s", org_code)
 
@@ -153,7 +153,6 @@ def generate_reports(datestring, output_directory):
                 org_name,
                 org_uid,
             )
-
             # Convert to HTML to PDF
             output_filename = f"{output_directory}/{org_code}-Posture_and_Exposure_Report-{datestring}.pdf"
             convert_html_to_pdf(source_html, output_filename)

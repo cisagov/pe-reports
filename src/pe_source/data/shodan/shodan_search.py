@@ -158,6 +158,7 @@ def search_shodan(thread_name, ips, api, start, end, org_uid, org_name, failed):
                                             "tags": r["tags"],
                                             "timestamp": d["timestamp"],
                                             "type": ftype,
+                                            "is_verified": False,
                                         }
                                     )
                             elif d["_shodan"]["module"] in risky_ports:

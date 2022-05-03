@@ -18,7 +18,7 @@ from .data.db_query import (
     query_shodan,
 )
 
-# from .data.translator import translate
+from .data.translator import translate
 
 
 class Credentials:
@@ -62,7 +62,6 @@ class Credentials:
         )
         if len(df.columns) == 0:
             df["Passwords Included"] = 0
-        print(df)
         return df
 
     def breaches(self):
@@ -81,7 +80,6 @@ class Credentials:
     def breach_details(self):
         """Return breach details."""
         breach_df = self.breach_details_view
-        print(breach_df)
         breach_det_df = breach_df.rename(columns={"modified_date": "update_date"})
         breach_det_df["update_date"] = pd.to_datetime(breach_det_df["update_date"])
         if len(breach_det_df) > 0:
@@ -101,7 +99,6 @@ class Credentials:
                 "number_of_creds": "Number of Creds",
             }
         )
-        print(breach_det_df)
         return breach_det_df
 
     def password(self):
@@ -556,7 +553,7 @@ class Cyber_Six:
         )
         dark_web_most_act = dark_web_most_act[:5]
         # Translate title field to english
-        # dark_web_most_act = translate(dark_web_most_act, ["title"])
+        dark_web_most_act = translate(dark_web_most_act, ["title"])
         dark_web_most_act = dark_web_most_act.rename(columns={"title": "Title"})
         dark_web_most_act["Title"] = dark_web_most_act["Title"].str[:80]
         dark_web_most_act = dark_web_most_act.replace(r"^\s*$", "Untitled", regex=True)
@@ -588,7 +585,7 @@ class Cyber_Six:
         )
         soc_med_most_act = soc_med_most_act[:6]
         # Translate title field to english
-        # soc_med_most_act = translate(soc_med_most_act, ["title"])
+        soc_med_most_act = translate(soc_med_most_act, ["title"])
         soc_med_most_act = soc_med_most_act.rename(columns={"title": "Title"})
         soc_med_most_act["Title"] = soc_med_most_act["Title"].str[:100]
         soc_med_most_act = soc_med_most_act.replace(r"^\s*$", "Untitled", regex=True)

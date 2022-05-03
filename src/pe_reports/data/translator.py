@@ -44,7 +44,6 @@ def translate(df, column_list=[]):
                             combined_element = ""
                             for chunk in chunks:
                                 if chunk:
-                                    print(chunk)
                                     combined_element = (
                                         combined_element
                                         + translator.translate(chunk, dest="en").text

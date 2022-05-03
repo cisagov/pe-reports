@@ -39,10 +39,9 @@ def org_assets(org_id):
     return resp
 
 
-def intel_post(query, frm, scroll, result_size):
+def intel_post(auth, query, frm, scroll, result_size):
     """Get intel items - advanced variation."""
     url = "https://api.cybersixgill.com/intel/intel_items"
-    auth = cybersix_token()
     headers = {
         "Content-Type": "application/json",
         "Cache-Control": "no-cache",
@@ -64,10 +63,9 @@ def intel_post(query, frm, scroll, result_size):
     return resp
 
 
-def alerts_list(organization_id, fetch_size, offset):
+def alerts_list(auth, organization_id, fetch_size, offset):
     """Get actionable alerts by ID using organization_id with optional filters."""
     url = "https://api.cybersixgill.com/alerts/actionable-alert"
-    auth = cybersix_token()
     headers = {
         "Content-Type": "application/json",
         "Cache-Control": "no-cache",
@@ -82,10 +80,9 @@ def alerts_list(organization_id, fetch_size, offset):
     return resp
 
 
-def alerts_count(organization_id):
+def alerts_count(auth, organization_id):
     """Get the total read and unread actionable alerts by organization."""
     url = "https://api.cybersixgill.com/alerts/actionable_alert/count"
-    auth = cybersix_token()
     headers = {
         "Content-Type": "application/json",
         "Cache-Control": "no-cache",
@@ -96,10 +93,9 @@ def alerts_count(organization_id):
     return resp
 
 
-def alerts_content(organization_id, alert_id):
+def alerts_content(auth, organization_id, alert_id):
     """Get total alert content."""
     url = f"https://api.cybersixgill.com/alerts/actionable_alert_content/{alert_id}"
-    auth = cybersix_token()
     headers = {
         "Content-Type": "application/json",
         "Cache-Control": "no-cache",
@@ -113,7 +109,6 @@ def alerts_content(organization_id, alert_id):
             content = content["_source"]["content"]
         elif "description" in content:
             content = content["description"]
-            print(content)
         else:
             content = ""
     except Exception as e:
