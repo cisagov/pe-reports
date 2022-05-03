@@ -30,9 +30,7 @@ def connect():
     """Connect to PostgreSQL database."""
     conn = None
     try:
-        logging.info("Connecting to the PostgreSQL......")
         conn = psycopg2.connect(**CONN_PARAMS_DIC)
-        logging.info("Connection successful......")
     except OperationalError as err:
         show_psycopg2_exception(err)
         conn = None
@@ -61,13 +59,54 @@ def get_orgs(conn):
             close(conn)
 
 
-def query_hibp_view(org_uid, start_date, end_date):
-    """Query 'Have I Been Pwned?' table."""
+def query_creds_view(org_uid, start_date, end_date):
+    """Query credentials view ."""
     conn = connect()
     try:
-        sql = """SELECT * FROM vw_breach_complete
+        sql = """SELECT * FROM vw_breachcomp
         WHERE organizations_uid = %(org_uid)s
         AND modified_date BETWEEN %(start_date)s AND %(end_date)s"""
+        df = pd.read_sql(
+            sql,
+            conn,
+            params={"org_uid": org_uid, "start_date": start_date, "end_date": end_date},
+        )
+        return df
+    except (Exception, psycopg2.DatabaseError) as error:
+        logging.error("There was a problem with your database query %s", error)
+    finally:
+        if conn is not None:
+            close(conn)
+
+
+def query_credsbyday_view(org_uid, start_date, end_date):
+    """Query credentials by date view ."""
+    conn = connect()
+    try:
+        sql = """SELECT mod_date, no_password, password_included FROM vw_breachcomp_credsbydate
+        WHERE organizations_uid = %(org_uid)s
+        AND mod_date BETWEEN %(start_date)s AND %(end_date)s"""
+        df = pd.read_sql(
+            sql,
+            conn,
+            params={"org_uid": org_uid, "start_date": start_date, "end_date": end_date},
+        )
+        return df
+    except (Exception, psycopg2.DatabaseError) as error:
+        logging.error("There was a problem with your database query %s", error)
+    finally:
+        if conn is not None:
+            close(conn)
+
+
+def query_breachdetails_view(org_uid, start_date, end_date):
+    """Query credentials by date view ."""
+    conn = connect()
+    try:
+        sql = """SELECT breach_name, mod_date modified_date, breach_date, password_included, number_of_creds
+        FROM vw_breachcomp_breachdetails
+        WHERE organizations_uid = %(org_uid)s
+        AND mod_date BETWEEN %(start_date)s AND %(end_date)s"""
         df = pd.read_sql(
             sql,
             conn,
@@ -85,9 +124,33 @@ def query_domMasq(org_uid, start_date, end_date):
     """Query domain masquerading table."""
     conn = connect()
     try:
-        sql = """SELECT * FROM dnstwist_domain_masq
+        sql = """SELECT * FROM domain_permutations
         WHERE organizations_uid = %(org_uid)s
-        AND date_observed BETWEEN %(start_date)s AND %(end_date)s"""
+        AND date_active BETWEEN %(start_date)s AND %(end_date)s"""
+        df = pd.read_sql(
+            sql,
+            conn,
+            params={
+                "org_uid": org_uid,
+                "start_date": start_date,
+                "end_date": end_date,
+            },
+        )
+        return df
+    except (Exception, psycopg2.DatabaseError) as error:
+        logging.error("There was a problem with your database query %s", error)
+    finally:
+        if conn is not None:
+            close(conn)
+
+
+def query_domMasq_alerts(org_uid, start_date, end_date):
+    """Query domain alerts table."""
+    conn = connect()
+    try:
+        sql = """SELECT * FROM domain_alerts
+        WHERE organizations_uid = %(org_uid)s
+        AND date BETWEEN %(start_date)s AND %(end_date)s"""
         df = pd.read_sql(
             sql,
             conn,
