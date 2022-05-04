@@ -14,10 +14,8 @@ import shodan
 REPORT_DB_CONFIG = files("pe_reports").joinpath("data/database.ini")
 
 
-def shodan_api_init():
-    """Connect to Shodan API."""
-    section = "shodan"
-    api_list = []
+def get_params(section):
+    """Get data source parameters."""
     if os.path.isfile(REPORT_DB_CONFIG):
         parser = ConfigParser()
         parser.read(REPORT_DB_CONFIG, encoding="utf-8")
@@ -31,7 +29,14 @@ def shodan_api_init():
         raise Exception(
             "Database.ini file not found at this path: {}".format(REPORT_DB_CONFIG)
         )
+    return params
 
+
+def shodan_api_init():
+    """Connect to Shodan API."""
+    section = "shodan"
+    api_list = []
+    params = get_params(section)
     for key in params:
         try:
             api = shodan.Shodan(key[1])
@@ -48,22 +53,8 @@ def shodan_api_init():
 def cybersix_token():
     """Retrieve bearer token from Cybersixgill client."""
     section = "sixgill"
-    if os.path.isfile(REPORT_DB_CONFIG):
-        parser = ConfigParser()
-        parser.read(REPORT_DB_CONFIG, encoding="utf-8")
-        if parser.has_section(section):
-            params = parser.items(section)
-            _id, _secret = params[0], params[1]
-            client_id = _id[1]
-            client_secret = _secret[1]
-        else:
-            raise Exception(
-                "Section {} not found in the {} file".format(section, REPORT_DB_CONFIG)
-            )
-    else:
-        raise Exception(
-            "Database.ini file not found at this path: {}".format(REPORT_DB_CONFIG)
-        )
+    params = get_params(section)
+    client_id, client_secret = params[0][1], params[1][1]
     url = "https://api.cybersixgill.com/auth/token/"
     headers = {
         "Content-Type": "application/x-www-form-urlencoded",
@@ -76,3 +67,25 @@ def cybersix_token():
     }
     resp = requests.post(url, headers=headers, data=payload).json()
     return resp["access_token"]
+
+
+def dnsmonitor_token():
+    """Retreive the DNSMonitor bearer token."""
+    section = "dnsmonitor"
+    params = get_params(section)
+    client_id, client_secret = params[0][1], params[1][1]
+    scope = "DNSMonitorAPI"
+    url = "https://portal.truespd.com/dhs/connect/token"
+
+    payload = {
+        "client_id": client_id,
+        "client_secret": client_secret,
+        "grant_type": "client_credentials",
+        "scope": scope,
+    }
+    headers = {}
+    files = []
+    response = requests.request(
+        "POST", url, headers=headers, data=payload, files=files
+    ).json()
+    return response["access_token"]

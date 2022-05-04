@@ -227,12 +227,14 @@
   margin: 1cm;
   margin-bottom: 0cm;
   background-image: url("assets/masq-background.png");
+
   @frame title {
     left: 3.5cm;
     width: 16.5cm;
     height: 2cm;
     top: 1cm;
   }
+
   @frame footer {
     -pdf-frame-content: footerContent;
     bottom: -0.4cm;
@@ -241,48 +243,66 @@
     height: 1.7cm;
     left: 1cm;
   }
+
   @frame header {
     -pdf-frame-content: headerContent;
     top: 0.5cm;
     left: 1cm;
     height: 6cm;
   }
+
   @frame kpi1 {
     left: 4.3cm;
     width: 5.45cm;
     height: 3cm;
     top: 2.7cm;
   }
+
   @frame kpi2 {
     left: 11.9cm;
     width: 5.45cm;
     height: 2.3cm;
     top: 2.7cm;
   }
-  @frame content1 {
+
+  @frame content0 {
+    -pdf-frame-content: summaryDom;
     left: 1.5cm;
     width: 19cm;
     height: 3cm;
     top: 5.3cm;
   }
-  /* @frame graphbox1 {
-    left: 1.3cm;
-    width: 9cm;
-    height: 4.5cm;
-    top: 7.8cm;
+
+  @frame content1 {
+    -pdf-frame-content: domainAlertsContent;
+    left: 1.5cm;
+    width: 19cm;
+    height: 3cm;
+    top: 7.3cm;
   }
-  @frame listbox {
-    left: 11.3cm;
-    width: 9cm;
-    height: 4.5cm;
-    top: 7.8cm;
-  } */
+
+  @frame table {
+    -pdf-frame-content: domainAlertsTable;
+    left: 1.5cm;
+    width: 19cm;
+    height: 9.3cm;
+    top: 8.5cm;
+  }
+
+  @frame content2 {
+    -pdf-frame-content: domainContent;
+    left: 1.5cm;
+    width: 19cm;
+    height: 3cm;
+    top: 17cm;
+  }
+
   @frame table {
     -pdf-frame-content: domainTable;
     left: 1.5cm;
     width: 19cm;
-    height: 18.6cm;
-    top: 7.8cm;
+    height: 9.3cm;
+    top: 18.2cm;
   }
 }
 

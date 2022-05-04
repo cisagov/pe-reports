@@ -103,11 +103,14 @@ def masquerading(chevron_dict, start_date, end_date, org_uid):
     chevron_dict.update(
         {
             "domain_table": buildTable(Domain_Masq.summary(), ["table"], []),
+            "domain_alerts_table": buildTable(
+                Domain_Masq.alerts(), ["table"], [75, 25]
+            ),
             "suspectedDomains": Domain_Masq.count(),
-            "uniqueTlds": Domain_Masq.utlds(),
+            "domain_alerts": Domain_Masq.alert_count(),
         }
     )
-    return chevron_dict, Domain_Masq.df_mal
+    return chevron_dict, Domain_Masq.df_mal, Domain_Masq.alerts_sum()
 
 
 def mal_vuln(chevron_dict, start_date, end_date, org_uid):
@@ -268,7 +271,9 @@ def init(source_html, datestring, org_name, org_uid):
         chevron_dict, start_date, end_date, org_uid
     )
 
-    chevron_dict, masq_df = masquerading(chevron_dict, start_date, end_date, org_uid)
+    chevron_dict, masq_df, dom_alert_sum = masquerading(
+        chevron_dict, start_date, end_date, org_uid
+    )
 
     chevron_dict, insecure_df, vulns_df, assets_df = mal_vuln(
         chevron_dict, start_date, end_date, org_uid
@@ -285,6 +290,7 @@ def init(source_html, datestring, org_name, org_uid):
         hibp_creds,
         cyber_creds,
         masq_df,
+        dom_alert_sum,
         insecure_df,
         vulns_df,
         assets_df,
