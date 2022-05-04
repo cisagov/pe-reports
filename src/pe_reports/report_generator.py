@@ -152,6 +152,7 @@ def generate_reports(datestring, output_directory):
                 hibp_creds,
                 cyber_creds,
                 masq_df,
+                dom_alerts_sum,
                 insecure_df,
                 vulns_df,
                 assets_df,
@@ -185,6 +186,7 @@ def generate_reports(datestring, output_directory):
             da_xlsx = f"{output_directory}/{org_code}/domain_alerts.xlsx"
             domWriter = pd.ExcelWriter(da_xlsx, engine="xlsxwriter")
             masq_df.to_excel(domWriter, sheet_name="Suspected Domains", index=False)
+            dom_alerts_sum.to_excel(domWriter, sheet_name="Domain Alerts", index=False)
             domWriter.save()
 
             # Create Suspected vulnerability Excel file

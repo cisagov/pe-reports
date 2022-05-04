@@ -9,6 +9,7 @@ from .data.db_query import (
     query_darkweb,
     query_darkweb_cves,
     query_domMasq,
+    query_domMasq_alerts,
     query_hibp_view,
     query_shodan,
 )
@@ -184,6 +185,7 @@ class Domains_Masqs:
         self.org_uid = org_uid
         df = query_domMasq(org_uid, start_date, end_date)
         self.df_mal = df[df["malicious"]]
+        self.dom_alerts_df = query_domMasq_alerts(org_uid, start_date, end_date)
 
     def count(self):
         """Return total count of malicious domains."""
@@ -202,7 +204,8 @@ class Domains_Masqs:
                     "name_server",
                 ]
             ]
-            domain_sum = domain_sum[:25]
+            domain_sum = domain_sum[:10]
+            domain_sum.loc[domain_sum["ipv6"] == "", "ipv6"] = "NA"
             domain_sum = domain_sum.rename(
                 columns={
                     "domain_permutation": "Domain",
@@ -224,23 +227,26 @@ class Domains_Masqs:
             )
         return domain_sum
 
-    def utlds(self):
-        """Return count of unique top level domains."""
-        mal_df = self.df_mal
+    def alert_count(self):
+        """Return number of alerts."""
+        dom_alert_count = len(self.dom_alerts_df)
+        return dom_alert_count
 
-        if len(mal_df.index) > 0:
-            mal_df["tld"] = (
-                mal_df["domain_permutation"]
-                .str.split(".")
-                .str[-1]
-                .str.split("/")
-                .str[0]
-            )
-            utlds = len(mal_df["tld"].unique())
-        else:
-            utlds = 0
+    def alerts(self):
+        """Return domain alerts."""
+        dom_alerts_df = self.dom_alerts_df[["message", "date"]]
+        dom_alerts_df = dom_alerts_df.rename(
+            columns={"message": "Alert", "date": "Date"}
+        )
+        dom_alerts_df = dom_alerts_df[:10].reset_index(drop=True)
+        return dom_alerts_df
 
-        return utlds
+    def alerts_sum(self):
+        """Return domain alerts summary."""
+        dom_alerts_sum = self.dom_alerts_df[
+            ["message", "date", "previous_value", "new_value"]
+        ]
+        return dom_alerts_sum
 
 
 class Malware_Vulns:

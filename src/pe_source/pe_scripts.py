@@ -5,7 +5,7 @@ Usage:
 
 Arguments:
   DATA_SOURCE                       Source to collect data from. Valid values are "cybersixgill",
-                                    "dnstwist", "hibp", and "shodan".
+                                    "shodan", and "dnsmonitor".
 
 Options:
   -h --help                         Show this message.
@@ -35,6 +35,7 @@ from schema import And, Schema, SchemaError, Use
 
 from ._version import __version__
 from .cybersixgill import Cybersixgill
+from .dnsmonitor import DNSMonitor
 from .shodan import Shodan
 
 
@@ -57,6 +58,9 @@ def run_pe_script(source, orgs_list, cybersix_methods):
     elif source == "shodan":
         shodan = Shodan(orgs_list)
         shodan.run_shodan()
+    elif source == "dnsmonitor":
+        dnsMonitor = DNSMonitor(orgs_list)
+        dnsMonitor.run_dnsMonitor()
 
 
 def main():

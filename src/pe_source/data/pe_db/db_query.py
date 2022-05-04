@@ -3,6 +3,7 @@
 # Standard Python Libraries
 from datetime import datetime
 import logging
+import socket
 import sys
 
 # Third-Party Libraries
@@ -365,3 +366,96 @@ def insert_shodan_data(dataframe, table, thread, org_name, failed):
         conn.rollback()
     cursor.close()
     return failed
+
+
+def execute_dnsmonitor_data(dataframe, table):
+    """Insert DNSMonitor data."""
+    conn = connect()
+    tpls = [tuple(x) for x in dataframe.to_numpy()]
+    cols = ",".join(list(dataframe.columns))
+    sql = """INSERT INTO {}({}) VALUES %s
+    ON CONFLICT (domain_permutation, organizations_uid)
+    DO UPDATE SET ipv4 = EXCLUDED.ipv4,
+        ipv6 = EXCLUDED.ipv6,
+        date_observed = EXCLUDED.date_observed,
+        mail_server = EXCLUDED.mail_server,
+        name_server = EXCLUDED.name_server,
+        sub_domain_uid = EXCLUDED.sub_domain_uid,
+        data_source_uid = EXCLUDED.data_source_uid;"""
+    cursor = conn.cursor()
+    extras.execute_values(
+        cursor,
+        sql.format(table, cols),
+        tpls,
+    )
+    conn.commit()
+
+
+def execute_dnsmonitor_alert_data(dataframe, table):
+    """Insert DNSMonitor alerts."""
+    conn = connect()
+    tpls = [tuple(x) for x in dataframe.to_numpy()]
+    cols = ",".join(list(dataframe.columns))
+    sql = """INSERT INTO {}({}) VALUES %s
+    ON CONFLICT (alert_type, sub_domain_uid, date, new_value)
+    DO NOTHING;"""
+    cursor = conn.cursor()
+    extras.execute_values(
+        cursor,
+        sql.format(table, cols),
+        tpls,
+    )
+    conn.commit()
+
+
+def getSubdomain(domain):
+    """Get subdomain."""
+    conn = connect()
+    cur = conn.cursor()
+    sql = """SELECT * FROM sub_domains sd
+        WHERE sd.sub_domain = '{}'"""
+    cur.execute(sql.format(domain))
+    sub = cur.fetchone()
+    cur.close()
+    return sub
+
+
+def getRootdomain(domain):
+    """Get root domain."""
+    conn = connect()
+    cur = conn.cursor()
+    sql = """SELECT * FROM root_domains rd
+        WHERE rd.root_domain = '{}'"""
+    cur.execute(sql.format(domain))
+    root = cur.fetchone()
+    cur.close()
+    return root
+
+
+def addRootdomain(root_domain, pe_org_uid, source_uid, org_name):
+    """Add root domain."""
+    conn = connect()
+    ip_address = str(socket.gethostbyname(root_domain))
+    sql = """insert into root_domains(root_domain, organizations_uid, organization_name, data_source_uid, ip_address)
+            values ('{}', '{}', '{}', '{}', '{}');"""
+    cur = conn.cursor()
+    cur.execute(sql.format(root_domain, pe_org_uid, org_name, source_uid, ip_address))
+    conn.commit()
+    cur.close()
+
+
+def addSubdomain(domain, pe_org_uid, org_name):
+    """Add root to subdomain table."""
+    data_source_uid = get_data_source_uid("DNSMonitor")
+    try:
+        root_domain_uid = getRootdomain(domain)[0]
+    except Exception:
+        addRootdomain(domain, pe_org_uid, data_source_uid, org_name)
+        root_domain_uid = getRootdomain(domain)[0]
+    conn = connect()
+    sql = """insert into sub_domains(sub_domain, root_domain_uid, root_domain, data_source_uid)
+            values ('{}', '{}', '{}','{}');"""
+    cur = conn.cursor()
+    cur.execute(sql.format(domain, root_domain_uid, domain, data_source_uid))
+    conn.commit()
+    close(conn)
