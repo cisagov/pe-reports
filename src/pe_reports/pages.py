@@ -270,6 +270,8 @@ def init(datestring, org_name, org_uid):
         start_date = datetime.datetime(end_date.year, end_date.month, 1)
     else:
         start_date = datetime.datetime(end_date.year, end_date.month, 16)
+    # create the trending start date which is 4 weeks from the last day of the report period
+    # 27 days plus the last day is 4 weeks
     days = datetime.timedelta(27)
     trending_start_date = end_date - days
 
