@@ -62,7 +62,7 @@ def get_orgs(conn):
 
 
 def query_creds_view(org_uid, start_date, end_date):
-    """Query credentials view ."""
+    """Query credentials view."""
     conn = connect()
     try:
         sql = """SELECT * FROM vw_breachcomp
