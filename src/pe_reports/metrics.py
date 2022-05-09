@@ -138,8 +138,7 @@ class Credentials:
 
     def total(self):
         """Return total number of credentials found in breaches."""
-        df_cred = self.creds_view.shape[0]
-        return df_cred
+        return self.creds_view.shape[0]
 
 
 class Domains_Masqs:
