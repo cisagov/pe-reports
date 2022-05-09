@@ -134,8 +134,7 @@ class Credentials:
 
     def password(self):
         """Return total number of credentials with passwords."""
-        pw_creds = len(self.creds_view[self.creds_view["password_included"]])
-        return pw_creds
+        return len(self.creds_view[self.creds_view["password_included"]])
 
     def total(self):
         """Return total number of credentials found in breaches."""
