@@ -137,8 +137,7 @@ def generate_reports(datestring, output_directory):
             # Insert Charts and Metrics into PDF
             (
                 source_html,
-                hibp_creds,
-                cyber_creds,
+                creds_sum,
                 masq_df,
                 insecure_df,
                 vulns_df,
@@ -159,9 +158,8 @@ def generate_reports(datestring, output_directory):
             # Create Credential Exposure Excel file
             cred_xlsx = f"{output_directory}/{org_code}/compromised_credentials.xlsx"
             credWriter = pd.ExcelWriter(cred_xlsx, engine="xlsxwriter")
-            hibp_creds.to_excel(credWriter, sheet_name="HIBP_Credentials", index=False)
-            cyber_creds.to_excel(
-                credWriter, sheet_name="Cyber6_Credentials", index=False
+            creds_sum.to_excel(
+                credWriter, sheet_name="Exposed_Credentials", index=False
             )
             credWriter.save()
 
