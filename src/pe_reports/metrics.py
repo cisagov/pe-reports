@@ -55,7 +55,9 @@ class Credentials:
         )
         group_limit = self.end_date + datetime.timedelta(1)
         df = df.groupby(
-            pd.Grouper(level="added_date", freq="7d", origin=group_limit)
+            pd.Grouper(
+                level="added_date", freq="7d", origin=group_limit
+            )  # lgtm [py/call/wrong-named-class-argument]
         ).sum()
         df["modified_date"] = df.index
         df["modified_date"] = df["modified_date"].dt.strftime("%m/%d")
@@ -485,7 +487,9 @@ class Cyber_Six:
 
         group_limit = self.end_date + datetime.timedelta(1)
         dark_web_date = dark_web_date.groupby(
-            pd.Grouper(level="date", freq="7d", origin=group_limit)
+            pd.Grouper(
+                level="date", freq="7d", origin=group_limit
+            )  # lgtm [py/call/wrong-named-class-argument]
         ).sum()
         dark_web_date["date"] = dark_web_date.index
         dark_web_date["date"] = dark_web_date["date"].dt.strftime("%m/%d")
