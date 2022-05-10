@@ -249,8 +249,18 @@ CREATE TABLE public.mentions (
 CREATE TABLE public.organizations (
     organizations_uid uuid DEFAULT public.uuid_generate_v1() NOT NULL,
     name text NOT NULL,
-    cyhy_db_name text
+    cyhy_db_name text,
+    org_type_uid uuid NOT NULL;
 );
+
+--
+-- Name: org_type; Type: TABLE; Schema: public; Owner: pe
+--
+
+CREATE TABLE org_type (
+org_type_uid uuid DEFAULT public.uuid_generate_v1() NOT NULL,
+org_type text
+)
 
 --
 -- Name: pshtt_results; Type: TABLE; Schema: public; Owner: pe
@@ -775,6 +785,18 @@ ALTER TABLE ONLY public.organizations
 ALTER TABLE ONLY public.organizations
     ADD CONSTRAINT organizations_pkey PRIMARY KEY (organizations_uid);
 
+--
+-- Name: organizations organizations_org_type_uid_fkey; Type: CONSTRAINT; Schema: public; Owner: pe
+--
+
+ALTER TABLE ONLY public.organizations
+    ADD CONSTRAINT organizations_org_type_uid_fkey FOREIGN KEY (org_type_uid) REFERENCES public.org_type(org_type_uid) NOT VALID;
+
+--
+-- Name: organizations org_type_pkey; Type: CONSTRAINT; Schema: public; Owner: pe
+--
+ALTER TABLE ONLY public.org_type
+    ADD CONSTRAINT org_type_pkey PRIMARY KEY (org_type_uid);
 
 --
 -- Name: pshtt_results pshtt_results_organizations_uid_sub_domain_uid_key; Type: CONSTRAINT; Schema: public; Owner: pe
