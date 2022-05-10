@@ -183,7 +183,7 @@ class Charts:
                         ),  # distance from text to points (x,y)
                         ha="center",  # horizontal alignment can be left, right or center
                     )
-        # Specify axis atributes
+        # Specify axis attributes
         plt.ylim(ymin=0, ymax=int(df[df.columns].max().max() * 1.15))
         plt.xticks(fontsize=7)
         plt.yticks(fontsize=7)
