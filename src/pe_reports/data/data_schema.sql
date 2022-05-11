@@ -250,6 +250,9 @@ CREATE TABLE public.organizations (
     organizations_uid uuid DEFAULT public.uuid_generate_v1() NOT NULL,
     name text NOT NULL,
     cyhy_db_name text,
+    password text,
+    report_on, boolean,
+    date_first_reported timestamp,
     org_type_uid uuid NOT NULL;
 );
 
@@ -775,7 +778,7 @@ ALTER TABLE ONLY public.mentions
 --
 
 ALTER TABLE ONLY public.organizations
-    ADD CONSTRAINT organizations_name_key UNIQUE (name);
+    ADD CONSTRAINT organizations_cyhy_db_name_key UNIQUE (cyhy_db_name);
 
 
 --
