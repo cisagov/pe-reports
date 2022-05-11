@@ -69,7 +69,7 @@ def query_values(conn, table, where=";"):
 def query_orgs(thread):
     """Query orgs."""
     conn = connect(thread)
-    orgs = query_values(conn, "organizations")
+    orgs = query_values(conn, "organizations", " WHERE report_on is True;")
     close(conn)
     print(orgs)
     return orgs
@@ -250,7 +250,7 @@ def query_ips(org_id):
 def query_orgs_rev():
     """Query orgs in reverse."""
     conn = connect("")
-    sql = "SELECT * FROM organizations ORDER BY organizations_uid DESC;"
+    sql = "SELECT * FROM organizations WHERE report_on is True ORDER BY organizations_uid DESC;"
     df = pd.read_sql_query(sql, conn)
     close(conn)
     return df
