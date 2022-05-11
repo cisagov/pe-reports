@@ -71,9 +71,8 @@ except Exception:
 # HIBP functions
 Emails_URL = "https://haveibeenpwned.com/api/v2/enterprisesubscriber/domainsearch/"
 Breaches_URL = "https://haveibeenpwned.com/api/v2/breaches"
-params = {
-    "Authorization": "Bearer p2jsEWGNXRfQYetV0vc8CGVKxKNvfcz4HM3FBN-HhoPg4fprYr-KOI6q1BaM-pHOxAcQ4b_vnrEZNSwg1DRfa3X8LZyjj-S-Tl84e1hFBMYriDLTmZmJrbWKJbzope7n4DZ9JOheYCclE7RSEd1Pgn66_7OkqAghUIZLmynMzq5S2oDc9r8YlgvZITYOQtcBCbXQGoUydVxqVbRCI40-p_d9c6-X_0shCd1Z4RiIKluqldYCI9VOsBP9XME5aYkc_QLuJT_L5Ne5_-Rrhs1ShosYnQ9Wjg7xHuKaCjzdoO5MRKk109GveNElGJyQzDxRbISVQvya3lIrqFD2kH4ixXlmRhg02hrpUT5Bsb-HGNp65AJrbFMkd-9XZUIvdY1nOlZw9qHx4lQ_wxOkPZBKwa1bZZW08zj-ejvkZEZGN7w"
-}
+# TODO: Add bearer token
+params = {"Authorization": "Bearer "}
 
 
 def flatten_data(response, subdomain, breaches_dict):

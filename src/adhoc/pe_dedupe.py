@@ -412,7 +412,8 @@ def main():
     # args = docopt(__doc__, version='v2.0')
 
     # get username and password from config file
-    key = "dkx4uJW66PXjihngybpdWuuJjNF7yxrE"
+    # TODO: ADD key
+    key = ""
     api = shodan.Shodan(key)
 
     orgs = query_orgs("")

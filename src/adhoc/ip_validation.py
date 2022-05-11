@@ -86,7 +86,8 @@ def thehostname(domainIP):
 
 def reverseLookup(ip):
     """Perform the reverse lookup."""
-    api = "at_k5eJoD6do4NSnXL2BY3o1e9BH1t2b"
+    # TODO: Add API key
+    api = ""
     url = f"https://dns-history.whoisxmlapi.com/api/v1?apiKey={api}&ip={ip}"
     payload = {}
     headers = {}
