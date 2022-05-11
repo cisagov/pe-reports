@@ -9,7 +9,6 @@ from unittest.mock import patch
 import pytest
 
 # cisagov Libraries
-
 from pe_reports import app as flask_app
 import pe_reports.data.db_query
 import pe_reports.report_generator
