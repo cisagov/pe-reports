@@ -14,6 +14,7 @@ import logging
 import os
 
 # Third-Party Libraries
+from celery import Celery
 from flask import Flask
 from flask_login import LoginManager
 from flask_migrate import Migrate
@@ -41,6 +42,14 @@ app.config[
     "SQLALCHEMY_DATABASE_URI"
 ] = f'postgresql+psycopg2://{params["user"]}:{params["password"]}@{params["host"]}:{params["port"]}/{params["database"]}'
 
+
+# Configure the redis server
+app.config["CELERY_BROKER_URL"] = "redis://localhost:6379/0"
+app.config["CELERY_RESULT_BACKEND"] = "redis://localhost:6379/0"
+
+# creates a Celery object
+celery = Celery(app.name, broker=app.config["CELERY_BROKER_URL"])
+celery.conf.update(app.config)
 
 # Config DB
 db = SQLAlchemy(app)
