@@ -10,7 +10,6 @@ import socket
 
 # Third-Party Libraries
 from flask import Blueprint, flash, redirect, render_template, url_for
-
 import psycopg2
 import psycopg2.extras
 import requests
@@ -156,9 +155,7 @@ def setStakeholder(customer):
             return True
 
     except (Exception, psycopg2.DatabaseError) as err:
-        logging.error(
-            "There was a problem logging into the psycopg database %s", err
-        )
+        logging.error("There was a problem logging into the psycopg database %s", err)
         return False
     finally:
         if conn is not None:
@@ -198,9 +195,7 @@ def setCustRootDomain(customer, rootdomain, orgUUID):
             return True
 
     except (Exception, psycopg2.DatabaseError) as err:
-        logging.error(
-            "There was a problem logging into the psycopg database %s", err
-        )
+        logging.error("There was a problem logging into the psycopg database %s", err)
         return False
     finally:
         if conn is not None:
@@ -245,9 +240,7 @@ def setCustSubDomain(subdomain, rootUUID, rootname):
             return True
 
     except (Exception, psycopg2.DatabaseError) as err:
-        logging.error(
-            "There was a problem logging into the psycopg database %s", err
-        )
+        logging.error("There was a problem logging into the psycopg database %s", err)
         return False
     finally:
         if conn is not None:
@@ -340,7 +333,9 @@ def getSubdomain(domain):
 
             logging.info(sub)
             subisolated = sub.rsplit(".")[:-2]
-            logging.info("The whole sub is %s and the isolated sub is %s", sub, subisolated)
+            logging.info(
+                "The whole sub is %s and the isolated sub is %s", sub, subisolated
+            )
         allsubs.append(subisolated)
 
     return subdomains, allsubs
@@ -568,8 +563,8 @@ def stakeholder():
                         rootUUID = getRootID(allDomain)[cust]
 
                         logging.info(
-                            "The Root Domain %s was entered at root_domains.", 
-                            custRootDomainValue
+                            "The Root Domain %s was entered at root_domains.",
+                            custRootDomainValue,
                         )
                         if allSubDomain:
                             for subdomain in allSubDomain:

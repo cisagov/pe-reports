@@ -24,8 +24,6 @@ from pe_reports.stakeholder.views import stakeholder_blueprint
 
 from ._version import __version__  # noqa: F401
 
-
-
 params = config()
 login_manager = LoginManager()
 # Flask implementation
@@ -54,7 +52,6 @@ Migrate(app, db)
 # login_manager.login_view = "login"
 
 __all__ = ["pages", "report_generator", "stylesheet", "app"]
-
 
 
 # Register the flask apps
