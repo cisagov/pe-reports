@@ -16,7 +16,6 @@ import psycopg2.extras
 import requests
 
 # cisagov Libraries
-# Local file import
 from pe_reports.data.config import config
 from pe_reports.stakeholder.forms import InfoFormExternal
 
@@ -68,9 +67,9 @@ def getAgencies(org_name):
             cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
 
             query = "select organizations_uid,name from"
-            f" organizations where name='{org_name}';"
+            " organizations where name='{}';"
 
-            cursor.execute(query)
+            cursor.execute(query.format(org_name))
 
             result = cursor.fetchall()
 
@@ -82,7 +81,7 @@ def getAgencies(org_name):
             return resultDict
 
     except (Exception, psycopg2.DatabaseError) as err:
-        logging.error(f"There was a problem logging into the psycopg database {err}")
+        logging.error("There was a problem logging into the psycopg database %s", err)
     finally:
         if conn is not None:
             cursor.close()
@@ -173,7 +172,6 @@ def setCustRootDomain(customer, rootdomain, orgUUID):
     """Insert customer into the PE-Reports database."""
     global conn, cursor
 
-    # customerInfo = rootdomain
     try:
         logging.info("Starting insert into database...")
 
@@ -216,7 +214,6 @@ def setCustSubDomain(subdomain, rootUUID, rootname):
     """Insert customer into the PE-Reports database."""
     global conn, cursor
 
-    # customerInfo = rootdomain
     try:
 
         logging.info("Starting insert into database...")
@@ -334,17 +331,16 @@ def getSubdomain(domain):
     data = response.json()
 
     subdomains = data["domainsList"]
-    print(subdomains)
+    logging.info(subdomains)
 
     subisolated = ""
     for sub in subdomains:
 
         if sub != f"www.{domain}":
 
-            print(sub)
+            logging.info(sub)
             subisolated = sub.rsplit(".")[:-2]
-            # subisolated = sub.rsplit('.',2)[:-2]
-            print(f"The whole sub is {sub} and " f"the isolated sub is {subisolated}")
+            logging.info("The whole sub is %s and the isolated sub is %s", sub, subisolated)
         allsubs.append(subisolated)
 
     return subdomains, allsubs
@@ -497,11 +493,11 @@ def setOrganizationDetails(org_id, orgAliases, orgDomain, orgIP, orgExecs):
     stakeholder at CSG portal via API.
     """
     logging.info("The following is from setting details")
-    logging.info(f"The org_id id {org_id}")
-    logging.info(f"The org_id id {orgAliases}")
-    logging.info(f"The org_id id {orgDomain}")
-    logging.info(f"The org_id id {orgIP}")
-    logging.info(f"The org_id id {orgExecs}")
+    logging.info("The org_id id %s", org_id)
+    logging.info("The org_id id %s", orgAliases)
+    logging.info("The org_id id %s", orgDomain)
+    logging.info("The org_id id %s", orgIP)
+    logging.info("The org_id id %s", orgExecs)
     newOrganizationDetails = json.dumps(
         {
             "organization_aliases": {"explicit": orgAliases},
@@ -519,7 +515,7 @@ def setOrganizationDetails(org_id, orgAliases, orgDomain, orgIP, orgExecs):
     }
 
     response = requests.put(url, headers=headers, data=newOrganizationDetails).json()
-    logging.info(f"The response is {response}")
+    logging.info("The response is %s", response)
 
 
 def getalluserinfo():
@@ -565,20 +561,20 @@ def stakeholder():
                 flash(f"You successfully submitted a new customer {cust} ", "success")
 
                 if setStakeholder(cust):
-                    logging.info(f"The customer {cust} was entered.")
+                    logging.info("The customer %s was entered.", cust)
                     allDomain = list(getAgencies(cust).keys())[0]
 
                     if setCustRootDomain(cust, custRootDomainValue, allDomain):
                         rootUUID = getRootID(allDomain)[cust]
 
                         logging.info(
-                            f"The Root Domain {custRootDomainValue} "
-                            f"was entered at root_domains."
+                            "The Root Domain %s was entered at root_domains.", 
+                            custRootDomainValue
                         )
                         if allSubDomain:
                             for subdomain in allSubDomain:
                                 if setCustSubDomain(subdomain, rootUUID, cust):
-                                    logging.info("The subdomains " "have been entered.")
+                                    logging.info("The subdomains have been entered.")
                                     setNewCSGOrg(
                                         cust,
                                         custDomainAliases,
@@ -598,9 +594,7 @@ def stakeholder():
         "home_stakeholder.html",
         formExternal=formExternal,
         cust=cust,
-        # custIP=custIP,
         custRootDomain=custRootDomain,
-        # custSubDomain=custSubDomain,
         custExecutives=custExecutives,
         custDomainAliases=custDomainAliases,
     )
