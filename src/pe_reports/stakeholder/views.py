@@ -201,7 +201,7 @@ def setCustRootDomain(customer, rootdomain, orgUUID):
 
     except (Exception, psycopg2.DatabaseError) as err:
         logging.error(
-            f"There was a problem logging" f" into the psycopg database {err}"
+            "There was a problem logging into the psycopg database %s", err
         )
         return False
     finally:
