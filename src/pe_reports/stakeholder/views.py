@@ -108,9 +108,9 @@ def getRootID(org_UUID):
 
             cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
             query = "select root_domain_uid, organization_name from"
-            f" root_domains where organizations_uid='{org_UUID}';"
+            " root_domains where organizations_uid='{}';"
 
-            cursor.execute(query)
+            cursor.execute(query.format(org_UUID))
 
             result = cursor.fetchall()
 
