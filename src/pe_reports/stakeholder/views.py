@@ -382,7 +382,7 @@ def verifyIPv4(custIP):
             return False
 
     except ValueError as err:
-        logging.error(f"The address is incorrect, {err}")
+        logging.error("The address is incorrect, %s", err)
         return False
 
 
