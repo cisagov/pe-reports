@@ -396,7 +396,7 @@ def verifyCIDR(custIP):
             return False
 
     except ValueError as err:
-        logging.error(f"The cidr is incorrect, {err}")
+        logging.error("The cidr is incorrect, %s", err)
         return False
 
 
