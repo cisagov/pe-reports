@@ -122,7 +122,7 @@ def getRootID(org_UUID):
             return resultDict
 
     except (Exception, psycopg2.DatabaseError) as err:
-        logging.error(f"There was a problem logging into the psycopg database {err}")
+        logging.error("There was a problem logging into the psycopg database %s", err)
     finally:
         if conn is not None:
             cursor.close()
