@@ -11,7 +11,6 @@ import socket
 # Third-Party Libraries
 from flask import Blueprint, flash, redirect, render_template, url_for
 
-# from flask import Flask, flash, redirect,request, render_template, url_for
 import psycopg2
 import psycopg2.extras
 import requests
