@@ -542,7 +542,9 @@ CREATE TABLE public.sub_domains (
     sub_domain text NOT NULL,
     root_domain_uid uuid NOT NULL,
     root_domain text NOT NULL,
-    data_source_uid uuid NOT NULL
+    data_source_uid uuid NOT NULL,
+    ip_uid uuid,
+    dns_record_uid uuid
 );
 
 --
@@ -577,6 +579,103 @@ CREATE TABLE public.unique_software (
     software_name text NOT NULL
 );
 
+--
+-- Name: ips; Type: TABLE; Schema: public; Owner: pe
+--
+
+CREATE TABLE public.ips (
+    ip_uid uuid DEFAULT public.uuid_generate_v1() NOT NULL,
+    ip inet NOT NULL,
+    origin_cidr cidr,
+    live boolean,
+    sub_domain_uid uuid,
+    date_last_live timestamp,
+    organizations_uid uuid NOT NULL
+);
+
+--
+-- Name: dns_records; Type: TABLE; Schema: public; Owner: pe
+--
+
+CREATE TABLE public.dns_records (
+	dns_record_uid uuid DEFAULT public.uuid_generate_v1() NOT NULL,
+	domain_name text,
+	domain_type text,
+	created_date timestamp,
+	updated_date timestamp,
+	expiration_date timestamp,
+	name_servers text[],
+	whois_server text,
+	registrar_name text,
+	status text,
+	clean_text text,
+	raw_text text,
+	registrant_name text,
+	registrant_organization text,
+	registrant_street text,
+	registrant_city text,
+	registrant_state text,
+	registrant_post_code text,
+	registrant_country text,
+	registrant_email text,
+	registrant_phone text,
+	registrant_phone_ext text,
+	registrant_fax text,
+	registrant_fax_ext text,
+	registrant_raw_text text,
+	administrative_name text,
+	administrative_organization text,
+	administrative_street text,
+	administrative_city text,
+	administrative_state text,
+	administrative_post_code text,
+	administrative_country text,
+	administrative_email text,
+	administrative_phone text,
+	administrative_phone_ext text,
+	administrative_fax text,
+	administrative_fax_ext text,
+	administrative_raw_text text,
+	technical_name text,
+	technical_organization text,
+	technical_street text,
+	technical_city text,
+	technical_state text,
+	technical_post_code text,
+	technical_country text,
+	technical_email text,
+	technical_phone text,
+	technical_phone_ext text,
+	technical_fax text,
+	technical_fax_ext text,
+	technical_raw_text text,
+	billing_name text,
+	billing_organization text,
+	billing_street text,
+	billing_city text,
+	billing_state text,
+	billing_post_code text,
+	billing_country text,
+	billing_email text,
+	billing_phone text,
+	billing_phone_ext text,
+	billing_fax text,
+	billing_fax_ext text,
+	billing_raw_text text,
+	zone_name text,
+	zone_organization text,
+	zone_street text,
+	zone_city text,
+	zone_state text,
+	zone_post_code text,
+	zone_country text,
+	zone_email text,
+	zone_phone text,
+	zone_phone_ext text,
+	zone_fax text,
+	zone_fax_ext text,
+	zone_raw_text text
+);
 --
 -- Name: web_assets; Type: TABLE; Schema: public; Owner: pe
 --
@@ -896,6 +995,20 @@ ALTER TABLE ONLY public.sub_domains
 ALTER TABLE ONLY public.sub_domains
     ADD CONSTRAINT sub_domains_sub_domain_root_domain_uid_key UNIQUE (sub_domain, root_domain_uid);
 
+--
+-- Name: sub_domains_ips_uid_fkey; Type: FK CONSTRAINT; Schema: public; Owner: pe
+--
+
+ALTER TABLE ONLY public.sub_domains
+    ADD CONSTRAINT sub_domains_ips_uid_fkey FOREIGN KEY (ip_uid) REFERENCES public.ips(ip_uid) NOT VALID;
+
+--
+-- Name: sub_domains_dns_records_uid_fkey; Type: FK CONSTRAINT; Schema: public; Owner: pe
+--
+
+ALTER TABLE ONLY public.sub_domains
+    ADD CONSTRAINT sub_domains_dns_records_uid_fkey FOREIGN KEY (dns_record_uid) REFERENCES public.dns_records(dns_record_uid) NOT VALID;
+
 
 --
 -- Name: sub_domains_web_assets sub_domains_web_assets_pkey; Type: CONSTRAINT; Schema: public; Owner: pe
@@ -928,6 +1041,18 @@ ALTER TABLE ONLY public.top_cves
 ALTER TABLE ONLY public.unique_software
     ADD CONSTRAINT unique_software_pkey PRIMARY KEY (_id);
 
+--
+-- Name: ips_pkey; Type: CONSTRAINT; Schema: public; Owner: pe
+--
+
+ALTER TABLE ONLY public.ips
+    ADD CONSTRAINT ips_pkey PRIMARY KEY (ip_uid);
+
+--
+-- Name: dns_records_pkey; Type: CONSTRAINT; Schema: public; Owner: pe
+--
+ALTER TABLE ONLY public.dns_records
+    ADD CONSTRAINT dns_records_pkey PRIMARY KEY (dns_record_uid);
 
 --
 -- Name: web_assets web_assets_asset_organizations_uid_key; Type: CONSTRAINT; Schema: public; Owner: pe
