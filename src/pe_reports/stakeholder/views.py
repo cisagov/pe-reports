@@ -1,4 +1,4 @@
-"""Classes and associagted functions that render the UI app pages."""
+"""Classes and associated functions that render the UI app pages."""
 
 # Standard Python Libraries
 from datetime import date
