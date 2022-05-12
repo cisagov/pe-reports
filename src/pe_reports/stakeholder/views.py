@@ -450,7 +450,7 @@ def setNewCSGOrg(newOrgName, orgAliases, orgdomainNames, orgIP, orgExecs):
     newOrgID = response["id"]
 
     if newOrgID:
-        logging.info(f"Got here there is a new new org {newOrgID}")
+        logging.info("Got here there is a new new org %s", newOrgID)
 
         setOrganizationUsers(newOrgID)
         setOrganizationDetails(newOrgID, orgAliases, orgdomainNames, orgIP, orgExecs)
