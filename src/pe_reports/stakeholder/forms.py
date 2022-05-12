@@ -10,7 +10,7 @@ class InfoFormExternal(FlaskForm):
     """Create web form to take user input on organization information/details."""
 
     cust = StringField("What is the stakeholder name?", validators=[DataRequired()])
-    # TODO the following form field may be used in a future update
+    # TODO: The following form field may be used in a future update
     # custIP = StringField(
     #     "What is the stakeholder ip/cidr? *comma separate entries",
     #     validators=[DataRequired()],
@@ -21,7 +21,7 @@ class InfoFormExternal(FlaskForm):
     custDomainAliases = StringField(
         "What are the organization aliases? " "*comma separate entries"
     )
-    # TODO the following form field may be used in a future update
+    # TODO: The following form field may be used in a future update
     # custSubDomain = StringField(
     #     "What is the sub-domain for this stakeholder?" " *comma separate entries"
     # )

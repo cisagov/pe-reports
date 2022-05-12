@@ -5,11 +5,6 @@
 # Python package.
 
 # Standard Python Libraries
-# Local packages
-# from pe_reports.home.views import home_blueprint
-# from pe_reports.manage_login.views import manage_login_blueprint
-
-# Standard Python Libraries
 import logging
 import os
 
@@ -29,7 +24,6 @@ from pe_reports.stakeholder.views import stakeholder_blueprint
 
 from ._version import __version__  # noqa: F401
 
-# import os
 
 
 params = config()
@@ -47,7 +41,7 @@ app.config[
 app.config["CELERY_BROKER_URL"] = "redis://localhost:6379/0"
 app.config["CELERY_RESULT_BACKEND"] = "redis://localhost:6379/0"
 
-# creates a Celery object
+# Creates a Celery object
 celery = Celery(app.name, broker=app.config["CELERY_BROKER_URL"])
 celery.conf.update(app.config)
 
@@ -55,17 +49,17 @@ celery.conf.update(app.config)
 db = SQLAlchemy(app)
 Migrate(app, db)
 
-
+# TODO: Add a login page
 # login_manager.init_app(app)
 # login_manager.login_view = "login"
 
 __all__ = ["pages", "report_generator", "stylesheet", "app"]
 
-# cisagov Libraries
 
 
 # Register the flask apps
 app.register_blueprint(stakeholder_blueprint)
+# TODO: Add login blueprint
 # app.register_blueprint(manage_login_blueprint)
 app.register_blueprint(home_blueprint)
 
