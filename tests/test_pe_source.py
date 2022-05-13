@@ -281,11 +281,15 @@ def test_cybersix_credentials(
     # Assert insert breaches function is called with the correct data
     breach_insert_df = pd.read_json("tests/data/cybersix_breach_insert.json")
     pd.testing.assert_frame_equal(
-        mock_insert_breaches.call_args[0][0], breach_insert_df
+        mock_insert_breaches.call_args[0][0].sort_index(axis=1),
+        breach_insert_df.sort_index(axis=1),
     )
     # Assert insert credentials function is called with the correct data
     creds_insert_df = pd.read_json("tests/data/cybersix_creds_insert.json")
-    pd.testing.assert_frame_equal(mock_insert_creds.call_args[0][0], creds_insert_df)
+    pd.testing.assert_frame_equal(
+        mock_insert_creds.call_args[0][0].sort_index(axis=1),
+        creds_insert_df.sort_index(axis=1),
+    )
     # Assert function completes without errors
     assert result == 0
 
