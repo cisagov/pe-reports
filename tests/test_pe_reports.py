@@ -104,3 +104,7 @@ def test_reports_bad_log_level():
         except SystemExit as sys_exit:
             return_code = sys_exit.code
         assert return_code == 1, "main() should exit with error"
+
+
+# TODO: Test data cleanup in metrics for each source
+# (Credentials, Domain Masq, Shodan, Cybersixgill)
