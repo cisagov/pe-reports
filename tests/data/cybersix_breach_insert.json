@@ -1,0 +1,56 @@
+[
+  {
+    "breach_date": "2022-05-07",
+    "breach_name": "Breach 2",
+    "data_source_uid": "source_uid",
+    "description": "Description 2",
+    "exposed_cred_count": 2,
+    "modified_date": "2022-05-07",
+    "password_included": true
+  },
+  {
+    "breach_date": "2022-04-15",
+    "breach_name": "Breach 3",
+    "data_source_uid": "source_uid",
+    "description": "Description 3",
+    "exposed_cred_count": 2,
+    "modified_date": "2022-04-15",
+    "password_included": false
+  },
+  {
+    "breach_date": "2022-05-10",
+    "breach_name": "Breach 4",
+    "data_source_uid": "source_uid",
+    "description": "Description 4",
+    "exposed_cred_count": 2,
+    "modified_date": "2022-05-10",
+    "password_included": false
+  },
+  {
+    "breach_date": "2022-05-06",
+    "breach_name": "Breach 5",
+    "data_source_uid": "source_uid",
+    "description": "Description 5",
+    "exposed_cred_count": 1,
+    "modified_date": "2022-05-06",
+    "password_included": false
+  },
+  {
+    "breach_date": "2022-05-08",
+    "breach_name": "Breach 6",
+    "data_source_uid": "source_uid",
+    "description": "Description 6",
+    "exposed_cred_count": 1,
+    "modified_date": "2022-05-08",
+    "password_included": false
+  },
+  {
+    "breach_date": "2022-04-26",
+    "breach_name": "Cybersixgill_1",
+    "data_source_uid": "source_uid",
+    "description": "Description 1",
+    "exposed_cred_count": 3,
+    "modified_date": "2022-04-26",
+    "password_included": true
+  }
+]
