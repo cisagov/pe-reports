@@ -112,10 +112,9 @@ def getRootID(org_UUID):
             result = cursor.fetchall()
 
             for row in result:
-                theRootUUID = row[0]
-                theOrgName = row[1]
-
-                resultDict[f"{theOrgName}"] = f"{theRootUUID}"
+                # row[0] = root UUID
+                # row[1] = org name
+                resultDict[f"{row[1]}"] = f"{row[0]}"
             return resultDict
 
     except (Exception, psycopg2.DatabaseError) as err:
