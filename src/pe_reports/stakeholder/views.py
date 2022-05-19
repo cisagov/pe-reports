@@ -376,7 +376,7 @@ def verifyIPv4(custIP):
 
 
 def verifyCIDR(custIP):
-    """Verify if parameter is a valid CIDR block ip address."""
+    """Verify if parameter is a valid CIDR block IP address."""
     try:
         if ip_network(custIP):
             return True
