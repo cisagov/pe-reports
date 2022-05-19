@@ -1,1 +1,1 @@
-"""Initialize stakeholder directory."""
+"""Init file for module implementation."""
