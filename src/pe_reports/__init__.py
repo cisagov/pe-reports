@@ -51,7 +51,7 @@ Migrate(app, db)
 # login_manager.init_app(app)
 # login_manager.login_view = "login"
 
-__all__ = ["pages", "report_generator", "stylesheet", "app"]
+__all__ = ["app", "pages", "report_generator", "stylesheet"]
 
 
 # Register the flask apps
