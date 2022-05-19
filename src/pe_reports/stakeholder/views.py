@@ -405,7 +405,7 @@ def validateIP(custIP):
 
 
 def getOrganizations():
-    """Get all orgaization details from Cybersix Gill via API."""
+    """Get all organization details from Cybersixgill via API."""
     url = "https://api.cybersixgill.com/multi-tenant/organization"
 
     headers = {
