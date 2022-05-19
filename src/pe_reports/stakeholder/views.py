@@ -60,7 +60,7 @@ def getAgencies(org_name):
         if conn:
             logging.info(
                 "There was a connection made to"
-                "the database and the query was executed. "
+                "the database and the query was executed."
             )
 
             cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
