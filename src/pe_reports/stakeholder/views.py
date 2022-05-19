@@ -73,10 +73,9 @@ def getAgencies(org_name):
             result = cursor.fetchall()
 
             for row in result:
-                theOrgUUID = row[0]
-                theOrgName = row[1]
-
-                resultDict[f"{theOrgUUID}"] = f"{theOrgName}"
+                # row[0] = org UUID
+                # row[1] = org name
+                resultDict[f"{row[0]}"] = f"{row[1]}"
             return resultDict
 
     except (Exception, psycopg2.DatabaseError) as err:
