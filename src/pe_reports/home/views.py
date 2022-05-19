@@ -11,7 +11,7 @@ home_blueprint = Blueprint("home", __name__, template_folder="templates/home")
 
 @home_blueprint.route("/")
 def index():
-    """Create add customer html form.
+    """Create "add customer" HTML form.
 
     Gather data from form and insert into database.
     """
