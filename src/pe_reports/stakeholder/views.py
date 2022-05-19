@@ -514,7 +514,7 @@ def setOrganizationDetails(org_id, orgAliases, orgDomain, orgIP, orgExecs):
 
 
 def getalluserinfo():
-    """Get CSG user permission role information from GSG."""
+    """Get CSG user permission role information from CSG."""
     userInfo = getOrganizations()[1]["assigned_users"]
 
     return userInfo
