@@ -563,7 +563,7 @@ def stakeholder():
                         rootUUID = getRootID(allDomain)[cust]
 
                         logging.info(
-                            "The Root Domain %s was entered at root_domains.",
+                            "The root domain %s was entered at root_domains.",
                             custRootDomainValue,
                         )
                         if allSubDomain:
