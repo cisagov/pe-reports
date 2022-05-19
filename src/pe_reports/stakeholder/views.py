@@ -362,7 +362,7 @@ def getallsubdomainIPS(domain):
 
 
 def verifyIPv4(custIP):
-    """Verify if parameter is a valid ipv4 ip address."""
+    """Verify if parameter is a valid IPv4 IP address."""
     try:
         if ip_address(custIP):
             return True
