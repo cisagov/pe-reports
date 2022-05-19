@@ -391,7 +391,7 @@ def verifyCIDR(custIP):
 
 def validateIP(custIP):
     """
-    Verify ipv4 and cidr.
+    Verify IPv4 and CIDR.
 
     Collect address information into a list that is ready for DB insertion.
     """
