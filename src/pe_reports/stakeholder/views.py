@@ -488,11 +488,11 @@ def setOrganizationDetails(org_id, orgAliases, orgDomain, orgIP, orgExecs):
     stakeholder at CSG portal via API.
     """
     logging.info("The following is from setting details")
-    logging.info("The org_id id %s", org_id)
-    logging.info("The org_id id %s", orgAliases)
-    logging.info("The org_id id %s", orgDomain)
-    logging.info("The org_id id %s", orgIP)
-    logging.info("The org_id id %s", orgExecs)
+    logging.info("The org_id is %s", org_id)
+    logging.info("The orgAliases is %s", orgAliases)
+    logging.info("The orgDomain is %s", orgDomain)
+    logging.info("The orgIP is %s", orgIP)
+    logging.info("The orgExecs is %s", orgExecs)
     newOrganizationDetails = json.dumps(
         {
             "organization_aliases": {"explicit": orgAliases},
