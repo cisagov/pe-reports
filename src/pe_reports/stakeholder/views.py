@@ -129,7 +129,7 @@ def getRootID(org_UUID):
 
 
 def setStakeholder(customer):
-    """Insert customer into the PE-Reports database."""
+    """Insert customer into the P&E reports database."""
     global conn, cursor
 
     try:
