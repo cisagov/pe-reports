@@ -139,10 +139,14 @@ def alerts(org_id):
     all_alerts = []
 
     for offset in range(0, count_total, fetch_size):
-        resp = alerts_list(token, org_id, fetch_size, offset).json()
-        df_alerts = pd.DataFrame.from_dict(resp)
-        all_alerts.append(df_alerts)
-        df_all_alerts = pd.concat(all_alerts).reset_index(drop=True)
+        try:
+            resp = alerts_list(token, org_id, fetch_size, offset).json()
+            df_alerts = pd.DataFrame.from_dict(resp)
+            all_alerts.append(df_alerts)
+            df_all_alerts = pd.concat(all_alerts).reset_index(drop=True)
+        except:
+            print("HAD TO CONTINUE THROUGH ALERT CHUNK")
+            continue
 
     # Fetch the full content of each alert
     # for i, r in df_all_alerts.iterrows():

@@ -71,6 +71,10 @@ class Cybersixgill:
             if self.get_topCVEs(source_uid) == 1:
                 failed.append("Top CVEs")
 
+        list = ""
+        for pe_org in pe_orgs:
+            list = list + pe_org["cyhy_db_name"]+ ','
+        print(list)
         for pe_org in pe_orgs:
             org_id = pe_org["cyhy_db_name"]
             pe_org_uid = pe_org["org_uid"]
@@ -139,6 +143,7 @@ class Cybersixgill:
             # Fetch organization assets
             org_assets_dict = all_assets_list(sixgill_org_id)
             print(org_assets_dict)
+            print(org_assets_dict)
             for i, row in alerts_df.iterrows():
                 try:
                     alert_id = row["sixgill_id"]
@@ -178,6 +183,8 @@ class Cybersixgill:
         """Get mentions."""
         logging.info("Fetching mention data for %s.", org_id)
 
+        # if org_id in ["SBA","USAID", "DHS_FEMA", "DHS_ICE", "DHS_USSS", "DOE", "DOI", "DOI_NPS", "DOL", "DOT", "DOS", "ED", "EOP", "EPA","GSA","HHS_FDA","HHS_NIH", "NRC", "DHS", "DHS_TSA", "DOC","DOJ","HHS","USDA","DOC_NIST", "DOC_USPTO", "DHS_NPPD", "DHS_ST", "USTDA","DOC_BEA","TREASURY","TREASURY_AUC","CFPB","DHS_FLETC","HUD", "DHS_CIS","OPM", "NSF", "VA", "DOL_BLS", "DOC_NTIA", "SSS", "EAC", "DOC_CENSUS"]:
+        #     return 1
         # Fetch org aliases from Cybersixgill
         try:
             aliases = alias_organization(sixgill_org_id)
@@ -190,9 +197,23 @@ class Cybersixgill:
         try:
             if "SSS" in aliases:
                 aliases.remove("SSS")
+            if "SSA" in aliases or "ssa" in aliases:
+                aliases.remove("ssa")
+                aliases.remove("SSA")
             if "ST" in aliases:
                 aliases.remove("ST")
-            mentions_df = mentions(DATE_SPAN, aliases)
+            if "DOL" in aliases:
+                aliases.remove("DOL")
+            if "GSA" in aliases:
+                aliases.remove("GSA")
+            if "HUD" in aliases:
+                aliases.remove("HUD")
+            if "DOC" in aliases:
+                aliases.remove("DOC")
+            try:
+                mentions_df = mentions(DATE_SPAN, aliases)
+            except UnboundLocalError:
+                return 1
             mentions_df = mentions_df.rename(columns={"id": "sixgill_mention_id"})
             mentions_df["organizations_uid"] = pe_org_uid
             # Add data source uid
@@ -217,6 +238,9 @@ class Cybersixgill:
         """Get credentials."""
         logging.info("Fetching credential data for %s.", org_id)
 
+        if org_id in ["DHS"]:
+            return 1
+            
         # Fetch org root domains from Cybersixgill
         try:
             roots = root_domains(sixgill_org_id)
@@ -228,6 +252,7 @@ class Cybersixgill:
         # Fetch credential data
         try:
             creds_df = creds(roots, START_DATE_TIME, END_DATE_TIME)
+            logging.info("Found %s credentials.", len(creds_df.index))
             creds_df["organizations_uid"] = pe_org_uid
             # Add data source uid
             creds_df["data_source_uid"] = source_uid
@@ -278,7 +303,6 @@ class Cybersixgill:
             )
         except Exception as e:
             logging.error("Probably no credential breaches for %s", org_id)
-            print(creds_df)
             logging.error(e)
             return 1
 

@@ -5,6 +5,7 @@ import logging
 # Third-Party Libraries
 import pandas as pd
 import requests
+import time
 
 # cisagov Libraries
 from pe_source.data.pe_db.config import cybersix_token
@@ -35,6 +36,16 @@ def org_assets(org_id):
         "Authorization": "Bearer " + auth,
     }
     payload = {"organization_id": org_id}
+    count = 1
+    while count < 7:
+        try:
+            resp = requests.get(url, headers=headers, params=payload).json()
+            break
+        except Exception:
+            time.sleep(5)
+            logging.info("Error. Trying query post again...")
+            count += 1
+            continue
     resp = requests.get(url, headers=headers, params=payload).json()
     return resp
 

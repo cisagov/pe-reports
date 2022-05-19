@@ -47,7 +47,7 @@ def get_orgs():
     conn = connect()
     try:
         cur = conn.cursor()
-        sql = """SELECT * FROM organizations"""
+        sql = """SELECT * FROM organizations where report_on"""
         cur.execute(sql)
         pe_orgs = cur.fetchall()
         keys = ("org_uid", "org_name", "cyhy_db_name")
