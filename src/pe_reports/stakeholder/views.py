@@ -351,7 +351,7 @@ def theaddress(domain):
 
 
 def getallsubdomainIPS(domain):
-    """Get a list if ip addresses associated with a subdomain."""
+    """Get a list of IP addresses associated with a subdomain."""
     logging.info("The domain at getallsubdomsinIPS is %s", domain)
     alladdresses = []
     for x in getSubdomain(domain)[0]:
