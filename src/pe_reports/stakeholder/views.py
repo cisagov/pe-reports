@@ -36,7 +36,7 @@ thedateToday = date.today().strftime("%Y-%m-%d")
 
 
 def getToken():
-    """Will get authorization token from CSG."""
+    """Get authorization token from Cybersixgill (CSG)."""
     d = {
         "grant_type": "client_credentials",
         "client_id": f"{API_Client_ID}",
