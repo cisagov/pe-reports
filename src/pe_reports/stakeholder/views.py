@@ -248,7 +248,7 @@ def setCustSubDomain(subdomain, rootUUID, rootname):
             logging.info("The connection/query was completed and closed.")
 
 
-def setCustomerExteralCSG(
+def setCustomerExternalCSG(
     customer, customerIP, customerRootDomain, customerSubDomain, customerExecutives
 ):
     """Insert customer not in cyhyDB into the PE-Reports database."""
