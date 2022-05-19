@@ -26,6 +26,6 @@ class InfoFormExternal(FlaskForm):
     #     "What is the sub-domain for this stakeholder?" " *comma separate entries"
     # )
     custExecutives = StringField(
-        "Who are the Excutive for this stakeholder? " "*comma separate entries"
+        "Who are the executives for this stakeholder? " "*comma separate entries"
     )
     submit = SubmitField("Submit", render_kw={"onclick": "loading()"})
