@@ -51,7 +51,7 @@ def getToken():
 def getAgencies(org_name):
     """Get all agency names from P&E database."""
     global conn, cursor
-    resultDict = {}
+
     try:
         params = config()
 
@@ -71,6 +71,7 @@ def getAgencies(org_name):
             cursor.execute(query.format(org_name))
 
             result = cursor.fetchall()
+            resultDict = {}
 
             for row in result:
                 # row[0] = org UUID
@@ -90,7 +91,7 @@ def getAgencies(org_name):
 
 
 def getRootID(org_UUID):
-    """Get all agency names from P&E database."""
+    """Get all root domain names from P&E database."""
     global conn, cursor
     resultDict = {}
     try:
@@ -164,7 +165,7 @@ def setStakeholder(customer):
 
 
 def setCustRootDomain(customer, rootdomain, orgUUID):
-    """Insert customer into the PE-Reports database."""
+    """Insert customer root domain into the PE-Reports database."""
     global conn, cursor
 
     try:
@@ -439,7 +440,7 @@ def setNewCSGOrg(newOrgName, orgAliases, orgdomainNames, orgIP, orgExecs):
     newOrgID = response["id"]
 
     if newOrgID:
-        logging.info("Got here there is a new new org %s", newOrgID)
+        logging.info("A new org_id was created: %s", newOrgID)
 
         setOrganizationUsers(newOrgID)
         setOrganizationDetails(newOrgID, orgAliases, orgdomainNames, orgIP, orgExecs)

@@ -47,7 +47,7 @@ celery.conf.update(app.config)
 db = SQLAlchemy(app)
 Migrate(app, db)
 
-# TODO: Add a login page
+# TODO: Add a login page in the future. Issue #207 contains details
 # login_manager.init_app(app)
 # login_manager.login_view = "login"
 
@@ -56,7 +56,7 @@ __all__ = ["app", "pages", "report_generator", "stylesheet"]
 
 # Register the flask apps
 app.register_blueprint(stakeholder_blueprint)
-# TODO: Add login blueprint
+# TODO: Add login blueprint. Issue #207 contains details
 # app.register_blueprint(manage_login_blueprint)
 app.register_blueprint(home_blueprint)
 
