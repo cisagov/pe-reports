@@ -21,7 +21,6 @@ log_levels = (
     "critical",
 )
 
-
 PROJECT_VERSION = pe_reports.__version__
 
 
@@ -117,13 +116,18 @@ def client():
         yield client
 
 
+# TODO: Increase flask UI testing to test Cyber Six Gill API responses. The
+#   current state of the CSG API times out randomly.
+#   See https://github.com/cisagov/pe-reports/issues/213
 def test_home_page(client):
-    """Test flask home.html."""
+    """Test flask home.html is avalible and verify the correct page."""
     resp = client.get("/")
     assert resp.status_code == 200
+    assert b"Home" in resp.data
 
 
 def test_stakeholder_page(client):
-    """Test flask home_stakeholder.html."""
+    """Test flask home_stakeholder.html and verify the correct page."""
     resp = client.get("/stakeholder")
     assert resp.status_code == 200
+    assert b"Stakeholder" in resp.data

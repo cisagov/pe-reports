@@ -87,3 +87,7 @@ div#loading {
   background: url("../SVG-Loaders/svg-loaders/bars.svg") no-repeat;
   cursor: wait;
 }
+
+homeBG {
+  background-color: white;
+}

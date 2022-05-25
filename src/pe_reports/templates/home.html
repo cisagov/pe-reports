@@ -1,39 +1,55 @@
 {% extends "base.html" %} {% block content %}
 
 <div class="container">
-  <img
-    src="{{ url_for('static', filename='CISAImage.png') }}"
-    alt="CISA seal image"
-    width="200"
-    height="200"
-  />
-</div>
-<!--End of container-->
-<script>
-  function showDiv() {
-    let T = document.getElementById("TestsDiv"),
-      displayValue = "";
-    if (T.style.display == "") displayValue = "none";
-    T.style.display = displayValue;
-  }
+  <div class="row">
+    <div class="col-lg-3">
+      <img
+        src="{{ url_for('static', filename='CISAImage.png') }}"
+        alt="CISA seal image"
+        width="200"
+        height="200"
+      />
+    </div>
+    <input type="hidden" value="{% block title %} Home {% endblock%}" />
 
-  function loading() {
-    $("#loading").show();
-    $("#content").hide();
-  }
+    <div class="col-lg-9 homeBG" style="background-color: white">
+      <p>
+        Posture and Exposure (P&E) offers stakeholders an opportunity to view
+        their organizational riskfrom the viewpoint of the adversary. We utilize
+        passive reconnaissance services, dark webanalysis, and open-source tools
+        to identify spoofing in order to generate a risk profile report thatis
+        delivered on a regular basis.
+      </p>
+    </div>
+  </div>
 
-  $(document).ready(function () {
-    console.log("Im ready ");
+  <!--End of container-->
+  <script>
+    function showDiv() {
+      let T = document.getElementById("TestsDiv"),
+        displayValue = "";
+      if (T.style.display == "") displayValue = "none";
+      T.style.display = displayValue;
+    }
 
-    showDiv();
+    function loading() {
+      $("#loading").show();
+      $("#content").hide();
+    }
 
-    setTimeout(function () {
-      $("#messageDiv").fadeOut("fast");
-    }, 5000);
-    $(window).load(function () {
-      $("#loading").hide();
+    $(document).ready(function () {
+      console.log("Im ready ");
+
+      showDiv();
+
+      setTimeout(function () {
+        $("#messageDiv").fadeOut("fast");
+      }, 5000);
+      $(window).load(function () {
+        $("#loading").hide();
+      });
     });
-  });
-</script>
+  </script>
 
-{% endblock %}
+  {% endblock %}
+</div>
