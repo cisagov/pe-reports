@@ -120,7 +120,7 @@ def client():
 #   current state of the CSG API times out randomly.
 #   See https://github.com/cisagov/pe-reports/issues/213
 def test_home_page(client):
-    """Test flask home.html is avalible and verify the correct page."""
+    """Test flask home.html is available and verify a string on the page."""
     resp = client.get("/")
     assert resp.status_code == 200
     assert b"Home" in resp.data
