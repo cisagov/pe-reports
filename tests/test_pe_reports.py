@@ -127,7 +127,7 @@ def test_home_page(client):
 
 
 def test_stakeholder_page(client):
-    """Test flask home_stakeholder.html and verify the correct page."""
+    """Test flask home_stakeholder.html is available and verify a string on the page."""
     resp = client.get("/stakeholder")
     assert resp.status_code == 200
     assert b"Stakeholder" in resp.data
