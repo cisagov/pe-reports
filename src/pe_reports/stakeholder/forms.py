@@ -1,4 +1,4 @@
-"""Create the page forms."""
+"""Create the stakeholder data input form."""
 
 # Third-Party Libraries
 from flask_wtf import FlaskForm
