@@ -114,7 +114,7 @@ setup(
         "psutil",
         "psycopg2-binary == 2.9.3",
         "pymongo == 4.0.1",
-        "pymupdf == 1.19.0",
+        "pymupdf == 1.19.6",
         "python-dateutil >= 2.7.3",
         "pytest-cov",
         "python-pptx == 0.6.21",
