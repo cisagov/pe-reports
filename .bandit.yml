@@ -12,4 +12,3 @@ tests:
 
 skips:
   - B101  # skip "assert used" check since assertions are required in pytests
-  - B303  # skip md5 blacklist since MD5 hash function isn't for security

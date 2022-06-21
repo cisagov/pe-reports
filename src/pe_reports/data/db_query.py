@@ -10,6 +10,7 @@ import pandas as pd
 import psycopg2
 from psycopg2 import OperationalError
 from psycopg2.extensions import AsIs
+import psycopg2.extras as extras
 
 from .config import config
 
@@ -30,9 +31,7 @@ def connect():
     """Connect to PostgreSQL database."""
     conn = None
     try:
-        logging.info("Connecting to the PostgreSQL......")
         conn = psycopg2.connect(**CONN_PARAMS_DIC)
-        logging.info("Connection successful......")
     except OperationalError as err:
         show_psycopg2_exception(err)
         conn = None
@@ -45,6 +44,22 @@ def close(conn):
     return
 
 
+def execute_values(conn, dataframe, table, except_condition=";"):
+    """INSERT into table, generic."""
+    tpls = [tuple(x) for x in dataframe.to_numpy()]
+    cols = ",".join(list(dataframe.columns))
+    sql = "INSERT INTO {}({}) VALUES %s"
+    sql = sql + except_condition
+    cursor = conn.cursor()
+    try:
+        extras.execute_values(cursor, sql.format(table, cols), tpls)
+        conn.commit()
+        print("Data inserted using execute_values() successfully..")
+    except (Exception, psycopg2.DatabaseError) as err:
+        show_psycopg2_exception(err)
+        cursor.close()
+
+
 def get_orgs(conn):
     """Query organizations table."""
     try:
@@ -54,6 +69,20 @@ def get_orgs(conn):
         pe_orgs = cur.fetchall()
         cur.close()
         return pe_orgs
+    except (Exception, psycopg2.DatabaseError) as error:
+        logging.error("There was a problem with your database query %s", error)
+    finally:
+        if conn is not None:
+            close(conn)
+
+
+def get_new_orgs():
+    """Query organizations table for new orgs."""
+    conn = connect()
+    try:
+        sql = """SELECT * FROM organizations WHERE report_on='False'"""
+        pe_orgs_df = pd.read_sql(sql, conn)
+        return pe_orgs_df
     except (Exception, psycopg2.DatabaseError) as error:
         logging.error("There was a problem with your database query %s", error)
     finally:
