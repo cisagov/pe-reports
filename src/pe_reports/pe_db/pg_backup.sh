@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Set path to save backup files
-path=
+path=$PWD
 backup_folder=$path/backups_$(date +%m-%d-%Y)
 
 globalsqlfile=$backup_folder/pedb_globals.sql

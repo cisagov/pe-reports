@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Set path to pg dump and globals backup files. ex: /Users/user/Desktop/backups
-path=
+path=$PWD
 
 dropdb pe -h localhost -U postgres --if-exists
 
