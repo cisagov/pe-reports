@@ -1,4 +1,4 @@
-"""File to be used to create test for pe-reports."""
+"""Tests for the pe-source module."""
 
 # Standard Python Libraries
 import logging
@@ -9,9 +9,7 @@ from unittest.mock import patch
 import pytest
 
 # cisagov Libraries
-from pe_reports import app as flask_app
-import pe_reports.data.db_query
-import pe_reports.report_generator
+import pe_source.pe_scripts
 
 log_levels = (
     "debug",
@@ -21,25 +19,26 @@ log_levels = (
     "critical",
 )
 
-PROJECT_VERSION = pe_reports.__version__
+
+PROJECT_VERSION = pe_source.__version__
 
 
 # TODO: Replace current dummy test with useful tests
 # Issue - https://github.com/cisagov/pe-reports/issues/3#issue-909531010
 
 
-def test_reports_stdout_version(capsys):
+def test_source_stdout_version(capsys):
     """Verify that version string sent to stdout agrees with the module version."""
     with pytest.raises(SystemExit):
         with patch.object(sys, "argv", ["bogus", "--version"]):
-            pe_reports.report_generator.main()
+            pe_source.pe_scripts.main()
     captured = capsys.readouterr()
     assert (
         captured.out == f"{PROJECT_VERSION}\n"
     ), "standard output by '--version' should agree with module.__version__"
 
 
-def test_reports_running_as_module(capsys):
+def test_source_running_as_module(capsys):
     """Verify that the __main__.py file loads correctly."""
     with pytest.raises(SystemExit):
         with patch.object(sys, "argv", ["bogus", "--version"]):
@@ -49,7 +48,7 @@ def test_reports_running_as_module(capsys):
             # package and running it, so there is nothing to use from this
             # import. As a result, we can safely ignore this warning.
             # cisagov Libraries
-            import pe_reports.__main__  # noqa: F401
+            import pe_source.__main__  # noqa: F401
     captured = capsys.readouterr()
     assert (
         captured.out == f"{PROJECT_VERSION}\n"
@@ -57,15 +56,14 @@ def test_reports_running_as_module(capsys):
 
 
 @pytest.mark.parametrize("level", log_levels)
-def test_reports_log_levels(level):
+def test_source_log_levels(level):
     """Validate commandline log-level arguments."""
     with patch.object(
         sys,
         "argv",
         [
-            "pe-reports",
-            "2021-01-01",
-            "output/",
+            "pe-source",
+            "source",
             f"--log-level={level}",
         ],
     ):
@@ -75,7 +73,7 @@ def test_reports_log_levels(level):
             ), "root logger should not have handlers yet"
             return_code = None
             try:
-                pe_reports.report_generator.main()
+                pe_source.pe_scripts.main()
             except SystemExit as sys_exit:
                 return_code = sys_exit.code
             assert (
@@ -87,47 +85,20 @@ def test_reports_log_levels(level):
             assert return_code is None, "main() should return success"
 
 
-def test_reports_bad_log_level():
+def test_source_bad_log_level():
     """Validate bad log-level argument returns error."""
     with patch.object(
         sys,
         "argv",
         [
-            "pe-reports",
-            "2021-01-01",
-            "output/",
+            "pe-source",
+            "source",
             "--log-level=emergency",
         ],
     ):
         return_code = None
         try:
-            pe_reports.report_generator.main()
+            pe_source.pe_scripts.main()
         except SystemExit as sys_exit:
             return_code = sys_exit.code
         assert return_code == 1, "main() should exit with error"
-
-
-@pytest.fixture
-def client():
-    """Create client to test flask application."""
-    flask_app.config.update({"TESTING": True})
-
-    with flask_app.test_client() as client:
-        yield client
-
-
-# TODO: Increase flask UI testing to test Cyber Six Gill API responses. The
-#   current state of the CSG API times out randomly.
-#   See https://github.com/cisagov/pe-reports/issues/213
-def test_home_page(client):
-    """Test flask home.html is available and verify a string on the page."""
-    resp = client.get("/")
-    assert resp.status_code == 200
-    assert b"Home" in resp.data
-
-
-def test_stakeholder_page(client):
-    """Test flask home_stakeholder.html is available and verify a string on the page."""
-    resp = client.get("/stakeholder")
-    assert resp.status_code == 200
-    assert b"Stakeholder" in resp.data
