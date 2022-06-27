@@ -9,19 +9,11 @@ services:
     entrypoint:
       - docker-entrypoint.sh
     environment:
-      - RABBITMQ_DEFAULT_USER=admin
-      - RABBITMQ_DEFAULT_PASS=guest1
+      - RABBITMQ_DEFAULT_USER=${RABBITMQ_USER}
+      - RABBITMQ_DEFAULT_PASS=${RABBITMQ_PASS}
       - PATH=/opt/rabbitmq/sbin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-      - OPENSSL_VERSION=1.1.1k
-      - OPENSSL_SOURCE_SHA256=892a0875b9872acd04a9fde79b1f943075d5ea162415de3047c327df33fbaee5
-      - OPENSSL_PGP_KEY_IDS=0x8657ABB260F056B1E5190839D9C4D26D0E604491 0x5B2545DAB21995F4088CEFAA36CEE4DEB00CFE33
-        0xED230BEC4D4F2518B9D7DF41F0DB4D21C1D35231 0xC1F33DD8CE1D4CC613AF14DA9195C48241FBF7DD
-        0x7953AC1FBC3DC8B3B292393ED5E9E43F7DF9EE8C 0xE5E52560DD91C556DDBDA5D02064C53641C25E5D
-      - OTP_VERSION=23.3.2
-      - OTP_SOURCE_SHA256=bb40ca2723fe51891850dc3bdf9e0409f195c73312e22e41e123ec55f26cc31f
       - RABBITMQ_DATA_DIR=/var/lib/rabbitmq
       - RABBITMQ_VERSION=3.8.14
-      - RABBITMQ_PGP_KEY_ID=0x0A9AF2115F4687BD29803A206B73A36E6026DFCA
       - RABBITMQ_HOME=/opt/rabbitmq
       - RABBITMQ_LOGS=-
       - HOME=/var/lib/rabbitmq
@@ -32,12 +24,12 @@ services:
     image: rabbitmq:3.8.14-management
     ipc: private
     labels:
-      com.docker.compose.config-hash: 015cf982957d084168493f50912e3f68a120063cf61ffd0d76ea04fd5bb9573d
+
       com.docker.compose.container-number: 1
       com.docker.compose.oneoff: False
       com.docker.compose.project: pe_reports
       com.docker.compose.project.config_files: docker-compose.yaml
-      com.docker.compose.project.working_dir: /Users/duhnc/Desktop/allInfo/pe-reports-UIupgrade/src/pe_reports
+
       com.docker.compose.service: rabbitmq
       com.docker.compose.version: 1.29.2
     logging:
