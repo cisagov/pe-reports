@@ -104,7 +104,7 @@ setup(
         "psycopg2",
         "psycopg2-binary",
         "pymongo",
-        "pymupdf == 1.19.0",
+        "pymupdf",
         "pytest-cov",
         "python-pptx",
         "pyyaml",
