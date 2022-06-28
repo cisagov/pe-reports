@@ -16,7 +16,7 @@ zipfile=$path/pedb_dump_$(date +%m-%d-%Y).zip
 mkdir -p "$backup_folder"
 
 # Create globals backup
-if pg_dumpall --globals-only --no-role-passwords -l "$PE_DB_NAME" -p "$PE_DB_PORT" -U "$PE_DB_USER" -h "$PE_DB_HOST" -w 2> "$errfile" > "$globalsqlfile"; then
+if pg_dumpall --globals-only --no-role-passwords --database "$PE_DB_NAME" --port "$PE_DB_PORT" --username "$PE_DB_USER" --host "$DATABASE_HOST" --no-password 2> "$errfile" > "$globalsqlfile"; then
   echo 'Globals dump created'
 else
   echo 'Globals pg_dump return non-zero code'
@@ -24,7 +24,7 @@ else
 fi
 
 # Create backup
-if pg_dump -d "$PE_DB_NAME" -p "$PE_DB_PORT" -U "$PE_DB_USER" -h "$PE_DB_HOST" -Fc -w 2> "$errfile" > "$sqlfile"; then
+if pg_dump --dbname "$PE_DB_NAME" --port "$PE_DB_PORT" --username "$PE_DB_USER" --host "$DATABASE_HOST" --format custom --no-password 2> "$errfile" > "$sqlfile"; then
   echo 'PG dump created'
 else
   echo 'pg_dump return non-zero code'
@@ -32,4 +32,4 @@ else
 fi
 
 # Zip folder
-zip -r "$zipfile" "$backup_folder"
+zip --recurse-paths "$zipfile" "$backup_folder"
