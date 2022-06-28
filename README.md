@@ -88,7 +88,7 @@ In the P&E database environment:
 
 - Add output path to: ./pe-reports/src/pe_reports/pe_db/pg_backup.sh
 - Open terminal and run:
-```bash ./pe-reports/src/pe_reports/pe_db/pg_backup.sh```
+`bash ./pe-reports/src/pe_reports/pe_db/pg_backup.sh`
 - Export resulting .zip file
 
 In your local environment:
@@ -97,7 +97,7 @@ In your local environment:
 - Add path to the backup files: ./pe-reports/src/pe_reports/pe_db/pg_restore.sh
 - Start local postgres
 - Run:
-```bash ./pe-reports/src/pe_reports/pe_db/pg_restore.sh```
+`bash ./pe-reports/src/pe_reports/pe_db/pg_restore.sh`
 
 ## Collect P&E Source Data ##
 
