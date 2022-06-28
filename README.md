@@ -87,20 +87,20 @@ Follow the instructions below to backup the P&E database instance and restore lo
 In the P&E database environment:
 
 - Pull the latest repository
-- If necessary, edit ./pe-reports/src/pe_reports/pe_db/pg_backup.sh and replace the
+- If necessary, edit ./src/pe_reports/pe_db/pg_backup.sh and replace the
 default output path ($PWD) with your preferred output path.
 - Open terminal and run:
-`bash ./pe-reports/src/pe_reports/pe_db/pg_backup.sh`
+`bash ./src/pe_reports/pe_db/pg_backup.sh`
 - Export resulting .zip file
 
 In your local environment:
 
 - Pull the latest repository
-- If necessary, edit ./pe-reports/src/pe_reports/pe_db/pg_restore.sh and replace
+- If necessary, edit ./src/pe_reports/pe_db/pg_restore.sh and replace
 the default path to the backup files ($PWD) with your preferred path.
 - Start local postgres
 - Run:
-`bash ./pe-reports/src/pe_reports/pe_db/pg_restore.sh`
+`bash ./src/pe_reports/pe_db/pg_restore.sh`
 
 ## Collect P&E Source Data ##
 
