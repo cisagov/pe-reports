@@ -1,4 +1,8 @@
 #!/usr/bin/env bash
+set -o errexit
+set -o nounset
+set -o pipefail
+
 # Set path to pg dump and globals backup files. ex: /Users/user/Desktop/backups
 path=$PWD
 

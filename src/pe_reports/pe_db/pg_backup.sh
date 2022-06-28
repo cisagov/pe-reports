@@ -1,4 +1,8 @@
 #!/usr/bin/env bash
+set -o errexit
+set -o nounset
+set -o pipefail
+
 # Set path to save backup files
 path=$PWD
 backup_folder=$path/backups_$(date +%m-%d-%Y)
