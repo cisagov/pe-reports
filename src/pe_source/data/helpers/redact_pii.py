@@ -538,7 +538,7 @@ def scrub(df, column):
     scrubber.add_detector(KS_DLDetector)
     scrubber.add_detector(KY_DLDetector)
     scrubber.add_detector(MI_DLDetector)
-    df[column] = df[column].apply(scrubber.clean)
+    df[column] = df[column].apply(lambda x: scrubber.clean(x))
 
     analyzer = AnalyzerEngine()
     anonymizer = AnonymizerEngine()
