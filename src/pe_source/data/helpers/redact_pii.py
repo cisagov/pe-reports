@@ -4,12 +4,10 @@
 import re
 
 # Third-Party Libraries
+from presidio_analyzer import AnalyzerEngine
+from presidio_anonymizer import AnonymizerEngine
 import scrubadub
 import scrubadub.detectors.date_of_birth
-
-# TODO: add NLP redaction
-# from presidio_analyzer import AnalyzerEngine
-# from presidio_anonymizer import AnonymizerEngine
 
 FL = [
     r"(?:(?<=\s)|(?<=^))[a-zA-Z] \d{3} \d{3} \d{3} \d{3}(?=$|\s)",
@@ -50,6 +48,7 @@ WA = [r"(?:(?<=\s)|(?<=^))[a-zA-Z]{3}\*\*[a-zA-Z]{2}\d{3}[a-zA-Z]\d(?=$|\s)"]
 WV = [r"(?:(?<=\s)|(?<=^))[a-zA-Z]\d{6}(?=$|\s)"]
 WI = [r"(?:(?<=\s)|(?<=^))[a-zA-Z]\d{3}-\d{4}-\d{4}-\d{2}(?=$|\s)"]
 WY = [r"(?:(?<=\s)|(?<=^))\d{6}-\d{3}(?=$|\s)"]
+
 
 # Build detectors to find Drivers License ID
 
@@ -472,7 +471,7 @@ class AlienIdDetector(scrubadub.detectors.RegexDetector):
     filth_cls = AlienIdFilth
 
 
-# credit card numbers
+# Createe various regex identifiers
 email = r"\b([-!#-'*+/-9=?A-Z^-~]+(\.[-!#-'*+/-9=?A-Z^-~]+)*|\"([]!#-[^-~ \t]|(\\[\t -~]))+\")@([-!#-'*+/-9=?A-Z^-~]+(\.[-!#-'*+/-9=?A-Z^-~]+)*|\[[\t -Z^-~]*])\b"
 all_cards = r"\b((4\d{3}|5[1-5]\d{2}|2\d{3}|3[47]\d{1,2})[\s\-]?\d{4,6}[\s\-]?\d{4,6}?([\s\-]\d{3,4})?(\d{3})?)\b"
 US_phones = r"((\+|\b)[1l][\-\. ])?\(?\b[\dOlZSB]{3,5}([\-\. ]|\) ?)[\dOlZSB]{3}[\-\. ][\dOlZSB]{4}\b"
@@ -481,8 +480,6 @@ US_street_address = r"\d{1,8}\b[\s\S]{10,100}?\b(AK|AL|AR|AZ|CA|CO|CT|DC|DE|FL|G
 
 def redact_pii(df, column_list=[]):
     """Run through provided columns and redact PII."""
-    # df = df.replace(regex={email: 'email', email2: 'email2', ssn1:'ssn1', ssn2:'ssn2', ssn3:'ssn3', US_phones: 'Phone Number', all_cards:'credit card'})
-
     if column_list:
         for column in column_list:
             df = scrub(df, column)
@@ -508,23 +505,19 @@ def redact_pii(df, column_list=[]):
 
 def scrub(df, column):
     """Add different scrubber classes and run column through scrubadub."""
-    # scrubadub.filth.date_of_birth.DateOfBirthFilth.min_age_years = 5
     scrubber = scrubadub.Scrubber()
-    # scrubber.add_detector(scrubadub.detectors.date_of_birth.DateOfBirthDetector())
     scrubber.remove_detector("url")
     scrubber.remove_detector("twitter")
     scrubber.remove_detector("email")
     scrubber.add_detector(SSNDetector)
     scrubber.add_detector(PassportDetector)
     scrubber.add_detector(AlienIdDetector)
-    # Test breaking detectors
     scrubber.add_detector(FL_DLDetector)
     scrubber.add_detector(HI_NE_VA_DLDetector)
     scrubber.add_detector(IL_DLDetector)
     scrubber.add_detector(MN_FL_MD_MI_DLDetector)
     scrubber.add_detector(MO_OK_DLDetector)
     scrubber.add_detector(MD_DLDetector)
-    # Working Detectors
     scrubber.add_detector(CA_DLDetector)
     scrubber.add_detector(CO_DLDetector)
     scrubber.add_detector(ID_DLDetector)
@@ -545,11 +538,26 @@ def scrub(df, column):
     scrubber.add_detector(KS_DLDetector)
     scrubber.add_detector(KY_DLDetector)
     scrubber.add_detector(MI_DLDetector)
-    df[column] = df[column].apply(lambda x: scrubber.clean(x))
-    # TODO: Add NLP redaction
-    # analyzer = AnalyzerEngine()
-    # anonymizer = AnonymizerEngine()
-    # entities = ["PHONE_NUMBER","CREDIT_CARD","US_DRIVER_LICENSE","US_SSN","EMAIL_ADDRESS","IP_ADDRESS"]
-    # scrub_2 = lambda x: anonymizer.anonymize(text=x,analyzer_results=analyzer.analyze(text=x,entities=entities,language='en')).text
-    # df[column] = df[column].apply(scrub_2)
+    df[column] = df[column].apply(scrubber.clean)
+
+    analyzer = AnalyzerEngine()
+    anonymizer = AnonymizerEngine()
+    entities = [
+        "PHONE_NUMBER",
+        "CREDIT_CARD",
+        "US_DRIVER_LICENSE",
+        "US_SSN",
+        "EMAIL_ADDRESS",
+        "IP_ADDRESS",
+    ]
+
+    def anon(text):
+        return anonymizer.anonymize(
+            text=text,
+            analyzer_results=analyzer.analyze(
+                text=text, entities=entities, language="en"
+            ),
+        ).text
+
+    df[column] = df[column].apply(anon)
     return df
