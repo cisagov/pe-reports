@@ -551,13 +551,10 @@ def scrub(df, column):
         "IP_ADDRESS",
     ]
 
-    def anon(text):
-        return anonymizer.anonymize(
-            text=text,
-            analyzer_results=analyzer.analyze(
-                text=text, entities=entities, language="en"
-            ),
+    df[column] = df[column].apply(
+        lambda x: anonymizer.anonymize(
+            text=x,
+            analyzer_results=analyzer.analyze(text=x, entities=entities, language="en"),
         ).text
-
-    df[column] = df[column].apply(anon)
+    )
     return df
