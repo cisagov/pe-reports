@@ -99,7 +99,7 @@ In your local environment:
 - If necessary, edit ./src/pe_reports/pe_db/pg_restore.sh and replace
 the default path to the backup files ($PWD) with your preferred path.
 - Start local postgres
-- Run:
+- Open terminal and run:
 `bash ./src/pe_reports/pe_db/pg_restore.sh`
 
 ## Collect P&E Source Data ##
