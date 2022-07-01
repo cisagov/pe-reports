@@ -9,6 +9,8 @@ from unittest.mock import patch
 import pytest
 
 # cisagov Libraries
+from pe_reports import app as flask_app
+import pe_reports.data.db_query
 import pe_reports.report_generator
 
 log_levels = (
@@ -18,7 +20,6 @@ log_levels = (
     "error",
     "critical",
 )
-
 
 PROJECT_VERSION = pe_reports.__version__
 
@@ -104,3 +105,29 @@ def test_reports_bad_log_level():
         except SystemExit as sys_exit:
             return_code = sys_exit.code
         assert return_code == 1, "main() should exit with error"
+
+
+@pytest.fixture
+def client():
+    """Create client to test flask application."""
+    flask_app.config.update({"TESTING": True})
+
+    with flask_app.test_client() as client:
+        yield client
+
+
+# TODO: Increase flask UI testing to test Cyber Six Gill API responses. The
+#   current state of the CSG API times out randomly.
+#   See https://github.com/cisagov/pe-reports/issues/213
+def test_home_page(client):
+    """Test flask home.html is available and verify a string on the page."""
+    resp = client.get("/")
+    assert resp.status_code == 200
+    assert b"Home" in resp.data
+
+
+def test_stakeholder_page(client):
+    """Test flask home_stakeholder.html is available and verify a string on the page."""
+    resp = client.get("/stakeholder")
+    assert resp.status_code == 200
+    assert b"Stakeholder" in resp.data
