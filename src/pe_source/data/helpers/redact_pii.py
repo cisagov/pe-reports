@@ -140,7 +140,7 @@ class MD_DLDetector(scrubadub.detectors.RegexDetector):
 class CA_DLFilth(scrubadub.filth.Filth):
     """Create filth class for CA drivers licenses."""
 
-    type = "ca_drivers_license"
+    type = "CA_drivers_license"
 
 
 class CA_DLDetector(scrubadub.detectors.RegexDetector):
