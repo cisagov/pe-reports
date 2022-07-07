@@ -454,21 +454,21 @@ class PassportDetector(scrubadub.detectors.RegexDetector):
 
 
 # Build a detector that identifies Alien Registration Numbers
-class AlienIdFilth(scrubadub.filth.Filth):
+class AlienRegistrationFilth(scrubadub.filth.Filth):
     """Create filth class for Alien Registration Numbers."""
 
-    type = "alien id"
+    type = "alien registration"
 
 
-class AlienIdDetector(scrubadub.detectors.RegexDetector):
+class AlienRegistrationDetector(scrubadub.detectors.RegexDetector):
     """Create detector class to identify Alien Registration Numbers."""
 
-    name = "alien id"
+    name = "alien registration"
     regex = re.compile(
         r"^(([A-Za-z]{3}[0-9]{10})|([A-Za-z]{3}(\s)([0-9]{2}(\s)[0-9]{3}(\s)[0-9]{5})))$",
         re.IGNORECASE,
     )
-    filth_cls = AlienIdFilth
+    filth_cls = AlienRegistrationFilth
 
 
 # Create various regex identifiers
@@ -511,7 +511,7 @@ def scrub(df, column):
     scrubber.remove_detector("email")
     scrubber.add_detector(SSNDetector)
     scrubber.add_detector(PassportDetector)
-    scrubber.add_detector(AlienIdDetector)
+    scrubber.add_detector(AlienRegistrationDetector)
     scrubber.add_detector(FL_DLDetector)
     scrubber.add_detector(HI_NE_VA_DLDetector)
     scrubber.add_detector(IL_DLDetector)
