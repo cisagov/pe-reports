@@ -68,7 +68,7 @@ class FL_DLDetector(scrubadub.detectors.RegexDetector):
 
 
 class HI_NE_VA_DLFilth(scrubadub.filth.Filth):
-    """Create filth class for HI and NE drivers licenses."""
+    """Create filth class for HI, NE, and VA drivers licenses."""
 
     type = "HI_NE_VA_drivers_license"
 
