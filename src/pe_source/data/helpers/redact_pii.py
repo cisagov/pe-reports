@@ -62,7 +62,7 @@ class CA_DLFilth(scrubadub.filth.Filth):
 class CA_DLDetector(scrubadub.detectors.RegexDetector):
     """Create detector class to identify CA drivers licenses."""
 
-    name = "ca_drivers_license"
+    name = "CA_drivers_license"
     regex = re.compile("|".join(CA), re.IGNORECASE)
     filth_cls = CA_DLFilth
 
@@ -70,13 +70,13 @@ class CA_DLDetector(scrubadub.detectors.RegexDetector):
 class CO_DLFilth(scrubadub.filth.Filth):
     """Create filth class for CO drivers licenses."""
 
-    type = "co_drivers_license"
+    type = "CO_drivers_license"
 
 
 class CO_DLDetector(scrubadub.detectors.RegexDetector):
     """Create detector class to identify CO drivers licenses."""
 
-    name = "co_drivers_license"
+    name = "CO_drivers_license"
     regex = re.compile("|".join(CO), re.IGNORECASE)
     filth_cls = CO_DLFilth
 
