@@ -429,7 +429,7 @@ class SSNDetector(scrubadub.detectors.RegexDetector):
 
     name = "no_space_ssn"
     regex = re.compile(
-        r"(?:(?<=\s)|(?<=^))(social security number|Social Security No|Social Security #|social security number|social|Social|ssn)\W*(?!219099999|078051120)(?!666|000|9\d{2})\d{3}(?!00)\d{2}(?!0{4})\d{4}(?=$|\s)",
+        r"(?:(?<=\s)|(?<=^))(social security number|Social Security No|Social Security #|social|ssn)\W*(?!219099999|078051120)(?!666|000|9\d{2})\d{3}(?!00)\d{2}(?!0{4})\d{4}(?=$|\s)",
         re.IGNORECASE,
     )
     filth_cls = SSNFilth
