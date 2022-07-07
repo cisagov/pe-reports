@@ -26,7 +26,7 @@ MD = [r"(?:(?<=\s)|(?<=^))[a-zA-Z]-\d{3}-\d{3}-\d{3}-\d{3}(?=$|\s)"]
 CA = [r"(?:(?<=\s)|(?<=^))[a-zA-Z]\d{7}(?=$|\s)"]
 CO = [r"(?:(?<=\s)|(?<=^))\d{2}-\d{3}-\d{4}(?=$|\s)"]
 ID = [r"(?:(?<=\s)|(?<=^))[a-zA-Z]{2}\d{6}[a-zA-Z](?=$|\s)"]
-IO = [r"(?:(?<=\s)|(?<=^))\d{4}-\d{2}-\d{4}(?=$|\s)"]
+IN = [r"(?:(?<=\s)|(?<=^))\d{4}-\d{2}-\d{4}(?=$|\s)"]
 IA = [r"(?:(?<=\s)|(?<=^))\d{3}[a-zA-Z]{2}\d{4}(?=$|\s)"]
 KS = [r"(?:(?<=\s)|(?<=^))[a-zA-Z]\d{2}-\d{2}-\d{4}(?=$|\s)"]
 KY = [r"(?:(?<=\s)|(?<=^))[a-zA-Z]\d{2}-\d{3}-\d{3}(?=$|\s)"]
@@ -179,18 +179,18 @@ class ID_DLDetector(scrubadub.detectors.RegexDetector):
     filth_cls = ID_DLFilth
 
 
-class IO_DLFilth(scrubadub.filth.Filth):
-    """Create filth class for IO drivers licenses."""
+class IN_DLFilth(scrubadub.filth.Filth):
+    """Create filth class for IN drivers licenses."""
 
-    type = "IO_drivers_license"
+    type = "IN_drivers_license"
 
 
-class IO_DLDetector(scrubadub.detectors.RegexDetector):
-    """Create detector class to identify IO drivers licenses."""
+class IN_DLDetector(scrubadub.detectors.RegexDetector):
+    """Create detector class to identify IN drivers licenses."""
 
-    name = "IO_drivers_license"
-    regex = re.compile("|".join(IO), re.IGNORECASE)
-    filth_cls = IO_DLFilth
+    name = "IN_drivers_license"
+    regex = re.compile("|".join(IN), re.IGNORECASE)
+    filth_cls = IN_DLFilth
 
 
 class IA_DLFilth(scrubadub.filth.Filth):
@@ -533,7 +533,7 @@ def scrub(df, column):
     scrubber.add_detector(WI_DLDetector)
     scrubber.add_detector(WY_DLDetector)
     scrubber.add_detector(NH_DLDetector)
-    scrubber.add_detector(IO_DLDetector)
+    scrubber.add_detector(IN_DLDetector)
     scrubber.add_detector(IA_DLDetector)
     scrubber.add_detector(KS_DLDetector)
     scrubber.add_detector(KY_DLDetector)
