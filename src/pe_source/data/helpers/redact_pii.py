@@ -9,6 +9,7 @@ from presidio_anonymizer import AnonymizerEngine
 import scrubadub
 import scrubadub.detectors.date_of_birth
 
+# List of regexes to identify each state's Drivers License format in a larger string
 FL = [
     r"(?:(?<=\s)|(?<=^))[a-zA-Z] \d{3} \d{3} \d{3} \d{3}(?=$|\s)",
     r"(?:(?<=\s)|(?<=^))[a-zA-Z]\d{3}-\d{3}-\d{2}-\d{3}-\d(?=$|\s)",
