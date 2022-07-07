@@ -425,7 +425,7 @@ class SSNFilth(scrubadub.filth.Filth):
 
 
 class SSNDetector(scrubadub.detectors.RegexDetector):
-    """Create detector class to identify social security numbers."""
+    """Create detector class to identify Social Security numbers."""
 
     name = "no_space_ssn"
     regex = re.compile(
