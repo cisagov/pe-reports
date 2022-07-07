@@ -543,12 +543,12 @@ def scrub(df, column):
     analyzer = AnalyzerEngine()
     anonymizer = AnonymizerEngine()
     entities = [
-        "PHONE_NUMBER",
         "CREDIT_CARD",
-        "US_DRIVER_LICENSE",
-        "US_SSN",
         "EMAIL_ADDRESS",
         "IP_ADDRESS",
+        "PHONE_NUMBER",
+        "US_DRIVER_LICENSE",
+        "US_SSN",
     ]
 
     df[column] = df[column].apply(
