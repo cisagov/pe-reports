@@ -10,28 +10,28 @@ import scrubadub
 import scrubadub.detectors.date_of_birth
 
 # List of regexes to identify each state's Drivers License format in a larger string
+CA = [r"(?:(?<=\s)|(?<=^))[a-zA-Z]\d{7}(?=$|\s)"]
+CO = [r"(?:(?<=\s)|(?<=^))\d{2}-\d{3}-\d{4}(?=$|\s)"]
 FL = [
     r"(?:(?<=\s)|(?<=^))[a-zA-Z] \d{3} \d{3} \d{3} \d{3}(?=$|\s)",
     r"(?:(?<=\s)|(?<=^))[a-zA-Z]\d{3}-\d{3}-\d{2}-\d{3}-\d(?=$|\s)",
     r"(?:(?<=\s)|(?<=^))[a-zA-Z]-\d{3}-\d{3}-\d{3}-\d{3}(?=$|\s)",
 ]
 HI_NE_VA = [r"(?:(?<=\s)|(?<=^))[a-zA-Z]\d{8}(?=$|\s)"]
+IA = [r"(?:(?<=\s)|(?<=^))\d{3}[a-zA-Z]{2}\d{4}(?=$|\s)"]
+ID = [r"(?:(?<=\s)|(?<=^))[a-zA-Z]{2}\d{6}[a-zA-Z](?=$|\s)"]
 IL = [
     r"(?:(?<=\s)|(?<=^))[a-zA-Z]\d{3}-\d{4}-\d{4}(?=$|\s)",
     r"(?:(?<=\s)|(?<=^))[a-zA-Z]\d{11}(?=$|\s)",
 ]
-MN_FL_MD_MI = [r"(?:(?<=\s)|(?<=^))[a-zA-Z]\d{12}(?=$|\s)"]
-MO_OK = [r"(?:(?<=\s)|(?<=^))[a-zA-Z]\d{9}(?=$|\s)"]
-MD = [r"(?:(?<=\s)|(?<=^))[a-zA-Z]-\d{3}-\d{3}-\d{3}-\d{3}(?=$|\s)"]
-
-CA = [r"(?:(?<=\s)|(?<=^))[a-zA-Z]\d{7}(?=$|\s)"]
-CO = [r"(?:(?<=\s)|(?<=^))\d{2}-\d{3}-\d{4}(?=$|\s)"]
-ID = [r"(?:(?<=\s)|(?<=^))[a-zA-Z]{2}\d{6}[a-zA-Z](?=$|\s)"]
 IN = [r"(?:(?<=\s)|(?<=^))\d{4}-\d{2}-\d{4}(?=$|\s)"]
-IA = [r"(?:(?<=\s)|(?<=^))\d{3}[a-zA-Z]{2}\d{4}(?=$|\s)"]
 KS = [r"(?:(?<=\s)|(?<=^))[a-zA-Z]\d{2}-\d{2}-\d{4}(?=$|\s)"]
 KY = [r"(?:(?<=\s)|(?<=^))[a-zA-Z]\d{2}-\d{3}-\d{3}(?=$|\s)"]
+MD = [r"(?:(?<=\s)|(?<=^))[a-zA-Z]-\d{3}-\d{3}-\d{3}-\d{3}(?=$|\s)"]
 MI = [r"(?:(?<=\s)|(?<=^))[a-zA-Z] \d{3} \d{3} \d{3} \d{3}(?=$|\s)"]
+MN_FL_MD_MI = [r"(?:(?<=\s)|(?<=^))[a-zA-Z]\d{12}(?=$|\s)"]
+MO_OK = [r"(?:(?<=\s)|(?<=^))[a-zA-Z]\d{9}(?=$|\s)"]
+ND = [r"(?:(?<=\s)|(?<=^))[a-zA-Z]{3}-\d{2}-\d{4}(?=$|\s)"]
 NH = [
     r"(?:(?<=\s)|(?<=^))([0][1-9]|[1][0-2])[a-zA-Z]{3}\d{2}(0[1-9]|[1-2][0-9]|3[0-1])\d(?=$|\s)"
 ]
@@ -40,102 +40,17 @@ NJ = [
     r"(?:(?<=\s)|(?<=^))[a-zA-Z]\d{14}(?=$|\s)",
 ]
 NY = [r"(?:(?<=\s)|(?<=^))\d{3} \d{3} \d{3}(?=$|\s)"]
-ND = [r"(?:(?<=\s)|(?<=^))[a-zA-Z]{3}-\d{2}-\d{4}(?=$|\s)"]
 OH = [r"(?:(?<=\s)|(?<=^))[a-zA-Z]{3}-\d{2}-\d{4}(?=$|\s)"]
 PA = [r"(?:(?<=\s)|(?<=^))\d{2} \d{3} \d{3}(?=$|\s)"]
-VT = [r"(?:(?<=\s)|(?<=^))\d{7}[a-zA-Z](?=$|\s)"]
 VA = [r"(?:(?<=\s)|(?<=^))[a-zA-Z]\d{2}-\d{2}-\d{4}(?=$|\s)"]
+VT = [r"(?:(?<=\s)|(?<=^))\d{7}[a-zA-Z](?=$|\s)"]
 WA = [r"(?:(?<=\s)|(?<=^))[a-zA-Z]{3}\*\*[a-zA-Z]{2}\d{3}[a-zA-Z]\d(?=$|\s)"]
-WV = [r"(?:(?<=\s)|(?<=^))[a-zA-Z]\d{6}(?=$|\s)"]
 WI = [r"(?:(?<=\s)|(?<=^))[a-zA-Z]\d{3}-\d{4}-\d{4}-\d{2}(?=$|\s)"]
+WV = [r"(?:(?<=\s)|(?<=^))[a-zA-Z]\d{6}(?=$|\s)"]
 WY = [r"(?:(?<=\s)|(?<=^))\d{6}-\d{3}(?=$|\s)"]
 
 
 # Build detectors to find Drivers License ID
-
-
-class FL_DLFilth(scrubadub.filth.Filth):
-    """Create filth class for FL drivers licenses."""
-
-    type = "FL_drivers_license"
-
-
-class FL_DLDetector(scrubadub.detectors.RegexDetector):
-    """Create detector class to identify FL drivers licenses."""
-
-    name = "FL_drivers_license"
-    regex = re.compile("|".join(FL), re.IGNORECASE)
-    filth_cls = FL_DLFilth
-
-
-class HI_NE_VA_DLFilth(scrubadub.filth.Filth):
-    """Create filth class for HI, NE, and VA drivers licenses."""
-
-    type = "HI_NE_VA_drivers_license"
-
-
-class HI_NE_VA_DLDetector(scrubadub.detectors.RegexDetector):
-    """Create detector class to identify HI, NE, and VA drivers licenses."""
-
-    name = "HI_NE_VA_drivers_license"
-    regex = re.compile("|".join(HI_NE_VA), re.IGNORECASE)
-    filth_cls = HI_NE_VA_DLFilth
-
-
-class IL_DLFilth(scrubadub.filth.Filth):
-    """Create filth class for IL drivers licenses."""
-
-    type = "IL_drivers_license"
-
-
-class IL_DLDetector(scrubadub.detectors.RegexDetector):
-    """Create detector class to identify IL drivers licenses."""
-
-    name = "IL_drivers_license"
-    regex = re.compile("|".join(IL), re.IGNORECASE)
-    filth_cls = IL_DLFilth
-
-
-class MN_FL_MD_MI_DLFilth(scrubadub.filth.Filth):
-    """Create filth class for MN, FL, MD, and MI drivers licenses."""
-
-    type = "MN_FL_MD_MI_drivers_license"
-
-
-class MN_FL_MD_MI_DLDetector(scrubadub.detectors.RegexDetector):
-    """Create detector class to identify MN, FL, MD, and MI drivers licenses."""
-
-    name = "MN_FL_MD_MI_drivers_license"
-    regex = re.compile("|".join(MN_FL_MD_MI), re.IGNORECASE)
-    filth_cls = MN_FL_MD_MI_DLFilth
-
-
-class MO_OK_DLFilth(scrubadub.filth.Filth):
-    """Create filth class for MO and OK drivers licenses."""
-
-    type = "MO_OK_drivers_license"
-
-
-class MO_OK_DLDetector(scrubadub.detectors.RegexDetector):
-    """Create detector class to identify MO and OK drivers licenses."""
-
-    name = "MO_OK_drivers_license"
-    regex = re.compile("|".join(MO_OK), re.IGNORECASE)
-    filth_cls = MO_OK_DLFilth
-
-
-class MD_DLFilth(scrubadub.filth.Filth):
-    """Create filth class for MD drivers licenses."""
-
-    type = "MD_drivers_license"
-
-
-class MD_DLDetector(scrubadub.detectors.RegexDetector):
-    """Create detector class to identify MD drivers licenses."""
-
-    name = "MD_drivers_license"
-    regex = re.compile("|".join(MD), re.IGNORECASE)
-    filth_cls = MD_DLFilth
 
 
 class CA_DLFilth(scrubadub.filth.Filth):
@@ -166,32 +81,32 @@ class CO_DLDetector(scrubadub.detectors.RegexDetector):
     filth_cls = CO_DLFilth
 
 
-class ID_DLFilth(scrubadub.filth.Filth):
-    """Create filth class for ID drivers licenses."""
+class FL_DLFilth(scrubadub.filth.Filth):
+    """Create filth class for FL drivers licenses."""
 
-    type = "ID_drivers_license"
-
-
-class ID_DLDetector(scrubadub.detectors.RegexDetector):
-    """Create detector class to identify ID drivers licenses."""
-
-    name = "ID_drivers_license"
-    regex = re.compile("|".join(ID), re.IGNORECASE)
-    filth_cls = ID_DLFilth
+    type = "FL_drivers_license"
 
 
-class IN_DLFilth(scrubadub.filth.Filth):
-    """Create filth class for IN drivers licenses."""
+class FL_DLDetector(scrubadub.detectors.RegexDetector):
+    """Create detector class to identify FL drivers licenses."""
 
-    type = "IN_drivers_license"
+    name = "FL_drivers_license"
+    regex = re.compile("|".join(FL), re.IGNORECASE)
+    filth_cls = FL_DLFilth
 
 
-class IN_DLDetector(scrubadub.detectors.RegexDetector):
-    """Create detector class to identify IN drivers licenses."""
+class HI_NE_VA_DLFilth(scrubadub.filth.Filth):
+    """Create filth class for HI, NE, and VA drivers licenses."""
 
-    name = "IN_drivers_license"
-    regex = re.compile("|".join(IN), re.IGNORECASE)
-    filth_cls = IN_DLFilth
+    type = "HI_NE_VA_drivers_license"
+
+
+class HI_NE_VA_DLDetector(scrubadub.detectors.RegexDetector):
+    """Create detector class to identify HI, NE, and VA drivers licenses."""
+
+    name = "HI_NE_VA_drivers_license"
+    regex = re.compile("|".join(HI_NE_VA), re.IGNORECASE)
+    filth_cls = HI_NE_VA_DLFilth
 
 
 class IA_DLFilth(scrubadub.filth.Filth):
@@ -206,6 +121,48 @@ class IA_DLDetector(scrubadub.detectors.RegexDetector):
     name = "IA_drivers_license"
     regex = re.compile("|".join(IA), re.IGNORECASE)
     filth_cls = IA_DLFilth
+
+
+class ID_DLFilth(scrubadub.filth.Filth):
+    """Create filth class for ID drivers licenses."""
+
+    type = "ID_drivers_license"
+
+
+class ID_DLDetector(scrubadub.detectors.RegexDetector):
+    """Create detector class to identify ID drivers licenses."""
+
+    name = "ID_drivers_license"
+    regex = re.compile("|".join(ID), re.IGNORECASE)
+    filth_cls = ID_DLFilth
+
+
+class IL_DLFilth(scrubadub.filth.Filth):
+    """Create filth class for IL drivers licenses."""
+
+    type = "IL_drivers_license"
+
+
+class IL_DLDetector(scrubadub.detectors.RegexDetector):
+    """Create detector class to identify IL drivers licenses."""
+
+    name = "IL_drivers_license"
+    regex = re.compile("|".join(IL), re.IGNORECASE)
+    filth_cls = IL_DLFilth
+
+
+class IN_DLFilth(scrubadub.filth.Filth):
+    """Create filth class for IN drivers licenses."""
+
+    type = "IN_drivers_license"
+
+
+class IN_DLDetector(scrubadub.detectors.RegexDetector):
+    """Create detector class to identify IN drivers licenses."""
+
+    name = "IN_drivers_license"
+    regex = re.compile("|".join(IN), re.IGNORECASE)
+    filth_cls = IN_DLFilth
 
 
 class KS_DLFilth(scrubadub.filth.Filth):
@@ -236,6 +193,20 @@ class KY_DLDetector(scrubadub.detectors.RegexDetector):
     filth_cls = KY_DLFilth
 
 
+class MD_DLFilth(scrubadub.filth.Filth):
+    """Create filth class for MD drivers licenses."""
+
+    type = "MD_drivers_license"
+
+
+class MD_DLDetector(scrubadub.detectors.RegexDetector):
+    """Create detector class to identify MD drivers licenses."""
+
+    name = "MD_drivers_license"
+    regex = re.compile("|".join(MD), re.IGNORECASE)
+    filth_cls = MD_DLFilth
+
+
 class MI_DLFilth(scrubadub.filth.Filth):
     """Create filth class for MI drivers licenses."""
 
@@ -248,6 +219,48 @@ class MI_DLDetector(scrubadub.detectors.RegexDetector):
     name = "MI_drivers_license"
     regex = re.compile("|".join(MI), re.IGNORECASE)
     filth_cls = MI_DLFilth
+
+
+class MN_FL_MD_MI_DLFilth(scrubadub.filth.Filth):
+    """Create filth class for MN, FL, MD, and MI drivers licenses."""
+
+    type = "MN_FL_MD_MI_drivers_license"
+
+
+class MN_FL_MD_MI_DLDetector(scrubadub.detectors.RegexDetector):
+    """Create detector class to identify MN, FL, MD, and MI drivers licenses."""
+
+    name = "MN_FL_MD_MI_drivers_license"
+    regex = re.compile("|".join(MN_FL_MD_MI), re.IGNORECASE)
+    filth_cls = MN_FL_MD_MI_DLFilth
+
+
+class MO_OK_DLFilth(scrubadub.filth.Filth):
+    """Create filth class for MO and OK drivers licenses."""
+
+    type = "MO_OK_drivers_license"
+
+
+class MO_OK_DLDetector(scrubadub.detectors.RegexDetector):
+    """Create detector class to identify MO and OK drivers licenses."""
+
+    name = "MO_OK_drivers_license"
+    regex = re.compile("|".join(MO_OK), re.IGNORECASE)
+    filth_cls = MO_OK_DLFilth
+
+
+class ND_DLFilth(scrubadub.filth.Filth):
+    """Create filth class for ND drivers licenses."""
+
+    type = "ND_drivers_license"
+
+
+class ND_DLDetector(scrubadub.detectors.RegexDetector):
+    """Create detector class to identify ND drivers licenses."""
+
+    name = "ND_drivers_license"
+    regex = re.compile("|".join(ND), re.IGNORECASE)
+    filth_cls = ND_DLFilth
 
 
 class NH_DLFilth(scrubadub.filth.Filth):
@@ -292,20 +305,6 @@ class NY_DLDetector(scrubadub.detectors.RegexDetector):
     filth_cls = NY_DLFilth
 
 
-class ND_DLFilth(scrubadub.filth.Filth):
-    """Create filth class for ND drivers licenses."""
-
-    type = "ND_drivers_license"
-
-
-class ND_DLDetector(scrubadub.detectors.RegexDetector):
-    """Create detector class to identify ND drivers licenses."""
-
-    name = "ND_drivers_license"
-    regex = re.compile("|".join(ND), re.IGNORECASE)
-    filth_cls = ND_DLFilth
-
-
 class OH_DLFilth(scrubadub.filth.Filth):
     """Create filth class for OH drivers licenses."""
 
@@ -334,20 +333,6 @@ class PA_DLDetector(scrubadub.detectors.RegexDetector):
     filth_cls = PA_DLFilth
 
 
-class VT_DLFilth(scrubadub.filth.Filth):
-    """Create filth class for VT drivers licenses."""
-
-    type = "VT_drivers_license"
-
-
-class VT_DLDetector(scrubadub.detectors.RegexDetector):
-    """Create detector class to identify VT drivers licenses."""
-
-    name = "VT_drivers_license"
-    regex = re.compile("|".join(VT), re.IGNORECASE)
-    filth_cls = VT_DLFilth
-
-
 class VA_DLFilth(scrubadub.filth.Filth):
     """Create filth class for VA drivers licenses."""
 
@@ -360,6 +345,20 @@ class VA_DLDetector(scrubadub.detectors.RegexDetector):
     name = "VA_drivers_license"
     regex = re.compile("|".join(VA), re.IGNORECASE)
     filth_cls = VA_DLFilth
+
+
+class VT_DLFilth(scrubadub.filth.Filth):
+    """Create filth class for VT drivers licenses."""
+
+    type = "VT_drivers_license"
+
+
+class VT_DLDetector(scrubadub.detectors.RegexDetector):
+    """Create detector class to identify VT drivers licenses."""
+
+    name = "VT_drivers_license"
+    regex = re.compile("|".join(VT), re.IGNORECASE)
+    filth_cls = VT_DLFilth
 
 
 class WA_DLFilth(scrubadub.filth.Filth):
@@ -376,20 +375,6 @@ class WA_DLDetector(scrubadub.detectors.RegexDetector):
     filth_cls = WA_DLFilth
 
 
-class WV_DLFilth(scrubadub.filth.Filth):
-    """Create filth class for WV drivers licenses."""
-
-    type = "WV_drivers_license"
-
-
-class WV_DLDetector(scrubadub.detectors.RegexDetector):
-    """Create detector class to identify WV drivers licenses."""
-
-    name = "WV_drivers_license"
-    regex = re.compile("|".join(WV), re.IGNORECASE)
-    filth_cls = WV_DLFilth
-
-
 class WI_DLFilth(scrubadub.filth.Filth):
     """Create filth class for WI drivers licenses."""
 
@@ -402,6 +387,20 @@ class WI_DLDetector(scrubadub.detectors.RegexDetector):
     name = "WI_drivers_license"
     regex = re.compile("|".join(WI), re.IGNORECASE)
     filth_cls = WI_DLFilth
+
+
+class WV_DLFilth(scrubadub.filth.Filth):
+    """Create filth class for WV drivers licenses."""
+
+    type = "WV_drivers_license"
+
+
+class WV_DLDetector(scrubadub.detectors.RegexDetector):
+    """Create detector class to identify WV drivers licenses."""
+
+    name = "WV_drivers_license"
+    regex = re.compile("|".join(WV), re.IGNORECASE)
+    filth_cls = WV_DLFilth
 
 
 class WY_DLFilth(scrubadub.filth.Filth):
