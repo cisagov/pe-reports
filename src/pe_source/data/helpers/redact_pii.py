@@ -453,15 +453,15 @@ class PassportDetector(scrubadub.detectors.RegexDetector):
     filth_cls = PassportFilth
 
 
-# Build a detector that identifies Alien Id numbers
+# Build a detector that identifies Alien Registration Numbers
 class AlienIdFilth(scrubadub.filth.Filth):
-    """Create filth class for alien identification numbers."""
+    """Create filth class for Alien Registration Numbers."""
 
     type = "alien id"
 
 
 class AlienIdDetector(scrubadub.detectors.RegexDetector):
-    """Create detector class to identify alien identification numbers."""
+    """Create detector class to identify Alien Registration Numbers."""
 
     name = "alien id"
     regex = re.compile(
