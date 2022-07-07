@@ -74,7 +74,7 @@ class HI_NE_VA_DLFilth(scrubadub.filth.Filth):
 
 
 class HI_NE_VA_DLDetector(scrubadub.detectors.RegexDetector):
-    """Create detector class to identify HI, NE and VA drivers licenses."""
+    """Create detector class to identify HI, NE, and VA drivers licenses."""
 
     name = "HI_NE_VA_drivers_license"
     regex = re.compile("|".join(HI_NE_VA), re.IGNORECASE)
