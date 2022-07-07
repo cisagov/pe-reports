@@ -96,13 +96,13 @@ class IL_DLDetector(scrubadub.detectors.RegexDetector):
 
 
 class MN_FL_MD_MI_DLFilth(scrubadub.filth.Filth):
-    """Create filth class for MN, FL, MD and MI drivers licenses."""
+    """Create filth class for MN, FL, MD, and MI drivers licenses."""
 
     type = "MN_FL_MD_MI_drivers_license"
 
 
 class MN_FL_MD_MI_DLDetector(scrubadub.detectors.RegexDetector):
-    """Create detector class to identify MN, FL, MD and MI drivers licenses."""
+    """Create detector class to identify MN, FL, MD, and MI drivers licenses."""
 
     name = "MN_FL_MD_MI_drivers_license"
     regex = re.compile("|".join(MN_FL_MD_MI), re.IGNORECASE)
