@@ -27,4 +27,4 @@ select = C,D,E,F,W,B,B950
 # No longer complies with PEP8 See example, here:
 # https://github.com/PyCQA/pycodestyle/issues/373
 # and here: https://github.com/psf/black/issues/315
-ignore = E203,E501,W503
+ignore = E203,E501,W503,E712

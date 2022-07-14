@@ -53,6 +53,14 @@
             </li>
             <li class="nav-item">
               <a
+                class="nav-link {% if request.endpoint=='stakeholder_full.stakeholder_full' %}active{%endif %}"
+                id="add"
+                href="{{ url_for('stakeholder_full.stakeholder_full') }}"
+                >Add Stakeholder Full</a
+              >
+            </li>
+            <li class="nav-item">
+              <a
                 class="nav-link {% if request.endpoint=='stakeholder.stakeholder' %}active{%endif %}"
                 id="add"
                 href="{{ url_for('stakeholder.stakeholder') }}"

@@ -42,7 +42,8 @@ services:
       - 5672:5672/tcp
     restart: always
     volumes:
-#If on a local      - /Users/${USER}/Desktop/allInfo/pe-reports-UIupgrade/src/pe_reports/data/rabbitmq/data:/var/lib/rabbitmq/mnesia:rw
+      # If on a local - /Users/${USER}/Desktop/allInfo/pe-reports-UIupgrade/src/
+      # pe_reports/data/rabbitmq/data:/var/lib/rabbitmq/mnesia:rw
       - /home/ubuntu/pe-reports/src/pe_reports/data/rabbitmq/data:/var/lib/rabbitmq/mnesia:rw
 networks:
   pe_reports_pe-reports-rabbitmq-network:
