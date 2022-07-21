@@ -51,6 +51,7 @@ WY = [r"(?:(?<=\s)|(?<=^))\d{6}-\d{3}(?=$|\s)"]
 HI_NE_VA = [r"(?:(?<=\s)|(?<=^))[a-zA-Z]\d{8}(?=$|\s)"]
 MN_FL_MD_MI = [r"(?:(?<=\s)|(?<=^))[a-zA-Z]\d{12}(?=$|\s)"]
 MO_OK = [r"(?:(?<=\s)|(?<=^))[a-zA-Z]\d{9}(?=$|\s)"]
+
 # Build detectors to find Drivers License ID
 
 
