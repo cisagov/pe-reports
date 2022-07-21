@@ -102,7 +102,7 @@ setup(
         "mongo-db-from-config@http://github.com/cisagov/mongo-db-from-config/tarball/develop",
         "openpyxl == 3.0.9",
         "pandas == 1.1.5",
-        "psycopg2 == 2.9.3",
+        # "psycopg2 == 2.9.3",
         "psycopg2-binary == 2.9.3",
         "pymongo == 4.0.1",
         "pymupdf == 1.19.0",
