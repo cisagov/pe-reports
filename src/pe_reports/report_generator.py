@@ -134,23 +134,10 @@ def generate_reports(datestring, output_directory):
                 if not os.path.exists(f"{output_directory}/{dir_name}"):
                     os.mkdir(f"{output_directory}/{dir_name}")
 
-            # Load source HTML
-            try:
-                basedir = os.path.abspath(os.path.dirname(__file__))
-                template = os.path.join(basedir, "template.html")
-                file = open(template)
-                source_html = file.read().replace("\n", " ")
-            except FileNotFoundError:
-                logging.error(
-                    "Template cannot be found. It must be named: '%s'", template
-                )
-                return 1
-
             # Insert Charts and Metrics into PDF
             (
                 source_html,
-                hibp_creds,
-                cyber_creds,
+                creds_sum,
                 masq_df,
                 insecure_df,
                 vulns_df,
@@ -159,14 +146,10 @@ def generate_reports(datestring, output_directory):
                 alerts,
                 top_cves,
             ) = init(
-                source_html,
                 datestring,
                 org_name,
                 org_uid,
             )
-
-            # Close PDF
-            file.close()
 
             # Convert to HTML to PDF
             output_filename = f"{output_directory}/{org_code}-Posture_and_Exposure_Report-{datestring}.pdf"
@@ -175,9 +158,8 @@ def generate_reports(datestring, output_directory):
             # Create Credential Exposure Excel file
             cred_xlsx = f"{output_directory}/{org_code}/compromised_credentials.xlsx"
             credWriter = pd.ExcelWriter(cred_xlsx, engine="xlsxwriter")
-            hibp_creds.to_excel(credWriter, sheet_name="HIBP_Credentials", index=False)
-            cyber_creds.to_excel(
-                credWriter, sheet_name="Cyber6_Credentials", index=False
+            creds_sum.to_excel(
+                credWriter, sheet_name="Exposed_Credentials", index=False
             )
             credWriter.save()
 
