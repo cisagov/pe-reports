@@ -30,7 +30,6 @@ logging.basicConfig(
 )
 
 
-
 PROJECT_VERSION = pe_reports.__version__
 
 
