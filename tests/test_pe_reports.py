@@ -21,6 +21,15 @@ log_levels = (
     "critical",
 )
 
+
+# Setup logging to file
+logging.basicConfig(
+    filename="pe_reports_Logging.log",
+    format="%(asctime)-15s %(levelname)s %(message)s",
+    level="INFO",
+)
+
+
 PROJECT_VERSION = pe_reports.__version__
 
 

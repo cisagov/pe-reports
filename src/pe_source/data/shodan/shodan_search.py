@@ -17,6 +17,13 @@ from pe_source.data.pe_db.db_query import (
     insert_shodan_data,
 )
 
+# Setup logging to central file
+logging.basicConfig(
+    filename="pe_reports_Logging.log",
+    format="%(asctime)-15s %(levelname)s %(message)s",
+    level="INFO",
+)
+
 
 def run_shodan_thread(api, org_chunk, thread_name):
     """Run a Shodan thread."""
