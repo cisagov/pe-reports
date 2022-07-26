@@ -248,7 +248,7 @@ def main():
     logging.basicConfig(
         filename="pe_reports_logging.log",
         format="%(asctime)-15s %(levelname)s %(message)s",
-        level="INFO",
+        level=log_level.upper(),
     )
 
     logging.info("Loading Posture & Exposure Report, Version : %s", __version__)
