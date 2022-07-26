@@ -483,9 +483,11 @@ def main():
     # Assign validated arguments to variables
     log_level: str = validated_args["--log-level"]
 
-    # Set up logging
+    # Setup logging to central file
     logging.basicConfig(
-        format="%(asctime)-15s %(levelname)s %(message)s", level=log_level.upper()
+        filename="pe_reports_logging.log",
+        format="%(asctime)-15s %(levelname)s %(message)s",
+        level="INFO",
     )
 
     logging.info("Sending Posture & Exposure Reports, Version : %s", __version__)

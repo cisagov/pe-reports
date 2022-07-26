@@ -37,7 +37,7 @@ from ._version import __version__
 from .cybersixgill import Cybersixgill
 from .shodan import Shodan
 
-# Setup logging to file
+# Setup logging to central file
 logging.basicConfig(
     filename="pe_reports_logging.log",
     format="%(asctime)-15s %(levelname)s %(message)s",

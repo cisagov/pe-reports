@@ -26,7 +26,7 @@ from .data.sixgill.source import (
     top_cves,
 )
 
-# Setup logging to file
+# Setup logging to central file
 logging.basicConfig(
     filename="pe_reports_logging.log",
     format="%(asctime)-15s %(levelname)s %(message)s",

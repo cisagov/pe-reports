@@ -16,6 +16,7 @@ from .api import (
     org_assets,
 )
 
+# Setup logging to central file
 logging.basicConfig(
     filename="pe_reports_Logging.log",
     format="%(asctime)-15s %(levelname)s %(message)s",

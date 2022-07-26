@@ -8,6 +8,7 @@ from email.mime.text import MIMEText
 import logging
 import os.path
 
+# Setup logging to central file
 logging.basicConfig(
     filename="pe_reports_logging.log",
     format="%(asctime)-15s %(levelname)s %(message)s",

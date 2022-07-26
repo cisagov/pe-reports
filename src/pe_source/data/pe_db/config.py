@@ -13,7 +13,7 @@ import shodan
 # Configuration
 REPORT_DB_CONFIG = files("pe_reports").joinpath("data/database.ini")
 
-# Central logging
+# Setup logging to central file
 logging.basicConfig(
     filename="pe_reports_Logging.log",
     format="%(asctime)-15s %(levelname)s %(message)s",

@@ -14,6 +14,7 @@ import psycopg2.extras as extras
 # cisagov Libraries
 from pe_reports.data.config import config
 
+# Setup logging to central file
 logging.basicConfig(
     filename="pe_reports_Logging.log",
     format="%(asctime)-15s %(levelname)s %(message)s",
