@@ -28,7 +28,7 @@ from .data.sixgill.source import (
 
 # Setup logging to file
 logging.basicConfig(
-    filename="pe_reports_Logging.log",
+    filename="pe_reports_logging.log",
     format="%(asctime)-15s %(levelname)s %(message)s",
     level="INFO",
 )
