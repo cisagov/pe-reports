@@ -93,7 +93,7 @@ setup(
     py_modules=[splitext(basename(path))[0] for path in glob("src/*.py")],
     include_package_data=True,
     install_requires=[
-        "boto3 == 1.21.10",
+        "boto3 == 1.24.52",
         "botocore == 1.24.10",
         "chevron == 0.14.0",
         "celery",
