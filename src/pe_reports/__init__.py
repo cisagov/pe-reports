@@ -39,13 +39,17 @@ app.config[
 app.config["CELERY_BROKER_URL"] = "redis://localhost:6379/0"
 app.config["CELERY_RESULT_BACKEND"] = "redis://localhost:6379/0"
 
+CENTRAL_LOGGING_FILE = "pe_reports_logging.log"
+
 logging.basicConfig(
-    filename="pe_reports_logging.log",
+    filename=CENTRAL_LOGGING_FILE,
     filemode="a",
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     datefmt="%m/%d/%Y %I:%M:%S",
     level=logging.INFO,
 )
+
+app.config["LOGGER"] = logging.getLogger(__name__)
 
 # Creates a Celery object
 celery = Celery(app.name, broker=app.config["CELERY_BROKER_URL"])

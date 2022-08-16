@@ -2,9 +2,14 @@
 
 Automate the process to add stakeholder information to Cyber Sixgill portal.
 """
+# Standard Python Libraries
+# Python native imports
+import logging
 
 # Third-Party Libraries
 from flask import Blueprint, render_template
+
+LOGGER = logging.getLogger(__name__)
 
 home_blueprint = Blueprint("home", __name__, template_folder="templates/home")
 
@@ -15,4 +20,6 @@ def index():
 
     Gather data from form and insert into database.
     """
+    LOGGER.info("Made it to home")
+
     return render_template("home.html")
