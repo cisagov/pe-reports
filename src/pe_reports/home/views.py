@@ -20,6 +20,6 @@ def index():
 
     Gather data from form and insert into database.
     """
-    LOGGER.info("Made it to home")
+    LOGGER.debug("Made it to home")
 
     return render_template("home.html")
