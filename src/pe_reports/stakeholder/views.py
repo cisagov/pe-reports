@@ -75,7 +75,7 @@ def getAgencies(org_name):
             return resultDict
 
     except (Exception, psycopg2.DatabaseError) as err:
-        LOGGER.error("There was a problem logger into the psycopg database %s", err)
+        LOGGER.error("There was a problem logging into the psycopg database %s", err)
     finally:
         if conn is not None:
             cursor.close()
