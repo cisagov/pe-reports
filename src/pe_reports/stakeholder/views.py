@@ -189,7 +189,7 @@ def setCustRootDomain(customer, rootdomain, orgUUID):
             return True
 
     except (Exception, psycopg2.DatabaseError) as err:
-        LOGGER.error("There was a problem logger into the psycopg database %s", err)
+        LOGGER.error("There was a problem logging into the psycopg database %s", err)
         return False
     finally:
         if conn is not None:
@@ -234,7 +234,7 @@ def setCustSubDomain(subdomain, rootUUID, rootname):
             return True
 
     except (Exception, psycopg2.DatabaseError) as err:
-        LOGGER.error("There was a problem logger into the psycopg database %s", err)
+        LOGGER.error("There was a problem logging into the psycopg database %s", err)
         return False
     finally:
         if conn is not None:
@@ -290,7 +290,7 @@ def setCustomerExternalCSG(
                 )
 
     except (Exception, psycopg2.DatabaseError) as err:
-        LOGGER.error("There was a problem logger into the psycopg database %s", err)
+        LOGGER.error("There was a problem logging into the psycopg database %s", err)
     finally:
         if conn is not None:
             conn.commit()
