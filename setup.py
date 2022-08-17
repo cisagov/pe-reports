@@ -109,6 +109,7 @@ setup(
         "importlib_resources == 5.4.0",
         "matplotlib == 3.3.4",
         "mongo-db-from-config@http://github.com/cisagov/mongo-db-from-config/tarball/develop",
+        "nltk",
         "openpyxl",
         "pandas == 1.1.5",
         "psutil",
@@ -125,6 +126,9 @@ setup(
         "schema == 0.7.5",
         "setuptools == 58.1.0",
         "shodan ==1.27.0",
+        "spacy",
+
+        "beautifulsoup4",
         "sublist3r",
         "types-PyYAML == 6.0.4",
         "urllib3 == 1.26.7",

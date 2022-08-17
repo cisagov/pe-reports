@@ -13,6 +13,8 @@ from flask import Blueprint, flash, redirect, render_template, url_for
 import psycopg2
 import psycopg2.extras
 import requests
+from nltk import pos_tag, word_tokenize
+from bs4 import BeautifulSoup
 
 # cisagov Libraries
 from pe_reports.data.config import config
@@ -523,6 +525,74 @@ stakeholder_blueprint = Blueprint(
     "stakeholder", __name__, template_folder="templates/stakeholder_UI"
 )
 
+def getNames(url):
+    '''Get the names from url data.'''
+
+    doc = nlp(getAbout(url))
+
+    d = []
+
+    for ent in doc.ents:
+        d.append((ent.label_, ent.text))
+
+    return d
+
+
+def getAbout(url):
+    '''Get stakeholder about page.'''
+    thepage = requests.get(url).text
+
+    soup = BeautifulSoup(thepage, "lxml")
+
+    body = soup.body.text
+
+    body = body.replace("\n", " ")
+    body = body.replace("\t", " ")
+    body = body.replace("\r", " ")
+    body = body.replace("\xa0", " ")
+    # body = re.sub(r'[^ws]', '', body)
+
+    return body
+
+
+def theExecs(URL):
+    '''Gather all executives names from data returned from about page url.'''
+    mytext = getAbout(URL)
+
+    tokens = word_tokenize(mytext)
+
+    thetag = pos_tag(tokens)
+
+    ne_tree = nltk.ne_chunk(thetag)
+
+    for x in ne_tree:
+        if "PERSON" in x:
+            print(x)
+
+    regex_pattern = re.compile(r"[@_'’!#\-$%^&*()<>?/\|}{~:]")
+
+    thereturn = getNames(URL)
+
+    executives = []
+
+    for hy in thereturn:
+
+        # print(hy)
+
+        if ("PERSON" in hy) and (hy[1] not in executives) and (len(hy[1]) < 50):
+            # executives.append(hy[1])
+            # print(hy[1])
+
+            # if not regex_pattern.search(hy[1]) and len(hy[1].split()) > 1 and not difflib.get_close_matches(hy[1], executives):
+            if not regex_pattern.search(hy[1]) and len(hy[1].split()) > 1:
+                person = hy[1].split("  ")
+                if len(person) <= 1:
+                    # print(person)
+                    executives.append(hy[1])
+                    # print(f'{hy[0]} {hy[1]}')
+    # print(executives)
+    return executives
+
 
 @stakeholder_blueprint.route("/stakeholder", methods=["GET", "POST"])
 def stakeholder():
@@ -540,12 +610,13 @@ def stakeholder():
         custDomainAliases = formExternal.custDomainAliases.data.split(",")
         custRootDomain = formExternal.custRootDomain.data.split(",")
         custRootDomainValue = custRootDomain[0]
-        custExecutives = formExternal.custExecutives.data.split(",")
+        custExecutives = formExternal.custExecutives.data
         formExternal.cust.data = ""
         formExternal.custDomainAliases = ""
         formExternal.custRootDomain.data = ""
         formExternal.custExecutives.data = ""
         allDomain = getAgencies(cust)
+        allExecutives = list(theExecs(custExecutives))
         allSubDomain = getSubdomain(custRootDomainValue)
         allValidIP = getallsubdomainIPS(custRootDomainValue)
 
@@ -574,7 +645,7 @@ def stakeholder():
                                         custDomainAliases,
                                         custRootDomain,
                                         allValidIP,
-                                        custExecutives,
+                                        allExecutives,
                                     )
 
             else:
