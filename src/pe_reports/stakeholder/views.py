@@ -6,15 +6,18 @@ from ipaddress import ip_address, ip_network
 import json
 import logging
 import os
+import re
 import socket
 
 # Third-Party Libraries
+from bs4 import BeautifulSoup
 from flask import Blueprint, flash, redirect, render_template, url_for
+import nltk
+from nltk import pos_tag, word_tokenize
 import psycopg2
 import psycopg2.extras
 import requests
-from nltk import pos_tag, word_tokenize
-from bs4 import BeautifulSoup
+import spacy
 
 # cisagov Libraries
 from pe_reports.data.config import config
@@ -26,6 +29,9 @@ logging.basicConfig(
     datefmt="%m/%d/%Y %I:%M:%S",
     level=logging.INFO,
 )
+
+# If you are getting errors saying that a "en_core_web_lg" is loaded. Run the command " python -m spacy download en_core_web_trf" but might have to chagne the name fo the spacy model
+nlp = spacy.load("en_core_web_lg")
 
 # CSG credentials
 API_Client_ID = os.getenv("CSGUSER")
@@ -525,9 +531,9 @@ stakeholder_blueprint = Blueprint(
     "stakeholder", __name__, template_folder="templates/stakeholder_UI"
 )
 
-def getNames(url):
-    '''Get the names from url data.'''
 
+def getNames(url):
+    """Get the names from url data."""
     doc = nlp(getAbout(url))
 
     d = []
@@ -539,7 +545,7 @@ def getNames(url):
 
 
 def getAbout(url):
-    '''Get stakeholder about page.'''
+    """Get stakeholder about page."""
     thepage = requests.get(url).text
 
     soup = BeautifulSoup(thepage, "lxml")
@@ -556,7 +562,7 @@ def getAbout(url):
 
 
 def theExecs(URL):
-    '''Gather all executives names from data returned from about page url.'''
+    """Gather all executives names from data returned from about page url."""
     mytext = getAbout(URL)
 
     tokens = word_tokenize(mytext)

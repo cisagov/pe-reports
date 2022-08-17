@@ -127,7 +127,6 @@ setup(
         "setuptools == 58.1.0",
         "shodan ==1.27.0",
         "spacy",
-
         "beautifulsoup4",
         "sublist3r",
         "types-PyYAML == 6.0.4",
