@@ -6,7 +6,6 @@ import sys
 from unittest.mock import patch
 
 # Third-Party Libraries
-# from flask import template_rendered
 import pytest
 
 # cisagov Libraries
