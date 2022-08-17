@@ -3,6 +3,8 @@
 # Standard Python Libraries
 from datetime import datetime
 import logging
+import os
+import platform
 import sys
 
 # Third-Party Libraries
@@ -13,6 +15,7 @@ import psycopg2.extras as extras
 
 # cisagov Libraries
 from pe_reports.data.config import config
+from pe_source.data.sixgill.topicModeling import thesshTunnel
 
 logging.basicConfig(format="%(asctime)-15s %(levelname)s %(message)s", level="INFO")
 
@@ -29,12 +32,37 @@ def show_psycopg2_exception(err):
 
 def connect():
     """Connect to PostgreSQL database."""
-    try:
-        conn = psycopg2.connect(**CONN_PARAMS_DIC)
-    except OperationalError as err:
-        show_psycopg2_exception(err)
-        conn = None
-    return conn
+    conn = None
+
+    if platform.system() != "Darwin":
+        try:
+            logging.info("Connecting to the PostgreSQL......")
+            conn = psycopg2.connect(**CONN_PARAMS_DIC)
+            logging.info("Connection successful......")
+        except OperationalError as err:
+            show_psycopg2_exception(err)
+            conn = None
+        return conn
+    else:
+        theport = thesshTunnel()
+        try:
+
+            logging.info("****SSH Tunnel Established****")
+
+            conn = psycopg2.connect(
+                host="127.0.0.1",
+                user=os.getenv("PE_DB_USER"),
+                password=os.getenv("PE_DB_PASSWORD"),
+                dbname=os.getenv("PE_DB_NAME"),
+                port=theport,
+            )
+
+            return conn
+        except OperationalError as err:
+            show_psycopg2_exception(err)
+            conn = None
+
+            return conn
 
 
 def close(conn):

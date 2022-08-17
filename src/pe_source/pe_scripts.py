@@ -43,9 +43,16 @@ def run_pe_script(source, orgs_list, cybersix_methods):
     # If not "all", separate orgs string into a list of orgs
     if orgs_list != "all":
         orgs_list = orgs_list.split(",")
-    # If not "all", separate Cybersixgill methods string into a list
+    # If not "all", separate Cybersixgill methods string into a list.
+    # See Cybersixgill run_cybersixgillkim
     if cybersix_methods == "all":
-        cybersix_methods = ["alerts", "mentions", "credentials", "topCVEs"]
+        cybersix_methods = [
+            "alerts",
+            "mentions",
+            "credentials",
+            "topCVEs",
+            "topic_count",
+        ]
     else:
         cybersix_methods = cybersix_methods.split(",")
 

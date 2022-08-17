@@ -73,14 +73,16 @@ setup(
         "License :: CC0 1.0 Universal (CC0 1.0) Public Domain Dedication",
         # Specify the Python versions you support here. In particular, ensure
         # that you indicate whether you support Python 2, Python 3 or both.
+
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
+
         "Programming Language :: Python :: 3.10",
     ],
-    python_requires=">=3.6",
+    python_requires=">=3.10.2",
     # What does your project relate to?
     keywords="posture and exposure report",
     packages=find_packages(where="src"),
@@ -93,9 +95,22 @@ setup(
     py_modules=[splitext(basename(path))[0] for path in glob("src/*.py")],
     include_package_data=True,
     install_requires=[
-        "boto3 == 1.21.10",
-        "botocore == 1.24.10",
+        "boto3 == 1.21.19",
+        "botocore == 1.24.19",
         "chevron == 0.14.0",
+
+        "click == 8.0.4",
+        "docopt == 0.6.2",
+        "glob2 == 0.7",
+        "httpcore == 0.9.1",
+        "importlib-resources == 5.4.0",
+        "nltk == 3.7",
+        "langdetect == 1.0.9",
+        "googletrans == 3.0.0",
+        "matplotlib == 3.5.1",
+        "mongo-db-from-config@http://github.com/cisagov/mongo-db-from-config/tarball/develop",
+        "openpyxl == 3.0.9",
+        "pandas == 1.4.1",
         "celery",
         "click==8.0.3",
         "docopt",
@@ -124,8 +139,11 @@ setup(
         "requests == 2.26.0",
         "schema == 0.7.5",
         "setuptools == 58.1.0",
+        "spacy == 3.2.4",
+
         "shodan ==1.27.0",
         "sublist3r",
+
         "types-PyYAML == 6.0.4",
         "urllib3 == 1.26.7",
         "wtforms",

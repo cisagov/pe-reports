@@ -25,6 +25,7 @@ from .data.sixgill.source import (
     root_domains,
     top_cves,
 )
+from .data.sixgill.topicModeling import sshgetcsv
 
 # Set todays date formatted YYYY-MM-DD and the start_date 30 days prior
 TODAY = date.today()
@@ -108,6 +109,12 @@ class Cybersixgill:
                         == 1
                     ):
                         failed.append("%s credentials" % org_id)
+                if "topic_count" in method_list:
+                    if self.getTopicsCount() == 1:
+                        failed.append(
+                            "The ssh Tunnel may not have started"
+                            "try running the software again."
+                        )
         if len(failed) > 0:
             logging.error("Failures: %s", failed)
 
@@ -295,6 +302,18 @@ class Cybersixgill:
             insert_sixgill_topCVEs(top_cve_df)
         except Exception as e:
             logging.error("Failed inserting top CVEs.")
+            logging.error(e)
+            return 1
+        return 0
+
+    def getTopicsCount(self):
+        """Get topic count by organization."""
+        logging.info("Fetching mention count data.")
+        try:
+            sshgetcsv(START_DATE, DAYS_BACK)
+
+        except Exception as e:
+            logging.error("Failed fetching total mentions per organization.")
             logging.error(e)
             return 1
         return 0
