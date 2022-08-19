@@ -11,14 +11,21 @@ import psycopg2
 from psycopg2 import OperationalError
 from psycopg2.extensions import AsIs
 
+# cisagov Libraries
+from pe_reports import CENTRAL_LOGGING_FILE
+
 from .config import config
 
 # Setup logging to central file
 logging.basicConfig(
-    filename="pe_reports_logging.log",
-    format="%(asctime)-15s %(levelname)s %(message)s",
+    filename=CENTRAL_LOGGING_FILE,
+    filemode="a",
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    datefmt="%m/%d/%Y %I:%M:%S",
     level="INFO",
 )
+
+logger = logging.getLogger(__name__)
 
 CONN_PARAMS_DIC = config()
 
@@ -26,7 +33,7 @@ CONN_PARAMS_DIC = config()
 def show_psycopg2_exception(err):
     """Handle errors for PostgreSQL issues."""
     err_type, err_obj, traceback = sys.exc_info()
-    logging.error(
+    logger.error(
         "Database connection error: %s on line number: %s", err, traceback.tb_lineno
     )
 
@@ -35,9 +42,9 @@ def connect():
     """Connect to PostgreSQL database."""
     conn = None
     try:
-        logging.info("Connecting to the PostgreSQL......")
+        logger.info("Connecting to the PostgreSQL......")
         conn = psycopg2.connect(**CONN_PARAMS_DIC)
-        logging.info("Connection successful......")
+        logger.info("Connection successful......")
     except OperationalError as err:
         show_psycopg2_exception(err)
         conn = None
@@ -60,7 +67,7 @@ def get_orgs(conn):
         cur.close()
         return pe_orgs
     except (Exception, psycopg2.DatabaseError) as error:
-        logging.error("There was a problem with your database query %s", error)
+        logger.error("There was a problem with your database query %s", error)
     finally:
         if conn is not None:
             close(conn)
@@ -80,7 +87,7 @@ def query_creds_view(org_uid, start_date, end_date):
         )
         return df
     except (Exception, psycopg2.DatabaseError) as error:
-        logging.error("There was a problem with your database query %s", error)
+        logger.error("There was a problem with your database query %s", error)
     finally:
         if conn is not None:
             close(conn)
@@ -104,7 +111,7 @@ def query_domMasq(org_uid, start_date, end_date):
         )
         return df
     except (Exception, psycopg2.DatabaseError) as error:
-        logging.error("There was a problem with your database query %s", error)
+        logger.error("There was a problem with your database query %s", error)
     finally:
         if conn is not None:
             close(conn)
@@ -137,7 +144,7 @@ def query_shodan(org_uid, start_date, end_date, table):
         )
         return df
     except (Exception, psycopg2.DatabaseError) as error:
-        logging.error("There was a problem with your database query %s", error)
+        logger.error("There was a problem with your database query %s", error)
     finally:
         if conn is not None:
             close(conn)
@@ -162,7 +169,7 @@ def query_darkweb(org_uid, start_date, end_date, table):
         )
         return df
     except (Exception, psycopg2.DatabaseError) as error:
-        logging.error("There was a problem with your database query %s", error)
+        logger.error("There was a problem with your database query %s", error)
     finally:
         if conn is not None:
             close(conn)
@@ -180,7 +187,7 @@ def query_darkweb_cves(table):
         )
         return df
     except (Exception, psycopg2.DatabaseError) as error:
-        logging.error("There was a problem with your database query %s", error)
+        logger.error("There was a problem with your database query %s", error)
     finally:
         if conn is not None:
             close(conn)
@@ -210,7 +217,7 @@ def query_cyberSix_creds(org_uid, start_date, end_date):
         df["password_included"] = np.where(df["password"] != "", True, False)
         return df
     except (Exception, psycopg2.DatabaseError) as error:
-        logging.error("There was a problem with your database query %s", error)
+        logger.error("There was a problem with your database query %s", error)
     finally:
         if conn is not None:
             close(conn)

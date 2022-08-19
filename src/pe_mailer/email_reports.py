@@ -42,9 +42,14 @@ import pymongo.errors
 from schema import And, Schema, SchemaError, Use
 import yaml
 
+# cisagov Libraries
+from pe_reports import CENTRAL_LOGGING_FILE
+
 from ._version import __version__
 from .pe_message import PEMessage
 from .stats_message import StatsMessage
+
+logger = logging.getLogger(__name__)
 
 
 def get_emails_from_request(request):
@@ -75,7 +80,7 @@ def get_emails_from_request(request):
 
     for c in request["agency"]["contacts"]:
         if "type" not in c or "email" not in c or not c["email"].split():
-            logging.warning(
+            logger.warning(
                 "Agency with ID %s has a contact that is missing an email and/or type attribute!",
                 id,
             )
@@ -85,7 +90,7 @@ def get_emails_from_request(request):
 
     # There should be zero or one distro email
     if len(distro_emails) > 1:
-        logging.warning("More than one DISTRO email address for agency with ID %s", id)
+        logger.warning("More than one DISTRO email address for agency with ID %s", id)
 
     # Send to the distro email, else send to the technical emails.
     to_emails = distro_emails
@@ -94,7 +99,7 @@ def get_emails_from_request(request):
 
     # At this point to_emails should contain at least one email
     if not to_emails:
-        logging.error("No emails found for ID %s", id)
+        logger.error("No emails found for ID %s", id)
 
     return to_emails
 
@@ -172,7 +177,7 @@ def get_requests_raw(db, query):
     try:
         requests = db.requests.find(query, projection)
     except TypeError:
-        logging.critical(
+        logger.critical(
             "There was an error with the MongoDB query that retrieves the request documents",
             exc_info=True,
         )
@@ -263,7 +268,7 @@ def send_message(ses_client, message, counter=None):
     # Check for errors
     status_code = response["ResponseMetadata"]["HTTPStatusCode"]
     if status_code != 200:
-        logging.error("Unable to send message. Response from boto3 is: %s", response)
+        logger.error("Unable to send message. Response from boto3 is: %s", response)
         raise UnableToSendError(response)
 
     if counter is not None:
@@ -311,7 +316,7 @@ def send_pe_reports(db, ses_client, pe_report_dir, to):
         cyhy_agencies = pe_requests.count()
         1 / cyhy_agencies
     except ZeroDivisionError:
-        logging.critical("No report data is found in %s", pe_report_dir)
+        logger.critical("No report data is found in %s", pe_report_dir)
         sys.exit(1)
 
     agencies_emailed_pe_reports = 0
@@ -334,9 +339,9 @@ def send_pe_reports(db, ses_client, pe_report_dir, to):
 
             # At most one Cybex report and CSV should match
             if len(pe_report_filenames) > 1:
-                logging.warning("More than one PDF report found")
+                logger.warning("More than one PDF report found")
             elif not pe_report_filenames:
-                logging.error("No PDF report found")
+                logger.error("No PDF report found")
 
             if pe_report_filenames:
                 # We take the last filename since, if there happens to be more than
@@ -375,7 +380,7 @@ def send_pe_reports(db, ses_client, pe_report_dir, to):
 
     # Print out and log some statistics
     pe_stats_string = f"Out of {cyhy_agencies} agencies with Posture and Exposure reports, {agencies_emailed_pe_reports} ({100.0 * agencies_emailed_pe_reports / cyhy_agencies:.2f}%) were emailed."
-    logging.info(pe_stats_string)
+    logger.info(pe_stats_string)
 
     return pe_stats_string
 
@@ -385,38 +390,38 @@ def send_reports(pe_report_dir, db_creds_file, summary_to=None, test_emails=None
     try:
         os.stat(pe_report_dir)
     except FileNotFoundError:
-        logging.critical("Directory to send reports does not exist")
+        logger.critical("Directory to send reports does not exist")
         return 1
 
     try:
         db = db_from_config(db_creds_file)
     except OSError:
-        logging.critical("Database configuration file %s does not exist", db_creds_file)
+        logger.critical("Database configuration file %s does not exist", db_creds_file)
         return 1
 
     except yaml.YAMLError:
-        logging.critical(
+        logger.critical(
             "Database configuration file %s does not contain valid YAML",
             db_creds_file,
             exc_info=True,
         )
         return 1
     except KeyError:
-        logging.critical(
+        logger.critical(
             "Database configuration file %s does not contain the expected keys",
             db_creds_file,
             exc_info=True,
         )
         return 1
     except pymongo.errors.ConnectionError:
-        logging.critical(
+        logger.critical(
             "Unable to connect to the database server in %s",
             db_creds_file,
             exc_info=True,
         )
         return 1
     except pymongo.errors.InvalidName:
-        logging.critical(
+        logger.critical(
             "The database in %s does not exist", db_creds_file, exc_info=True
         )
         return 1
@@ -441,13 +446,13 @@ def send_reports(pe_report_dir, db_creds_file, summary_to=None, test_emails=None
         try:
             send_message(ses_client, message)
         except (UnableToSendError, ClientError):
-            logging.error(
+            logger.error(
                 "Unable to send cyhy-mailer report summary",
                 exc_info=True,
                 stack_info=True,
             )
     else:
-        logging.warning("Nothing was emailed.")
+        logger.warning("Nothing was emailed.")
         print("Nothing was emailed.")
 
     # Stop logging and clean up
@@ -485,12 +490,14 @@ def main():
 
     # Setup logging to central file
     logging.basicConfig(
-        filename="pe_reports_logging.log",
-        format="%(asctime)-15s %(levelname)s %(message)s",
+        filename=CENTRAL_LOGGING_FILE,
+        filemode="a",
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+        datefmt="%m/%d/%Y %I:%M:%S",
         level=log_level.upper(),
     )
 
-    logging.info("Sending Posture & Exposure Reports, Version : %s", __version__)
+    logger.info("Sending Posture & Exposure Reports, Version : %s", __version__)
 
     send_reports(
         # TODO: Improve use of schema to validate arguments.
