@@ -10,15 +10,23 @@ from importlib_resources import files
 import requests
 import shodan
 
+# cisagov Libraries
+from pe_reports import CENTRAL_LOGGING_FILE
+
 # Configuration
 REPORT_DB_CONFIG = files("pe_reports").joinpath("data/database.ini")
 
+
 # Setup logging to central file
 logging.basicConfig(
-    filename="pe_reports_Logging.log",
-    format="%(asctime)-15s %(levelname)s %(message)s",
+    filename=CENTRAL_LOGGING_FILE,
+    filemode="a",
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    datefmt="%m/%d/%Y %I:%M:%S",
     level="INFO",
 )
+
+logger = logging.getLogger(__name__)
 
 
 def shodan_api_init():
@@ -45,10 +53,10 @@ def shodan_api_init():
             # Test api key
             api.info()
         except Exception:
-            logging.error("Invalid Shodan API key: {}".format(key))
+            logger.error("Invalid Shodan API key: {}".format(key))
             continue
         api_list.append(api)
-    logging.info("Number of valid Shodan API keys: {}".format(len(api_list)))
+    logger.info("Number of valid Shodan API keys: {}".format(len(api_list)))
     return api_list
 
 

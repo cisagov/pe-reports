@@ -9,6 +9,7 @@ from unittest.mock import patch
 import pytest
 
 # cisagov Libraries
+from pe_reports import CENTRAL_LOGGING_FILE
 import pe_source.pe_scripts
 
 log_levels = (
@@ -21,10 +22,14 @@ log_levels = (
 
 # Setup logging to file
 logging.basicConfig(
-    filename="pe_reports_Logging.log",
-    format="%(asctime)-15s %(levelname)s %(message)s",
+    filename=CENTRAL_LOGGING_FILE,
+    filemode="a",
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    datefmt="%m/%d/%Y %I:%M:%S",
     level="INFO",
 )
+
+logger = logging.getLogger(__name__)
 
 
 PROJECT_VERSION = pe_source.__version__
