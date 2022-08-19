@@ -522,7 +522,7 @@ stakeholder_blueprint = Blueprint(
 @stakeholder_blueprint.route("/stakeholder", methods=["GET", "POST"])
 def stakeholder():
     """Process form information, instantiate form and render page template."""
-    LOGGER.info("made it to stakeholder")
+    LOGGER.debug("made it to stakeholder")
     cust = False
     custDomainAliases = False
     custRootDomain = False
@@ -531,7 +531,7 @@ def stakeholder():
     formExternal = InfoFormExternal()
 
     if formExternal.validate_on_submit():
-        LOGGER.info("Got to the submit validate")
+        LOGGER.debug("Got to the submit validate")
         cust = formExternal.cust.data.upper()
         custDomainAliases = formExternal.custDomainAliases.data.split(",")
         custRootDomain = formExternal.custRootDomain.data.split(",")
