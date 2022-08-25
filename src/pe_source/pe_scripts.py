@@ -49,7 +49,7 @@ logging.basicConfig(
     level="INFO",
 )
 
-logger = logging.getLogger(__name__)
+LOGGER = logging.getLogger(__name__)
 
 
 def run_pe_script(source, orgs_list, cybersix_methods):
@@ -63,7 +63,7 @@ def run_pe_script(source, orgs_list, cybersix_methods):
     else:
         cybersix_methods = cybersix_methods.split(",")
 
-    logger.info("Running %s on these orgs: %s", source, orgs_list)
+    LOGGER.info("Running %s on these orgs: %s", source, orgs_list)
 
     if source == "cybersixgill":
         cybersix = Cybersixgill(orgs_list, cybersix_methods)

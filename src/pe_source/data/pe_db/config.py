@@ -26,7 +26,7 @@ logging.basicConfig(
     level="INFO",
 )
 
-logger = logging.getLogger(__name__)
+LOGGER = logging.getLogger(__name__)
 
 
 def shodan_api_init():
@@ -53,10 +53,10 @@ def shodan_api_init():
             # Test api key
             api.info()
         except Exception:
-            logger.error("Invalid Shodan API key: {}".format(key))
+            LOGGER.error("Invalid Shodan API key: {}".format(key))
             continue
         api_list.append(api)
-    logger.info("Number of valid Shodan API keys: {}".format(len(api_list)))
+    LOGGER.info("Number of valid Shodan API keys: {}".format(len(api_list)))
     return api_list
 
 

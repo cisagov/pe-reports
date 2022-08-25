@@ -33,7 +33,7 @@ from ._version import __version__
 from .data.db_query import connect, get_orgs
 from .pages import init
 
-logger = logging.getLogger(__name__)
+LOGGER = logging.getLogger(__name__)
 
 
 def embed(
@@ -125,14 +125,14 @@ def generate_reports(datestring, output_directory):
 
     # Iterate over organizations
     if pe_orgs:
-        logger.info("PE orgs count: %d", len(pe_orgs))
+        LOGGER.info("PE orgs count: %d", len(pe_orgs))
         for org in pe_orgs:
             # Assign organization values
             org_uid = org[0]
             org_name = org[1]
             org_code = org[2]
 
-            logger.info("Running on %s", org_code)
+            LOGGER.info("Running on %s", org_code)
 
             # Create folders in output directory
             for dir_name in ("ppt", org_code):
@@ -208,17 +208,17 @@ def generate_reports(datestring, output_directory):
             # Log a message if the report is too large.  Our current mailer
             # cannot send files larger than 20MB.
             if tooLarge:
-                logger.info(
+                LOGGER.info(
                     "%s is too large. File size: %s Limit: 20MB", org_code, filesize
                 )
 
             generated_reports += 1
     else:
-        logger.error(
+        LOGGER.error(
             "Connection to pe database failed and/or there are 0 organizations stored."
         )
 
-    logger.info("%s reports generated", generated_reports)
+    LOGGER.info("%s reports generated", generated_reports)
 
 
 def main():

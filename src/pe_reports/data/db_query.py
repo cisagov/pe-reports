@@ -25,7 +25,7 @@ logging.basicConfig(
     level="INFO",
 )
 
-logger = logging.getLogger(__name__)
+LOGGER = logging.getLogger(__name__)
 
 CONN_PARAMS_DIC = config()
 
@@ -33,7 +33,7 @@ CONN_PARAMS_DIC = config()
 def show_psycopg2_exception(err):
     """Handle errors for PostgreSQL issues."""
     err_type, err_obj, traceback = sys.exc_info()
-    logger.error(
+    LOGGER.error(
         "Database connection error: %s on line number: %s", err, traceback.tb_lineno
     )
 
@@ -42,9 +42,9 @@ def connect():
     """Connect to PostgreSQL database."""
     conn = None
     try:
-        logger.info("Connecting to the PostgreSQL......")
+        LOGGER.info("Connecting to the PostgreSQL......")
         conn = psycopg2.connect(**CONN_PARAMS_DIC)
-        logger.info("Connection successful......")
+        LOGGER.info("Connection successful......")
     except OperationalError as err:
         show_psycopg2_exception(err)
         conn = None
@@ -67,7 +67,7 @@ def get_orgs(conn):
         cur.close()
         return pe_orgs
     except (Exception, psycopg2.DatabaseError) as error:
-        logger.error("There was a problem with your database query %s", error)
+        LOGGER.error("There was a problem with your database query %s", error)
     finally:
         if conn is not None:
             close(conn)
@@ -87,7 +87,7 @@ def query_creds_view(org_uid, start_date, end_date):
         )
         return df
     except (Exception, psycopg2.DatabaseError) as error:
-        logger.error("There was a problem with your database query %s", error)
+        LOGGER.error("There was a problem with your database query %s", error)
     finally:
         if conn is not None:
             close(conn)
@@ -111,7 +111,7 @@ def query_domMasq(org_uid, start_date, end_date):
         )
         return df
     except (Exception, psycopg2.DatabaseError) as error:
-        logger.error("There was a problem with your database query %s", error)
+        LOGGER.error("There was a problem with your database query %s", error)
     finally:
         if conn is not None:
             close(conn)
@@ -144,7 +144,7 @@ def query_shodan(org_uid, start_date, end_date, table):
         )
         return df
     except (Exception, psycopg2.DatabaseError) as error:
-        logger.error("There was a problem with your database query %s", error)
+        LOGGER.error("There was a problem with your database query %s", error)
     finally:
         if conn is not None:
             close(conn)
@@ -169,7 +169,7 @@ def query_darkweb(org_uid, start_date, end_date, table):
         )
         return df
     except (Exception, psycopg2.DatabaseError) as error:
-        logger.error("There was a problem with your database query %s", error)
+        LOGGER.error("There was a problem with your database query %s", error)
     finally:
         if conn is not None:
             close(conn)
@@ -187,7 +187,7 @@ def query_darkweb_cves(table):
         )
         return df
     except (Exception, psycopg2.DatabaseError) as error:
-        logger.error("There was a problem with your database query %s", error)
+        LOGGER.error("There was a problem with your database query %s", error)
     finally:
         if conn is not None:
             close(conn)
@@ -217,7 +217,7 @@ def query_cyberSix_creds(org_uid, start_date, end_date):
         df["password_included"] = np.where(df["password"] != "", True, False)
         return df
     except (Exception, psycopg2.DatabaseError) as error:
-        logger.error("There was a problem with your database query %s", error)
+        LOGGER.error("There was a problem with your database query %s", error)
     finally:
         if conn is not None:
             close(conn)
