@@ -5,22 +5,14 @@ from email import encoders
 from email.mime.application import MIMEApplication
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-import logging
 import os.path
 
 # cisagov Libraries
-from pe_reports import CENTRAL_LOGGING_FILE
+from pe_reports import app
 
 # Setup logging to central file
-logging.basicConfig(
-    filename=CENTRAL_LOGGING_FILE,
-    filemode="a",
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    datefmt="%m/%d/%Y %I:%M:%S",
-    level="INFO",
-)
 
-LOGGER = logging.getLogger(__name__)
+LOGGER = app.config["LOGGER"]
 
 
 class Message(MIMEMultipart):

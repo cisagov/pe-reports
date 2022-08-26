@@ -1,7 +1,6 @@
 """Query the PE PostgreSQL database."""
 
 # Standard Python Libraries
-import logging
 import sys
 
 # Third-Party Libraries
@@ -12,20 +11,12 @@ from psycopg2 import OperationalError
 from psycopg2.extensions import AsIs
 
 # cisagov Libraries
-from pe_reports import CENTRAL_LOGGING_FILE
+from pe_reports import app
 
 from .config import config
 
 # Setup logging to central file
-logging.basicConfig(
-    filename=CENTRAL_LOGGING_FILE,
-    filemode="a",
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    datefmt="%m/%d/%Y %I:%M:%S",
-    level="INFO",
-)
-
-LOGGER = logging.getLogger(__name__)
+LOGGER = app.config["LOGGER"]
 
 CONN_PARAMS_DIC = config()
 

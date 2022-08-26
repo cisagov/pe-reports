@@ -1,11 +1,14 @@
 """Scripts for importing Sixgill data into PE Postgres database."""
 
 # Standard Python Libraries
-import logging
+
 
 # Third-Party Libraries
 import pandas as pd
 import requests
+
+# cisagov Libraries
+from pe_reports import app
 
 from .api import (
     alerts_count,
@@ -16,14 +19,7 @@ from .api import (
     org_assets,
 )
 
-# Setup logging to central file
-logging.basicConfig(
-    filename="pe_reports_Logging.log",
-    format="%(asctime)-15s %(levelname)s %(message)s",
-    level="INFO",
-)
-
-LOGGER = logging.getLogger(__name__)
+LOGGER = app.config["LOGGER"]
 
 
 def alias_organization(org_id):

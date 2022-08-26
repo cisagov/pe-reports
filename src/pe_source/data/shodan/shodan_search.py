@@ -2,7 +2,6 @@
 
 # Standard Python Libraries
 import datetime
-import logging
 import time
 
 # Third-Party Libraries
@@ -11,7 +10,7 @@ import requests
 import shodan
 
 # cisagov Libraries
-from pe_reports import CENTRAL_LOGGING_FILE
+from pe_reports import app
 from pe_source.data.pe_db.db_query import (
     get_data_source_uid,
     get_ips,
@@ -19,15 +18,7 @@ from pe_source.data.pe_db.db_query import (
 )
 
 # Setup logging to central file
-logging.basicConfig(
-    filename=CENTRAL_LOGGING_FILE,
-    filemode="a",
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    datefmt="%m/%d/%Y %I:%M:%S",
-    level="INFO",
-)
-
-LOGGER = logging.getLogger(__name__)
+LOGGER = app.config["LOGGER"]
 
 
 def run_shodan_thread(api, org_chunk, thread_name):

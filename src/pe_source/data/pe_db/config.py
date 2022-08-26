@@ -2,7 +2,6 @@
 
 # Standard Python Libraries
 from configparser import ConfigParser
-import logging
 import os
 
 # Third-Party Libraries
@@ -11,22 +10,14 @@ import requests
 import shodan
 
 # cisagov Libraries
-from pe_reports import CENTRAL_LOGGING_FILE
+from pe_reports import app
 
 # Configuration
 REPORT_DB_CONFIG = files("pe_reports").joinpath("data/database.ini")
 
 
 # Setup logging to central file
-logging.basicConfig(
-    filename=CENTRAL_LOGGING_FILE,
-    filemode="a",
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    datefmt="%m/%d/%Y %I:%M:%S",
-    level="INFO",
-)
-
-LOGGER = logging.getLogger(__name__)
+LOGGER = app.config["LOGGER"]
 
 
 def shodan_api_init():

@@ -2,7 +2,6 @@
 
 # Standard Python Libraries
 from datetime import datetime
-import logging
 import sys
 
 # Third-Party Libraries
@@ -12,14 +11,11 @@ from psycopg2 import OperationalError
 import psycopg2.extras as extras
 
 # cisagov Libraries
+from pe_reports import app
 from pe_reports.data.config import config
 
 # Setup logging to central file
-logging.basicConfig(
-    filename="pe_reports_Logging.log",
-    format="%(asctime)-15s %(levelname)s %(message)s",
-    level="INFO",
-)
+LOGGER = app.config["LOGGER"]
 
 CONN_PARAMS_DIC = config()
 
@@ -27,7 +23,7 @@ CONN_PARAMS_DIC = config()
 def show_psycopg2_exception(err):
     """Handle errors for PostgreSQL issues."""
     err_type, err_obj, traceback = sys.exc_info()
-    logging.error(
+    LOGGER.error(
         "Database connection error: %s on line number: %s", err, traceback.tb_lineno
     )
 
@@ -60,7 +56,7 @@ def get_orgs():
         cur.close()
         return pe_orgs
     except (Exception, psycopg2.DatabaseError) as error:
-        logging.error("There was a problem with your database query %s", error)
+        LOGGER.error("There was a problem with your database query %s", error)
     finally:
         if conn is not None:
             close(conn)
@@ -140,9 +136,9 @@ def insert_sixgill_alerts(df):
             tuples,
         )
         conn.commit()
-        logging.info("Successfully inserted/updated alert data into PE database.")
+        LOGGER.info("Successfully inserted/updated alert data into PE database.")
     except (Exception, psycopg2.DatabaseError) as error:
-        logging.error(error)
+        LOGGER.error(error)
         conn.rollback()
     cursor.close()
 
@@ -175,7 +171,7 @@ def insert_sixgill_mentions(df):
             ]
         ]
     except Exception as e:
-        logging.error(e)
+        LOGGER.error(e)
         df = df[
             [
                 "organizations_uid",
@@ -223,9 +219,9 @@ def insert_sixgill_mentions(df):
             tuples,
         )
         conn.commit()
-        logging.info("Successfully inserted/updated mention data into PE database.")
+        LOGGER.info("Successfully inserted/updated mention data into PE database.")
     except (Exception, psycopg2.DatabaseError) as error:
-        logging.error(error)
+        LOGGER.error(error)
         conn.rollback()
     cursor.close()
 
@@ -254,9 +250,9 @@ def insert_sixgill_breaches(df):
             tuples,
         )
         conn.commit()
-        logging.info("Successfully inserted/updated breaches into PE database.")
+        LOGGER.info("Successfully inserted/updated breaches into PE database.")
     except (Exception, psycopg2.DatabaseError) as error:
-        logging.info(error)
+        LOGGER.info(error)
         conn.rollback()
     cursor.close()
 
@@ -272,7 +268,7 @@ def get_breaches():
         cur.close()
         return pe_orgs
     except (Exception, psycopg2.DatabaseError) as error:
-        logging.error("There was a problem with your database query %s", error)
+        LOGGER.error("There was a problem with your database query %s", error)
     finally:
         if conn is not None:
             close(conn)
@@ -301,11 +297,11 @@ def insert_sixgill_credentials(df):
             tuples,
         )
         conn.commit()
-        logging.info(
+        LOGGER.info(
             "Successfully inserted/updated exposed credentials into PE database."
         )
     except (Exception, psycopg2.DatabaseError) as error:
-        logging.info(error)
+        LOGGER.info(error)
         conn.rollback()
     cursor.close()
 
@@ -332,9 +328,9 @@ def insert_sixgill_topCVEs(df):
             tuples,
         )
         conn.commit()
-        logging.info("Successfully inserted/updated top cve data into PE database.")
+        LOGGER.info("Successfully inserted/updated top cve data into PE database.")
     except (Exception, psycopg2.DatabaseError) as error:
-        logging.info(error)
+        LOGGER.info(error)
         conn.rollback()
     cursor.close()
 
@@ -358,14 +354,14 @@ def insert_shodan_data(dataframe, table, thread, org_name, failed):
             tpls,
         )
         conn.commit()
-        logging.info(
+        LOGGER.info(
             "{} Data inserted using execute_values() successfully - {}".format(
                 thread, org_name
             )
         )
     except Exception as e:
-        logging.error("{} failed inserting into {}".format(org_name, table))
-        logging.error("{} {} - {}".format(thread, e, org_name))
+        LOGGER.error("{} failed inserting into {}".format(org_name, table))
+        LOGGER.error("{} {} - {}".format(thread, e, org_name))
         failed.append("{} failed inserting into {}".format(org_name, table))
         conn.rollback()
     cursor.close()

@@ -34,22 +34,13 @@ import docopt
 from schema import And, Schema, SchemaError, Use
 
 # cisagov Libraries
-from pe_reports import CENTRAL_LOGGING_FILE
+from pe_reports import CENTRAL_LOGGING_FILE, app
 
 from ._version import __version__
 from .cybersixgill import Cybersixgill
 from .shodan import Shodan
 
-# Setup logging to central file
-logging.basicConfig(
-    filename=CENTRAL_LOGGING_FILE,
-    filemode="a",
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    datefmt="%m/%d/%Y %I:%M:%S",
-    level="INFO",
-)
-
-LOGGER = logging.getLogger(__name__)
+LOGGER = app.config["LOGGER"]
 
 
 def run_pe_script(source, orgs_list, cybersix_methods):

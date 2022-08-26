@@ -41,12 +41,15 @@ app.config["CELERY_RESULT_BACKEND"] = "redis://localhost:6379/0"
 
 CENTRAL_LOGGING_FILE = "pe_reports_logging.log"
 
+# Setup Logging
+"""Set up logging and call the run_pe_script function."""
+
 logging.basicConfig(
     filename=CENTRAL_LOGGING_FILE,
     filemode="a",
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     datefmt="%m/%d/%Y %I:%M:%S",
-    level=logging.INFO,
+    level="INFO",
 )
 
 app.config["LOGGER"] = logging.getLogger(__name__)
