@@ -2,7 +2,6 @@
 
 # Standard Python Libraries
 from configparser import ConfigParser
-import logging
 import os
 
 # Third-Party Libraries
@@ -10,8 +9,15 @@ from importlib_resources import files
 import requests
 import shodan
 
+# cisagov Libraries
+from pe_reports import app
+
 # Configuration
 REPORT_DB_CONFIG = files("pe_reports").joinpath("data/database.ini")
+
+
+# Setup logging to central file
+LOGGER = app.config["LOGGER"]
 
 
 def shodan_api_init():
@@ -38,10 +44,10 @@ def shodan_api_init():
             # Test api key
             api.info()
         except Exception:
-            logging.error("Invalid Shodan API key: {}".format(key))
+            LOGGER.error("Invalid Shodan API key: {}".format(key))
             continue
         api_list.append(api)
-    logging.info("Number of valid Shodan API keys: {}".format(len(api_list)))
+    LOGGER.info("Number of valid Shodan API keys: {}".format(len(api_list)))
     return api_list
 
 

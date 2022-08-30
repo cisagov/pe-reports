@@ -2,7 +2,6 @@
 
 # Standard Python Libraries
 import datetime
-import logging
 import time
 
 # Third-Party Libraries
@@ -11,11 +10,15 @@ import requests
 import shodan
 
 # cisagov Libraries
+from pe_reports import app
 from pe_source.data.pe_db.db_query import (
     get_data_source_uid,
     get_ips,
     insert_shodan_data,
 )
+
+# Setup logging to central file
+LOGGER = app.config["LOGGER"]
 
 
 def run_shodan_thread(api, org_chunk, thread_name):
@@ -24,20 +27,18 @@ def run_shodan_thread(api, org_chunk, thread_name):
     for org in org_chunk:
         org_name = org["cyhy_db_name"]
         org_uid = org["org_uid"]
-        logging.info("{} Running IPs for {}".format(thread_name, org_name))
+        LOGGER.info("{} Running IPs for {}".format(thread_name, org_name))
         start, end = get_dates()
         try:
             ips = get_ips(org_uid)
         except Exception as e:
-            logging.error(
-                "{} Failed fetching IPs for {}.".format(thread_name, org_name)
-            )
-            logging.error("{} {} - {}".format(thread_name, e, org_name))
+            LOGGER.error("{} Failed fetching IPs for {}.".format(thread_name, org_name))
+            LOGGER.error("{} {} - {}".format(thread_name, e, org_name))
             failed.append("{} fetching IPs".format(org_name))
             continue
 
         if len(ips) == 0:
-            logging.error("{} No IPs for {}.".format(thread_name, org_name))
+            LOGGER.error("{} No IPs for {}.".format(thread_name, org_name))
             failed.append("{} has 0 IPs".format(org_name))
             continue
 
@@ -46,7 +47,7 @@ def run_shodan_thread(api, org_chunk, thread_name):
         )
 
     if len(failed) > 0:
-        logging.critical("{} Failures: {}".format(thread_name, failed))
+        LOGGER.critical("{} Failures: {}".format(thread_name, failed))
 
 
 def get_dates():
@@ -91,7 +92,7 @@ def search_shodan(thread_name, ips, api, start, end, org_uid, org_name, failed):
     tot_ips = len(ips)
     ip_chunks = [ips[i : i + 100] for i in range(0, tot_ips, 100)]
     tot = len(ip_chunks)
-    logging.info(
+    LOGGER.info(
         "{} Split {} IPs into {} chunks - {}".format(
             thread_name, tot_ips, tot, org_name
         )
@@ -209,7 +210,7 @@ def search_shodan(thread_name, ips, api, start, end, org_uid, org_name, failed):
                 break
             except shodan.APIError as e:
                 if try_count == 5:
-                    logging.error(
+                    LOGGER.error(
                         "{} Failed 5 times. Continuing to next chunk - {}".format(
                             thread_name, org_name
                         )
@@ -218,8 +219,8 @@ def search_shodan(thread_name, ips, api, start, end, org_uid, org_name, failed):
                         "{} chunk {} failed 5 times and skipped".format(org_name, count)
                     )
                     break
-                logging.error("{} {} - {}".format(thread_name, e, org_name))
-                logging.error(
+                LOGGER.error("{} {} - {}".format(thread_name, e, org_name))
+                LOGGER.error(
                     "{} Try #{} failed. Calling the API again. - {}".format(
                         thread_name, try_count, org_name
                     )
@@ -228,8 +229,8 @@ def search_shodan(thread_name, ips, api, start, end, org_uid, org_name, failed):
                 # Most likely too many API calls per second so sleep
                 time.sleep(5)
             except Exception as e:
-                logging.error("{} {} - {}".format(thread_name, e, org_name))
-                logging.error(
+                LOGGER.error("{} {} - {}".format(thread_name, e, org_name))
+                LOGGER.error(
                     "{} Not a shodan API error. Continuing to next chunk - {}".format(
                         thread_name, org_name
                     )
@@ -237,7 +238,7 @@ def search_shodan(thread_name, ips, api, start, end, org_uid, org_name, failed):
                 failed.append("{} chunk {} failed and skipped".format(org_name, count))
                 break
 
-        logging.info("{} {}/{} complete - {}".format(thread_name, count, tot, org_name))
+        LOGGER.info("{} {}/{} complete - {}".format(thread_name, count, tot, org_name))
 
     df = pd.DataFrame(data)
     risk_df = pd.DataFrame(risk_data)

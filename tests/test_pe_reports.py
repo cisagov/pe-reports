@@ -9,6 +9,7 @@ from unittest.mock import patch
 import pytest
 
 # cisagov Libraries
+from pe_reports import CENTRAL_LOGGING_FILE
 from pe_reports import app as flask_app
 import pe_reports.data.db_query
 import pe_reports.report_generator
@@ -21,11 +22,24 @@ log_levels = (
     "critical",
 )
 
+# TODO: Setup log rotate to rotate pe-reports log file
+#  Issue - https://github.com/cisagov/pe-reports/issues/248
+
+# Setup logging to file
+logging.basicConfig(
+    filename=CENTRAL_LOGGING_FILE,
+    filemode="a",
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    datefmt="%m/%d/%Y %I:%M:%S",
+    level="INFO",
+)
+
+
 PROJECT_VERSION = pe_reports.__version__
 
 
 # TODO: Replace current dummy test with useful tests
-# Issue - https://github.com/cisagov/pe-reports/issues/3#issue-909531010
+#  Issue - https://github.com/cisagov/pe-reports/issues/3#issue-909531010
 
 
 def test_reports_stdout_version(capsys):
