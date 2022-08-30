@@ -34,7 +34,7 @@ import docopt
 from schema import And, Schema, SchemaError, Use
 
 # cisagov Libraries
-from pe_reports import CENTRAL_LOGGING_FILE, app
+from pe_reports import CENTRAL_LOGGING_FILE
 
 from ._version import __version__
 from .cybersixgill import Cybersixgill
