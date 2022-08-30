@@ -31,7 +31,7 @@ logging.basicConfig(
     filemode="a",
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     datefmt="%m/%d/%Y %I:%M:%S",
-    level="info",
+    level="INFO",
 )
 
 
