@@ -40,16 +40,20 @@ app.config["CELERY_BROKER_URL"] = "redis://localhost:6379/0"
 app.config["CELERY_RESULT_BACKEND"] = "redis://localhost:6379/0"
 
 CENTRAL_LOGGING_FILE = "pe_reports_logging.log"
-
+DEBUG = False
 # Setup Logging
 """Set up logging and call the run_pe_script function."""
+if DEBUG is True:
+    level = "DEBUG"
+else:
+    level = "INFO"
 
 logging.basicConfig(
     filename=CENTRAL_LOGGING_FILE,
     filemode="a",
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     datefmt="%m/%d/%Y %I:%M:%S",
-    level="INFO",
+    level=level,
 )
 
 app.config["LOGGER"] = logging.getLogger(__name__)
@@ -78,4 +82,4 @@ app.register_blueprint(home_blueprint)
 
 if __name__ == "__main__":
     logging.info("The program has started...")
-    app.run(host="127.0.0.1", debug=False, port=8000)
+    app.run(host="127.0.0.1", debug=DEBUG, port=8000)

@@ -27,13 +27,13 @@ from schema import And, Schema, SchemaError, Use
 from xhtml2pdf import pisa
 
 # cisagov Libraries
-from pe_reports import CENTRAL_LOGGING_FILE, app
+from pe_reports import CENTRAL_LOGGING_FILE
 
 from ._version import __version__
 from .data.db_query import connect, get_orgs
 from .pages import init
 
-LOGGER = app.config["LOGGER"]
+LOGGER = logging.getLogger(__name__)
 
 
 def embed(

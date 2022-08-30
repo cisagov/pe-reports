@@ -40,7 +40,7 @@ from ._version import __version__
 from .cybersixgill import Cybersixgill
 from .shodan import Shodan
 
-LOGGER = app.config["LOGGER"]
+LOGGER = logging.getLogger(__name__)
 
 
 def run_pe_script(source, orgs_list, cybersix_methods):
