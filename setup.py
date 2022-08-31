@@ -97,7 +97,7 @@ setup(
         "botocore == 1.24.10",
         "chevron == 0.14.0",
         "celery",
-        "click==8.0.3",
+        "click",
         "docopt",
         "glob2 == 0.7",
         "flask",
