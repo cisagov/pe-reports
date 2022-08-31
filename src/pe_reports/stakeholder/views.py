@@ -39,14 +39,9 @@ from werkzeug.utils import secure_filename
 nlp = spacy.load("en_core_web_lg")
 
 
-# Create central logging
-logging.basicConfig(
-    filename="flaskLog.log",
-    filemode="a",
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    datefmt="%m/%d/%Y %I:%M:%S",
-    level=logging.INFO,
-)
+
+LOGGER = logging.getLogger(__name__)
+
 
 
 # cisagov Libraries
@@ -91,7 +86,7 @@ def getAgencies(org_name):
         conn = psycopg2.connect(**params)
 
         if conn:
-            logging.info(
+            LOGGER.info(
                 "There was a connection made to"
                 "the database and the query was executed."
             )
@@ -112,12 +107,12 @@ def getAgencies(org_name):
             return resultDict
 
     except (Exception, psycopg2.DatabaseError) as err:
-        logging.error("There was a problem logging into the psycopg database %s", err)
+        LOGGER.error("There was a problem logging into the psycopg database %s", err)
     finally:
         if conn is not None:
             cursor.close()
             conn.close()
-            logging.info("The connection/query was completed and closed.")
+            LOGGER.info("The connection/query was completed and closed.")
 
             return resultDict
 
@@ -132,7 +127,7 @@ def getRootID(org_UUID):
         conn = psycopg2.connect(**params)
 
         if conn:
-            logging.info(
+            LOGGER.info(
                 "There was a connection made to the database and the query was executed "
             )
 
@@ -150,12 +145,12 @@ def getRootID(org_UUID):
             return resultDict
 
     except (Exception, psycopg2.DatabaseError) as err:
-        logging.error("There was a problem logging into the psycopg database %s", err)
+        LOGGER.error("There was a problem logging into the psycopg database %s", err)
     finally:
         if conn is not None:
             cursor.close()
             conn.close()
-            logging.info("The connection/query was completed and closed.")
+            LOGGER.info("The connection/query was completed and closed.")
 
             return resultDict
 
@@ -165,7 +160,7 @@ def setStakeholder(customer):
     global conn, cursor
 
     try:
-        logging.info("Starting insert into database...")
+        LOGGER.info("Starting insert into database...")
 
         params = config()
 
@@ -173,7 +168,7 @@ def setStakeholder(customer):
 
         if conn:
 
-            logging.info(
+            LOGGER.info(
                 "There was a connection made to "
                 "the database and the query was executed "
             )
@@ -185,14 +180,14 @@ def setStakeholder(customer):
             return True
 
     except (Exception, psycopg2.DatabaseError) as err:
-        logging.error("There was a problem logging into the psycopg database %s", err)
+        LOGGER.error("There was a problem logging into the psycopg database %s", err)
         return False
     finally:
         if conn is not None:
             conn.commit()
             cursor.close()
             conn.close()
-            logging.info("The connection/query was completed and closed.")
+            LOGGER.info("The connection/query was completed and closed.")
 
 
 def setCustRootDomain(customer, rootdomain, orgUUID):
@@ -200,7 +195,7 @@ def setCustRootDomain(customer, rootdomain, orgUUID):
     global conn, cursor
 
     try:
-        logging.info("Starting insert into database...")
+        LOGGER.info("Starting insert into database...")
 
         params = config()
 
@@ -208,8 +203,10 @@ def setCustRootDomain(customer, rootdomain, orgUUID):
 
         if conn:
 
-            logging.info(
-                "There was a connection made to the database and the query was executed "
+
+            LOGGER.info(
+                "There was a connection made to "
+                "the database and the query was executed "
             )
 
             cursor = conn.cursor()
@@ -220,14 +217,14 @@ def setCustRootDomain(customer, rootdomain, orgUUID):
             return True
 
     except (Exception, psycopg2.DatabaseError) as err:
-        logging.error("There was a problem logging into the psycopg database %s", err)
+        LOGGER.error("There was a problem logging into the psycopg database %s", err)
         return False
     finally:
         if conn is not None:
             conn.commit()
             cursor.close()
             conn.close()
-            logging.info("The connection/query was completed and closed.")
+            LOGGER.info("The connection/query was completed and closed.")
 
 
 def setCustSubDomain(subdomain, rootUUID, rootname):
@@ -236,7 +233,7 @@ def setCustSubDomain(subdomain, rootUUID, rootname):
 
     try:
 
-        logging.info("Starting insert into database...")
+        LOGGER.info("Starting insert into database...")
 
         params = config()
 
@@ -244,7 +241,7 @@ def setCustSubDomain(subdomain, rootUUID, rootname):
 
         if conn:
 
-            logging.info(
+            LOGGER.info(
                 "There was a connection made to "
                 "the database and the query to "
                 "insert the subdomains was executed "
@@ -259,14 +256,14 @@ def setCustSubDomain(subdomain, rootUUID, rootname):
             return True
 
     except (Exception, psycopg2.DatabaseError) as err:
-        logging.error("There was a problem logging into the psycopg database %s", err)
+        LOGGER.error("There was a problem logging into the psycopg database %s", err)
         return False
     finally:
         if conn is not None:
             conn.commit()
             cursor.close()
             conn.close()
-            logging.info("The connection/query was completed and closed.")
+            LOGGER.info("The connection/query was completed and closed.")
 
 
 def setCustomerExternalCSG(
@@ -278,7 +275,7 @@ def setCustomerExternalCSG(
     iplist = []
     domainlist = []
     try:
-        logging.info("Starting insert into database...")
+        LOGGER.info("Starting insert into database...")
 
         params = config()
 
@@ -286,8 +283,10 @@ def setCustomerExternalCSG(
 
         if conn:
 
-            logging.info(
-                "There was a connection made to the database and the query was executed "
+
+            LOGGER.info(
+                "There was a connection made to"
+                " the database and the query was executed "
             )
 
             cursor = conn.cursor()
@@ -305,13 +304,13 @@ def setCustomerExternalCSG(
                 )
 
     except (Exception, psycopg2.DatabaseError) as err:
-        logging.error("There was a problem logging into the psycopg database %s", err)
+        LOGGER.error("There was a problem logging into the psycopg database %s", err)
     finally:
         if conn is not None:
             conn.commit()
             cursor.close()
             conn.close()
-            logging.info("The connection/query was completed and closed.")
+            LOGGER.info("The connection/query was completed and closed.")
 
     return iplist
 
@@ -333,16 +332,16 @@ def getSubdomain(domain):
     data = response.json()
 
     subdomains = data["domainsList"]
-    logging.info(subdomains)
+    LOGGER.info(subdomains)
 
     subisolated = ""
     for sub in subdomains:
 
         if sub != f"www.{domain}":
 
-            logging.info(sub)
+            LOGGER.info(sub)
             subisolated = sub.rsplit(".")[:-2]
-            logging.info(
+            LOGGER.info(
                 "The whole sub is %s and the isolated sub is %s", sub, subisolated
             )
         allsubs.append(subisolated)
@@ -356,14 +355,14 @@ def theaddress(domain):
     try:
         gettheAddress = socket.gethostbyname(domain)
     except socket.gaierror:
-        logging.info("There is a problem with the domain that you selected")
+        LOGGER.info("There is a problem with the domain that you selected")
 
     return gettheAddress
 
 
 def getallsubdomainIPS(domain):
     """Get a list of IP addresses associated with a subdomain."""
-    logging.info("The domain at getallsubdomsinIPS is %s", domain)
+    LOGGER.info("The domain at getallsubdomsinIPS is %s", domain)
     alladdresses = []
     for x in getSubdomain(domain)[0]:
         domainaddress = theaddress(x)
@@ -382,7 +381,7 @@ def verifyIPv4(custIP):
             return False
 
     except ValueError as err:
-        logging.error("The address is incorrect, %s", err)
+        LOGGER.error("The address is incorrect, %s", err)
         return False
 
 
@@ -396,7 +395,7 @@ def verifyCIDR(custIP):
             return False
 
     except ValueError as err:
-        logging.error("The CIDR is incorrect, %s", err)
+        LOGGER.error("The CIDR is incorrect, %s", err)
         return False
 
 
@@ -450,7 +449,7 @@ def setNewCSGOrg(newOrgName, orgAliases, orgdomainNames, orgIP, orgExecs):
     newOrgID = response["id"]
 
     if newOrgID:
-        logging.info("A new org_id was created: %s", newOrgID)
+        LOGGER.info("A new org_id was created: %s", newOrgID)
 
         setOrganizationUsers(newOrgID)
         setOrganizationDetails(newOrgID, orgAliases, orgdomainNames, orgIP, orgExecs)
@@ -488,7 +487,7 @@ def setOrganizationUsers(org_id):
             }
 
             response = requests.post(url, headers=headers).json()
-            logging.info(response)
+            LOGGER.info(response)
 
 
 def setOrganizationDetails(org_id, orgAliases, orgDomain, orgIP, orgExecs):
@@ -496,12 +495,12 @@ def setOrganizationDetails(org_id, orgAliases, orgDomain, orgIP, orgExecs):
 
     stakeholder at CSG portal via API.
     """
-    logging.info("The following is from setting details")
-    logging.info("The org_id is %s", org_id)
-    logging.info("The orgAliases is %s", orgAliases)
-    logging.info("The orgDomain is %s", orgDomain)
-    logging.info("The orgIP is %s", orgIP)
-    logging.info("The orgExecs is %s", orgExecs)
+    LOGGER.info("The following is from setting details")
+    LOGGER.info("The org_id is %s", org_id)
+    LOGGER.info("The orgAliases is %s", orgAliases)
+    LOGGER.info("The orgDomain is %s", orgDomain)
+    LOGGER.info("The orgIP is %s", orgIP)
+    LOGGER.info("The orgExecs is %s", orgExecs)
     newOrganizationDetails = json.dumps(
         {
             "organization_aliases": {"explicit": orgAliases},
@@ -519,7 +518,7 @@ def setOrganizationDetails(org_id, orgAliases, orgDomain, orgIP, orgExecs):
     }
 
     response = requests.put(url, headers=headers, data=newOrganizationDetails).json()
-    logging.info("The response is %s", response)
+    LOGGER.info("The response is %s", response)
 
 
 def getalluserinfo():
@@ -644,6 +643,7 @@ def upload_file():
 @stakeholder_blueprint.route("/stakeholder", methods=["GET", "POST"])
 def stakeholder():
     """Process form information, instantiate form and render page template."""
+    LOGGER.debug("made it to stakeholder")
     cust = False
     custDomainAliases = False
     custRootDomain = False
@@ -652,7 +652,7 @@ def stakeholder():
     formExternal = InfoFormExternal()
 
     if formExternal.validate_on_submit():
-        logging.info("Got to the submit validate")
+        LOGGER.debug("Got to the submit validate")
         cust = formExternal.cust.data.upper()
         custDomainAliases = formExternal.custDomainAliases.data.split(",")
         custRootDomain = formExternal.custRootDomain.data.split(",")
@@ -669,34 +669,35 @@ def stakeholder():
 
         try:
 
-            # if cust not in allDomain.values():
-            #     flash(f"You successfully submitted a new customer {cust} ", "success")
+            if cust not in allDomain.values():
+                flash(f"You successfully submitted a new customer {cust} ", "success")
 
-            # if setStakeholder(cust):
-            #     logging.info("The customer %s was entered.", cust)
-            #     allDomain = list(getAgencies(cust).keys())[0]
+                if setStakeholder(cust):
+                    LOGGER.info("The customer %s was entered.", cust)
+                    allDomain = list(getAgencies(cust).keys())[0]
 
-            # if setCustRootDomain(cust, custRootDomainValue, allDomain):
-            #     rootUUID = getRootID(allDomain)[cust]
+                    if setCustRootDomain(cust, custRootDomainValue, allDomain):
+                        rootUUID = getRootID(allDomain)[cust]
 
-            #     logging.info(
-            #         "The root domain %s was entered at root_domains.",
-            #         custRootDomainValue,
-            #     )
-            #     if allSubDomain:
-            #         for subdomain in allSubDomain:
-            #             if setCustSubDomain(subdomain, rootUUID, cust):
-            #                 logging.info("The subdomains have been entered.")
-            setNewCSGOrg(
-                cust,
-                custDomainAliases,
-                custRootDomain,
-                allValidIP,
-                allExecutives,
-            )
+                        LOGGER.info(
+                            "The root domain %s was entered at root_domains.",
+                            custRootDomainValue,
+                        )
+                        if allSubDomain:
+                            for subdomain in allSubDomain:
+                                if setCustSubDomain(subdomain, rootUUID, cust):
+                                    LOGGER.info("The subdomains have been entered.")
+                                    setNewCSGOrg(
+                                        cust,
+                                        custDomainAliases,
+                                        custRootDomain,
+                                        allValidIP,
+                                        custExecutives,
+                                    )
 
-            # else:
-            #     flash(f"The customer {cust} already exists.", "warning")
+            else:
+                flash(f"The customer {cust} already exists.", "warning")
+
 
         except ValueError as e:
             flash(f"The customer IP {e} is not a valid IP, please try again.", "danger")

@@ -1,11 +1,14 @@
 """Scripts for importing Sixgill data into PE Postgres database."""
 
 # Standard Python Libraries
-import logging
+
 
 # Third-Party Libraries
 import pandas as pd
 import requests
+
+# cisagov Libraries
+from pe_reports import app
 
 from .api import (
     alerts_count,
@@ -15,6 +18,8 @@ from .api import (
     intel_post,
     org_assets,
 )
+
+LOGGER = app.config["LOGGER"]
 
 
 def alias_organization(org_id):
@@ -40,20 +45,20 @@ def mentions(date, aliases):
         mentions += '"' + mention + '"' + ","
     mentions = mentions[:-1]
     query = "site:forum_* AND date:" + date + " AND " + "(" + str(mentions) + ")"
-    logging.info("Query:")
-    logging.info(query)
+    LOGGER.info("Query:")
+    LOGGER.info(query)
     count = 1
     while count < 7:
         try:
-            logging.info("Intel post try #%s", count)
+            LOGGER.info("Intel post try #%s", count)
             resp = intel_post(query, frm=0, scroll=False, result_size=1)
             break
         except Exception:
-            logging.info("Error. Trying intel_post again...")
+            LOGGER.info("Error. Trying intel_post again...")
             count += 1
             continue
     count_total = resp["total_intel_items"]
-    logging.info("Total Mentions: %s", count_total)
+    LOGGER.info("Total Mentions: %s", count_total)
 
     i = 0
     all_mentions = []
@@ -62,7 +67,7 @@ def mentions(date, aliases):
             # Recommended "from" and "result_size" is 50. The maximum is 400.
             resp = intel_post(query, frm=i, scroll=False, result_size=200)
             i += 200
-            logging.info("Getting %s of %s....", i, count_total)
+            LOGGER.info("Getting %s of %s....", i, count_total)
             intel_items = resp["intel_items"]
             df_mentions = pd.DataFrame.from_dict(intel_items)
             all_mentions.append(df_mentions)
@@ -72,7 +77,7 @@ def mentions(date, aliases):
             # Recommended "from" and "result_size" is 50. The maximum is 400.
             resp = intel_post(query, frm=i, scroll=True, result_size=400)
             i += 400
-            logging.info("Getting %s of %s....", i, count_total)
+            LOGGER.info("Getting %s of %s....", i, count_total)
             intel_items = resp["intel_items"]
             df_mentions = pd.DataFrame.from_dict(intel_items)
             all_mentions.append(df_mentions)
@@ -85,7 +90,7 @@ def alerts(org_id):
     """Get actionable alerts for an organization."""
     count = alerts_count(org_id)
     count_total = count["total"]
-    logging.info("Total Alerts: %s", count_total)
+    LOGGER.info("Total Alerts: %s", count_total)
 
     # Recommended "fetch_size" is 25. The maximum is 400.
     fetch_size = 25
