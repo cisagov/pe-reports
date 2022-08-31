@@ -1,0 +1,20 @@
+{% extends 'base.html' %} {% block content %}
+<div class="container">
+  <div class="row">
+    <div class="d-flex justify-content-center Jumbotron">
+      <h1>Woops, the page does not exist (404)</h1>
+      <br />
+      <a
+        class="nav-link {% if request.endpoint=='home.index' %}active{%endif %}"
+        id="home"
+        aria-current="page"
+        href="{{ url_for('home.index') }}"
+        >Back to Home</a
+      >
+
+      <!--<img src="../static/" alt="">-->
+    </div>
+  </div>
+</div>
+
+{% endblock %}

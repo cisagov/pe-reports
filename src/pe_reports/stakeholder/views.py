@@ -6,29 +6,62 @@ from ipaddress import ip_address, ip_network
 import json
 import logging
 import os
+import re
 import socket
+from time import sleep
+from urllib.request import Request, urlopen
 
 # Third-Party Libraries
-from flask import Blueprint, flash, redirect, render_template, url_for
+from bs4 import BeautifulSoup
+import flask
+from flask import (
+    Blueprint,
+    current_app,
+    flash,
+    redirect,
+    render_template,
+    request,
+    url_for,
+)
+from lxml import html
+import nltk
+
+# from nltk.tag import StanfordTagger
+# from nltk.tokenize import word_tokenize
+from nltk import pos_tag, word_tokenize
 import psycopg2
 import psycopg2.extras
 import requests
+import spacy
+from werkzeug.utils import secure_filename
 
-# cisagov Libraries
-from pe_reports.data.config import config
-from pe_reports.stakeholder.forms import InfoFormExternal
+# If you are getting errors saying that a "en_core_web_lg" is loaded. Run the command " python -m spacy download en_core_web_trf" but might have to chagne the name fo the spacy model
+nlp = spacy.load("en_core_web_lg")
 
+
+# Create central logging
 logging.basicConfig(
+    filename="flaskLog.log",
     filemode="a",
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     datefmt="%m/%d/%Y %I:%M:%S",
     level=logging.INFO,
 )
 
+
+# cisagov Libraries
+from pe_reports.data.config import config
+from pe_reports.stakeholder.forms import InfoFormExternal
+
+# from pe_reports import UPLOAD_FOLDER
+#
+# logging.info(f'{UPLOAD_FOLDER}')
+
+
 # CSG credentials
-API_Client_ID = os.getenv("CSGUSER")
-API_Client_secret = os.environ.get("CSGSECRET")
-API_WHOIS = os.environ.get("WHOIS_VAR")
+API_Client_ID = "dhscisape-jo2ju4gm90"
+API_Client_secret = "718203c5-1a4f-4af1-b8b1-2623dae661ae"
+API_WHOIS = "at_k5eJoD6do4NSnXL2BY3o1e9BH1t2b"
 
 conn = None
 cursor = None
@@ -65,8 +98,7 @@ def getAgencies(org_name):
 
             cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
 
-            query = "select organizations_uid,name from"
-            " organizations where name='{}';"
+            query = "select organizations_uid,name from organizations where name='{}';"
 
             cursor.execute(query.format(org_name))
 
@@ -105,8 +137,7 @@ def getRootID(org_UUID):
             )
 
             cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-            query = "select root_domain_uid, organization_name from"
-            " root_domains where organizations_uid='{}';"
+            query = "select root_domain_uid, organization_name from root_domains where organizations_uid='{}';"
 
             cursor.execute(query.format(org_UUID))
 
@@ -178,18 +209,13 @@ def setCustRootDomain(customer, rootdomain, orgUUID):
         if conn:
 
             logging.info(
-                "There was a connection made to "
-                "the database and the query was executed "
+                "There was a connection made to the database and the query was executed "
             )
 
             cursor = conn.cursor()
 
             cursor.execute(
-                f"insert into root_domains("
-                f"organizations_uid,"
-                f"organization_name,"
-                f" root_domain)"
-                f"values('{orgUUID}', '{customer}','{rootdomain}');"
+                f"insert into root_domains(organizations_uid, organization_name, root_domain) values('{orgUUID}', '{customer}','{rootdomain}');"
             )
             return True
 
@@ -228,13 +254,7 @@ def setCustSubDomain(subdomain, rootUUID, rootname):
 
             for sub in subdomain:
                 cursor.execute(
-                    f"insert into sub_domains("
-                    f"sub_domain,"
-                    f"root_domain_uid,"
-                    f" root_domain)"
-                    f"values('{sub}',"
-                    f" '{rootUUID}',"
-                    f"'{rootname}');"
+                    f"insert into sub_domains(sub_domain,root_domain_uid, root_domain) values('{sub}', '{rootUUID}', '{rootname}');"
                 )
             return True
 
@@ -267,8 +287,7 @@ def setCustomerExternalCSG(
         if conn:
 
             logging.info(
-                "There was a connection made to"
-                " the database and the query was executed "
+                "There was a connection made to the database and the query was executed "
             )
 
             cursor = conn.cursor()
@@ -277,21 +296,12 @@ def setCustomerExternalCSG(
                 iplist.append(ip)
 
                 cursor.execute(
-                    f"insert into organizations(domain_name,"
-                    f" domain_ip,"
-                    f" date_saved) "
-                    f"values('{customer}',"
-                    f" '{ip}',"
-                    f"'{thedateToday}');"
+                    f"insert into organizations(domain_name, domain_ip, date_saved) values('{customer}', '{ip}','{thedateToday}');"
                 )
             for domain in customerRootDomain:
                 domainlist.append(domain)
                 cursor.execute(
-                    f"insert into domain_assets(domain_name,"
-                    f" domain_ip,"
-                    f" date_saved) "
-                    f"values('{customer}',"
-                    f" '{ip}', '{thedateToday}');"
+                    f"insert into domain_assets(domain_name, domain_ip, date_saved) values('{customer}', '{ip}', '{thedateToday}');"
                 )
 
     except (Exception, psycopg2.DatabaseError) as err:
@@ -524,6 +534,113 @@ stakeholder_blueprint = Blueprint(
 )
 
 
+def getNames(url):
+
+    doc = nlp(getAbout(url))
+
+    d = []
+
+    for ent in doc.ents:
+        d.append((ent.label_, ent.text))
+
+    return d
+
+
+def getAbout(url):
+    thepage = requests.get(url).text
+
+    soup = BeautifulSoup(thepage, "lxml")
+
+    body = soup.body.text
+
+    body = body.replace("\n", " ")
+    body = body.replace("\t", " ")
+    body = body.replace("\r", " ")
+    body = body.replace("\xa0", " ")
+    # body = re.sub(r'[^ws]', '', body)
+
+    return body
+
+
+def theExecs(URL):
+    mytext = getAbout(URL)
+
+    tokens = word_tokenize(mytext)
+
+    thetag = pos_tag(tokens)
+
+    ne_tree = nltk.ne_chunk(thetag)
+
+    for x in ne_tree:
+        if "PERSON" in x:
+            print(x)
+
+    regex_pattern = re.compile(r"[@_'’!#\-$%^&*()<>?/\|}{~:]")
+
+    thereturn = getNames(URL)
+
+    executives = []
+
+    for hy in thereturn:
+
+        # print(hy)
+
+        if ("PERSON" in hy) and (hy[1] not in executives) and (len(hy[1]) < 50):
+            # executives.append(hy[1])
+            # print(hy[1])
+
+            # if not regex_pattern.search(hy[1]) and len(hy[1].split()) > 1 and not difflib.get_close_matches(hy[1], executives):
+            if not regex_pattern.search(hy[1]) and len(hy[1].split()) > 1:
+                person = hy[1].split("  ")
+                if len(person) <= 1:
+                    # print(person)
+                    executives.append(hy[1])
+                    # print(f'{hy[0]} {hy[1]}')
+    # print(executives)
+    return executives
+
+
+def allowed_file(filename):
+    # Allowed file extensions to upload
+    ALLOWED_EXTENSIONS = current_app.config["ALLOWED_EXTENSIONS"]
+    return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
+
+
+@stakeholder_blueprint.route("/upload", methods=["GET", "POST"])
+def upload_file():
+    # Directory where bulk stakeholder files to be uploaded
+    UPLOAD_FOLDER = current_app.config["UPLOAD_FOLDER"]
+
+    try:
+        os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+        logging.info("There was a directory created for upload")
+    except FileExistsError:
+        logging.info("The upload folder already exists")
+
+    if request.method == "POST":
+        # check if the post request has the file part
+        if "file" not in request.files:
+            flash("No file part", "warning")
+            return redirect(request.url)
+        file = request.files["file"]
+        # If the user does not select a file, the browser submits an
+        # empty file without a filename.
+        if file.filename == "":
+            flash("No selected file", "warning")
+            return redirect(request.url)
+        if file and allowed_file(file.filename):
+            filename = secure_filename(file.filename)
+            file.save(os.path.join(UPLOAD_FOLDER, filename))
+            flash("The file was saved", "success")
+        else:
+            flash("The file that was chosen cannot be uploaded", "warning")
+            logging.info("The file that was chosen cannot be uploaded")
+
+            return redirect(url_for("stakeholder.upload_file", name=filename))
+        return redirect(url_for("stakeholder.upload_file"))
+    return render_template("upload.html")
+
+
 @stakeholder_blueprint.route("/stakeholder", methods=["GET", "POST"])
 def stakeholder():
     """Process form information, instantiate form and render page template."""
@@ -540,45 +657,46 @@ def stakeholder():
         custDomainAliases = formExternal.custDomainAliases.data.split(",")
         custRootDomain = formExternal.custRootDomain.data.split(",")
         custRootDomainValue = custRootDomain[0]
-        custExecutives = formExternal.custExecutives.data.split(",")
+        custExecutives = formExternal.custExecutives.data
         formExternal.cust.data = ""
         formExternal.custDomainAliases = ""
         formExternal.custRootDomain.data = ""
         formExternal.custExecutives.data = ""
         allDomain = getAgencies(cust)
+        allExecutives = list(theExecs(custExecutives))
         allSubDomain = getSubdomain(custRootDomainValue)
         allValidIP = getallsubdomainIPS(custRootDomainValue)
 
         try:
 
-            if cust not in allDomain.values():
-                flash(f"You successfully submitted a new customer {cust} ", "success")
+            # if cust not in allDomain.values():
+            #     flash(f"You successfully submitted a new customer {cust} ", "success")
 
-                if setStakeholder(cust):
-                    logging.info("The customer %s was entered.", cust)
-                    allDomain = list(getAgencies(cust).keys())[0]
+            # if setStakeholder(cust):
+            #     logging.info("The customer %s was entered.", cust)
+            #     allDomain = list(getAgencies(cust).keys())[0]
 
-                    if setCustRootDomain(cust, custRootDomainValue, allDomain):
-                        rootUUID = getRootID(allDomain)[cust]
+            # if setCustRootDomain(cust, custRootDomainValue, allDomain):
+            #     rootUUID = getRootID(allDomain)[cust]
 
-                        logging.info(
-                            "The root domain %s was entered at root_domains.",
-                            custRootDomainValue,
-                        )
-                        if allSubDomain:
-                            for subdomain in allSubDomain:
-                                if setCustSubDomain(subdomain, rootUUID, cust):
-                                    logging.info("The subdomains have been entered.")
-                                    setNewCSGOrg(
-                                        cust,
-                                        custDomainAliases,
-                                        custRootDomain,
-                                        allValidIP,
-                                        custExecutives,
-                                    )
+            #     logging.info(
+            #         "The root domain %s was entered at root_domains.",
+            #         custRootDomainValue,
+            #     )
+            #     if allSubDomain:
+            #         for subdomain in allSubDomain:
+            #             if setCustSubDomain(subdomain, rootUUID, cust):
+            #                 logging.info("The subdomains have been entered.")
+            setNewCSGOrg(
+                cust,
+                custDomainAliases,
+                custRootDomain,
+                allValidIP,
+                allExecutives,
+            )
 
-            else:
-                flash(f"The customer {cust} already exists.", "warning")
+            # else:
+            #     flash(f"The customer {cust} already exists.", "warning")
 
         except ValueError as e:
             flash(f"The customer IP {e} is not a valid IP, please try again.", "danger")
