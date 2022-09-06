@@ -10,8 +10,12 @@ import pandas as pd
 import pytest
 
 # cisagov Libraries
+
 import pe_source.cybersixgill
 import pe_source.data.sixgill.api
+
+from pe_reports import CENTRAL_LOGGING_FILE
+
 import pe_source.pe_scripts
 import pe_source.shodan
 
@@ -22,6 +26,17 @@ log_levels = (
     "error",
     "critical",
 )
+
+# Setup logging to file
+logging.basicConfig(
+    filename=CENTRAL_LOGGING_FILE,
+    filemode="a",
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    datefmt="%m/%d/%Y %I:%M:%S",
+    level="INFO",
+)
+
+logger = logging.getLogger(__name__)
 
 
 PROJECT_VERSION = pe_source.__version__
