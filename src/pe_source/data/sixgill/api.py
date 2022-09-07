@@ -1,11 +1,11 @@
 """Cybersixgill API calls."""
 # Standard Python Libraries
 import logging
+import time
 
 # Third-Party Libraries
 import pandas as pd
 import requests
-import time
 
 # cisagov Libraries
 from pe_source.data.pe_db.config import cybersix_token

@@ -1,6 +1,7 @@
 """Collect Cybersixgill data."""
 
 # Standard Python Libraries
+from ast import alias
 from datetime import date, datetime, timedelta
 import logging
 import sys
@@ -73,7 +74,7 @@ class Cybersixgill:
 
         list = ""
         for pe_org in pe_orgs:
-            list = list + pe_org["cyhy_db_name"]+ ','
+            list = list + pe_org["cyhy_db_name"] + ","
         print(list)
         for pe_org in pe_orgs:
             org_id = pe_org["cyhy_db_name"]
@@ -83,7 +84,9 @@ class Cybersixgill:
                 count += 1
                 # Get sixgill_org_id associated with the PE org
                 try:
-                    sixgill_org_id = sixgill_orgs[org_id][5]
+                    sixgill_org_id = sixgill_orgs[org_id][4]
+                    logging.info("sixgill_id")
+                    logging.info(sixgill_org_id)
                 except KeyError as err:
                     logging.error("PE org is not listed in Cybersixgill.")
                     print(err, file=sys.stderr)
@@ -122,6 +125,9 @@ class Cybersixgill:
         """Get alerts."""
         logging.info("Fetching alert data for %s.", org_id)
 
+        # if org_id not in ["DHS_FLETC","EAC","DOC_CENSUS","DOL_BLS","VA","HUD","NSF","OPM","DHS_CIS","SSA","NASA","DOC_BIS","DOC_NOAA","DOC_OS","DOC_OIG"]:
+        #     return 1
+
         # Fetch alert data with sixgill_org_id
         try:
             alerts_df = alerts(sixgill_org_id)
@@ -145,11 +151,14 @@ class Cybersixgill:
             print(org_assets_dict)
             print(org_assets_dict)
             for i, row in alerts_df.iterrows():
+                print(org_id)
                 try:
                     alert_id = row["sixgill_id"]
+
                     content_snip, asset_mentioned, asset_type = get_alerts_content(
                         sixgill_org_id, alert_id, org_assets_dict
                     )
+
                     alerts_df.at[i, "content_snip"] = content_snip
                     alerts_df.at[i, "asset_mentioned"] = asset_mentioned
                     alerts_df.at[i, "asset_type"] = asset_type
@@ -183,20 +192,56 @@ class Cybersixgill:
         """Get mentions."""
         logging.info("Fetching mention data for %s.", org_id)
 
-        # if org_id in ["SBA","USAID", "DHS_FEMA", "DHS_ICE", "DHS_USSS", "DOE", "DOI", "DOI_NPS", "DOL", "DOT", "DOS", "ED", "EOP", "EPA","GSA","HHS_FDA","HHS_NIH", "NRC", "DHS", "DHS_TSA", "DOC","DOJ","HHS","USDA","DOC_NIST", "DOC_USPTO", "DHS_NPPD", "DHS_ST", "USTDA","DOC_BEA","TREASURY","TREASURY_AUC","CFPB","DHS_FLETC","HUD", "DHS_CIS","OPM", "NSF", "VA", "DOL_BLS", "DOC_NTIA", "SSS", "EAC", "DOC_CENSUS"]:
-        #     return 1
         # Fetch org aliases from Cybersixgill
         try:
             aliases = alias_organization(sixgill_org_id)
         except Exception as e:
             logging.error("Failed fetching aliases for %s", org_id)
+            print(traceback.format_exc())
             logging.error(e)
             return 1
 
         # Fetch mention data
         try:
+            # if "DHS" in aliases:
+            #     aliases.remove("DHS")
+            # if "NRC" in aliases:
+            #     aliases.remove("NRC")
+            if org_id == "DOI_OS":
+                aliases = [
+                    "DOI Office of the Secretary",
+                    "Department of the Interior Office of the Secretary",
+                    "Department of Interior Office of the Secretary",
+                    "Interior Office of the Secretary",
+                ]
+            if "BLM" in aliases:
+                aliases.remove("BLM")
+            if "ED" in aliases:
+                aliases.remove("ED")
+            if "PT" in aliases:
+                aliases.remove("PT")
+            if "OCC" in aliases:
+                aliases.remove("OCC")
+            if "PC" in aliases:
+                aliases.remove("PC")
+            if "EPA" in aliases:
+                aliases = ["EPA"]
+            if "HHS" in aliases:
+                aliases.remove("HHS")
+            if "BLS" in aliases:
+                aliases.remove("BLS")
+            if "DOI" in aliases:
+                aliases.remove("DOI")
+            if "DOE" in aliases:
+                aliases.remove("DOE")
             if "SSS" in aliases:
                 aliases.remove("SSS")
+            if "DOT" in aliases:
+                aliases.remove("DOT")
+            if "DOS" in aliases:
+                aliases.remove("DOS")
+            if "SBA" in aliases:
+                aliases.remove("SBA")
             if "SSA" in aliases or "ssa" in aliases:
                 aliases.remove("ssa")
                 aliases.remove("SSA")
@@ -238,12 +283,13 @@ class Cybersixgill:
         """Get credentials."""
         logging.info("Fetching credential data for %s.", org_id)
 
-        if org_id in ["DHS"]:
-            return 1
-            
+        # if org_id in ["DHS","VA","DOJ"]:
+        #     return 1
+
         # Fetch org root domains from Cybersixgill
         try:
             roots = root_domains(sixgill_org_id)
+            logging.info(f"Got roots:{roots}")
         except Exception as e:
             logging.error("Failed fetching root domains for %s", org_id)
             logging.error(e)
