@@ -121,9 +121,9 @@ def test_reports_bad_log_level():
         assert return_code == 1, "main() should exit with error"
 
 
-
 # TODO: Test data cleanup in metrics for each source
 # (Credentials, Domain Masq, Shodan, Cybersixgill)
+
 
 @pytest.fixture
 def client():
@@ -149,4 +149,3 @@ def test_stakeholder_page(client):
     resp = client.get("/stakeholder")
     assert resp.status_code == 200
     assert b"Stakeholder" in resp.data
-

@@ -199,7 +199,7 @@ class Cybersixgill:
             return 1
 
         if creds_df.empty:
-            logging.error("No credentials for %s", org_id)
+            LOGGER.error("No credentials for %s", org_id)
             return 1
 
         # Change empty and ambiguous breach names

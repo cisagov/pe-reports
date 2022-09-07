@@ -10,12 +10,9 @@ import pandas as pd
 import pytest
 
 # cisagov Libraries
-
+from pe_reports import CENTRAL_LOGGING_FILE
 import pe_source.cybersixgill
 import pe_source.data.sixgill.api
-
-from pe_reports import CENTRAL_LOGGING_FILE
-
 import pe_source.pe_scripts
 import pe_source.shodan
 
