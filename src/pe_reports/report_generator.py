@@ -57,21 +57,21 @@ def embed(
 
     # Insert link to CSV data in summary page of PDF.
     # Use coordinates to position them on the bottom.
-    p1 = fitz.Point(110, 695)
-    p2 = fitz.Point(240, 695)
-    p3 = fitz.Point(375, 695)
-    p5 = fitz.Point(500, 695)
+    p1 = fitz.Point(71, 632)
+    p2 = fitz.Point(71, 660)
+    p3 = fitz.Point(71, 688)
+    p5 = fitz.Point(71, 716)
 
     # Embed and add push-pin graphic
     page.add_file_annot(
-        p1, cc, "compromised_credentials.xlsx", desc="Open up CSV", icon="PushPin"
+        p1, cc, "compromised_credentials.xlsx", desc="Open xlsx", icon="Paperclip"
     )
     page.add_file_annot(
-        p2, da, "domain_alerts.xlsx", desc="Open up CSV", icon="PushPin"
+        p2, da, "domain_alerts.xlsx", desc="Open xlsx", icon="Paperclip"
     )
-    page.add_file_annot(p3, ma, "vuln_alerts.xlsx", desc="Open up xlsx", icon="PushPin")
+    page.add_file_annot(p3, ma, "vuln_alerts.xlsx", desc="Open xlsx", icon="Paperclip")
     page.add_file_annot(
-        p5, mi, "mention_incidents.xlsx", desc="Open up CSV", icon="PushPin"
+        p5, mi, "mention_incidents.xlsx", desc="Open xlsx", icon="Paperclip"
     )
 
     # Save doc and set garbage=4 to reduce PDF size using all 4 methods:
@@ -127,6 +127,8 @@ def generate_reports(datestring, output_directory):
             org_name = org[1]
             org_code = org[2]
 
+            if org_code not in ["DOI"]:
+                continue
             logging.info("Running on %s", org_code)
 
             # Create folders in output directory

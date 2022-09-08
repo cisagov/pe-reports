@@ -32,7 +32,8 @@ from werkzeug.utils import secure_filename
 from nltk import pos_tag, word_tokenize
 import psycopg2
 import psycopg2.extras
-from pygtail import Pygtail
+
+# from pygtail import Pygtail
 import requests
 import spacy
 

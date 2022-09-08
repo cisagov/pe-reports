@@ -7,6 +7,7 @@ import os
 
 # Third-Party Libraries
 import chevron
+from numpy import source
 
 from .charts import Charts
 
@@ -93,11 +94,11 @@ def buildTable(
 
 def buildAppendixList(df):
     """Build report appendix."""
-    html = "<div> \n"
+    html = "<div>"
 
     for row in df.itertuples(index=False):
-        html += """<p class="content"><b style="font-size: 15px;"><a name="{link_name}"></a>{breach_name}</b><br>{description}
-        </p>\n""".format(
+        html += """<ul><li class="content"><b style="font-size: 11pt; color:black;"><a name="{link_name}"></a>{breach_name}</b>: {description}
+        </li></ul>\n""".format(
             breach_name=row[0], description=row[1], link_name=row[0].replace(" ", "_")
         )
     html += "\n</div>"
@@ -110,8 +111,8 @@ def credential(
     """Build exposed credential page."""
     Credential = Credentials(trending_start_date, start_date, end_date, org_uid)
     # Build exposed credential stacked bar chart
-    width = 24
-    height = 9
+    width = 16.51
+    height = 10
     name = "inc_date_df"
     title = "Trending Exposures by Week"
     x_label = "Week Reported"
@@ -127,7 +128,10 @@ def credential(
     )
     cred_date_chart.line_chart()
     breach_table = buildTable(
-        Credential.breach_details(), ["table"], link_to_appendix=True
+        Credential.breach_details(),
+        ["table"],
+        [30, 20, 20, 20, 10],
+        link_to_appendix=True,
     )
 
     creds_dict = {
@@ -140,7 +144,7 @@ def credential(
 
     if len(breach_appendix) > 0:
         # breach_appendix_list = np.array_split(breach_appendix.reset_index(drop=True),2)
-        rows = 6
+        rows = 12
         n_pages = int(len(breach_appendix) / rows)
         frames = [
             breach_appendix.iloc[i * rows : (i + 1) * rows].copy()
@@ -160,9 +164,17 @@ def credential(
         i = 0
         for chunk in frames:
             key = "breachAppendix" + str(i)
+            if i != 0:
+                appendix_html = (
+                    "<div>             <pdf:nextpage />         </div> " + appendix_html
+                )
+                appendix_html = appendix_html.replace(
+                    '<p class="content"><br><b style="font-size: 11pt; color: black;">Credential Breach                 Details:</b>         </p>',
+                    "",
+                )
             appendix_html_1 = appendix_html % (key)
-
-            source_html = source_html + appendix_html_1
+            idx = source_html.index("<!-- Additional Information -->     ")
+            source_html = source_html[:idx] + appendix_html_1 + source_html[idx:]
             creds_dict[key] = buildAppendixList(chunk)
             i += 1
 
@@ -191,7 +203,7 @@ def mal_vuln(chevron_dict, start_date, end_date, org_uid, source_html):
     """Build Malwares and Vulnerabilities page."""
     Malware_Vuln = Malware_Vulns(start_date, end_date, org_uid)
     # Build insecure protocol horizontal bar chart
-    width = 9
+    width = 16.51
     height = 5.3
     name = "pro_count"
     title = ""
@@ -208,7 +220,7 @@ def mal_vuln(chevron_dict, start_date, end_date, org_uid, source_html):
     )
     protocol_chart.h_bar()
     # Build unverified vulnerability horizontal bar chart
-    width = 9
+    width = 16.51
     height = 9
     name = "unverif_vuln_count"
     title = ""
@@ -250,7 +262,7 @@ def mal_vuln(chevron_dict, start_date, end_date, org_uid, source_html):
         verif_vulns_summary_table = buildTable(
             verif_vulns_summary,
             ["table"],
-            [15, 15, 15, 55],
+            [20, 20, 15, 45],
             link_destination=True,
         )
         try:
@@ -263,7 +275,8 @@ def mal_vuln(chevron_dict, start_date, end_date, org_uid, source_html):
         except FileNotFoundError:
             logging.error("Template cannot be found. It must be named: '%s'", template)
             return 1
-        source_html = source_html + vuln_html
+        idx = source_html.index("<!-- Additional Information -->     ")
+        source_html = source_html[:idx] + vuln_html + source_html[idx:]
         vulns_dict["verif_vulns_summary"] = verif_vulns_summary_table
 
     chevron_dict.update(vulns_dict)
@@ -280,8 +293,8 @@ def dark_web(chevron_dict, trending_start_date, start_date, end_date, org_uid):
     """Dark Web Mentions."""
     Cyber6 = Cyber_Six(trending_start_date, start_date, end_date, org_uid)
     # Build dark web mentions over time line chart
-    width = 18.5
-    height = 8
+    width = 16.51
+    height = 12
     name = "web_only_df_2"
     title = ""
     x_label = "Dark Web Mentions"
@@ -312,7 +325,7 @@ def dark_web(chevron_dict, trending_start_date, start_date, end_date, org_uid):
     invite_only_markets_table = buildTable(
         Cyber6.invite_only_markets(), ["table"], [50, 50]
     )
-    top_cves_table = buildTable(Cyber6.top_cve_table(), ["table"], [15, 70, 15])
+    top_cves_table = buildTable(Cyber6.top_cve_table(), ["table"], [25, 60, 15])
 
     dark_web_dict = {
         "darkWeb": Cyber6.dark_web_count(),
