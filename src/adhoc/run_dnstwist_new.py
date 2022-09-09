@@ -89,12 +89,11 @@ from data.run import (
     getSubdomain,
 )
 
-"""asdf"""
+"""Connect to Database"""
 PE_conn = connect("")
 
 # Get data source
 source_uid = getDataSource(PE_conn, "DNSTwist")[0]
-# source_uid = '7ad1b168-981d-11ec-a102-02589a36c9d7'
 print("source_uid")
 print(source_uid)
 
