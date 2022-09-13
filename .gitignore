@@ -16,3 +16,4 @@ src/pe_reports/*.html
 src/pe_reports/data/database.ini
 build/*
 dist/*
+pe-reports/src/pe_reports/data/rabbitmq/*
