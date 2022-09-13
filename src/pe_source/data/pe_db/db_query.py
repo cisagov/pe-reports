@@ -64,14 +64,36 @@ def get_orgs():
 def get_ips(org_uid):
     """Get IP data."""
     conn = connect()
-    sql = """SELECT wa.asset as ip_address
-            FROM web_assets wa
-            WHERE wa.organizations_uid = %(org_uid)s
-            and wa.report_on = True
-            """
-    df = pd.read_sql(sql, conn, params={"org_uid": org_uid})
-    ips = list(df["ip_address"].values)
+    sql1 = """SELECT i.ip_hash, i.ip, ct.network FROM ips i
+    JOIN cidrs ct on ct.cidr_uid = i.origin_cidr
+    JOIN organizations o on o.organizations_uid = ct.organizations_uid
+    where o.organizations_uid = %(org_uid)s
+    and i.origin_cidr is not null
+    and i.shodan_results is True;"""
+    df1 = pd.read_sql(sql1, conn, params={"org_uid": org_uid})
+    ips1 = list(df1["ip"].values)
+
+    sql2 = """select i.ip_hash, i.ip
+    from ips i
+    join ips_subs is2 ON i.ip_hash = is2.ip_hash
+    join sub_domains sd on sd.sub_domain_uid = is2.sub_domain_uid
+    join root_domains rd on rd.root_domain_uid = sd.root_domain_uid
+    JOIN organizations o on o.organizations_uid = rd.organizations_uid
+    where o.organizations_uid = %(org_uid)s
+    and i.shodan_results is True;"""
+    df2 = pd.read_sql(sql2, conn, params={"org_uid": org_uid})
+    ips2 = list(df2["ip"].values)
+
+    in_first = set(ips1)
+    in_second = set(ips2)
+
+    in_second_but_not_in_first = in_second - in_first
+
+    ips = ips1 + list(in_second_but_not_in_first)
+    print(ips)
+    print(len(ips))
     conn.close()
+
     return ips
 
 
@@ -201,28 +223,53 @@ def insert_sixgill_mentions(df):
         ]
     except Exception as e:
         logging.error(e)
-        df = df[
-            [
-                "organizations_uid",
-                "data_source_uid",
-                "category",
-                "collection_date",
-                "content",
-                "creator",
-                "date",
-                "sixgill_mention_id",
-                "lang",
-                "post_id",
-                "rep_grade",
-                "site",
-                "site_grade",
-                "sub_category",
-                "title",
-                "type",
-                "url",
-                "comments_count",
+        try:
+            df = df[
+                [
+                    "organizations_uid",
+                    "data_source_uid",
+                    "category",
+                    "collection_date",
+                    "content",
+                    "creator",
+                    "date",
+                    "sixgill_mention_id",
+                    "lang",
+                    "post_id",
+                    "rep_grade",
+                    "site",
+                    "site_grade",
+                    "sub_category",
+                    "title",
+                    "type",
+                    "url",
+                    "comments_count",
+                ]
             ]
-        ]
+        except Exception as e:
+            logging.error(e)
+            logging.info("Proceeded without sub_cat and commetns count.")
+            df = df[
+                [
+                    "organizations_uid",
+                    "data_source_uid",
+                    "category",
+                    "collection_date",
+                    "content",
+                    "creator",
+                    "date",
+                    "sixgill_mention_id",
+                    "lang",
+                    "post_id",
+                    "rep_grade",
+                    "site",
+                    "site_grade",
+                    "title",
+                    "type",
+                    "url",
+                ]
+            ]
+
     # Remove any "[\x00|NULL]" characters
     df = df.apply(
         lambda col: col.str.replace(r"[\x00|NULL]", "", regex=True)

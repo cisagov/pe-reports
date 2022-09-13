@@ -1,0 +1,69 @@
+{% extends "base.html" %} {% block content %}
+
+<div class="container">
+  <div class="row">
+    <div class="d-flex justify-content-center Jumbotron">
+      <h1>Welcome to P&E Reports</h1>
+
+      <!--<img src="../static/" alt="">-->
+    </div>
+    <div class="col-lg-3">
+      <img
+        src="{{ url_for('static', filename='CISAImage.png') }}"
+        alt="CISA seal image"
+        width="200"
+        height="200"
+      />
+    </div>
+    <input type="hidden" value="{% block title %} Home {% endblock%}" />
+
+    <div class="col-lg-9 homeBG homebanner" style="background-color: white">
+      <p>
+        Posture and Exposure (P&E) offers stakeholders an opportunity to view
+        their organizational risk from the viewpoint of the adversary. We utilize
+        passive reconnaissance services, dark webanalysis, and open-source tools
+        to identify spoofing in order to generate a risk profile report thatis
+        delivered on a regular basis.
+      </p>
+    </div>
+    <br />
+    <div class="columns is-centered is-mobile">
+      <div class="column is-dark notification is-four-fifths">
+        <div class="is-size-7 has-text-warning" id="display">
+          <ul id="display_list"></ul>
+        </div>
+      </div>
+    </div>
+    <!--    <div class="row col-lg-6 offset-lg-3 " style="background-color: white;margin-top: 15px;"><pre id="output"></pre></div>-->
+  </div>
+
+  <!--End of container-->
+  <script>
+    function showDiv() {
+      let T = document.getElementById("TestsDiv"),
+        displayValue = "";
+      if (T.style.display == "") displayValue = "none";
+      T.style.display = displayValue;
+    }
+
+    function loading() {
+      $("#loading").show();
+      $("#content").hide();
+    }
+
+    $(document).ready(function () {
+      console.log("Im ready ");
+
+      showDiv();
+
+      setTimeout(function () {
+        $("#messageDiv").fadeOut("fast");
+      }, 5000);
+      $(window).load(function () {
+        $("#loading").hide();
+      });
+    });
+  </script>
+
+  {% endblock %}
+</div>

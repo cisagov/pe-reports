@@ -8,6 +8,9 @@ import time
 import pandas as pd
 import requests
 
+# cisagov Libraries
+from pe_source.data.pe_db.config import cybersix_token
+
 from .api import (
     alerts_content,
     alerts_count,
@@ -17,7 +20,6 @@ from .api import (
     intel_post,
     org_assets,
 )
-from pe_source.data.pe_db.config import cybersix_token
 
 
 def alias_organization(org_id):
@@ -89,8 +91,10 @@ def mentions(date, aliases):
             # Recommended "from" and "result_size" is 50. The maximum is 400.
             while count < 7:
                 try:
-                    resp = intel_post(token, query, frm=i, scroll=False, result_size=200)
-                    i += 200
+                    resp = intel_post(
+                        token, query, frm=i, scroll=False, result_size=100
+                    )
+                    i += 100
                     logging.info("Getting %s of %s....", i, count_total)
                     intel_items = resp["intel_items"]
                     df_mentions = pd.DataFrame.from_dict(intel_items)
@@ -110,7 +114,9 @@ def mentions(date, aliases):
             # Recommended "from" and "result_size" is 50. The maximum is 400.
             while count < 7:
                 try:
-                    resp = intel_post(token, query, frm=i, scroll=False, result_size=300)
+                    resp = intel_post(
+                        token, query, frm=i, scroll=False, result_size=300
+                    )
                     i += 300
                     logging.info("Getting %s of %s....", i, count_total)
                     intel_items = resp["intel_items"]
@@ -131,6 +137,7 @@ def alerts(org_id):
     """Get actionable alerts for an organization."""
     token = cybersix_token()
     count = alerts_count(token, org_id)
+    logging.info(count)
     count_total = count["total"]
     logging.info("Total Alerts: %s", count_total)
 
