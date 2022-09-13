@@ -3,7 +3,7 @@
 import sys
 
 # Third-Party Libraries
-from .config import config
+from data.config import config
 import pandas as pd
 import psycopg2
 from psycopg2 import OperationalError

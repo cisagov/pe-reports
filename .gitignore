@@ -14,6 +14,7 @@ __pycache__
 *.egg-info
 src/pe_reports/*.html
 src/pe_reports/data/database.ini
+src/adhoc/data/database.ini
 build/*
 dist/*
 pe-reports/src/pe_reports/data/rabbitmq/*
