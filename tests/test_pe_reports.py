@@ -122,7 +122,7 @@ def test_reports_bad_log_level():
 
 
 # TODO: Test data cleanup in metrics for each source
-# (Credentials, Domain Masq, Shodan, Cybersixgill)
+# Issue - https://github.com/cisagov/pe-reports/issues/264
 
 
 @pytest.fixture
