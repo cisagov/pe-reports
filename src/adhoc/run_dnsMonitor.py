@@ -61,10 +61,10 @@ print(df)
 
 # Sync domainid's with org names
 df["org"] = "NA"
-for i, row in org_names_df.iterrows():
-    for i2, row2 in df.iterrows():
-        if row["domain_name"] == row2["domainName"]:
-            df.at[i2, "org"] = row["org"]
+for org_names_index, org_names in org_names_df.iterrows():
+    for org_names_index2, org_names2 in df.iterrows():
+        if org_names["domain_name"] == org_names2["domainName"]:
+            df.at[org_names_index2, "org"] = org_names["org"]
 
 """ Get Orgs """
 orgs = query_orgs("")
@@ -72,9 +72,9 @@ orgs = query_orgs("")
 from_date, to_date = get_dates()
 
 # Iterate through each org
-for i, row in orgs.iterrows():
+for org_index, org_row in orgs.iterrows():
     # Get a list of the org's DomainIds that DNS Monitor assigned
-    org = row["name"]
+    org = org_row["name"]
     # if (
     #     org != "National Aeronautics and Space Administration"
     #     and org != "Nuclear Regulatory Commission"
@@ -111,8 +111,8 @@ for i, row in orgs.iterrows():
         # df["mx_records"] = []
         # df["ns_records"] = []
         # df["ip_address"] = ""
-        for i, r in alerts_df.iterrows():
-            root_domain = r["rootDomain"]
+        for alert_index, alert_row in alerts_df.iterrows():
+            root_domain = alert_row["rootDomain"]
             sub_domain = getSubdomain(root_domain)
             # DNSMonitor only monitor roots and table relationships are org --> root_domain --> subdomain --> domain_permutations --> domain_alerts
             # So the subdomain table needs to have roots in them as well as a "sub_domain"
@@ -125,10 +125,10 @@ for i, row in orgs.iterrows():
 
             # Add subdomain_uid to associated alert
             sub_domain_uid = sub_domain[0]
-            alerts_df.at[i, "sub_domain_uid"] = sub_domain_uid
+            alerts_df.at[alert_index, "sub_domain_uid"] = sub_domain_uid
 
             # Get DNS records for each domain permutation
-            dom_perm = r["domainPermutation"]
+            dom_perm = alert_row["domainPermutation"]
             # NS
             try:
                 ns_list = []
@@ -160,10 +160,10 @@ for i, row in orgs.iterrows():
                 ipv6 = ""
 
             # Add records to df
-            alerts_df.at[i, "mail_server"] = str(mx_list)
-            alerts_df.at[i, "name_server"] = str(ns_list)
-            alerts_df.at[i, "ipv4"] = ipv4
-            alerts_df.at[i, "ipv6"] = ipv6
+            alerts_df.at[alert_index, "mail_server"] = str(mx_list)
+            alerts_df.at[alert_index, "name_server"] = str(ns_list)
+            alerts_df.at[alert_index, "ipv4"] = ipv4
+            alerts_df.at[alert_index, "ipv6"] = ipv6
 
         # Set the data_source_uid
         source = getDataSource("DNSMonitor")
@@ -186,7 +186,7 @@ for i, row in orgs.iterrows():
                 "newValue": "new_value",
             }
         )
-        alerts_df["organizations_uid"] = row["organizations_uid"]
+        alerts_df["organizations_uid"] = org_row["organizations_uid"]
         dom_perm_df = alerts_df[
             [
                 "organizations_uid",

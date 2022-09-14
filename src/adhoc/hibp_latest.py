@@ -50,6 +50,7 @@ def query_CF_subs(conn, CF_org_id):
     df = pd.read_sql_query(sql, conn, params={"org_id": CF_org_id})
     return df
 
+
 def query_PE_subs(conn, PE_org_id):
     """Query Posture and Exposure subdomains."""
     sql = """
@@ -57,8 +58,9 @@ def query_PE_subs(conn, PE_org_id):
         FROM sub_domains sd
         join root_domains rd on rd.root_domain_uid = sd.root_domain_uid
         where rd.organizations_uid = %(org_id)s;"""
-    df = pd.read_sql_query(sql, conn, params = {"org_id": PE_org_id})
+    df = pd.read_sql_query(sql, conn, params={"org_id": PE_org_id})
     return df
+
 
 def getDataSource(conn, source):
     """Get the data source."""
@@ -226,6 +228,7 @@ def execute_hibp_breach_values(conn, jsonList, table):
         print(err)
         cursor.close()
 
+
 def run_hibp(org_df):
     PE_conn = connect("", PE_CONN_PARAMS)
     try:
@@ -256,7 +259,7 @@ def run_hibp(org_df):
             "data_source_uid": source_uid,
         }
         b_list.append(breach_dict)
-    
+
     execute_hibp_breach_values(PE_conn, b_list, "public.credential_breaches")
     sql = """SELECT breach."breach_name", breach."credential_breaches_uid" from public.credential_breaches as breach"""
     breaches_UIDs = query_db(PE_conn, sql)
@@ -265,10 +268,10 @@ def run_hibp(org_df):
     for UID in breaches_UIDs:
         breach_UIDS_Dict.update({UID["breach_name"]: UID["credential_breaches_uid"]})
 
-    for i, row in org_df.iterrows():
-        pe_org_uid = row["organizations_uid"]
-        org_name = row["name"]
-        cyhy_id = row["cyhy_db_name"]
+    for org_index, org_row in org_df.iterrows():
+        pe_org_uid = org_row["organizations_uid"]
+        org_name = org_row["name"]
+        cyhy_id = org_row["cyhy_db_name"]
         print(cyhy_id)
 
         if cyhy_id not in orgs_to_run and orgs_to_run:
@@ -276,19 +279,20 @@ def run_hibp(org_df):
         print(f"Running on {org_name}")
 
         subs = query_PE_subs(PE_conn, pe_org_uid).sort_values(
-            by="sub_domain", key=lambda col: col.str.count("."))
+            by="sub_domain", key=lambda col: col.str.count(".")
+        )
 
         print(subs)
 
-        for i, sub in subs.iterrows():
-            sd = sub['sub_domain']
-            if sd.endswith('.gov'):
+        for sub_index, sub in subs.iterrows():
+            sd = sub["sub_domain"]
+            if sd.endswith(".gov"):
                 print(f"Finding breaches for {sd}")
             else:
                 continue
             hibp_resp = get_emails(sd)
             if hibp_resp:
-                print(emails)
+                # print(emails)
                 # flat = flatten_data(emails, sub['name'], compiled_breaches)
                 creds_list = []
                 for email, breach_list in hibp_resp.items():
@@ -311,11 +315,7 @@ def run_hibp(org_df):
                         creds_list.append(cred)
                 print("there are ", len(creds_list), " creds found")
                 # Insert new creds into the PE DB
-                execute_hibp_emails_values(
-                    PE_conn, creds_list
-                )
-
-
+                execute_hibp_emails_values(PE_conn, creds_list)
 
 
 def main():

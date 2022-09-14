@@ -14,7 +14,7 @@ from pe_reports.data.db_query import connect, show_psycopg2_exception
 
 def execute_ips(conn, dataframe):
     """Insert the ips into the ips table in the database and link them to the associated cidr."""
-    for i, row in dataframe.iterrows():
+    for ip_index, ip_row in dataframe.iterrows():
         try:
             cur = conn.cursor()
             sql = """
@@ -22,7 +22,7 @@ def execute_ips(conn, dataframe):
             ON CONFLICT (ip)
                     DO
                     UPDATE SET origin_cidr = UUID(EXCLUDED.origin_cidr); """
-            cur.execute(sql, (row["ip_hash"], row["ip"], row["origin_cidr"]))
+            cur.execute(sql, (ip_row["ip_hash"], ip_row["ip"], ip_row["origin_cidr"]))
             conn.commit()
         except (Exception, psycopg2.DatabaseError) as err:
             show_psycopg2_exception(err)
@@ -62,8 +62,8 @@ def fill_ips_from_cidrs():
     """For each cidr enumerate all ips and add them to the ips table."""
     cidrs = query_cidrs()
     ips_from_cidrs = []
-    for i, cidr in cidrs.iterrows():
-        
+    for cidr_index, cidr in cidrs.iterrows():
+
         if cidr["insert_alert"] is not None:
             continue
         ips_from_cidrs = ips_from_cidrs + enumerate_ips(

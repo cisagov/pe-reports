@@ -263,10 +263,10 @@ def main():
     breach_UIDS_Dict = {}
     for UID in breaches_UIDs:
         breach_UIDS_Dict.update({UID["breach_name"]: UID["credential_breaches_uid"]})
-    for i, row in PE_orgs.iterrows():
-        pe_org_uid = row["organizations_uid"]
-        org_name = row["name"]
-        cyhy_id = row["cyhy_db_name"]
+    for org_index, org_row in PE_orgs.iterrows():
+        pe_org_uid = org_row["organizations_uid"]
+        org_name = org_row["name"]
+        cyhy_id = org_row["cyhy_db_name"]
 
         if cyhy_id not in orgs_to_run and orgs_to_run:
             continue
@@ -277,7 +277,7 @@ def main():
 
         print(subs)
 
-        for i, sub in subs.iterrows():
+        for sub_index, sub in subs.iterrows():
             print(f"Finding breaches for {sub['name']}")
             hibp_resp = get_emails(sub["name"])
             if hibp_resp:

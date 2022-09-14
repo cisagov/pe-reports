@@ -102,9 +102,9 @@ def enumerate_and_save_subs(root_uid, root_domain):
 def main():
     """Query orgs and run them through the enuemeration function."""
     orgs = get_orgs("")
-    for i, org in orgs.iterrows():
+    for org_index, org in orgs.iterrows():
         roots = query_roots(org["organizations_uid"])
-        for j, root in roots.iterrows():
+        for root_index, root in roots.iterrows():
             enumerate_and_save_subs(root["root_domain_uid"], root["root_domain"])
 
 

@@ -309,8 +309,8 @@ class Malware_Vulns:
         vulns_df = self.vulns_df
         verified_cves = vulns_df["cve"].tolist()
         all_cves = []
-        for i, r in unverif_df.iterrows():
-            for cve in r["potential_vulns_list"]:
+        for unverif_index, unverif_row in unverif_df.iterrows():
+            for cve in unverif_row["potential_vulns_list"]:
                 cve = cve.strip("[]' ")
                 all_cves.append(cve)
         all_cves += verified_cves
@@ -601,10 +601,10 @@ class Cyber_Six:
         shodan_cves = Malware_Vulns(
             self.start_date, self.end_date, self.org_uid
         ).all_cves()
-        for i, r in top_cve_table.iterrows():
-            if r["CVE"] in shodan_cves:
+        for cve_index, cve_row in top_cve_table.iterrows():
+            if cve_row["CVE"] in shodan_cves:
                 print("we got a match")
-                print(r["CVE"])
-                top_cve_table.at[i, "Identified By"] += ",   Shodan"
+                print(cve_row["CVE"])
+                top_cve_table.at[cve_index, "Identified By"] += ",   Shodan"
 
         return top_cve_table

@@ -150,27 +150,27 @@ class Cybersixgill:
             org_assets_dict = all_assets_list(sixgill_org_id)
             print(org_assets_dict)
             print(org_assets_dict)
-            for i, row in alerts_df.iterrows():
+            for alert_index, alert_row in alerts_df.iterrows():
                 print(org_id)
                 try:
-                    alert_id = row["sixgill_id"]
+                    alert_id = alert_row["sixgill_id"]
 
                     content_snip, asset_mentioned, asset_type = get_alerts_content(
                         sixgill_org_id, alert_id, org_assets_dict
                     )
 
-                    alerts_df.at[i, "content_snip"] = content_snip
-                    alerts_df.at[i, "asset_mentioned"] = asset_mentioned
-                    alerts_df.at[i, "asset_type"] = asset_type
+                    alerts_df.at[alert_index, "content_snip"] = content_snip
+                    alerts_df.at[alert_index, "asset_mentioned"] = asset_mentioned
+                    alerts_df.at[alert_index, "asset_type"] = asset_type
                 except Exception as e:
                     logging.error(
                         "Failed fetching a specific alert content for %s", org_id
                     )
                     logging.error(e)
                     print(traceback.format_exc())
-                    alerts_df.at[i, "content_snip"] = ""
-                    alerts_df.at[i, "asset_mentioned"] = ""
-                    alerts_df.at[i, "asset_type"] = ""
+                    alerts_df.at[alert_index, "content_snip"] = ""
+                    alerts_df.at[alert_index, "asset_mentioned"] = ""
+                    alerts_df.at[alert_index, "asset_type"] = ""
             print(alerts_df["asset_mentioned"])
 
         except Exception as e:
@@ -362,9 +362,9 @@ class Cybersixgill:
 
         # Get breach uids and match to credentials
         breach_dict = dict(get_breaches())
-        for i, row in creds_df.iterrows():
-            breach_uid = breach_dict[row["breach_name"]]
-            creds_df.at[i, "credential_breaches_uid"] = breach_uid
+        for cred_index, cred_row in creds_df.iterrows():
+            breach_uid = breach_dict[cred_row["breach_name"]]
+            creds_df.at[cred_index, "credential_breaches_uid"] = breach_uid
 
         # Insert credential data into the PE database
         creds_df = creds_df.rename(
@@ -407,13 +407,13 @@ class Cybersixgill:
             top_cve_df["data_source_uid"] = source_uid
             # Get CVE summary from circl.lu
             top_cve_df["summary"] = ""
-            for index, row in top_cve_df.iterrows():
+            for cve_index, cve_row in top_cve_df.iterrows():
                 try:
-                    resp = cve_summary(row["cve_id"])
+                    resp = cve_summary(cve_row["cve_id"])
                     summary = resp["summary"]
                 except Exception:
                     summary = ""
-                top_cve_df.at[index, "summary"] = summary
+                top_cve_df.at[cve_index, "summary"] = summary
         except Exception as e:
             logging.error("Failed fetching top CVEs.")
             logging.error(e)

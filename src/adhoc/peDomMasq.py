@@ -145,9 +145,9 @@ cf_orgs_dict = cf_orgs_df.set_index("name").agg(list, axis=1).to_dict()
 
 """ Get P&E Orgs """
 orgs = query_orgs("")
-for i, row in orgs.iterrows():
-    pe_org_uid = row["organizations_uid"]
-    org_name = row["name"]
+for org_index, org_row in orgs.iterrows():
+    pe_org_uid = org_row["organizations_uid"]
+    org_name = org_row["name"]
     # if org_name not in ["Department of Housing and Urban Development"]:
     #     continue
     print(pe_org_uid)

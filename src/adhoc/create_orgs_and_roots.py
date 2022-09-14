@@ -35,7 +35,7 @@ def fill_orgs(org_df):
 def add_empty_domains(orgs_df, json_orgs):
     """Add empty domains."""
     roots_list = []
-    for index, org in orgs_df.iterrows():
+    for org_index, org in orgs_df.iterrows():
         print(org)
         # print(org)
         uid = org["organizations_uid"]

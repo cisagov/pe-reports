@@ -53,10 +53,10 @@ def link_ip_from_domain(sub, root_uid, org_uid, data_source):
 
 def connect_ips_from_subs(orgs):
     """For each org, find all ips associated with its sub_domains and link them in the ips_subs table."""
-    for i, org in orgs.iterrows():
+    for org_index, org in orgs.iterrows():
         org_uid = org["organizations_uid"]
         subs = query_subs(str(org_uid))
-        for i, sub in subs.iterrows():
+        for sub_index, sub in subs.iterrows():
             sub_domain = sub["sub_domain"]
             root_uid = sub["root_domain_uid"]
             if sub_domain == "Null_Sub":

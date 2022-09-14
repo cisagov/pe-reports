@@ -134,7 +134,7 @@ try:
         print(e)
         print("Failed to query Crossfeed Orgs")
         quit()
-    for i, CF_org in orgs_df.iterrows():
+    for CF_org_index, CF_org in orgs_df.iterrows():
         org_name = CF_org["name"]
         org_id = CF_org["id"]
         # Connect to PE DB

@@ -14,9 +14,9 @@ def query_cyhy_assets(cyhy_db_id, conn):
     FROM cyhy_db_assets ca
     where ca.org_id = %(org_id)s;
     """
-    
+
     df = pd.read_sql_query(sql, conn, params={"org_id": cyhy_db_id})
-    
+
     return df
 
 
@@ -24,7 +24,7 @@ def fill_cidrs(orgs):
     """Fill CIDRs."""
     network_count = 0
 
-    for i, org in orgs.iterrows():
+    for org_index, org in orgs.iterrows():
         conn = connect()
         # if org['cyhy_db_name'] not in ['DOC', 'DOC_CENSUS']:
         #     continue
@@ -32,7 +32,7 @@ def fill_cidrs(orgs):
         print(org)
         networks = query_cyhy_assets(org["cyhy_db_name"], conn)
         print(networks)
-        for j, network in networks.iterrows():
+        for network_index, network in networks.iterrows():
             network_count += 1
             net = network["network"]
             print(net)

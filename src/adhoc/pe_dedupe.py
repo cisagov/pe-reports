@@ -418,7 +418,7 @@ def main():
 
     orgs = query_orgs("")
 
-    for i, org in orgs.iterrows():
+    for org_index, org in orgs.iterrows():
         if args["ORGS"] and org["cyhy_db_name"] not in args["ORGS"]:
             continue
         if org["cyhy_db_name"] not in ["DOC_OS", "DOC_OIG", "DOC_BIS"]:

@@ -13,7 +13,7 @@ from pe_reports.data.db_query import connect, show_psycopg2_exception, get_orgs_
 
 def execute_ips(conn, dataframe):
     """Insert the ips into the ips table in the database and link them to the associated cidr."""
-    for i, row in dataframe.iterrows():
+    for row_index, row in dataframe.iterrows():
         try:
             cur = conn.cursor()
             sql = """
@@ -30,6 +30,7 @@ def execute_ips(conn, dataframe):
             continue
     print("IPs inserted using execute_values() successfully..")
 
+
 def query_cidrs(org_id):
     """Query Cidr."""
     conn = connect()
@@ -42,6 +43,7 @@ def query_cidrs(org_id):
     df = pd.read_sql(sql, conn, params={"org_id": org_id})
     conn.close()
     return df
+
 
 def enumerate_ips(cidr, cidr_uid):
     """Enumerate all ips for a provided cidr."""
@@ -62,7 +64,7 @@ def fill_ips_from_cidrs(org_id):
     """For each cidr enumerate all ips and add them to the ips table."""
     cidrs = query_cidrs(org_id)
     ips_from_cidrs = []
-    for i, cidr in cidrs.iterrows():
+    for row_index, cidr in cidrs.iterrows():
         if cidr["insert_alert"] is not None:
             continue
         ips_from_cidrs = ips_from_cidrs + enumerate_ips(
@@ -79,11 +81,12 @@ def fill_ips_from_cidrs(org_id):
 def main():
     orgs = get_orgs_df()
     # orgs = orgs[orgs['cyhy_db_name'] == 'DOI_OS-OAS']
-    orgs = orgs[orgs['cyhy_db_name'].isin(['DHS', 'TREASURY', 'TREASURY_AUC', 'HHS'])]
+    orgs = orgs[orgs["cyhy_db_name"].isin(["DHS", "TREASURY", "TREASURY_AUC", "HHS"])]
     print(orgs)
     # if len(orgs == 1):
-    for i, org in orgs.iterrows():
-        fill_ips_from_cidrs(org['organizations_uid'])
+    for org_index, org in orgs.iterrows():
+        fill_ips_from_cidrs(org["organizations_uid"])
+
 
 if __name__ == "__main__":
     main()

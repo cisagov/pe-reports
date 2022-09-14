@@ -116,9 +116,9 @@ print(source_uid)
 orgs = query_orgs_rev()
 print(orgs["name"])
 
-for i, row in orgs.iterrows():
-    pe_org_uid = row["organizations_uid"]
-    org_name = row["name"]
+for org_index, org_row in orgs.iterrows():
+    pe_org_uid = org_row["organizations_uid"]
+    org_name = org_row["name"]
 
     # if org_name not in ["National Institute of Standards and Technology"]:
     #     continue
@@ -135,13 +135,13 @@ for i, row in orgs.iterrows():
         print(rd_df)
         domain_list = []
         perm_list = []
-        for i, row in rd_df.iterrows():
-            root_domain = row["root_domain"]
+        for rd_index, rd_row in rd_df.iterrows():
+            root_domain = rd_row["root_domain"]
             if root_domain != "dhs.gov":
                 continue
             if root_domain == "Null_Root":
                 continue
-            print(row["root_domain"])
+            print(rd_row["root_domain"])
 
             # Run dnstwist on each root domain
             cmd = f"dnstwist -r --tld common_tlds.dict -f json {root_domain} -t 8"

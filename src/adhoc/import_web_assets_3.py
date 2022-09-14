@@ -20,7 +20,7 @@ def query_cyhy_assets(cyhy_db_id):
     return df
 
 
-for i, org in orgs.iterrows():
+for org_index, org in orgs.iterrows():
 
     print(f"Importing assets for {org['name']}")
     try:
@@ -29,26 +29,26 @@ for i, org in orgs.iterrows():
         continue
 
     asset_list = []
-    for i, row in new_assets.iterrows():
-        source_uid = getDataSource(row["Source"])[0]
+    for asset_index, asset_row in new_assets.iterrows():
+        source_uid = getDataSource(asset_row["Source"])[0]
         asset_list.append(
             {
-                "asset_type": row["Type"],
-                "asset": row["Assets"],
+                "asset_type": asset_row["Type"],
+                "asset": asset_row["Assets"],
                 "verified": False,
                 "organizations_uid": org["organizations_uid"],
-                "asset_origin": row["Source"],
+                "asset_origin": asset_row["Source"],
                 "report_on": True,
                 "data_source_uid": source_uid,
             }
         )
     cyhy_assets = query_cyhy_assets(org["cyhy_db_name"])
     source_uid = getDataSource("cyhy_db")[0]
-    for i, row in cyhy_assets.iterrows():
+    for cyhy_asset_index, cyhy_asset_row in cyhy_assets.iterrows():
         asset_list.append(
             {
                 "asset_type": "cidrv4",
-                "asset": row["network"],
+                "asset": cyhy_asset_row["network"],
                 "verified": False,
                 "organizations_uid": org["organizations_uid"],
                 "asset_origin": "cyhy_db",

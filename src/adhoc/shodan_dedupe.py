@@ -167,7 +167,7 @@ def cidr_dedupe(cidrs, api, org_type):
     """Dedupe CIDR."""
     ip_obj = []
     results = []
-    for i, cidr in cidrs.iterrows():
+    for cidr_index, cidr in cidrs.iterrows():
         query = f"net:{cidr['network']}"
         result = search(api, query, ip_obj, cidr["cidr_uid"], org_type)
         results.append(result)
@@ -364,7 +364,7 @@ def dedupe(orgs):
     # TODO: Add key
     key = ""
     api = shodan.Shodan(key)
-    for i, org in orgs.iterrows():
+    for org_index, org in orgs.iterrows():
 
         logging.info(f"Running on {org['name']}")
         conn = connect()

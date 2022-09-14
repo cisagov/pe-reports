@@ -132,14 +132,14 @@ def set_org_to_report_on(cyhy_db_id):
         logging.error("No org found for that cyhy id")
         return 0
 
-    for i, row in df.iterrows():
-        if row["report_on"] == True and row["premium_report"] == True:
+    for org_index, org_row in df.iterrows():
+        if org_row["report_on"] == True and org_row["premium_report"] == True:
             continue
         cursor = conn.cursor()
         sql = """UPDATE organizations
                 SET report_on = True, premium_report = True
                 WHERE organizations_uid = %s"""
-        uid = row["organizations_uid"]
+        uid = org_row["organizations_uid"]
         cursor.execute(sql, [uid])
         conn.commit()
         cursor.close()
@@ -591,13 +591,13 @@ def stakeholder_full():
         elif len(orgs) == 1:
             try:
                 # Add roots and enumerate for subs
-                for i, org in orgs.iterrows():
+                for org_index, org in orgs.iterrows():
                     insert_roots(org, custRootDomain)
                     logging.info(
                         "root domains have been successfully added to the database"
                     )
                     roots = query_roots(org["organizations_uid"])
-                    for j, root in roots.iterrows():
+                    for root_index, root in roots.iterrows():
                         enumerate_and_save_subs(
                             root["root_domain_uid"], root["root_domain"]
                         )
@@ -681,21 +681,21 @@ def fill_IPs():
         "/var/www/pe-reports/src/pe_reports/stakeholder_full/aug_24_domains.csv"
     )
     count = 0
-    for i, r in df.iterrows():
+    for org_index, org_row in df.iterrows():
         try:
 
-            logging.info(f"Running on {r['org_code']}")
-            allExecutives = list(theExecs(r["exec_url"]))
-            orgs = set_org_to_report_on(r["org_code"])
-            logging.info(r["root_domain"].split(","))
-            for i, org in orgs.iterrows():
-                insert_roots(org, r["root_domain"].split(","))
+            logging.info(f"Running on {org_row['org_code']}")
+            allExecutives = list(theExecs(org_row["exec_url"]))
+            orgs = set_org_to_report_on(org_row["org_code"])
+            logging.info(org_row["root_domain"].split(","))
+            for new_org_index, new_org_row in orgs.iterrows():
+                insert_roots(new_org_row, org_row["root_domain"].split(","))
                 logging.info(
                     "root domains have been successfully added to the database"
                 )
-                roots = query_roots(org["organizations_uid"])
+                roots = query_roots(new_org_row["organizations_uid"])
 
-            for j, root in roots.iterrows():
+            for root_index, root in roots.iterrows():
                 enumerate_and_save_subs(root["root_domain_uid"], root["root_domain"])
             logging.info("subdomains have been successfully added to the database")
 
@@ -715,16 +715,16 @@ def fill_IPs():
 
             allValidIP = get_cidrs_and_ips(orgs["organizations_uid"].iloc[0])
             logging.info("Going to start Cybersixgill")
-            aliases = r["aliases"].split(",")
+            aliases = org_row["aliases"].split(",")
             logging.info(aliases)
-            logging.info(r["root_domain"])
-            logging.info(r["org_code"])
+            logging.info(org_row["root_domain"])
+            logging.info(org_row["org_code"])
             logging.info(allExecutives)
 
             setNewCSGOrg(
-                r["org_code"],
+                org_row["org_code"],
                 aliases,
-                r["root_domain"].split(","),
+                org_row["root_domain"].split(","),
                 allValidIP,
                 allExecutives,
             )
@@ -734,7 +734,7 @@ def fill_IPs():
             logging.info("done")
             count += 1
         except:
-            logging.error(f"{r['org_code']} failed.")
+            logging.error(f"{org_row['org_code']} failed.")
             logging.error(traceback.format_exc())
     logging.info(f"Finished {count} orgs.")
 

@@ -119,7 +119,7 @@ def main():
 
         orgs = query_orgs_rev()
 
-        for i, org in orgs.iterrows():
+        for org_index, org in orgs.iterrows():
             if args["ORGS"] and org["cyhy_db_name"] not in args["ORGS"]:
                 continue
 
@@ -129,11 +129,11 @@ def main():
             org_uid = org["organizations_uid"]
             roots = query_roots(PE_conn, org_uid)
             roots_list = []
-            for i, r in roots.iterrows():
-                roots_list.append(r["root_domain"])
+            for root_index, root in roots.iterrows():
+                roots_list.append(root["root_domain"])
             ips_df = query_ips(org_uid)
             print(roots_list)
-            for j, ip in ips_df.iterrows():
+            for ip_index, ip in ips_df.iterrows():
                 ip_domain_compare(ip, roots_list, org_uid)
             close(PE_conn)
 

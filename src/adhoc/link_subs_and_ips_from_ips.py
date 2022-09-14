@@ -114,7 +114,7 @@ def run_ip_chunk(org, ips, thread):
     start_time = time.time()
     last_50 = time.time()
     failed_ips = []
-    for j, ip in ips.iterrows():
+    for ip_index, ip in ips.iterrows():
         count += 1
         if count % 50 == 0:
             print(f"{thread} Currently Running ips: {count}/{len(ips)}")
@@ -133,7 +133,7 @@ def run_ip_chunk(org, ips, thread):
 
 def connect_subs_from_ips(orgs):
     """For each org find all domains that are associated to an ip and create link in the ip_subs table."""
-    for i, org in orgs.iterrows():
+    for org_index, org in orgs.iterrows():
         print(f"Running on {org['name']}")
         org_uid = org["organizations_uid"]
         ips = query_ips(org_uid)
