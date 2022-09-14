@@ -1,12 +1,15 @@
 """Classes and associated functions that render the UI app pages."""
 
 # Standard Python Libraries
+import datetime
 from datetime import date
 from ipaddress import ip_address, ip_network
 import json
 import logging
 import os
 import re
+
+# import os
 import socket
 
 # Third-Party Libraries
@@ -14,18 +17,29 @@ from bs4 import BeautifulSoup
 from flask import Blueprint, flash, redirect, render_template, url_for
 import nltk
 from nltk import pos_tag, word_tokenize
+import numpy as np
+import pandas as pd
 import psycopg2
 import psycopg2.extras
 import requests
 import spacy
 
 # cisagov Libraries
+from adhoc.enumerate_subs_from_root import enumerate_and_save_subs, query_roots
+from adhoc.fill_cidrs_from_cyhy_assets import fill_cidrs
+from adhoc.fill_ips_from_cidrs import fill_ips_from_cidrs
+from adhoc.link_subs_and_ips_from_ips import connect_subs_from_ips
+from adhoc.link_subs_and_ips_from_subs import connect_ips_from_subs
+from adhoc.shodan_dedupe import dedupe
 from pe_reports.data.config import config
-from pe_reports.stakeholder.forms import InfoFormExternal
+from pe_reports.data.db_query import execute_values, get_orgs_df
+from pe_reports.stakeholder_full.forms import InfoFormExternal
+
+# import traceback
+
 
 # If you are getting errors saying that a "en_core_web_lg" is loaded. Run the command " python -m spacy download en_core_web_trf" but might have to chagne the name fo the spacy model
 nlp = spacy.load("en_core_web_lg")
-
 
 LOGGER = logging.getLogger(__name__)
 
@@ -41,18 +55,21 @@ thedateToday = date.today().strftime("%Y-%m-%d")
 
 def getToken():
     """Get authorization token from Cybersixgill (CSG)."""
+    LOGGER.info(API_Client_ID)
+    LOGGER.info(API_Client_secret)
     d = {
         "grant_type": "client_credentials",
         "client_id": f"{API_Client_ID}",
         "client_secret": f"{API_Client_secret}",
     }
     r = requests.post("https://api.cybersixgill.com/auth/token", data=d)
+    LOGGER.info(r)
     r = r.text.split(":")
     r = r[1].lstrip('"').rsplit('"')[0]
     return r
 
 
-def getAgencies(org_name):
+def getAgencies(cyhy_db_id):
     """Get all agency names from P&E database."""
     global conn, cursor
 
@@ -69,10 +86,12 @@ def getAgencies(org_name):
 
             cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
 
-            query = "select organizations_uid,name from"
-            " organizations where name='{}';"
+            query = """
+            select organizations_uid, name
+            from organizations
+            where cyhy_db_name = %s;"""
 
-            cursor.execute(query.format(org_name))
+            cursor.execute(query, (cyhy_db_id))
 
             result = cursor.fetchall()
             resultDict = {}
@@ -92,6 +111,120 @@ def getAgencies(org_name):
             LOGGER.info("The connection/query was completed and closed.")
 
             return resultDict
+
+
+def set_org_to_report_on(cyhy_db_id):
+    """Query cyhy assets."""
+    sql = """
+    SELECT *
+    FROM organizations o
+    where o.cyhy_db_name = %(org_id)s
+    """
+    params = config()
+    conn = psycopg2.connect(**params)
+    df = pd.read_sql_query(sql, conn, params={"org_id": cyhy_db_id})
+
+    if len(df) < 1:
+        LOGGER.error("No org found for that cyhy id")
+        return 0
+
+    for i, row in df.iterrows():
+        if row["report_on"] is True and row["premium_report"] is True:
+            continue
+        cursor = conn.cursor()
+        sql = """UPDATE organizations
+                SET report_on = True, premium_report = True
+                WHERE organizations_uid = %s"""
+        uid = row["organizations_uid"]
+        cursor.execute(sql, [uid])
+        conn.commit()
+        cursor.close()
+    conn.close()
+    return df
+
+
+def get_data_source_uid(source):
+    """Get data source uid."""
+    params = config()
+    conn = psycopg2.connect(**params)
+    cur = conn.cursor()
+    sql = """SELECT * FROM data_source WHERE name = '{}'"""
+    cur.execute(sql.format(source))
+    source = cur.fetchone()[0]
+    cur.close()
+    cur = conn.cursor()
+    # Update last_run in data_source table
+    date = datetime.datetime.today().strftime("%Y-%m-%d")
+    sql = """update data_source set last_run = '{}'
+            where name = '{}';"""
+    cur.execute(sql.format(date, source))
+    cur.close()
+    conn.close()
+    return source
+
+
+def get_cidrs_and_ips(org_uid):
+    """Query all cidrs and ips for an organization."""
+    params = config()
+    conn = psycopg2.connect(**params)
+    cur = conn.cursor()
+    sql = """SELECT network from cidrs where
+        organizations_uid = %s;"""
+    cur.execute(sql, [org_uid])
+    cidrs = cur.fetchall()
+    sql = """
+    SELECT i.ip
+    FROM ips i
+    join ips_subs ip_s on ip_s.ip_hash = i.ip_hash
+    join sub_domains sd on sd.sub_domain_uid = ip_s.sub_domain_uid
+    join root_domains rd on rd.root_domain_uid = sd.root_domain_uid
+    WHERE rd.organizations_uid = %s
+    AND i.origin_cidr is null;
+    """
+    cur.execute(sql, [org_uid])
+    ips = cur.fetchall()
+    conn.close()
+    cidrs_ips = cidrs + ips
+    # cidrs_ips = [item for sublist in cidrs_ips for item in sublist]
+    cidrs_ips = [x[0] for x in cidrs_ips]
+    cidrs_ips = validateIP(cidrs_ips)
+    # cidrs_ips.remove("0.0.0.9")
+    # cidrs_ips.remove("0.0.0.1")
+    # cidrs_ips.remove("0.0.0.4")
+    # cidrs_ips.remove("0.0.0.2")
+    # cidrs_ips.remove("10.171.32.57")
+    # cidrs_ips.remove("10.171.40.44")
+    # cidrs_ips.remove("10.176.56.23")
+    # cidrs_ips.remove("127.0.0.1")
+    LOGGER.info(cidrs_ips)
+    return cidrs_ips
+
+
+def insert_roots(org, domain_list):
+    """Insert root domains into the database."""
+    source_uid = get_data_source_uid("P&E")
+    roots_list = []
+    for domain in domain_list:
+        try:
+            ip = socket.gethostbyname(domain)
+        except Exception:
+            ip = np.nan
+        root = {
+            "organizations_uid": org["organizations_uid"],
+            "root_domain": domain,
+            "ip_address": ip,
+            "data_source_uid": source_uid,
+            "enumerate_subs": True,
+        }
+        roots_list.append(root)
+
+    roots = pd.DataFrame(roots_list)
+    LOGGER.info(roots)
+    except_clause = """ ON CONFLICT (root_domain, organizations_uid)
+    DO NOTHING;"""
+    params = config()
+    conn = psycopg2.connect(**params)
+    execute_values(conn, roots, "public.root_domains", except_clause)
 
 
 def getRootID(org_UUID):
@@ -131,126 +264,6 @@ def getRootID(org_UUID):
             LOGGER.info("The connection/query was completed and closed.")
 
             return resultDict
-
-
-def setStakeholder(customer):
-    """Insert customer into the P&E reports database."""
-    global conn, cursor
-
-    try:
-        LOGGER.info("Starting insert into database...")
-
-        params = config()
-
-        conn = psycopg2.connect(**params)
-
-        if conn:
-
-            LOGGER.info(
-                "There was a connection made to "
-                "the database and the query was executed "
-            )
-
-            cursor = conn.cursor()
-
-            cursor.execute(f"insert into organizations(name)" f"values('{customer}')")
-
-            return True
-
-    except (Exception, psycopg2.DatabaseError) as err:
-        LOGGER.error("There was a problem logging into the psycopg database %s", err)
-        return False
-    finally:
-        if conn is not None:
-            conn.commit()
-            cursor.close()
-            conn.close()
-            LOGGER.info("The connection/query was completed and closed.")
-
-
-def setCustRootDomain(customer, rootdomain, orgUUID):
-    """Insert customer root domain into the PE-Reports database."""
-    global conn, cursor
-
-    try:
-        LOGGER.info("Starting insert into database...")
-
-        params = config()
-
-        conn = psycopg2.connect(**params)
-
-        if conn:
-
-            LOGGER.info(
-                "There was a connection made to "
-                "the database and the query was executed "
-            )
-
-            cursor = conn.cursor()
-
-            cursor.execute(
-                f"insert into root_domains("
-                f"organizations_uid,"
-                f"organization_name,"
-                f" root_domain)"
-                f"values('{orgUUID}', '{customer}','{rootdomain}');"
-            )
-            return True
-
-    except (Exception, psycopg2.DatabaseError) as err:
-        LOGGER.error("There was a problem logging into the psycopg database %s", err)
-        return False
-    finally:
-        if conn is not None:
-            conn.commit()
-            cursor.close()
-            conn.close()
-            LOGGER.info("The connection/query was completed and closed.")
-
-
-def setCustSubDomain(subdomain, rootUUID, rootname):
-    """Insert customer into the PE-Reports database."""
-    global conn, cursor
-
-    try:
-
-        LOGGER.info("Starting insert into database...")
-
-        params = config()
-
-        conn = psycopg2.connect(**params)
-
-        if conn:
-
-            LOGGER.info(
-                "There was a connection made to "
-                "the database and the query to "
-                "insert the subdomains was executed "
-            )
-
-            cursor = conn.cursor()
-
-            for sub in subdomain:
-                cursor.execute(
-                    f"insert into sub_domains("
-                    f"sub_domain,"
-                    f"root_domain_uid,"
-                    f" root_domain)"
-                    f"values('{sub}',"
-                    f" '{rootUUID}',"
-                    f"'{rootname}');"
-                )
-            return True
-
-    except (Exception, psycopg2.DatabaseError) as err:
-        LOGGER.error("There was a problem logging into the psycopg database %s", err)
-        return False
-    finally:
-        if conn is not None:
-            conn.commit()
-            cursor.close()
-            conn.close()
-            LOGGER.info("The connection/query was completed and closed.")
 
 
 def setCustomerExternalCSG(
@@ -310,40 +323,6 @@ def setCustomerExternalCSG(
     return iplist
 
 
-def getSubdomain(domain):
-    """Get all sub-domains from passed in root domain."""
-    allsubs = []
-
-    url = "https://domains-subdomains-discovery.whoisxmlapi.com/api/v1"
-    payload = json.dumps(
-        {
-            "apiKey": f"{API_WHOIS}",
-            "domains": {"include": [f"{domain}"]},
-            "subdomains": {"include": ["*"], "exclude": []},
-        }
-    )
-    headers = {"Content-Type": "application/json"}
-    response = requests.request("POST", url, headers=headers, data=payload)
-    data = response.json()
-
-    subdomains = data["domainsList"]
-    LOGGER.info(subdomains)
-
-    subisolated = ""
-    for sub in subdomains:
-
-        if sub != f"www.{domain}":
-
-            LOGGER.info(sub)
-            subisolated = sub.rsplit(".")[:-2]
-            LOGGER.info(
-                "The whole sub is %s and the isolated sub is %s", sub, subisolated
-            )
-        allsubs.append(subisolated)
-
-    return subdomains, allsubs
-
-
 def theaddress(domain):
     """Get actual IP address of domain."""
     gettheAddress = ""
@@ -353,17 +332,6 @@ def theaddress(domain):
         LOGGER.info("There is a problem with the domain that you selected")
 
     return gettheAddress
-
-
-def getallsubdomainIPS(domain):
-    """Get a list of IP addresses associated with a subdomain."""
-    LOGGER.info("The domain at getallsubdomsinIPS is %s", domain)
-    alladdresses = []
-    for x in getSubdomain(domain)[0]:
-        domainaddress = theaddress(x)
-        if domainaddress not in alladdresses and domainaddress != "":
-            alladdresses.append(domainaddress)
-    return alladdresses
 
 
 def verifyIPv4(custIP):
@@ -454,11 +422,11 @@ def setNewCSGOrg(newOrgName, orgAliases, orgdomainNames, orgIP, orgExecs):
 
 def setOrganizationUsers(org_id):
     """Set CSG user permissions at new stakeholder."""
-    role1 = os.getenv("USERROLE1")
-    role2 = os.getenv("USERROLE2")
-    id_role1 = os.getenv("USERID")
-    csg_role_id = os.getenv("CSGUSERROLE")
-    csg_user_id = os.getenv("CSGUSERID")
+    role1 = "5d23342df5feaf006a8a8929"
+    role2 = "5d23342df5feaf006a8a8927"
+    id_role1 = "610017c216948d7efa077a52"
+    csg_role_id = "role_id"
+    csg_user_id = "user_id"
     for user in getalluserinfo():
         userrole = user[csg_role_id]
         user_id = user[csg_user_id]
@@ -523,13 +491,13 @@ def getalluserinfo():
     return userInfo
 
 
-stakeholder_blueprint = Blueprint(
-    "stakeholder", __name__, template_folder="templates/stakeholder_UI"
+stakeholder_full_blueprint = Blueprint(
+    "stakeholder_full", __name__, template_folder="templates/stakeholder_full_UI"
 )
 
 
 def getNames(url):
-    """Get the names from url data."""
+    """Retrieve all executive names from URL."""
     doc = nlp(getAbout(url))
 
     d = []
@@ -541,7 +509,7 @@ def getNames(url):
 
 
 def getAbout(url):
-    """Get stakeholder about page."""
+    """Retrieve stakeholder about page."""
     thepage = requests.get(url).text
 
     soup = BeautifulSoup(thepage, "lxml")
@@ -558,7 +526,7 @@ def getAbout(url):
 
 
 def theExecs(URL):
-    """Gather all executives names from data returned from about page url."""
+    """Isolate executive names from information."""
     mytext = getAbout(URL)
 
     tokens = word_tokenize(mytext)
@@ -596,10 +564,9 @@ def theExecs(URL):
     return executives
 
 
-@stakeholder_blueprint.route("/stakeholder", methods=["GET", "POST"])
-def stakeholder():
+@stakeholder_full_blueprint.route("/stakeholder_full", methods=["GET", "POST"])
+def stakeholder_full():
     """Process form information, instantiate form and render page template."""
-    LOGGER.debug("made it to stakeholder")
     cust = False
     custDomainAliases = False
     custRootDomain = False
@@ -608,61 +575,104 @@ def stakeholder():
     formExternal = InfoFormExternal()
 
     if formExternal.validate_on_submit():
-        LOGGER.debug("Got to the submit validate")
-        cust = formExternal.cust.data.upper()
+        LOGGER.info("Got to the submit validate")
+        cust = formExternal.cust.data
         custDomainAliases = formExternal.custDomainAliases.data.split(",")
-        custRootDomain = formExternal.custRootDomain.data.split(",")
-        custRootDomainValue = custRootDomain[0]
-        custExecutives = formExternal.custExecutives.data.split(",")
+        custRootDomain = formExternal.custRootDomain.data.replace(" ", "").split(",")
+        # custRootDomainValue = custRootDomain[0]
+        custExecutives = formExternal.custExecutives.data
         formExternal.cust.data = ""
         formExternal.custDomainAliases = ""
         formExternal.custRootDomain.data = ""
         formExternal.custExecutives.data = ""
-        allDomain = getAgencies(cust)
+
         allExecutives = list(theExecs(custExecutives))
-        allSubDomain = getSubdomain(custRootDomainValue)
-        allValidIP = getallsubdomainIPS(custRootDomainValue)
 
-        try:
+        orgs = set_org_to_report_on(cust)
 
-            if cust not in allDomain.values():
-                flash(f"You successfully submitted a new customer {cust} ", "success")
-
-                if setStakeholder(cust):
-                    LOGGER.info("The customer %s was entered.", cust)
-                    allDomain = list(getAgencies(cust).keys())[0]
-
-                    if setCustRootDomain(cust, custRootDomainValue, allDomain):
-                        rootUUID = getRootID(allDomain)[cust]
-
-                        LOGGER.info(
-                            "The root domain %s was entered at root_domains.",
-                            custRootDomainValue,
+        if orgs.empty:
+            LOGGER.info("No org found for the given cyhy_id")
+            flash(f"{cust} is not a valid cyhy_id", "warning")
+            return redirect(url_for("stakeholder_full.stakeholder_full"))
+        elif len(orgs) == 1:
+            try:
+                # Add roots and enumerate for subs
+                for i, org in orgs.iterrows():
+                    insert_roots(org, custRootDomain)
+                    LOGGER.info(
+                        "root domains have been successfully added to the database"
+                    )
+                    roots = query_roots(org["organizations_uid"])
+                    for j, root in roots.iterrows():
+                        enumerate_and_save_subs(
+                            root["root_domain_uid"], root["root_domain"]
                         )
-                        if allSubDomain:
-                            for subdomain in allSubDomain:
-                                if setCustSubDomain(subdomain, rootUUID, cust):
-                                    LOGGER.info("The subdomains have been entered.")
-                                    setNewCSGOrg(
-                                        cust,
-                                        custDomainAliases,
-                                        custRootDomain,
-                                        allValidIP,
-                                        allExecutives,
-                                    )
+                    LOGGER.info(
+                        "subdomains have been successfully added to the database"
+                    )
 
-            else:
-                flash(f"The customer {cust} already exists.", "warning")
+                # Fill the cidrs
+                fill_cidrs(orgs)
+                LOGGER.info("Filled all cidrs")
 
-        except ValueError as e:
-            flash(f"The customer IP {e} is not a valid IP, please try again.", "danger")
-            return redirect(url_for("stakeholder.stakeholder"))
-        return redirect(url_for("stakeholder.stakeholder"))
+                # Fill IPs table by enumerating CIDRs (all orgs)
+                # fill_ips_from_cidrs()
+
+                # Connect to subs from IPs table (only new orgs)
+                # connect_subs_from_ips(orgs)
+                # LOGGER.info("Filled and linked all IPs")
+
+                # Connect to IPs from subs table (only new orgs)
+                connect_ips_from_subs(orgs)
+
+                allValidIP = get_cidrs_and_ips(orgs["organizations_uid"].iloc[0])
+
+                setNewCSGOrg(
+                    cust,
+                    custDomainAliases,
+                    custRootDomain,
+                    allValidIP,
+                    allExecutives,
+                )
+
+                # Run pe_dedupe
+                LOGGER.info("Running dedupe:")
+                dedupe(orgs)
+                LOGGER.info("done")
+            except ValueError as e:
+                LOGGER.error(f"An error occured: {e}")
+                flash(f"An error occured: {e}", "warning")
+            return redirect(url_for("stakeholder_full.stakeholder_full"))
+        else:
+            flash(
+                "multiple orgs were found for the provided cyhy_id, this should not be possible",
+                "danger",
+            )
+
     return render_template(
-        "home_stakeholder.html",
+        "home_stakeholder_full.html",
         formExternal=formExternal,
         cust=cust,
         custRootDomain=custRootDomain,
         custExecutives=custExecutives,
         custDomainAliases=custDomainAliases,
     )
+
+
+@stakeholder_full_blueprint.route("/link_IPs", methods=["GET", "POST"])
+def link_IPs():
+    """Run link IPs script on all orgs that are set to report_on."""
+    orgs = get_orgs_df()
+    report_orgs = orgs[orgs["report_on"] is True]
+    connect_subs_from_ips(report_orgs)
+    LOGGER.info("Filled and linked all IPs")
+    return "nothing"
+
+
+@stakeholder_full_blueprint.route("/fill_IPs", methods=["GET", "POST"])
+def fill_IPs():
+    """Run link IPs script on all orgs that are set to report_on."""
+    logging.info("Filling IPS")
+    fill_ips_from_cidrs()
+    logging.info("Done Filling IPS")
+    return "nothing"
