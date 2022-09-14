@@ -62,6 +62,11 @@ def run_pe_script(source, orgs_list, cybersix_methods):
     elif source == "shodan":
         shodan = Shodan(orgs_list)
         shodan.run_shodan()
+    else:
+        logging.error(
+            "Not a valid source name. Correct values are cybersixgill or shodan."
+        )
+        sys.exit(1)
 
 
 def main():
