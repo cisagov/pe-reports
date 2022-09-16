@@ -1,27 +1,29 @@
-from copy import copy
-import os
+"""Use DNS twist to fuzz domain names and cross check with a blacklist."""
+# Standard Python Libraries
+import datetime
+import json
+import logging
 import traceback
-import psycopg2
+
+# Third-Party Libraries
+from data.run import connect, query_orgs_rev
+import dnstwist
+import dshield
+import pandas as pd
+
+# import psycopg2
 import psycopg2.extras as extras
 import requests
-import socket
-from data.run import query_orgs_rev
-from data.run import connect
-import pandas as pd
-import dshield
-import json
-import datetime
-import time
-import subprocess
-
 
 date = datetime.datetime.now().strftime("%Y-%m-%d")
 
+
 def query_db(conn, query, args=(), one=False):
+    """Query the database."""
     cur = conn.cursor()
     cur.execute(query, args)
     r = [
-        dict((cur.description[i][0], value) for i, value in enumerate(row))
+        {cur.description[i][0]: value for i, value in enumerate(row)}
         for row in cur.fetchall()
     ]
 
@@ -29,9 +31,10 @@ def query_db(conn, query, args=(), one=False):
 
 
 def getSubdomain(conn, domain):
+    """Get subdomains given a domain from the databases."""
     cur = conn.cursor()
-    sql = f"""SELECT * FROM sub_domains sd
-        WHERE sd.sub_domain = '{domain}'"""
+    sql = """SELECT * FROM sub_domains sd
+        WHERE sd.sub_domain = '%(domain)s'"""
     cur.execute(sql)
     sub = cur.fetchone()
     cur.close()
@@ -39,9 +42,10 @@ def getSubdomain(conn, domain):
 
 
 def getRootdomain(conn, domain):
+    """Get root domain given domain from the database."""
     cur = conn.cursor()
-    sql = f"""SELECT * FROM root_domains rd
-        WHERE rd.root_domain = '{domain}'"""
+    sql = """SELECT * FROM root_domains rd
+        WHERE rd.root_domain = '%(domain)s'"""
     cur.execute(sql)
     root = cur.fetchone()
     cur.close()
@@ -49,33 +53,40 @@ def getRootdomain(conn, domain):
 
 
 def addRootdomain(conn, root_domain, pe_org_uid, source_uid, org_name):
-    ip_address = str(socket.gethostbyname(root_domain))
-    sql = f"""insert into root_domains(root_domain, organizations_uid, organization_name, data_source_uid, ip_address)
-            values ('{root_domain}', '{pe_org_uid}', '{org_name}', '{source_uid}', '{ip_address}');"""
+    """Add a root domain into the database."""
+    # ip_address = str(socket.gethostbyname(root_domain))
+    sql = """insert into root_domains(root_domain, organizations_uid, organization_name, data_source_uid, ip_address)
+            values ('%(root_domain)s', '%(pe_org_uid)s', '%(org_name)s', '%(source_uid)s', '%(ip_address)s');"""
     cur = conn.cursor()
     cur.execute(sql)
     conn.commit()
     cur.close()
-    print(f"Success adding root domain, {root_domain}, to root domain table.")
+    logging.info("Success adding root domain, %(root_domain)s, to root domain table.")
 
 
 def addSubdomain(conn, domain, pe_org_uid, org_name):
+    """Add a subdomain into the database."""
     root_domain = domain.split(".")[-2:]
     root_domain = ".".join(root_domain)
     cur = conn.cursor()
-    cur.callproc('insert_sub_domain', (domain, pe_org_uid, "findomain", root_domain, None))
-    print(f"Success adding domain, {domain}, to subdomains table.")
+    cur.callproc(
+        "insert_sub_domain", (domain, pe_org_uid, "findomain", root_domain, None)
+    )
+    logging.info("Success adding domain, %(domain)s, to subdomains table.")
 
 
 def getDataSource(conn, source):
+    """Get datasource information from a database."""
     cur = conn.cursor()
-    sql = f"""SELECT * FROM data_source WHERE name='{source}'"""
+    sql = """SELECT * FROM data_source WHERE name= %(source)s"""
     cur.execute(sql)
     source = cur.fetchone()
     cur.close()
     return source
 
+
 def org_root_domains(conn, org_uid):
+    """Get from database given the org_uid."""
     sql = """
         select * from root_domains rd
         where rd.organizations_uid = %(org_id)s;
@@ -83,23 +94,19 @@ def org_root_domains(conn, org_uid):
     df = pd.read_sql_query(sql, conn, params={"org_id": org_uid})
     return df
 
-from data.run import (
 
-    getDataSource,
-    getSubdomain,
-)
-
+# Third-Party Libraries
 """Connect to Database"""
 PE_conn = connect("")
 
 # Get data source
 source_uid = getDataSource(PE_conn, "DNSTwist")[0]
-print("source_uid")
-print(source_uid)
+logging.info("source_uid")
+logging.info(source_uid)
 
 """ Get P&E Orgs """
 orgs = query_orgs_rev()
-print(orgs["name"])
+logging.info(orgs["name"])
 
 for i, row in orgs.iterrows():
     pe_org_uid = row["organizations_uid"]
@@ -108,8 +115,8 @@ for i, row in orgs.iterrows():
     # if org_name not in ["National Institute of Standards and Technology"]:
     #     continue
 
-    print(pe_org_uid)
-    print(org_name)
+    logging.info(pe_org_uid)
+    logging.info(org_name)
     if org_name != "Department of Homeland Security":
         continue
 
@@ -117,37 +124,51 @@ for i, row in orgs.iterrows():
     try:
         # Get root domains
         rd_df = org_root_domains(PE_conn, pe_org_uid)
-        print(rd_df)
+        logging.info(rd_df)
         domain_list = []
         perm_list = []
         for i, row in rd_df.iterrows():
             root_domain = row["root_domain"]
             if root_domain != "dhs.gov":
                 continue
-            if root_domain == 'Null_Root':
+            if root_domain == "Null_Root":
                 continue
-            print(row["root_domain"])
+            logging.info(row["root_domain"])
 
             # Run dnstwist on each root domain
-            cmd = f'dnstwist -r --tld common_tlds.dict -f json {root_domain} -t 8'
-            dnstwist_result = json.loads(subprocess.check_output(cmd, shell=True))
+            dnstwist_result = dnstwist.run(
+                registered=True,
+                tld="common_tlds.dict",
+                format="json",
+                threads=8,
+                domain=root_domain,
+            )
+
             finalorglist = dnstwist_result + []
             for dom in dnstwist_result:
-                if ("tld-swap" not in dom["fuzzer"]) and ("original" not in dom["fuzzer"]):
-                        print(dom["domain"])
-                        cmd = f'dnstwist -r --tld common_tlds.dict -f json {dom["domain"]} -t 8'
-                        secondlist = json.loads(subprocess.check_output(cmd, shell=True))
-                        finalorglist += secondlist
-            
-            print(dnstwist_result)
-    
+                if ("tld-swap" not in dom["fuzzer"]) and (
+                    "original" not in dom["fuzzer"]
+                ):
+                    logging.info(dom["domain"])
+                    secondlist = dnstwist.run(
+                        registered=True,
+                        tld="common_tlds.dict",
+                        format="json",
+                        threads=8,
+                        domain=root_domain,
+                    )
+                    finalorglist += secondlist
+
+            logging.info(dnstwist_result)
+
             # Get subdomain uid
             sub_domain = root_domain
-            print(sub_domain)
+            logging.info(sub_domain)
             try:
                 sub_domain_uid = getSubdomain(PE_conn, sub_domain)[0]
-                print(sub_domain_uid)
-            except:
+                logging.info(sub_domain_uid)
+            except Exception:
+                logging.info("This is my logging message", "warning")
                 # Add and then get it
                 addSubdomain(PE_conn, sub_domain, pe_org_uid, org_name)
                 sub_domain_uid = getSubdomain(PE_conn, sub_domain)[0]
@@ -157,13 +178,13 @@ for i, row in orgs.iterrows():
                 attacks = 0
                 reports = 0
                 if "original" in dom["fuzzer"]:
-                    print("original")
-                    print(dom["fuzzer"])
+                    logging.info("original")
+                    logging.info(dom["fuzzer"])
                     continue
                 if "dns_a" not in dom:
                     continue
                 else:
-                    print(str(dom["dns_a"][0]))
+                    logging.info(str(dom["dns_a"][0]))
                     # check IP in Blocklist API
                     response = requests.get(
                         "http://api.blocklist.de/api.php?ip=" + str(dom["dns_a"][0])
@@ -173,12 +194,14 @@ for i, row in orgs.iterrows():
                         malicious = True
                         attacks = int(str(response).split("attacks: ")[1].split("<")[0])
                         reports = int(str(response).split("reports: ")[1].split("<")[0])
-                    
+
                     # check dns-a record in DSheild API
                     if str(dom["dns_a"][0]) == "!ServFail":
                         continue
-                    
-                    results = dshield.ip(str(dom["dns_a"][0]), return_format=dshield.JSON)
+
+                    results = dshield.ip(
+                        str(dom["dns_a"][0]), return_format=dshield.JSON
+                    )
                     results = json.loads(results)
                     try:
                         threats = results["ip"]["threatfeeds"]
@@ -200,7 +223,7 @@ for i, row in orgs.iterrows():
                 if "dns_aaaa" not in dom:
                     dom["dns_aaaa"] = [""]
                 else:
-                    print(str(dom["dns_aaaa"][0]))
+                    logging.info(str(dom["dns_aaaa"][0]))
                     # check IP in Blocklist API
                     response = requests.get(
                         "http://api.blocklist.de/api.php?ip=" + str(dom["dns_aaaa"][0])
@@ -209,13 +232,15 @@ for i, row in orgs.iterrows():
                         malicious = True
                         attacks = int(str(response).split("attacks: ")[1].split("<")[0])
                         reports = int(str(response).split("reports: ")[1].split("<")[0])
-                    
+
                     # check dns-a record in DSheild API
                     if str(dom["dns_aaaa"][0]) == "!ServFail":
                         continue
-                    results = dshield.ip(str(dom["dns_aaaa"][0]), return_format=dshield.JSON)
+                    results = dshield.ip(
+                        str(dom["dns_aaaa"][0]), return_format=dshield.JSON
+                    )
                     results = json.loads(results)
-                    
+
                     try:
                         threats = results["ip"]["threatfeeds"]
                         attacks = results["ip"]["attacks"]
@@ -229,7 +254,7 @@ for i, row in orgs.iterrows():
 
                 # Ignore duplicates
                 permutation = dom["domain"]
-                print(permutation)
+                logging.info(permutation)
                 if permutation in perm_list:
                     continue
                 else:
@@ -251,38 +276,36 @@ for i, row in orgs.iterrows():
                     "blocklist_attack_count": attacks,
                     "blocklist_report_count": reports,
                     "dshield_record_count": dshield_count,
-                    "dshield_attack_count": dshield_attacks
+                    "dshield_attack_count": dshield_attacks,
                 }
                 domain_list.append(domain_dict)
 
-    except:
-        print("Failed selecting DNSTwist data.")
-        print(traceback.format_exc())
+    except Exception:
+        logging.info("Failed selecting DNSTwist data.", "Warning")
+        logging.info(traceback.format_exc())
     """Insert cleaned data into PE database."""
     try:
         cursor = PE_conn.cursor()
         columns = domain_list[0].keys()
         table = "domain_permutations"
-        sql = """INSERT INTO %s(%s) VALUES %%s 
-        ON CONFLICT (domain_permutation,organizations_uid) 
+        coljoin = ",".join(columns)
+        sql = """INSERT INTO %(root_domain)s(%(coljoin)s) VALUES %s
+        ON CONFLICT (domain_permutation,organizations_uid)
         DO UPDATE SET malicious = EXCLUDED.malicious,
             blocklist_attack_count = EXCLUDED.blocklist_attack_count,
             blocklist_report_count = EXCLUDED.blocklist_report_count,
             dshield_record_count = EXCLUDED.dshield_record_count,
             dshield_attack_count = EXCLUDED.dshield_attack_count,
             data_source_uid = EXCLUDED.data_source_uid,
-            date_active = EXCLUDED.date_active;""" % (
-            table,
-            ",".join(columns),
-        )
+            date_active = EXCLUDED.date_active;"""
         values = [[value for value in dict.values()] for dict in domain_list]
         extras.execute_values(cursor, sql, values)
         PE_conn.commit()
-        print("Data inserted using execute_values() successfully..")
+        logging.info("Data inserted using execute_values() successfully..")
 
-    except:
-        print("Failure inserting data into database.")
-        print(traceback.format_exc())
+    except Exception:
+        logging.info("Failure inserting data into database.")
+        logging.info(traceback.format_exc())
 
 
 PE_conn.close()
