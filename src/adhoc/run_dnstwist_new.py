@@ -97,7 +97,10 @@ def org_root_domains(conn, org_uid):
 
 # Third-Party Libraries
 """Connect to Database"""
+
 PE_conn = connect("")
+#instead of importing run .py, lookover config.py and implement steakholder/views style
+
 
 # Get data source
 source_uid = getDataSource(PE_conn, "DNSTwist")[0]
@@ -143,8 +146,9 @@ for i, row in orgs.iterrows():
                 threads=8,
                 domain=root_domain,
             )
-
+            
             finalorglist = dnstwist_result + []
+
             for dom in dnstwist_result:
                 if ("tld-swap" not in dom["fuzzer"]) and (
                     "original" not in dom["fuzzer"]
@@ -155,11 +159,11 @@ for i, row in orgs.iterrows():
                         tld="common_tlds.dict",
                         format="json",
                         threads=8,
-                        domain=root_domain,
+                        domain=dom["domain"],
                     )
                     finalorglist += secondlist
-
-            logging.info(dnstwist_result)
+            
+            logging.debug(finalorglist)
 
             # Get subdomain uid
             sub_domain = root_domain
@@ -168,12 +172,13 @@ for i, row in orgs.iterrows():
                 sub_domain_uid = getSubdomain(PE_conn, sub_domain)[0]
                 logging.info(sub_domain_uid)
             except Exception:
-                logging.info("This is my logging message", "warning")
+                #TODO Issue #265 implement custom Exceptions
+                logging.info("Unable to get sub domain uid", "warning")
                 # Add and then get it
                 addSubdomain(PE_conn, sub_domain, pe_org_uid, org_name)
                 sub_domain_uid = getSubdomain(PE_conn, sub_domain)[0]
 
-            for dom in dnstwist_result:
+            for dom in finalorglist:
                 malicious = False
                 attacks = 0
                 reports = 0
@@ -281,6 +286,7 @@ for i, row in orgs.iterrows():
                 domain_list.append(domain_dict)
 
     except Exception:
+        #TODO Issue #265 create custom Exceptions
         logging.info("Failed selecting DNSTwist data.", "Warning")
         logging.info(traceback.format_exc())
     """Insert cleaned data into PE database."""
@@ -304,6 +310,7 @@ for i, row in orgs.iterrows():
         logging.info("Data inserted using execute_values() successfully..")
 
     except Exception:
+        #TODO Issue #265 create custom Exceptions
         logging.info("Failure inserting data into database.")
         logging.info(traceback.format_exc())
 
