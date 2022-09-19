@@ -2,9 +2,15 @@
 
 # Import query functions
 # Standard Python Libraries
+import calendar
 import datetime
 
+# New Imports
+from datetime import timedelta
+from tokenize import group
+
 # Third-Party Libraries
+from dateutil.relativedelta import relativedelta
 import pandas as pd
 
 from .data.db_query import (
@@ -18,6 +24,59 @@ from .data.db_query import (
     query_shodan,
 )
 from .data.translator import translate
+
+# ---------- v New helper functions v ------------
+
+
+def checkEmptyTable(df):
+    """Adds note explaining no new data was found for this report period if dataframe is empty"""
+    if len(df) == 0:
+        noDataRow = ["..."] * len(df.columns)
+        noDataRow[0] = "No New Data"
+        df.loc[len(df)] = noDataRow
+
+
+def getPrevPeriod(currReportDate):
+    """Calculates the start/end dates of the previous report period"""
+    # Calculate start date of current report period
+    if currReportDate.day == 15:
+        currStart = datetime.datetime(currReportDate.year, currReportDate.month, 1)
+    else:
+        currStart = datetime.datetime(currReportDate.year, currReportDate.month, 16)
+    # Calculate start/end dates for previous report period
+    prevEnd = currStart - timedelta(days=1)
+    if prevEnd.day == 15:
+        prevStart = datetime.datetime(prevEnd.year, prevEnd.month, 1)
+    else:
+        prevStart = datetime.datetime(prevEnd.year, prevEnd.month, 16)
+    return [prevStart, prevEnd]
+
+
+def percentChange(initial, final):
+    """Calculates the percentage change between initial and final values"""
+    if initial == 0 and final == 0:
+        return 0.00
+    elif initial == 0 and final != 0:
+        return "New Value"
+    else:
+        return round((float(final - initial) / float(initial)) * 100, 2)
+
+
+def percentChangeStr(percChng):
+    """Creates string that displays metric and percent change in value"""
+    finalString = ""
+    if percChng == "New Value":
+        finalString = "(\u2191 New)"
+    elif percChng < 0:
+        finalString = "(\u2193 %.2f%%)" % (percChng)
+    elif percChng > 0:
+        finalString = "(\u2191 +%.2f%%)" % (percChng)
+    else:
+        finalString = "(No Change)"
+    return finalString
+
+
+# ---------- ^ New helper functions ^ -----------
 
 
 class Credentials:
@@ -42,26 +101,72 @@ class Credentials:
 
     def by_days(self):
         """Return number of credentials by day."""
+
+        # ------ v Start New Cred Plot Section v ------
         df = self.creds_by_day
-        # df = df[["mod_date", "no_password", "password_included"]].copy()
-        idx = pd.date_range(self.trending_start_date, self.end_date)
-        df = df.set_index("mod_date").reindex(idx).fillna(0.0).rename_axis("added_date")
-        group_limit = self.end_date + datetime.timedelta(1)
-        df = df.groupby(
-            pd.Grouper(level="added_date", freq="7d", origin=group_limit)
-        ).sum()
-        df["modified_date"] = df.index
-        df["modified_date"] = df["modified_date"].dt.strftime("%b %d")
-        df = df.set_index("modified_date")
-        df = df.rename(
+        df = df[["mod_date", "no_password", "password_included"]].copy()
+
+        if self.end_date.day == 15:
+            # Calculate start/end dates for report periods 1-4
+            p1_start = (self.end_date + relativedelta(months=-2)).replace(day=16)
+            p1_end = self.end_date + relativedelta(months=-2)
+            p1_end = p1_end.replace(
+                day=calendar.monthrange(p1_end.year, p1_end.month)[1]
+            )
+            p2_start = (self.end_date + relativedelta(months=-1)).replace(day=1)
+            p2_end = self.end_date + relativedelta(months=-1)
+            p3_start = (self.end_date + relativedelta(months=-1)).replace(day=16)
+            p3_end = self.end_date + relativedelta(months=-1)
+            p3_end = p3_end.replace(
+                day=calendar.monthrange(p3_end.year, p3_end.month)[1]
+            )
+        else:
+            # Calculate start/end dates for report periods 1-4
+            p1_start = (self.end_date + relativedelta(months=-1)).replace(day=1)
+            p1_end = (self.end_date + relativedelta(months=-1)).replace(day=15)
+            p2_start = (self.end_date + relativedelta(months=-1)).replace(day=16)
+            p2_end = self.end_date + relativedelta(months=-1)
+            p2_end = p2_end.replace(
+                day=calendar.monthrange(p2_end.year, p2_end.month)[1]
+            )
+            p3_start = self.end_date.replace(day=1)
+            p3_end = self.end_date.replace(day=15)
+
+        # Aggregate credential counts by report period
+        period1 = df.loc[((df["mod_date"] >= p1_start) & (df["mod_date"] <= p1_end))]
+        period2 = df.loc[((df["mod_date"] >= p2_start) & (df["mod_date"] <= p2_end))]
+        period3 = df.loc[((df["mod_date"] >= p3_start) & (df["mod_date"] <= p3_end))]
+        period4 = df.loc[
+            (
+                (df["mod_date"] >= self.start_date.date())
+                & (df["mod_date"] <= self.end_date)
+            )
+        ]
+        df2 = pd.concat(
+            (
+                period1[["no_password", "password_included"]].sum().to_frame().T,
+                period2[["no_password", "password_included"]].sum().to_frame().T,
+                period3[["no_password", "password_included"]].sum().to_frame().T,
+                period4[["no_password", "password_included"]].sum().to_frame().T,
+            ),
+            ignore_index=True,
+        )
+        df2["modified_date"] = [p1_end, p2_end, p3_end, self.end_date]
+        df2["modified_date"] = pd.to_datetime(df2["modified_date"], utc=True)
+        df2["modified_date"] = df2["modified_date"].dt.strftime("%b %d")
+        df2 = df2.set_index("modified_date")
+        df2 = df2.astype({"password_included": float, "no_password": float})
+        df2 = df2.rename(
             columns={
                 "password_included": "Passwords Included",
                 "no_password": "No Password",
             }
         )
-        if len(df.columns) == 0:
-            df["Passwords Included"] = 0
-        return df
+        # ------ ^ End New Cred Plot Section ^ ------
+
+        if len(df2.columns) == 0:
+            df2["Passwords Included"] = 0
+        return df2
 
     def breaches(self):
         """Return total number of breaches."""
@@ -98,6 +203,15 @@ class Credentials:
                 "number_of_creds": "Number of Creds",
             }
         )
+        # ----- DAYS UNREPORTED METRIC ----- v
+        breach_det_df.insert(loc=3, column="Days Unreported", value="")
+        if len(breach_det_df) > 0:
+            breach_det_df["Days Unreported"] = (
+                pd.to_datetime(breach_det_df["Date Reported"])
+                - pd.to_datetime(breach_det_df["Breach Date"])
+            ).dt.days
+        checkEmptyTable(breach_det_df)
+        # ----- DAYS UNREPORTED METRIC ----- ^
         return breach_det_df
 
     def password(self):
@@ -109,6 +223,37 @@ class Credentials:
         """Return total number of credentials found in breaches."""
         df_cred = self.creds_view.shape[0]
         return df_cred
+
+    # ---------- v New cred functions v ------------
+
+    def percentCredTotal(self):
+        """Calculates the percent change in total creds exposed since last report"""
+        currTotal = self.creds_view.shape[0]
+        [prevStart, prevEnd] = getPrevPeriod(self.end_date)
+        prev_creds_view = query_creds_view(self.org_uid, prevStart, prevEnd)
+        prevTotal = prev_creds_view.shape[0]
+        credTotPercChng = percentChange(prevTotal, currTotal)
+        return credTotPercChng
+
+    def percentCredPass(self):
+        """Calculates the percent change in creds w/ passwords exposed since last report"""
+        currTotal = self.creds_view[self.creds_view["password_included"]].shape[0]
+        [prevStart, prevEnd] = getPrevPeriod(self.end_date)
+        prev_creds_view = query_creds_view(self.org_uid, prevStart, prevEnd)
+        prevTotal = prev_creds_view[prev_creds_view["password_included"]].shape[0]
+        credPassPercChng = percentChange(prevTotal, currTotal)
+        return credPassPercChng
+
+    def percentBreach(self):
+        """Calculates the percent change in distinct breaches since last report"""
+        currTotal = self.creds_view["breach_name"].nunique()
+        [prevStart, prevEnd] = getPrevPeriod(self.end_date)
+        prev_creds_view = query_creds_view(self.org_uid, prevStart, prevEnd)
+        prevTotal = prev_creds_view["breach_name"].nunique()
+        breachPercChng = percentChange(prevTotal, currTotal)
+        return breachPercChng
+
+    # ---------- ^ New cred functions ^ ------------
 
 
 class Domains_Masqs:
@@ -161,6 +306,10 @@ class Domains_Masqs:
                     "Name Server",
                 ]
             )
+
+        # EMPTY TABLE CHECK ADDED -----
+        checkEmptyTable(domain_sum)
+
         return domain_sum
 
     def alert_count(self):
@@ -343,6 +492,10 @@ class Malware_Vulns:
             .agg(lambda x: "  ".join(set(x)))
             .reset_index()
         )
+
+        # EMPTY TABLE CHECK ADDED ----
+        checkEmptyTable(verif_vulns)
+
         return verif_vulns
 
     def verif_vulns_summary(self):
@@ -431,9 +584,13 @@ class Cyber_Six:
             pd.Grouper(level="date", freq="7d", origin=group_limit)
         ).sum()
         dark_web_date["date"] = dark_web_date.index
-        dark_web_date["date"] = dark_web_date["date"].dt.strftime("%m/%d")
+        dark_web_date["date"] = dark_web_date["date"].dt.strftime(
+            "%b %d"
+        )  # Convert to month abbreviation
         dark_web_date = dark_web_date.set_index("date")
         dark_web_date = dark_web_date[["Count"]]
+        # More descriptive column name
+        dark_web_date = dark_web_date.rename(columns={"Count": "Mentions Count"})
         return dark_web_date
 
     def social_media_most_act(self):

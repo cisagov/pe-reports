@@ -124,7 +124,7 @@ class Charts:
         plt.gca().set_yticks(df.index)
         plt.gca().set_yticklabels(category_column)
         plt.gca().set_xlabel(x_label, fontdict={"size": 8})
-        plt.gca().set_ylabel(y_label)
+        plt.gca().set_ylabel(y_label, fontdict={"size": 8})  # EDIT MADE
         plt.gcf().set_size_inches(
             width / CM_CONVERSION_FACTOR, height / CM_CONVERSION_FACTOR
         )
@@ -160,9 +160,26 @@ class Charts:
         ax.spines["right"].set_visible(False)
         ax.spines["top"].set_visible(False)
         plt.set_loglevel("WARNING")
-        plt.plot(df.index, value_column, color=color[0], label=df.columns[0])
+        plt.plot(  # Adjusted cred plot
+            df.index,
+            value_column,
+            color=color[0],
+            label=df.columns[0],
+            linewidth=3,
+            marker=".",
+            markersize=10,
+        )
         if len(df.columns) == 2:
-            plt.plot(df.index, df[df.columns[1]], color=color[1], label=df.columns[1])
+            plt.plot(  # Adjusted cred plot
+                df.index,
+                df[df.columns[1]],
+                color=color[1],
+                label=df.columns[1],
+                linewidth=3,
+                linestyle="dashed",
+                marker=".",
+                markersize=10,
+            )
 
         plt.ylim(ymin=0, ymax=int(df[df.columns].max().max() * 1.15))
         # plt.legend(loc=9, ncol=2, framealpha=0, fontsize=8, bbox_to_anchor=(0.5, -0.5))
@@ -182,7 +199,20 @@ class Charts:
         # for i, total in enumerate(totals):
         #     ax.text(totals.index[i], total + 0, round(total), ha="center")
         for i, j in df[df.columns[0]].items():
-            if int(j):
+            plt.annotate(
+                str(int(j)),
+                xy=(i, j),
+                textcoords="offset points",  # how to position the text
+                xytext=(
+                    0,
+                    15,  # Fixed number overlap
+                ),  # distance from text to points (x,y)
+                ha="center",  # horizontal alignment can be left, right or center
+                # fontsize=2,
+                color="#1357BE",  # Changed color
+            )
+        if len(df.columns) == 2:
+            for i, j in df[df.columns[1]].items():
                 plt.annotate(
                     str(int(j)),
                     xy=(i, j),
@@ -193,21 +223,8 @@ class Charts:
                     ),  # distance from text to points (x,y)
                     ha="center",  # horizontal alignment can be left, right or center
                     # fontsize=2,
+                    color="#D0342C",  # Changed color
                 )
-        if len(df.columns) == 2:
-            for i, j in df[df.columns[1]].items():
-                if int(j):
-                    plt.annotate(
-                        str(int(j)),
-                        xy=(i, j),
-                        textcoords="offset points",  # how to position the text
-                        xytext=(
-                            0,
-                            5,
-                        ),  # distance from text to points (x,y)
-                        ha="center",  # horizontal alignment can be left, right or center
-                        # fontsize=2,
-                    )
 
         plt.savefig(
             BASE_DIR + "/assets/" + name, transparent=True, dpi=500, bbox_inches="tight"

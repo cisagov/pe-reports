@@ -16,6 +16,7 @@ from flask_login import LoginManager
 from flask_migrate import Migrate
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.utils import secure_filename
+
 # cisagov Libraries
 from pe_reports.data.config import config
 
@@ -26,9 +27,6 @@ from pe_reports.stakeholder_full.views import stakeholder_full_blueprint
 from pe_reports.stakeholder_lite.views import stakeholder_lite_blueprint
 
 from ._version import __version__  # noqa: F401
-
-
-
 
 params = config()
 login_manager = LoginManager()
@@ -44,8 +42,8 @@ app.config[
 # Configure the redis server
 app.config["CELERY_BROKER_URL"] = "redis://localhost:6379/0"
 app.config["CELERY_RESULT_BACKEND"] = "redis://localhost:6379/0"
-app.config['UPLOAD_FOLDER'] = 'src/pe_reports/uploads/'
-app.config['ALLOWED_EXTENSIONS'] = {'txt', 'csv'}
+app.config["UPLOAD_FOLDER"] = "src/pe_reports/uploads/"
+app.config["ALLOWED_EXTENSIONS"] = {"txt", "csv"}
 
 
 # Create central logging
@@ -56,7 +54,6 @@ logging.basicConfig(
     datefmt="%m/%d/%Y %I:%M:%S",
     level=logging.INFO,
 )
-
 
 
 # Creates a Celery object

@@ -1,18 +1,20 @@
+# Standard Python Libraries
 from copy import copy
+import datetime
+import json
 import os
+import socket
+import subprocess
+import time
 import traceback
+
+# Third-Party Libraries
+from data.run import query_orgs_rev
+import dshield
+import pandas as pd
 import psycopg2
 import psycopg2.extras as extras
 import requests
-import socket
-from data.run import query_orgs_rev
-import pandas as pd
-import dshield
-import json
-import datetime
-import time
-import subprocess
-
 
 date = datetime.datetime.now().strftime("%Y-%m-%d")
 
@@ -21,7 +23,7 @@ def query_db(conn, query, args=(), one=False):
     cur = conn.cursor()
     cur.execute(query, args)
     r = [
-        dict((cur.description[i][0], value) for i, value in enumerate(row))
+        {cur.description[i][0]: value for i, value in enumerate(row)}
         for row in cur.fetchall()
     ]
 
@@ -284,15 +286,15 @@ for org_index, org_row in orgs.iterrows():
         cursor = PE_conn.cursor()
         columns = domain_list[0].keys()
         table = "domain_permutations"
-        sql = """INSERT INTO %s(%s) VALUES %%s 
-        ON CONFLICT (domain_permutation,organizations_uid) 
+        sql = """INSERT INTO {}({}) VALUES %s
+        ON CONFLICT (domain_permutation,organizations_uid)
         DO UPDATE SET malicious = EXCLUDED.malicious,
             blocklist_attack_count = EXCLUDED.blocklist_attack_count,
             blocklist_report_count = EXCLUDED.blocklist_report_count,
             dshield_record_count = EXCLUDED.dshield_record_count,
             dshield_attack_count = EXCLUDED.dshield_attack_count,
             data_source_uid = EXCLUDED.data_source_uid,
-            date_active = EXCLUDED.date_active;""" % (
+            date_active = EXCLUDED.date_active;""".format(
             table,
             ",".join(columns),
         )

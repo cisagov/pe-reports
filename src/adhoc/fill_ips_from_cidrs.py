@@ -2,11 +2,11 @@
 # Standard Python Libraries
 import hashlib
 import ipaddress
+import logging
 
 # Third-Party Libraries
 import pandas as pd
 import psycopg2
-import logging
 
 # cisagov Libraries
 from pe_reports.data.db_query import connect, show_psycopg2_exception

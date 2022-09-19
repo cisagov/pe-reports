@@ -7,12 +7,21 @@ import os
 
 # Third-Party Libraries
 import chevron
+
+# New Imports
+from dateutil.relativedelta import relativedelta
 from numpy import source
 
 from .charts import Charts
 
 # Import Classes
-from .metrics import Credentials, Cyber_Six, Domains_Masqs, Malware_Vulns
+from .metrics import (
+    Credentials,
+    Cyber_Six,
+    Domains_Masqs,
+    Malware_Vulns,
+    percentChangeStr,
+)
 
 
 # Style and build tables
@@ -115,7 +124,7 @@ def credential(
     height = 10
     name = "inc_date_df"
     title = "Trending Exposures by Week"
-    x_label = "Week Reported"
+    x_label = "Report Period"  # Updated x label
     y_label = "Creds Exposed"
     cred_date_chart = Charts(
         Credential.by_days(),
@@ -130,7 +139,8 @@ def credential(
     breach_table = buildTable(
         Credential.breach_details(),
         ["table"],
-        [30, 20, 20, 20, 10],
+        # [30, 20, 20, 20, 10], # orginial
+        [25, 20, 20, 14, 11, 10],  # New breach table spacing
         link_to_appendix=True,
     )
 
@@ -139,6 +149,10 @@ def credential(
         "creds": Credential.total(),
         "pw_creds": Credential.password(),
         "breach_table": breach_table,
+        # New page metircs ------ v
+        "percChngBreach": percentChangeStr(Credential.percentBreach()),
+        "percChngCreds": percentChangeStr(Credential.percentCredTotal()),
+        "percChngPass": percentChangeStr(Credential.percentCredPass()),
     }
     breach_appendix = Credential.breach_appendix()
 
@@ -207,8 +221,8 @@ def mal_vuln(chevron_dict, start_date, end_date, org_uid, source_html):
     height = 5.3
     name = "pro_count"
     title = ""
-    x_label = "Insecure Protocols"
-    y_label = ""
+    x_label = "Number of Insecure IPs"  # Updated label
+    y_label = "Protocol"  # Updated label
     protocol_chart = Charts(
         Malware_Vuln.protocol_count(),
         width,
@@ -224,8 +238,8 @@ def mal_vuln(chevron_dict, start_date, end_date, org_uid, source_html):
     height = 9
     name = "unverif_vuln_count"
     title = ""
-    x_label = "Unverified CVEs"
-    y_label = ""
+    x_label = "Number of Unverified CVEs"  # Updated label
+    y_label = "IP Address"  # Updated label
     unverif_vuln_chart = Charts(
         Malware_Vuln.unverified_cve_count(),
         width,
@@ -297,8 +311,8 @@ def dark_web(chevron_dict, trending_start_date, start_date, end_date, org_uid):
     height = 12
     name = "web_only_df_2"
     title = ""
-    x_label = "Dark Web Mentions"
-    y_label = "Mentions count"
+    x_label = "Week Reported"  # Updated label
+    y_label = "Dark Web Mention Count"  # Updated label
     dark_mentions_chart = Charts(
         Cyber6.dark_web_date(),
         width,
@@ -367,8 +381,17 @@ def init(datestring, org_name, org_uid):
         start_date = datetime.datetime(end_date.year, end_date.month, 1)
     else:
         start_date = datetime.datetime(end_date.year, end_date.month, 16)
-    days = datetime.timedelta(27)
-    trending_start_date = end_date - days
+
+    # NEW TRENDING START DATE ----- v
+    # Calulate trending start date, going back 4 report periods
+    if end_date.day == 15:
+        trending_start_date = end_date + relativedelta(months=-2)
+        trending_start_date = trending_start_date.replace(day=16)
+    else:
+        trending_start_date = end_date + relativedelta(months=-1)
+        trending_start_date = trending_start_date.replace(day=1)
+    # NEW TRENDING START DATE ----- ^
+
     # Get base directory to save images
     base_dir = os.path.abspath(os.path.dirname(__file__))
     start = start_date.strftime("%m/%d/%Y")
