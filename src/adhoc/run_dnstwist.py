@@ -160,8 +160,6 @@ for org_index, org_row in orgs.iterrows():
                 attacks = 0
                 reports = 0
                 if "original" in dom["fuzzer"]:
-                    print("original")
-                    print(dom["fuzzer"])
                     continue
                 if "dns_a" not in dom:
                     continue
@@ -184,8 +182,8 @@ for org_index, org_row in orgs.iterrows():
                     results = dshield.ip(
                         str(dom["dns_a"][0]), return_format=dshield.JSON
                     )
-                    results = json.loads(results)
                     try:
+                        results = json.loads(results)
                         threats = results["ip"]["threatfeeds"]
                         attacks = results["ip"]["attacks"]
                         attacks = int(0 if attacks is None else attacks)
@@ -221,9 +219,8 @@ for org_index, org_row in orgs.iterrows():
                     results = dshield.ip(
                         str(dom["dns_aaaa"][0]), return_format=dshield.JSON
                     )
-                    results = json.loads(results)
-
                     try:
+                        results = json.loads(results)
                         threats = results["ip"]["threatfeeds"]
                         attacks = results["ip"]["attacks"]
                         attacks = int(0 if attacks is None else attacks)

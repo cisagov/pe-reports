@@ -84,7 +84,7 @@ class Cybersixgill:
                 count += 1
                 # Get sixgill_org_id associated with the PE org
                 try:
-                    sixgill_org_id = sixgill_orgs[org_id][4]
+                    sixgill_org_id = sixgill_orgs[org_id][5]
                     logging.info("sixgill_id")
                     logging.info(sixgill_org_id)
                 except KeyError as err:
@@ -130,6 +130,7 @@ class Cybersixgill:
 
         # Fetch alert data with sixgill_org_id
         try:
+            print(sixgill_org_id)
             alerts_df = alerts(sixgill_org_id)
             # Add pe_org_id
             alerts_df["organizations_uid"] = pe_org_uid
@@ -171,12 +172,12 @@ class Cybersixgill:
                     alerts_df.at[alert_index, "content_snip"] = ""
                     alerts_df.at[alert_index, "asset_mentioned"] = ""
                     alerts_df.at[alert_index, "asset_type"] = ""
-            print(alerts_df["asset_mentioned"])
+            # print(alerts_df["asset_mentioned"])
 
         except Exception as e:
             logging.error("Failed fetching alert content for %s", org_id)
             logging.error(e)
-            print(traceback.format_exc())
+            logging.error(traceback.format_exc())
             return 1
 
         # Insert alert data into the PE database
@@ -214,6 +215,9 @@ class Cybersixgill:
                     "Department of Interior Office of the Secretary",
                     "Interior Office of the Secretary",
                 ]
+            if "NIH" in aliases:
+                aliases.remove("NIH")
+
             if "BLM" in aliases:
                 aliases.remove("BLM")
             if "ED" in aliases:

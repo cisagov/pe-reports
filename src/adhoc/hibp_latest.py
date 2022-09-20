@@ -7,7 +7,6 @@ from data.config import config, config2
 from data.run import query_orgs
 import pandas as pd
 import psycopg2
-from psycopg2 import OperationalError, show_psycopg2_exception
 import psycopg2.extras as extras
 import requests
 
@@ -23,8 +22,9 @@ def connect(PARAMS):
     conn = None
     try:
         conn = psycopg2.connect(**PARAMS)
-    except OperationalError as err:
-        show_psycopg2_exception(err)
+    except Exception as err:
+        print(err)
+        print("Error connecting to DB.")
         conn = None
     return conn
 
@@ -230,7 +230,7 @@ def execute_hibp_breach_values(conn, jsonList, table):
 
 
 def run_hibp(org_df):
-    PE_conn = connect("", PE_CONN_PARAMS)
+    PE_conn = connect(PE_CONN_PARAMS)
     try:
         source_uid = getDataSource(PE_conn, "HaveIBeenPwnd")[0]
         print("Success fetching the data source")
@@ -290,7 +290,11 @@ def run_hibp(org_df):
                 print(f"Finding breaches for {sd}")
             else:
                 continue
-            hibp_resp = get_emails(sd)
+            try:
+                hibp_resp = get_emails(sd)
+            except:
+                print("Failed after 5 tries.")
+                continue
             if hibp_resp:
                 # print(emails)
                 # flat = flatten_data(emails, sub['name'], compiled_breaches)

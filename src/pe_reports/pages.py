@@ -190,7 +190,7 @@ def masquerading(chevron_dict, start_date, end_date, org_uid):
         {
             "domain_table": buildTable(Domain_Masq.summary(), ["table"], []),
             "domain_alerts_table": buildTable(
-                Domain_Masq.alerts(), ["table"], [75, 25]
+                Domain_Masq.alerts(), ["table"], [85, 15]
             ),
             "suspectedDomains": Domain_Masq.count(),
             "domain_alerts": Domain_Masq.alert_count(),

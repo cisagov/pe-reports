@@ -44,7 +44,7 @@ def embed(
     """Embeds raw data into PDF and encrypts file."""
     doc = fitz.open(file)
     # Get the summary page of the PDF on page 4
-    page = doc[3]
+    page = doc[4]
     output = (
         f"{output_directory}/{org_code}/Posture_and_Exposure_Report-{datestring}.pdf"
     )
@@ -127,8 +127,9 @@ def generate_reports(datestring, output_directory):
             org_name = org[1]
             org_code = org[2]
 
-            if org_code not in ["DOI"]:
-                continue
+            # if org_code not in ["NMB"]:
+            #     continue
+
             logging.info("Running on %s", org_code)
 
             # Create folders in output directory
