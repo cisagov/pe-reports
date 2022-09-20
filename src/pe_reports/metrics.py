@@ -66,7 +66,7 @@ def percentChangeStr(percChng):
     """Creates string that displays metric and percent change in value"""
     finalString = ""
     if percChng == "New Value":
-        finalString = "(\u2191 New)"
+        finalString = "(\u2191 Increased From Zero)"
     elif percChng < 0:
         finalString = "(\u2193 %.2f%%)" % (percChng)
     elif percChng > 0:
@@ -226,32 +226,21 @@ class Credentials:
 
     # ---------- v New cred functions v ------------
 
-    def percentCredTotal(self):
-        """Calculates the percent change in total creds exposed since last report"""
-        currTotal = self.creds_view.shape[0]
+    def perChngCred(self, option):
+        "Consolidated percent change function for the credential pub & abuse page metrics"
         [prevStart, prevEnd] = getPrevPeriod(self.end_date)
         prev_creds_view = query_creds_view(self.org_uid, prevStart, prevEnd)
-        prevTotal = prev_creds_view.shape[0]
-        credTotPercChng = percentChange(prevTotal, currTotal)
-        return credTotPercChng
-
-    def percentCredPass(self):
-        """Calculates the percent change in creds w/ passwords exposed since last report"""
-        currTotal = self.creds_view[self.creds_view["password_included"]].shape[0]
-        [prevStart, prevEnd] = getPrevPeriod(self.end_date)
-        prev_creds_view = query_creds_view(self.org_uid, prevStart, prevEnd)
-        prevTotal = prev_creds_view[prev_creds_view["password_included"]].shape[0]
-        credPassPercChng = percentChange(prevTotal, currTotal)
-        return credPassPercChng
-
-    def percentBreach(self):
-        """Calculates the percent change in distinct breaches since last report"""
-        currTotal = self.creds_view["breach_name"].nunique()
-        [prevStart, prevEnd] = getPrevPeriod(self.end_date)
-        prev_creds_view = query_creds_view(self.org_uid, prevStart, prevEnd)
-        prevTotal = prev_creds_view["breach_name"].nunique()
-        breachPercChng = percentChange(prevTotal, currTotal)
-        return breachPercChng
+        [currTotal, prevTotal] = [1, 1]
+        if option == "total":
+            prevTotal = prev_creds_view.shape[0]
+            currTotal = self.creds_view.shape[0]
+        elif option == "pass":
+            prevTotal = prev_creds_view[prev_creds_view["password_included"]].shape[0]
+            currTotal = self.creds_view[self.creds_view["password_included"]].shape[0]
+        elif option == "breach":
+            prevTotal = prev_creds_view["breach_name"].nunique()
+            currTotal = self.creds_view["breach_name"].nunique()
+        return percentChangeStr(percentChange(prevTotal, currTotal))
 
     # ---------- ^ New cred functions ^ ------------
 
@@ -332,6 +321,25 @@ class Domains_Masqs:
             ["message", "date", "previous_value", "new_value"]
         ]
         return dom_alerts_sum
+
+    # ---------- v New domain functions v ------------
+
+    def perChngDomain(self, option):
+        "Consolidated percent change function for the domain alerts & masq page metrics"
+        [prevStart, prevEnd] = getPrevPeriod(self.end_date)
+        prev_dom_alerts_df = query_domMasq_alerts(self.org_uid, prevStart, prevEnd)
+        prev_df = query_domMasq(self.org_uid, prevStart, prevEnd)
+        prev_df_mal = prev_df[prev_df["malicious"] == True]
+        [currTotal, prevTotal] = [1, 1]
+        if option == "suspect":
+            prevTotal = len(prev_df_mal.index)
+            currTotal = len(self.df_mal.index)
+        elif option == "alerts":
+            prevTotal = len(prev_dom_alerts_df)
+            currTotal = len(self.dom_alerts_df)
+        return percentChangeStr(percentChange(prevTotal, currTotal))
+
+    # ---------- ^ New domain functions ^ ------------
 
 
 class Malware_Vulns:
@@ -517,6 +525,72 @@ class Malware_Vulns:
             }
         )
         return verif_vulns_summary
+
+    # ---------- v New vuln functions v ------------
+
+    def perChngVuln(self, option):
+        "Consolidated percent change function for the insec dev & sus vuln page metrics"
+        [prevStart, prevEnd] = getPrevPeriod(self.end_date)
+
+        # Ports
+        prev_insecure_df = query_shodan(
+            self.org_uid,
+            prevStart,
+            prevEnd,
+            "vw_shodanvulns_suspected",
+        )
+        prev_risky_assets = self.isolate_risky_assets(prev_insecure_df)
+        prev_pro_count = prev_risky_assets.groupby(["protocol"], as_index=False)[
+            "protocol"
+        ].agg({"id_count": "count"})
+
+        # Verif Vulns
+        prev_vulns_df = query_shodan(
+            self.org_uid, prevStart, prevEnd, "vw_shodanvulns_verified"
+        )
+        prev_vulns_df["port"] = prev_vulns_df["port"].astype(str)
+        prev_verif_vulns = (
+            prev_vulns_df[["cve", "ip", "port"]]
+            .groupby("cve")
+            .agg(lambda x: "  ".join(set(x)))
+            .reset_index()
+        )
+        if len(prev_verif_vulns) > 0:
+            prev_verif_vulns["count"] = prev_verif_vulns["ip"].str.split("  ").str.len()
+            prev_verifVulns = prev_verif_vulns["count"].sum()
+        else:
+            prev_verifVulns = 0
+
+        # Sus Vulns
+        prev_unverif_df = prev_insecure_df[
+            prev_insecure_df["type"] != "Insecure Protocol"
+        ]
+        prev_unverif_df = prev_unverif_df.copy()
+        prev_unverif_df["potential_vulns"] = (
+            prev_unverif_df["potential_vulns"].sort_values().apply(lambda x: sorted(x))
+        )
+        prev_unverif_df["potential_vulns"] = prev_unverif_df["potential_vulns"].astype(
+            "str"
+        )
+        prev_unverif_df = (
+            prev_unverif_df[["potential_vulns", "ip"]]
+            .drop_duplicates(keep="first")
+            .reset_index(drop=True)
+        )
+
+        [currTotal, prevTotal] = [1, 1]
+        if option == "ports":
+            prevTotal = prev_pro_count["id_count"].sum()
+            currTotal = self.risky_ports_count()
+        elif option == "verifvuln":
+            prevTotal = prev_verifVulns
+            currTotal = self.total_verif_vulns()
+        elif option == "susvuln":
+            prevTotal = len(prev_unverif_df.index)
+            currTotal = self.unverified_vuln_count()
+        return percentChangeStr(percentChange(prevTotal, currTotal))
+
+    # ---------- ^ New vuln functions ^ ------------
 
 
 class Cyber_Six:
@@ -765,3 +839,22 @@ class Cyber_Six:
                 top_cve_table.at[cve_index, "Identified By"] += ",   Shodan"
 
         return top_cve_table
+
+    # ---------- v New dark web functions v ------------
+
+    def perChngDark(self, option):
+        "Consolidated percent change function for the dark web activity page metrics"
+        [prevStart, prevEnd] = getPrevPeriod(self.end_date)
+        prev_alerts = query_darkweb(
+            self.org_uid,
+            prevStart,
+            prevEnd,
+            "alerts",
+        )
+        [currTotal, prevTotal] = [1, 1]
+        if option == "alerts":
+            prevTotal = len(prev_alerts.index)
+            currTotal = len(self.alerts.index)
+        return percentChangeStr(percentChange(prevTotal, currTotal))
+
+    # ---------- ^ New dark web functions ^ ------------

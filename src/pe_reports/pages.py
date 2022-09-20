@@ -150,9 +150,9 @@ def credential(
         "pw_creds": Credential.password(),
         "breach_table": breach_table,
         # New page metircs ------ v
-        "percChngBreach": percentChangeStr(Credential.percentBreach()),
-        "percChngCreds": percentChangeStr(Credential.percentCredTotal()),
-        "percChngPass": percentChangeStr(Credential.percentCredPass()),
+        "percChngBreach": Credential.perChngCred("breach"),
+        "percChngTotal": Credential.perChngCred("total"),
+        "percChngPass": Credential.perChngCred("pass"),
     }
     breach_appendix = Credential.breach_appendix()
 
@@ -208,6 +208,9 @@ def masquerading(chevron_dict, start_date, end_date, org_uid):
             ),
             "suspectedDomains": Domain_Masq.count(),
             "domain_alerts": Domain_Masq.alert_count(),
+            # New page metircs ------ v
+            "percChngDomainAlert": Domain_Masq.perChngDomain("alerts"),
+            "percChngSusDomain": Domain_Masq.perChngDomain("suspect"),
         }
     )
     return chevron_dict, Domain_Masq.df_mal, Domain_Masq.alerts_sum()
@@ -268,6 +271,10 @@ def mal_vuln(chevron_dict, start_date, end_date, org_uid, source_html):
         "riskyPorts": Malware_Vuln.risky_ports_count(),
         "verifVulns": Malware_Vuln.total_verif_vulns(),
         "unverifVulns": Malware_Vuln.unverified_vuln_count(),
+        # New page metircs ------ v
+        "percChngPorts": Malware_Vuln.perChngVuln("ports"),
+        "percChngVerifVuln": Malware_Vuln.perChngVuln("verifvuln"),
+        "percChngSusVuln": Malware_Vuln.perChngVuln("susvuln"),
     }
 
     verif_vulns_summary = Malware_Vuln.verif_vulns_summary()
@@ -352,6 +359,8 @@ def dark_web(chevron_dict, trending_start_date, start_date, end_date, org_uid):
         "social_med_act": social_med_act_table,
         "markets_table": invite_only_markets_table,
         "top_cves": top_cves_table,
+        # New page metircs ------ v
+        "percChngDarkAlert": Cyber6.perChngDark("alerts"),
     }
 
     chevron_dict.update(dark_web_dict)
