@@ -1,6 +1,5 @@
 """Script to enumerate subs based on a provided root domain."""
 # Standard Python Libraries
-import datetime
 import json
 
 # Third-Party Libraries
@@ -8,14 +7,14 @@ import pandas as pd
 import requests
 
 # cisagov Libraries
+from pe_reports.data.config import whois_xml_api_key
 from pe_reports.data.db_query import (
     connect,
     execute_values,
+    get_data_source_uid,
     get_orgs,
     query_roots,
-    get_data_source_uid,
 )
-from pe_reports.data.config import whois_xml_api_key
 
 API_WHOIS = whois_xml_api_key()
 

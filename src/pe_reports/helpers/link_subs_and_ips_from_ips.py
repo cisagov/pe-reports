@@ -1,9 +1,9 @@
 """Link sub-domains and IPs from IP lookups."""
 # Standard Python Libraries
 import datetime
+import logging
 import threading
 import time
-import logging
 
 # Third-Party Libraries
 import numpy as np
@@ -11,8 +11,8 @@ import pandas as pd
 import requests
 
 # cisagov Libraries
-from pe_reports.data.db_query import connect
 from pe_reports.data.config import whois_xml_api_key
+from pe_reports.data.db_query import connect
 
 
 def reverseLookup(ip, failed_ips):

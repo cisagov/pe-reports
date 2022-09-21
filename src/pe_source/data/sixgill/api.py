@@ -1,8 +1,9 @@
 """Cybersixgill API calls."""
 # Standard Python Libraries
-import logging
-import time
 import json
+import logging
+import os
+import time
 
 # Third-Party Libraries
 import pandas as pd
@@ -164,11 +165,11 @@ def setNewCSGOrg(newOrgName, orgAliases, orgDomainNames, orgIP, orgExecs):
 
 def setOrganizationUsers(org_id):
     """Set CSG user permissions at new stakeholder."""
-    role1 = "5d23342df5feaf006a8a8929"
-    role2 = "5d23342df5feaf006a8a8927"
-    id_role1 = "610017c216948d7efa077a52"
-    csg_role_id = "role_id"
-    csg_user_id = "user_id"
+    role1 = os.getenv("USERROLE1")
+    role2 = os.getenv("USERROLE2")
+    id_role1 = os.getenv("USERID")
+    csg_role_id = os.getenv("CSGUSERROLE")
+    csg_user_id = os.getenv("CSGUSERID")
 
     for user in getUserInfo():
         userrole = user[csg_role_id]
@@ -192,7 +193,7 @@ def setOrganizationUsers(org_id):
                 "Authorization": f"Bearer {cybersix_token()}",
             }
 
-            response = requests.post(url, headers=headers).json()
+            requests.post(url, headers=headers).json()
 
 
 def setOrganizationDetails(org_id, orgAliases, orgDomain, orgIP, orgExecs):

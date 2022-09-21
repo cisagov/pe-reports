@@ -2,11 +2,10 @@
 # Standard Python Libraries
 import hashlib
 import ipaddress
+import logging
 
 # Third-Party Libraries
 import pandas as pd
-import psycopg2
-import logging
 
 # cisagov Libraries
 from pe_reports.data.db_query import connect, execute_ips, query_cidrs
@@ -47,6 +46,7 @@ def fill_ips_from_cidrs():
 
 
 def main():
+    """Run fill IPs."""
     fill_ips_from_cidrs()
 
 

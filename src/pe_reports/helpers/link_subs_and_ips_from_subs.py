@@ -1,11 +1,8 @@
 """Link sub-domains and IPs from sub-domain lookups."""
 # Standard Python Libraries
 import hashlib
-import socket
 import logging
-
-# Third-Party Libraries
-import pandas as pd
+import socket
 
 # cisagov Libraries
 from pe_reports.data.db_query import connect, query_subs

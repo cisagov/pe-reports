@@ -1,7 +1,6 @@
 """Fill CIDRs table from cyhy assets."""
 
-# Third-Party Libraries
-import pandas as pd
+# Standard Python Libraries
 import logging
 
 # cisagov Libraries
