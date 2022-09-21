@@ -10,6 +10,7 @@ import logging
 
 # cisagov Libraries
 from pe_reports.data.db_query import close, connect, execute_values, get_orgs_df
+from pe_source.data.pe_db.config import shodan_api_init
 
 states = [
     "AL",
@@ -362,7 +363,7 @@ def dedupe(orgs):
     """Check list of IPs, CIDRs, ASNS, and FQDNs in Shodan and output set of IPs."""
     # get username and password from config file
     # TODO: Add key
-    key = ""
+    key = shodan_api_init()[0]
     api = shodan.Shodan(key)
     for i, org in orgs.iterrows():
 

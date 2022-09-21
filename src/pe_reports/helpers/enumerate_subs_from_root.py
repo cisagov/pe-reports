@@ -8,23 +8,17 @@ import pandas as pd
 import requests
 
 # cisagov Libraries
-from pe_reports.data.db_query import connect, execute_values, get_orgs
+from pe_reports.data.db_query import (
+    connect,
+    execute_values,
+    get_orgs,
+    query_roots,
+    get_data_source_uid,
+)
+from pe_reports.data.config import whois_xml_api_key
 
 # TODO: Add API key
-API_WHOIS = ""
-
-
-def query_roots(org_uid):
-    """Query all ips that link to a cidr related to a specific org."""
-    print(org_uid)
-    conn = connect()
-    sql = """SELECT r.root_domain_uid, r.root_domain FROM root_domains r
-            where r.organizations_uid = %(org_uid)s
-            and r.enumerate_subs = True
-            """
-    df = pd.read_sql(sql, conn, params={"org_uid": org_uid})
-    conn.close()
-    return df
+API_WHOIS = whois_xml_api_key()
 
 
 def execute_subs(conn, dataframe):
@@ -34,25 +28,6 @@ def execute_subs(conn, dataframe):
                     DO
                     NOTHING;"""
     execute_values(conn, df, "public.sub_domains", except_clause)
-
-
-def get_data_source_uid(source):
-    """Get data source uid."""
-    conn = connect()
-    cur = conn.cursor()
-    sql = """SELECT * FROM data_source WHERE name = '{}'"""
-    cur.execute(sql.format(source))
-    source = cur.fetchone()[0]
-    cur.close()
-    cur = conn.cursor()
-    # Update last_run in data_source table
-    date = datetime.datetime.today().strftime("%Y-%m-%d")
-    sql = """update data_source set last_run = '{}'
-            where name = '{}';"""
-    cur.execute(sql.format(date, source))
-    cur.close()
-    conn.close()
-    return source
 
 
 def getSubdomain(domain, root_uid):
@@ -101,11 +76,13 @@ def enumerate_and_save_subs(root_uid, root_domain):
 
 def main():
     """Query orgs and run them through the enuemeration function."""
-    orgs = get_orgs("")
-    for i, org in orgs.iterrows():
-        roots = query_roots(org["organizations_uid"])
-        for j, root in roots.iterrows():
-            enumerate_and_save_subs(root["root_domain_uid"], root["root_domain"])
+    orgs = get_orgs(connect())
+    for org_index, org_row in orgs.iterrows():
+        roots = query_roots(org_row["organizations_uid"])
+        for root_index, root_row in roots.iterrows():
+            enumerate_and_save_subs(
+                root_row["root_domain_uid"], root_row["root_domain"]
+            )
 
 
 if __name__ == "__main__":

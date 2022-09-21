@@ -25,7 +25,7 @@ from flask import (
 )
 from lxml import html
 import nltk
-from werkzeug.utils import secure_filename
+
 
 # from nltk.tag import StanfordTagger
 # from nltk.tokenize import word_tokenize
@@ -602,47 +602,6 @@ def theExecs(URL):
                     # print(f'{hy[0]} {hy[1]}')
     # print(executives)
     return executives
-
-
-def allowed_file(filename):
-    # Allowed file extensions to upload
-    ALLOWED_EXTENSIONS = current_app.config["ALLOWED_EXTENSIONS"]
-    return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
-
-
-@stakeholder_blueprint.route("/upload", methods=["GET", "POST"])
-def upload_file():
-    # Directory where bulk stakeholder files to be uploaded
-    UPLOAD_FOLDER = current_app.config["UPLOAD_FOLDER"]
-
-    try:
-        os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-        logging.info("There was a directory created for upload")
-    except FileExistsError:
-        logging.info("The upload folder already exists")
-
-    if request.method == "POST":
-        # check if the post request has the file part
-        if "file" not in request.files:
-            flash("No file part", "warning")
-            return redirect(request.url)
-        file = request.files["file"]
-        # If the user does not select a file, the browser submits an
-        # empty file without a filename.
-        if file.filename == "":
-            flash("No selected file", "warning")
-            return redirect(request.url)
-        if file and allowed_file(file.filename):
-            filename = secure_filename(file.filename)
-            file.save(os.path.join(UPLOAD_FOLDER, filename))
-            flash("The file was saved", "success")
-        else:
-            flash("The file that was chosen cannot be uploaded", "warning")
-            logging.info("The file that was chosen cannot be uploaded")
-
-            return redirect(url_for("stakeholder.upload_file", name=filename))
-        return redirect(url_for("stakeholder.upload_file"))
-    return render_template("upload.html")
 
 
 @stakeholder_blueprint.route("/stakeholder", methods=["GET", "POST"])

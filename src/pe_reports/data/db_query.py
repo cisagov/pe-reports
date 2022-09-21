@@ -3,6 +3,8 @@
 # Standard Python Libraries
 import logging
 import sys
+import socket
+from ipaddress import ip_address, ip_network
 
 # Third-Party Libraries
 import numpy as np
@@ -11,6 +13,7 @@ import psycopg2
 from psycopg2 import OperationalError
 from psycopg2.extensions import AsIs
 import psycopg2.extras as extras
+import datetime
 
 from .config import config
 
@@ -103,6 +106,176 @@ def get_new_orgs():
     finally:
         if conn is not None:
             close(conn)
+
+
+def set_org_to_report_on(cyhy_db_id):
+    """Query cyhy assets."""
+    sql = """
+    SELECT *
+    FROM organizations o
+    where o.cyhy_db_name = %(org_id)s
+    """
+    params = config()
+    conn = psycopg2.connect(**params)
+    df = pd.read_sql_query(sql, conn, params={"org_id": cyhy_db_id})
+
+    if len(df) < 1:
+        logging.error("No org found for that cyhy id")
+        return 0
+
+    for i, row in df.iterrows():
+        if row["report_on"] == True and row["premium_report"] == True:
+            continue
+        cursor = conn.cursor()
+        sql = """UPDATE organizations
+                SET report_on = True, premium_report = True
+                WHERE organizations_uid = %s"""
+        uid = row["organizations_uid"]
+        cursor.execute(sql, [uid])
+        conn.commit()
+        cursor.close()
+    conn.close()
+    return df
+
+
+def query_cyhy_assets(cyhy_db_id, conn):
+    """Query cyhy assets."""
+    sql = """
+    SELECT *
+    FROM cyhy_db_assets ca
+    where ca.org_id = %(org_id)s;
+    """
+
+    df = pd.read_sql_query(sql, conn, params={"org_id": cyhy_db_id})
+
+    return df
+
+
+def get_data_source_uid(source):
+    """Get data source uid."""
+    params = config()
+    conn = psycopg2.connect(**params)
+    cur = conn.cursor()
+    sql = """SELECT * FROM data_source WHERE name = '{}'"""
+    cur.execute(sql.format(source))
+    source = cur.fetchone()[0]
+    cur.close()
+    cur = conn.cursor()
+    # Update last_run in data_source table
+    date = datetime.datetime.today().strftime("%Y-%m-%d")
+    sql = """update data_source set last_run = '{}'
+            where name = '{}';"""
+    cur.execute(sql.format(date, source))
+    cur.close()
+    conn.close()
+    return source
+
+
+def verifyIPv4(custIP):
+    """Verify if parameter is a valid IPv4 IP address."""
+    try:
+        if ip_address(custIP):
+            return True
+
+        else:
+            return False
+
+    except ValueError as err:
+        logging.error("The address is incorrect, %s", err)
+        return False
+
+
+def validateIP(custIP):
+    """
+    Verify IPv4 and CIDR.
+
+    Collect address information into a list that is ready for DB insertion.
+    """
+    verifiedIP = []
+    for the_ip in custIP:
+        if verifyCIDR(the_ip) or verifyIPv4(the_ip):
+            verifiedIP.append(the_ip)
+    return verifiedIP
+
+
+def verifyCIDR(custIP):
+    """Verify if parameter is a valid CIDR block IP address."""
+    try:
+        if ip_network(custIP):
+            return True
+
+        else:
+            return False
+
+    except ValueError as err:
+        logging.error("The CIDR is incorrect, %s", err)
+        return False
+
+
+def get_cidrs_and_ips(org_uid):
+    """Query all cidrs and ips for an organization."""
+    params = config()
+    conn = psycopg2.connect(**params)
+    cur = conn.cursor()
+    sql = """SELECT network from cidrs where
+        organizations_uid = %s;"""
+    cur.execute(sql, [org_uid])
+    cidrs = cur.fetchall()
+    sql = """
+    SELECT i.ip
+    FROM ips i
+    join ips_subs ip_s on ip_s.ip_hash = i.ip_hash
+    join sub_domains sd on sd.sub_domain_uid = ip_s.sub_domain_uid
+    join root_domains rd on rd.root_domain_uid = sd.root_domain_uid
+    WHERE rd.organizations_uid = %s
+    AND i.origin_cidr is null;
+    """
+    cur.execute(sql, [org_uid])
+    ips = cur.fetchall()
+    conn.close()
+    cidrs_ips = cidrs + ips
+    cidrs_ips = [x[0] for x in cidrs_ips]
+    cidrs_ips = validateIP(cidrs_ips)
+    logging.info(cidrs_ips)
+    return cidrs_ips
+
+
+def query_cidrs():
+    """Query all cidrs ordered by length."""
+    conn = connect()
+    sql = """SELECT tc.cidr_uid, tc.network, tc.organizations_uid, tc.insert_alert
+            FROM cidrs tc
+            ORDER BY masklen(tc.network)
+            """
+    df = pd.read_sql(sql, conn)
+    conn.close()
+    return df
+
+
+def insert_roots(org, domain_list):
+    """Insert root domains into the database."""
+    source_uid = get_data_source_uid("P&E")
+    roots_list = []
+    for domain in domain_list:
+        try:
+            ip = socket.gethostbyname(domain)
+        except Exception:
+            ip = np.nan
+        root = {
+            "organizations_uid": org["organizations_uid"].iloc[0],
+            "root_domain": domain,
+            "ip_address": ip,
+            "data_source_uid": source_uid,
+            "enumerate_subs": True,
+        }
+        roots_list.append(root)
+
+    roots = pd.DataFrame(roots_list)
+    except_clause = """ ON CONFLICT (root_domain, organizations_uid)
+    DO NOTHING;"""
+    params = config()
+    conn = psycopg2.connect(**params)
+    execute_values(conn, roots, "public.root_domains", except_clause)
 
 
 def query_creds_view(org_uid, start_date, end_date):
@@ -318,3 +491,34 @@ def query_cyberSix_creds(org_uid, start_date, end_date):
     finally:
         if conn is not None:
             close(conn)
+
+
+def query_subs(org_uid):
+    """Query all subs for an organization."""
+    conn = connect()
+    sql = """SELECT sd.* FROM sub_domains sd
+            JOIN root_domains rd on rd.root_domain_uid = sd.root_domain_uid
+            where rd.organizations_uid = %(org_uid)s
+            """
+    df = pd.read_sql(sql, conn, params={"org_uid": org_uid})
+    conn.close()
+    return df
+
+
+def execute_ips(conn, dataframe):
+    """Insert the ips into the ips table in the database and link them to the associated cidr."""
+    for i, row in dataframe.iterrows():
+        try:
+            cur = conn.cursor()
+            sql = """
+            INSERT INTO ips(ip_hash, ip, origin_cidr) VALUES (%s, %s, %s)
+            ON CONFLICT (ip)
+                    DO
+                    UPDATE SET origin_cidr = UUID(EXCLUDED.origin_cidr); """
+            cur.execute(sql, (row["ip_hash"], row["ip"], row["origin_cidr"]))
+            conn.commit()
+        except (Exception, psycopg2.DatabaseError) as err:
+            show_psycopg2_exception(err)
+            cur.close()
+            continue
+    print("IPs inserted using execute_values() successfully..")

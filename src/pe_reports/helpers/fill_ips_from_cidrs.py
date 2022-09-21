@@ -9,38 +9,7 @@ import psycopg2
 import logging
 
 # cisagov Libraries
-from pe_reports.data.db_query import connect, show_psycopg2_exception
-
-
-def execute_ips(conn, dataframe):
-    """Insert the ips into the ips table in the database and link them to the associated cidr."""
-    for i, row in dataframe.iterrows():
-        try:
-            cur = conn.cursor()
-            sql = """
-            INSERT INTO ips(ip_hash, ip, origin_cidr) VALUES (%s, %s, %s)
-            ON CONFLICT (ip)
-                    DO
-                    UPDATE SET origin_cidr = UUID(EXCLUDED.origin_cidr); """
-            cur.execute(sql, (row["ip_hash"], row["ip"], row["origin_cidr"]))
-            conn.commit()
-        except (Exception, psycopg2.DatabaseError) as err:
-            show_psycopg2_exception(err)
-            cur.close()
-            continue
-    print("IPs inserted using execute_values() successfully..")
-
-
-def query_cidrs():
-    """Query all cidrs ordered by length."""
-    conn = connect()
-    sql = """SELECT tc.cidr_uid, tc.network, tc.organizations_uid, tc.insert_alert
-            FROM cidrs tc
-            ORDER BY masklen(tc.network)
-            """
-    df = pd.read_sql(sql, conn)
-    conn.close()
-    return df
+from pe_reports.data.db_query import connect, execute_ips, query_cidrs
 
 
 def enumerate_ips(cidr, cidr_uid):
@@ -63,7 +32,7 @@ def fill_ips_from_cidrs():
     cidrs = query_cidrs()
     ips_from_cidrs = []
     for i, cidr in cidrs.iterrows():
-        
+
         if cidr["insert_alert"] is not None:
             continue
         ips_from_cidrs = ips_from_cidrs + enumerate_ips(
