@@ -3,6 +3,7 @@
 import datetime
 import threading
 import time
+import logging
 
 # Third-Party Libraries
 import numpy as np
@@ -11,12 +12,13 @@ import requests
 
 # cisagov Libraries
 from pe_reports.data.db_query import connect
+from pe_reports.data.config import whois_xml_api_key
 
 
 def reverseLookup(ip, failed_ips):
     """Take an ip and find all associated subdomains."""
     # TODO: Add API key
-    api = ""
+    api = whois_xml_api_key()
     url = f"https://dns-history.whoisxmlapi.com/api/v1?apiKey={api}&ip={ip}"
     payload = {}
     headers = {}
@@ -32,7 +34,7 @@ def reverseLookup(ip, failed_ips):
     found_domains = []
     try:
         try:
-            # update last_reverse_lookup field
+            # Update last_reverse_lookup field
             conn = connect()
             cur = conn.cursor()
             date = datetime.datetime.today().strftime("%Y-%m-%d")
@@ -117,18 +119,20 @@ def run_ip_chunk(org, ips, thread):
     for ip_index, ip in ips.iterrows():
         count += 1
         if count % 50 == 0:
-            print(f"{thread} Currently Running ips: {count}/{len(ips)}")
-            print(f"{thread} {time.time() - last_50} seconds for the last 50 IPs")
+            logging.info(f"{thread} Currently Running ips: {count}/{len(ips)}")
+            logging.info(
+                f"{thread} {time.time() - last_50} seconds for the last 50 IPs"
+            )
             last_50 = time.time()
         try:
             link_domain_from_ip(
                 ip["ip_hash"], ip["ip"], org_uid, "WhoisXML", failed_ips
             )
         except requests.exceptions.SSLError as e:
-            print(e)
+            logging.error(e)
             time.sleep(1)
             continue
-    print(f"{thread} Ips took {time.time() - start_time} to link to subs")
+    logging.info(f"{thread} Ips took {time.time() - start_time} to link to subs")
 
 
 def connect_subs_from_ips(orgs):
@@ -146,7 +150,7 @@ def connect_subs_from_ips(orgs):
         thread_list = []
         while x < len(ips_split):
             thread_name = f"Thread {x+1}: "
-            # start thread
+            # Start thread
             t = threading.Thread(
                 target=run_ip_chunk, args=(org, ips_split[x], thread_name)
             )

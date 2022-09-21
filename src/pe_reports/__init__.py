@@ -16,6 +16,7 @@ from flask_login import LoginManager
 from flask_migrate import Migrate
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.utils import secure_filename
+
 # cisagov Libraries
 from pe_reports.data.config import config
 
@@ -24,10 +25,9 @@ from pe_reports.home.views import home_blueprint
 from pe_reports.stakeholder.views import stakeholder_blueprint
 from pe_reports.stakeholder_full.views import stakeholder_full_blueprint
 from pe_reports.stakeholder_lite.views import stakeholder_lite_blueprint
+from pe_reports.stakeholder_bulk_upload.views import stakeholder_bulk_upload_blueprint
 
 from ._version import __version__  # noqa: F401
-
-
 
 
 params = config()
@@ -44,8 +44,8 @@ app.config[
 # Configure the redis server
 app.config["CELERY_BROKER_URL"] = "redis://localhost:6379/0"
 app.config["CELERY_RESULT_BACKEND"] = "redis://localhost:6379/0"
-app.config['UPLOAD_FOLDER'] = 'src/pe_reports/uploads/'
-app.config['ALLOWED_EXTENSIONS'] = {'txt', 'csv'}
+app.config["UPLOAD_FOLDER"] = "src/pe_reports/uploads/"
+app.config["ALLOWED_EXTENSIONS"] = {"txt", "csv"}
 
 
 # Create central logging
@@ -56,7 +56,6 @@ logging.basicConfig(
     datefmt="%m/%d/%Y %I:%M:%S",
     level=logging.INFO,
 )
-
 
 
 # Creates a Celery object
@@ -78,6 +77,8 @@ __all__ = ["app", "pages", "report_generator", "stylesheet"]
 app.register_blueprint(stakeholder_blueprint)
 app.register_blueprint(stakeholder_lite_blueprint)
 app.register_blueprint(stakeholder_full_blueprint)
+app.register_blueprint(stakeholder_bulk_upload_blueprint)
+
 # TODO: Add login blueprint. Issue #207 contains details
 # app.register_blueprint(manage_login_blueprint)
 app.register_blueprint(home_blueprint)

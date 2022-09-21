@@ -24,12 +24,15 @@ import spacy
 import traceback
 
 # cisagov Libraries
-from adhoc.enumerate_subs_from_root import enumerate_and_save_subs, query_roots
-from adhoc.fill_cidrs_from_cyhy_assets import fill_cidrs
-from adhoc.fill_ips_from_cidrs import fill_ips_from_cidrs
-from adhoc.link_subs_and_ips_from_ips import connect_subs_from_ips
-from adhoc.link_subs_and_ips_from_subs import connect_ips_from_subs
-from adhoc.shodan_dedupe import dedupe
+from pe_reports.helpers.enumerate_subs_from_root import (
+    enumerate_and_save_subs,
+    query_roots,
+)
+from pe_reports.helpers.fill_cidrs_from_cyhy_assets import fill_cidrs
+from pe_reports.helpers.fill_ips_from_cidrs import fill_ips_from_cidrs
+from pe_reports.helpers.link_subs_and_ips_from_ips import connect_subs_from_ips
+from pe_reports.helpers.link_subs_and_ips_from_subs import connect_ips_from_subs
+from pe_reports.helpers.shodan_dedupe import dedupe
 from pe_reports.data.config import config
 from pe_reports.data.db_query import execute_values, get_orgs_df
 from pe_reports.stakeholder_full.forms import InfoFormExternal

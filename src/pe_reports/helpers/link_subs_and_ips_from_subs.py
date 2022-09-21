@@ -2,12 +2,13 @@
 # Standard Python Libraries
 import hashlib
 import socket
+import logging
 
 # Third-Party Libraries
 import pandas as pd
 
 # cisagov Libraries
-from pe_reports.data.db_query import connect
+from pe_reports.data.db_query import connect, query_subs
 
 
 def find_ips(domain):
@@ -18,18 +19,6 @@ def find_ips(domain):
         ip = None
     print(ip)
     return ip
-
-
-def query_subs(org_uid):
-    """Query all subs for an organization."""
-    conn = connect()
-    sql = """SELECT sd.* FROM sub_domains sd
-            JOIN root_domains rd on rd.root_domain_uid = sd.root_domain_uid
-            where rd.organizations_uid = %(org_uid)s
-            """
-    df = pd.read_sql(sql, conn, params={"org_uid": org_uid})
-    conn.close()
-    return df
 
 
 def link_ip_from_domain(sub, root_uid, org_uid, data_source):
@@ -53,13 +42,14 @@ def link_ip_from_domain(sub, root_uid, org_uid, data_source):
 
 def connect_ips_from_subs(orgs):
     """For each org, find all ips associated with its sub_domains and link them in the ips_subs table."""
-    for org_index, org in orgs.iterrows():
-        org_uid = org["organizations_uid"]
+    for org_index, org_row in orgs.iterrows():
+        org_uid = org_row["organizations_uid"]
         subs = query_subs(str(org_uid))
-        for sub_index, sub in subs.iterrows():
-            sub_domain = sub["sub_domain"]
-            root_uid = sub["root_domain_uid"]
+        for sub_index, sub_row in subs.iterrows():
+            sub_domain = sub_row["sub_domain"]
+            root_uid = sub_row["root_domain_uid"]
             if sub_domain == "Null_Sub":
                 continue
+            logging.info(sub_domain)
             link_ip_from_domain(sub_domain, root_uid, org_uid, "unknown")
-        print("Finished connecting ips from subs")
+        logging.info("Finished connecting ips from subs")
