@@ -1,4 +1,9 @@
 """Cybersixgill API calls."""
+# Standard Python Libraries
+import logging
+import time
+import json
+
 # Third-Party Libraries
 import pandas as pd
 import requests
@@ -32,14 +37,23 @@ def org_assets(org_id):
         "Authorization": "Bearer " + auth,
     }
     payload = {"organization_id": org_id}
+    count = 1
+    while count < 7:
+        try:
+            resp = requests.get(url, headers=headers, params=payload).json()
+            break
+        except Exception:
+            time.sleep(5)
+            logging.info("Error. Trying query post again...")
+            count += 1
+            continue
     resp = requests.get(url, headers=headers, params=payload).json()
     return resp
 
 
-def intel_post(query, frm, scroll, result_size):
+def intel_post(auth, query, frm, scroll, result_size):
     """Get intel items - advanced variation."""
     url = "https://api.cybersixgill.com/intel/intel_items"
-    auth = cybersix_token()
     headers = {
         "Content-Type": "application/json",
         "Cache-Control": "no-cache",
@@ -61,10 +75,9 @@ def intel_post(query, frm, scroll, result_size):
     return resp
 
 
-def alerts_list(organization_id, fetch_size, offset):
+def alerts_list(auth, organization_id, fetch_size, offset):
     """Get actionable alerts by ID using organization_id with optional filters."""
     url = "https://api.cybersixgill.com/alerts/actionable-alert"
-    auth = cybersix_token()
     headers = {
         "Content-Type": "application/json",
         "Cache-Control": "no-cache",
@@ -79,10 +92,9 @@ def alerts_list(organization_id, fetch_size, offset):
     return resp
 
 
-def alerts_count(organization_id):
+def alerts_count(auth, organization_id):
     """Get the total read and unread actionable alerts by organization."""
     url = "https://api.cybersixgill.com/alerts/actionable_alert/count"
-    auth = cybersix_token()
     headers = {
         "Content-Type": "application/json",
         "Cache-Control": "no-cache",
@@ -118,3 +130,107 @@ def credential_auth(params):
     }
     resp = requests.get(url, headers=headers, params=params).json()
     return resp
+
+
+def setNewCSGOrg(newOrgName, orgAliases, orgDomainNames, orgIP, orgExecs):
+    """Set a new stakeholder name in CSG."""
+    newOrganization = json.dumps(
+        {
+            "name": f"{newOrgName}",
+            "organization_commercial_category": "customer",
+            "countries": ["worldwide"],
+            "industries": ["Government"],
+        }
+    )
+    url = "https://api.cybersixgill.com/multi-tenant/organization"
+
+    headers = {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache",
+        "Authorization": f"Bearer {cybersix_token()}",
+    }
+
+    response = requests.post(url, headers=headers, data=newOrganization).json()
+
+    newOrgID = response["id"]
+
+    if newOrgID:
+        logging.info("A new org_id was created: %s", newOrgID)
+        setOrganizationUsers(newOrgID)
+        setOrganizationDetails(newOrgID, orgAliases, orgDomainNames, orgIP, orgExecs)
+
+    return response
+
+
+def setOrganizationUsers(org_id):
+    """Set CSG user permissions at new stakeholder."""
+    role1 = "5d23342df5feaf006a8a8929"
+    role2 = "5d23342df5feaf006a8a8927"
+    id_role1 = "610017c216948d7efa077a52"
+    csg_role_id = "role_id"
+    csg_user_id = "user_id"
+
+    for user in getUserInfo():
+        userrole = user[csg_role_id]
+        user_id = user[csg_user_id]
+
+        if (
+            (userrole == role1)
+            and (user_id != id_role1)
+            or userrole == role2
+            and user_id != id_role1
+        ):
+
+            url = (
+                f"https://api.cybersixgill.com/multi-tenant/organization/"
+                f"{org_id}/user/{user_id}?role_id={userrole}"
+            )
+
+            headers = {
+                "Content-Type": "application/json",
+                "Cache-Control": "no-cache",
+                "Authorization": f"Bearer {cybersix_token()}",
+            }
+
+            response = requests.post(url, headers=headers).json()
+
+
+def setOrganizationDetails(org_id, orgAliases, orgDomain, orgIP, orgExecs):
+    """Set stakeholder details at newly created.
+
+    stakeholder at CSG portal via API.
+    """
+    newOrganizationDetails = json.dumps(
+        {
+            "organization_aliases": {"explicit": orgAliases},
+            "domain_names": {"explicit": orgDomain},
+            "ip_addresses": {"explicit": orgIP},
+            "executives": {"explicit": orgExecs},
+        }
+    )
+    url = f"https://api.cybersixgill.com/multi-tenant/" f"organization/{org_id}/assets"
+
+    headers = {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache",
+        "Authorization": f"Bearer {cybersix_token()}",
+    }
+
+    response = requests.put(url, headers=headers, data=newOrganizationDetails).json()
+    logging.info("The response is %s", response)
+
+
+def getUserInfo():
+    """Get all organization details from Cybersixgill via API."""
+    url = "https://api.cybersixgill.com/multi-tenant/organization"
+
+    headers = {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache",
+        "Authorization": f"Bearer {cybersix_token()}",
+    }
+
+    response = requests.get(url, headers=headers).json()
+
+    userInfo = response[1]["assigned_users"]
+    return userInfo
