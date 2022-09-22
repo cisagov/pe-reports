@@ -48,8 +48,8 @@ def embed(
 ):
     """Embeds raw data into PDF and encrypts file."""
     doc = fitz.open(file)
-    # Get the summary page of the PDF on page 4
-    page = doc[3]
+    # Get the summary page of the PDF on page 5
+    page = doc[4]
     output = (
         f"{output_directory}/{org_code}/Posture_and_Exposure_Report-{datestring}.pdf"
     )
@@ -62,21 +62,21 @@ def embed(
 
     # Insert link to CSV data in summary page of PDF.
     # Use coordinates to position them on the bottom.
-    p1 = fitz.Point(110, 695)
-    p2 = fitz.Point(240, 695)
-    p3 = fitz.Point(375, 695)
-    p5 = fitz.Point(500, 695)
+    p1 = fitz.Point(71, 632)
+    p2 = fitz.Point(71, 660)
+    p3 = fitz.Point(71, 688)
+    p5 = fitz.Point(71, 716)
 
     # Embed and add push-pin graphic
     page.add_file_annot(
-        p1, cc, "compromised_credentials.xlsx", desc="Open up CSV", icon="PushPin"
+        p1, cc, "compromised_credentials.xlsx", desc="Open xlsx", icon="Paperclip"
     )
     page.add_file_annot(
-        p2, da, "domain_alerts.xlsx", desc="Open up CSV", icon="PushPin"
+        p2, da, "domain_alerts.xlsx", desc="Open xlsx", icon="Paperclip"
     )
-    page.add_file_annot(p3, ma, "vuln_alerts.xlsx", desc="Open up xlsx", icon="PushPin")
+    page.add_file_annot(p3, ma, "vuln_alerts.xlsx", desc="Open xlsx", icon="Paperclip")
     page.add_file_annot(
-        p5, mi, "mention_incidents.xlsx", desc="Open up CSV", icon="PushPin"
+        p5, mi, "mention_incidents.xlsx", desc="Open xlsx", icon="Paperclip"
     )
 
     # Save doc and set garbage=4 to reduce PDF size using all 4 methods:
@@ -144,6 +144,7 @@ def generate_reports(datestring, output_directory):
                 source_html,
                 creds_sum,
                 masq_df,
+                dom_alerts_sum,
                 insecure_df,
                 vulns_df,
                 assets_df,
@@ -163,15 +164,14 @@ def generate_reports(datestring, output_directory):
             # Create Credential Exposure Excel file
             cred_xlsx = f"{output_directory}/{org_code}/compromised_credentials.xlsx"
             credWriter = pd.ExcelWriter(cred_xlsx, engine="xlsxwriter")
-            creds_sum.to_excel(
-                credWriter, sheet_name="Exposed_Credentials", index=False
-            )
+            creds_sum.to_excel(credWriter, sheet_name="Credentials", index=False)
             credWriter.save()
 
             # Create Domain Masquerading Excel file
             da_xlsx = f"{output_directory}/{org_code}/domain_alerts.xlsx"
             domWriter = pd.ExcelWriter(da_xlsx, engine="xlsxwriter")
             masq_df.to_excel(domWriter, sheet_name="Suspected Domains", index=False)
+            dom_alerts_sum.to_excel(domWriter, sheet_name="Domain Alerts", index=False)
             domWriter.save()
 
             # Create Suspected vulnerability Excel file

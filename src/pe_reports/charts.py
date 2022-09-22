@@ -49,16 +49,16 @@ class Charts:
         pie = plt.pie(
             value_column,
             startangle=0,
-            radius=1,
+            radius=1.75,
             autopct=autopct,
             textprops={"color": "w", "fontsize": 7},
         )
         plt.legend(
             pie[0],
             labels,
-            bbox_to_anchor=(1, 0.5),
+            bbox_to_anchor=(1, 0.75),
             loc="center right",
-            fontsize=7,
+            fontsize=6,
             bbox_transform=plt.gcf().transFigure,
             frameon=False,
         )
@@ -82,22 +82,18 @@ class Charts:
         name = self.name
         color = ["#1357BE", "#D0342C"]
         df.plot(kind="bar", stacked=True, zorder=3, color=color)
-        # Add title to chart
         plt.title(title, pad=15, fontsize=10)
-        # Format chart's axis
         plt.xlabel(x_label, labelpad=10, fontdict={"size": 8})
         plt.ylabel(y_label, labelpad=10, fontdict={"size": 8})
+        plt.gcf().set_size_inches(
+            width / CM_CONVERSION_FACTOR, height / CM_CONVERSION_FACTOR
+        )
+        plt.ylim(ymin=0)
+        plt.tight_layout()
         plt.gca().yaxis.set_major_locator(MaxNLocator(integer=True))
         plt.rc("axes", axisbelow=True)
         plt.grid(axis="y", zorder=0)
         plt.xticks(rotation=0)
-        plt.ylim(ymin=0)
-        # Set sizing for image
-        plt.gcf().set_size_inches(
-            width / CM_CONVERSION_FACTOR, height / CM_CONVERSION_FACTOR
-        )
-        plt.tight_layout()
-        # Save chart to assets directory
         plt.savefig(BASE_DIR + "/assets/" + name, transparent=True, dpi=500)
         plt.clf()
 
@@ -116,11 +112,10 @@ class Charts:
         value_column = df[df.columns[1]]
         bar_width = 0.6
         fig, ax = plt.subplots()
-        ax.spines.right.set_visible(False)
-        ax.spines.top.set_visible(False)
-        # Generate horizontal bar chart
+        plt.set_loglevel("WARNING")
+        ax.spines["right"].set_visible(False)
+        ax.spines["top"].set_visible(False)
         plt.barh(df.index, value_column, bar_width, align="center", color="#466fc6")
-        # Specify axis atributes
         plt.xticks(fontsize=7)
         plt.yticks(fontsize=7)
         plt.xlim(xmin=0)
@@ -130,12 +125,11 @@ class Charts:
         plt.gca().set_yticklabels(category_column)
         plt.gca().set_xlabel(x_label, fontdict={"size": 8})
         plt.gca().set_ylabel(y_label)
-        # Set sizing for image
         plt.gcf().set_size_inches(
             width / CM_CONVERSION_FACTOR, height / CM_CONVERSION_FACTOR
         )
         plt.tight_layout()
-        # Add data labels to each bar if greater than 0
+
         for i in range(len(df)):
             if df.loc[i, value_name] > 0:
                 label = df.loc[i, value_name]
@@ -147,7 +141,6 @@ class Charts:
                     ha="center",  # horizontal alignment can be left, right or center
                     fontsize=8,
                 )
-        # Save chart to assets directory
         plt.savefig(
             BASE_DIR + "/assets/" + name, transparent=True, dpi=500, bbox_inches="tight"
         )
@@ -161,17 +154,43 @@ class Charts:
         width = self.width
         height = self.height
         name = self.name
+        value_column = df[df.columns[0]]
         color = ["#1357BE", "#D0342C"]
         fig, ax = plt.subplots()
         ax.spines["right"].set_visible(False)
         ax.spines["top"].set_visible(False)
         plt.set_loglevel("WARNING")
-        # Generate lines for chart and add data labels
-        for col in range(len(df.columns)):
-            plt.plot(
-                df.index, df[df.columns[col]], color=color[col], label=df.columns[col]
-            )
-            for i, j in df[df.columns[col]].items():
+        plt.plot(df.index, value_column, color=color[0], label=df.columns[0])
+        if len(df.columns) == 2:
+            plt.plot(df.index, df[df.columns[1]], color=color[1], label=df.columns[1])
+
+        plt.ylim(ymin=0, ymax=int(df[df.columns].max().max() * 1.15))
+        plt.legend(loc="upper right")
+        plt.gcf().set_size_inches(
+            width / CM_CONVERSION_FACTOR, height / CM_CONVERSION_FACTOR
+        )
+        plt.xticks(fontsize=7)
+        plt.yticks(fontsize=7)
+        plt.gca().set_ylabel(y_label, labelpad=10, fontdict={"size": 8})
+        plt.xlabel(x_label, labelpad=10, fontdict={"size": 8})
+        plt.xticks(rotation=0)
+        plt.grid(axis="y")
+        plt.tight_layout()
+
+        for i, j in df[df.columns[0]].items():
+            if int(j):
+                plt.annotate(
+                    str(int(j)),
+                    xy=(i, j),
+                    textcoords="offset points",  # how to position the text
+                    xytext=(
+                        0,
+                        5,
+                    ),  # distance from text to points (x,y)
+                    ha="center",  # horizontal alignment can be left, right or center
+                )
+        if len(df.columns) == 2:
+            for i, j in df[df.columns[1]].items():
                 if int(j):
                     plt.annotate(
                         str(int(j)),
@@ -183,22 +202,7 @@ class Charts:
                         ),  # distance from text to points (x,y)
                         ha="center",  # horizontal alignment can be left, right or center
                     )
-        # Specify axis attributes
-        plt.ylim(ymin=0, ymax=int(df[df.columns].max().max() * 1.15))
-        plt.xticks(fontsize=7)
-        plt.yticks(fontsize=7)
-        plt.gca().set_ylabel(y_label, labelpad=10, fontdict={"size": 8})
-        plt.xlabel(x_label, labelpad=10, fontdict={"size": 8})
-        plt.xticks(rotation=0)
-        plt.grid(axis="y")
-        # Add legend
-        plt.legend(loc="upper right")
-        # Set sizing for image
-        plt.gcf().set_size_inches(
-            width / CM_CONVERSION_FACTOR, height / CM_CONVERSION_FACTOR
-        )
-        plt.tight_layout()
-        # Save chart to assets directory
+
         plt.savefig(
             BASE_DIR + "/assets/" + name, transparent=True, dpi=500, bbox_inches="tight"
         )
