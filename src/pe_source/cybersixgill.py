@@ -198,6 +198,10 @@ class Cybersixgill:
             LOGGER.error(e)
             return 1
 
+        if creds_df.empty:
+            LOGGER.error("No credentials for %s", org_id)
+            return 1
+
         # Change empty and ambiguous breach names
         creds_df.loc[
             creds_df["breach_name"] == "", "breach_name"

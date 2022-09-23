@@ -121,6 +121,10 @@ def test_reports_bad_log_level():
         assert return_code == 1, "main() should exit with error"
 
 
+# TODO: Test data cleanup in metrics for each source
+# Issue - https://github.com/cisagov/pe-reports/issues/264
+
+
 @pytest.fixture
 def client():
     """Create client to test flask application."""
