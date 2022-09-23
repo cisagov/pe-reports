@@ -1,21 +1,29 @@
 """Use DNS twist to fuzz domain names and cross check with a blacklist."""
 # Standard Python Libraries
 import datetime
+from ipaddress import ip_address
 import json
 import logging
 import traceback
 
 # Third-Party Libraries
-from data.run import connect, query_orgs_rev
+from data.config import config
+from data.run import query_orgs_rev
 import dnstwist
 import dshield
 import pandas as pd
-
-# import psycopg2
+import psycopg2
 import psycopg2.extras as extras
 import requests
 
 date = datetime.datetime.now().strftime("%Y-%m-%d")
+
+logging.basicConfig(
+    filemode="a",
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    datefmt="%m/%d/%Y %I:%M:%S",
+    level=logging.INFO,
+)
 
 
 def query_db(conn, query, args=(), one=False):
@@ -34,8 +42,8 @@ def getSubdomain(conn, domain):
     """Get subdomains given a domain from the databases."""
     cur = conn.cursor()
     sql = """SELECT * FROM sub_domains sd
-        WHERE sd.sub_domain = '%(domain)s'"""
-    cur.execute(sql)
+        WHERE sd.sub_domain = %(domain)s"""
+    cur.execute(sql, {"domain": domain})
     sub = cur.fetchone()
     cur.close()
     return sub
@@ -46,7 +54,7 @@ def getRootdomain(conn, domain):
     cur = conn.cursor()
     sql = """SELECT * FROM root_domains rd
         WHERE rd.root_domain = '%(domain)s'"""
-    cur.execute(sql)
+    cur.execute(sql, {"domain": domain})
     root = cur.fetchone()
     cur.close()
     return root
@@ -58,7 +66,16 @@ def addRootdomain(conn, root_domain, pe_org_uid, source_uid, org_name):
     sql = """insert into root_domains(root_domain, organizations_uid, organization_name, data_source_uid, ip_address)
             values ('%(root_domain)s', '%(pe_org_uid)s', '%(org_name)s', '%(source_uid)s', '%(ip_address)s');"""
     cur = conn.cursor()
-    cur.execute(sql)
+    cur.execute(
+        sql,
+        {
+            "domain": root_domain,
+            "pe_org_uid": pe_org_uid,
+            "org_name": org_name,
+            "source_uid": source_uid,
+            "ip_address": ip_address,
+        },
+    )
     conn.commit()
     cur.close()
     logging.info("Success adding root domain, %(root_domain)s, to root domain table.")
@@ -78,11 +95,18 @@ def addSubdomain(conn, domain, pe_org_uid, org_name):
 def getDataSource(conn, source):
     """Get datasource information from a database."""
     cur = conn.cursor()
-    sql = """SELECT * FROM data_source WHERE name= %(source)s"""
-    cur.execute(sql)
+    sql = """SELECT * FROM data_source WHERE name=%(s)s"""
+    cur.execute(sql, {"s": source})
     source = cur.fetchone()
     cur.close()
     return source
+
+    # cur = conn.cursor()
+    # sql = f"""SELECT * FROM data_source WHERE name={source}"""
+    # cur.execute(sql)
+    # source = cur.fetchone()
+    # cur.close()
+    # return source
 
 
 def org_root_domains(conn, org_uid):
@@ -95,14 +119,16 @@ def org_root_domains(conn, org_uid):
     return df
 
 
-# Third-Party Libraries
-"""Connect to Database"""
+logging.info("wheres the logging man")
+"""Connect to PostgreSQL database."""
+try:
+    params = config()
+    PE_conn = psycopg2.connect(**params)
+except Exception:
+    logging.error("There was a problem logging into the psycopg database")
 
-PE_conn = connect("")
-#instead of importing run .py, lookover config.py and implement steakholder/views style
+# instead of importing run .py, lookover config.py and implement steakholder/views style
 
-
-# Get data source
 source_uid = getDataSource(PE_conn, "DNSTwist")[0]
 logging.info("source_uid")
 logging.info(source_uid)
@@ -111,17 +137,16 @@ logging.info(source_uid)
 orgs = query_orgs_rev()
 logging.info(orgs["name"])
 
+failures = []
 for i, row in orgs.iterrows():
     pe_org_uid = row["organizations_uid"]
     org_name = row["name"]
 
-    # if org_name not in ["National Institute of Standards and Technology"]:
-    #     continue
+    if org_name not in ["National Institute of Standards and Technology"]:
+        continue
 
     logging.info(pe_org_uid)
     logging.info(org_name)
-    if org_name != "Department of Homeland Security":
-        continue
 
     """Collect DNSTwist data from Crossfeed"""
     try:
@@ -132,8 +157,6 @@ for i, row in orgs.iterrows():
         perm_list = []
         for i, row in rd_df.iterrows():
             root_domain = row["root_domain"]
-            if root_domain != "dhs.gov":
-                continue
             if root_domain == "Null_Root":
                 continue
             logging.info(row["root_domain"])
@@ -141,12 +164,12 @@ for i, row in orgs.iterrows():
             # Run dnstwist on each root domain
             dnstwist_result = dnstwist.run(
                 registered=True,
-                tld="common_tlds.dict",
+                tld="/var/www/pe-reports/src/adhoc/common_tlds.dict",
                 format="json",
                 threads=8,
                 domain=root_domain,
             )
-            
+
             finalorglist = dnstwist_result + []
 
             for dom in dnstwist_result:
@@ -162,7 +185,7 @@ for i, row in orgs.iterrows():
                         domain=dom["domain"],
                     )
                     finalorglist += secondlist
-            
+
             logging.debug(finalorglist)
 
             # Get subdomain uid
@@ -172,7 +195,7 @@ for i, row in orgs.iterrows():
                 sub_domain_uid = getSubdomain(PE_conn, sub_domain)[0]
                 logging.info(sub_domain_uid)
             except Exception:
-                #TODO Issue #265 implement custom Exceptions
+                # TODO Issue #265 implement custom Exceptions
                 logging.info("Unable to get sub domain uid", "warning")
                 # Add and then get it
                 addSubdomain(PE_conn, sub_domain, pe_org_uid, org_name)
@@ -284,18 +307,23 @@ for i, row in orgs.iterrows():
                     "dshield_attack_count": dshield_attacks,
                 }
                 domain_list.append(domain_dict)
-
+                logging.info(domain_list)
     except Exception:
-        #TODO Issue #265 create custom Exceptions
+        # TODO Issue #265 create custom Exceptions
         logging.info("Failed selecting DNSTwist data.", "Warning")
+        failures.append(org_name)
         logging.info(traceback.format_exc())
     """Insert cleaned data into PE database."""
     try:
         cursor = PE_conn.cursor()
-        columns = domain_list[0].keys()
+        try:
+            columns = domain_list[0].keys()
+        except Exception:
+            logging.critical("No data in the domain list.")
+            failures.append(org_name)
+            continue
         table = "domain_permutations"
-        coljoin = ",".join(columns)
-        sql = """INSERT INTO %(root_domain)s(%(coljoin)s) VALUES %s
+        sql = """INSERT INTO {}({}) VALUES %s
         ON CONFLICT (domain_permutation,organizations_uid)
         DO UPDATE SET malicious = EXCLUDED.malicious,
             blocklist_attack_count = EXCLUDED.blocklist_attack_count,
@@ -304,15 +332,27 @@ for i, row in orgs.iterrows():
             dshield_attack_count = EXCLUDED.dshield_attack_count,
             data_source_uid = EXCLUDED.data_source_uid,
             date_active = EXCLUDED.date_active;"""
+
         values = [[value for value in dict.values()] for dict in domain_list]
-        extras.execute_values(cursor, sql, values)
+        extras.execute_values(
+            cursor,
+            sql.format(
+                table,
+                ",".join(columns),
+            ),
+            values,
+        )
         PE_conn.commit()
         logging.info("Data inserted using execute_values() successfully..")
 
     except Exception:
-        #TODO Issue #265 create custom Exceptions
+        # TODO Issue #265 create custom Exceptions
         logging.info("Failure inserting data into database.")
+        failures.append(org_name)
         logging.info(traceback.format_exc())
 
+if failures != []:
+    logging.error("These orgs failed:")
+    logging.error(failures)
 
 PE_conn.close()
