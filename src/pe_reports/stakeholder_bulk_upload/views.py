@@ -3,42 +3,41 @@
 # Standard Python Libraries
 import logging
 import os
-import pandas as pd
-import requests
-from bs4 import BeautifulSoup
 import re
 import traceback
-import spacy
 
 # Third-Party Libraries
+from bs4 import BeautifulSoup
 from flask import (
     Blueprint,
+    current_app,
+    flash,
     redirect,
     render_template,
-    url_for,
     request,
-    flash,
-    current_app,
+    url_for,
 )
+import pandas as pd
+import requests
+import spacy
 from werkzeug.utils import secure_filename
 
 # cisagov Libraries
+from pe_reports.data.db_query import (
+    get_cidrs_and_ips,
+    insert_roots,
+    set_org_to_report_on,
+)
 from pe_reports.helpers.enumerate_subs_from_root import (
     enumerate_and_save_subs,
     query_roots,
 )
 from pe_reports.helpers.fill_cidrs_from_cyhy_assets import fill_cidrs
+from pe_reports.helpers.fill_ips_from_cidrs import fill_ips_from_cidrs
 from pe_reports.helpers.link_subs_and_ips_from_ips import connect_subs_from_ips
 from pe_reports.helpers.link_subs_and_ips_from_subs import connect_ips_from_subs
 from pe_reports.helpers.shodan_dedupe import dedupe
-from pe_reports.helpers.fill_ips_from_cidrs import fill_ips_from_cidrs
-from pe_reports.data.db_query import (
-    set_org_to_report_on,
-    insert_roots,
-    get_cidrs_and_ips,
-)
 from pe_source.data.sixgill.api import setNewCSGOrg
-
 
 # If you are getting errors saying that a "en_core_web_lg" is loaded. Run the command " python -m spacy download en_core_web_trf" but might have to chagne the name fo the spacy model
 nlp = spacy.load("en_core_web_lg")

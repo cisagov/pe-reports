@@ -1,12 +1,12 @@
 """Shodan dedupe script."""
 # Standard Python Libraries
 import hashlib
+import logging
 import time
 
 # Third-Party Libraries
 import pandas as pd
 import shodan
-import logging
 
 # cisagov Libraries
 from pe_reports.data.db_query import close, connect, execute_values, get_orgs_df

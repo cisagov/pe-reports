@@ -16,16 +16,15 @@ from bs4 import BeautifulSoup
 import flask
 from flask import (
     Blueprint,
+    current_app,
     flash,
     redirect,
     render_template,
-    url_for,
     request,
-    current_app,
+    url_for,
 )
 from lxml import html
 import nltk
-
 
 # from nltk.tag import StanfordTagger
 # from nltk.tokenize import word_tokenize

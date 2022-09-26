@@ -1,8 +1,8 @@
 """Link sub-domains and IPs from sub-domain lookups."""
 # Standard Python Libraries
 import hashlib
-import socket
 import logging
+import socket
 
 # Third-Party Libraries
 import pandas as pd

@@ -8,7 +8,7 @@ import pandas as pd
 import psycopg2
 
 # cisagov Libraries
-from pe_reports.data.db_query import connect, show_psycopg2_exception, get_orgs_df
+from pe_reports.data.db_query import connect, get_orgs_df, show_psycopg2_exception
 
 
 def execute_ips(conn, dataframe):
