@@ -19,11 +19,14 @@ import psycopg2.extras
 import requests
 import spacy
 
+# If you are getting errors saying that a "en_core_web_lg" is loaded. Run the command " python -m spacy download en_core_web_trf" but might have to chagne the name fo the spacy model
+import spacy.cli
+
 # cisagov Libraries
 from pe_reports.data.config import config
 from pe_reports.stakeholder.forms import InfoFormExternal
 
-# If you are getting errors saying that a "en_core_web_lg" is loaded. Run the command " python -m spacy download en_core_web_trf" but might have to chagne the name fo the spacy model
+spacy.cli.download("en_core_web_lg")
 nlp = spacy.load("en_core_web_lg")
 # TODO
 
