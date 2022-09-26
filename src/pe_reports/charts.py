@@ -4,8 +4,12 @@
 import os
 
 # Third-Party Libraries
+import matplotlib
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator
+
+matplotlib.use("Agg")
+
 
 # Factor to convert cm to inches
 CM_CONVERSION_FACTOR = 2.54

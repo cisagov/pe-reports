@@ -19,3 +19,15 @@ build/*
 dist/*
 pe-reports/src/pe_reports/data/rabbitmq/*
 pe-reports/celerybeat-schedule.dat
+/src/pe_reports/data/rabbitmq/data
+src/adhoc/Bulletin/bulletin_template_filled.html
+src/adhoc/Bulletin/creds_bulletin_template_filled.html
+flaskLog.log
+src/adhoc/Bulletin/background.png
+src/adhoc/Bulletin/bulletin_template.html
+src/adhoc/Bulletin/creds_bulletin_template.html
+src/adhoc/Bulletin/footer_img.png
+src/adhoc/Bulletin/Franklin_Gothic_Book_Regular.ttf
+src/adhoc/Bulletin/Header2.png
+src/adhoc/Bulletin/Header_img.png
+src/adhoc/data/database.ini
