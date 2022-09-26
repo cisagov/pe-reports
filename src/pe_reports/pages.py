@@ -1,7 +1,9 @@
 """Collect and distribute graphical data to readable charts in the presentation."""
 
 # Standard Python Libraries
-from datetime import datetime
+import datetime
+import logging
+import os
 
 # Third-Party Libraries
 import chevron
@@ -96,7 +98,7 @@ def credential(
     }
     chevron_dict.update(creds_dict)
 
-    return chevron_dict, Credential.query_hibp_view, Credential.query_cyberSix_creds
+    return chevron_dict, Credential.creds_view
 
 
 def masquerading(chevron_dict, start_date, end_date, org_uid):
@@ -247,12 +249,24 @@ def dark_web(chevron_dict, trending_start_date, start_date, end_date, org_uid):
     return (chevron_dict, Cyber6.dark_web_mentions, Cyber6.alerts, Cyber6.top_cves)
 
 
-def init(source_html, datestring, org_name, org_uid):
+def init(datestring, org_name, org_uid):
     """Call each page of the report."""
     # Format start_date and end_date for the bi-monthly reporting period.
     # If the given end_date is the 15th, then the start_date is the 1st.
     # Otherwise, the start_date will be the 16th of the respective month.
-    end_date = datetime.strptime(datestring, "%Y-%m-%d").date()
+
+    # Load source HTML
+    try:
+        basedir = os.path.abspath(os.path.dirname(__file__))
+        template = os.path.join(basedir, "template.html")
+        file = open(template)
+        source_html = file.read().replace("\n", " ")
+        # Close PDF
+        file.close()
+    except FileNotFoundError:
+        logging.error("Template cannot be found. It must be named: '%s'", template)
+        return 1
+
     end_date = datetime.datetime.strptime(datestring, "%Y-%m-%d").date()
     if end_date.day == 15:
         start_date = datetime.datetime(end_date.year, end_date.month, 1)
