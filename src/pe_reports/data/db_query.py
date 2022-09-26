@@ -98,7 +98,7 @@ def query_credsbyday_view(org_uid, start_date, end_date):
         )
         return df
     except (Exception, psycopg2.DatabaseError) as error:
-        logging.error("There was a problem with your database query %s", error)
+        LOGGER.error("There was a problem with your database query %s", error)
     finally:
         if conn is not None:
             close(conn)
@@ -119,7 +119,7 @@ def query_breachdetails_view(org_uid, start_date, end_date):
         )
         return df
     except (Exception, psycopg2.DatabaseError) as error:
-        logging.error("There was a problem with your database query %s", error)
+        LOGGER.error("There was a problem with your database query %s", error)
     finally:
         if conn is not None:
             close(conn)
