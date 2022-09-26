@@ -1,10 +1,10 @@
 """Query the PE PostgreSQL database."""
 
 # Standard Python Libraries
-import logging
 import sys
 import socket
 from ipaddress import ip_address, ip_network
+import logging
 
 # Third-Party Libraries
 import numpy as np
@@ -276,6 +276,19 @@ def insert_roots(org, domain_list):
     params = config()
     conn = psycopg2.connect(**params)
     execute_values(conn, roots, "public.root_domains", except_clause)
+
+
+def query_roots(org_uid):
+    """Query all ips that link to a cidr related to a specific org."""
+    print(org_uid)
+    conn = connect()
+    sql = """SELECT r.root_domain_uid, r.root_domain FROM root_domains r
+            where r.organizations_uid = %(org_uid)s
+            and r.enumerate_subs = True
+            """
+    df = pd.read_sql(sql, conn, params={"org_uid": org_uid})
+    conn.close()
+    return df
 
 
 def query_creds_view(org_uid, start_date, end_date):
