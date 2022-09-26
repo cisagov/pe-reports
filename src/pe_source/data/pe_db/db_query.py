@@ -284,7 +284,7 @@ def insert_sixgill_credentials(df):
     cols = ",".join(list(df.columns))
     # SQL query to execute
     query = """INSERT INTO {}({}) VALUES %s
-    ON CONFLICT (breach_name, email, name) DO UPDATE SET
+    ON CONFLICT (breach_name, email) DO UPDATE SET
     modified_date = EXCLUDED.modified_date;"""
     cursor = conn.cursor()
     try:
