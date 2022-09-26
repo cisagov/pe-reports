@@ -93,6 +93,7 @@ setup(
     py_modules=[splitext(basename(path))[0] for path in glob("src/*.py")],
     include_package_data=True,
     install_requires=[
+        "beautifulsoup4",
         "boto3 == 1.21.10",
         "botocore == 1.24.10",
         "chevron == 0.14.0",
@@ -109,6 +110,7 @@ setup(
         "importlib_resources == 5.4.0",
         "matplotlib == 3.3.4",
         "mongo-db-from-config@http://github.com/cisagov/mongo-db-from-config/tarball/develop",
+        "nltk",
         "openpyxl",
         "pandas == 1.1.5",
         "psutil",
@@ -125,6 +127,7 @@ setup(
         "schema == 0.7.5",
         "setuptools == 58.1.0",
         "shodan ==1.27.0",
+        "spacy",
         "sublist3r",
         "types-PyYAML == 6.0.4",
         "urllib3 == 1.26.7",

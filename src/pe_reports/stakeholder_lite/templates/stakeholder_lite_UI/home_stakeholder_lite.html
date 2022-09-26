@@ -25,15 +25,9 @@
         </div>
         <div class="card-body">
           <form method="post">
-            {{ formExternal.hidden_tag() }} {{
-            formExternal.cust.label(style='font-size: 24px') }} {{
-            formExternal.cust(class='form-control') }} {{
-            formExternal.custDomainAliases.label(style='font-size: 24px') }} {{
-            formExternal.custDomainAliases(class='form-control') }} {{
-            formExternal.custRootDomain.label(style='font-size: 24px') }} {{
-            formExternal.custRootDomain(class='form-control') }} {{
-            formExternal.custExecutives.label(style='font-size: 24px') }} {{
-            formExternal.custExecutives(class='form-control') }}
+            {{ formExternal.hidden_tag() }}
+            {{formExternal.orgCount.label(style='font-size: 24px') }}
+            {{formExternal.orgCount(class='form-control') }}
             <br />
             {{ formExternal.submit(class='btn btn-primary') }}
           </form>
@@ -58,7 +52,7 @@
 
   $(document).ready(function () {
     console.log("Im ready ");
-    $(#TestsDiv).hide();
+    $(#TestsDi).hide();
 
     showDiv();
 
