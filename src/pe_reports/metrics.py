@@ -42,7 +42,6 @@ class Credentials:
     def by_days(self):
         """Return number of credentials by day."""
         df = self.creds_by_day
-        # df = df[["mod_date", "no_password", "password_included"]].copy()
         idx = pd.date_range(self.trending_start_date, self.end_date)
         df = df.set_index("mod_date").reindex(idx).fillna(0.0).rename_axis("added_date")
         group_limit = self.end_date + datetime.timedelta(1)
@@ -87,7 +86,6 @@ class Credentials:
             breach_det_df["breach_date"] = pd.to_datetime(
                 breach_det_df["breach_date"]
             ).dt.strftime("%m/%d/%y")
-
         breach_det_df = breach_det_df.rename(
             columns={
                 "breach_name": "Breach Name",
@@ -374,6 +372,18 @@ class Cyber_Six:
         self.start_date = start_date
         self.end_date = end_date
         self.org_uid = org_uid
+
+        trending_dark_web_mentions = query_darkweb(
+            org_uid,
+            trending_start_date,
+            end_date,
+            "mentions",
+        )
+        trending_dark_web_mentions = trending_dark_web_mentions.drop(
+            columns=["organizations_uid", "mentions_uid"],
+            errors="ignore",
+        )
+        self.trending_dark_web_mentions = trending_dark_web_mentions
 
         dark_web_mentions = query_darkweb(
             org_uid,
