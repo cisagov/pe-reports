@@ -66,7 +66,7 @@ def percentChangeStr(percChng):
     """Creates string that displays metric and percent change in value"""
     finalString = ""
     if percChng == "New Value":
-        finalString = "(\u2191 Increased From Zero)"
+        finalString = "(\u2191 Up From Zero)"
     elif percChng < 0:
         finalString = "(\u2193 %.2f%%)" % (percChng)
     elif percChng > 0:
@@ -74,6 +74,11 @@ def percentChangeStr(percChng):
     else:
         finalString = "(No Change)"
     return finalString
+
+
+def truncColumn(df, column, numChar):
+    """Takes in a dataframe and truncates a column to the specified character limit"""
+    df[column] = df[column].str.slice(0, numChar) + " ..."
 
 
 # ---------- ^ New helper functions ^ -----------
@@ -210,6 +215,8 @@ class Credentials:
                 pd.to_datetime(breach_det_df["Date Reported"])
                 - pd.to_datetime(breach_det_df["Breach Date"])
             ).dt.days
+
+        # EMPTY TABLE CHECK ADDED -----
         checkEmptyTable(breach_det_df)
         # ----- DAYS UNREPORTED METRIC ----- ^
         return breach_det_df
@@ -313,6 +320,10 @@ class Domains_Masqs:
             columns={"message": "Alert", "date": "Date"}
         )
         dom_alerts_df = dom_alerts_df[:10].reset_index(drop=True)
+
+        # EMPTY TABLE CHECK ADDED -----
+        checkEmptyTable(dom_alerts_df)
+
         return dom_alerts_df
 
     def alerts_sum(self):
@@ -327,14 +338,14 @@ class Domains_Masqs:
     def perChngDomain(self, option):
         "Consolidated percent change function for the domain alerts & masq page metrics"
         [prevStart, prevEnd] = getPrevPeriod(self.end_date)
-        prev_dom_alerts_df = query_domMasq_alerts(self.org_uid, prevStart, prevEnd)
-        prev_df = query_domMasq(self.org_uid, prevStart, prevEnd)
-        prev_df_mal = prev_df[prev_df["malicious"] == True]
         [currTotal, prevTotal] = [1, 1]
         if option == "suspect":
+            prev_df = query_domMasq(self.org_uid, prevStart, prevEnd)
+            prev_df_mal = prev_df[prev_df["malicious"] == True]
             prevTotal = len(prev_df_mal.index)
             currTotal = len(self.df_mal.index)
         elif option == "alerts":
+            prev_dom_alerts_df = query_domMasq_alerts(self.org_uid, prevStart, prevEnd)
             prevTotal = len(prev_dom_alerts_df)
             currTotal = len(self.dom_alerts_df)
         return percentChangeStr(percentChange(prevTotal, currTotal))
@@ -390,6 +401,9 @@ class Malware_Vulns:
             risky_assets.loc[risky_assets["ip"].str.len() == 30, "ip"] = (
                 risky_assets["ip"] + "  ..."
             )
+
+        # EMPTY TABLE CHECK ADDED -----
+        checkEmptyTable(risky_assets)
 
         return risky_assets
 
@@ -531,63 +545,63 @@ class Malware_Vulns:
     def perChngVuln(self, option):
         "Consolidated percent change function for the insec dev & sus vuln page metrics"
         [prevStart, prevEnd] = getPrevPeriod(self.end_date)
-
-        # Ports
         prev_insecure_df = query_shodan(
             self.org_uid,
             prevStart,
             prevEnd,
             "vw_shodanvulns_suspected",
         )
-        prev_risky_assets = self.isolate_risky_assets(prev_insecure_df)
-        prev_pro_count = prev_risky_assets.groupby(["protocol"], as_index=False)[
-            "protocol"
-        ].agg({"id_count": "count"})
-
-        # Verif Vulns
-        prev_vulns_df = query_shodan(
-            self.org_uid, prevStart, prevEnd, "vw_shodanvulns_verified"
-        )
-        prev_vulns_df["port"] = prev_vulns_df["port"].astype(str)
-        prev_verif_vulns = (
-            prev_vulns_df[["cve", "ip", "port"]]
-            .groupby("cve")
-            .agg(lambda x: "  ".join(set(x)))
-            .reset_index()
-        )
-        if len(prev_verif_vulns) > 0:
-            prev_verif_vulns["count"] = prev_verif_vulns["ip"].str.split("  ").str.len()
-            prev_verifVulns = prev_verif_vulns["count"].sum()
-        else:
-            prev_verifVulns = 0
-
-        # Sus Vulns
-        prev_unverif_df = prev_insecure_df[
-            prev_insecure_df["type"] != "Insecure Protocol"
-        ]
-        prev_unverif_df = prev_unverif_df.copy()
-        prev_unverif_df["potential_vulns"] = (
-            prev_unverif_df["potential_vulns"].sort_values().apply(lambda x: sorted(x))
-        )
-        prev_unverif_df["potential_vulns"] = prev_unverif_df["potential_vulns"].astype(
-            "str"
-        )
-        prev_unverif_df = (
-            prev_unverif_df[["potential_vulns", "ip"]]
-            .drop_duplicates(keep="first")
-            .reset_index(drop=True)
-        )
-
         [currTotal, prevTotal] = [1, 1]
         if option == "ports":
+            prev_risky_assets = self.isolate_risky_assets(prev_insecure_df)
+            prev_pro_count = prev_risky_assets.groupby(["protocol"], as_index=False)[
+                "protocol"
+            ].agg({"id_count": "count"})
             prevTotal = prev_pro_count["id_count"].sum()
             currTotal = self.risky_ports_count()
+
         elif option == "verifvuln":
+            prev_vulns_df = query_shodan(
+                self.org_uid, prevStart, prevEnd, "vw_shodanvulns_verified"
+            )
+            prev_vulns_df["port"] = prev_vulns_df["port"].astype(str)
+            prev_verif_vulns = (
+                prev_vulns_df[["cve", "ip", "port"]]
+                .groupby("cve")
+                .agg(lambda x: "  ".join(set(x)))
+                .reset_index()
+            )
+            if len(prev_verif_vulns) > 0:
+                prev_verif_vulns["count"] = (
+                    prev_verif_vulns["ip"].str.split("  ").str.len()
+                )
+                prev_verifVulns = prev_verif_vulns["count"].sum()
+            else:
+                prev_verifVulns = 0
             prevTotal = prev_verifVulns
             currTotal = self.total_verif_vulns()
+
         elif option == "susvuln":
+            prev_unverif_df = prev_insecure_df[
+                prev_insecure_df["type"] != "Insecure Protocol"
+            ]
+            prev_unverif_df = prev_unverif_df.copy()
+            prev_unverif_df["potential_vulns"] = (
+                prev_unverif_df["potential_vulns"]
+                .sort_values()
+                .apply(lambda x: sorted(x))
+            )
+            prev_unverif_df["potential_vulns"] = prev_unverif_df[
+                "potential_vulns"
+            ].astype("str")
+            prev_unverif_df = (
+                prev_unverif_df[["potential_vulns", "ip"]]
+                .drop_duplicates(keep="first")
+                .reset_index(drop=True)
+            )
             prevTotal = len(prev_unverif_df.index)
             currTotal = self.unverified_vuln_count()
+
         return percentChangeStr(percentChange(prevTotal, currTotal))
 
     # ---------- ^ New vuln functions ^ ------------
@@ -679,11 +693,17 @@ class Cyber_Six:
             columns=["organizations_uid", "date"],
             errors="ignore",
         )
-        soc_med_most_act = soc_med_most_act[:6]
+        soc_med_most_act = soc_med_most_act[:5]  # EDIT MADE
         # Translate title field to english
         soc_med_most_act = translate(soc_med_most_act, ["Title"])
         soc_med_most_act["Title"] = soc_med_most_act["Title"].str[:100]
         soc_med_most_act = soc_med_most_act.replace(r"^\s*$", "Untitled", regex=True)
+
+        # TRUNCATE COLUMN ADDED -----
+        truncColumn(soc_med_most_act, "Title", 60)
+        # EMPTY TABLE CHECK ADDED -----
+        checkEmptyTable(soc_med_most_act)
+
         return soc_med_most_act
 
     def dark_web_most_act(self):
@@ -703,6 +723,12 @@ class Cyber_Six:
         dark_web_most_act = translate(dark_web_most_act, ["Title"])
         dark_web_most_act["Title"] = dark_web_most_act["Title"].str[:80]
         dark_web_most_act = dark_web_most_act.replace(r"^\s*$", "Untitled", regex=True)
+
+        # TRUNCATE COLUMN ADDED -----
+        truncColumn(dark_web_most_act, "Title", 60)
+        # EMPTY TABLE CHECK ADDED -----
+        checkEmptyTable(dark_web_most_act)
+
         return dark_web_most_act
 
     def asset_alerts(self):
@@ -717,8 +743,14 @@ class Cyber_Six:
             columns=["organizations_uid", "date"],
             errors="ignore",
         )
-        asset_alerts = asset_alerts[:10]
-        asset_alerts["Title"] = asset_alerts["Title"].str[:150]
+        asset_alerts = asset_alerts[:7]  # EDIT MADE
+        asset_alerts["Title"] = asset_alerts["Title"].str[:100]  # EDIT MADE
+
+        # TRUNCATE COLUMN ADDED -----
+        truncColumn(asset_alerts, "Title", 50)
+        # EMPTY TABLE CHECK ADDED -----
+        checkEmptyTable(asset_alerts)
+
         return asset_alerts
 
     def alerts_exec(self):
@@ -733,8 +765,14 @@ class Cyber_Six:
             columns=["organizations_uid", "date"],
             errors="ignore",
         )
-        alerts_exec = alerts_exec[:10]
+        alerts_exec = alerts_exec[:7]  # EDIT MADE
         alerts_exec["Title"] = alerts_exec["Title"].str[:100]
+
+        # TRUNCATE COLUMN ADDED -----
+        truncColumn(alerts_exec, "Title", 50)
+        # EMPTY TABLE CHECK ADDED -----
+        checkEmptyTable(alerts_exec)
+
         return alerts_exec
 
     def dark_web_bad_actors(self):
@@ -754,7 +792,12 @@ class Cyber_Six:
         ).max()
         dark_web_bad_actors = dark_web_bad_actors.sort_values(
             by=["Grade"], ascending=False
-        )[:10]
+        )[:5]
+        # EDIT MADE
+
+        # EMPTY TABLE CHECK ADDED -----
+        checkEmptyTable(dark_web_bad_actors)
+
         return dark_web_bad_actors
 
     def alerts_threats(self):
@@ -776,6 +819,11 @@ class Cyber_Six:
             .reset_index(name="Events")
         )
         alerts_threats["Threats"] = alerts_threats["Threats"].str[:50]
+
+        alerts_threats = alerts_threats[:5]  # EDIT MADE
+        # EMPTY TABLE CHECK ADDED -----
+        checkEmptyTable(alerts_threats)
+
         return alerts_threats
 
     def dark_web_sites(self):
@@ -795,7 +843,12 @@ class Cyber_Six:
             .count()
             .nlargest(10)
             .reset_index(name="count")
-        )
+        )[:9]
+        # EDIT MADE
+
+        # EMPTY TABLE CHECK ADDED -----
+        checkEmptyTable(dark_web_sites)
+
         return dark_web_sites
 
     def invite_only_markets(self):
@@ -815,7 +868,12 @@ class Cyber_Six:
             .count()
             .nlargest(10)
             .reset_index(name="Alerts")
-        )
+        )[:5]
+        # EDIT MADE
+
+        # EMPTY TABLE CHECK ADDED -----
+        checkEmptyTable(markets)
+
         return markets
 
     def top_cve_table(self):
@@ -838,6 +896,11 @@ class Cyber_Six:
                 print(cve_row["CVE"])
                 top_cve_table.at[cve_index, "Identified By"] += ",   Shodan"
 
+        # TRUNCATE COLUMN ADDED -----
+        truncColumn(top_cve_table, "Description", 45)
+        # EMPTY TABLE CHECK ADDED -----
+        checkEmptyTable(top_cve_table)
+
         return top_cve_table
 
     # ---------- v New dark web functions v ------------
@@ -845,14 +908,14 @@ class Cyber_Six:
     def perChngDark(self, option):
         "Consolidated percent change function for the dark web activity page metrics"
         [prevStart, prevEnd] = getPrevPeriod(self.end_date)
-        prev_alerts = query_darkweb(
-            self.org_uid,
-            prevStart,
-            prevEnd,
-            "alerts",
-        )
         [currTotal, prevTotal] = [1, 1]
         if option == "alerts":
+            prev_alerts = query_darkweb(
+                self.org_uid,
+                prevStart,
+                prevEnd,
+                "alerts",
+            )
             prevTotal = len(prev_alerts.index)
             currTotal = len(self.alerts.index)
         return percentChangeStr(percentChange(prevTotal, currTotal))
