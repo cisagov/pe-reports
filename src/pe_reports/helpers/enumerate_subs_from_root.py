@@ -8,14 +8,14 @@ import pandas as pd
 import requests
 
 # cisagov Libraries
+from pe_reports.data.config import whois_xml_api_key
 from pe_reports.data.db_query import (
     connect,
     execute_values,
+    get_data_source_uid,
     get_orgs,
     query_roots,
-    get_data_source_uid,
 )
-from pe_reports.data.config import whois_xml_api_key
 
 # TODO: Add API key
 API_WHOIS = whois_xml_api_key()

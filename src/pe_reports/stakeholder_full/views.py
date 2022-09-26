@@ -7,23 +7,26 @@ from ipaddress import ip_address, ip_network
 import json
 import logging
 import os
-import socket
 import re
+import socket
+import traceback
 
 # Third-Party Libraries
+from bs4 import BeautifulSoup
 from flask import Blueprint, flash, redirect, render_template, url_for
+import nltk
+from nltk import pos_tag, word_tokenize
 import numpy as np
 import pandas as pd
 import psycopg2
 import psycopg2.extras
 import requests
-from bs4 import BeautifulSoup
-from nltk import pos_tag, word_tokenize
-import nltk
 import spacy
-import traceback
 
 # cisagov Libraries
+from pe_reports.data.config import config
+from pe_reports.data.db_query import execute_values, get_orgs_df
+from pe_reports.data.tasks.tasks import add, fill_ips_task
 from pe_reports.helpers.enumerate_subs_from_root import (
     enumerate_and_save_subs,
     query_roots,
@@ -33,11 +36,7 @@ from pe_reports.helpers.fill_ips_from_cidrs import fill_ips_from_cidrs
 from pe_reports.helpers.link_subs_and_ips_from_ips import connect_subs_from_ips
 from pe_reports.helpers.link_subs_and_ips_from_subs import connect_ips_from_subs
 from pe_reports.helpers.shodan_dedupe import dedupe
-from pe_reports.data.config import config
-from pe_reports.data.db_query import execute_values, get_orgs_df
 from pe_reports.stakeholder_full.forms import InfoFormExternal
-from pe_reports.data.tasks.tasks import add, fill_ips_task
-
 
 # If you are getting errors saying that a "en_core_web_lg" is loaded. Run the command " python -m spacy download en_core_web_trf" but might have to chagne the name fo the spacy model
 nlp = spacy.load("en_core_web_lg")

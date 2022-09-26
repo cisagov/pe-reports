@@ -23,12 +23,11 @@ from pe_reports.data.config import config
 # Stakeholder views
 from pe_reports.home.views import home_blueprint
 from pe_reports.stakeholder.views import stakeholder_blueprint
+from pe_reports.stakeholder_bulk_upload.views import stakeholder_bulk_upload_blueprint
 from pe_reports.stakeholder_full.views import stakeholder_full_blueprint
 from pe_reports.stakeholder_lite.views import stakeholder_lite_blueprint
-from pe_reports.stakeholder_bulk_upload.views import stakeholder_bulk_upload_blueprint
 
 from ._version import __version__  # noqa: F401
-
 
 params = config()
 login_manager = LoginManager()

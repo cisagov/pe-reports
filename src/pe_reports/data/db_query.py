@@ -1,10 +1,11 @@
 """Query the PE PostgreSQL database."""
 
 # Standard Python Libraries
-import sys
-import socket
+import datetime
 from ipaddress import ip_address, ip_network
 import logging
+import socket
+import sys
 
 # Third-Party Libraries
 import numpy as np
@@ -13,7 +14,6 @@ import psycopg2
 from psycopg2 import OperationalError
 from psycopg2.extensions import AsIs
 import psycopg2.extras as extras
-import datetime
 
 from .config import config
 

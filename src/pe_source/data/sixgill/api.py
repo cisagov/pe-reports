@@ -1,8 +1,8 @@
 """Cybersixgill API calls."""
 # Standard Python Libraries
+import json
 import logging
 import time
-import json
 
 # Third-Party Libraries
 import pandas as pd

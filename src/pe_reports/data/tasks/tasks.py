@@ -1,15 +1,13 @@
 """All task functions to gather source data for reports."""
 
-import time
+# Standard Python Libraries
 import logging
+import time
 import traceback
 
-# Third-Party Libraries
-
-
 # cisagov Libraries
-from pe_reports.data.tasks.celery1 import app
 from adhoc.fill_ips_from_cidrs import fill_ips_from_cidrs
+from pe_reports.data.tasks.celery1 import app
 
 # from adhoc.run_dnstwist import run_main_dnstwist
 
