@@ -26,9 +26,14 @@ import pandas as pd
 from schema import And, Schema, SchemaError, Use
 from xhtml2pdf import pisa
 
+# cisagov Libraries
+from pe_reports import CENTRAL_LOGGING_FILE
+
 from ._version import __version__
 from .data.db_query import connect, get_orgs
 from .pages import init
+
+LOGGER = logging.getLogger(__name__)
 
 
 def embed(
@@ -120,37 +125,24 @@ def generate_reports(datestring, output_directory):
 
     # Iterate over organizations
     if pe_orgs:
-        logging.info("PE orgs count: %d", len(pe_orgs))
+        LOGGER.info("PE orgs count: %d", len(pe_orgs))
         for org in pe_orgs:
             # Assign organization values
             org_uid = org[0]
             org_name = org[1]
             org_code = org[2]
 
-            logging.info("Running on %s", org_code)
+            LOGGER.info("Running on %s", org_code)
 
             # Create folders in output directory
             for dir_name in ("ppt", org_code):
                 if not os.path.exists(f"{output_directory}/{dir_name}"):
                     os.mkdir(f"{output_directory}/{dir_name}")
 
-            # Load source HTML
-            try:
-                basedir = os.path.abspath(os.path.dirname(__file__))
-                template = os.path.join(basedir, "template.html")
-                file = open(template)
-                source_html = file.read().replace("\n", " ")
-            except FileNotFoundError:
-                logging.error(
-                    "Template cannot be found. It must be named: '%s'", template
-                )
-                return 1
-
             # Insert Charts and Metrics into PDF
             (
                 source_html,
-                hibp_creds,
-                cyber_creds,
+                creds_sum,
                 masq_df,
                 dom_alerts_sum,
                 insecure_df,
@@ -160,14 +152,10 @@ def generate_reports(datestring, output_directory):
                 alerts,
                 top_cves,
             ) = init(
-                source_html,
                 datestring,
                 org_name,
                 org_uid,
             )
-
-            # Close PDF
-            file.close()
 
             # Convert to HTML to PDF
             output_filename = f"{output_directory}/{org_code}-Posture_and_Exposure_Report-{datestring}.pdf"
@@ -176,9 +164,8 @@ def generate_reports(datestring, output_directory):
             # Create Credential Exposure Excel file
             cred_xlsx = f"{output_directory}/{org_code}/compromised_credentials.xlsx"
             credWriter = pd.ExcelWriter(cred_xlsx, engine="xlsxwriter")
-            hibp_creds.to_excel(credWriter, sheet_name="HIBP_Credentials", index=False)
-            cyber_creds.to_excel(
-                credWriter, sheet_name="Cyber6_Credentials", index=False
+            creds_sum.to_excel(
+                credWriter, sheet_name="Exposed_Credentials", index=False
             )
             credWriter.save()
 
@@ -223,17 +210,17 @@ def generate_reports(datestring, output_directory):
             # Log a message if the report is too large.  Our current mailer
             # cannot send files larger than 20MB.
             if tooLarge:
-                logging.info(
+                LOGGER.info(
                     "%s is too large. File size: %s Limit: 20MB", org_code, filesize
                 )
 
             generated_reports += 1
     else:
-        logging.error(
+        LOGGER.error(
             "Connection to pe database failed and/or there are 0 organizations stored."
         )
 
-    logging.info("%s reports generated", generated_reports)
+    LOGGER.info("%s reports generated", generated_reports)
 
 
 def main():
@@ -264,12 +251,16 @@ def main():
     # Assign validated arguments to variables
     log_level: str = validated_args["--log-level"]
 
-    # Set up logging
+    # Setup logging to central file
     logging.basicConfig(
-        format="%(asctime)-15s %(levelname)s %(message)s", level=log_level.upper()
+        filename=CENTRAL_LOGGING_FILE,
+        filemode="a",
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+        datefmt="%m/%d/%Y %I:%M:%S",
+        level=log_level.upper(),
     )
 
-    logging.info("Loading Posture & Exposure Report, Version : %s", __version__)
+    LOGGER.info("Loading Posture & Exposure Report, Version : %s", __version__)
 
     # Create output directory
     if not os.path.exists(validated_args["OUTPUT_DIRECTORY"]):

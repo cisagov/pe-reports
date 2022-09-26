@@ -80,6 +80,28 @@ Options:
                                 "warning", "error", and "critical". [default: info]
 ```
 
+## Database backup/restore ##
+
+Follow the instructions below to backup the P&E database instance and restore locally.
+
+In the P&E database environment:
+
+- Pull the latest repository
+- If necessary, edit ./src/pe_reports/pe_db/pg_backup.sh and replace the
+default output path ($PWD) with your preferred output path.
+- Open terminal and run:
+`bash ./src/pe_reports/pe_db/pg_backup.sh`
+- Export resulting .zip file
+
+In your local environment:
+
+- Pull the latest repository
+- If necessary, edit ./src/pe_reports/pe_db/pg_restore.sh and replace
+the default path to the backup files ($PWD) with your preferred path.
+- Start local postgres
+- Open terminal and run:
+`bash ./src/pe_reports/pe_db/pg_restore.sh`
+
 ## Collect P&E Source Data ##
 
 - Add database and data source credentials to src/pe_reports/data/config.ini

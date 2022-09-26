@@ -2,8 +2,8 @@
 
 # Standard Python Libraries
 from configparser import ConfigParser
-import logging
 import os
+import logging
 
 # Third-Party Libraries
 from importlib_resources import files
