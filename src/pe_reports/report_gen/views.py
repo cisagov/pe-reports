@@ -129,7 +129,7 @@ def report_gen():
                 breach_name,
                 org_id,
                 "user_text",
-                output_directory="/var/www/Bulletins",
+                output_directory="/var/www/cred_bulletins",
                 filename=org_id + "_" + breach_name.replace(" ", "") + "_Bulletin.pdf",
             )
 
