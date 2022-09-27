@@ -11,13 +11,10 @@ import psycopg2
 from psycopg2 import OperationalError
 from psycopg2.extensions import AsIs
 
-# cisagov Libraries
-from pe_reports import app
-
 from .config import config
 
 # Setup logging to central file
-LOGGER = app.config["LOGGER"]
+LOGGER = logging.getLogger(__name__)
 
 CONN_PARAMS_DIC = config()
 
@@ -73,7 +70,7 @@ def get_orgs_df():
         pe_orgs_df = pd.read_sql(sql, conn)
         return pe_orgs_df
     except (Exception, psycopg2.DatabaseError) as error:
-        logging.error("There was a problem with your database query %s", error)
+        LOGGER.error("There was a problem with your database query %s", error)
     finally:
         if conn is not None:
             close(conn)
