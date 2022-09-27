@@ -111,6 +111,7 @@ setup(
         "mongo-db-from-config@http://github.com/cisagov/mongo-db-from-config/tarball/develop",
         "openpyxl",
         "pandas == 1.1.5",
+        "pdfkit",
         "psutil",
         "psycopg2-binary == 2.9.3",
         "pymongo == 4.0.1",
