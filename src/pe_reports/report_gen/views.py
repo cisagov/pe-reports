@@ -85,6 +85,14 @@ def report_gen():
         bulletinForm.output_directory1.data = ""
         bulletinForm.file_name.data = ""
 
+        file_name = file_name.replace(" ", "")
+        if any(ele in file_name for ele in ["#","%","&","{","}","<",">","!","`","$","+","*","'",'"',"?","=","/",":"," ","@"]):
+            flash(
+                "Invalid filename entered, please enter a different filename",
+                "warning",
+            )
+            return redirect(url_for("report_gen.report_gen"))
+
         if not os.path.exists(output_dir):
             flash(
                 "Invalid output directory provided, please enter an existing directory",

@@ -93,6 +93,10 @@ def generate_cybersix_bulletin(
     filename="_Bulletin.pdf",
 ):
     """Generate a bulletin based on a provided cybersix id."""
+
+    if not filename.endswith(".pdf"):
+        filename = filename + ".pdf"
+
     templateLoader = jinja2.FileSystemLoader(searchpath=bulletin_path)
     templateEnv = jinja2.Environment(loader=templateLoader, autoescape=True)
     templateEnv.filters["date_format"] = date_format
@@ -245,7 +249,6 @@ def generate_creds_bulletin(
         }
         out_path = output_directory + "/" + filename
         print(out_path)
-
         pdfkit.from_file(
             [bulletin_path + "/creds_bulletin_template_filled.html"],
             out_path,
@@ -264,7 +267,7 @@ def main():
 
     print(id)
 
-    generate_cybersix_bulletin(id, user_text, "/var/www/", "Bulletin.pdf")
+    generate_cybersix_bulletin(id, user_text,)
     # print(resp)
 
 
