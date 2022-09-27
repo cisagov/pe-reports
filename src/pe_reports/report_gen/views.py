@@ -8,7 +8,6 @@ import os
 
 # Third-Party Libraries
 from flask import Blueprint, flash, redirect, render_template, url_for
-import spacy
 
 # cisagov Libraries
 from pe_reports.data.db_query import get_orgs_df
@@ -22,9 +21,6 @@ from pe_reports.report_gen.forms import (
     InfoFormExternal,
 )
 from pe_reports.report_generator import generate_reports
-
-# If you are getting errors saying that a "en_core_web_lg" is loaded. Run the command " python -m spacy download en_core_web_trf" but might have to chagne the name fo the spacy model
-nlp = spacy.load("en_core_web_lg")
 
 logging.basicConfig(
     filemode="a",
