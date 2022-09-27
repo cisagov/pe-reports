@@ -1,0 +1,190 @@
+{% extends "base.html" %} {% block content %}
+
+<div class="container">
+  <div class="row justify-content-lg-center">
+    <div class="d-flex justify-content-center">
+      <button
+        type="button"
+        class="btn btn-primary"
+        style="margin-left: 0%"
+        onclick="showReportDiv()"
+      >
+        Generate Reports
+      </button>
+    </div>
+  </div>
+  <br />
+  <div class="row justify-content-lg-center">
+    <div class="d-flex justify-content-center">
+      <button
+        type="button"
+        class="btn btn-primary"
+        style="margin-left: 0%"
+        onclick="showBulletinDiv()"
+      >
+        Generate Cyber Six Bulletin
+      </button>
+    </div>
+  </div>
+  <br />
+  <div class="row justify-content-lg-center">
+    <div class="d-flex justify-content-center">
+      <button
+        type="button"
+        class="btn btn-primary"
+        style="margin-left: 0%"
+        onclick="showCredsDiv()"
+      >
+        Generate Credential Bulletin
+      </button>
+    </div>
+  </div>
+  <br />
+  <div
+    id="ReportDiv"
+    class="row justify-content-lg-center"
+    style="display: none"
+  >
+    <div class="d-flex justify-content-center">
+      <div class="card" id="content">
+        <div class="card-header text-white bg-primary mb-3">
+          Generate Reports
+        </div>
+        <div class="card-body">
+          <form method="post">
+            {{ formExternal.hidden_tag() }} {{
+            formExternal.report_date.label(style='font-size: 24px') }} {{
+            formExternal.report_date(class='form-control') }} {{
+            formExternal.output_directory.label(style='font-size: 24px') }} {{
+            formExternal.output_directory(class='form-control' ,
+            value="/var/www/current_report_run" ) }}
+            <br />
+            {{ formExternal.submit(class='btn btn-primary') }}
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div
+    id="BulletinDiv"
+    class="row justify-content-lg-center"
+    style="display: none"
+  >
+    <div class="d-flex justify-content-center">
+      <div class="card" id="content">
+        <div class="card-header text-white bg-primary mb-3">
+          Generate Cybersix Bulletin
+        </div>
+        <div class="card-body">
+          <form method="post">
+            {{ bulletinForm.hidden_tag() }} {{
+            bulletinForm.cybersix_id.label(style='font-size: 24px') }} {{
+            bulletinForm.cybersix_id(class='form-control') }} {{
+            bulletinForm.user_input.label(style='font-size: 24px') }} {{
+            bulletinForm.user_input(class='form-control') }} {{
+            bulletinForm.output_directory1.label(style='font-size: 24px') }} {{
+            bulletinForm.output_directory1(class='form-control' ,
+            value="/var/www/cybersix_bulletins" ) }}{{
+            bulletinForm.file_name.label(style='font-size: 24px') }} {{
+            bulletinForm.file_name(class='form-control') }}
+            <br />
+            {{ bulletinForm.submit1(class='btn btn-primary') }}
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div
+    id="CredsDiv"
+    class="row justify-content-lg-center"
+    style="display: none"
+  >
+    <div class="d-flex justify-content-center">
+      <div class="card" id="content">
+        <div class="card-header text-white bg-primary mb-3">
+          Generate Credential Breach Bulletin
+        </div>
+        <div class="card-body">
+          <form method="post">
+            {{ credsForm.hidden_tag() }} {{
+            credsForm.org_id.label(style='font-size: 24px') }} {{
+            credsForm.org_id(class='form-control') }} {{
+            credsForm.breach_name.label(style='font-size: 24px') }} {{
+            credsForm.breach_name(class='form-control' ) }}
+            <br />
+            {{ credsForm.submit2(class='btn btn-primary') }}
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="loading" class="justify-content-lg-center"></div>
+<div class="row justify-content-lg-center">
+  <div class="row col-lg-6 offset-lg-3">
+    <input type="hidden" value="{% block title %} Stakeholder {% endblock%}" />
+  </div>
+  <br />
+
+  <!--End of container-->
+  <script>
+    function showReportDiv() {
+      console.log("Test Print");
+      let R = document.getElementById("ReportDiv"),
+        displayValue = "";
+      if (R.style.display == "") displayValue = "none";
+      R.style.display = displayValue;
+
+      let B = document.getElementById("BulletinDiv");
+      if (R.style.display == "" && B.style.display == "") showBulletinDiv();
+
+      let C = document.getElementById("CredsDiv");
+      if (R.style.display == "" && C.style.display == "") showCredsDiv();
+    }
+
+    function showBulletinDiv() {
+      let B = document.getElementById("BulletinDiv"),
+        displayValue = "";
+      if (B.style.display == "") displayValue = "none";
+      B.style.display = displayValue;
+
+      let R = document.getElementById("ReportDiv");
+      if (B.style.display == "" && R.style.display == "") showReportDiv();
+
+      let C = document.getElementById("CredsDiv");
+      if (B.style.display == "" && C.style.display == "") showCredsDiv();
+    }
+
+    function showCredsDiv() {
+      let C = document.getElementById("CredsDiv"),
+        displayValue = "";
+      if (C.style.display == "") displayValue = "none";
+      C.style.display = displayValue;
+
+      let R = document.getElementById("ReportDiv");
+      if (C.style.display == "" && R.style.display == "") showReportDiv();
+
+      let B = document.getElementById("BulletinDiv");
+      if (C.style.display == "" && B.style.display == "") showBulletinDiv();
+    }
+
+    function loading() {
+      $("#loading").show();
+      $("#content").hide();
+    }
+
+    $(document).ready(function () {
+      console.log("Im ready ");
+
+      setTimeout(function () {
+        $("#messageDiv").fadeOut("fast");
+      }, 5000);
+      $(window).load(function () {
+        $("#loading").hide();
+      });
+    });
+  </script>
+
+  {% endblock %}
+</div>

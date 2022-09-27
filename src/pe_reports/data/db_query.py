@@ -1,6 +1,7 @@
 """Query the PE PostgreSQL database."""
 
 # Standard Python Libraries
+import logging
 import sys
 
 # Third-Party Libraries
@@ -59,6 +60,20 @@ def get_orgs(conn):
         return pe_orgs
     except (Exception, psycopg2.DatabaseError) as error:
         LOGGER.error("There was a problem with your database query %s", error)
+    finally:
+        if conn is not None:
+            close(conn)
+
+
+def get_orgs_df():
+    """Query organizations table for new orgs."""
+    conn = connect()
+    try:
+        sql = """SELECT * FROM organizations"""
+        pe_orgs_df = pd.read_sql(sql, conn)
+        return pe_orgs_df
+    except (Exception, psycopg2.DatabaseError) as error:
+        logging.error("There was a problem with your database query %s", error)
     finally:
         if conn is not None:
             close(conn)

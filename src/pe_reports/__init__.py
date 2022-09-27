@@ -20,6 +20,7 @@ from pe_reports.data.config import config
 
 # Stakeholder views
 from pe_reports.home.views import home_blueprint
+from pe_reports.report_gen.views import report_gen_blueprint
 from pe_reports.stakeholder.views import stakeholder_blueprint
 
 from ._version import __version__  # noqa: F401
@@ -75,6 +76,7 @@ __all__ = ["app", "pages", "report_generator", "stylesheet"]
 
 # Register the flask apps
 app.register_blueprint(stakeholder_blueprint)
+app.register_blueprint(report_gen_blueprint)
 # TODO: Add login blueprint. Issue #207 contains details
 # app.register_blueprint(manage_login_blueprint)
 app.register_blueprint(home_blueprint)
