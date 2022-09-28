@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """Query the PE PostgreSQL database."""
 
 # Standard Python Libraries
@@ -47,7 +48,7 @@ def get_orgs():
     conn = connect()
     try:
         cur = conn.cursor()
-        sql = """SELECT * FROM organizations where report_on"""
+        sql = """SELECT * FROM organizations where report_on or demo"""
         cur.execute(sql)
         pe_orgs = cur.fetchall()
         keys = ("org_uid", "org_name", "cyhy_db_name")

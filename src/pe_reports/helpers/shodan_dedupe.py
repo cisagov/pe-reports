@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """Shodan dedupe script."""
 # Standard Python Libraries
 import hashlib
@@ -384,8 +385,9 @@ def dedupe(orgs):
 
 
 def main():
+    """Run all orgs net assets through the dedupe process."""
     orgs = get_orgs_df()
-    orgs = orgs[orgs["report_on"] == True]
+    orgs = orgs[orgs["report_on"] == True | orgs["demo"]]
     print(orgs)
 
     dedupe(orgs)

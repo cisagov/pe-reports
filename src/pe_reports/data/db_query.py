@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """Query the PE PostgreSQL database."""
 
 # Standard Python Libraries
@@ -108,8 +109,8 @@ def get_new_orgs():
             close(conn)
 
 
-def set_org_to_report_on(cyhy_db_id):
-    """Query cyhy assets."""
+def set_org_to_report_on(cyhy_db_id, premium: bool = False):
+    """Set organization to report_on."""
     sql = """
     SELECT *
     FROM organizations o
@@ -124,14 +125,48 @@ def set_org_to_report_on(cyhy_db_id):
         return 0
 
     for i, row in df.iterrows():
-        if row["report_on"] == True and row["premium_report"] == True:
-            continue
+        if row["report_on"] == True:
+            if row["premium_report"] == premium:
+                continue
+
         cursor = conn.cursor()
         sql = """UPDATE organizations
-                SET report_on = True, premium_report = True
+                SET report_on = True, premium_report = %s, demo = False
                 WHERE organizations_uid = %s"""
         uid = row["organizations_uid"]
-        cursor.execute(sql, [uid])
+        cursor.execute(sql, (premium, uid))
+        conn.commit()
+        cursor.close()
+    conn.close()
+    return df
+
+
+def set_org_to_demo(cyhy_db_id, premium):
+    """Set organization to demo."""
+    sql = """
+    SELECT *
+    FROM organizations o
+    where o.cyhy_db_name = %(org_id)s
+    """
+    params = config()
+    conn = psycopg2.connect(**params)
+    df = pd.read_sql_query(sql, conn, params={"org_id": cyhy_db_id})
+
+    if len(df) < 1:
+        logging.error("No org found for that cyhy id")
+        return 0
+
+    for i, row in df.iterrows():
+        if row["demo"] == True:
+            if row["premium_report"] == premium:
+                continue
+
+        cursor = conn.cursor()
+        sql = """UPDATE organizations
+                SET report_on = False, premium_report = %s, demo = True
+                WHERE organizations_uid = %s"""
+        uid = row["organizations_uid"]
+        cursor.execute(sql, (premium, uid))
         conn.commit()
         cursor.close()
     conn.close()
