@@ -81,6 +81,67 @@ def truncColumn(df, column, numChar):
     df[column] = df[column].str.slice(0, numChar) + " ..."
 
 
+def prevSixPeriods(currDate):
+    """Returns the start/end dates of the previous four report periods"""
+    if currDate.day == 15:
+        # Calculate start/end dates for previous report periods 1-6
+        p1_start = (currDate + relativedelta(months=-3)).replace(day=16)
+        p1_end = currDate + relativedelta(months=-3)
+        p1_end = p1_end.replace(day=calendar.monthrange(p1_end.year, p1_end.month)[1])
+
+        p2_start = (currDate + relativedelta(months=-2)).replace(day=1)
+        p2_end = currDate + relativedelta(months=-2)
+
+        p3_start = (currDate + relativedelta(months=-2)).replace(day=16)
+        p3_end = currDate + relativedelta(months=-2)
+        p3_end = p3_end.replace(day=calendar.monthrange(p3_end.year, p3_end.month)[1])
+
+        p4_start = (currDate + relativedelta(months=-1)).replace(day=1)
+        p4_end = currDate + relativedelta(months=-1)
+
+        p5_start = (currDate + relativedelta(months=-1)).replace(day=16)
+        p5_end = currDate + relativedelta(months=-1)
+        p5_end = p5_end.replace(day=calendar.monthrange(p5_end.year, p5_end.month)[1])
+
+        p6_start = currDate.replace(day=1)
+        p6_end = currDate
+    else:
+        # Calculate start/end dates for previous report periods 1-6
+        p1_start = (currDate + relativedelta(months=-2)).replace(day=1)
+        p1_end = (currDate + relativedelta(months=-2)).replace(day=15)
+
+        p2_start = (currDate + relativedelta(months=-2)).replace(day=16)
+        p2_end = currDate + relativedelta(months=-2)
+        p2_end = p2_end.replace(day=calendar.monthrange(p2_end.year, p2_end.month)[1])
+
+        p3_start = (currDate + relativedelta(months=-1)).replace(day=1)
+        p3_end = (currDate + relativedelta(months=-1)).replace(day=15)
+
+        p4_start = (currDate + relativedelta(months=-1)).replace(day=16)
+        p4_end = currDate + relativedelta(months=-1)
+        p4_end = p4_end.replace(day=calendar.monthrange(p4_end.year, p4_end.month)[1])
+
+        p5_start = currDate.replace(day=1)
+        p5_end = currDate.replace(day=15)
+
+        p6_start = currDate.replace(day=16)
+        p6_end = currDate
+    return [
+        p1_start,
+        p1_end,
+        p2_start,
+        p2_end,
+        p3_start,
+        p3_end,
+        p4_start,
+        p4_end,
+        p5_start,
+        p5_end,
+        p6_start,
+        p6_end,
+    ]
+
+
 # ---------- ^ New helper functions ^ -----------
 
 
@@ -108,55 +169,47 @@ class Credentials:
         """Return number of credentials by day."""
 
         # ------ v Start New Cred Plot Section v ------
+
         df = self.creds_by_day
         df = df[["mod_date", "no_password", "password_included"]].copy()
 
-        if self.end_date.day == 15:
-            # Calculate start/end dates for report periods 1-4
-            p1_start = (self.end_date + relativedelta(months=-2)).replace(day=16)
-            p1_end = self.end_date + relativedelta(months=-2)
-            p1_end = p1_end.replace(
-                day=calendar.monthrange(p1_end.year, p1_end.month)[1]
-            )
-            p2_start = (self.end_date + relativedelta(months=-1)).replace(day=1)
-            p2_end = self.end_date + relativedelta(months=-1)
-            p3_start = (self.end_date + relativedelta(months=-1)).replace(day=16)
-            p3_end = self.end_date + relativedelta(months=-1)
-            p3_end = p3_end.replace(
-                day=calendar.monthrange(p3_end.year, p3_end.month)[1]
-            )
-        else:
-            # Calculate start/end dates for report periods 1-4
-            p1_start = (self.end_date + relativedelta(months=-1)).replace(day=1)
-            p1_end = (self.end_date + relativedelta(months=-1)).replace(day=15)
-            p2_start = (self.end_date + relativedelta(months=-1)).replace(day=16)
-            p2_end = self.end_date + relativedelta(months=-1)
-            p2_end = p2_end.replace(
-                day=calendar.monthrange(p2_end.year, p2_end.month)[1]
-            )
-            p3_start = self.end_date.replace(day=1)
-            p3_end = self.end_date.replace(day=15)
+        # Calculate start/stop dates of previous 6 periods
+        [
+            p1_start,
+            p1_end,
+            p2_start,
+            p2_end,
+            p3_start,
+            p3_end,
+            p4_start,
+            p4_end,
+            p5_start,
+            p5_end,
+            p6_start,
+            p6_end,
+        ] = prevSixPeriods(self.end_date)
 
-        # Aggregate credential counts by report period
+        # Group credential counts by report period
         period1 = df.loc[((df["mod_date"] >= p1_start) & (df["mod_date"] <= p1_end))]
         period2 = df.loc[((df["mod_date"] >= p2_start) & (df["mod_date"] <= p2_end))]
         period3 = df.loc[((df["mod_date"] >= p3_start) & (df["mod_date"] <= p3_end))]
-        period4 = df.loc[
-            (
-                (df["mod_date"] >= self.start_date.date())
-                & (df["mod_date"] <= self.end_date)
-            )
-        ]
+        period4 = df.loc[((df["mod_date"] >= p4_start) & (df["mod_date"] <= p4_end))]
+        period5 = df.loc[((df["mod_date"] >= p5_start) & (df["mod_date"] <= p5_end))]
+        period6 = df.loc[((df["mod_date"] >= p6_start) & (df["mod_date"] <= p6_end))]
+
+        # Aggregate each report period into a single row
         df2 = pd.concat(
             (
                 period1[["no_password", "password_included"]].sum().to_frame().T,
                 period2[["no_password", "password_included"]].sum().to_frame().T,
                 period3[["no_password", "password_included"]].sum().to_frame().T,
                 period4[["no_password", "password_included"]].sum().to_frame().T,
+                period5[["no_password", "password_included"]].sum().to_frame().T,
+                period6[["no_password", "password_included"]].sum().to_frame().T,
             ),
             ignore_index=True,
         )
-        df2["modified_date"] = [p1_end, p2_end, p3_end, self.end_date]
+        df2["modified_date"] = [p1_end, p2_end, p3_end, p4_end, p5_end, p6_end]
         df2["modified_date"] = pd.to_datetime(df2["modified_date"], utc=True)
         df2["modified_date"] = df2["modified_date"].dt.strftime("%b %d")
         df2 = df2.set_index("modified_date")
@@ -659,27 +712,70 @@ class Cyber_Six:
             self.end_date,
             "vw_darkweb_mentionsbydate",
         )
-        dark_web_date = trending_dark_web_mentions.drop(
-            columns=["organizations_uid"],
-            errors="ignore",
+
+        # ----- v New Dark Mention Section v ------
+        dark_mentions = query_darkweb(
+            self.org_uid,
+            self.trending_start_date,
+            self.end_date,
+            "vw_darkweb_mentionsbydate",
         )
-        idx = pd.date_range(self.trending_start_date, self.end_date)
-        dark_web_date = (
-            dark_web_date.set_index("date").reindex(idx).fillna(0.0).rename_axis("date")
+        [
+            p1_start,
+            p1_end,
+            p2_start,
+            p2_end,
+            p3_start,
+            p3_end,
+            p4_start,
+            p4_end,
+            p5_start,
+            p5_end,
+            p6_start,
+            p6_end,
+        ] = prevSixPeriods(self.end_date)
+
+        # Group mention counts by report period
+        period1 = dark_mentions.loc[
+            ((dark_mentions["date"] >= p1_start) & (dark_mentions["date"] <= p1_end))
+        ]
+        period2 = dark_mentions.loc[
+            ((dark_mentions["date"] >= p2_start) & (dark_mentions["date"] <= p2_end))
+        ]
+        period3 = dark_mentions.loc[
+            ((dark_mentions["date"] >= p3_start) & (dark_mentions["date"] <= p3_end))
+        ]
+        period4 = dark_mentions.loc[
+            ((dark_mentions["date"] >= p4_start) & (dark_mentions["date"] <= p4_end))
+        ]
+        period5 = dark_mentions.loc[
+            ((dark_mentions["date"] >= p5_start) & (dark_mentions["date"] <= p5_end))
+        ]
+        period6 = dark_mentions.loc[
+            ((dark_mentions["date"] >= p6_start) & (dark_mentions["date"] <= p6_end))
+        ]
+
+        # Aggregate each report period into a single row
+        df2 = pd.concat(
+            (
+                period1[["Count"]].sum().to_frame().T,
+                period2[["Count"]].sum().to_frame().T,
+                period3[["Count"]].sum().to_frame().T,
+                period4[["Count"]].sum().to_frame().T,
+                period5[["Count"]].sum().to_frame().T,
+                period6[["Count"]].sum().to_frame().T,
+            ),
+            ignore_index=True,
         )
-        group_limit = self.end_date + datetime.timedelta(1)
-        dark_web_date = dark_web_date.groupby(
-            pd.Grouper(level="date", freq="7d", origin=group_limit)
-        ).sum()
-        dark_web_date["date"] = dark_web_date.index
-        dark_web_date["date"] = dark_web_date["date"].dt.strftime(
-            "%b %d"
-        )  # Convert to month abbreviation
-        dark_web_date = dark_web_date.set_index("date")
-        dark_web_date = dark_web_date[["Count"]]
-        # More descriptive column name
-        dark_web_date = dark_web_date.rename(columns={"Count": "Mentions Count"})
-        return dark_web_date
+        df2["date"] = [p1_end, p2_end, p3_end, p4_end, p5_end, p6_end]
+        df2["date"] = pd.to_datetime(df2["date"], utc=True)
+        df2["date"] = df2["date"].dt.strftime("%b %d")
+        df2 = df2.set_index("date")
+        df2 = df2.astype({"Count": float})
+        df2 = df2.rename(columns={"Count": "Mentions Count"})
+        # ----- ^ New Dark Mention Section ^ -----
+
+        return df2
 
     def social_media_most_act(self):
         """Get most active social media posts."""

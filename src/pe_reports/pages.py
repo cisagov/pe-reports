@@ -318,7 +318,7 @@ def dark_web(chevron_dict, trending_start_date, start_date, end_date, org_uid):
     height = 12
     name = "web_only_df_2"
     title = ""
-    x_label = "Week Reported"  # Updated label
+    x_label = "Report Period"  # Updated label
     y_label = "Dark Web Mention Count"  # Updated label
     dark_mentions_chart = Charts(
         Cyber6.dark_web_date(),
@@ -392,12 +392,12 @@ def init(datestring, org_name, org_uid):
         start_date = datetime.datetime(end_date.year, end_date.month, 16)
 
     # NEW TRENDING START DATE ----- v
-    # Calulate trending start date, going back 4 report periods
+    # Calulate trending start date, going back 6 report periods
     if end_date.day == 15:
-        trending_start_date = end_date + relativedelta(months=-2)
+        trending_start_date = end_date + relativedelta(months=-3)
         trending_start_date = trending_start_date.replace(day=16)
     else:
-        trending_start_date = end_date + relativedelta(months=-1)
+        trending_start_date = end_date + relativedelta(months=-2)
         trending_start_date = trending_start_date.replace(day=1)
     # NEW TRENDING START DATE ----- ^
 
