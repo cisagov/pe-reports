@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """Fill IPs table from CIDR blocks."""
 # Standard Python Libraries
 import hashlib
@@ -6,7 +7,6 @@ import logging
 
 # Third-Party Libraries
 import pandas as pd
-import psycopg2
 
 # cisagov Libraries
 from pe_reports.data.db_query import connect, execute_ips, query_cidrs
@@ -43,10 +43,11 @@ def fill_ips_from_cidrs():
     logging.info(ips_from_cidrs.drop_duplicates(subset=["ip"]))
     conn = connect()
     execute_ips(conn, ips_from_cidrs)
-    print("Succuss adding IPS to Cidrs")
+    print("Success adding IPS to Cidrs")
 
 
 def main():
+    """Fill ips from the cidrs in new orgs."""
     fill_ips_from_cidrs()
 
 
