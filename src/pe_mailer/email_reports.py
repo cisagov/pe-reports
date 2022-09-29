@@ -360,7 +360,7 @@ def send_pe_reports(db, ses_client, pe_report_dir, to):
                 ).strftime("%B %d, %Y")
 
                 # Construct the Posture and Exposure message to send
-                message = PEMessage(pe_report_filename, report_date, to_emails)
+                message = PEMessage(pe_report_filename, report_date, id, to_emails)
 
                 print(to_emails)
                 print(pe_report_filename)

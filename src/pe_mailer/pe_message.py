@@ -26,7 +26,7 @@ class PEMessage(ReportMessage):
 
     """
 
-    Subject = "Posture and Exposure Report - {{report_date}}"
+    Subject = "Posture and Exposure Report - {{org_id}} - {{report_date}}"
 
     TextBody = """Greetings,
 
@@ -82,6 +82,7 @@ Cybersecurity and Infrastructure Security Agency<br>
         self,
         pdf_filename,
         report_date,
+        org_id
         to_addrs,
         from_addr=Message.DefaultFrom,
         cc_addrs=Message.DefaultCc,
@@ -98,6 +99,9 @@ Cybersecurity and Infrastructure Security Agency<br>
         report_date : str
             The date corresponding to the Posture and Exposure
             report attachment. Specify dates using the format "December 12, 2017".
+        
+        org_id : str
+            The organization ID to add to the email subject.
 
         to_addrs : array of str
             An array of string objects, each of which is an email
@@ -116,7 +120,7 @@ Cybersecurity and Infrastructure Security Agency<br>
 
         """
         # This is the data mustache will use to render the templates
-        mustache_data = {"report_date": report_date}
+        mustache_data = {"report_date": report_date, "org_id": org_id}
 
         # Render the templates
         subject = chevron.render(PEMessage.Subject, mustache_data)
