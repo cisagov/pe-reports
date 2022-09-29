@@ -50,7 +50,7 @@ def embed(
     doc = fitz.open(file)
     # Get the summary page of the PDF on page 4
     page = doc[3]
-    output = f"{output_directory}/{org_code}/{org_code}-Posture_and_Exposure_Report-{datestring}.pdf"
+    output = f"{output_directory}/{org_code}/Posture_and_Exposure_Report-{org_code}-{datestring}.pdf"
 
     # Open CSV data as binary
     cc = open(cred_xlsx, "rb").read()
