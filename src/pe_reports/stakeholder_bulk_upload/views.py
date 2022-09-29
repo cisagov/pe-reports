@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """Classes and associated functions that render the UI app pages."""
 
 # Standard Python Libraries
@@ -26,6 +27,7 @@ from werkzeug.utils import secure_filename
 from pe_reports.data.db_query import (
     get_cidrs_and_ips,
     insert_roots,
+    set_org_to_demo,
     set_org_to_report_on,
 )
 from pe_reports.helpers.enumerate_subs_from_root import (
@@ -58,7 +60,7 @@ stakeholder_bulk_upload_blueprint = Blueprint(
 
 
 def allowed_file(filename):
-    """Allowed file extensions to upload."""
+    """Filter allowed file extensions to upload."""
     ALLOWED_EXTENSIONS = current_app.config["ALLOWED_EXTENSIONS"]
     return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
 
@@ -99,8 +101,12 @@ def add_stakeholders(orgs_df):
         try:
             logging.info(f"Beginning to add {org_row['org_code']}")
 
+            premium = org_row["premium"]
             # Set new org to report on
-            new_org_df = set_org_to_report_on(org_row["org_code"])
+            if org_row["demo"] is True:
+                new_org_df = set_org_to_demo(org_row["org_code"], premium)
+            else:
+                new_org_df = set_org_to_report_on(org_row["org_code"], premium)
 
             # Insert root domains
             logging.info("Getting root domains:")
@@ -127,7 +133,7 @@ def add_stakeholders(orgs_df):
             logging.info("Finished connecting subs/ips from IPs.")
 
             # Check if the org should be added to Cybersixgill
-            if org_row["cybersixgill"] is True:
+            if org_row["premium"] is True:
                 # Get executives list by passing the about page URL
                 logging.info("Getting executives:")
                 allExecutives = list(theExecs(org_row["exec_url"]))
@@ -160,7 +166,8 @@ def add_stakeholders(orgs_df):
 
             logging.info(f"Completely done with {org_row['org_code']}")
             count += 1
-        except:
+        except Exception as e:
+            logging.info(e)
             logging.error(f"{org_row['org_code']} failed.")
             logging.error(traceback.format_exc())
     logging.info(f"Finished {count} orgs.")
