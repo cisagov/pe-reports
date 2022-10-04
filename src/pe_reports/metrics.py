@@ -7,7 +7,6 @@ import datetime
 
 # New Imports
 from datetime import timedelta
-from tokenize import group
 
 # Third-Party Libraries
 from dateutil.relativedelta import relativedelta
@@ -22,10 +21,12 @@ from .data.db_query import (
     query_domMasq,
     query_domMasq_alerts,
     query_shodan,
+    get_org_first_report_date,  # Dark Web Usage, WIP
 )
 from .data.translator import translate
 
-# ---------- v New helper functions v ------------
+
+# ---------- v Helper Functions v ------------
 
 
 def checkEmptyTable(df):
@@ -34,22 +35,6 @@ def checkEmptyTable(df):
         noDataRow = ["..."] * len(df.columns)
         noDataRow[0] = "No New Data"
         df.loc[len(df)] = noDataRow
-
-
-def getPrevPeriod(currReportDate):
-    """Calculates the start/end dates of the previous report period"""
-    # Calculate start date of current report period
-    if currReportDate.day == 15:
-        currStart = datetime.datetime(currReportDate.year, currReportDate.month, 1)
-    else:
-        currStart = datetime.datetime(currReportDate.year, currReportDate.month, 16)
-    # Calculate start/end dates for previous report period
-    prevEnd = currStart - timedelta(days=1)
-    if prevEnd.day == 15:
-        prevStart = datetime.datetime(prevEnd.year, prevEnd.month, 1)
-    else:
-        prevStart = datetime.datetime(prevEnd.year, prevEnd.month, 16)
-    return [prevStart, prevEnd]
 
 
 def percentChange(initial, final):
@@ -79,6 +64,22 @@ def percentChangeStr(percChng):
 def truncColumn(df, column, numChar):
     """Takes in a dataframe and truncates a column to the specified character limit"""
     df[column] = df[column].str.slice(0, numChar) + " ..."
+
+
+def getPrevPeriod(currReportDate):
+    """Calculates the start/end dates of the previous report period"""
+    # Calculate start date of current report period
+    if currReportDate.day == 15:
+        currStart = datetime.datetime(currReportDate.year, currReportDate.month, 1)
+    else:
+        currStart = datetime.datetime(currReportDate.year, currReportDate.month, 16)
+    # Calculate start/end dates for previous report period
+    prevEnd = currStart - timedelta(days=1)
+    if prevEnd.day == 15:
+        prevStart = datetime.datetime(prevEnd.year, prevEnd.month, 1)
+    else:
+        prevStart = datetime.datetime(prevEnd.year, prevEnd.month, 16)
+    return [prevStart, prevEnd]
 
 
 def prevSixPeriods(currDate):
@@ -142,9 +143,6 @@ def prevSixPeriods(currDate):
     ]
 
 
-# ---------- ^ New helper functions ^ -----------
-
-
 class Credentials:
     """Credentials class."""
 
@@ -167,9 +165,6 @@ class Credentials:
 
     def by_days(self):
         """Return number of credentials by day."""
-
-        # ------ v Start New Cred Plot Section v ------
-
         df = self.creds_by_day
         df = df[["mod_date", "no_password", "password_included"]].copy()
 
@@ -220,7 +215,6 @@ class Credentials:
                 "no_password": "No Password",
             }
         )
-        # ------ ^ End New Cred Plot Section ^ ------
 
         if len(df2.columns) == 0:
             df2["Passwords Included"] = 0
@@ -261,17 +255,19 @@ class Credentials:
                 "number_of_creds": "Number of Creds",
             }
         )
-        # ----- DAYS UNREPORTED METRIC ----- v
-        breach_det_df.insert(loc=3, column="Days Unreported", value="")
-        if len(breach_det_df) > 0:
-            breach_det_df["Days Unreported"] = (
-                pd.to_datetime(breach_det_df["Date Reported"])
-                - pd.to_datetime(breach_det_df["Breach Date"])
-            ).dt.days
 
-        # EMPTY TABLE CHECK ADDED -----
+        # ----- DAYS UNREPORTED METRIC WIP ----- v
+        # breach_det_df.insert(loc=3, column="Days Unreported", value="")
+        # if len(breach_det_df) > 0:
+        #    breach_det_df["Days Unreported"] = (
+        #        pd.to_datetime(breach_det_df["Date Reported"])
+        #        - pd.to_datetime(breach_det_df["Breach Date"])
+        #    ).dt.days
+        # ----- DAYS UNREPORTED METRIC WIP ---- ^
+
+        # Empty table check:
         checkEmptyTable(breach_det_df)
-        # ----- DAYS UNREPORTED METRIC ----- ^
+
         return breach_det_df
 
     def password(self):
@@ -283,8 +279,6 @@ class Credentials:
         """Return total number of credentials found in breaches."""
         df_cred = self.creds_view.shape[0]
         return df_cred
-
-    # ---------- v New cred functions v ------------
 
     def perChngCred(self, option):
         "Consolidated percent change function for the credential pub & abuse page metrics"
@@ -301,8 +295,6 @@ class Credentials:
             prevTotal = prev_creds_view["breach_name"].nunique()
             currTotal = self.creds_view["breach_name"].nunique()
         return percentChangeStr(percentChange(prevTotal, currTotal))
-
-    # ---------- ^ New cred functions ^ ------------
 
 
 class Domains_Masqs:
@@ -356,7 +348,7 @@ class Domains_Masqs:
                 ]
             )
 
-        # EMPTY TABLE CHECK ADDED -----
+        # Empty table check:
         checkEmptyTable(domain_sum)
 
         return domain_sum
@@ -374,7 +366,7 @@ class Domains_Masqs:
         )
         dom_alerts_df = dom_alerts_df[:10].reset_index(drop=True)
 
-        # EMPTY TABLE CHECK ADDED -----
+        # Empty table check:
         checkEmptyTable(dom_alerts_df)
 
         return dom_alerts_df
@@ -385,8 +377,6 @@ class Domains_Masqs:
             ["message", "date", "previous_value", "new_value"]
         ]
         return dom_alerts_sum
-
-    # ---------- v New domain functions v ------------
 
     def perChngDomain(self, option):
         "Consolidated percent change function for the domain alerts & masq page metrics"
@@ -402,8 +392,6 @@ class Domains_Masqs:
             prevTotal = len(prev_dom_alerts_df)
             currTotal = len(self.dom_alerts_df)
         return percentChangeStr(percentChange(prevTotal, currTotal))
-
-    # ---------- ^ New domain functions ^ ------------
 
 
 class Malware_Vulns:
@@ -455,7 +443,7 @@ class Malware_Vulns:
                 risky_assets["ip"] + "  ..."
             )
 
-        # EMPTY TABLE CHECK ADDED -----
+        # Empty table check:
         checkEmptyTable(risky_assets)
 
         return risky_assets
@@ -568,7 +556,7 @@ class Malware_Vulns:
             .reset_index()
         )
 
-        # EMPTY TABLE CHECK ADDED ----
+        # Empty table check:
         checkEmptyTable(verif_vulns)
 
         return verif_vulns
@@ -592,8 +580,6 @@ class Malware_Vulns:
             }
         )
         return verif_vulns_summary
-
-    # ---------- v New vuln functions v ------------
 
     def perChngVuln(self, option):
         "Consolidated percent change function for the insec dev & sus vuln page metrics"
@@ -657,8 +643,6 @@ class Malware_Vulns:
 
         return percentChangeStr(percentChange(prevTotal, currTotal))
 
-    # ---------- ^ New vuln functions ^ ------------
-
 
 class Cyber_Six:
     """Dark web and Cyber Six data class."""
@@ -713,7 +697,6 @@ class Cyber_Six:
             "vw_darkweb_mentionsbydate",
         )
 
-        # ----- v New Dark Mention Section v ------
         dark_mentions = query_darkweb(
             self.org_uid,
             self.trending_start_date,
@@ -773,7 +756,6 @@ class Cyber_Six:
         df2 = df2.set_index("date")
         df2 = df2.astype({"Count": float})
         df2 = df2.rename(columns={"Count": "Mentions Count"})
-        # ----- ^ New Dark Mention Section ^ -----
 
         return df2
 
@@ -789,15 +771,13 @@ class Cyber_Six:
             columns=["organizations_uid", "date"],
             errors="ignore",
         )
-        soc_med_most_act = soc_med_most_act[:5]  # EDIT MADE
+        soc_med_most_act = soc_med_most_act[:4]
         # Translate title field to english
         soc_med_most_act = translate(soc_med_most_act, ["Title"])
         soc_med_most_act["Title"] = soc_med_most_act["Title"].str[:100]
         soc_med_most_act = soc_med_most_act.replace(r"^\s*$", "Untitled", regex=True)
 
-        # TRUNCATE COLUMN ADDED -----
-        truncColumn(soc_med_most_act, "Title", 60)
-        # EMPTY TABLE CHECK ADDED -----
+        # Empty table check:
         checkEmptyTable(soc_med_most_act)
 
         return soc_med_most_act
@@ -820,9 +800,7 @@ class Cyber_Six:
         dark_web_most_act["Title"] = dark_web_most_act["Title"].str[:80]
         dark_web_most_act = dark_web_most_act.replace(r"^\s*$", "Untitled", regex=True)
 
-        # TRUNCATE COLUMN ADDED -----
-        truncColumn(dark_web_most_act, "Title", 60)
-        # EMPTY TABLE CHECK ADDED -----
+        # Empty table check:
         checkEmptyTable(dark_web_most_act)
 
         return dark_web_most_act
@@ -839,12 +817,10 @@ class Cyber_Six:
             columns=["organizations_uid", "date"],
             errors="ignore",
         )
-        asset_alerts = asset_alerts[:7]  # EDIT MADE
-        asset_alerts["Title"] = asset_alerts["Title"].str[:100]  # EDIT MADE
+        asset_alerts = asset_alerts[:4]
+        asset_alerts["Title"] = asset_alerts["Title"].str[:100]
 
-        # TRUNCATE COLUMN ADDED -----
-        truncColumn(asset_alerts, "Title", 50)
-        # EMPTY TABLE CHECK ADDED -----
+        # Empty table check:
         checkEmptyTable(asset_alerts)
 
         return asset_alerts
@@ -861,12 +837,10 @@ class Cyber_Six:
             columns=["organizations_uid", "date"],
             errors="ignore",
         )
-        alerts_exec = alerts_exec[:7]  # EDIT MADE
+        alerts_exec = alerts_exec[:10]
         alerts_exec["Title"] = alerts_exec["Title"].str[:100]
 
-        # TRUNCATE COLUMN ADDED -----
-        truncColumn(alerts_exec, "Title", 50)
-        # EMPTY TABLE CHECK ADDED -----
+        # Empty table check:
         checkEmptyTable(alerts_exec)
 
         return alerts_exec
@@ -889,9 +863,8 @@ class Cyber_Six:
         dark_web_bad_actors = dark_web_bad_actors.sort_values(
             by=["Grade"], ascending=False
         )[:5]
-        # EDIT MADE
 
-        # EMPTY TABLE CHECK ADDED -----
+        # Empty table check:
         checkEmptyTable(dark_web_bad_actors)
 
         return dark_web_bad_actors
@@ -916,8 +889,7 @@ class Cyber_Six:
         )
         alerts_threats["Threats"] = alerts_threats["Threats"].str[:50]
 
-        alerts_threats = alerts_threats[:5]  # EDIT MADE
-        # EMPTY TABLE CHECK ADDED -----
+        # Empty table check:
         checkEmptyTable(alerts_threats)
 
         return alerts_threats
@@ -939,10 +911,9 @@ class Cyber_Six:
             .count()
             .nlargest(10)
             .reset_index(name="count")
-        )[:9]
-        # EDIT MADE
+        )
 
-        # EMPTY TABLE CHECK ADDED -----
+        # Empty table check:
         checkEmptyTable(dark_web_sites)
 
         return dark_web_sites
@@ -964,10 +935,9 @@ class Cyber_Six:
             .count()
             .nlargest(10)
             .reset_index(name="Alerts")
-        )[:5]
-        # EDIT MADE
+        )
 
-        # EMPTY TABLE CHECK ADDED -----
+        # Empty table check:
         checkEmptyTable(markets)
 
         return markets
@@ -992,14 +962,10 @@ class Cyber_Six:
                 print(cve_row["CVE"])
                 top_cve_table.at[cve_index, "Identified By"] += ",   Shodan"
 
-        # TRUNCATE COLUMN ADDED -----
-        truncColumn(top_cve_table, "Description", 45)
-        # EMPTY TABLE CHECK ADDED -----
+        # Empty table check:
         checkEmptyTable(top_cve_table)
 
         return top_cve_table
-
-    # ---------- v New dark web functions v ------------
 
     def perChngDark(self, option):
         "Consolidated percent change function for the dark web activity page metrics"
@@ -1016,4 +982,138 @@ class Cyber_Six:
             currTotal = len(self.alerts.index)
         return percentChangeStr(percentChange(prevTotal, currTotal))
 
-    # ---------- ^ New dark web functions ^ ------------
+    # ---------- v Dark Web Usage WIP v ------------
+
+    def checkDarkUsage(self):
+        """Checks if stakeholder is making good use of dark web/cybersixgill resources"""
+        # Check organization's first report date
+        firstReportDate = get_org_first_report_date(self.org_uid).iloc[0, 0]
+        firstReportDate = datetime.datetime(2022, 1, 1)  # Testing
+        if firstReportDate is None or firstReportDate == "":
+            return "No first report date"
+        else:
+            # If valid first report date,
+            firstReportDate = firstReportDate.date()
+            # check if stakeholder has 3 report periods of data history available
+            [
+                p1_start,
+                p1_end,
+                p2_start,
+                p2_end,
+                p3_start,
+                p3_end,
+                p4_start,
+                p4_end,
+                p5_start,
+                p5_end,
+                p6_start,
+                p6_end,
+            ] = prevSixPeriods(self.end_date)
+
+            if firstReportDate <= p4_start:
+                # If stakeholder has sufficient data history
+                # Get alert data for past 3 report periods
+                Alerts = query_darkweb(
+                    self.org_uid,
+                    p3_start,
+                    p6_end,
+                    "alerts",
+                )
+                p4_alert = Alerts.loc[
+                    ((Alerts["date"] >= p4_start) & (Alerts["date"] <= p4_end))
+                ]
+                p5_alert = Alerts.loc[
+                    ((Alerts["date"] >= p5_start) & (Alerts["date"] <= p5_end))
+                ]
+                p6_alert = Alerts.loc[
+                    ((Alerts["date"] >= p6_start) & (Alerts["date"] <= p6_end))
+                ]
+                alertCounts = [
+                    len(p4_alert.index),
+                    len(p5_alert.index),
+                    len(p6_alert.index),
+                ]
+
+                # Get mention data for past 3 report periods
+                Mentions = query_darkweb(
+                    self.org_uid,
+                    p4_start,
+                    p6_end,
+                    "vw_darkweb_mentionsbydate",
+                )
+                p4_mention = Mentions.loc[
+                    ((Mentions["date"] >= p4_start) & (Mentions["date"] <= p4_end))
+                ]
+                p5_mention = Mentions.loc[
+                    ((Mentions["date"] >= p5_start) & (Mentions["date"] <= p5_end))
+                ]
+                p6_mention = Mentions.loc[
+                    ((Mentions["date"] >= p6_start) & (Mentions["date"] <= p6_end))
+                ]
+                mentionCounts = [
+                    p4_mention[["Count"]].sum()[0],
+                    p5_mention[["Count"]].sum()[0],
+                    p6_mention[["Count"]].sum()[0],
+                ]
+
+                # Get dark web post counts for past 3 report periods
+                Posts = query_darkweb(
+                    self.org_uid,
+                    p4_start,
+                    p6_end,
+                    "vw_darkweb_mostactposts",
+                )
+                p4_posts = Posts.loc[
+                    ((Posts["date"] >= p4_start) & (Posts["date"] <= p4_end))
+                ]
+                p5_posts = Posts.loc[
+                    ((Posts["date"] >= p5_start) & (Posts["date"] <= p5_end))
+                ]
+                p6_posts = Posts.loc[
+                    ((Posts["date"] >= p6_start) & (Posts["date"] <= p6_end))
+                ]
+                postCounts = [
+                    len(p4_posts),
+                    len(p5_posts),
+                    len(p6_posts),
+                ]
+
+                # Get dark web threat counts for past 3 report periods
+                Threats = query_darkweb(
+                    self.org_uid,
+                    p4_start,
+                    p6_end,
+                    "vw_darkweb_potentialthreats",
+                )
+                p4_threats = Threats.loc[
+                    ((Threats["date"] >= p4_start) & (Threats["date"] <= p4_end))
+                ]
+                p5_threats = Threats.loc[
+                    ((Threats["date"] >= p5_start) & (Threats["date"] <= p5_end))
+                ]
+                p6_threats = Threats.loc[
+                    ((Threats["date"] >= p6_start) & (Threats["date"] <= p6_end))
+                ]
+
+                threatCounts = [len(p4_threats), len(p5_threats), len(p6_threats)]
+
+                print("Alert Counts: ", alertCounts)
+                print("Mention Counts: ", mentionCounts)
+                print("Post Counts: ", postCounts)
+                print("Threat Counts: ", threatCounts)
+
+                # Check if dark web stats are below thresholds
+                if (
+                    all(x < 7 for x in alertCounts)
+                    and all(x < 16 for x in mentionCounts)
+                    and all(x < 11 for x in postCounts)
+                    and all(x < 3 for x in threatCounts)
+                ):
+                    # Organization should be downgraded to core report
+                    return "Core"
+                else:
+                    # Organization should continue with premium report
+                    return "Premium"
+            else:
+                # If stakeholder has insufficient data history
+                return "Insufficient data history"

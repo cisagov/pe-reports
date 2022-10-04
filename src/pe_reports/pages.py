@@ -20,7 +20,6 @@ from .metrics import (
     Cyber_Six,
     Domains_Masqs,
     Malware_Vulns,
-    percentChangeStr,
 )
 
 
@@ -124,7 +123,7 @@ def credential(
     height = 10
     name = "inc_date_df"
     title = "Trending Exposures by Week"
-    x_label = "Report Period"  # Updated x label
+    x_label = "Report Period"  # Updated label
     y_label = "Creds Exposed"
     cred_date_chart = Charts(
         Credential.by_days(),
@@ -139,8 +138,8 @@ def credential(
     breach_table = buildTable(
         Credential.breach_details(),
         ["table"],
-        # [30, 20, 20, 20, 10], # orginial
-        [25, 20, 20, 14, 11, 10],  # New breach table spacing
+        [30, 20, 20, 20, 10],  # orginial spacing
+        # [25, 20, 20, 14, 11, 10],  # New breach table spacing WIP
         link_to_appendix=True,
     )
 
@@ -149,7 +148,7 @@ def credential(
         "creds": Credential.total(),
         "pw_creds": Credential.password(),
         "breach_table": breach_table,
-        # New page metircs ------ v
+        # Percent change metrics:
         "percChngBreach": Credential.perChngCred("breach"),
         "percChngTotal": Credential.perChngCred("total"),
         "percChngPass": Credential.perChngCred("pass"),
@@ -208,7 +207,7 @@ def masquerading(chevron_dict, start_date, end_date, org_uid):
             ),
             "suspectedDomains": Domain_Masq.count(),
             "domain_alerts": Domain_Masq.alert_count(),
-            # New page metircs ------ v
+            # Percent change metrics:
             "percChngDomainAlert": Domain_Masq.perChngDomain("alerts"),
             "percChngSusDomain": Domain_Masq.perChngDomain("suspect"),
         }
@@ -271,7 +270,7 @@ def mal_vuln(chevron_dict, start_date, end_date, org_uid, source_html):
         "riskyPorts": Malware_Vuln.risky_ports_count(),
         "verifVulns": Malware_Vuln.total_verif_vulns(),
         "unverifVulns": Malware_Vuln.unverified_vuln_count(),
-        # New page metircs ------ v
+        # Percent change metrics:
         "percChngPorts": Malware_Vuln.perChngVuln("ports"),
         "percChngVerifVuln": Malware_Vuln.perChngVuln("verifvuln"),
         "percChngSusVuln": Malware_Vuln.perChngVuln("susvuln"),
@@ -319,7 +318,7 @@ def dark_web(chevron_dict, trending_start_date, start_date, end_date, org_uid):
     name = "web_only_df_2"
     title = ""
     x_label = "Report Period"  # Updated label
-    y_label = "Dark Web Mention Count"  # Updated label
+    y_label = "Dark Web Mentions"  # Updated label
     dark_mentions_chart = Charts(
         Cyber6.dark_web_date(),
         width,
@@ -359,9 +358,11 @@ def dark_web(chevron_dict, trending_start_date, start_date, end_date, org_uid):
         "social_med_act": social_med_act_table,
         "markets_table": invite_only_markets_table,
         "top_cves": top_cves_table,
-        # New page metircs ------ v
+        # Percent change metrics:
         "percChngDarkAlert": Cyber6.perChngDark("alerts"),
     }
+
+    # print(Cyber6.checkDarkUsage())  # EDIT MADE (Dark Web Usage WIP)
 
     chevron_dict.update(dark_web_dict)
     return (chevron_dict, Cyber6.dark_web_mentions, Cyber6.alerts, Cyber6.top_cves)
@@ -391,7 +392,6 @@ def init(datestring, org_name, org_uid):
     else:
         start_date = datetime.datetime(end_date.year, end_date.month, 16)
 
-    # NEW TRENDING START DATE ----- v
     # Calulate trending start date, going back 6 report periods
     if end_date.day == 15:
         trending_start_date = end_date + relativedelta(months=-3)
@@ -399,7 +399,6 @@ def init(datestring, org_name, org_uid):
     else:
         trending_start_date = end_date + relativedelta(months=-2)
         trending_start_date = trending_start_date.replace(day=1)
-    # NEW TRENDING START DATE ----- ^
 
     # Get base directory to save images
     base_dir = os.path.abspath(os.path.dirname(__file__))
