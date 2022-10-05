@@ -1,48 +1,36 @@
 """Use DNS twist to fuzz domain names and cross check with a blacklist."""
 # Standard Python Libraries
 import datetime
-from ipaddress import ip_address
-from datetime import date, datetime, timedelta
 import json
 import logging
 import traceback
 
 # Third-Party Libraries
-from pe_reports import app
 from data.pe_db.db_query import (
-    query_orgs_rev, 
+    addSubdomain,
+    connect,
+    getDataSource,
+    getSubdomain,
     org_root_domains,
-    get_data_source_uid,
-    org_root_domains,
-    getDataSource
+    query_orgs_rev,
 )
-
 import dnstwist
 import dshield
-import pandas as pd
-import psycopg2
 import psycopg2.extras as extras
 import requests
 
+# cisagov Libraries
+from pe_reports import app
+
+date = datetime.datetime.now().strftime("%Y-%m-%d")
+
+# cisagov Libraries
+
 LOGGER = app.config["LOGGER"]
-
-TODAY = date.today()
-DAYS_BACK = timedelta(days=30)
-START_DATE = str(TODAY - DAYS_BACK)
-END_DATE = str(TODAY)
-DATE_SPAN = f"[{START_DATE} TO {END_DATE}]"
-
-# Set dates to YYYY-MM-DD H:M:S format
-NOW = datetime.now()
-START_DATE_TIME = (NOW - DAYS_BACK).strftime("%Y-%m-%d %H:%M:%S")
-END_DATE_TIME = NOW.strftime("%Y-%m-%d %H:%M:%S")
-
-
 
 """Connect to PostgreSQL database."""
 try:
-    params = config()
-    PE_conn = psycopg2.connect(**params)
+    PE_conn = connect()
 except Exception:
     LOGGER.error("There was a problem logging into the psycopg database")
 
