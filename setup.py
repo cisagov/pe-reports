@@ -105,7 +105,7 @@ setup(
         "flask_login",
         "flask_migrate",
         "flask_wtf",
-        "Flask-SQLAlchemy",
+        "Flask-SQLAlchemy==1.4.41",
         "importlib_resources == 5.4.0",
         "matplotlib == 3.3.4",
         "mongo-db-from-config@http://github.com/cisagov/mongo-db-from-config/tarball/develop",
