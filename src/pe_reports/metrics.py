@@ -484,7 +484,7 @@ class Cyber_Six:
             dark_web_date.groupby(["date"])["date"].count().reset_index(name="Count")
         )
         dark_web_date["date"] = pd.to_datetime(dark_web_date["date"])
-        dark_web_date = dark_web_date
+        dark_web_date = dark_web_date.copy()
         idx = pd.date_range(self.trending_start_date, self.end_date)
         dark_web_date = (
             dark_web_date.set_index("date").reindex(idx).fillna(0.0).rename_axis("date")
