@@ -25,6 +25,9 @@ from pe_reports.stakeholder.views import stakeholder_blueprint
 from ._version import __version__  # noqa: F401
 
 params = config()
+if params["port"] == "":
+    logging.info("Empty port. Setting to 5000.")
+    params["port"] = 5000
 login_manager = LoginManager()
 # Flask implementation
 app = Flask(__name__)
@@ -32,7 +35,7 @@ app.config["SECRET_KEY"] = os.getenv("FLASK_SECRET_KEY", "dev")
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.config[
     "SQLALCHEMY_DATABASE_URI"
-] = f'postgresql+psycopg2://{params["user"]}:{params["password"]}@{params["host"]}:{int(float(params["port"]))}/{params["database"]}'
+] = f'postgresql+psycopg2://{params["user"]}:{params["password"]}@{params["host"]}:{params["port"]}/{params["database"]}'
 
 
 # Configure the redis server
