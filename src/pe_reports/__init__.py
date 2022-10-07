@@ -9,7 +9,7 @@ import logging
 import os
 
 # Third-Party Libraries
-from celery import Celery
+import celery
 from flask import Flask
 from flask_login import LoginManager
 from flask_migrate import Migrate
@@ -27,7 +27,8 @@ from ._version import __version__  # noqa: F401
 params = config()
 if params["port"] == "":
     logging.info("Empty port. Setting to 5000.")
-    params["port"] = 5000
+    params["port"] = 5443
+
 login_manager = LoginManager()
 # Flask implementation
 app = Flask(__name__)
@@ -62,7 +63,7 @@ logging.basicConfig(
 app.config["LOGGER"] = logging.getLogger(__name__)
 
 # Creates a Celery object
-celery = Celery(app.name, broker=app.config["CELERY_BROKER_URL"])
+celery = celery.Celery(app.name, broker=app.config["CELERY_BROKER_URL"])
 celery.conf.update(app.config)
 
 # Config DB
