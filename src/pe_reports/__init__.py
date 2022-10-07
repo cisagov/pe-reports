@@ -25,7 +25,7 @@ from pe_reports.stakeholder.views import stakeholder_blueprint
 from ._version import __version__  # noqa: F401
 
 params = config()
-if params["host"] == ""
+if params["host"] == "":
     logging.info("Empty port. Setting to 5443")
     params["host"] = 5443
 login_manager = LoginManager()
