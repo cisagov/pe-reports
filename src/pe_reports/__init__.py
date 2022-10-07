@@ -32,7 +32,7 @@ app.config["SECRET_KEY"] = os.getenv("FLASK_SECRET_KEY", "dev")
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.config[
     "SQLALCHEMY_DATABASE_URI"
-] = f'postgresql+psycopg2://{params["user"]}:{params["password"]}@{params["host"]}:{int(params["port"])}/{params["database"]}'
+] = f'postgresql+psycopg2://{params["user"]}:{params["password"]}@{params["host"]}:{int(float(params["port"]))}/{params["database"]}'
 
 
 # Configure the redis server
