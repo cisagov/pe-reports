@@ -383,6 +383,7 @@ def dedupe(orgs):
 
 
 def main():
+    """Serve as the main function."""
     orgs = get_orgs_df()
     orgs = orgs[orgs["report_on"] == True]
     print(orgs)

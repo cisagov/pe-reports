@@ -2,25 +2,27 @@
 
 # Standard Python Libraries
 import logging
-import time
-import traceback
 
 # cisagov Libraries
 from adhoc.fill_ips_from_cidrs import fill_ips_from_cidrs
 from pe_reports.data.tasks.celery1 import app
+
+# import time
+# import traceback
+
 
 # from adhoc.run_dnstwist import run_main_dnstwist
 
 
 @app.task(name="sumNumbers")
 def add(x, y):
-    """Add two numbers together"""
+    """Add two numbers together."""
     return x + y
 
 
 @app.task(name="fill_ips_from_cidrs")
 def fill_ips_task():
-    """Add two numbers together"""
+    """Add two numbers together."""
     logging.info("Filling IPS")
     fill_ips_from_cidrs()
     logging.info("Done Filling IPS")

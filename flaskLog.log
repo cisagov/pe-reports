@@ -1,0 +1,63 @@
+10/04/2022 02:25:50 - root - INFO - Loading Posture & Exposure Report, Version : 1.2.1
+10/04/2022 02:25:50 - root - INFO - PE orgs count: 97
+10/04/2022 02:25:50 - root - INFO - Running on DOI
+10/04/2022 02:26:17 - xhtml2pdf - WARNING - getSize ('10', 'p') 11.25
+Traceback (most recent call last):
+  File "/Users/nga/Documents/Python/.venv/lib/python3.10/site-packages/xhtml2pdf-0.2.5-py3.10.egg/xhtml2pdf/util.py", line 329, in getSize
+    return max(MIN_FONT_SIZE, relative * float(value))
+ValueError: could not convert string to float: '10p'
+10/04/2022 02:26:22 - root - INFO - 1 reports generated
+10/04/2022 02:40:34 - root - INFO - Loading Posture & Exposure Report, Version : 1.2.1
+10/04/2022 02:40:34 - root - INFO - PE orgs count: 97
+10/04/2022 02:40:34 - root - INFO - Running on SSS
+10/04/2022 02:41:18 - xhtml2pdf - WARNING - getSize ('10', 'p') 11.25
+Traceback (most recent call last):
+  File "/Users/nga/Documents/Python/.venv/lib/python3.10/site-packages/xhtml2pdf-0.2.5-py3.10.egg/xhtml2pdf/util.py", line 329, in getSize
+    return max(MIN_FONT_SIZE, relative * float(value))
+ValueError: could not convert string to float: '10p'
+10/04/2022 02:41:20 - root - INFO - 1 reports generated
+10/04/2022 02:42:03 - root - INFO - Loading Posture & Exposure Report, Version : 1.2.1
+10/04/2022 02:42:03 - root - INFO - PE orgs count: 97
+10/04/2022 02:42:03 - root - INFO - Running on SSS
+10/04/2022 02:42:45 - xhtml2pdf - WARNING - getSize ('10', 'p') 11.25
+Traceback (most recent call last):
+  File "/Users/nga/Documents/Python/.venv/lib/python3.10/site-packages/xhtml2pdf-0.2.5-py3.10.egg/xhtml2pdf/util.py", line 329, in getSize
+    return max(MIN_FONT_SIZE, relative * float(value))
+ValueError: could not convert string to float: '10p'
+10/04/2022 02:42:47 - root - INFO - 1 reports generated
+10/04/2022 02:43:52 - root - INFO - Loading Posture & Exposure Report, Version : 1.2.1
+10/04/2022 02:43:52 - root - INFO - PE orgs count: 97
+10/04/2022 02:43:52 - root - INFO - Running on GSEC
+10/04/2022 02:44:29 - xhtml2pdf - WARNING - getSize ('10', 'p') 11.25
+Traceback (most recent call last):
+  File "/Users/nga/Documents/Python/.venv/lib/python3.10/site-packages/xhtml2pdf-0.2.5-py3.10.egg/xhtml2pdf/util.py", line 329, in getSize
+    return max(MIN_FONT_SIZE, relative * float(value))
+ValueError: could not convert string to float: '10p'
+10/04/2022 02:44:32 - root - INFO - 1 reports generated
+10/04/2022 02:47:24 - root - INFO - Loading Posture & Exposure Report, Version : 1.2.1
+10/04/2022 02:47:24 - root - INFO - PE orgs count: 97
+10/04/2022 02:47:24 - root - INFO - Running on USTDA
+10/04/2022 02:48:04 - xhtml2pdf - WARNING - getSize ('10', 'p') 11.25
+Traceback (most recent call last):
+  File "/Users/nga/Documents/Python/.venv/lib/python3.10/site-packages/xhtml2pdf-0.2.5-py3.10.egg/xhtml2pdf/util.py", line 329, in getSize
+    return max(MIN_FONT_SIZE, relative * float(value))
+ValueError: could not convert string to float: '10p'
+10/04/2022 02:48:06 - root - INFO - 1 reports generated
+10/04/2022 02:49:12 - root - INFO - Loading Posture & Exposure Report, Version : 1.2.1
+10/04/2022 02:49:12 - root - INFO - PE orgs count: 97
+10/04/2022 02:49:12 - root - INFO - Running on DOI
+10/04/2022 02:49:50 - xhtml2pdf - WARNING - getSize ('10', 'p') 11.25
+Traceback (most recent call last):
+  File "/Users/nga/Documents/Python/.venv/lib/python3.10/site-packages/xhtml2pdf-0.2.5-py3.10.egg/xhtml2pdf/util.py", line 329, in getSize
+    return max(MIN_FONT_SIZE, relative * float(value))
+ValueError: could not convert string to float: '10p'
+10/04/2022 02:49:54 - root - INFO - 1 reports generated
+10/11/2022 03:28:48 - root - INFO - Loading Posture & Exposure Report, Version : 1.2.1
+10/11/2022 03:28:48 - root - INFO - PE orgs count: 97
+10/11/2022 03:28:48 - root - INFO - Running on DOI
+10/11/2022 03:29:28 - xhtml2pdf - WARNING - getSize ('10', 'p') 11.25
+Traceback (most recent call last):
+  File "/Users/nga/Documents/Python/.venv/lib/python3.10/site-packages/xhtml2pdf-0.2.5-py3.10.egg/xhtml2pdf/util.py", line 329, in getSize
+    return max(MIN_FONT_SIZE, relative * float(value))
+ValueError: could not convert string to float: '10p'
+10/11/2022 03:29:32 - root - INFO - 1 reports generated

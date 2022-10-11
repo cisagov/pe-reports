@@ -13,6 +13,7 @@ from dateutil.relativedelta import relativedelta
 import pandas as pd
 
 from .data.db_query import (
+    org_ip_count,
     query_breachdetails_view,
     query_creds_view,
     query_credsbyday_view,
@@ -21,16 +22,15 @@ from .data.db_query import (
     query_domMasq,
     query_domMasq_alerts,
     query_shodan,
-    get_org_first_report_date,  # Dark Web Usage, WIP
 )
+from .data.db_query import org_first_report_date  # Dark Web Usage, WIP
 from .data.translator import translate
-
 
 # ---------- v Helper Functions v ------------
 
 
 def checkEmptyTable(df):
-    """Adds note explaining no new data was found for this report period if dataframe is empty"""
+    """Check if table is empty, and add No New Data note."""
     if len(df) == 0:
         noDataRow = ["..."] * len(df.columns)
         noDataRow[0] = "No New Data"
@@ -38,7 +38,7 @@ def checkEmptyTable(df):
 
 
 def percentChange(initial, final):
-    """Calculates the percentage change between initial and final values"""
+    """Calculate the percentage change between the initial and final values."""
     if initial == 0 and final == 0:
         return 0.00
     elif initial == 0 and final != 0:
@@ -48,7 +48,7 @@ def percentChange(initial, final):
 
 
 def percentChangeStr(percChng):
-    """Creates string that displays metric and percent change in value"""
+    """Create a string that neatly describes metric and percent change."""
     finalString = ""
     if percChng == "New Value":
         finalString = "(\u2191 Up From Zero)"
@@ -62,12 +62,12 @@ def percentChangeStr(percChng):
 
 
 def truncColumn(df, column, numChar):
-    """Takes in a dataframe and truncates a column to the specified character limit"""
+    """Take in a dataframe and truncate column to the specified character limit."""
     df[column] = df[column].str.slice(0, numChar) + " ..."
 
 
 def getPrevPeriod(currReportDate):
-    """Calculates the start/end dates of the previous report period"""
+    """Calculate the start/end dates of the previous report period."""
     # Calculate start date of current report period
     if currReportDate.day == 15:
         currStart = datetime.datetime(currReportDate.year, currReportDate.month, 1)
@@ -83,7 +83,7 @@ def getPrevPeriod(currReportDate):
 
 
 def prevSixPeriods(currDate):
-    """Returns the start/end dates of the previous four report periods"""
+    """Return the start/end dates of the previous six report periods."""
     if currDate.day == 15:
         # Calculate start/end dates for previous report periods 1-6
         p1_start = (currDate + relativedelta(months=-3)).replace(day=16)
@@ -281,7 +281,7 @@ class Credentials:
         return df_cred
 
     def perChngCred(self, option):
-        "Consolidated percent change function for the credential pub & abuse page metrics"
+        """Consolidated percent change function for the credential pub & abuse page metrics."""
         [prevStart, prevEnd] = getPrevPeriod(self.end_date)
         prev_creds_view = query_creds_view(self.org_uid, prevStart, prevEnd)
         [currTotal, prevTotal] = [1, 1]
@@ -379,7 +379,7 @@ class Domains_Masqs:
         return dom_alerts_sum
 
     def perChngDomain(self, option):
-        "Consolidated percent change function for the domain alerts & masq page metrics"
+        """Consolidated percent change function for the domain alerts & masq page metrics."""
         [prevStart, prevEnd] = getPrevPeriod(self.end_date)
         [currTotal, prevTotal] = [1, 1]
         if option == "suspect":
@@ -582,7 +582,7 @@ class Malware_Vulns:
         return verif_vulns_summary
 
     def perChngVuln(self, option):
-        "Consolidated percent change function for the insec dev & sus vuln page metrics"
+        """Consolidated percent change function for the insec dev & sus vuln page metrics."""
         [prevStart, prevEnd] = getPrevPeriod(self.end_date)
         prev_insecure_df = query_shodan(
             self.org_uid,
@@ -690,13 +690,6 @@ class Cyber_Six:
 
     def dark_web_date(self):
         """Get dark web mentions by date."""
-        trending_dark_web_mentions = query_darkweb(
-            self.org_uid,
-            self.trending_start_date,
-            self.end_date,
-            "vw_darkweb_mentionsbydate",
-        )
-
         dark_mentions = query_darkweb(
             self.org_uid,
             self.trending_start_date,
@@ -968,7 +961,7 @@ class Cyber_Six:
         return top_cve_table
 
     def perChngDark(self, option):
-        "Consolidated percent change function for the dark web activity page metrics"
+        """Consolidated percent change function for the dark web activity page metrics."""
         [prevStart, prevEnd] = getPrevPeriod(self.end_date)
         [currTotal, prevTotal] = [1, 1]
         if option == "alerts":
@@ -985,15 +978,17 @@ class Cyber_Six:
     # ---------- v Dark Web Usage WIP v ------------
 
     def checkDarkUsage(self):
-        """Checks if stakeholder is making good use of dark web/cybersixgill resources"""
+        """Check if stakeholder is making good use of dark web/cybersixgill resources."""
         # Check organization's first report date
-        firstReportDate = get_org_first_report_date(self.org_uid).iloc[0, 0]
+        firstReportDate = org_first_report_date(self.org_uid).iloc[0, 0]
         firstReportDate = datetime.datetime(2022, 1, 1)  # Testing
         if firstReportDate is None or firstReportDate == "":
             return "No first report date"
         else:
             # If valid first report date,
             firstReportDate = firstReportDate.date()
+            num_ips = org_ip_count(self.org_uid).iloc[0, 0]
+            print(num_ips)
             # check if stakeholder has 3 report periods of data history available
             [
                 p1_start,
@@ -1094,20 +1089,24 @@ class Cyber_Six:
                 p6_threats = Threats.loc[
                     ((Threats["date"] >= p6_start) & (Threats["date"] <= p6_end))
                 ]
-
                 threatCounts = [len(p4_threats), len(p5_threats), len(p6_threats)]
 
-                print("Alert Counts: ", alertCounts)
-                print("Mention Counts: ", mentionCounts)
-                print("Post Counts: ", postCounts)
-                print("Threat Counts: ", threatCounts)
+                alertCounts_norm = alertCounts / num_ips
+                mentionCounts_norm = mentionCounts / num_ips
+                postCounts_norm = postCounts / num_ips
+                threatCounts_norm = threatCounts / num_ips
+
+                print("Alert Counts: ", alertCounts_norm)
+                print("Mention Counts: ", mentionCounts_norm)
+                print("Post Counts: ", postCounts_norm)
+                print("Threat Counts: ", threatCounts_norm)
 
                 # Check if dark web stats are below thresholds
                 if (
-                    all(x < 7 for x in alertCounts)
-                    and all(x < 16 for x in mentionCounts)
-                    and all(x < 11 for x in postCounts)
-                    and all(x < 3 for x in threatCounts)
+                    all(x < 0.00015001260023789692 for x in alertCounts_norm)
+                    and all(x < 16 for x in mentionCounts)  # 10th percentile
+                    and all(x < 11 for x in postCounts)  # 10th percentile
+                    and all(x < 5 for x in threatCounts)  # 15th percentile
                 ):
                     # Organization should be downgraded to core report
                     return "Core"

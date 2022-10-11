@@ -106,14 +106,14 @@ def get_new_orgs():
 
 
 # ----- v Org Start Date Function WIP v -----
-def get_org_first_report_date(org_uid):
-    """Gets the date when the first report was delivered for an org"""
+def org_first_report_date(org_uid):
+    """Get the date when the first report was delivered for an org."""
     # Still testing/under construction
     conn = connect()
     try:
-        sql = """SELECT date_first_reported 
+        sql = """SELECT date_first_reported
         FROM organizations
-        WHERE 
+        WHERE
             report_on = 'True'
             AND
             organizations_uid = %(org_uid)s"""
@@ -126,8 +126,35 @@ def get_org_first_report_date(org_uid):
             close(conn)
 
 
+# ----- v Total # of Org IPs v -----
+def org_ip_count(org_uid):
+    """Get the total number of IPs associated with the org."""
+    conn = connect()
+    try:
+        sql = """SELECT COUNT(*) num_ips
+        FROM (
+            SELECT cidr_uid
+            FROM public.cidrs
+            WHERE organizations_uid = %(org_uid)s
+            ) cidrs_table
+        INNER JOIN
+            (
+            SELECT ip, origin_cidr
+            FROM public.ips
+            ) ips_table
+        ON
+        ips_table.origin_cidr = cidrs_table.cidr_uid"""
+        num_ips = pd.read_sql(sql, conn, params={"org_uid": org_uid})
+        return num_ips
+    except (Exception, psycopg2.DatabaseError) as error:
+        logging.error("There was a problem with your database query %s", error)
+    finally:
+        if conn is not None:
+            close(conn)
+
+
 def query_creds_view(org_uid, start_date, end_date):
-    """Query credentials view ."""
+    """Query credentials view."""
     conn = connect()
     try:
         sql = """SELECT * FROM vw_breachcomp

@@ -1,10 +1,14 @@
+"""Serve as placeholder for docstring."""
 # Standard Python Libraries
 import datetime
 import json
-import os
+import logging
+
+# import os
 import socket
 import subprocess
-import time
+
+# import time
 import traceback
 
 # Third-Party Libraries
@@ -15,10 +19,13 @@ import psycopg2
 import psycopg2.extras as extras
 import requests
 
+# from sqlalchemy import except_
+
 date = datetime.datetime.now().strftime("%Y-%m-%d")
 
 
 def query_db(conn, query, args=(), one=False):
+    """Query the database."""
     cur = conn.cursor()
     cur.execute(query, args)
     r = [
@@ -30,6 +37,7 @@ def query_db(conn, query, args=(), one=False):
 
 
 def getSubdomain(conn, domain):
+    """Get subdomain."""
     cur = conn.cursor()
     sql = f"""SELECT * FROM sub_domains sd
         WHERE sd.sub_domain = '{domain}'"""
@@ -40,6 +48,7 @@ def getSubdomain(conn, domain):
 
 
 def getRootdomain(conn, domain):
+    """Get root domain."""
     cur = conn.cursor()
     sql = f"""SELECT * FROM root_domains rd
         WHERE rd.root_domain = '{domain}'"""
@@ -50,6 +59,7 @@ def getRootdomain(conn, domain):
 
 
 def addRootdomain(conn, root_domain, pe_org_uid, source_uid, org_name):
+    """Add root domain."""
     ip_address = str(socket.gethostbyname(root_domain))
     sql = f"""insert into root_domains(root_domain, organizations_uid, organization_name, data_source_uid, ip_address)
             values ('{root_domain}', '{pe_org_uid}', '{org_name}', '{source_uid}', '{ip_address}');"""
@@ -61,6 +71,7 @@ def addRootdomain(conn, root_domain, pe_org_uid, source_uid, org_name):
 
 
 def addSubdomain(conn, domain, pe_org_uid, org_name):
+    """Add subdomain."""
     root_domain = domain.split(".")[-2:]
     root_domain = ".".join(root_domain)
     cur = conn.cursor()
@@ -71,6 +82,7 @@ def addSubdomain(conn, domain, pe_org_uid, org_name):
 
 
 def getDataSource(conn, source):
+    """Get data source."""
     cur = conn.cursor()
     sql = f"""SELECT * FROM data_source WHERE name='{source}'"""
     cur.execute(sql)
@@ -80,6 +92,7 @@ def getDataSource(conn, source):
 
 
 def org_root_domains(conn, org_uid):
+    """Get root domains for specific org."""
     sql = """
         select * from root_domains rd
         where rd.organizations_uid = %(org_id)s;
@@ -104,7 +117,8 @@ try:
         password=PE_DB_PASSWORD,
     )
     print("Connected to PE database.")
-except:
+except Exception as e:
+    logging.error(e)
     print("Failed connecting to PE database.")
 
 
@@ -152,7 +166,8 @@ for org_index, org_row in orgs.iterrows():
             try:
                 sub_domain_uid = getSubdomain(PE_conn, sub_domain)[0]
                 print(sub_domain_uid)
-            except:
+            except Exception as e:
+                logging.error(e)
                 # Add and then get it
                 addSubdomain(PE_conn, sub_domain, pe_org_uid, org_name)
                 sub_domain_uid = getSubdomain(PE_conn, sub_domain)[0]
@@ -264,7 +279,8 @@ for org_index, org_row in orgs.iterrows():
                 }
                 domain_list.append(domain_dict)
 
-    except:
+    except Exception as e:
+        logging.error(e)
         print("Failed selecting DNSTwist data.")
         print(traceback.format_exc())
 
@@ -290,7 +306,8 @@ for org_index, org_row in orgs.iterrows():
         PE_conn.commit()
         print("Data inserted using execute_values() successfully..")
 
-    except:
+    except Exception as e:
+        logging.error(e)
         print("Failure inserting data into database.")
         print(traceback.format_exc())
 

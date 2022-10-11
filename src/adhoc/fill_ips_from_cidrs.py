@@ -78,6 +78,7 @@ def fill_ips_from_cidrs():
 
 
 def main():
+    """Serve as main function."""
     fill_ips_from_cidrs()
 
 

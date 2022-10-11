@@ -79,6 +79,7 @@ def fill_ips_from_cidrs(org_id):
 
 
 def main():
+    """Serve as main function."""
     orgs = get_orgs_df()
     # orgs = orgs[orgs['cyhy_db_name'] == 'DOI_OS-OAS']
     orgs = orgs[orgs["cyhy_db_name"].isin(["DHS", "TREASURY", "TREASURY_AUC", "HHS"])]

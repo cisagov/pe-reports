@@ -1,7 +1,7 @@
 """Collect Cybersixgill data."""
 
 # Standard Python Libraries
-from ast import alias
+# from ast import alias
 from datetime import date, datetime, timedelta
 import logging
 import sys

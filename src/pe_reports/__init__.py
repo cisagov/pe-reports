@@ -5,7 +5,7 @@
 # Python package.
 
 # Standard Python Libraries
-from datetime import date
+# from datetime import date
 import logging
 import os
 
@@ -15,7 +15,6 @@ from flask import Flask, render_template
 from flask_login import LoginManager
 from flask_migrate import Migrate
 from flask_sqlalchemy import SQLAlchemy
-from werkzeug.utils import secure_filename
 
 # cisagov Libraries
 from pe_reports.data.config import config
@@ -27,6 +26,9 @@ from pe_reports.stakeholder_full.views import stakeholder_full_blueprint
 from pe_reports.stakeholder_lite.views import stakeholder_lite_blueprint
 
 from ._version import __version__  # noqa: F401
+
+# from werkzeug.utils import secure_filename
+
 
 params = config()
 login_manager = LoginManager()

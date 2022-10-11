@@ -14,7 +14,7 @@ import requests
 # DB connection functions
 CF_CONN_PARAMS = config2()
 PE_CONN_PARAMS = config()
-orgs_to_run = []
+orgs_to_run = []  # type: list[str]
 
 
 def connect(PARAMS):
@@ -230,6 +230,7 @@ def execute_hibp_breach_values(conn, jsonList, table):
 
 
 def run_hibp(org_df):
+    """Serve as placeholder for docstring."""
     PE_conn = connect("", PE_CONN_PARAMS)
     try:
         source_uid = getDataSource(PE_conn, "HaveIBeenPwnd")[0]

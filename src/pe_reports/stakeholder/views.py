@@ -8,12 +8,11 @@ import logging
 import os
 import re
 import socket
-from time import sleep
-from urllib.request import Request, urlopen
 
 # Third-Party Libraries
 from bs4 import BeautifulSoup
-import flask
+
+# import flask
 from flask import (
     Blueprint,
     current_app,
@@ -23,7 +22,8 @@ from flask import (
     request,
     url_for,
 )
-from lxml import html
+
+# from lxml import html
 import nltk
 
 # from nltk.tag import StanfordTagger
@@ -36,6 +36,14 @@ import psycopg2.extras
 import requests
 import spacy
 from werkzeug.utils import secure_filename
+
+# cisagov Libraries
+from pe_reports.data.config import config
+from pe_reports.stakeholder.forms import InfoFormExternal
+
+# from time import sleep
+# from urllib.request import Request, urlopen
+
 
 # Create central logging
 logging.basicConfig(
@@ -50,9 +58,6 @@ logging.basicConfig(
 # If you are getting errors saying that a "en_core_web_lg" is loaded. Run the command " python -m spacy download en_core_web_trf" but might have to chagne the name fo the spacy model
 nlp = spacy.load("en_core_web_lg")
 
-# cisagov Libraries
-from pe_reports.data.config import config
-from pe_reports.stakeholder.forms import InfoFormExternal
 
 # from pe_reports import UPLOAD_FOLDER
 #
@@ -539,7 +544,7 @@ stakeholder_blueprint = Blueprint(
 
 
 def getNames(url):
-
+    """Get names."""
     doc = nlp(getAbout(url))
 
     d = []
@@ -551,6 +556,7 @@ def getNames(url):
 
 
 def getAbout(url):
+    """Get about."""
     thepage = requests.get(url).text
 
     soup = BeautifulSoup(thepage, "lxml")
@@ -567,6 +573,7 @@ def getAbout(url):
 
 
 def theExecs(URL):
+    """Get executives."""
     mytext = getAbout(URL)
 
     tokens = word_tokenize(mytext)
@@ -605,6 +612,7 @@ def theExecs(URL):
 
 
 def allowed_file(filename):
+    """Get allowed extensions."""
     # Allowed file extensions to upload
     ALLOWED_EXTENSIONS = current_app.config["ALLOWED_EXTENSIONS"]
     return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -612,6 +620,7 @@ def allowed_file(filename):
 
 @stakeholder_blueprint.route("/upload", methods=["GET", "POST"])
 def upload_file():
+    """Upload file."""
     # Directory where bulk stakeholder files to be uploaded
     UPLOAD_FOLDER = current_app.config["UPLOAD_FOLDER"]
 
@@ -666,9 +675,9 @@ def stakeholder():
         formExternal.custDomainAliases = ""
         formExternal.custRootDomain.data = ""
         formExternal.custExecutives.data = ""
-        allDomain = getAgencies(cust)
+        # allDomain = getAgencies(cust)
         allExecutives = list(theExecs(custExecutives))
-        allSubDomain = getSubdomain(custRootDomainValue)
+        # allSubDomain = getSubdomain(custRootDomainValue)
         allValidIP = getallsubdomainIPS(custRootDomainValue)
 
         try:

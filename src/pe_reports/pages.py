@@ -10,17 +10,11 @@ import chevron
 
 # New Imports
 from dateutil.relativedelta import relativedelta
-from numpy import source
 
 from .charts import Charts
 
 # Import Classes
-from .metrics import (
-    Credentials,
-    Cyber_Six,
-    Domains_Masqs,
-    Malware_Vulns,
-)
+from .metrics import Credentials, Cyber_Six, Domains_Masqs, Malware_Vulns
 
 
 # Style and build tables
@@ -362,7 +356,7 @@ def dark_web(chevron_dict, trending_start_date, start_date, end_date, org_uid):
         "percChngDarkAlert": Cyber6.perChngDark("alerts"),
     }
 
-    # print(Cyber6.checkDarkUsage())  # EDIT MADE (Dark Web Usage WIP)
+    # print(Cyber6.checkDarkUsage())  # (Dark Web Usage WIP)
 
     chevron_dict.update(dark_web_dict)
     return (chevron_dict, Cyber6.dark_web_mentions, Cyber6.alerts, Cyber6.top_cves)

@@ -151,7 +151,8 @@ def alerts(org_id):
             df_alerts = pd.DataFrame.from_dict(resp)
             all_alerts.append(df_alerts)
             df_all_alerts = pd.concat(all_alerts).reset_index(drop=True)
-        except:
+        except Exception as e:
+            logging.error(e)
             print("HAD TO CONTINUE THROUGH ALERT CHUNK")
             continue
 
