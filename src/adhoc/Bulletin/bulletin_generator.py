@@ -11,6 +11,7 @@ Options:
 
 # Standard Python Libraries
 import datetime
+import logging
 import os
 
 # Third-Party Libraries
@@ -23,6 +24,8 @@ import pdfkit
 from pe_reports.data.db_query import connect
 from pe_source.data.pe_db.config import cybersix_token
 from pe_source.data.sixgill.api import intel_post
+
+LOGGER = logging.getLogger(__name__)
 
 
 def get_post(id):
@@ -45,13 +48,13 @@ def html_builder(text):
         "Which of the following would you like to insert:\n [P]aragraph\n [B]ulleted List \n [N]umbered List\n Please provide a selection:"
     )
     if input_type == "P":
-        print("Paragraph Selected")
+        LOGGER.info("Paragraph Selected")
         paragraph = input("Please enter paragraph text:")
         paragraph = f"<p> {paragraph} </p>"
         text = text + f"\n {paragraph}"
 
     elif input_type == "B":
-        print("Bulleted List Selected. Enter [D] when done.")
+        LOGGER.info("Bulleted List Selected. Enter [D] when done.")
         bullets = "<ul>\n"
         while True:
             item = input("Enter line item: ")
@@ -62,7 +65,7 @@ def html_builder(text):
         text = text + f"\n {bullets}"
 
     elif input_type == "N":
-        print("Numbered List Selected")
+        LOGGER.info("Numbered List Selected")
         bullets = "<ol>\n"
         while True:
             item = input("Enter line item: ")
@@ -72,13 +75,13 @@ def html_builder(text):
             bullets = bullets + f"<li>{item}</li>\n"
         text = text + f"\n {bullets}"
     else:
-        print("Invalid Selection")
+        LOGGER.info("Invalid Selection")
 
     cont = input("Would you like to add more content (Y/N): ")
     if cont == "Y":
         text = html_builder(text)
 
-    print(text)
+    LOGGER.info(text)
 
     return text
 
@@ -140,7 +143,7 @@ def generate_cybersix_bulletin(
             "disable-smart-shrinking": True,
         }
         out_path = output_directory + "/" + filename
-        print(out_path)
+        LOGGER.info(out_path)
 
         pdfkit.from_file(
             [bulletin_path + "/bulletin_template_filled.html"],
@@ -158,7 +161,7 @@ def generate_creds_bulletin(
     filename="_Bulletin.pdf",
 ):
     """Generate a credential breach bulletin."""
-    print("generating creds bulletin")
+    LOGGER.info("generating creds bulletin")
     templateLoader = jinja2.FileSystemLoader(searchpath=bulletin_path)
     templateEnv = jinja2.Environment(loader=templateLoader, autoescape=True)
     templateEnv.filters["date_format"] = date_format
@@ -192,6 +195,7 @@ def generate_creds_bulletin(
 
     # Replace Blank values with DataFrame.replace() methods.
     emails_df = emails_df.replace(r"^\s*$", "-", regex=True)
+    LOGGER.info(emails_df)
     df_table = emails_df[
         ["Email", "Name", "Login ID", "Phone", "Password", "Hash Type"]
     ].to_html(index=False, classes="table table-striped")
@@ -205,7 +209,8 @@ def generate_creds_bulletin(
         emails_list[i * n : (i + 1) * n] for i in range((len(emails_list) + n - 1) // n)
     ]
 
-    print(hibp_rows)
+    LOGGER.info(hibp_rows)
+    LOGGER.info(df_table)
     results = []
     for row in breaches:
         row_dict = {}
@@ -213,6 +218,7 @@ def generate_creds_bulletin(
             row_dict[col] = row[i]
         results.append(row_dict)
 
+        LOGGER.info(row_dict)
         outputText = template.render(
             row_dict,
             user_provided_content=user_text,
@@ -248,7 +254,7 @@ def generate_creds_bulletin(
             "disable-smart-shrinking": True,
         }
         out_path = output_directory + "/" + filename
-        print(out_path)
+        LOGGER.info(out_path)
         pdfkit.from_file(
             [bulletin_path + "/creds_bulletin_template_filled.html"],
             out_path,
@@ -265,10 +271,13 @@ def main():
 
     user_text = html_builder("")
 
-    print(id)
+    LOGGER.info(id)
 
-    generate_cybersix_bulletin(id, user_text,)
-    # print(resp)
+    generate_cybersix_bulletin(
+        id,
+        user_text,
+    )
+    # LOGGER.info(resp)
 
 
 if __name__ == "__main__":

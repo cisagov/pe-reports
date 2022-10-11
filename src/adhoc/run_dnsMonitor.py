@@ -4,8 +4,6 @@ import datetime
 import socket
 
 # Third-Party Libraries
-# sys.path is a list of absolute path strings
-# sys.path.append("/Users/loftusa/Documents/PE/Scripts/Testing/pe_db")
 from data.run import (
     addRootToSubdomain,
     execute_dnsmonitor_alert_data,
@@ -17,6 +15,15 @@ from data.run import (
 import dns.resolver
 import pandas as pd
 import requests
+
+# cisagov Libraries
+# sys.path is a list of absolute path strings
+# sys.path.append("/Users/loftusa/Documents/PE/Scripts/Testing/pe_db")
+from pe_reports import app
+
+LOGGER = logging.getLogger(__name__)
+
+LOGGER.info("TESTINGF")
 
 
 def get_dates():
@@ -38,10 +45,13 @@ org_names_df = pd.read_csv("/home/ubuntu/adhoc/data/root_domains_dns_monitor.csv
 scope = "DNSMonitorAPI"
 url = "https://portal.truespd.com/dhs/connect/token"
 
+client_id = ""
+client_secret = ""
+
 # TODO: Insert client id and secret values
 payload = {
-    "client_id": "",
-    "client_secret": "",
+    "client_id": client_id,
+    "client_secret": client_secret,
     "grant_type": "client_credentials",
     "scope": scope,
 }
@@ -56,7 +66,7 @@ headers = {}
 headers["authorization"] = f"Bearer {token}"
 response = requests.request("GET", url, headers=headers, data=payload).json()
 df = pd.DataFrame(response)
-print(df)
+LOGGER.info(df)
 
 
 # Sync domainid's with org names
@@ -86,15 +96,15 @@ for org_index, org_row in orgs.iterrows():
 
     # Get Alerts for a specific org based on the list of DOomainIds
     if domainIds == "[]":
-        print("Can't match org to any domains...")
+        LOGGER.info("Can't match org to any domains...")
     else:
         url = "https://dns.portal.truespd.com/dhs/api/GetAlerts"
         payload1 = (
             '{\r\n  "domainIds": %s,\r\n  "fromDate": "%s",\r\n  "toDate": "%s",\r\n  "alertType": null,\r\n  "showBufferPeriod": false\r\n}'
             % (domainIds, from_date, to_date)
         )
-        print("\n\n" + org + ":")
-        print(payload1)
+        LOGGER.info("\n\n" + org + ":")
+        LOGGER.info(payload1)
         headers = {}
         headers["authorization"] = f"Bearer {token}"
         headers["Content-Type"] = "application/json"
@@ -102,9 +112,9 @@ for org_index, org_row in orgs.iterrows():
         alerts_df = pd.DataFrame(response)
         # If no alerts, continue
         if alerts_df.empty:
-            print(f"No alerts for {org}.")
+            LOGGER.info(f"No alerts for {org}.")
             continue
-        print(alerts_df)
+        LOGGER.info(alerts_df)
 
         # Now that we have all the alerts, get the sub_domain_uid for each
         # df["sub_domain_uid"] = ""
@@ -117,7 +127,7 @@ for org_index, org_row in orgs.iterrows():
             # DNSMonitor only monitor roots and table relationships are org --> root_domain --> subdomain --> domain_permutations --> domain_alerts
             # So the subdomain table needs to have roots in them as well as a "sub_domain"
             if not sub_domain:
-                print(
+                LOGGER.info(
                     f"Root domain, {root_domain}, isn't in sub domain table as a sub_domain."
                 )
                 addRootToSubdomain(root_domain)
@@ -174,7 +184,7 @@ for org_index, org_row in orgs.iterrows():
         # alerts_df["fuzzer"] = None
         # alerts_df["ssdeep_score"] = None
 
-        print(alerts_df)
+        LOGGER.info(alerts_df)
 
         # Create df to insert into domain permtations table
         alerts_df = alerts_df.rename(
@@ -219,5 +229,5 @@ for org_index, org_row in orgs.iterrows():
                 "date",
             ]
         ]
-        print(domain_alerts)
+        LOGGER.info(domain_alerts)
         execute_dnsmonitor_alert_data(domain_alerts, "domain_alerts")

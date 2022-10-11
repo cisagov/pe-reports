@@ -42,9 +42,14 @@ import pymongo.errors
 from schema import And, Schema, SchemaError, Use
 import yaml
 
+# cisagov Libraries
+import pe_reports
+
 from ._version import __version__
 from .pe_message import PEMessage
 from .stats_message import StatsMessage
+
+LOGGER = logging.getLogger(__name__)
 
 
 def get_emails_from_request(request):
@@ -483,12 +488,16 @@ def main():
     # Assign validated arguments to variables
     log_level: str = validated_args["--log-level"]
 
-    # Set up logging
+    # Setup logging to central file
     logging.basicConfig(
-        format="%(asctime)-15s %(levelname)s %(message)s", level=log_level.upper()
+        filename=pe_reports.CENTRAL_LOGGING_FILE,
+        filemode="a",
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+        datefmt="%m/%d/%Y %I:%M:%S",
+        level=log_level.upper(),
     )
 
-    logging.info("Sending Posture & Exposure Reports, Version : %s", __version__)
+    LOGGER.info("Sending Posture & Exposure Reports, Version : %s", __version__)
 
     send_reports(
         # TODO: Improve use of schema to validate arguments.

@@ -18,12 +18,7 @@ from pe_reports.helpers.link_subs_and_ips_from_subs import connect_ips_from_subs
 from pe_reports.helpers.shodan_dedupe import dedupe
 from pe_reports.stakeholder_lite.forms import InfoFormExternal
 
-logging.basicConfig(
-    filemode="a",
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    datefmt="%m/%d/%Y %I:%M:%S",
-    level=logging.INFO,
-)
+LOGGER = logging.getLogger(__name__)
 
 # CSG credentials
 API_Client_ID = os.getenv("CSGUSER")

@@ -1,5 +1,6 @@
 """HIBP scan."""
 # Standard Python Libraries
+import logging
 import time
 
 # Third-Party Libraries
@@ -15,6 +16,24 @@ CF_CONN_PARAMS = config2()
 PE_CONN_PARAMS = config()
 orgs_to_run = []
 
+CENTRAL_LOGGING_FILE = "pe_reports_logging.log"
+DEBUG = False
+# Setup Logging
+"""Set up logging and call the run_pe_script function."""
+if DEBUG is True:
+    level = "DEBUG"
+else:
+    level = "INFO"
+
+logging.basicConfig(
+    filename=CENTRAL_LOGGING_FILE,
+    filemode="a",
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    datefmt="%m/%d/%Y %I:%M:%S",
+    level=level,
+)
+LOGGER = logging.getLogger(__name__)
+
 
 def connect(PARAMS):
     """Connect to the db."""
@@ -23,8 +42,8 @@ def connect(PARAMS):
     try:
         conn = psycopg2.connect(**PARAMS)
     except Exception as err:
-        print(err)
-        print("Error connecting to DB.")
+        LOGGER.info(err)
+        LOGGER.info("Error connecting to DB.")
         conn = None
     return conn
 
@@ -75,9 +94,9 @@ def getDataSource(conn, source):
 try:
     PE_conn = connect(PE_CONN_PARAMS)
     source_uid = getDataSource(PE_conn, "HaveIBeenPwnd")[0]
-    print("Success fetching the data source")
+    LOGGER.info("Success fetching the data source")
 except Exception:
-    print("Failed fetching the data source.")
+    LOGGER.error("Failed fetching the data source.")
 
 # HIBP functions
 Emails_URL = "https://haveibeenpwned.com/api/v2/enterprisesubscriber/domainsearch/"
@@ -97,7 +116,7 @@ def flatten_data(response, subdomain, breaches_dict):
                 data = {"email": key + "@" + subdomain, "sub_domain": subdomain}
                 data.update(breaches_dict[b])
                 combined_data.append(data)
-    print(combined_data)
+    LOGGER.info(combined_data)
     return combined_data
 
 
@@ -131,7 +150,7 @@ def get_breaches():
             breach_dict[line["Name"]] = breach
         return (pd.DataFrame(breach_list), breach_dict)
     else:
-        print(breaches.text)
+        LOGGER.info(breaches.text)
 
 
 def get_emails(domain):
@@ -149,9 +168,9 @@ def get_emails(domain):
             run_failed = False
         else:
             run_failed = True
-            print(status)
-            print(r.text)
-            print(f"Trying to run on {domain} again")
+            LOGGER.info(status)
+            LOGGER.info(r.text)
+            LOGGER.info(f"Trying to run on {domain} again")
             if status == 502:
                 time.sleep(60 * 3)
 
@@ -170,14 +189,14 @@ def execute_hibp_emails_values(conn, jsonList):
         data_source_uid,
         name
     ) VALUES %s
-    ON CONFLICT (email, breach_name, name)
+    ON CONFLICT (email, breach_name)
     DO NOTHING;"""
     values = [[value for value in dict.values()] for dict in jsonList]
     cursor = conn.cursor()
     # try:
     extras.execute_values(cursor, sql, values)
     conn.commit()
-    print("Data inserted into credential_exposures successfully..")
+    LOGGER.info("Data inserted into credential_exposures successfully..")
     # except (Exception, psycopg2.DatabaseError) as err:
     #     show_psycopg2_exception(err)
     #     cursor.close()
@@ -223,9 +242,9 @@ def execute_hibp_breach_values(conn, jsonList, table):
     try:
         extras.execute_values(cursor, sql, values)
         conn.commit()
-        print("Data inserted into credential_breaches successfully..")
+        LOGGER.info("Data inserted into credential_breaches successfully..")
     except (Exception, psycopg2.DatabaseError) as err:
-        print(err)
+        LOGGER.error(err)
         cursor.close()
 
 
@@ -233,15 +252,15 @@ def run_hibp(org_df):
     PE_conn = connect(PE_CONN_PARAMS)
     try:
         source_uid = getDataSource(PE_conn, "HaveIBeenPwnd")[0]
-        print("Success fetching the data source")
+        LOGGER.info("Success fetching the data source")
     except Exception:
-        print("Failed fetching the data source.")
+        LOGGER.error("Failed fetching the data source.")
 
     breaches = get_breaches()
     compiled_breaches = breaches[1]
     b_list = []
     for breach in compiled_breaches.values():
-        print(breach)
+        LOGGER.info(breach)
         breach_dict = {
             "breach_name": breach["breach_name"],
             "description": breach["description"],
@@ -272,35 +291,35 @@ def run_hibp(org_df):
         pe_org_uid = org_row["organizations_uid"]
         org_name = org_row["name"]
         cyhy_id = org_row["cyhy_db_name"]
-        print(cyhy_id)
+        LOGGER.info(cyhy_id)
 
         if cyhy_id not in orgs_to_run and orgs_to_run:
             continue
-        print(f"Running on {org_name}")
+        LOGGER.info(f"Running on {org_name}")
 
         subs = query_PE_subs(PE_conn, pe_org_uid).sort_values(
             by="sub_domain", key=lambda col: col.str.count(".")
         )
 
-        print(subs)
+        LOGGER.info(subs)
 
         for sub_index, sub in subs.iterrows():
             sd = sub["sub_domain"]
             if sd.endswith(".gov"):
-                print(f"Finding breaches for {sd}")
+                LOGGER.info(f"Finding breaches for {sd}")
             else:
                 continue
             try:
                 hibp_resp = get_emails(sd)
             except:
-                print("Failed after 5 tries.")
+                LOGGER.info("Failed after 5 tries.")
                 continue
             if hibp_resp:
-                # print(emails)
+                # LOGGER.info(emails)
                 # flat = flatten_data(emails, sub['name'], compiled_breaches)
                 creds_list = []
                 for email, breach_list in hibp_resp.items():
-                    # print(emails)
+                    # LOGGER.info(emails)
                     # for email, breach_list in emails.items():
                     subdomain = sd
                     root_domain = sub["root_domain"]
@@ -317,7 +336,7 @@ def run_hibp(org_df):
                             "name": None,
                         }
                         creds_list.append(cred)
-                print("there are ", len(creds_list), " creds found")
+                LOGGER.info(f"there are {len(creds_list)} creds found")
                 # Insert new creds into the PE DB
                 execute_hibp_emails_values(PE_conn, creds_list)
 

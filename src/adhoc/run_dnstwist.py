@@ -1,6 +1,7 @@
 # Standard Python Libraries
 import datetime
 import json
+import logging
 import os
 import socket
 import subprocess
@@ -16,6 +17,23 @@ import psycopg2.extras as extras
 import requests
 
 date = datetime.datetime.now().strftime("%Y-%m-%d")
+CENTRAL_LOGGING_FILE = "pe_reports_logging.log"
+DEBUG = False
+# Setup Logging
+"""Set up logging and call the run_pe_script function."""
+if DEBUG is True:
+    level = "DEBUG"
+else:
+    level = "INFO"
+
+logging.basicConfig(
+    filename=CENTRAL_LOGGING_FILE,
+    filemode="a",
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    datefmt="%m/%d/%Y %I:%M:%S",
+    level=level,
+)
+LOGGER = logging.getLogger(__name__)
 
 
 def query_db(conn, query, args=(), one=False):
@@ -57,7 +75,7 @@ def addRootdomain(conn, root_domain, pe_org_uid, source_uid, org_name):
     cur.execute(sql)
     conn.commit()
     cur.close()
-    print(f"Success adding root domain, {root_domain}, to root domain table.")
+    LOGGER.info(f"Success adding root domain, {root_domain}, to root domain table.")
 
 
 def addSubdomain(conn, domain, pe_org_uid, org_name):
@@ -67,7 +85,7 @@ def addSubdomain(conn, domain, pe_org_uid, org_name):
     cur.callproc(
         "insert_sub_domain", (domain, pe_org_uid, "findomain", root_domain, None)
     )
-    print(f"Success adding domain, {domain}, to subdomains table.")
+    LOGGER.info(f"Success adding domain, {domain}, to subdomains table.")
 
 
 def getDataSource(conn, source):
@@ -103,55 +121,53 @@ try:
         user=PE_DB_USERNAME,
         password=PE_DB_PASSWORD,
     )
-    print("Connected to PE database.")
+    LOGGER.info("Connected to PE database.")
 except:
-    print("Failed connecting to PE database.")
+    LOGGER.error("Failed connecting to PE database.")
 
 
 # Get data source
 source_uid = getDataSource(PE_conn, "DNSTwist")[0]
 
-print("source_uid")
-print(source_uid)
 
 """ Get P&E Orgs """
 
 orgs = query_orgs_rev()
-print(orgs["name"])
+LOGGER.info(orgs["name"])
 for org_index, org_row in orgs.iterrows():
     pe_org_uid = org_row["organizations_uid"]
     org_name = org_row["name"]
 
-    # if org_name not in ["Commission of Fine Arts"]:
-    #     continue
+    if org_name not in ["Commission of Fine Arts"]:
+        continue
 
-    print(pe_org_uid)
-    print(org_name)
+    LOGGER.info(pe_org_uid)
+    LOGGER.info(org_name)
 
     """Collect DNSTwist data from Crossfeed"""
     try:
         # Get root domains
         rd_df = org_root_domains(PE_conn, pe_org_uid)
-        print(rd_df)
+        LOGGER.info(rd_df)
         domain_list = []
         perm_list = []
         for rd_index, rd_row in rd_df.iterrows():
             root_domain = rd_row["root_domain"]
             if root_domain == "Null_Root":
                 continue
-            print(rd_row["root_domain"])
+            LOGGER.info(rd_row["root_domain"])
 
             # Run dnstwist on each root domain
-            cmd = f"dnstwist -r --tld common_tlds.dict -f json {root_domain}"
+            cmd = f"dnstwist -r --tld /var/www/pe-reports/src/adhoc/common_tlds.dict -f json {root_domain}"
             dnstwist_result = json.loads(subprocess.check_output(cmd, shell=True))
-            # print(dnstwist_result)
+            # LOGGER.info(dnstwist_result)
 
             # Get subdomain uid
             sub_domain = root_domain
-            print(sub_domain)
+            LOGGER.info(sub_domain)
             try:
                 sub_domain_uid = getSubdomain(PE_conn, sub_domain)[0]
-                print(sub_domain_uid)
+                LOGGER.info(sub_domain_uid)
             except:
                 # Add and then get it
                 addSubdomain(PE_conn, sub_domain, pe_org_uid, org_name)
@@ -166,7 +182,7 @@ for org_index, org_row in orgs.iterrows():
                 if "dns_a" not in dom:
                     continue
                 else:
-                    print(str(dom["dns_a"][0]))
+                    LOGGER.info(str(dom["dns_a"][0]))
                     # check IP in Blocklist API
                     response = requests.get(
                         "http://api.blocklist.de/api.php?ip=" + str(dom["dns_a"][0])
@@ -205,7 +221,7 @@ for org_index, org_row in orgs.iterrows():
                 if "dns_aaaa" not in dom:
                     dom["dns_aaaa"] = [""]
                 else:
-                    print(str(dom["dns_aaaa"][0]))
+                    LOGGER.info(str(dom["dns_aaaa"][0]))
                     # check IP in Blocklist API
                     response = requests.get(
                         "http://api.blocklist.de/api.php?ip=" + str(dom["dns_aaaa"][0])
@@ -235,7 +251,7 @@ for org_index, org_row in orgs.iterrows():
 
                 # Ignore duplicates
                 permutation = dom["domain"]
-                print(permutation)
+                LOGGER.info(permutation)
                 if permutation in perm_list:
                     continue
                 else:
@@ -262,13 +278,18 @@ for org_index, org_row in orgs.iterrows():
                 domain_list.append(domain_dict)
 
     except:
-        print("Failed selecting DNSTwist data.")
-        print(traceback.format_exc())
+        LOGGER.error("Failed selecting DNSTwist data.")
+        LOGGER.error(traceback.format_exc())
 
     """Insert cleaned data into PE database."""
     try:
         cursor = PE_conn.cursor()
-        columns = domain_list[0].keys()
+        try:
+            columns = domain_list[0].keys()
+        except Exception as e:
+            LOGGER.info(e)
+            LOGGER.info("No data")
+            continue
         table = "domain_permutations"
         sql = """INSERT INTO {}({}) VALUES %s
         ON CONFLICT (domain_permutation,organizations_uid)
@@ -285,10 +306,10 @@ for org_index, org_row in orgs.iterrows():
         values = [[value for value in dict.values()] for dict in domain_list]
         extras.execute_values(cursor, sql, values)
         PE_conn.commit()
-        print("Data inserted using execute_values() successfully..")
+        LOGGER.info("Data inserted using execute_values() successfully..")
 
     except:
-        print("Failure inserting data into database.")
-        print(traceback.format_exc())
+        LOGGER.error("Failure inserting data into database.")
+        LOGGER.error(traceback.format_exc())
 
 PE_conn.close()

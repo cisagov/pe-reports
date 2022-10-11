@@ -421,8 +421,7 @@ def main():
     for org_index, org in orgs.iterrows():
         if args["ORGS"] and org["cyhy_db_name"] not in args["ORGS"]:
             continue
-        if org["cyhy_db_name"] not in ["DOC_OS", "DOC_OIG", "DOC_BIS"]:
-            continue
+
         print(f"Running on {org['name']}")
         conn = connect("")
         assets = query_web_assets(conn, org["organizations_uid"])

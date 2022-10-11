@@ -41,12 +41,7 @@ from pe_reports.stakeholder_full.forms import InfoFormExternal
 # If you are getting errors saying that a "en_core_web_lg" is loaded. Run the command " python -m spacy download en_core_web_trf" but might have to chagne the name fo the spacy model
 nlp = spacy.load("en_core_web_lg")
 
-logging.basicConfig(
-    filemode="a",
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    datefmt="%m/%d/%Y %I:%M:%S",
-    level=logging.INFO,
-)
+LOGGER = logging.getLogger(__name__)
 
 # CSG credentials
 # TODO: Insert credentials

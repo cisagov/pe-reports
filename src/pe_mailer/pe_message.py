@@ -99,7 +99,7 @@ Cybersecurity and Infrastructure Security Agency<br>
         report_date : str
             The date corresponding to the Posture and Exposure
             report attachment. Specify dates using the format "December 12, 2017".
-        
+
         org_id : str
             The organization ID to add to the email subject.
 
