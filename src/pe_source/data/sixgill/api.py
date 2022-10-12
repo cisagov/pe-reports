@@ -11,6 +11,8 @@ import requests
 # cisagov Libraries
 from pe_source.data.pe_db.config import cybersix_token
 
+LOGGER = logging.getLogger(__name__)
+
 
 def get_sixgill_organizations():
     """Get the list of organizations."""
@@ -44,7 +46,7 @@ def org_assets(org_id):
             break
         except Exception:
             time.sleep(5)
-            logging.info("Error. Trying query post again...")
+            LOGGER.info("Error. Trying query post again...")
             count += 1
             continue
     resp = requests.get(url, headers=headers, params=payload).json()
@@ -124,7 +126,7 @@ def alerts_content(auth, organization_id, alert_id):
         else:
             content = ""
     except Exception as e:
-        logging.error("Failed getting content snip: %s", e)
+        LOGGER.error("Failed getting content snip: %s", e)
         content = ""
     return content
 
@@ -179,7 +181,7 @@ def setNewCSGOrg(newOrgName, orgAliases, orgDomainNames, orgIP, orgExecs):
     newOrgID = response["id"]
 
     if newOrgID:
-        logging.info("A new org_id was created: %s", newOrgID)
+        LOGGER.info("A new org_id was created: %s", newOrgID)
         setOrganizationUsers(newOrgID)
         setOrganizationDetails(newOrgID, orgAliases, orgDomainNames, orgIP, orgExecs)
 
@@ -241,7 +243,7 @@ def setOrganizationDetails(org_id, orgAliases, orgDomain, orgIP, orgExecs):
     }
 
     response = requests.put(url, headers=headers, data=newOrganizationDetails).json()
-    logging.info("The response is %s", response)
+    LOGGER.info("The response is %s", response)
 
 
 def getUserInfo():

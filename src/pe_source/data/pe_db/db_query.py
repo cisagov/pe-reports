@@ -15,7 +15,7 @@ import psycopg2.extras as extras
 # cisagov Libraries
 from pe_reports.data.config import config
 
-logging.basicConfig(format="%(asctime)-15s %(levelname)s %(message)s", level="INFO")
+LOGGER = logging.getLogger(__name__)
 
 CONN_PARAMS_DIC = config()
 

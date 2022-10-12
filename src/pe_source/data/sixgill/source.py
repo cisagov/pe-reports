@@ -21,6 +21,8 @@ from .api import (
     org_assets,
 )
 
+LOGGER = logging.getLogger(__name__)
+
 
 def alias_organization(org_id):
     """List an organization's aliases."""
@@ -60,28 +62,20 @@ def mentions(date, aliases):
         mentions += '"' + mention + '"' + ","
     mentions = mentions[:-1]
     query = "date:" + date + " AND " + "(" + str(mentions) + ")"
-    # query = (
-    #     "date:"
-    #     + date
-    #     + " AND NOT site:telegram AND NOT site:forum_4chan AND NOT site:reddit AND "
-    #     + "("
-    #     + str(mentions)
-    #     + ")"
-    # )
-    logging.info("Query:")
-    logging.info(query)
+    LOGGER.info("Query:")
+    LOGGER.info(query)
     count = 1
     while count < 7:
         try:
-            logging.info("Intel post try #%s", count)
+            LOGGER.info("Intel post try #%s", count)
             resp = intel_post(token, query, frm=0, scroll=False, result_size=1)
             break
         except Exception:
-            logging.info("Error. Trying intel_post again...")
+            LOGGER.info("Error. Trying intel_post again...")
             count += 1
             continue
     count_total = resp["total_intel_items"]
-    logging.info("Total Mentions: %s", count_total)
+    LOGGER.info("Total Mentions: %s", count_total)
 
     if count_total < 8000:
         i = 0
@@ -95,7 +89,7 @@ def mentions(date, aliases):
                         token, query, frm=i, scroll=False, result_size=100
                     )
                     i += 100
-                    logging.info("Getting %s of %s....", i, count_total)
+                    LOGGER.info("Getting %s of %s....", i, count_total)
                     intel_items = resp["intel_items"]
                     df_mentions = pd.DataFrame.from_dict(intel_items)
                     all_mentions.append(df_mentions)
@@ -103,7 +97,7 @@ def mentions(date, aliases):
                     break
                 except Exception:
                     time.sleep(5)
-                    logging.info("Error. Trying query post again...")
+                    LOGGER.info("Error. Trying query post again...")
                     count += 1
                     continue
     else:
@@ -118,7 +112,7 @@ def mentions(date, aliases):
                         token, query, frm=i, scroll=False, result_size=300
                     )
                     i += 300
-                    logging.info("Getting %s of %s....", i, count_total)
+                    LOGGER.info("Getting %s of %s....", i, count_total)
                     intel_items = resp["intel_items"]
                     df_mentions = pd.DataFrame.from_dict(intel_items)
                     all_mentions.append(df_mentions)
@@ -126,7 +120,7 @@ def mentions(date, aliases):
                     break
                 except Exception:
                     time.sleep(5)
-                    logging.info("Error. Trying query post again...")
+                    LOGGER.info("Error. Trying query post again...")
                     count += 1
                     continue
 
@@ -137,9 +131,9 @@ def alerts(org_id):
     """Get actionable alerts for an organization."""
     token = cybersix_token()
     count = alerts_count(token, org_id)
-    logging.info(count)
+    LOGGER.info(count)
     count_total = count["total"]
-    logging.info("Total Alerts: %s", count_total)
+    LOGGER.info("Total Alerts: %s", count_total)
 
     # Recommended "fetch_size" is 25. The maximum is 400.
     fetch_size = 25
@@ -179,7 +173,7 @@ def get_alerts_content(organization_id, alert_id, org_assets_dict):
                 snip = "..." + snip + "..."
                 asset_mentioned = asset
                 asset_type = type
-                logging.info("Asset mentioned: %s", asset_mentioned)
+                LOGGER.info("Asset mentioned: %s", asset_mentioned)
     return snip, asset_mentioned, asset_type
 
 
