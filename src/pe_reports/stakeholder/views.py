@@ -10,6 +10,7 @@ import socket
 
 # Third-Party Libraries
 from flask import Blueprint, flash, redirect, render_template, url_for
+from flask_login import login_required
 import psycopg2
 import psycopg2.extras
 import requests
@@ -520,6 +521,7 @@ stakeholder_blueprint = Blueprint(
 
 
 @stakeholder_blueprint.route("/stakeholder", methods=["GET", "POST"])
+@login_required
 def stakeholder():
     """Process form information, instantiate form and render page template."""
     LOGGER.debug("made it to stakeholder")

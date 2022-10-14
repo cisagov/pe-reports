@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+{% block content %}
+
+{#    <form method="post">#}
+{##}
+{#    {{ form.hidden_tag() }}#}
+{#    <br>#}
+{#        {{ form.username.label }}{{ form.username() }}<br>#}
+{#    {{ form.password.label }}{{ form.password() }}<br>#}
+{#    {{ form.pass_confirm.label }}{{ form.pass_confirm }}<br>#}
+{#    {{ form.submit() }}#}
+{##}
+{#    </form>#}
+
+      <section class="vh-100">
+  <div class="container-fluid h-custom">
+    <div class="row d-flex justify-content-center align-items-center h-100">
+
+      <div class="col-md-8 col-lg-6 col-xl-4 offset-xl-1">
+        <form method="post">
+            {{ form.hidden_tag() }}
+          <!-- Email input -->
+          <div class="form-outline mb-4">
+              {{ form.email.label }}{{ form.email(class="form-control form-control-lg", placeholder='Enter a valid email address') }}
+{#              {{ form.email(class="form-control form-control-lg", placeholder='Enter a valid email address') }}{{ form.email.label }}#}
+
+          </div>
+            <div class="form-outline mb-4">
+                {{ form.username.label }}{{ form.username(class="form-control form-control-lg", placeholder='Enter a username') }}
+            </div>
+
+          <!-- Password input -->
+          <div class="form-outline mb-3">
+              {{ form.password.label }}{{ form.password(class="form-control form-control-lg", placeholder="Enter password") }}
+
+          </div>
+
+            <div class="form-outline mb-3">
+                {{ form.pass_confirm.label }}{{ form.pass_confirm(class="form-control form-control-lg", placeholder="Confirm password") }}
+            </div>
+
+{#          <div class="d-flex justify-content-between align-items-center">#}
+{#            <!-- Checkbox -->#}
+{##}
+{#            <a href="#!" class="text-body">Forgot password?</a>#}
+{#          </div>#}
+
+          <div class="text-center text-lg-start mt-4 pt-2">
+              {{ form.submit(class="btn btn-primary btn-lg", style="padding-left: 2.5rem; padding-right: 2.5rem;" ) }}
+
+{#            <p class="small fw-bold mt-2 pt-1 mb-0">Don't have an account?#}
+{#                <a href="{{ url_for('manage_login.register') }}"#}
+{#                class="link-danger">Register</a></p>#}
+          </div>
+
+        </form>
+      </div>
+    </div>
+  </div>
+
+</section>
+
+{% endblock %}

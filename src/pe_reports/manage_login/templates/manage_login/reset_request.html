@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% block content %}
+
+    <section class="vh-100">
+  <div class="container-fluid h-custom">
+    <div class="row d-flex justify-content-center align-items-center h-100">
+
+      <div class="col-md-8 col-lg-6 col-xl-4 offset-xl-1">
+        <form method="post">
+            {{ form.hidden_tag() }}
+          <!-- Email input -->
+          <div class="form-outline mb-4">
+              {{ form.email(class="form-control form-control-lg",
+               placeholder='Enter a valid email address') }}{{ form.email.label }}
+
+          </div>
+
+          <div class="text-center text-lg-start mt-4 pt-2">
+              {{ form.submit(class="btn btn-primary btn-lg",
+               style="padding-left: 2.5rem; padding-right: 2.5rem;" ) }}
+
+            <p class="small fw-bold mt-2 pt-1 mb-0">Don't have an account?
+                <a href="{{ url_for('manage_login.register') }}"
+                class="link-danger">Register</a></p>
+          </div>
+
+        </form>
+      </div>
+    </div>
+  </div>
+
+</section>
+
+{% endblock %}
+

@@ -23,6 +23,7 @@
       crossorigin="anonymous"
     ></script>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+    <script src="https://code.jquery.com/jquery-migrate-1.4.1.min.js"></script>
     <script src="../static/js/htmx.js"></script>
 
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
@@ -50,6 +51,7 @@
                 >Home</a
               >
             </li>
+            {% if current_user.is_authenticated %}
             <li class="nav-item">
               <a
                 class="nav-link {% if request.endpoint=='stakeholder.stakeholder' %}active{%endif %}"
@@ -58,6 +60,19 @@
                 >Add Stakeholder</a
               >
             </li>
+            {% endif %} {% if current_user.is_authenticated %}
+            <li class="nav-link">
+              <a href="{{ url_for('manage_login.logout') }}">Logout</a>
+            </li>
+            {% else %}
+            <li class="nav-link">
+              <a href="{{ url_for('manage_login.login') }}">Login</a>
+            </li>
+            <li class="nav-link">
+              <a href="{{ url_for('manage_login.register') }}">Register</a>
+            </li>
+
+            {% endif %}
           </ul>
         </div>
       </div>
@@ -88,6 +103,20 @@
       <!-- <strong>Title</strong> -->
       {{ message }}
     </div>
-    {% endfor %} {% endif %} {% endwith %} {%block content%} {% endblock%}
+    {% endfor %} {% endif %} {% endwith %}
+    <div class="container">
+      <img
+        src="{{ url_for('static', filename='CISAImage.png') }}"
+        alt="Cinque Terre"
+        width="200"
+        height="200"
+      />
+      {% if current_user.is_authenticated %}
+      <p>Welcome {{ current_user.username }}</p>
+      {% else %}
+      <p>Please Login</p>
+
+      {% endif %} {%block content%} {% endblock%}
+    </div>
   </body>
 </html>
