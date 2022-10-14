@@ -49,11 +49,11 @@ logging.basicConfig(
     level=logging.INFO,
 )
 
-# CSG credentials
-# TODO: Insert credentials
-API_Client_ID = ""
-API_Client_secret = ""
-API_WHOIS = ""
+# CSG
+# TODO: Insert CSG creds
+API_Client_ID = ""  # nosec
+API_Client_secret = ""  # nosec
+API_WHOIS = ""  # nosec
 
 conn = None
 cursor = None

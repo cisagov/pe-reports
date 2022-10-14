@@ -64,11 +64,11 @@ nlp = spacy.load("en_core_web_lg")
 # logging.info(f'{UPLOAD_FOLDER}')
 
 
-# CSG credentials
-# TODO: Insert creds
-API_Client_ID = ""
-API_Client_secret = ""
-API_WHOIS = ""
+# CSG
+# TODO: Insert CSG creds
+API_Client_ID = ""  # nosec
+API_Client_secret = ""  # nosec
+API_WHOIS = ""  # nosec
 
 
 conn = None
