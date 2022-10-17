@@ -128,8 +128,12 @@ def main():
 
                         if str(response) != "b'attacks: 0<br />reports: 0<br />'":
                             malicious = True
-                            attacks = int(str(response).split("attacks: ")[1].split("<")[0])
-                            reports = int(str(response).split("reports: ")[1].split("<")[0])
+                            attacks = int(
+                                str(response).split("attacks: ")[1].split("<")[0]
+                            )
+                            reports = int(
+                                str(response).split("reports: ")[1].split("<")[0]
+                            )
 
                         # check dns-a record in DSheild API
                         if str(dom["dns_a"][0]) == "!ServFail":
@@ -162,12 +166,17 @@ def main():
                         LOGGER.info(str(dom["dns_aaaa"][0]))
                         # check IP in Blocklist API
                         response = requests.get(
-                            "http://api.blocklist.de/api.php?ip=" + str(dom["dns_aaaa"][0])
+                            "http://api.blocklist.de/api.php?ip="
+                            + str(dom["dns_aaaa"][0])
                         ).content
                         if str(response) != "b'attacks: 0<br />reports: 0<br />'":
                             malicious = True
-                            attacks = int(str(response).split("attacks: ")[1].split("<")[0])
-                            reports = int(str(response).split("reports: ")[1].split("<")[0])
+                            attacks = int(
+                                str(response).split("attacks: ")[1].split("<")[0]
+                            )
+                            reports = int(
+                                str(response).split("reports: ")[1].split("<")[0]
+                            )
 
                         # check dns-a record in DSheild API
                         if str(dom["dns_aaaa"][0]) == "!ServFail":

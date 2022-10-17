@@ -370,7 +370,7 @@ def insert_shodan_data(dataframe, table, thread, org_name, failed):
 
 def query_orgs_rev():
     """Query orgs in reverse."""
-    conn = connect("")
+    conn = connect()
     sql = "SELECT * FROM organizations WHERE report_on is True ORDER BY organizations_uid DESC;"
     df = pd.read_sql_query(sql, conn)
     close(conn)
