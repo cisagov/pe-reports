@@ -9,7 +9,7 @@ import logging
 import os
 
 # Third-Party Libraries
-from celery import Celery
+import celery
 from flask import Flask
 from flask_login import LoginManager
 from flask_migrate import Migrate
@@ -26,6 +26,11 @@ from pe_reports.stakeholder.views import stakeholder_blueprint
 from ._version import __version__  # noqa: F401
 
 params = config()
+"""Test to see if port is empty."""
+if params["host"] == "":
+    logging.info("Empty port. Setting to 5443")
+    params["host"] = 5443
+
 login_manager = LoginManager()
 # Flask implementation
 app = Flask(__name__)
@@ -33,7 +38,7 @@ app.config["SECRET_KEY"] = os.getenv("FLASK_SECRET_KEY", "dev")
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.config[
     "SQLALCHEMY_DATABASE_URI"
-] = f'postgresql+psycopg2://{params["user"]}:{params["password"]}@{params["host"]}:{params["port"]}/{params["database"]}'
+] = f'postgresql+psycopg2://{params["user"]}:{params["password"]}@{params["host"]}{params["port"]}/{params["database"]}'
 
 
 # Configure the redis server
@@ -60,8 +65,8 @@ logging.basicConfig(
 app.config["LOGGER"] = logging.getLogger(__name__)
 
 # Creates a Celery object
-celery = Celery(app.name, broker=app.config["CELERY_BROKER_URL"])
-celery.conf.update(app.config)
+celery_obj = celery.Celery(app.name, broker=app.config["CELERY_BROKER_URL"])
+celery_obj.conf.update(app.config)
 
 # Config DB
 db = SQLAlchemy(app)

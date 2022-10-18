@@ -366,3 +366,54 @@ def insert_shodan_data(dataframe, table, thread, org_name, failed):
         conn.rollback()
     cursor.close()
     return failed
+
+
+def query_orgs_rev():
+    """Query orgs in reverse."""
+    conn = connect()
+    sql = "SELECT * FROM organizations WHERE report_on is True ORDER BY organizations_uid DESC;"
+    df = pd.read_sql_query(sql, conn)
+    close(conn)
+    return df
+
+
+def getSubdomain(conn, domain):
+    """Get subdomains given a domain from the databases."""
+    cur = conn.cursor()
+    sql = """SELECT * FROM sub_domains sd
+        WHERE sd.sub_domain = %(domain)s"""
+    cur.execute(sql, {"domain": domain})
+    sub = cur.fetchone()
+    cur.close()
+    return sub
+
+
+def addSubdomain(conn, domain, pe_org_uid, org_name):
+    """Add a subdomain into the database."""
+    root_domain = domain.split(".")[-2:]
+    root_domain = ".".join(root_domain)
+    cur = conn.cursor()
+    cur.callproc(
+        "insert_sub_domain", (domain, pe_org_uid, "findomain", root_domain, None)
+    )
+    LOGGER.info("Success adding domain, %(domain)s, to subdomains table.")
+
+
+def getDataSource(conn, source):
+    """Get datasource information from a database."""
+    cur = conn.cursor()
+    sql = """SELECT * FROM data_source WHERE name=%(s)s"""
+    cur.execute(sql, {"s": source})
+    source = cur.fetchone()
+    cur.close()
+    return source
+
+
+def org_root_domains(conn, org_uid):
+    """Get from database given the org_uid."""
+    sql = """
+        select * from root_domains rd
+        where rd.organizations_uid = %(org_id)s;
+    """
+    df = pd.read_sql_query(sql, conn, params={"org_id": org_uid})
+    return df
