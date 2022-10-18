@@ -27,7 +27,7 @@ from schema import And, Schema, SchemaError, Use
 from xhtml2pdf import pisa
 
 # cisagov Libraries
-from pe_reports import CENTRAL_LOGGING_FILE
+import pe_reports
 
 from ._version import __version__
 from .data.db_query import connect, get_orgs
@@ -251,7 +251,7 @@ def main():
 
     # Setup logging to central file
     logging.basicConfig(
-        filename=CENTRAL_LOGGING_FILE,
+        filename=pe_reports.CENTRAL_LOGGING_FILE,
         filemode="a",
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
         datefmt="%m/%d/%Y %I:%M:%S",
