@@ -35,11 +35,14 @@ import psycopg2.extras
 # from pygtail import Pygtail
 import requests
 import spacy
+import spacy.cli  # en_core_web_lg fix
 from werkzeug.utils import secure_filename
 
 # cisagov Libraries
 from pe_reports.data.config import config
 from pe_reports.stakeholder.forms import InfoFormExternal
+
+spacy.cli.download("en_core_web_lg")  # en_core_web_lg fix
 
 # from time import sleep
 # from urllib.request import Request, urlopen

@@ -14,7 +14,6 @@ from flask import Flask, render_template
 from flask_login import LoginManager
 from flask_migrate import Migrate
 from flask_sqlalchemy import SQLAlchemy
-import spacy.cli  # en_core_web_lg fix
 
 # cisagov Libraries
 from pe_reports.data.config import config
@@ -28,7 +27,6 @@ from pe_reports.stakeholder_lite.views import stakeholder_lite_blueprint
 from ._version import __version__  # noqa: F401
 
 # from werkzeug.utils import secure_filename
-spacy.cli.download("en_core_web_lg")  # en_core_web_lg fix
 
 params = config()
 login_manager = LoginManager()
