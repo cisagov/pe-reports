@@ -11,7 +11,6 @@ from dateutil.relativedelta import relativedelta
 import pandas as pd
 
 from .data.db_query import (
-    org_ip_count,
     query_breachdetails_view,
     query_creds_view,
     query_credsbyday_view,
@@ -23,7 +22,6 @@ from .data.db_query import (
 )
 from .data.db_query import org_first_report_date  # [Dark Web Usage, WIP]
 from .data.translator import translate
-
 
 # ---------- v Helper Functions v ------------
 

@@ -1,0 +1,1 @@
+    return max(MIN_FONT_SIZE, relative * float(value))
