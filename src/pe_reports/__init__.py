@@ -5,16 +5,18 @@
 # Python package.
 
 # Standard Python Libraries
-# from datetime import date
 import logging
 import os
 
 # Third-Party Libraries
-from celery import Celery
+import celery
 from flask import Flask, render_template
 from flask_login import LoginManager
 from flask_migrate import Migrate
 from flask_sqlalchemy import SQLAlchemy
+import spacy.cli
+
+spacy.cli.download("en_core_web_lg")
 
 # cisagov Libraries
 from pe_reports.data.config import config

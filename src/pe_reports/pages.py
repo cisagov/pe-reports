@@ -132,8 +132,7 @@ def credential(
     breach_table = buildTable(
         Credential.breach_details(),
         ["table"],
-        [30, 20, 20, 20, 10],  # orginial spacing
-        # [25, 20, 20, 14, 11, 10],  # New breach table spacing WIP
+        [30, 20, 20, 20, 10],
         link_to_appendix=True,
     )
 
@@ -356,7 +355,7 @@ def dark_web(chevron_dict, trending_start_date, start_date, end_date, org_uid):
         "percChngDarkAlert": Cyber6.perChngDark("alerts"),
     }
 
-    # print(Cyber6.checkDarkUsage())  # (Dark Web Usage WIP)
+    # print(Cyber6.checkDarkUsage())  # [Dark Web Usage WIP]
 
     chevron_dict.update(dark_web_dict)
     return (chevron_dict, Cyber6.dark_web_mentions, Cyber6.alerts, Cyber6.top_cves)

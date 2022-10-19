@@ -4,8 +4,6 @@
 # Standard Python Libraries
 import calendar
 import datetime
-
-# New Imports
 from datetime import timedelta
 
 # Third-Party Libraries
@@ -23,8 +21,9 @@ from .data.db_query import (
     query_domMasq_alerts,
     query_shodan,
 )
-from .data.db_query import org_first_report_date  # Dark Web Usage, WIP
+from .data.db_query import org_first_report_date  # [Dark Web Usage, WIP]
 from .data.translator import translate
+
 
 # ---------- v Helper Functions v ------------
 
@@ -143,6 +142,9 @@ def prevSixPeriods(currDate):
     ]
 
 
+# ---------- ^ Helper Functions ^ ------------
+
+
 class Credentials:
     """Credentials class."""
 
@@ -255,15 +257,6 @@ class Credentials:
                 "number_of_creds": "Number of Creds",
             }
         )
-
-        # ----- DAYS UNREPORTED METRIC WIP ----- v
-        # breach_det_df.insert(loc=3, column="Days Unreported", value="")
-        # if len(breach_det_df) > 0:
-        #    breach_det_df["Days Unreported"] = (
-        #        pd.to_datetime(breach_det_df["Date Reported"])
-        #        - pd.to_datetime(breach_det_df["Breach Date"])
-        #    ).dt.days
-        # ----- DAYS UNREPORTED METRIC WIP ---- ^
 
         # Empty table check:
         checkEmptyTable(breach_det_df)
@@ -975,7 +968,8 @@ class Cyber_Six:
             currTotal = len(self.alerts.index)
         return percentChangeStr(percentChange(prevTotal, currTotal))
 
-    # ---------- v Dark Web Usage WIP v ------------
+    # ---------- v Dark Web Usage v ------------
+    # Currently WIP, this code is never called
 
     def checkDarkUsage(self):
         """Check if stakeholder is making good use of dark web/cybersixgill resources."""
@@ -987,8 +981,9 @@ class Cyber_Six:
         else:
             # If valid first report date,
             firstReportDate = firstReportDate.date()
-            num_ips = org_ip_count(self.org_uid).iloc[0, 0]
-            print(num_ips)
+            # num_ips = org_ip_count(self.org_uid).iloc[0, 0]
+            # print(num_ips)
+            num_ips = 10
             # check if stakeholder has 3 report periods of data history available
             [
                 p1_start,
