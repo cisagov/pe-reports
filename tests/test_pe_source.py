@@ -336,9 +336,15 @@ def test_shodan_search(
         )
 
 
-def test_dnstwistscript():
+def test_dnstwistfuzzing():
     """Test if dnstwist is installed correctly."""
-    assert pe_source.dnstwistscript.run_dnstwist("google.com", test=1) != []
+    assert pe_source.dnstwistscript.run_dnstwist("a.com", test=1) != []
+
+
+def test_dnstwistmain():
+    """Test if main function."""
+    with pytest.raises(AttributeError):
+        pe_source.dnstwistscript.main()
 
 
 # TODO: Add shodan search once this issue is addressed
