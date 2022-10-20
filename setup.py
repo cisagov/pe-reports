@@ -100,6 +100,7 @@ setup(
         "click",
 	"dnstwist",
         "docopt",
+	"DShield",
         "glob2 == 0.7",
         "flask",
         "flask",
