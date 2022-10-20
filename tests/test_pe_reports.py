@@ -6,6 +6,7 @@ import sys
 from unittest.mock import patch
 
 # Third-Party Libraries
+import pandas as pd
 import pytest
 
 # cisagov Libraries
@@ -149,3 +150,39 @@ def test_stakeholder_page(client):
     resp = client.get("/stakeholder")
     assert resp.status_code == 200
     assert b"Stakeholder" in resp.data
+
+
+@patch.object(pe_reports.report_generator, "embed")
+@patch.object(pe_reports.report_generator, "init")
+@patch.object(pe_reports.report_generator, "get_orgs")
+@patch.object(pe_reports.report_generator, "connect")
+def test_report_generator(mock_db_connect, mock_get_orgs, mock_init, mock_embed):
+    """Test report is generated."""
+    mock_db_connect.return_value = "connection"
+    mock_get_orgs.return_value = [("pe_org_uid", "Test Org", "TestOrg")]
+    source_html = ""
+    creds_sum = ""
+    creds_sum = pd.DataFrame()
+    masq_df = pd.DataFrame()
+    insecure_df = pd.DataFrame()
+    vulns_df = pd.DataFrame()
+    assets_df = pd.DataFrame()
+    dark_web_mentions = pd.DataFrame()
+    alerts = pd.DataFrame()
+    top_cves = pd.Series(dtype="object")
+    mock_init.return_value = (
+        source_html,
+        creds_sum,
+        masq_df,
+        insecure_df,
+        vulns_df,
+        assets_df,
+        dark_web_mentions,
+        alerts,
+        top_cves,
+    )
+    mock_embed.return_value = 10000000, False
+    return_value = pe_reports.report_generator.generate_reports(
+        "2022-09-30", "output"
+    )
+    assert return_value == 1
