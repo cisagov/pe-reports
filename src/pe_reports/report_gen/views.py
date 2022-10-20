@@ -39,6 +39,57 @@ report_gen_blueprint = Blueprint(
 )
 
 
+def validate_filename(filename):
+    """Verify that a filename is the correct format."""
+    if filename == "":
+        return False
+    if any(
+        ele in filename
+        for ele in [
+            "#",
+            "%",
+            "&",
+            "{",
+            "}",
+            "<",
+            ">",
+            "!",
+            "`",
+            "$",
+            "+",
+            "*",
+            "'",
+            '"',
+            "?",
+            "=",
+            "/",
+            ":",
+            " ",
+            "@",
+        ]
+    ):
+        return False
+    else:
+        return True
+
+
+def validate_date(date_string):
+    """Validate that a provided string matches the right format and is a report date."""
+    try:
+        date = datetime.datetime.strptime(date_string, "%Y-%m-%d")
+    except ValueError:
+        return False
+    if date.day == 15:
+        return True
+    if date.month in [4, 6, 9, 11] and date.day != 30:
+        return False
+    elif date.month in [1, 3, 5, 7, 8, 12] and date.day != 31:
+        return False
+    elif date.month == 2 and date.day not in [28, 29]:
+        return False
+    return True
+
+
 @report_gen_blueprint.route("/report_gen", methods=["GET", "POST"])
 def report_gen():
     """Process form information, instantiate form and render page template."""
@@ -54,10 +105,11 @@ def report_gen():
         formExternal.report_date.data = ""
         formExternal.output_directory.data = ""
 
-        try:
-            datetime.datetime.strptime(report_date, "%Y-%m-%d")
-        except ValueError:
-            flash("Incorrect data format, should be YYYY-MM-DD", "warning")
+        if not validate_date(report_date):
+            flash(
+                "Incorrect data format, should be YYYY-MM-DD or not correct report date",
+                "warning",
+            )
             return redirect(url_for("report_gen.report_gen  "))
 
         if not os.path.exists(output_directory):
@@ -82,31 +134,7 @@ def report_gen():
         bulletinForm.file_name.data = ""
 
         file_name = file_name.replace(" ", "")
-        if any(
-            ele in file_name
-            for ele in [
-                "#",
-                "%",
-                "&",
-                "{",
-                "}",
-                "<",
-                ">",
-                "!",
-                "`",
-                "$",
-                "+",
-                "*",
-                "'",
-                '"',
-                "?",
-                "=",
-                "/",
-                ":",
-                " ",
-                "@",
-            ]
-        ):
+        if not validate_filename(file_name):
             flash(
                 "Invalid filename entered, please enter a different filename",
                 "warning",
