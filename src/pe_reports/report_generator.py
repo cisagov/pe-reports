@@ -272,7 +272,7 @@ def main():
         validated_args["REPORT_DATE"],
         validated_args["OUTPUT_DIRECTORY"],
     )
-    
+
     LOGGER.info("%s reports generated", generated_reports)
     # Stop logging and clean up
     logging.shutdown()
