@@ -52,7 +52,7 @@ def get_orgs(conn):
     """Query organizations table."""
     try:
         cur = conn.cursor()
-        sql = """SELECT * FROM organizations"""
+        sql = """SELECT * FROM organizations WHERE report_on"""
         cur.execute(sql)
         pe_orgs = cur.fetchall()
         cur.close()

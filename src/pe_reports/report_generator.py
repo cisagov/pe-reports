@@ -117,8 +117,10 @@ def generate_reports(datestring, output_directory):
     """Process steps for generating report data."""
     # Get PE orgs from PE db
     conn = connect()
+    print(conn)
     if conn:
         pe_orgs = get_orgs(conn)
+        print(pe_orgs)
     else:
         return 1
     generated_reports = 0
@@ -134,6 +136,7 @@ def generate_reports(datestring, output_directory):
 
             LOGGER.info("Running on %s", org_code)
 
+            print(output_directory)
             # Create folders in output directory
             for dir_name in ("ppt", org_code):
                 if not os.path.exists(f"{output_directory}/{dir_name}"):
@@ -218,7 +221,7 @@ def generate_reports(datestring, output_directory):
             "Connection to pe database failed and/or there are 0 organizations stored."
         )
 
-    LOGGER.info("%s reports generated", generated_reports)
+    return generated_reports
 
 
 def main():
@@ -265,10 +268,11 @@ def main():
         os.mkdir(validated_args["OUTPUT_DIRECTORY"])
 
     # Generate reports
-    generate_reports(
+    generated_reports = generate_reports(
         validated_args["REPORT_DATE"],
         validated_args["OUTPUT_DIRECTORY"],
     )
-
+    
+    LOGGER.info("%s reports generated", generated_reports)
     # Stop logging and clean up
     logging.shutdown()
