@@ -98,6 +98,7 @@ setup(
         "chevron == 0.14.0",
         "celery",
         "click",
+	"dnstwist"
         "docopt",
         "glob2 == 0.7",
         "flask",
