@@ -13,6 +13,7 @@ import pytest
 from pe_reports import CENTRAL_LOGGING_FILE
 import pe_source.cybersixgill
 import pe_source.data.sixgill.api
+import pe_source.dnstwistscript
 import pe_source.pe_scripts
 import pe_source.shodan
 
@@ -333,6 +334,11 @@ def test_shodan_search(
             ],
             "Thread 1:",
         )
+
+
+def test_dnstwistscript():
+    """Test if dnstwist is installed correctly."""
+    assert pe_source.dnstwistscript.run_dnstwist("google.com", test=1) != []
 
 
 # TODO: Add shodan search once this issue is addressed

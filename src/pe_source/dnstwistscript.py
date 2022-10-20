@@ -3,17 +3,10 @@
 import datetime
 import json
 import logging
+import pathlib
 import traceback
 
 # Third-Party Libraries
-from data.pe_db.db_query_source import (
-    addSubdomain,
-    connect,
-    getDataSource,
-    getSubdomain,
-    org_root_domains,
-    query_orgs_rev,
-)
 import dnstwist
 import dshield
 import psycopg2.extras as extras
@@ -22,12 +15,49 @@ import requests
 # cisagov Libraries
 from pe_reports import app
 
+from .data.pe_db.db_query_source import (
+    addSubdomain,
+    connect,
+    getDataSource,
+    getSubdomain,
+    org_root_domains,
+    query_orgs_rev,
+)
+
 date = datetime.datetime.now().strftime("%Y-%m-%d")
 
 # cisagov Libraries
 
 
 LOGGER = app.config["LOGGER"]
+
+
+def run_dnstwist(root_domain, test=0):
+    """Run dnstwist on each root domain."""
+    pathtoDict = str(pathlib.Path(__file__).parent.resolve()) + "/common_tlds.dict"
+    dnstwist_result = dnstwist.run(
+        registered=True,
+        tld=pathtoDict,
+        format="json",
+        threads=8,
+        domain=root_domain,
+    )
+    if test == 1:
+        return dnstwist_result
+    finalorglist = dnstwist_result + []
+    for dom in dnstwist_result:
+        if ("tld-swap" not in dom["fuzzer"]) and ("original" not in dom["fuzzer"]):
+            LOGGER.info(dom["domain"])
+            secondlist = dnstwist.run(
+                registered=True,
+                tld="common_tlds.dict",
+                format="json",
+                threads=8,
+                domain=dom["domain"],
+            )
+            finalorglist += secondlist
+
+    logging.debug(finalorglist)
 
 
 def main():
@@ -69,32 +99,7 @@ def main():
                     continue
                 LOGGER.info(row["root_domain"])
 
-                # Run dnstwist on each root domain
-                dnstwist_result = dnstwist.run(
-                    registered=True,
-                    tld="/var/www/pe-reports/src/adhoc/common_tlds.dict",
-                    format="json",
-                    threads=8,
-                    domain=root_domain,
-                )
-
-                finalorglist = dnstwist_result + []
-
-                for dom in dnstwist_result:
-                    if ("tld-swap" not in dom["fuzzer"]) and (
-                        "original" not in dom["fuzzer"]
-                    ):
-                        LOGGER.info(dom["domain"])
-                        secondlist = dnstwist.run(
-                            registered=True,
-                            tld="common_tlds.dict",
-                            format="json",
-                            threads=8,
-                            domain=dom["domain"],
-                        )
-                        finalorglist += secondlist
-
-                logging.debug(finalorglist)
+                finalorglist = run_dnstwist(root_domain)
 
                 # Get subdomain uid
                 sub_domain = root_domain
