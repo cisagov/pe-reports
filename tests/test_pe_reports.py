@@ -13,6 +13,7 @@ import pytest
 from pe_reports import CENTRAL_LOGGING_FILE
 from pe_reports import app as flask_app
 import pe_reports.data.db_query
+from pe_reports.report_gen.views import validate_date, validate_filename
 import pe_reports.report_generator
 
 log_levels = (
@@ -182,7 +183,45 @@ def test_report_generator(mock_db_connect, mock_get_orgs, mock_init, mock_embed)
         top_cves,
     )
     mock_embed.return_value = 10000000, False
-    return_value = pe_reports.report_generator.generate_reports(
-        "2022-09-30", "output"
-    )
+    return_value = pe_reports.report_generator.generate_reports("2022-09-30", "output")
     assert return_value == 1
+
+
+@pytest.mark.parametrize(
+    "filename, expected_result",
+    [
+        ("#superfile", False),
+        ("Re@lfile", False),
+        ("File+100", False),
+        ("<filename>", False),
+        ("{filename", False),
+        ("awesome_file!!", False),
+        ("File$name", False),
+        ("File/name", False),
+        ("file name", False),
+        ("", False),
+        ("valid_file", True),
+    ],
+)
+def test_valid_filename(filename, expected_result):
+    """Test valid filename."""
+    assert validate_filename(filename) == expected_result
+
+
+@pytest.mark.parametrize(
+    "date, expected_result",
+    [
+        ("22-12-22", False),
+        ("2022/03/15", False),
+        ("2020-12-30", False),
+        ("2020-2-27", False),
+        ("2015-11-31", False),
+        ("2020-02-28", True),
+        ("2020-11-30", True),
+        ("2020-12-31", True),
+        ("2020-12-15", True),
+    ],
+)
+def test_valid_date(date, expected_result):
+    """Test valid date."""
+    assert validate_date(date) == expected_result
