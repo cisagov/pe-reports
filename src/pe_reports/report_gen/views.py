@@ -38,8 +38,8 @@ def validate_filename(filename):
     if filename == "":
         return False
     if any(
-        ele in filename
-        for ele in [
+        char in filename
+        for char in [
             "#",
             "%",
             "&",
