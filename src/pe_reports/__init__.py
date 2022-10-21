@@ -27,9 +27,9 @@ from ._version import __version__  # noqa: F401
 
 params = config()
 """Test to see if port is empty."""
-if params["host"] == "":
+if params["port"] == "":
     logging.info("Empty port. Setting to 5443")
-    params["host"] = 5443
+    params["port"] = 5443
 
 login_manager = LoginManager()
 # Flask implementation
