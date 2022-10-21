@@ -32,6 +32,112 @@ date = datetime.datetime.now().strftime("%Y-%m-%d")
 LOGGER = app.config["LOGGER"]
 
 
+def checkBlocklist(dom, sub_domain_uid, source_uid, pe_org_uid, perm_list):
+    """Cross reference the dnstwist results with DShield Blocklist."""
+    malicious = False
+    attacks = 0
+    reports = 0
+    if "original" in dom["fuzzer"]:
+        LOGGER.info("original")
+        LOGGER.info(dom["fuzzer"])
+        return
+    if "dns_a" not in dom:
+        return
+    else:
+        LOGGER.info(str(dom["dns_a"][0]))
+        # check IP in Blocklist API
+        response = requests.get(
+            "http://api.blocklist.de/api.php?ip=" + str(dom["dns_a"][0])
+        ).content
+
+        if str(response) != "b'attacks: 0<br />reports: 0<br />'":
+            malicious = True
+            attacks = int(str(response).split("attacks: ")[1].split("<")[0])
+            reports = int(str(response).split("reports: ")[1].split("<")[0])
+
+        # check dns-a record in DSheild API
+        if str(dom["dns_a"][0]) == "!ServFail":
+            return
+
+        results = dshield.ip(str(dom["dns_a"][0]), return_format=dshield.JSON)
+        results = json.loads(results)
+        try:
+            threats = results["ip"]["threatfeeds"]
+            attacks = results["ip"]["attacks"]
+            attacks = int(0 if attacks is None else attacks)
+            malicious = True
+            dshield_attacks = attacks
+            dshield_count = len(threats)
+        except KeyError:
+            dshield_attacks = 0
+            dshield_count = 0
+
+    if "ssdeep_score" not in dom:
+        dom["ssdeep_score"] = ""
+    if "dns_mx" not in dom:
+        dom["dns_mx"] = [""]
+    if "dns_ns" not in dom:
+        dom["dns_ns"] = [""]
+    if "dns_aaaa" not in dom:
+        dom["dns_aaaa"] = [""]
+    else:
+        LOGGER.info(str(dom["dns_aaaa"][0]))
+        # check IP in Blocklist API
+        response = requests.get(
+            "http://api.blocklist.de/api.php?ip=" + str(dom["dns_aaaa"][0])
+        ).content
+        if str(response) != "b'attacks: 0<br />reports: 0<br />'":
+            malicious = True
+            attacks = int(str(response).split("attacks: ")[1].split("<")[0])
+            reports = int(str(response).split("reports: ")[1].split("<")[0])
+
+        # check dns-a record in DSheild API
+        if str(dom["dns_aaaa"][0]) == "!ServFail":
+            return
+        results = dshield.ip(str(dom["dns_aaaa"][0]), return_format=dshield.JSON)
+        results = json.loads(results)
+
+        try:
+            threats = results["ip"]["threatfeeds"]
+            attacks = results["ip"]["attacks"]
+            attacks = int(0 if attacks is None else attacks)
+            malicious = True
+            dshield_attacks = attacks
+            dshield_count = len(threats)
+        except KeyError:
+            dshield_attacks = 0
+            dshield_count = 0
+
+    # Ignore duplicates
+    permutation = dom["domain"]
+    LOGGER.info(permutation)
+    if permutation in perm_list:
+        return
+    else:
+        perm_list.append(permutation)
+
+    domain_dict = {
+        "organizations_uid": pe_org_uid,
+        "data_source_uid": source_uid,
+        "sub_domain_uid": sub_domain_uid,
+        "domain_permutation": dom["domain"],
+        "ipv4": dom["dns_a"][0],
+        "ipv6": dom["dns_aaaa"][0],
+        "mail_server": dom["dns_mx"][0],
+        "name_server": dom["dns_ns"][0],
+        "fuzzer": dom["fuzzer"],
+        "date_active": date,
+        "ssdeep_score": dom["ssdeep_score"],
+        "malicious": malicious,
+        "blocklist_attack_count": attacks,
+        "blocklist_report_count": reports,
+        "dshield_record_count": dshield_count,
+        "dshield_attack_count": dshield_attacks,
+    }
+    LOGGER.info(domain_dict)
+    return domain_dict, perm_list
+
+
 def run_dnstwist(root_domain, test=0):
     """Run dnstwist on each root domain."""
     pathtoDict = str(pathlib.Path(__file__).parent.resolve()) + "/common_tlds.dict"
@@ -56,7 +162,6 @@ def run_dnstwist(root_domain, test=0):
                 domain=dom["domain"],
             )
             finalorglist += secondlist
-
     logging.debug(finalorglist)
 
 
@@ -79,9 +184,6 @@ def main():
     for org_index, org_row in orgs.iterrows():
         pe_org_uid = org_row["organizations_uid"]
         org_name = org_row["name"]
-
-        if org_name not in ["National Institute of Standards and Technology"]:
-            continue
 
         LOGGER.info(pe_org_uid)
         LOGGER.info(org_name)
@@ -115,121 +217,10 @@ def main():
                     sub_domain_uid = getSubdomain(PE_conn, sub_domain)[0]
 
                 for dom in finalorglist:
-                    malicious = False
-                    attacks = 0
-                    reports = 0
-                    if "original" in dom["fuzzer"]:
-                        LOGGER.info("original")
-                        LOGGER.info(dom["fuzzer"])
-                        continue
-                    if "dns_a" not in dom:
-                        continue
-                    else:
-                        LOGGER.info(str(dom["dns_a"][0]))
-                        # check IP in Blocklist API
-                        response = requests.get(
-                            "http://api.blocklist.de/api.php?ip=" + str(dom["dns_a"][0])
-                        ).content
-
-                        if str(response) != "b'attacks: 0<br />reports: 0<br />'":
-                            malicious = True
-                            attacks = int(
-                                str(response).split("attacks: ")[1].split("<")[0]
-                            )
-                            reports = int(
-                                str(response).split("reports: ")[1].split("<")[0]
-                            )
-
-                        # check dns-a record in DSheild API
-                        if str(dom["dns_a"][0]) == "!ServFail":
-                            continue
-
-                        results = dshield.ip(
-                            str(dom["dns_a"][0]), return_format=dshield.JSON
-                        )
-                        results = json.loads(results)
-                        try:
-                            threats = results["ip"]["threatfeeds"]
-                            attacks = results["ip"]["attacks"]
-                            attacks = int(0 if attacks is None else attacks)
-                            malicious = True
-                            dshield_attacks = attacks
-                            dshield_count = len(threats)
-                        except KeyError:
-                            dshield_attacks = 0
-                            dshield_count = 0
-
-                    if "ssdeep_score" not in dom:
-                        dom["ssdeep_score"] = ""
-                    if "dns_mx" not in dom:
-                        dom["dns_mx"] = [""]
-                    if "dns_ns" not in dom:
-                        dom["dns_ns"] = [""]
-                    if "dns_aaaa" not in dom:
-                        dom["dns_aaaa"] = [""]
-                    else:
-                        LOGGER.info(str(dom["dns_aaaa"][0]))
-                        # check IP in Blocklist API
-                        response = requests.get(
-                            "http://api.blocklist.de/api.php?ip="
-                            + str(dom["dns_aaaa"][0])
-                        ).content
-                        if str(response) != "b'attacks: 0<br />reports: 0<br />'":
-                            malicious = True
-                            attacks = int(
-                                str(response).split("attacks: ")[1].split("<")[0]
-                            )
-                            reports = int(
-                                str(response).split("reports: ")[1].split("<")[0]
-                            )
-
-                        # check dns-a record in DSheild API
-                        if str(dom["dns_aaaa"][0]) == "!ServFail":
-                            continue
-                        results = dshield.ip(
-                            str(dom["dns_aaaa"][0]), return_format=dshield.JSON
-                        )
-                        results = json.loads(results)
-
-                        try:
-                            threats = results["ip"]["threatfeeds"]
-                            attacks = results["ip"]["attacks"]
-                            attacks = int(0 if attacks is None else attacks)
-                            malicious = True
-                            dshield_attacks = attacks
-                            dshield_count = len(threats)
-                        except KeyError:
-                            dshield_attacks = 0
-                            dshield_count = 0
-
-                    # Ignore duplicates
-                    permutation = dom["domain"]
-                    LOGGER.info(permutation)
-                    if permutation in perm_list:
-                        continue
-                    else:
-                        perm_list.append(permutation)
-
-                    domain_dict = {
-                        "organizations_uid": pe_org_uid,
-                        "data_source_uid": source_uid,
-                        "sub_domain_uid": sub_domain_uid,
-                        "domain_permutation": dom["domain"],
-                        "ipv4": dom["dns_a"][0],
-                        "ipv6": dom["dns_aaaa"][0],
-                        "mail_server": dom["dns_mx"][0],
-                        "name_server": dom["dns_ns"][0],
-                        "fuzzer": dom["fuzzer"],
-                        "date_active": date,
-                        "ssdeep_score": dom["ssdeep_score"],
-                        "malicious": malicious,
-                        "blocklist_attack_count": attacks,
-                        "blocklist_report_count": reports,
-                        "dshield_record_count": dshield_count,
-                        "dshield_attack_count": dshield_attacks,
-                    }
+                    domain_dict, perm_list = checkBlocklist(
+                        dom, sub_domain_uid, source_uid, pe_org_uid, perm_list
+                    )
                     domain_list.append(domain_dict)
-                    LOGGER.info(domain_list)
         except Exception:
             # TODO Issue #265 create custom Exceptions
             LOGGER.info("Failed selecting DNSTwist data.", "Warning")
