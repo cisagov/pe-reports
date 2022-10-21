@@ -2,7 +2,6 @@
 
 # Standard Python Libraries
 import datetime
-from datetime import date
 import logging
 import os
 
@@ -26,7 +25,7 @@ LOGGER = logging.getLogger(__name__)
 
 conn = None
 cursor = None
-thedateToday = date.today().strftime("%Y-%m-%d")
+thedateToday = datetime.date.today().strftime("%Y-%m-%d")
 
 
 report_gen_blueprint = Blueprint(
