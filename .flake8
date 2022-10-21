@@ -28,6 +28,6 @@ select = C,D,E,F,W,B,B950
 # https://github.com/PyCQA/pycodestyle/issues/373
 # and here: https://github.com/psf/black/issues/315
 #
-#Also ignore flake8's error about "cond == True" vs "cond is True" this pattern
-#does not work in a pandas dataframe filter so needs to be ignored
+# Also ignore flake8's error about "cond == True" vs "cond is True" this pattern
+# does not work in a pandas dataframe filter so needs to be ignored
 ignore = E203,E501,W503,E712
