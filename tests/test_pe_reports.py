@@ -187,6 +187,13 @@ def test_report_generator(mock_db_connect, mock_get_orgs, mock_init, mock_embed)
     assert return_value == 1
 
 
+def test_report_gen_page(client):
+    """Test flask report_gen.html is available and verify a string on the page."""
+    resp = client.get("/report_gen")
+    assert resp.status_code == 200
+    assert b"Generate Cybersixgill Bulletin" in resp.data
+
+
 @pytest.mark.parametrize(
     "filename, expected_result",
     [

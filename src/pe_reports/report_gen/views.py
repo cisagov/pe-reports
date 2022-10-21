@@ -22,12 +22,7 @@ from pe_reports.report_gen.forms import (
 )
 from pe_reports.report_generator import generate_reports
 
-logging.basicConfig(
-    filemode="a",
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    datefmt="%m/%d/%Y %I:%M:%S",
-    level=logging.INFO,
-)
+LOGGER = logging.getLogger(__name__)
 
 conn = None
 cursor = None
@@ -99,7 +94,7 @@ def report_gen():
     formExternal = InfoFormExternal()
 
     if formExternal.validate_on_submit() and formExternal.submit.data:
-        logging.info("Got to the submit validate")
+        LOGGER.info("Got to the submit validate")
         report_date = formExternal.report_date.data
         output_directory = formExternal.output_directory.data
         formExternal.report_date.data = ""
@@ -121,8 +116,7 @@ def report_gen():
     bulletinForm = BulletinFormExternal()
 
     if bulletinForm.validate_on_submit() and bulletinForm.submit1.data:
-        logging.info("Submitted Bulletin Form")
-        print("Submitted Bulletin Form")
+        LOGGER.info("Submitted Bulletin Form")
 
         id = bulletinForm.cybersix_id.data
         user_input = bulletinForm.user_input.data
@@ -161,7 +155,6 @@ def report_gen():
 
         if org_id != "":
             org_id = org_id.upper()
-            print(all_orgs)
             all_orgs = all_orgs[all_orgs["cyhy_db_name"].str.upper() == org_id]
 
         if len(all_orgs) < 1:
@@ -172,7 +165,7 @@ def report_gen():
             return redirect(url_for("report_gen.report_gen"))
 
         for org_index, org in all_orgs.iterrows():
-            print(f"Running on {org['name']}")
+            LOGGER.info(f"Running on {org['name']}")
             generate_creds_bulletin(
                 breach_name,
                 org_id,
@@ -180,8 +173,6 @@ def report_gen():
                 output_directory="/var/www/cred_bulletins",
                 filename=org_id + "_" + breach_name.replace(" ", "") + "_Bulletin.pdf",
             )
-
-        print(breach_name)
 
     return render_template(
         "home_report_gen.html",
