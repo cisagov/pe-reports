@@ -26,7 +26,7 @@ from pe_reports.stakeholder.views import stakeholder_blueprint
 from ._version import __version__  # noqa: F401
 
 params = config()
-"""Test to see if port is empty."""
+# Initialize port if empty.
 if params["port"] == "":
     logging.info("Empty port. Setting to 5443")
     params["port"] = 5443
