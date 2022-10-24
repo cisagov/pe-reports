@@ -98,7 +98,7 @@ def report_gen():
                 "Incorrect data format, should be YYYY-MM-DD or not correct report date",
                 "warning",
             )
-            return redirect(url_for("report_gen.report_gen  "))
+            return redirect(url_for("report_gen.report_gen"))
 
         if not os.path.exists(output_directory):
             os.mkdir(output_directory)
