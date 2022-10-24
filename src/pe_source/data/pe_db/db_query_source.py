@@ -396,7 +396,7 @@ def addSubdomain(conn, domain, pe_org_uid, org_name):
     cur.callproc(
         "insert_sub_domain", (domain, pe_org_uid, "findomain", root_domain, None)
     )
-    LOGGER.info("Success adding domain, %(domain)s, to subdomains table.")
+    LOGGER.info("Success adding domain %s to subdomains table.", domain)
 
 
 def getDataSource(conn, source):
