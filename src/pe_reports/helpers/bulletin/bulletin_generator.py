@@ -97,11 +97,11 @@ def generate_cybersix_bulletin(
     if not filename.endswith(".pdf"):
         filename = filename + ".pdf"
 
-    templateLoader = jinja2.FileSystemLoader(searchpath=bulletin_path)
-    templateEnv = jinja2.Environment(loader=templateLoader, autoescape=True)
-    templateEnv.filters["date_format"] = date_format
+    template_loader = jinja2.FileSystemLoader(searchpath=bulletin_path)
+    template_env = jinja2.Environment(loader=template_loader, autoescape=True)
+    template_env.filters["date_format"] = date_format
     TEMPLATE_FILE = "bulletin_template.html"
-    template = templateEnv.get_template(TEMPLATE_FILE)
+    template = template_env.get_template(TEMPLATE_FILE)
     resp = get_post(id)
 
     for post in resp["intel_items"]:
