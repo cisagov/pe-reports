@@ -143,7 +143,9 @@ def report_gen():
         creds_form.breach_name.data = ""
         creds_form.org_id.data = ""
         all_orgs = get_orgs_df()
-        all_orgs = all_orgs[all_orgs["report_on"] == True]
+        # Pandas does not support "cond is True" syntax for dataframe filters,
+        # so we must disable flake8 E712 here
+        all_orgs = all_orgs[all_orgs["report_on"] == True]  # noqa: E712
 
         if org_id != "":
             org_id = org_id.upper()
