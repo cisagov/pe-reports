@@ -25,7 +25,6 @@ LOGGER = logging.getLogger(__name__)
 
 conn = None
 cursor = None
-thedateToday = datetime.date.today().strftime("%Y-%m-%d")
 
 
 report_gen_blueprint = Blueprint(
