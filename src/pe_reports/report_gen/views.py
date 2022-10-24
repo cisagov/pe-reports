@@ -164,7 +164,7 @@ def report_gen():
             return redirect(url_for("report_gen.report_gen"))
 
         for org_index, org in all_orgs.iterrows():
-            LOGGER.info(f"Running on {org['name']}")
+            LOGGER.info("Running on %s", org['name'])
             generate_creds_bulletin(
                 breach_name,
                 org_id,
