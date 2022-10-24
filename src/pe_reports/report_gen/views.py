@@ -76,6 +76,8 @@ def validate_date(date_string):
     # that date is the last day of a month
     if date.day == 15 or (date + datetime.timedelta(days=1)).day == 1:
         return True
+    else:
+        return False
 
 
 @report_gen_blueprint.route("/report_gen", methods=["GET", "POST"])
