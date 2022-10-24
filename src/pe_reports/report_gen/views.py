@@ -72,15 +72,10 @@ def validate_date(date_string):
         date = datetime.datetime.strptime(date_string, "%Y-%m-%d")
     except ValueError:
         return False
-    if date.day == 15:
+    # If the day after a date is the first day of a month, then
+    # that date is the last day of a month
+    if date.day == 15 or (date + datetime.timedelta(days=1)).day == 1:
         return True
-    if date.month in [4, 6, 9, 11] and date.day != 30:
-        return False
-    elif date.month in [1, 3, 5, 7, 8, 12] and date.day != 31:
-        return False
-    elif date.month == 2 and date.day not in [28, 29]:
-        return False
-    return True
 
 
 @report_gen_blueprint.route("/report_gen", methods=["GET", "POST"])
