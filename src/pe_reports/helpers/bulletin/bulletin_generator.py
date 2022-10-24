@@ -262,7 +262,7 @@ def main():
 
     user_text = html_builder("")
 
-    LOGGER.info(f"Running on {id}")
+    LOGGER.info("Running on %s", id)
 
     generate_cybersix_bulletin(
         id,
