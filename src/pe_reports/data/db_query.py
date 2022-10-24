@@ -82,6 +82,28 @@ def get_orgs(conn):
             close(conn)
 
 
+def get_org_assets_count(uid):
+    """Get asset counts for an organization."""
+    conn = connect()
+    cur = conn.cursor()
+    sql = """select sur.cyhy_db_name, sur.num_root_domain, sur.num_sub_domain, sur.num_ips  from
+            vw_orgs_attacksurface sur
+            where sur.organizations_uid = %s"""
+    cur.execute(sql, [uid])
+    source = cur.fetchone()
+    print(source)
+    cur.close()
+    conn.close()
+    assets_dict = {
+        "org_uid": uid,
+        "cyhy_db_name": source[0],
+        "num_root_domain": source[1],
+        "num_sub_domain": source[2],
+        "num_ips": source[3],
+    }
+    return assets_dict
+
+
 def get_orgs_df():
     """Query organizations table for new orgs."""
     conn = connect()
@@ -571,3 +593,48 @@ def execute_ips(conn, dataframe):
             cur.close()
             continue
     print("IPs inserted using execute_values() successfully..")
+
+
+def execute_summary(summary_dict):
+    """Save summary statistics for an organization to the database."""
+    try:
+        conn = connect()
+        cur = conn.cursor()
+        print(summary_dict)
+        sql = """
+        INSERT INTO report_summary_stats(organizations_uid, start_date, end_date, ip_count, root_count, sub_count, creds_count, breach_count, domain_alert_count, suspected_domain_count, insecure_port_count, verified_vuln_count, suspected_vuln_count,
+        dark_web_alerts_count, dark_web_mentions_count, dark_web_executive_alerts_count, dark_web_asset_alerts_count)
+        VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+        ON CONFLICT(organizations_uid, start_date)
+        DO
+        UPDATE SET ip_count = EXCLUDED.ip_count, root_count = EXCLUDED.root_count, sub_count = EXCLUDED.sub_count, creds_count = EXCLUDED.creds_count, breach_count = EXCLUDED.breach_count, domain_alert_count = EXCLUDED.domain_alert_count,
+        suspected_domain_count = EXCLUDED.suspected_domain_count, insecure_port_count = EXCLUDED.insecure_port_count, verified_vuln_count = EXCLUDED.verified_vuln_count, suspected_vuln_count = EXCLUDED.suspected_vuln_count,
+        dark_web_alerts_count = EXCLUDED.dark_web_alerts_count, dark_web_mentions_count = EXCLUDED.dark_web_mentions_count, dark_web_executive_alerts_count = EXCLUDED.dark_web_executive_alerts_count, dark_web_asset_alerts_count = EXCLUDED.dark_web_asset_alerts_count;
+        """
+        cur.execute(
+            sql,
+            (
+                summary_dict["organizations_uid"],
+                summary_dict["start_date"],
+                summary_dict["end_date"],
+                AsIs(summary_dict["ip_count"]),
+                AsIs(summary_dict["root_count"]),
+                AsIs(summary_dict["sub_count"]),
+                AsIs(summary_dict["creds_count"]),
+                AsIs(summary_dict["breach_count"]),
+                AsIs(summary_dict["domain_alert_count"]),
+                AsIs(summary_dict["suspected_domain_count"]),
+                AsIs(summary_dict["insecure_port_count"]),
+                AsIs(summary_dict["verified_vuln_count"]),
+                AsIs(summary_dict["suspected_vuln_count"]),
+                AsIs(summary_dict["dark_web_alerts_count"]),
+                AsIs(summary_dict["dark_web_mentions_count"]),
+                AsIs(summary_dict["dark_web_executive_alerts_count"]),
+                AsIs(summary_dict["dark_web_asset_alerts_count"]),
+            ),
+        )
+        conn.commit()
+        conn.close()
+    except (Exception, psycopg2.DatabaseError) as err:
+        show_psycopg2_exception(err)
+        cur.close()

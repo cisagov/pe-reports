@@ -486,7 +486,6 @@ class Cyber_Six:
             columns=["organizations_uid", "date"],
             errors="ignore",
         )
-        asset_alerts = asset_alerts[:4]
         asset_alerts["Title"] = asset_alerts["Title"].str[:100]
         return asset_alerts
 
@@ -502,7 +501,6 @@ class Cyber_Six:
             columns=["organizations_uid", "date"],
             errors="ignore",
         )
-        alerts_exec = alerts_exec[:10]
         alerts_exec["Title"] = alerts_exec["Title"].str[:100]
         return alerts_exec
 
