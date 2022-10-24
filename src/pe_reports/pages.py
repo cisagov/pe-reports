@@ -7,7 +7,9 @@ import os
 
 # Third-Party Libraries
 import chevron
-from numpy import source
+
+# cisagov Libraries
+from pe_reports.data.db_query import execute_summary, get_org_assets_count
 
 from .charts import Charts
 
@@ -106,7 +108,13 @@ def buildAppendixList(df):
 
 
 def credential(
-    chevron_dict, trending_start_date, start_date, end_date, org_uid, source_html
+    summary_dict,
+    chevron_dict,
+    trending_start_date,
+    start_date,
+    end_date,
+    org_uid,
+    source_html,
 ):
     """Build exposed credential page."""
     Credential = Credentials(trending_start_date, start_date, end_date, org_uid)
@@ -140,6 +148,10 @@ def credential(
         "pw_creds": Credential.password(),
         "breach_table": breach_table,
     }
+
+    summary_dict["creds_count"] = creds_dict["creds"]
+    summary_dict["breach_count"] = creds_dict["breach"]
+
     breach_appendix = Credential.breach_appendix()
 
     if len(breach_appendix) > 0:
@@ -180,26 +192,31 @@ def credential(
 
     chevron_dict.update(creds_dict)
 
-    return chevron_dict, Credential.creds_view, source_html
+    return summary_dict, chevron_dict, Credential.creds_view, source_html
 
 
-def masquerading(chevron_dict, start_date, end_date, org_uid):
+def masquerading(summary_dict, chevron_dict, start_date, end_date, org_uid):
     """Build masquerading page."""
     Domain_Masq = Domains_Masqs(start_date, end_date, org_uid)
+    domain_count = Domain_Masq.count()
+    dom_alert_count = Domain_Masq.alert_count()
     chevron_dict.update(
         {
             "domain_table": buildTable(Domain_Masq.summary(), ["table"], []),
             "domain_alerts_table": buildTable(
                 Domain_Masq.alerts(), ["table"], [85, 15]
             ),
-            "suspectedDomains": Domain_Masq.count(),
-            "domain_alerts": Domain_Masq.alert_count(),
+            "suspectedDomains": domain_count,
+            "domain_alerts": dom_alert_count,
         }
     )
-    return chevron_dict, Domain_Masq.df_mal, Domain_Masq.alerts_sum()
+    summary_dict["domain_alert_count"] = dom_alert_count
+    summary_dict["suspected_domain_count"] = domain_count
+
+    return summary_dict, chevron_dict, Domain_Masq.df_mal, Domain_Masq.alerts_sum()
 
 
-def mal_vuln(chevron_dict, start_date, end_date, org_uid, source_html):
+def mal_vuln(summary_dict, chevron_dict, start_date, end_date, org_uid, source_html):
     """Build Malwares and Vulnerabilities page."""
     Malware_Vuln = Malware_Vulns(start_date, end_date, org_uid)
     # Build insecure protocol horizontal bar chart
@@ -246,15 +263,21 @@ def mal_vuln(chevron_dict, start_date, end_date, org_uid, source_html):
     verif_vulns_table = buildTable(
         verif_vulns, ["table"], [40, 40, 20], link_to_appendix=True
     )
-
+    risky_ports = Malware_Vuln.risky_ports_count()
+    verif_vulns_count = Malware_Vuln.total_verif_vulns()
+    unverif_vulns = Malware_Vuln.unverified_vuln_count()
     # Update chevron dictionary
     vulns_dict = {
         "verif_vulns": verif_vulns_table,
         "risky_assets": risky_assets_table,
-        "riskyPorts": Malware_Vuln.risky_ports_count(),
-        "verifVulns": Malware_Vuln.total_verif_vulns(),
-        "unverifVulns": Malware_Vuln.unverified_vuln_count(),
+        "riskyPorts": risky_ports,
+        "verifVulns": verif_vulns_count,
+        "unverifVulns": unverif_vulns,
     }
+
+    summary_dict["insecure_port_count"] = risky_ports
+    summary_dict["verified_vuln_count"] = verif_vulns_count
+    summary_dict["suspected_vuln_count"] = unverif_vulns
 
     verif_vulns_summary = Malware_Vuln.verif_vulns_summary()
     if len(verif_vulns_summary) > 0:
@@ -281,6 +304,7 @@ def mal_vuln(chevron_dict, start_date, end_date, org_uid, source_html):
 
     chevron_dict.update(vulns_dict)
     return (
+        summary_dict,
         chevron_dict,
         Malware_Vuln.insecure_df,
         Malware_Vuln.vulns_df,
@@ -289,7 +313,9 @@ def mal_vuln(chevron_dict, start_date, end_date, org_uid, source_html):
     )
 
 
-def dark_web(chevron_dict, trending_start_date, start_date, end_date, org_uid):
+def dark_web(
+    summary_dict, chevron_dict, trending_start_date, start_date, end_date, org_uid
+):
     """Dark Web Mentions."""
     Cyber6 = Cyber_Six(trending_start_date, start_date, end_date, org_uid)
     # Build dark web mentions over time line chart
@@ -316,8 +342,12 @@ def dark_web(chevron_dict, trending_start_date, start_date, end_date, org_uid):
     dark_web_actors_table = buildTable(
         Cyber6.dark_web_bad_actors()[:10], ["table"], [50, 50]
     )
-    alerts_exec_table = buildTable(Cyber6.alerts_exec()[:8], ["table"], [15, 70, 15])
-    asset_alerts_table = buildTable(Cyber6.asset_alerts()[:10], ["table"], [15, 70, 15])
+    exec_alerts = Cyber6.alerts_exec()
+    summary_dict["dark_web_executive_alerts_count"] = len(exec_alerts)
+    alerts_exec_table = buildTable(exec_alerts[:8], ["table"], [15, 70, 15])
+    asset_alerts = Cyber6.asset_alerts()
+    summary_dict["dark_web_asset_alerts_count"] = len(asset_alerts)
+    asset_alerts_table = buildTable(asset_alerts[:10], ["table"], [15, 70, 15])
     dark_web_act_table = buildTable(Cyber6.dark_web_most_act(), ["table"], [75, 25])
     social_med_act_table = buildTable(
         Cyber6.social_media_most_act(), ["table"], [75, 25]
@@ -326,9 +356,9 @@ def dark_web(chevron_dict, trending_start_date, start_date, end_date, org_uid):
         Cyber6.invite_only_markets(), ["table"], [50, 50]
     )
     top_cves_table = buildTable(Cyber6.top_cve_table(), ["table"], [25, 60, 15])
-
+    dark_web_count = Cyber6.dark_web_count()
     dark_web_dict = {
-        "darkWeb": Cyber6.dark_web_count(),
+        "darkWeb": dark_web_count,
         "dark_web_sites": dark_web_sites_table,
         "alerts_threats": alerts_threats_table,
         "dark_web_actors": dark_web_actors_table,
@@ -339,9 +369,17 @@ def dark_web(chevron_dict, trending_start_date, start_date, end_date, org_uid):
         "markets_table": invite_only_markets_table,
         "top_cves": top_cves_table,
     }
+    summary_dict["dark_web_alerts_count"] = dark_web_count
+    summary_dict["dark_web_mentions_count"] = len(Cyber6.dark_web_mentions)
 
     chevron_dict.update(dark_web_dict)
-    return (chevron_dict, Cyber6.dark_web_mentions, Cyber6.alerts, Cyber6.top_cves)
+    return (
+        summary_dict,
+        chevron_dict,
+        Cyber6.dark_web_mentions,
+        Cyber6.alerts,
+        Cyber6.top_cves,
+    )
 
 
 def init(datestring, org_name, org_uid):
@@ -379,22 +417,43 @@ def init(datestring, org_name, org_uid):
         "endDate": end,
         "base_dir": base_dir,
     }
+    asset_dict = get_org_assets_count(org_uid)
+    summary_dict = {
+        "organizations_uid": org_uid,
+        "start_date": start_date,
+        "end_date": end_date,
+        "ip_count": asset_dict["num_ips"],
+        "root_count": asset_dict["num_root_domain"],
+        "sub_count": 5,
+    }
 
-    chevron_dict, creds_sum, source_html = credential(
-        chevron_dict, trending_start_date, start_date, end_date, org_uid, source_html
+    summary_dict, chevron_dict, creds_sum, source_html = credential(
+        summary_dict,
+        chevron_dict,
+        trending_start_date,
+        start_date,
+        end_date,
+        org_uid,
+        source_html,
     )
 
-    chevron_dict, masq_df, dom_alert_sum = masquerading(
-        chevron_dict, start_date, end_date, org_uid
+    summary_dict, chevron_dict, masq_df, dom_alert_sum = masquerading(
+        summary_dict, chevron_dict, start_date, end_date, org_uid
     )
 
-    chevron_dict, insecure_df, vulns_df, assets_df, source_html = mal_vuln(
-        chevron_dict, start_date, end_date, org_uid, source_html
-    )
+    (
+        summary_dict,
+        chevron_dict,
+        insecure_df,
+        vulns_df,
+        assets_df,
+        source_html,
+    ) = mal_vuln(summary_dict, chevron_dict, start_date, end_date, org_uid, source_html)
 
-    chevron_dict, dark_web_mentions, alerts, top_cves = dark_web(
-        chevron_dict, trending_start_date, start_date, end_date, org_uid
+    summary_dict, chevron_dict, dark_web_mentions, alerts, top_cves = dark_web(
+        summary_dict, chevron_dict, trending_start_date, start_date, end_date, org_uid
     )
+    execute_summary(summary_dict)
     source_html = (
         source_html
         + """
