@@ -94,7 +94,7 @@ def report_gen():
 
         if not validate_date(report_date):
             flash(
-                "Incorrect data format, should be YYYY-MM-DD or not correct report date",
+                "Incorrect date format, should be YYYY-MM-DD",
                 "warning",
             )
             return redirect(url_for("report_gen.report_gen"))
