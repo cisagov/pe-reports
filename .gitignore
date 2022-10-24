@@ -5,6 +5,9 @@
 ## macOS ##
 .DS_Store
 
+## Project Specific ##
+output/
+
 ## Python ##
 __pycache__
 .coverage
@@ -12,4 +15,3 @@ __pycache__
 .pytest_cache
 .python-version
 *.egg-info
-output/
