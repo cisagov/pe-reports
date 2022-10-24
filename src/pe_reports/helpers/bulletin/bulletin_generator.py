@@ -210,7 +210,7 @@ def generate_creds_bulletin(
             row_dict[col] = row[i]
         results.append(row_dict)
 
-        outputText = template.render(
+        output_text = template.render(
             row_dict,
             user_provided_content=user_text,
             email_count=email_count,
@@ -218,7 +218,7 @@ def generate_creds_bulletin(
             hibp_rows=hibp_rows,
         )
         html_file = open(bulletin_path + "/creds_bulletin_template_filled.html", "w")
-        html_file.write(outputText)
+        html_file.write(output_text)
         html_file.close()
 
         options = {
