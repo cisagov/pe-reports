@@ -63,7 +63,7 @@ def get_orgs(conn):
 
 
 def get_orgs_df():
-    """Query organizations table for new orgs."""
+    """Query organizations table into a dataframe."""
     conn = connect()
     try:
         sql = """SELECT * FROM organizations"""
