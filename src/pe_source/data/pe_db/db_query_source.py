@@ -410,7 +410,7 @@ def getDataSource(conn, source):
 
 
 def org_root_domains(conn, org_uid):
-    """Get from database given the org_uid."""
+    """Get root domains from database given the org_uid."""
     sql = """
         select * from root_domains rd
         where rd.organizations_uid = %(org_id)s;
