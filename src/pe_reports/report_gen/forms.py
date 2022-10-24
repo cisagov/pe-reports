@@ -8,7 +8,10 @@ from wtforms import StringField, SubmitField, TextAreaField
 class InfoFormExternal(FlaskForm):
     """Create web form to take user input on report to be generated."""
 
-    report_date = StringField("What is the report date? " "*format YYYY-MM-DD")
+    report_date = StringField(
+        "What is the report date? (Final day of the report period, either the 15th or last day of the month)"
+        "*format YYYY-MM-DD"
+    )
     output_directory = StringField(
         "The directory where the final PDF reports should be saved. "
     )

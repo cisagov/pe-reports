@@ -87,8 +87,6 @@ class Cybersixgill:
                 # Get sixgill_org_id associated with the PE org
                 try:
                     sixgill_org_id = sixgill_orgs[org_id][5]
-                    LOGGER.info("sixgill_id")
-                    LOGGER.info(sixgill_org_id)
                 except KeyError as err:
                     LOGGER.error("PE org is not listed in Cybersixgill.")
                     print(err, file=sys.stderr)
@@ -206,60 +204,68 @@ class Cybersixgill:
 
         # Fetch mention data
         try:
-            # if "DHS" in aliases:
-            #     aliases.remove("DHS")
+            if "dhs" in aliases:
+                aliases.remove("dhs")
             # if "NRC" in aliases:
             #     aliases.remove("NRC")
-            if org_id == "DOI_OS":
+            if org_id == "doi_os":
                 aliases = [
                     "DOI Office of the Secretary",
                     "Department of the Interior Office of the Secretary",
                     "Department of Interior Office of the Secretary",
                     "Interior Office of the Secretary",
                 ]
-            if "NIH" in aliases:
-                aliases.remove("NIH")
-            if "BLM" in aliases:
-                aliases.remove("BLM")
-            if "ED" in aliases:
-                aliases.remove("ED")
-            if "PT" in aliases:
-                aliases.remove("PT")
-            if "OCC" in aliases:
-                aliases.remove("OCC")
-            if "PC" in aliases:
-                aliases.remove("PC")
-            if "EPA" in aliases:
-                aliases = ["EPA"]
-            if "HHS" in aliases:
-                aliases.remove("HHS")
-            if "BLS" in aliases:
-                aliases.remove("BLS")
-            if "DOI" in aliases:
-                aliases.remove("DOI")
-            if "DOE" in aliases:
-                aliases.remove("DOE")
-            if "SSS" in aliases:
-                aliases.remove("SSS")
-            if "DOT" in aliases:
-                aliases.remove("DOT")
-            if "DOS" in aliases:
-                aliases.remove("DOS")
-            if "SBA" in aliases:
-                aliases.remove("SBA")
-            if "SSA" in aliases or "ssa" in aliases:
+            if "st" in aliases:
+                aliases.remove("st")
+            if "nih" in aliases:
+                aliases.remove("noh")
+            if "blm" in aliases:
+                aliases.remove("blm")
+            if "ed" in aliases:
+                aliases.remove("ed")
+            if "pt" in aliases:
+                aliases.remove("pt")
+            if "occ" in aliases:
+                aliases.remove("occ")
+            if "pc" in aliases:
+                aliases.remove("pc")
+            if "epa" in aliases:
+                aliases = ["epa"]
+            if "hhs" in aliases:
+                aliases.remove("hhs")
+            if "bls" in aliases:
+                aliases.remove("bls")
+            if "doi" in aliases:
+                aliases.remove("doi")
+            if "doe" in aliases:
+                aliases.remove("doe")
+            if "sss" in aliases:
+                aliases.remove("sss")
+            if "dot" in aliases:
+                aliases.remove("dot")
+            if "dos" in aliases:
+                aliases.remove("dos")
+            if "sba" in aliases:
+                aliases.remove("sba")
+            if "ssa" in aliases:
                 aliases.remove("ssa")
-                aliases.remove("SSA")
-            if "ST" in aliases:
-                aliases.remove("ST")
-            if "DOL" in aliases:
-                aliases.remove("DOL")
-            if "GSA" in aliases:
-                aliases.remove("GSA")
-            if "HUD" in aliases:
-                aliases.remove("HUD")
-            if "DOC" in aliases:
-                aliases.remove("DOC")
+            if "st" in aliases:
+                aliases.remove("st")
+            if "dol" in aliases:
+                aliases.remove("dol")
+            if "gsa" in aliases:
+                aliases.remove("gsa")
+            if "hud" in aliases:
+                aliases.remove("hud")
+            if "doc" in aliases:
+                aliases.remove("doc")
+            if "os" in aliases:
+                aliases.remove("os")
+            if "sec" in aliases:
+                aliases.remove("sec")
+            if "stb" in aliases:
+                aliases.remove("stb")
+                aliases.append("surface transportation")
             try:
                 mentions_df = mentions(DATE_SPAN, aliases)
             except UnboundLocalError:
