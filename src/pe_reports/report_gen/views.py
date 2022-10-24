@@ -84,14 +84,13 @@ def report_gen():
     report_date = False
     output_directory = False
 
-    formExternal = InfoFormExternal()
+    form_external = InfoFormExternal()
 
-    if formExternal.validate_on_submit() and formExternal.submit.data:
-        LOGGER.info("Got to the submit validate")
-        report_date = formExternal.report_date.data
-        output_directory = formExternal.output_directory.data
-        formExternal.report_date.data = ""
-        formExternal.output_directory.data = ""
+    if form_external.validate_on_submit() and form_external.submit.data:
+        report_date = form_external.report_date.data
+        output_directory = form_external.output_directory.data
+        form_external.report_date.data = ""
+        form_external.output_directory.data = ""
 
         if not validate_date(report_date):
             flash(
@@ -106,19 +105,19 @@ def report_gen():
         # Generate reports
         generate_reports(report_date, output_directory)
 
-    bulletinForm = BulletinFormExternal()
+    bulletin_form = BulletinFormExternal()
 
-    if bulletinForm.validate_on_submit() and bulletinForm.submit1.data:
+    if bulletin_form.validate_on_submit() and bulletin_form.submit1.data:
         LOGGER.info("Submitted Bulletin Form")
 
-        id = bulletinForm.cybersix_id.data
-        user_input = bulletinForm.user_input.data
-        output_dir = bulletinForm.output_directory1.data
-        file_name = bulletinForm.file_name.data
-        bulletinForm.cybersix_id.data = ""
-        bulletinForm.user_input.data = ""
-        bulletinForm.output_directory1.data = ""
-        bulletinForm.file_name.data = ""
+        id = bulletin_form.cybersix_id.data
+        user_input = bulletin_form.user_input.data
+        output_dir = bulletin_form.output_directory1.data
+        file_name = bulletin_form.file_name.data
+        bulletin_form.cybersix_id.data = ""
+        bulletin_form.user_input.data = ""
+        bulletin_form.output_directory1.data = ""
+        bulletin_form.file_name.data = ""
 
         file_name = file_name.replace(" ", "")
         if not validate_filename(file_name):
@@ -137,12 +136,12 @@ def report_gen():
 
         generate_cybersix_bulletin(id, user_input, output_dir, file_name)
 
-    credsForm = CredsFormExternal()
-    if credsForm.validate_on_submit() and credsForm.submit2.data:
-        breach_name = credsForm.breach_name.data
-        org_id = credsForm.org_id.data
-        credsForm.breach_name.data = ""
-        credsForm.org_id.data = ""
+    creds_form = CredsFormExternal()
+    if creds_form.validate_on_submit() and creds_form.submit2.data:
+        breach_name = creds_form.breach_name.data
+        org_id = creds_form.org_id.data
+        creds_form.breach_name.data = ""
+        creds_form.org_id.data = ""
         all_orgs = get_orgs_df()
         all_orgs = all_orgs[all_orgs["report_on"] == True]
 
@@ -158,7 +157,7 @@ def report_gen():
             return redirect(url_for("report_gen.report_gen"))
 
         for org_index, org in all_orgs.iterrows():
-            LOGGER.info("Running on %s", org['name'])
+            LOGGER.info("Running on %s", org["name"])
             generate_creds_bulletin(
                 breach_name,
                 org_id,
@@ -169,7 +168,7 @@ def report_gen():
 
     return render_template(
         "home_report_gen.html",
-        formExternal=formExternal,
-        bulletinForm=bulletinForm,
-        credsForm=credsForm,
+        form_external=form_external,
+        bulletin_form=bulletin_form,
+        creds_form=creds_form,
     )
