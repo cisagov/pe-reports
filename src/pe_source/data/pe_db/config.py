@@ -15,6 +15,8 @@ REPORT_DB_CONFIG = files("pe_reports").joinpath("data/database.ini")
 
 
 # Setup logging to central file
+# To avoid a circular reference error which occurs when calling app.config("LOGGER")
+# we are directly calling the logger here
 LOGGER = logging.getLogger(__name__)
 
 
