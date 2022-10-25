@@ -41,7 +41,6 @@ class Credentials:
     def by_days(self):
         """Return number of credentials by day."""
         df = self.creds_by_day
-        # df = df[["mod_date", "no_password", "password_included"]].copy()
         idx = pd.date_range(self.trending_start_date, self.end_date)
         df = df.set_index("mod_date").reindex(idx).fillna(0.0).rename_axis("added_date")
         group_limit = self.end_date + datetime.timedelta(1)
@@ -59,7 +58,6 @@ class Credentials:
         )
         if len(df.columns) == 0:
             df["Passwords Included"] = 0
-        print(df)
         return df
 
     def breaches(self):
@@ -100,13 +98,11 @@ class Credentials:
 
     def password(self):
         """Return total number of credentials with passwords."""
-        pw_creds = len(self.creds_view[self.creds_view["password_included"]])
-        return pw_creds
+        return len(self.creds_view[self.creds_view["password_included"]])
 
     def total(self):
         """Return total number of credentials found in breaches."""
-        df_cred = self.creds_view.shape[0]
-        return df_cred
+        return self.creds_view.shape[0]
 
 
 class Domains_Masqs:
