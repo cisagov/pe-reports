@@ -11,7 +11,7 @@ import shodan
 
 # cisagov Libraries
 from pe_reports import app
-from pe_source.data.pe_db.db_query import (
+from pe_source.data.pe_db.db_query_source import (
     get_data_source_uid,
     get_ips,
     insert_shodan_data,

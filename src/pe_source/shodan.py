@@ -7,7 +7,7 @@ import threading
 import numpy
 
 from .data.pe_db.config import shodan_api_init
-from .data.pe_db.db_query import get_orgs
+from .data.pe_db.db_query_source import get_orgs
 from .data.shodan.shodan_search import run_shodan_thread
 
 
