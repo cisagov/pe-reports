@@ -14,6 +14,8 @@ from psycopg2.extensions import AsIs
 from .config import config
 
 # Setup logging to central file
+# To avoid a circular reference error which occurs when calling app.config("LOGGER")
+# we are directly calling the logger here
 LOGGER = logging.getLogger(__name__)
 
 CONN_PARAMS_DIC = config()
