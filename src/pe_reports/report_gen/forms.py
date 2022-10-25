@@ -26,9 +26,10 @@ class BulletinFormExternal(FlaskForm):
     user_input = TextAreaField(
         "Please provide an explanation of what was found in the post/intel_item."
     )
+    # Using a distinct directory variable name to avoid validation errors when multiple forms are on the same page
     output_directory1 = StringField("Output Directory:")
     file_name = StringField("File Name?")
-
+    # Using a distinct submit variable name to avoid validation errors when multiple forms are on the same page
     submit1 = SubmitField("Submit", render_kw={"onclick": "loading()"})
 
 
@@ -37,5 +38,5 @@ class CredsFormExternal(FlaskForm):
 
     org_id = StringField("Organization Cyhy ID:")
     breach_name = StringField("Breach Name:")
-
+    # Using a distinct submit variable name to avoid validation errors when multiple forms are on the same page
     submit2 = SubmitField("Submit", render_kw={"onclick": "loading()"})
