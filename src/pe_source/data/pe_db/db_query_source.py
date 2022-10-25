@@ -396,8 +396,7 @@ def addSubdomain(conn, domain, pe_org_uid, org_name):
     cur.callproc(
         "insert_sub_domain", (domain, pe_org_uid, "findomain", root_domain, None)
     )
-    LOGGER.info("Success adding domain, %(domain)s, to subdomains table.")
-
+    LOGGER.info("Success adding domain %s to subdomains table.", domain)
 
 def getDataSource(conn, source):
     """Get datasource information from a database."""
@@ -410,7 +409,7 @@ def getDataSource(conn, source):
 
 
 def org_root_domains(conn, org_uid):
-    """Get from database given the org_uid."""
+    """Get root domains from database given the org_uid."""
     sql = """
         select * from root_domains rd
         where rd.organizations_uid = %(org_id)s;

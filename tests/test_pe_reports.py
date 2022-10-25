@@ -6,12 +6,14 @@ import sys
 from unittest.mock import patch
 
 # Third-Party Libraries
+import pandas as pd
 import pytest
 
 # cisagov Libraries
 from pe_reports import CENTRAL_LOGGING_FILE
 from pe_reports import app as flask_app
 import pe_reports.data.db_query
+from pe_reports.report_gen.views import validate_date, validate_filename
 import pe_reports.report_generator
 
 log_levels = (
@@ -149,3 +151,85 @@ def test_stakeholder_page(client):
     resp = client.get("/stakeholder")
     assert resp.status_code == 200
     assert b"Stakeholder" in resp.data
+
+
+@patch.object(pe_reports.report_generator, "embed")
+@patch.object(pe_reports.report_generator, "init")
+@patch.object(pe_reports.report_generator, "get_orgs")
+@patch.object(pe_reports.report_generator, "connect")
+def test_report_generator(mock_db_connect, mock_get_orgs, mock_init, mock_embed):
+    """Test report is generated."""
+    mock_db_connect.return_value = "connection"
+    mock_get_orgs.return_value = [("pe_org_uid", "Test Org", "TestOrg")]
+    source_html = ""
+    creds_sum = ""
+    creds_sum = pd.DataFrame()
+    masq_df = pd.DataFrame()
+    insecure_df = pd.DataFrame()
+    vulns_df = pd.DataFrame()
+    assets_df = pd.DataFrame()
+    dark_web_mentions = pd.DataFrame()
+    alerts = pd.DataFrame()
+    top_cves = pd.Series(dtype="object")
+    mock_init.return_value = (
+        source_html,
+        creds_sum,
+        masq_df,
+        insecure_df,
+        vulns_df,
+        assets_df,
+        dark_web_mentions,
+        alerts,
+        top_cves,
+    )
+    mock_embed.return_value = 10000000, False
+    return_value = pe_reports.report_generator.generate_reports("2022-09-30", "output")
+    assert return_value == 1
+
+
+def test_report_gen_page(client):
+    """Test flask report_gen.html is available and verify a string on the page."""
+    resp = client.get("/report_gen")
+    assert resp.status_code == 200
+    assert b"Generate Cybersixgill Bulletin" in resp.data
+
+
+@pytest.mark.parametrize(
+    "filename, expected_result",
+    [
+        ("#superfile", False),
+        ("Re@lfile", False),
+        ("File+100", False),
+        ("<filename>", False),
+        ("{filename", False),
+        ("awesome_file!!", False),
+        ("File$name", False),
+        ("File/name", False),
+        ("file name", False),
+        ("", False),
+        ("valid_file", True),
+    ],
+)
+def test_valid_filename(filename, expected_result):
+    """Test valid filename."""
+    assert validate_filename(filename) == expected_result
+
+
+@pytest.mark.parametrize(
+    "date, expected_result",
+    [
+        ("22-12-22", False),
+        ("2022/03/15", False),
+        ("2020-12-30", False),
+        ("2020-2-27", False),
+        ("2015-11-31", False),
+        ("2020-02-28", False),
+        ("2020-02-29", True),
+        ("2020-11-30", True),
+        ("2020-12-31", True),
+        ("2020-12-15", True),
+    ],
+)
+def test_valid_date(date, expected_result):
+    """Test valid date."""
+    assert validate_date(date) == expected_result

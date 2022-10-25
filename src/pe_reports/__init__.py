@@ -20,16 +20,16 @@ from pe_reports.data.config import config
 
 # Stakeholder views
 from pe_reports.home.views import home_blueprint
+from pe_reports.report_gen.views import report_gen_blueprint
 from pe_reports.stakeholder.views import stakeholder_blueprint
 
 from ._version import __version__  # noqa: F401
 
 params = config()
-"""Test to see if port is empty."""
-if params["host"] == "":
+# Initialize port if empty.
+if params["port"] == "":
     logging.info("Empty port. Setting to 5443")
-    params["host"] = 5443
-
+    params["port"] = 5443
 login_manager = LoginManager()
 # Flask implementation
 app = Flask(__name__)
@@ -80,6 +80,7 @@ __all__ = ["app", "pages", "report_generator", "stylesheet"]
 
 # Register the flask apps
 app.register_blueprint(stakeholder_blueprint)
+app.register_blueprint(report_gen_blueprint)
 # TODO: Add login blueprint. Issue #207 contains details
 # app.register_blueprint(manage_login_blueprint)
 app.register_blueprint(home_blueprint)
