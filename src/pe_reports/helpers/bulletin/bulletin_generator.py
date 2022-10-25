@@ -43,7 +43,7 @@ def date_format(value, format="%m/%d/%Y"):
 
 
 def html_builder(text):
-    """Build out an html string for command line usage."""
+    """Build out an HTML string for command line usage."""
     input_type = input(
         "Which of the following would you like to insert:\n [P]aragraph\n [B]ulleted List \n [N]umbered List\n Please provide a selection:"
     )
