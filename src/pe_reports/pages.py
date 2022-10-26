@@ -65,9 +65,7 @@ def buildAppendixList(df):
     return html
 
 
-def credential(
-    chevron_dict, trending_start_date, start_date, end_date, org_uid
-):
+def credential(chevron_dict, trending_start_date, start_date, end_date, org_uid):
     """Build exposed credential page."""
     Credential = Credentials(trending_start_date, start_date, end_date, org_uid)
     # Build exposed credential stacked bar chart
