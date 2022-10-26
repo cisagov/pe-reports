@@ -91,7 +91,6 @@ def get_org_assets_count(uid):
             where sur.organizations_uid = %s"""
     cur.execute(sql, [uid])
     source = cur.fetchone()
-    print(source)
     cur.close()
     conn.close()
     assets_dict = {
@@ -338,7 +337,6 @@ def insert_roots(org, domain_list):
 
 def query_roots(org_uid):
     """Query all ips that link to a cidr related to a specific org."""
-    print(org_uid)
     conn = connect()
     sql = """SELECT r.root_domain_uid, r.root_domain FROM root_domains r
             where r.organizations_uid = %(org_uid)s
@@ -600,7 +598,6 @@ def execute_summary(summary_dict):
     try:
         conn = connect()
         cur = conn.cursor()
-        print(summary_dict)
         sql = """
         INSERT INTO report_summary_stats(organizations_uid, start_date, end_date, ip_count, root_count, sub_count, creds_count, breach_count, domain_alert_count, suspected_domain_count, insecure_port_count, verified_vuln_count, suspected_vuln_count,
         dark_web_alerts_count, dark_web_mentions_count, dark_web_executive_alerts_count, dark_web_asset_alerts_count)

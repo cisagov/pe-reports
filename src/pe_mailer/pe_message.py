@@ -26,7 +26,7 @@ class PEMessage(ReportMessage):
 
     """
 
-    Subject = "Posture and Exposure Report - {{org_id}} - {{report_date}}"
+    Subject = "Posture and Exposure Report - {{org_id}} - {{report_date}} (TLP:AMBER)"
 
     TextBody = """Greetings,
 
@@ -49,6 +49,8 @@ WARNING: This document is FOR OFFICIAL USE ONLY (FOUO). It contains information 
     HtmlBody = """<html>
 <head></head>
 <body>
+<p style="color:#FFC000">TLP:AMBER</p>
+
 <p>Greetings,</p>
 
 <p>The attached Posture and Exposure (P&E) report is the result of a
@@ -82,7 +84,7 @@ Cybersecurity and Infrastructure Security Agency<br>
         self,
         pdf_filename,
         report_date,
-        org_id
+        org_id,
         to_addrs,
         from_addr=Message.DefaultFrom,
         cc_addrs=Message.DefaultCc,

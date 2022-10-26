@@ -131,8 +131,8 @@ def generate_reports(datestring, output_directory):
             org_name = org[1]
             org_code = org[2]
 
-            # if org_code in ["NMB"]:
-            #     continue
+            if org_code not in ["CIGIE"]:
+                continue
 
             LOGGER.info("Running on %s", org_code)
 

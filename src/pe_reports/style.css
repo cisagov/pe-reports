@@ -49,6 +49,13 @@
     height: 1in;
     font-size: 10pt;
   }
+  @frame headerCont2 {
+    -pdf-frame-content: headerContentCont2;
+    top: 0.625in;
+    margin-right: 1in;
+    height: 1in;
+    font-size: 12pt;
+  }
 }
 
 @page sum {
@@ -86,6 +93,13 @@
     margin-right: 1in;
     height: 1in;
     font-size: 10pt;
+  }
+  @frame headerCont2 {
+    -pdf-frame-content: headerContentCont2;
+    top: 0.625in;
+    margin-right: 1in;
+    height: 1in;
+    font-size: 12pt;
   }
 
   @frame kpi1 {
@@ -166,6 +180,13 @@
     margin-right: 1in;
     height: 1in;
     font-size: 10pt;
+  }
+  @frame headerCont2 {
+    -pdf-frame-content: headerContentCont2;
+    top: 0.625in;
+    margin-right: 1in;
+    height: 1in;
+    font-size: 12pt;
   }
 
   @frame content1 {
@@ -260,6 +281,13 @@
     height: 1in;
     font-size: 10pt;
   }
+  @frame headerCont2 {
+    -pdf-frame-content: headerContentCont2;
+    top: 0.625in;
+    margin-right: 1in;
+    height: 1in;
+    font-size: 12pt;
+  }
   @frame tableCont {
     -pdf-frame-content: tableCont;
     left: 2.54cm;
@@ -320,6 +348,13 @@
     margin-right: 1in;
     height: 1in;
     font-size: 10pt;
+  }
+  @frame headerCont2 {
+    -pdf-frame-content: headerContentCont2;
+    top: 0.625in;
+    margin-right: 1in;
+    height: 1in;
+    font-size: 12pt;
   }
 
   @frame content0 {
@@ -443,6 +478,13 @@
     height: 1in;
     font-size: 10pt;
   }
+  @frame headerCont2 {
+    -pdf-frame-content: headerContentCont2;
+    top: 0.625in;
+    margin-right: 1in;
+    height: 1in;
+    font-size: 12pt;
+  }
 
   @frame content0 {
     -pdf-frame-content: summaryVuln;
@@ -552,6 +594,13 @@
     height: 1in;
     font-size: 10pt;
   }
+  @frame headerCont2 {
+    -pdf-frame-content: headerContentCont2;
+    top: 0.625in;
+    margin-right: 1in;
+    height: 1in;
+    font-size: 12pt;
+  }
   @frame shodanTableSum {
     -pdf-frame-content: shodanTableSum;
     left: 2.54cm;
@@ -639,6 +688,13 @@
     height: 1in;
     font-size: 10pt;
   }
+  @frame headerCont2 {
+    -pdf-frame-content: headerContentCont2;
+    top: 0.625in;
+    margin-right: 1in;
+    height: 1in;
+    font-size: 12pt;
+  }
 
   @frame kpi1 {
     left: 2.3cm;
@@ -725,6 +781,13 @@
     height: 1in;
     font-size: 10pt;
   }
+  @frame headerCont2 {
+    -pdf-frame-content: headerContentCont2;
+    top: 0.625in;
+    margin-right: 1in;
+    height: 1in;
+    font-size: 12pt;
+  }
   @frame socMedSum {
     -pdf-frame-content: socMedSum;
     left: 2.54cm;
@@ -810,6 +873,13 @@
     margin-right: 1in;
     height: 1in;
     font-size: 10pt;
+  }
+  @frame headerCont2 {
+    -pdf-frame-content: headerContentCont2;
+    top: 0.625in;
+    margin-right: 1in;
+    height: 1in;
+    font-size: 12pt;
   }
   @frame assetAlertsSum {
     -pdf-frame-content: assetAlertsSum;
@@ -898,6 +968,13 @@
     height: 1in;
     font-size: 10pt;
   }
+  @frame headerCont2 {
+    -pdf-frame-content: headerContentCont2;
+    top: 0.625in;
+    margin-right: 1in;
+    height: 1in;
+    font-size: 12pt;
+  }
   @frame threatActorsSum {
     -pdf-frame-content: threatActorsSum;
     left: 2.54cm;
@@ -984,6 +1061,13 @@
     margin-right: 1in;
     height: 1in;
     font-size: 10pt;
+  }
+  @frame headerCont2 {
+    -pdf-frame-content: headerContentCont2;
+    top: 0.625in;
+    margin-right: 1in;
+    height: 1in;
+    font-size: 12pt;
   }
   @frame sitesSum {
     -pdf-frame-content: sitesSum;
@@ -1072,6 +1156,13 @@
     height: 1in;
     font-size: 10pt;
   }
+  @frame headerCont2 {
+    -pdf-frame-content: headerContentCont2;
+    top: 0.625in;
+    margin-right: 1in;
+    height: 1in;
+    font-size: 12pt;
+  }
   @frame topCvesSum {
     -pdf-frame-content: topCvesSum;
     left: 2.54cm;
@@ -1130,6 +1221,13 @@
     height: 1in;
     font-size: 10pt;
   }
+  @frame headerCont2 {
+    -pdf-frame-content: headerContentCont2;
+    top: 0.625in;
+    margin-right: 1in;
+    height: 1in;
+    font-size: 12pt;
+  }
   @frame content {
     left: 1in;
     top: 2in;
@@ -1172,6 +1270,13 @@
     margin-right: 1in;
     height: 1in;
     font-size: 10pt;
+  }
+  @frame headerCont2 {
+    -pdf-frame-content: headerContentCont2;
+    top: 0.625in;
+    margin-right: 1in;
+    height: 1in;
+    font-size: 12pt;
   }
 
   @frame TableIntro1 {
@@ -1223,6 +1328,13 @@
     margin-right: 1in;
     height: 1in;
     font-size: 10pt;
+  }
+  @frame headerCont2 {
+    -pdf-frame-content: headerContentCont2;
+    top: 0.625in;
+    margin-right: 1in;
+    height: 1in;
+    font-size: 12pt;
   }
 }
 

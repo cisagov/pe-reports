@@ -31,3 +31,4 @@ src/adhoc/Bulletin/Franklin_Gothic_Book_Regular.ttf
 src/adhoc/Bulletin/Header2.png
 src/adhoc/Bulletin/Header_img.png
 src/adhoc/data/database.ini
+*.log
