@@ -72,7 +72,7 @@ def credential(
     Credential = Credentials(trending_start_date, start_date, end_date, org_uid)
     # Build exposed credential stacked bar chart
     width = 24
-    height = 9
+    height = 9.5
     name = "inc_date_df"
     title = "Trending Exposures by Week"
     x_label = "Week Reported"
@@ -185,8 +185,8 @@ def dark_web(chevron_dict, trending_start_date, start_date, end_date, org_uid):
     """Dark Web Mentions."""
     Cyber6 = Cyber_Six(trending_start_date, start_date, end_date, org_uid)
     # Build dark web mentions over time line chart
-    width = 18.5
-    height = 8
+    width = 19
+    height = 9
     name = "web_only_df_2"
     title = ""
     x_label = "Dark Web Mentions"
