@@ -6,6 +6,8 @@
 .DS_Store
 
 ## Project Specific ##
+*.html
+*.log
 output/
 
 ## Python ##
