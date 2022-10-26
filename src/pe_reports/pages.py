@@ -66,7 +66,7 @@ def buildAppendixList(df):
 
 
 def credential(
-    chevron_dict, trending_start_date, start_date, end_date, org_uid, source_html
+    chevron_dict, trending_start_date, start_date, end_date, org_uid
 ):
     """Build exposed credential page."""
     Credential = Credentials(trending_start_date, start_date, end_date, org_uid)
@@ -282,8 +282,8 @@ def init(datestring, org_name, org_uid):
         "endDate": end,
     }
 
-    chevron_dict, creds_sum, source_html = credential(
-        chevron_dict, trending_start_date, start_date, end_date, org_uid, source_html
+    chevron_dict, creds_sum = credential(
+        chevron_dict, trending_start_date, start_date, end_date, org_uid
     )
 
     chevron_dict, masq_df = masquerading(chevron_dict, start_date, end_date, org_uid)
