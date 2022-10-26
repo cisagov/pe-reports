@@ -388,8 +388,7 @@ class Cyber_Six:
     def alerts_exec(self):
         """Get top executive mentions."""
         alerts = self.alerts
-        alerts_exec = alerts[alerts["alert_name"].str.contains("executive")]
-        alerts_exec = alerts_exec[["site", "title"]]
+        alerts_exec = alerts[["site", "title"]]
         alerts_exec = alerts_exec[alerts_exec["site"] != "NaN"]
         alerts_exec = alerts_exec[alerts_exec["site"] != ""]
         alerts_exec = (
@@ -398,26 +397,8 @@ class Cyber_Six:
             .nlargest(10)
             .reset_index(name="Events")
         )
-        alerts_exec["title"] = alerts_exec["title"].str[:100]
-        alerts_exec = alerts_exec.rename(columns={"site": "Site", "title": "Topic"})
+        alerts_exec = alerts_exec.rename(columns={"site": "Site", "title": "Title"})
         return alerts_exec
-
-    def asset_alerts(self):
-        """Get top executive mentions."""
-        alerts = self.alerts
-        asset_alerts = alerts[~alerts["alert_name"].str.contains("executive")]
-        asset_alerts = asset_alerts[["site", "title"]]
-        asset_alerts = asset_alerts[asset_alerts["site"] != "NaN"]
-        asset_alerts = asset_alerts[asset_alerts["site"] != ""]
-        asset_alerts = (
-            asset_alerts.groupby(["site", "title"])["title"]
-            .count()
-            .nlargest(10)
-            .reset_index(name="Events")
-        )
-        asset_alerts["title"] = asset_alerts["title"].str[:150]
-        asset_alerts = asset_alerts.rename(columns={"site": "Site", "title": "Topic"})
-        return asset_alerts
 
     def alerts_threats(self):
         """Get threat alerts."""
@@ -480,7 +461,6 @@ class Cyber_Six:
             dark_web_date.groupby(["date"])["date"].count().reset_index(name="Count")
         )
         dark_web_date["date"] = pd.to_datetime(dark_web_date["date"])
-        dark_web_date = dark_web_date.copy()
         idx = pd.date_range(self.trending_start_date, self.end_date)
         dark_web_date = (
             dark_web_date.set_index("date").reindex(idx).fillna(0.0).rename_axis("date")
@@ -488,7 +468,9 @@ class Cyber_Six:
 
         group_limit = self.end_date + datetime.timedelta(1)
         dark_web_date = dark_web_date.groupby(
-            pd.Grouper(level="date", freq="7d", origin=group_limit)
+            pd.Grouper(  # lgtm [py/call/wrong-named-class-argument]
+                level="date", freq="7d", origin=group_limit
+            )
         ).sum()
         dark_web_date["date"] = dark_web_date.index
         dark_web_date["date"] = dark_web_date["date"].dt.strftime("%m/%d")
@@ -499,10 +481,7 @@ class Cyber_Six:
     def dark_web_most_act(self):
         """Get most active posts."""
         dark_web_mentions = self.dark_web_mentions
-        dark_web_most_act = dark_web_mentions[
-            dark_web_mentions["site"].str.startswith("forum", "market")
-        ]
-        dark_web_most_act = dark_web_most_act[["title", "comments_count"]]
+        dark_web_most_act = dark_web_mentions[["title", "comments_count"]]
         dark_web_most_act = dark_web_most_act[
             dark_web_most_act["comments_count"] != "NaN"
         ]
