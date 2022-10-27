@@ -1,6 +1,7 @@
 """Query the PE PostgreSQL database."""
 
 # Standard Python Libraries
+import logging
 import sys
 
 # Third-Party Libraries
@@ -10,13 +11,12 @@ import psycopg2
 from psycopg2 import OperationalError
 from psycopg2.extensions import AsIs
 
-# cisagov Libraries
-from pe_reports import app
-
 from .config import config
 
 # Setup logging to central file
-LOGGER = app.config["LOGGER"]
+# To avoid a circular reference error which occurs when calling app.config["LOGGER"]
+# we are directly calling the logger here
+LOGGER = logging.getLogger(__name__)
 
 CONN_PARAMS_DIC = config()
 
@@ -57,6 +57,20 @@ def get_orgs(conn):
         pe_orgs = cur.fetchall()
         cur.close()
         return pe_orgs
+    except (Exception, psycopg2.DatabaseError) as error:
+        LOGGER.error("There was a problem with your database query %s", error)
+    finally:
+        if conn is not None:
+            close(conn)
+
+
+def get_orgs_df():
+    """Query organizations table into a dataframe."""
+    conn = connect()
+    try:
+        sql = """SELECT * FROM organizations"""
+        pe_orgs_df = pd.read_sql(sql, conn)
+        return pe_orgs_df
     except (Exception, psycopg2.DatabaseError) as error:
         LOGGER.error("There was a problem with your database query %s", error)
     finally:

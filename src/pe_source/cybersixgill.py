@@ -7,7 +7,7 @@ import sys
 # cisagov Libraries
 from pe_reports import app
 
-from .data.pe_db.db_query import (
+from .data.pe_db.db_query_source import (
     get_breaches,
     get_data_source_uid,
     get_orgs,

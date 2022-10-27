@@ -27,7 +27,7 @@ from schema import And, Schema, SchemaError, Use
 from xhtml2pdf import pisa
 
 # cisagov Libraries
-from pe_reports import CENTRAL_LOGGING_FILE
+import pe_reports
 
 from ._version import __version__
 from .data.db_query import connect, get_orgs
@@ -220,7 +220,7 @@ def generate_reports(datestring, output_directory):
             "Connection to pe database failed and/or there are 0 organizations stored."
         )
 
-    LOGGER.info("%s reports generated", generated_reports)
+    return generated_reports
 
 
 def main():
@@ -253,7 +253,7 @@ def main():
 
     # Setup logging to central file
     logging.basicConfig(
-        filename=CENTRAL_LOGGING_FILE,
+        filename=pe_reports.CENTRAL_LOGGING_FILE,
         filemode="a",
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
         datefmt="%m/%d/%Y %I:%M:%S",
@@ -267,10 +267,12 @@ def main():
         os.mkdir(validated_args["OUTPUT_DIRECTORY"])
 
     # Generate reports
-    generate_reports(
+    generated_reports = generate_reports(
         validated_args["REPORT_DATE"],
         validated_args["OUTPUT_DIRECTORY"],
     )
+
+    LOGGER.info("%s reports generated", generated_reports)
 
     # Stop logging and clean up
     logging.shutdown()
