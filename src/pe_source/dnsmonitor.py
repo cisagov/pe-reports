@@ -25,9 +25,11 @@ DAY = datetime.timedelta(days=1)
 START_DATE = NOW - DAYS_BACK
 END_DATE = NOW + DAY
 
+LOGGER = logging.getLogger(__name__)
+
 
 class DNSMonitor:
-    """Fetch Shodan data."""
+    """Fetch DNSMonitor data."""
 
     def __init__(self, orgs_list):
         """Initialize Shodan class."""
@@ -62,43 +64,45 @@ class DNSMonitor:
             org_name = org["org_name"]
             org_uid = org["org_uid"]
             org_code = org["cyhy_db_name"]
-            logging.info("\nRunning on %s", org_code)
+            LOGGER.info("\nRunning DNSMonitor on %s", org_code)
+
             # Get respective domain IDs
             domain_ids = domain_df[domain_df["org"] == org_name]
-            logging.info("Found %s root domains being monitored.", len(domain_ids))
+            LOGGER.info("Found %s root domains being monitored.", len(domain_ids))
             domain_ids = str(domain_ids["domainId"].tolist())
 
             # Get Alerts for a specific org based on the list of domain IDs
             if domain_ids == "[]":
-                logging.error("Can't match org to any domains...")
+                LOGGER.error("Can't match org to any domains...")
                 failed.append(f"{org_code} - No domains")
                 continue
             else:
                 alerts_df = get_domain_alerts(token, domain_ids, START_DATE, END_DATE)
-                logging.info("Fetched %s alerts.", len(alerts_df.index))
+                LOGGER.info("Fetched %s alerts.", len(alerts_df.index))
+
                 # If no alerts, continue
                 if alerts_df.empty:
-                    logging.error("No alerts for %s", org_code)
+                    LOGGER.error("No alerts for %s", org_code)
                     failed.append(f"{org_code} - No alerts")
                     continue
 
-            for i, r in alerts_df.iterrows():
+            for alert_index, alert_row in alerts_df.iterrows():
                 # Get subdomain_uid
-                root_domain = r["rootDomain"]
+                root_domain = alert_row["rootDomain"]
                 sub_domain = getSubdomain(root_domain)
                 if not sub_domain:
-                    logging.info(
+                    LOGGER.info(
                         "Root domain, %s, isn't in subdomain table as a sub_domain.",
                         root_domain,
                     )
                     try:
                         addSubdomain(root_domain, org_uid, org_name)
-                        logging.info(
+                        LOGGER.info(
                             "Success adding %s to subdomain table.", root_domain
                         )
                     except Exception as e:
-                        logging.error("Failure adding subdomain to root domain table.")
-                        logging.error(e)
+                        LOGGER.error("Failure adding root domain to subdomain table.")
+                        LOGGER.error(e)
                         failed.append(
                             f"{org_code} - {root_domain} - Failed inserting into subdomain table"
                         )
@@ -106,17 +110,17 @@ class DNSMonitor:
 
                 # Add subdomain_uid to associated alert
                 sub_domain_uid = sub_domain[0]
-                alerts_df.at[i, "sub_domain_uid"] = sub_domain_uid
+                alerts_df.at[alert_index, "sub_domain_uid"] = sub_domain_uid
 
                 # Get DNS records for each domain permutation
-                dom_perm = r["domainPermutation"]
+                dom_perm = alert_row["domainPermutation"]
                 mx_list, ns_list, ipv4, ipv6 = get_dns_records(dom_perm)
 
                 # Add records to the dataframe
-                alerts_df.at[i, "mail_server"] = mx_list
-                alerts_df.at[i, "name_server"] = ns_list
-                alerts_df.at[i, "ipv4"] = ipv4
-                alerts_df.at[i, "ipv6"] = ipv6
+                alerts_df.at[alert_index, "mail_server"] = mx_list
+                alerts_df.at[alert_index, "name_server"] = ns_list
+                alerts_df.at[alert_index, "ipv4"] = ipv4
+                alerts_df.at[alert_index, "ipv6"] = ipv6
 
             # Set the data_source_uid and organization_uid
             alerts_df["data_source_uid"] = get_data_source_uid("DNSMonitor")
@@ -150,14 +154,10 @@ class DNSMonitor:
             )
             try:
                 execute_dnsmonitor_data(dom_perm_df, "domain_permutations")
-                logging.info(
-                    "Success inserting into domain_permutations - %s", org_code
-                )
+                LOGGER.info("Success inserting into domain_permutations - %s", org_code)
             except Exception as e:
-                logging.error(
-                    "Failed inserting into domain_permutations - %s", org_code
-                )
-                logging.error(e)
+                LOGGER.error("Failed inserting into domain_permutations - %s", org_code)
+                LOGGER.error(e)
                 failed.append(f"{org_code} - Failed inserting into dom_perms")
 
             # Format dataframe and insert into domain_alerts table
@@ -176,12 +176,12 @@ class DNSMonitor:
             ]
             try:
                 execute_dnsmonitor_alert_data(domain_alerts, "domain_alerts")
-                logging.info("Success inserting into domain_alerts - %s", org_code)
+                LOGGER.info("Success inserting into domain_alerts - %s", org_code)
             except Exception as e:
-                logging.error("Failed inserting into domain_alerts - %s", org_code)
-                logging.error(e)
+                LOGGER.error("Failed inserting into domain_alerts - %s", org_code)
+                LOGGER.error(e)
                 failed.append(f"{org_code} - Failed inserting into dom_alerts")
 
         # Output any failures
         if len(failed) > 0:
-            logging.error("Failures: %s", failed)
+            LOGGER.error("Failures: %s", failed)

@@ -2,8 +2,9 @@
 
 # Standard Python Libraries
 from configparser import ConfigParser
-import os
 import logging
+import os
+import time
 
 # Third-Party Libraries
 from importlib_resources import files
@@ -12,7 +13,6 @@ import shodan
 
 # Configuration
 REPORT_DB_CONFIG = files("pe_reports").joinpath("data/database.ini")
-
 
 def get_params(section):
     """Get data source parameters."""
@@ -31,12 +31,12 @@ def get_params(section):
         )
     return params
 
-
 def shodan_api_init():
     """Connect to Shodan API."""
     section = "shodan"
     api_list = []
     params = get_params(section)
+
     for key in params:
         try:
             api = shodan.Shodan(key[1])
@@ -48,7 +48,6 @@ def shodan_api_init():
         api_list.append(api)
     logging.info("Number of valid Shodan API keys: {}".format(len(api_list)))
     return api_list
-
 
 def cybersix_token():
     """Retrieve bearer token from Cybersixgill client."""
@@ -68,14 +67,13 @@ def cybersix_token():
     resp = requests.post(url, headers=headers, data=payload).json()
     return resp["access_token"]
 
-
 def dnsmonitor_token():
     """Retreive the DNSMonitor bearer token."""
     section = "dnsmonitor"
     params = get_params(section)
     client_id, client_secret = params[0][1], params[1][1]
     scope = "DNSMonitorAPI"
-    url = "https://portal.truespd.com/dhs/connect/token"
+    url = "https://argosecure.com/dhs/connect/token"
 
     payload = {
         "client_id": client_id,

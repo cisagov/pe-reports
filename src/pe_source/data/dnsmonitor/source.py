@@ -13,25 +13,25 @@ def get_monitored_domains(token):
     org_names_df = pd.read_csv(
         "src/pe_source/data/dnsmonitor/root_domains_dnsmonitor.csv"
     )
-    url = "https://dns.portal.truespd.com/dhs/api/GetDomains"
+    url = "https://dns.argosecure.com/dhs/api/GetDomains"
     payload = {}
     headers = {}
     headers["authorization"] = f"Bearer {token}"
     response = requests.request("GET", url, headers=headers, data=payload).json()
-    df = pd.DataFrame(response)
+    domain_df = pd.DataFrame(response)
 
     # Sync domainid's with org names
-    df["org"] = "NA"
-    for i, row in org_names_df.iterrows():
-        for i2, row2 in df.iterrows():
-            if row["domain_name"] == row2["domainName"]:
-                df.at[i2, "org"] = row["org"]
-    return df
+    domain_df["org"] = "NA"
+    for org_index, org_row in org_names_df.iterrows():
+        for domain_index, domain_row in domain_df.iterrows():
+            if org_row["domain_name"] == domain_row["domainName"]:
+                domain_df.at[domain_index, "org"] = org_row["org"]
+    return domain_df
 
 
 def get_domain_alerts(token, domain_ids, from_date, to_date):
     """Get domain alerts."""
-    url = "https://dns.portal.truespd.com/dhs/api/GetAlerts"
+    url = "https://dns.argosecure.com/dhs/api/GetAlerts"
     payload = (
         '{\r\n  "domainIds": %s,\r\n  "fromDate": "%s",\r\n  "toDate": "%s",\r\n  "alertType": null,\r\n  "showBufferPeriod": false\r\n}'
         % (domain_ids, from_date, to_date)
