@@ -12,6 +12,7 @@ from .data.db_query import (
     query_darkweb,
     query_darkweb_cves,
     query_domMasq,
+    query_domMasq_alerts,
     query_shodan,
 )
 

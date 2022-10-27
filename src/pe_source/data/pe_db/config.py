@@ -36,6 +36,7 @@ def get_params(section):
         )
     return params
 
+
 def shodan_api_init():
     """Connect to Shodan API."""
     section = "shodan"
@@ -54,6 +55,7 @@ def shodan_api_init():
     LOGGER.info("Number of valid Shodan API keys: {}".format(len(api_list)))
     return api_list
 
+
 def cybersix_token():
     """Retrieve bearer token from Cybersixgill client."""
     section = "sixgill"
@@ -71,6 +73,7 @@ def cybersix_token():
     }
     resp = requests.post(url, headers=headers, data=payload).json()
     return resp["access_token"]
+
 
 def dnsmonitor_token():
     """Retreive the DNSMonitor bearer token."""

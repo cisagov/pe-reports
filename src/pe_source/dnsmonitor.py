@@ -4,13 +4,13 @@
 import datetime
 import logging
 
-from .data.dnsmonitor.source import (
+from .data.dnsmonitor.monitor_source import (
     get_dns_records,
     get_domain_alerts,
     get_monitored_domains,
 )
 from .data.pe_db.config import dnsmonitor_token
-from .data.pe_db.db_query import (
+from .data.pe_db.db_query_source import (
     addSubdomain,
     execute_dnsmonitor_alert_data,
     execute_dnsmonitor_data,
@@ -96,7 +96,7 @@ class DNSMonitor:
                         root_domain,
                     )
                     try:
-                        addSubdomain(root_domain, org_uid, org_name)
+                        addSubdomain(root_domain, org_uid)
                         LOGGER.info(
                             "Success adding %s to subdomain table.", root_domain
                         )

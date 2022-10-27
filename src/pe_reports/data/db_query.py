@@ -98,30 +98,6 @@ def query_creds_view(org_uid, start_date, end_date):
             close(conn)
 
 
-def query_domMasq(org_uid, start_date, end_date):
-    """Query domain masquerading table."""
-    conn = connect()
-    try:
-        sql = """SELECT * FROM dnstwist_domain_masq
-        WHERE organizations_uid = %(org_uid)s
-        AND date_observed BETWEEN %(start_date)s AND %(end_date)s"""
-        df = pd.read_sql(
-            sql,
-            conn,
-            params={
-                "org_uid": org_uid,
-                "start_date": start_date,
-                "end_date": end_date,
-            },
-        )
-        return df
-    except (Exception, psycopg2.DatabaseError) as error:
-        LOGGER.error("There was a problem with your database query %s", error)
-    finally:
-        if conn is not None:
-            close(conn)
-
-
 # The 'table' parameter is used in query_shodan, query_darkweb and
 # query_darkweb_cves functions to call specific tables that relate to the
 # function name.  The result of this implementation reduces the code base,

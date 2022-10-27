@@ -406,7 +406,8 @@ def execute_dnsmonitor_alert_data(dataframe, table):
         tpls,
     )
     conn.commit()
-    
+
+
 def query_orgs_rev():
     """Query orgs in reverse."""
     conn = connect()
@@ -416,8 +417,9 @@ def query_orgs_rev():
     return df
 
 
-def getSubdomain(conn, domain):
+def getSubdomain(domain):
     """Get subdomains given a domain from the databases."""
+    conn = connect()
     cur = conn.cursor()
     sql = """SELECT * FROM sub_domains sd
         WHERE sd.sub_domain = %(domain)s"""
@@ -427,7 +429,7 @@ def getSubdomain(conn, domain):
     return sub
 
 
-def addSubdomain(conn, domain, pe_org_uid, org_name):
+def addSubdomain(conn, domain, pe_org_uid):
     """Add a subdomain into the database."""
     root_domain = domain.split(".")[-2:]
     root_domain = ".".join(root_domain)
