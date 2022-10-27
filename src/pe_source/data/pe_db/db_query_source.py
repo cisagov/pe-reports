@@ -2,8 +2,6 @@
 
 # Standard Python Libraries
 from datetime import datetime
-import logging
-import socket
 import sys
 
 # Third-Party Libraries
@@ -13,9 +11,11 @@ from psycopg2 import OperationalError
 import psycopg2.extras as extras
 
 # cisagov Libraries
+from pe_reports import app
 from pe_reports.data.config import config
 
-LOGGER = logging.getLogger(__name__)
+# Setup logging to central file
+LOGGER = app.config["LOGGER"]
 
 CONN_PARAMS_DIC = config()
 
@@ -23,7 +23,7 @@ CONN_PARAMS_DIC = config()
 def show_psycopg2_exception(err):
     """Handle errors for PostgreSQL issues."""
     err_type, err_obj, traceback = sys.exc_info()
-    logging.error(
+    LOGGER.error(
         "Database connection error: %s on line number: %s", err, traceback.tb_lineno
     )
 
@@ -48,7 +48,7 @@ def get_orgs():
     conn = connect()
     try:
         cur = conn.cursor()
-        sql = """SELECT * FROM organizations where report_on or demo"""
+        sql = """SELECT * FROM organizations where report_on"""
         cur.execute(sql)
         pe_orgs = cur.fetchall()
         keys = ("org_uid", "org_name", "cyhy_db_name")
@@ -56,7 +56,7 @@ def get_orgs():
         cur.close()
         return pe_orgs
     except (Exception, psycopg2.DatabaseError) as error:
-        logging.error("There was a problem with your database query %s", error)
+        LOGGER.error("There was a problem with your database query %s", error)
     finally:
         if conn is not None:
             close(conn)
@@ -65,36 +65,14 @@ def get_orgs():
 def get_ips(org_uid):
     """Get IP data."""
     conn = connect()
-    sql1 = """SELECT i.ip_hash, i.ip, ct.network FROM ips i
-    JOIN cidrs ct on ct.cidr_uid = i.origin_cidr
-    JOIN organizations o on o.organizations_uid = ct.organizations_uid
-    where o.organizations_uid = %(org_uid)s
-    and i.origin_cidr is not null
-    and i.shodan_results is True;"""
-    df1 = pd.read_sql(sql1, conn, params={"org_uid": org_uid})
-    ips1 = list(df1["ip"].values)
-
-    sql2 = """select i.ip_hash, i.ip
-    from ips i
-    join ips_subs is2 ON i.ip_hash = is2.ip_hash
-    join sub_domains sd on sd.sub_domain_uid = is2.sub_domain_uid
-    join root_domains rd on rd.root_domain_uid = sd.root_domain_uid
-    JOIN organizations o on o.organizations_uid = rd.organizations_uid
-    where o.organizations_uid = %(org_uid)s
-    and i.shodan_results is True;"""
-    df2 = pd.read_sql(sql2, conn, params={"org_uid": org_uid})
-    ips2 = list(df2["ip"].values)
-
-    in_first = set(ips1)
-    in_second = set(ips2)
-
-    in_second_but_not_in_first = in_second - in_first
-
-    ips = ips1 + list(in_second_but_not_in_first)
-    print(ips)
-    print(len(ips))
+    sql = """SELECT wa.asset as ip_address
+            FROM web_assets wa
+            WHERE wa.organizations_uid = %(org_uid)s
+            and wa.report_on = True
+            """
+    df = pd.read_sql(sql, conn, params={"org_uid": org_uid})
+    ips = list(df["ip_address"].values)
     conn.close()
-
     return ips
 
 
@@ -120,51 +98,25 @@ def get_data_source_uid(source):
 def insert_sixgill_alerts(df):
     """Insert sixgill alert data."""
     conn = connect()
-    try:
-        df = df[
-            [
-                "alert_name",
-                "content",
-                "date",
-                "sixgill_id",
-                "read",
-                "severity",
-                "site",
-                "threat_level",
-                "threats",
-                "title",
-                "user_id",
-                "category",
-                "lang",
-                "organizations_uid",
-                "data_source_uid",
-                "content_snip",
-                "asset_mentioned",
-                "asset_type",
-            ]
+    df = df[
+        [
+            "alert_name",
+            "content",
+            "date",
+            "sixgill_id",
+            "read",
+            "severity",
+            "site",
+            "threat_level",
+            "threats",
+            "title",
+            "user_id",
+            "category",
+            "lang",
+            "organizations_uid",
+            "data_source_uid",
         ]
-    except Exception as e:
-        logging.error(e)
-        df = df[
-            [
-                "alert_name",
-                "content",
-                "date",
-                "sixgill_id",
-                "read",
-                "severity",
-                "site",
-                "threat_level",
-                "threats",
-                "title",
-                "user_id",
-                "organizations_uid",
-                "data_source_uid",
-                "content_snip",
-                "asset_mentioned",
-                "asset_type",
-            ]
-        ]
+    ]
     table = "alerts"
     # Create a list of tuples from the dataframe values
     tuples = [tuple(x) for x in df.to_numpy()]
@@ -172,11 +124,7 @@ def insert_sixgill_alerts(df):
     cols = ",".join(list(df.columns))
     # SQL query to execute
     query = """INSERT INTO {}({}) VALUES %s
-    ON CONFLICT (sixgill_id) DO UPDATE SET
-    content = EXCLUDED.content,
-    content_snip = EXCLUDED.content_snip,
-    asset_mentioned = EXCLUDED.asset_mentioned,
-    asset_type = EXCLUDED.asset_type;"""
+    ON CONFLICT (sixgill_id) DO NOTHING;"""
     cursor = conn.cursor()
     try:
         extras.execute_values(
@@ -188,9 +136,9 @@ def insert_sixgill_alerts(df):
             tuples,
         )
         conn.commit()
-        logging.info("Successfully inserted/updated alert data into PE database.")
+        LOGGER.info("Successfully inserted/updated alert data into PE database.")
     except (Exception, psycopg2.DatabaseError) as error:
-        logging.error(error)
+        LOGGER.error(error)
         conn.rollback()
     cursor.close()
 
@@ -223,54 +171,29 @@ def insert_sixgill_mentions(df):
             ]
         ]
     except Exception as e:
-        logging.error(e)
-        try:
-            df = df[
-                [
-                    "organizations_uid",
-                    "data_source_uid",
-                    "category",
-                    "collection_date",
-                    "content",
-                    "creator",
-                    "date",
-                    "sixgill_mention_id",
-                    "lang",
-                    "post_id",
-                    "rep_grade",
-                    "site",
-                    "site_grade",
-                    "sub_category",
-                    "title",
-                    "type",
-                    "url",
-                    "comments_count",
-                ]
+        LOGGER.error(e)
+        df = df[
+            [
+                "organizations_uid",
+                "data_source_uid",
+                "category",
+                "collection_date",
+                "content",
+                "creator",
+                "date",
+                "sixgill_mention_id",
+                "lang",
+                "post_id",
+                "rep_grade",
+                "site",
+                "site_grade",
+                "sub_category",
+                "title",
+                "type",
+                "url",
+                "comments_count",
             ]
-        except Exception as e:
-            logging.error(e)
-            logging.info("Proceeded without sub_cat and commetns count.")
-            df = df[
-                [
-                    "organizations_uid",
-                    "data_source_uid",
-                    "category",
-                    "collection_date",
-                    "content",
-                    "creator",
-                    "date",
-                    "sixgill_mention_id",
-                    "lang",
-                    "post_id",
-                    "rep_grade",
-                    "site",
-                    "site_grade",
-                    "title",
-                    "type",
-                    "url",
-                ]
-            ]
-
+        ]
     # Remove any "[\x00|NULL]" characters
     df = df.apply(
         lambda col: col.str.replace(r"[\x00|NULL]", "", regex=True)
@@ -296,9 +219,9 @@ def insert_sixgill_mentions(df):
             tuples,
         )
         conn.commit()
-        logging.info("Successfully inserted/updated mention data into PE database.")
+        LOGGER.info("Successfully inserted/updated mention data into PE database.")
     except (Exception, psycopg2.DatabaseError) as error:
-        logging.error(error)
+        LOGGER.error(error)
         conn.rollback()
     cursor.close()
 
@@ -327,9 +250,9 @@ def insert_sixgill_breaches(df):
             tuples,
         )
         conn.commit()
-        logging.info("Successfully inserted/updated breaches into PE database.")
+        LOGGER.info("Successfully inserted/updated breaches into PE database.")
     except (Exception, psycopg2.DatabaseError) as error:
-        logging.info(error)
+        LOGGER.info(error)
         conn.rollback()
     cursor.close()
 
@@ -345,7 +268,7 @@ def get_breaches():
         cur.close()
         return pe_orgs
     except (Exception, psycopg2.DatabaseError) as error:
-        logging.error("There was a problem with your database query %s", error)
+        LOGGER.error("There was a problem with your database query %s", error)
     finally:
         if conn is not None:
             close(conn)
@@ -361,7 +284,7 @@ def insert_sixgill_credentials(df):
     cols = ",".join(list(df.columns))
     # SQL query to execute
     query = """INSERT INTO {}({}) VALUES %s
-    ON CONFLICT (breach_name, email) DO UPDATE SET
+    ON CONFLICT (breach_name, email, name) DO UPDATE SET
     modified_date = EXCLUDED.modified_date;"""
     cursor = conn.cursor()
     try:
@@ -374,11 +297,11 @@ def insert_sixgill_credentials(df):
             tuples,
         )
         conn.commit()
-        logging.info(
+        LOGGER.info(
             "Successfully inserted/updated exposed credentials into PE database."
         )
     except (Exception, psycopg2.DatabaseError) as error:
-        logging.info(error)
+        LOGGER.info(error)
         conn.rollback()
     cursor.close()
 
@@ -405,9 +328,9 @@ def insert_sixgill_topCVEs(df):
             tuples,
         )
         conn.commit()
-        logging.info("Successfully inserted/updated top cve data into PE database.")
+        LOGGER.info("Successfully inserted/updated top cve data into PE database.")
     except (Exception, psycopg2.DatabaseError) as error:
-        logging.info(error)
+        LOGGER.info(error)
         conn.rollback()
     cursor.close()
 
@@ -431,14 +354,14 @@ def insert_shodan_data(dataframe, table, thread, org_name, failed):
             tpls,
         )
         conn.commit()
-        logging.info(
+        LOGGER.info(
             "{} Data inserted using execute_values() successfully - {}".format(
                 thread, org_name
             )
         )
     except Exception as e:
-        logging.error("{} failed inserting into {}".format(org_name, table))
-        logging.error("{} {} - {}".format(thread, e, org_name))
+        LOGGER.error("{} failed inserting into {}".format(org_name, table))
+        LOGGER.error("{} {} - {}".format(thread, e, org_name))
         failed.append("{} failed inserting into {}".format(org_name, table))
         conn.rollback()
     cursor.close()
@@ -485,54 +408,43 @@ def execute_dnsmonitor_alert_data(dataframe, table):
     conn.commit()
 
 
-def getSubdomain(domain):
-    """Get subdomain."""
-    conn = connect()
+def getSubdomain(conn, domain):
+    """Get subdomains given a domain from the databases."""
     cur = conn.cursor()
     sql = """SELECT * FROM sub_domains sd
-        WHERE sd.sub_domain = '{}'"""
-    cur.execute(sql.format(domain))
+        WHERE sd.sub_domain = %(domain)s"""
+    cur.execute(sql, {"domain": domain})
     sub = cur.fetchone()
     cur.close()
     return sub
 
 
-def getRootdomain(domain):
-    """Get root domain."""
-    conn = connect()
+def addSubdomain(conn, domain, pe_org_uid, org_name):
+    """Add a subdomain into the database."""
+    root_domain = domain.split(".")[-2:]
+    root_domain = ".".join(root_domain)
     cur = conn.cursor()
-    sql = """SELECT * FROM root_domains rd
-        WHERE rd.root_domain = '{}'"""
-    cur.execute(sql.format(domain))
-    root = cur.fetchone()
+    cur.callproc(
+        "insert_sub_domain", (domain, pe_org_uid, "findomain", root_domain, None)
+    )
+    LOGGER.info("Success adding domain %s to subdomains table.", domain)
+
+
+def getDataSource(conn, source):
+    """Get datasource information from a database."""
+    cur = conn.cursor()
+    sql = """SELECT * FROM data_source WHERE name=%(s)s"""
+    cur.execute(sql, {"s": source})
+    source = cur.fetchone()
     cur.close()
-    return root
+    return source
 
 
-def addRootdomain(root_domain, pe_org_uid, source_uid, org_name):
-    """Add root domain."""
-    conn = connect()
-    ip_address = str(socket.gethostbyname(root_domain))
-    sql = """insert into root_domains(root_domain, organizations_uid, organization_name, data_source_uid, ip_address)
-            values ('{}', '{}', '{}', '{}', '{}');"""
-    cur = conn.cursor()
-    cur.execute(sql.format(root_domain, pe_org_uid, org_name, source_uid, ip_address))
-    conn.commit()
-    cur.close()
-
-
-def addSubdomain(domain, pe_org_uid, org_name):
-    """Add root to subdomain table."""
-    data_source_uid = get_data_source_uid("DNSMonitor")
-    try:
-        root_domain_uid = getRootdomain(domain)[0]
-    except Exception:
-        addRootdomain(domain, pe_org_uid, data_source_uid, org_name)
-        root_domain_uid = getRootdomain(domain)[0]
-    conn = connect()
-    sql = """insert into sub_domains(sub_domain, root_domain_uid, data_source_uid)
-            values ('{}', '{}','{}');"""
-    cur = conn.cursor()
-    cur.execute(sql.format(domain, root_domain_uid, data_source_uid))
-    conn.commit()
-    close(conn)
+def org_root_domains(conn, org_uid):
+    """Get root domains from database given the org_uid."""
+    sql = """
+        select * from root_domains rd
+        where rd.organizations_uid = %(org_id)s;
+    """
+    df = pd.read_sql_query(sql, conn, params={"org_id": org_uid})
+    return df
