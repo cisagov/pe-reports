@@ -165,6 +165,7 @@ def test_report_generator(mock_db_connect, mock_get_orgs, mock_init, mock_embed)
     creds_sum = ""
     creds_sum = pd.DataFrame()
     masq_df = pd.DataFrame()
+    dom_alert_sum = pd.DataFrame()
     insecure_df = pd.DataFrame()
     vulns_df = pd.DataFrame()
     assets_df = pd.DataFrame()
@@ -175,6 +176,7 @@ def test_report_generator(mock_db_connect, mock_get_orgs, mock_init, mock_embed)
         source_html,
         creds_sum,
         masq_df,
+        dom_alert_sum,
         insecure_df,
         vulns_df,
         assets_df,
