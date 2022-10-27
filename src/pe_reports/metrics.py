@@ -38,7 +38,7 @@ class Credentials:
             org_uid, start_date, end_date
         )
 
-    def by_days(self):
+    def by_week(self):
         """Return number of credentials by day."""
         df = self.creds_by_day
         idx = pd.date_range(self.trending_start_date, self.end_date)

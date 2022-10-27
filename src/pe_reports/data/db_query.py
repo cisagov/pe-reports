@@ -33,9 +33,7 @@ def connect():
     """Connect to PostgreSQL database."""
     conn = None
     try:
-        LOGGER.info("Connecting to the PostgreSQL......")
         conn = psycopg2.connect(**CONN_PARAMS_DIC)
-        LOGGER.info("Connection successful......")
     except OperationalError as err:
         show_psycopg2_exception(err)
         conn = None
@@ -52,7 +50,7 @@ def get_orgs(conn):
     """Query organizations table."""
     try:
         cur = conn.cursor()
-        sql = """SELECT * FROM organizations"""
+        sql = """SELECT * FROM organizations WHERE report_on"""
         cur.execute(sql)
         pe_orgs = cur.fetchall()
         cur.close()
