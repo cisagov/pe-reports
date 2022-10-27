@@ -97,7 +97,7 @@ def query_creds_view(org_uid, start_date, end_date):
 
 
 def query_credsbyday_view(org_uid, start_date, end_date):
-    """Query credentials by date view ."""
+    """Query the credential exposures per day view."""
     conn = connect()
     try:
         sql = """SELECT mod_date, no_password, password_included FROM vw_breachcomp_credsbydate
@@ -117,7 +117,7 @@ def query_credsbyday_view(org_uid, start_date, end_date):
 
 
 def query_breachdetails_view(org_uid, start_date, end_date):
-    """Query credentials by date view ."""
+    """Query the breach details view."""
     conn = connect()
     try:
         sql = """SELECT breach_name, mod_date modified_date, breach_date, password_included, number_of_creds
