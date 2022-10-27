@@ -87,7 +87,13 @@ setup(
     package_data={
         "pe_mailer": ["data/*"],
         "pe_reports": ["*.html", "*.css", "data/*", "assets/*"],
-        "pe_source": ["data/*", "data/shodan/*", "data/sixgill/*", "data/pe_db/*"],
+        "pe_source": [
+            "data/*",
+            "data/shodan/*",
+            "data/sixgill/*",
+            "data/dnsmonitor/*",
+            "data/pe_db/*",
+        ],
     },
     py_modules=[splitext(basename(path))[0] for path in glob("src/*.py")],
     include_package_data=True,

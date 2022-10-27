@@ -20,6 +20,8 @@ import sys
 from typing import Any, Dict
 
 # Third-Party Libraries
+import boto3
+from botocore.exceptions import ClientError
 import docopt
 import fitz
 import pandas as pd
@@ -34,6 +36,26 @@ from .data.db_query import connect, get_orgs
 from .pages import init
 
 LOGGER = logging.getLogger(__name__)
+ACCESSOR_AWS_PROFILE = os.getenv("ACCESSOR_PROFILE")
+
+
+def upload_file_to_s3(file_name, datestring, bucket):
+    """Upload a file to an S3 bucket."""
+
+    session = boto3.Session(profile_name=ACCESSOR_AWS_PROFILE)
+    s3_client = session.client("s3")
+
+    # If S3 object_name was not specified, use file_name
+    object_name = f"{datestring}/{os.path.basename(file_name)}"
+
+    try:
+        response = s3_client.upload_file(file_name, bucket, object_name)
+        if response == None:
+            LOGGER.info("Success uploading to S3.")
+        else:
+            LOGGER.info(response)
+    except ClientError as e:
+        LOGGER.error(e)
 
 
 def embed(
@@ -91,7 +113,7 @@ def embed(
     if filesize >= 20000000:
         tooLarge = True
 
-    return filesize, tooLarge
+    return filesize, tooLarge, output
 
 
 def convert_html_to_pdf(source_html, output_filename):
@@ -131,7 +153,7 @@ def generate_reports(datestring, output_directory):
             org_name = org[1]
             org_code = org[2]
 
-            # if org_code not in ["CIGIE"]:
+            # if org_code not in ["DHS"]:
             #     continue
 
             LOGGER.info("Running on %s", org_code)
@@ -159,7 +181,7 @@ def generate_reports(datestring, output_directory):
                 org_uid,
             )
             # Convert to HTML to PDF
-            output_filename = f"{output_directory}/{org_code}-Posture_and_Exposure_Report-{datestring}.pdf"
+            output_filename = f"{output_directory}/Posture_and_Exposure_Report-{org_code}-{datestring}.pdf"
             convert_html_to_pdf(source_html, output_filename)
 
             # Create Credential Exposure Excel file
@@ -194,9 +216,9 @@ def generate_reports(datestring, output_directory):
             miWriter.save()
 
             # Grab the PDF
-            pdf = f"{output_directory}/{org_code}-Posture_and_Exposure_Report-{datestring}.pdf"
+            pdf = f"{output_directory}/Posture_and_Exposure_Report-{org_code}-{datestring}.pdf"
 
-            (filesize, tooLarge) = embed(
+            (filesize, tooLarge, output) = embed(
                 output_directory,
                 org_code,
                 datestring,
@@ -206,6 +228,7 @@ def generate_reports(datestring, output_directory):
                 vuln_xlsx,
                 mi_xlsx,
             )
+
             # Log a message if the report is too large.  Our current mailer
             # cannot send files larger than 20MB.
             if tooLarge:
@@ -213,6 +236,7 @@ def generate_reports(datestring, output_directory):
                     "%s is too large. File size: %s Limit: 20MB", org_code, filesize
                 )
 
+            upload_file_to_s3(output, datestring, "cisa-crossfeed-pe-reports")
             generated_reports += 1
     else:
         LOGGER.error(
