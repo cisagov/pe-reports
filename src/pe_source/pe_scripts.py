@@ -66,6 +66,11 @@ def run_pe_script(source, orgs_list, cybersix_methods):
     elif source == "dnsmonitor":
         dnsMonitor = DNSMonitor(orgs_list)
         dnsMonitor.run_dnsMonitor()
+    else:
+        LOGGER.error(
+            "Not a valid source name. Correct values are cybersixgill or shodan."
+        )
+        sys.exit(1)
 
 
 def main():
