@@ -46,10 +46,8 @@ def close(conn):
     return
 
 
-def get_orgs(conn=None):
+def get_orgs(conn):
     """Query organizations table for orgs we report on."""
-    if not conn:
-        conn = connect()
     try:
         cur = conn.cursor()
         sql = """SELECT * FROM organizations WHERE report_on"""
