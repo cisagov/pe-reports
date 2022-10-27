@@ -276,7 +276,7 @@ def test_credential_metrics(mock_creds_view, mock_creds_byday, mock_breach_detai
     expected_output = pd.json_normalize(expected_output_json)
     pd.testing.assert_frame_equal(
         credentials.breach_details(),
-        expected_output,
+        expected_output.reindex(sorted(expected_output.columns), axis=1),
     )
 
     # Test total breaches with passwords
