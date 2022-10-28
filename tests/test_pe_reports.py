@@ -153,11 +153,14 @@ def test_stakeholder_page(client):
     assert b"Stakeholder" in resp.data
 
 
+@patch.object(pe_reports.report_generator, "upload_file_to_s3")
 @patch.object(pe_reports.report_generator, "embed")
 @patch.object(pe_reports.report_generator, "init")
 @patch.object(pe_reports.report_generator, "get_orgs")
 @patch.object(pe_reports.report_generator, "connect")
-def test_report_generator(mock_db_connect, mock_get_orgs, mock_init, mock_embed):
+def test_report_generator(
+    mock_db_connect, mock_get_orgs, mock_init, mock_embed, mock_s3_upload
+):
     """Test report is generated."""
     mock_db_connect.return_value = "connection"
     mock_get_orgs.return_value = [("pe_org_uid", "Test Org", "TestOrg")]
@@ -182,8 +185,18 @@ def test_report_generator(mock_db_connect, mock_get_orgs, mock_init, mock_embed)
         alerts,
         top_cves,
     )
-    mock_embed.return_value = 10000000, False
+    mock_embed.return_value = (
+        10000000,
+        False,
+        "output/TestOrg/Posture_and_Exposure_Report-TestOrg-2022-09-30.pdf",
+    )
+
     return_value = pe_reports.report_generator.generate_reports("2022-09-30", "output")
+    mock_s3_upload.assert_called_once_with(
+        "output/TestOrg/Posture_and_Exposure_Report-TestOrg-2022-09-30.pdf",
+        "2022-09-30",
+        None,
+    )
     assert return_value == 1
 
 
