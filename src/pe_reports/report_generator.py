@@ -46,7 +46,7 @@ def upload_file_to_s3(file_name, datestring, bucket):
 
     try:
         response = s3_client.upload_file(file_name, bucket, object_name)
-        if response == None:
+        if response is None:
             LOGGER.info("Success uploading to S3.")
         else:
             LOGGER.info(response)
