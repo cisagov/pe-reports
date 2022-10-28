@@ -20,6 +20,8 @@ import sys
 from typing import Any, Dict
 
 # Third-Party Libraries
+import boto3
+from botocore.exceptions import ClientError
 import docopt
 import fitz
 import pandas as pd
@@ -34,6 +36,22 @@ from .data.db_query import connect, get_orgs
 from .pages import init
 
 LOGGER = logging.getLogger(__name__)
+S3_BUCKET_NAME = os.getenv("PE_REPORT_S3_BUCKET")
+
+
+def upload_file_to_s3(file_name, datestring, bucket):
+    """Upload a file to an S3 bucket."""
+    s3_client = boto3.client("s3")
+    object_name = f"{datestring}/{os.path.basename(file_name)}"
+
+    try:
+        response = s3_client.upload_file(file_name, bucket, object_name)
+        if response == None:
+            LOGGER.info("Success uploading to S3.")
+        else:
+            LOGGER.info(response)
+    except ClientError as e:
+        LOGGER.error(e)
 
 
 def embed(
@@ -49,10 +67,8 @@ def embed(
     """Embeds raw data into PDF and encrypts file."""
     doc = fitz.open(file)
     # Get the summary page of the PDF on page 4
-    page = doc[3]
-    output = (
-        f"{output_directory}/{org_code}/Posture_and_Exposure_Report-{datestring}.pdf"
-    )
+    page = doc[4]
+    output = f"{output_directory}/{org_code}/Posture_and_Exposure_Report-{org_code}-{datestring}.pdf"
 
     # Open CSV data as binary
     cc = open(cred_xlsx, "rb").read()
@@ -62,21 +78,21 @@ def embed(
 
     # Insert link to CSV data in summary page of PDF.
     # Use coordinates to position them on the bottom.
-    p1 = fitz.Point(110, 695)
-    p2 = fitz.Point(240, 695)
-    p3 = fitz.Point(375, 695)
-    p5 = fitz.Point(500, 695)
+    p1 = fitz.Point(71, 632)
+    p2 = fitz.Point(71, 660)
+    p3 = fitz.Point(71, 688)
+    p5 = fitz.Point(71, 716)
 
     # Embed and add push-pin graphic
     page.add_file_annot(
-        p1, cc, "compromised_credentials.xlsx", desc="Open up CSV", icon="PushPin"
+        p1, cc, "compromised_credentials.xlsx", desc="Open xlsx", icon="Paperclip"
     )
     page.add_file_annot(
-        p2, da, "domain_alerts.xlsx", desc="Open up CSV", icon="PushPin"
+        p2, da, "domain_alerts.xlsx", desc="Open xlsx", icon="Paperclip"
     )
-    page.add_file_annot(p3, ma, "vuln_alerts.xlsx", desc="Open up xlsx", icon="PushPin")
+    page.add_file_annot(p3, ma, "vuln_alerts.xlsx", desc="Open xlsx", icon="Paperclip")
     page.add_file_annot(
-        p5, mi, "mention_incidents.xlsx", desc="Open up CSV", icon="PushPin"
+        p5, mi, "mention_incidents.xlsx", desc="Open xlsx", icon="Paperclip"
     )
 
     # Save doc and set garbage=4 to reduce PDF size using all 4 methods:
@@ -93,7 +109,7 @@ def embed(
     if filesize >= 20000000:
         tooLarge = True
 
-    return filesize, tooLarge
+    return filesize, tooLarge, output
 
 
 def convert_html_to_pdf(source_html, output_filename):
@@ -155,17 +171,14 @@ def generate_reports(datestring, output_directory):
                 org_name,
                 org_uid,
             )
-
             # Convert to HTML to PDF
-            output_filename = f"{output_directory}/{org_code}-Posture_and_Exposure_Report-{datestring}.pdf"
+            output_filename = f"{output_directory}/Posture_and_Exposure_Report-{org_code}-{datestring}.pdf"
             convert_html_to_pdf(source_html, output_filename)
 
             # Create Credential Exposure Excel file
             cred_xlsx = f"{output_directory}/{org_code}/compromised_credentials.xlsx"
             credWriter = pd.ExcelWriter(cred_xlsx, engine="xlsxwriter")
-            creds_sum.to_excel(
-                credWriter, sheet_name="Exposed_Credentials", index=False
-            )
+            creds_sum.to_excel(credWriter, sheet_name="Credentials", index=False)
             credWriter.save()
 
             # Create Domain Masquerading Excel file
@@ -193,9 +206,9 @@ def generate_reports(datestring, output_directory):
             miWriter.save()
 
             # Grab the PDF
-            pdf = f"{output_directory}/{org_code}-Posture_and_Exposure_Report-{datestring}.pdf"
+            pdf = f"{output_directory}/Posture_and_Exposure_Report-{org_code}-{datestring}.pdf"
 
-            (filesize, tooLarge) = embed(
+            (filesize, tooLarge, output) = embed(
                 output_directory,
                 org_code,
                 datestring,
@@ -212,6 +225,7 @@ def generate_reports(datestring, output_directory):
                     "%s is too large. File size: %s Limit: 20MB", org_code, filesize
                 )
 
+            upload_file_to_s3(output, datestring, S3_BUCKET_NAME)
             generated_reports += 1
     else:
         LOGGER.error(
