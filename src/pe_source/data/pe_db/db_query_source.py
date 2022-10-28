@@ -398,6 +398,7 @@ def addSubdomain(conn, domain, pe_org_uid, org_name):
     )
     LOGGER.info("Success adding domain %s to subdomains table.", domain)
 
+
 def getDataSource(conn, source):
     """Get datasource information from a database."""
     cur = conn.cursor()
