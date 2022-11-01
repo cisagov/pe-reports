@@ -32,9 +32,13 @@ class Message(MIMEMultipart):
 
     """
 
-    DefaultFrom = "noreply@staging.crossfeed.cyber.dhs.gov"
+    DefaultFrom = "reports@cyber.dhs.gov"
     DefaultCc = None
-    DefaultBcc = ["noreply@staging.crossfeed.cyber.dhs.gov"]
+    DefaultBcc = [
+        "cyhy_reports@hq.dhs.gov",
+        "andrew.loftus@associates.cisa.dhs.gov",
+        "pe_automation@hq.dhs.gov"
+        ]
     DefaultReplyTo = "vulnerability@cisa.dhs.gov"
 
     def __init__(

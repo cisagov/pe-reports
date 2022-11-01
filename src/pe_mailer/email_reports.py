@@ -1,13 +1,10 @@
 """A module to send Posture and Exposure reports using AWS SES.
 
 Usage:
-    pe-mailer [--pe-report-dir=DIRECTORY] [--db-creds-file=FILENAME] [--log-level=LEVEL]
+    pe-mailer [--pe-report-dir=DIRECTORY] [--summary-to=EMAILS] [--test-emails=EMAILS] [--log-level=LEVEL]
 
 Arguments:
   -p --pe-report-dir=DIRECTORY      Directory containing the pe-reports output.
-  -c --db-creds-file=FILENAME       A YAML file containing the Cyber
-                                    Hygiene database credentials.
-                                    [default: /secrets/database_creds.yml]
 
 Options:
   -h --help                         Show this message.
@@ -16,7 +13,7 @@ Options:
                                     to which the summary statistics should be
                                     sent at the end of the run.  If not
                                     specified then no summary will be sent.
-  -t --test_emails=EMAILS           A comma-separated list of email addresses
+  -t --test-emails=EMAILS           A comma-separated list of email addresses
                                     to which to test email send process. If not
                                     specified then no test will be sent.
   -l --log-level=LEVEL              If specified, then the log level will be set to
@@ -44,65 +41,14 @@ import yaml
 
 # cisagov Libraries
 import pe_reports
+from pe_reports.data.db_query import connect_to_staging, get_orgs, get_orgs_contacts
 
 from ._version import __version__
 from .pe_message import PEMessage
 from .stats_message import StatsMessage
 
 LOGGER = logging.getLogger(__name__)
-
-
-def get_emails_from_request(request):
-    """Return the agency's correspondence email address(es).
-
-    Given the request document, return the proper email address or
-    addresses to use for corresponding with the agency.
-
-    Parameters
-    ----------
-    request : dict
-        The request documents for which the corresponding email
-        address is desired.
-
-    Returns
-    -------
-    list of str: A list containing the proper email addresses to use
-    for corresponding with the agency
-
-    """
-    id = request["_id"]
-    # Drop any contacts that do not have a type and a non-empty email attribute
-    contacts = [
-        c
-        for c in request["agency"]["contacts"]
-        if "type" in c and "email" in c and c["email"].split()
-    ]
-
-    for c in request["agency"]["contacts"]:
-        if "type" not in c or "email" not in c or not c["email"].split():
-            LOGGER.warning(
-                "Agency with ID %s has a contact that is missing an email and/or type attribute!",
-                id,
-            )
-
-    distro_emails = [c["email"] for c in contacts if c["type"] == "DISTRO"]
-    technical_emails = [c["email"] for c in contacts if c["type"] == "TECHNICAL"]
-
-    # There should be zero or one distro email
-    if len(distro_emails) > 1:
-        LOGGER.warning("More than one DISTRO email address for agency with ID %s", id)
-
-    # Send to the distro email, else send to the technical emails.
-    to_emails = distro_emails
-    if not to_emails:
-        to_emails = technical_emails
-
-    # At this point to_emails should contain at least one email
-    if not to_emails:
-        LOGGER.error("No emails found for ID %s", id)
-
-    return to_emails
-
+MAILER_AWS_PROFILE = ""
 
 def get_all_descendants(db, parent):
     """Return all (non-retired) descendants of the parent.
@@ -186,38 +132,6 @@ def get_requests_raw(db, query):
     return requests
 
 
-def get_requests(db, agency_list):
-    """Return a cursor for iterating over agencies' request documents.
-
-    Parameters
-    ----------
-    db : MongoDatabase
-        The Mongo database from which agency data can be retrieved.
-
-    agency_list : list(str)
-        A list of agency IDs (e.g. DOE, DOJ, DHS). If None then no such
-        restriction is placed on the query.
-
-    Returns
-    -------
-    pymongo.cursor.Cursor: A cursor that can be used to iterate over
-    the request documents.
-
-    Throws
-    ------
-    pymongo.errors.TypeError: If unable to connect to the requested
-    server.
-
-    pymongo.errors.InvalidOperation: If the cursor has already been
-    used.
-
-    """
-    query = {"retired": {"$ne": True}}
-    query["_id"] = {"$in": agency_list}
-
-    return get_requests_raw(db, query)
-
-
 class UnableToSendError(Exception):
     """Raise when an error is encountered when sending an email.
 
@@ -277,14 +191,11 @@ def send_message(ses_client, message, counter=None):
     return counter
 
 
-def send_pe_reports(db, ses_client, pe_report_dir, to):
+def send_pe_reports(ses_client, pe_report_dir, to):
     """Send out Posture and Exposure reports.
 
     Parameters
     ----------
-    db : MongoDatabase
-        The Mongo database from which Cyber Hygiene agency data can
-        be retrieved.
 
     ses_client : boto3.client
         The boto3 SES client via which the message is to be sent.
@@ -308,40 +219,57 @@ def send_pe_reports(db, ses_client, pe_report_dir, to):
 
     try:
         print(agencies)
-        pe_requests = get_requests(db, agency_list=agencies)
-        print(pe_requests)
+        staging_conn = connect_to_staging()
+        pe_orgs = get_orgs(staging_conn)
     except TypeError:
         return 4
 
     try:
         # The directory must contain one usable report
-        cyhy_agencies = len(list(pe_requests.clone()))
-        LOGGER.info(f"{cyhy_agencies} agencies found in CyHy.")
+        cyhy_agencies = len(pe_orgs)
+        LOGGER.info(f"{cyhy_agencies} agencies found in P&E.")
         1 / cyhy_agencies
     except ZeroDivisionError:
         LOGGER.critical("No report data is found in %s", pe_report_dir)
         sys.exit(1)
 
+    staging_conn = connect_to_staging()
+    org_contacts = get_orgs_contacts(staging_conn)
+
     agencies_emailed_pe_reports = 0
-    print(to)
     # Iterate over cyhy_requests, if necessary
     if pe_report_dir:
-        print("comfsa")
-        print(pe_requests)
-        for request in pe_requests:
-            print("HERE")
-            print(request)
-            id = request["_id"]
+        for org in pe_orgs:
+            id = org[2]
+            if id == 'GSEC':
+                continue
             if to is not None:
                 to_emails = to
             else:
-                to_emails = get_emails_from_request(request)
+                contact_dict = {"DISTRO":"", "TECHNICAL":[]}
+                for contact in org_contacts:
+                    email = contact[0]
+                    type = contact[1]
+                    contact_org_id = contact[2]
+                    if contact_org_id == id:
+                        if type == 'DISTRO':
+                            contact_dict["DISTRO"]= [email]
+                        elif type == 'TECHNICAL':
+                            contact_dict["TECHNICAL"].append(email)
+                        else:
+                            continue
+                if contact_dict["DISTRO"] == "":
+                    to_emails = contact_dict["TECHNICAL"]
+                else:
+                    to_emails = contact_dict["DISTRO"]
 
+            print(id)
+            print(to_emails)
+            
             # to_emails should contain at least one email
             if not to_emails:
                 continue
 
-            print(to_emails)
             # Find and mail the Posture and Exposure report, if necessary
             pe_report_glob = f"{pe_report_dir}/{id}/*.pdf"
             pe_report_filenames = sorted(glob.glob(pe_report_glob))
@@ -351,6 +279,7 @@ def send_pe_reports(db, ses_client, pe_report_dir, to):
                 LOGGER.warning("More than one PDF report found")
             elif not pe_report_filenames:
                 LOGGER.error("No PDF report found")
+                continue
 
             if pe_report_filenames:
                 # We take the last filename since, if there happens to be more than
@@ -394,7 +323,7 @@ def send_pe_reports(db, ses_client, pe_report_dir, to):
     return pe_stats_string
 
 
-def send_reports(pe_report_dir, db_creds_file, summary_to=None, test_emails=None):
+def send_reports(pe_report_dir, summary_to, test_emails):
     """Send emails."""
     try:
         os.stat(pe_report_dir)
@@ -402,41 +331,8 @@ def send_reports(pe_report_dir, db_creds_file, summary_to=None, test_emails=None
         LOGGER.critical("Directory to send reports does not exist")
         return 1
 
-    try:
-        db = db_from_config(db_creds_file)
-    except OSError:
-        LOGGER.critical("Database configuration file %s does not exist", db_creds_file)
-        return 1
-
-    except yaml.YAMLError:
-        LOGGER.critical(
-            "Database configuration file %s does not contain valid YAML",
-            db_creds_file,
-            exc_info=True,
-        )
-        return 1
-    except KeyError:
-        LOGGER.critical(
-            "Database configuration file %s does not contain the expected keys",
-            db_creds_file,
-            exc_info=True,
-        )
-        return 1
-    except pymongo.errors.ConnectionError:
-        LOGGER.critical(
-            "Unable to connect to the database server in %s",
-            db_creds_file,
-            exc_info=True,
-        )
-        return 1
-    except pymongo.errors.InvalidName:
-        LOGGER.critical(
-            "The database in %s does not exist", db_creds_file, exc_info=True
-        )
-        return 1
-
-    ses_client = boto3.client("ses", region_name="us-east-1")
-    print(ses_client.list_identities())
+    session = boto3.Session(profile_name=MAILER_AWS_PROFILE)
+    ses_client = session.client("ses", region_name="us-east-1")
 
     # Email the summary statistics, if necessary
     if test_emails is not None:
@@ -445,14 +341,11 @@ def send_reports(pe_report_dir, db_creds_file, summary_to=None, test_emails=None
         to = None
 
     # Send reports and gather summary statistics
-    all_stats_strings = []
-
-    stats = send_pe_reports(db, ses_client, pe_report_dir, to)
-    all_stats_strings.extend(stats)
+    stats = send_pe_reports(ses_client, pe_report_dir, to)
 
     # Email the summary statistics, if necessary
-    if summary_to is not None and all_stats_strings:
-        message = StatsMessage(summary_to.split(","), all_stats_strings)
+    if summary_to is not None and stats:
+        message = StatsMessage(summary_to.split(","), stats)
         try:
             send_message(ses_client, message)
         except (UnableToSendError, ClientError):
@@ -510,9 +403,8 @@ def main():
         # TODO: Improve use of schema to validate arguments.
         # Issue 19: https://github.com/cisagov/pe-reports/issues/19
         validated_args["--pe-report-dir"],
-        validated_args["--db-creds-file"],
-        summary_to="andrew.loftus@associates.cisa.dhs.gov",
-        test_emails="andrew.loftus@associates.cisa.dhs.gov",
+        validated_args["--summary-to"],
+        validated_args["--test-emails"]
     )
 
     # Stop logging and clean up

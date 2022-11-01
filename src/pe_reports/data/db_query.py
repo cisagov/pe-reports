@@ -15,13 +15,15 @@ import psycopg2
 from psycopg2 import OperationalError
 from psycopg2.extensions import AsIs
 import psycopg2.extras as extras
+from sshtunnel import SSHTunnelForwarder
 
-from .config import config
+from .config import config, staging_config
 
 # Setup logging to central file
 LOGGER = logging.getLogger(__name__)
 
 CONN_PARAMS_DIC = config()
+CONN_PARAMS_DIC_STAGING = staging_config()
 
 
 def show_psycopg2_exception(err):
@@ -38,6 +40,7 @@ def connect():
     try:
         conn = psycopg2.connect(**CONN_PARAMS_DIC)
     except OperationalError as err:
+        print(err)
         show_psycopg2_exception(err)
         conn = None
     return conn
@@ -48,6 +51,35 @@ def close(conn):
     conn.close()
     return
 
+def connect_to_staging():
+    theport = thesshTunnel()
+    try:
+        LOGGER.info("****SSH Tunnel Established****")
+        conn = psycopg2.connect(
+            host="localhost",
+            user=CONN_PARAMS_DIC_STAGING['user'],
+            password=CONN_PARAMS_DIC_STAGING['password'],
+            dbname=CONN_PARAMS_DIC_STAGING['database'],
+            port=theport,
+        )
+        return conn
+    except OperationalError as err:
+        show_psycopg2_exception(err)
+        conn = None
+        return conn
+
+def thesshTunnel():
+    """SSH Tunnel to the Crossfeed database instance."""
+    server = SSHTunnelForwarder(
+        ("localhost"),
+        ssh_username="ubuntu",
+        remote_bind_address=(
+            CONN_PARAMS_DIC_STAGING['host'],
+            int(CONN_PARAMS_DIC_STAGING['port']),
+        ),
+    )
+    server.start()
+    return server.local_bind_port
 
 def execute_values(conn, dataframe, table, except_condition=";"):
     """INSERT into table, generic."""
@@ -81,6 +113,40 @@ def get_orgs(conn):
         if conn is not None:
             close(conn)
 
+def get_orgs_pass(conn, password):
+    """Get all org passwords."""
+    try:
+        cur = conn.cursor()
+        sql = """SELECT cyhy_db_name, PGP_SYM_DECRYPT(password::bytea, %s)
+        FROM organizations o 
+        WHERE report_on;"""
+        cur.execute(sql, [password])
+        pe_orgs = cur.fetchall()
+        cur.close()
+        return pe_orgs
+    except (Exception, psycopg2.DatabaseError) as error:
+        LOGGER.error("There was a problem with your database query %s", error)
+    finally:
+        if conn is not None:
+            close(conn)
+
+def get_orgs_contacts(conn):
+    """Get all org contacts."""
+    try:
+        cur = conn.cursor()
+        sql = """select email, contact_type, org_id 
+        from cyhy_contacts cc 
+        join organizations o on cc.org_id = o.cyhy_db_name 
+        where o.report_on;"""
+        cur.execute(sql)
+        pe_orgs = cur.fetchall()
+        cur.close()
+        return pe_orgs
+    except (Exception, psycopg2.DatabaseError) as error:
+        LOGGER.error("There was a problem with your database query %s", error)
+    finally:
+        if conn is not None:
+            close(conn)
 
 def get_org_assets_count(uid):
     """Get asset counts for an organization."""
