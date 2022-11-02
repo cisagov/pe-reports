@@ -209,7 +209,8 @@ def main():
                     sub_domain_uid = getSubdomain(PE_conn, sub_domain)[0]
                     LOGGER.info(sub_domain_uid)
                 except Exception:
-                    # TODO Issue #265 implement custom Exceptions
+            # TODO: Create custom exceptions.
+            # Issue 265: https://github.com/cisagov/pe-reports/issues/265
                     LOGGER.info("Unable to get sub domain uid", "warning")
                     # Add and then get it
                     addSubdomain(PE_conn, sub_domain, pe_org_uid, org_name)
