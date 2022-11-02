@@ -81,7 +81,7 @@ def checkBlocklist(dom, sub_domain_uid, source_uid, pe_org_uid, perm_list):
         dom["dns_aaaa"] = [""]
     else:
         LOGGER.info(str(dom["dns_aaaa"][0]))
-        # check IP in Blocklist API
+        # Check IP in Blocklist API
         response = requests.get(
             "http://api.blocklist.de/api.php?ip=" + str(dom["dns_aaaa"][0])
         ).content
