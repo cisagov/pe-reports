@@ -26,7 +26,6 @@ from .data.pe_db.db_query_source import (
 
 date = datetime.datetime.now().strftime("%Y-%m-%d")
 
-# cisagov Libraries
 
 
 LOGGER = app.config["LOGGER"]
