@@ -338,7 +338,7 @@ def test_shodan_search(
 
 def test_dnstwistfuzzing():
     """Test if dnstwist is installed correctly."""
-    assert pe_source.dnstwistscript.run_dnstwist("a.com", test=1) != []
+    assert pe_source.dnstwistscript.execute_dnstwist("a.com", test=1) != []
 
 
 def test_blocklist():

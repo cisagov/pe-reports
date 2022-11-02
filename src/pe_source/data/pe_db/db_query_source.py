@@ -373,7 +373,6 @@ def query_orgs_rev():
     conn = connect()
     sql = "SELECT * FROM organizations WHERE report_on is True ORDER BY organizations_uid DESC;"
     df = pd.read_sql_query(sql, conn)
-    close(conn)
     return df
 
 
@@ -388,7 +387,7 @@ def getSubdomain(conn, domain):
     return sub
 
 
-def addSubdomain(conn, domain, pe_org_uid, org_name):
+def addSubdomain(conn, domain, pe_org_uid):
     """Add a subdomain into the database."""
     root_domain = domain.split(".")[-2:]
     root_domain = ".".join(root_domain)

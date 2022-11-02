@@ -38,6 +38,7 @@ from pe_reports import CENTRAL_LOGGING_FILE
 
 from ._version import __version__
 from .cybersixgill import Cybersixgill
+from .dnstwistscript import run_dnstwist
 from .shodan import Shodan
 
 LOGGER = logging.getLogger(__name__)
@@ -62,6 +63,8 @@ def run_pe_script(source, orgs_list, cybersix_methods):
     elif source == "shodan":
         shodan = Shodan(orgs_list)
         shodan.run_shodan()
+    elif source == "dnstwist":
+        run_dnstwist(orgs_list)
     else:
         logging.error(
             "Not a valid source name. Correct values are cybersixgill or shodan."
