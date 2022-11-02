@@ -54,7 +54,7 @@ def checkBlocklist(dom, sub_domain_uid, source_uid, pe_org_uid, perm_list):
             attacks = int(str(response).split("attacks: ")[1].split("<")[0])
             reports = int(str(response).split("reports: ")[1].split("<")[0])
 
-        # check dns-a record in DSheild API
+        # Check dns-a record in DSheild API
         if str(dom["dns_a"][0]) == "!ServFail":
             return
 
