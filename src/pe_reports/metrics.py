@@ -39,7 +39,7 @@ class Credentials:
         )
 
     def by_week(self):
-        """Return number of credentials by day."""
+        """Return number of credentials by week."""
         df = self.creds_by_day
         idx = pd.date_range(self.trending_start_date, self.end_date)
         df = df.set_index("mod_date").reindex(idx).fillna(0.0).rename_axis("added_date")
@@ -217,9 +217,11 @@ class Malware_Vulns:
             .agg(lambda x: "  ".join(set(x)))
             .reset_index()
         )
+        # Limit the IP column to 32 characters so the table isn't too big.
+        # 30 characters is the max length of 2 IPs, plus the 2 spaces.
         if len(risky_assets.index) > 0:
-            risky_assets["ip"] = risky_assets["ip"].str[:30]
-            risky_assets.loc[risky_assets["ip"].str.len() == 30, "ip"] = (
+            risky_assets["ip"] = risky_assets["ip"].str[:32]
+            risky_assets.loc[risky_assets["ip"].str.len() == 32, "ip"] = (
                 risky_assets["ip"] + "  ..."
             )
 
