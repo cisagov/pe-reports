@@ -259,7 +259,8 @@ def main():
             LOGGER.info("Data inserted using execute_values() successfully..")
 
         except Exception:
-            # TODO Issue #265 create custom Exceptions
+            # TODO: Create custom exceptions.
+            # Issue 265: https://github.com/cisagov/pe-reports/issues/265
             LOGGER.info("Failure inserting data into database.")
             failures.append(org_name)
             LOGGER.info(traceback.format_exc())
