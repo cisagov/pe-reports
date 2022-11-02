@@ -268,3 +268,7 @@ def main():
         LOGGER.error(failures)
 
     PE_conn.close()
+
+if __name__ == "__main__":
+    main()
+
