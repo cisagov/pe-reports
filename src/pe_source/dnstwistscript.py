@@ -222,7 +222,8 @@ def main():
                     )
                     domain_list.append(domain_dict)
         except Exception:
-            # TODO Issue #265 create custom Exceptions
+            # TODO: Create custom exceptions.
+            # Issue 265: https://github.com/cisagov/pe-reports/issues/265
             LOGGER.info("Failed selecting DNSTwist data.", "Warning")
             failures.append(org_name)
             LOGGER.info(traceback.format_exc())
