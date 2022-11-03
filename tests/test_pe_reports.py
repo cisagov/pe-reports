@@ -1,6 +1,7 @@
 """File to be used to create test for pe-reports."""
 
 # Standard Python Libraries
+import datetime
 import logging
 import sys
 from unittest.mock import patch
@@ -13,6 +14,7 @@ import pytest
 from pe_reports import CENTRAL_LOGGING_FILE
 from pe_reports import app as flask_app
 import pe_reports.data.db_query
+import pe_reports.metrics
 from pe_reports.report_gen.views import validate_date, validate_filename
 import pe_reports.report_generator
 
@@ -185,6 +187,103 @@ def test_report_generator(mock_db_connect, mock_get_orgs, mock_init, mock_embed)
     mock_embed.return_value = 10000000, False
     return_value = pe_reports.report_generator.generate_reports("2022-09-30", "output")
     assert return_value == 1
+
+
+# Test credential metrics
+@patch.object(pe_reports.metrics, "query_breachdetails_view")
+@patch.object(pe_reports.metrics, "query_credsbyday_view")
+@patch.object(pe_reports.metrics, "query_creds_view")
+def test_credential_metrics(mock_creds_view, mock_creds_byday, mock_breach_details):
+    """Test credential metrics."""
+    # Mock the credential views
+    mock_creds_view.return_value = pd.read_json("tests/data/creds_view.json")
+    creds_byday = pd.read_json("tests/data/creds_byday_view.json")
+    creds_byday["mod_date"] = pd.to_datetime(creds_byday["mod_date"])
+    mock_creds_byday.return_value = creds_byday
+    mock_breach_details.return_value = pd.read_json(
+        "tests/data/breach_details_view.json"
+    )
+
+    # Call the credential class
+    date_str = "2022-09-30"
+    end_date = datetime.datetime.strptime(date_str, "%Y-%m-%d").date()
+    start_date = datetime.datetime(end_date.year, end_date.month, 16)
+    trending_date = datetime.datetime(end_date.year, end_date.month, 3)
+    credentials = pe_reports.metrics.Credentials(
+        trending_date, start_date, end_date, "pe_org_uid"
+    )
+
+    # Test by_week output
+    expected_output_json = [
+        {"modified_date": "09/03", "No Password": 0.0, "Passwords Included": 0.0},
+        {"modified_date": "09/10", "No Password": 0.0, "Passwords Included": 0.0},
+        {"modified_date": "09/17", "No Password": 0.0, "Passwords Included": 1.0},
+        {"modified_date": "09/24", "No Password": 1.0, "Passwords Included": 2.0},
+    ]
+    expected_output = pd.json_normalize(expected_output_json).set_index("modified_date")
+    pd.testing.assert_frame_equal(
+        credentials.by_week(),
+        expected_output.sort_index(axis=1),
+    )
+
+    # Test total breaches
+    assert credentials.breaches() == 4
+
+    # Test breach appendix function output
+    expected_output_json = [
+        {"breach_name": "Test Breach A", "description": "Test description a."},
+        {"breach_name": "Test Breach B", "description": "Test description b."},
+        {"breach_name": "Test Breach C", "description": "Test description c."},
+        {"breach_name": "Test Breach D", "description": "Test description d."},
+    ]
+    expected_output = pd.json_normalize(expected_output_json)
+    pd.testing.assert_frame_equal(
+        credentials.breach_appendix(),
+        expected_output.sort_index(axis=1),
+    )
+
+    # Test breach details output
+    expected_output_json = [
+        {
+            "Breach Name": "Test Breach A",
+            "Date Reported": "09/23/22",
+            "Breach Date": "09/23/22",
+            "Password Included": True,
+            "Number of Creds": 1,
+        },
+        {
+            "Breach Name": "Test Breach B",
+            "Date Reported": "09/25/22",
+            "Breach Date": "09/25/22",
+            "Password Included": False,
+            "Number of Creds": 1,
+        },
+        {
+            "Breach Name": "Test Breach C",
+            "Date Reported": "09/27/22",
+            "Breach Date": "09/27/22",
+            "Password Included": True,
+            "Number of Creds": 1,
+        },
+        {
+            "Breach Name": "Test Breach D",
+            "Date Reported": "09/29/22",
+            "Breach Date": "09/29/22",
+            "Password Included": True,
+            "Number of Creds": 1,
+        },
+    ]
+    expected_output = pd.json_normalize(expected_output_json)
+    pd.testing.assert_frame_equal(
+        credentials.breach_details(),
+        expected_output.reindex(sorted(expected_output.columns), axis=1),
+    )
+
+    # Test total breaches with passwords
+    assert credentials.password() == 3
+
+    # Test total number of credentials
+    assert credentials.total() == 4
 
 
 def test_report_gen_page(client):
