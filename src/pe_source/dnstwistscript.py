@@ -156,10 +156,8 @@ def execute_dnstwist(root_domain, test=0):
 
 
 def run_dnstwist(orgs_list):
-    """Run DNStwist on certain domains and upload findings to database"""
-   
+    """Run DNStwist on certain domains and upload findings to database."""
     PE_conn = connect()
-
     source_uid = getDataSource(PE_conn, "DNSTwist")[0]
 
     """ Get P&E Orgs """
