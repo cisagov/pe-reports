@@ -30,6 +30,7 @@ params = config()
 if params["port"] == "":
     logging.info("Empty port. Setting to 5443")
     params["port"] = 5443
+    
 login_manager = LoginManager()
 # Flask implementation
 app = Flask(__name__)
