@@ -71,8 +71,6 @@ def checkBlocklist(dom, sub_domain_uid, source_uid, pe_org_uid, perm_list):
     elif str(dom["dns_aaaa"][0]) == "!ServFail":
         dom["dns_aaaa"] = [""]
     else:
-        LOGGER.info(str(dom["dns_aaaa"][0]))
-
         # Check IP in Blocklist API
         response = requests.get(
             "http://api.blocklist.de/api.php?ip=" + str(dom["dns_aaaa"][0])
@@ -158,18 +156,14 @@ def execute_dnstwist(root_domain, test=0):
 
 
 def run_dnstwist(orgs_list):
-    """Connect to PostgreSQL database."""
-    try:
-        PE_conn = connect()
-    except Exception:
-        LOGGER.error("There was a problem logging into the psycopg database")
+    """Run DNStwist on certain domains and upload findings to database"""
+   
+    PE_conn = connect()
 
     source_uid = getDataSource(PE_conn, "DNSTwist")[0]
 
     """ Get P&E Orgs """
     orgs = query_orgs_rev()
-    LOGGER.info(orgs["cyhy_db_name"])
-
     failures = []
     for org_index, org_row in orgs.iterrows():
         pe_org_uid = org_row["organizations_uid"]
