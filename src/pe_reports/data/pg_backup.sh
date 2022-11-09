@@ -4,8 +4,8 @@ set -o nounset
 set -o pipefail
 
 # Set path to save backup files
-path=/home/ubuntu/db_backups
-backup_folder=$path/backups_$(date +%m-%d-%Y)
+path=/var/www/db_backups
+backup_folder=$path/backups_$(date +%Y-%m-%d)
 
 globalsqlfile=$backup_folder/pedb_globals.sql
 sqlfile=$backup_folder/pedb_dump.sql
