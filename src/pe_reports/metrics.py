@@ -140,7 +140,7 @@ class Domains_Masqs:
                     "name_server",
                 ]
             ]
-            domain_sum = domain_sum[:8]
+            domain_sum = domain_sum[:6]
             domain_sum.loc[domain_sum["ipv6"] == "", "ipv6"] = "NA"
             domain_sum = domain_sum.rename(
                 columns={
@@ -151,6 +151,8 @@ class Domains_Masqs:
                     "name_server": "Name Server",
                 }
             )
+            domain_sum["Mail Server"] = domain_sum["Mail Server"].str[:15]
+            domain_sum["Name Server"] = domain_sum["Name Server"].str[:15]
         else:
             domain_sum = pd.DataFrame(
                 columns=[
@@ -174,7 +176,8 @@ class Domains_Masqs:
         dom_alerts_df = dom_alerts_df.rename(
             columns={"message": "Alert", "date": "Date"}
         )
-        dom_alerts_df = dom_alerts_df[:6].reset_index(drop=True)
+        dom_alerts_df["Alert"] = dom_alerts_df["Alert"].str[:70]
+        dom_alerts_df = dom_alerts_df[:4].reset_index(drop=True)
         return dom_alerts_df
 
     def alerts_sum(self):

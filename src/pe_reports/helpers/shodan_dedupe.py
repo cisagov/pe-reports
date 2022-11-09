@@ -364,8 +364,7 @@ def dedupe(orgs):
     """Check list of IPs, CIDRs, ASNS, and FQDNs in Shodan and output set of IPs."""
     # get username and password from config file
     # TODO: Add key
-    key = shodan_api_init()[0]
-    api = shodan.Shodan(key)
+    api = shodan_api_init()[0]
     for org_index, org in orgs.iterrows():
 
         logging.info(f"Running on {org['name']}")

@@ -42,8 +42,8 @@ ACCESSOR_AWS_PROFILE = os.getenv("ACCESSOR_PROFILE")
 def upload_file_to_s3(file_name, datestring, bucket):
     """Upload a file to an S3 bucket."""
 
-    session = boto3.Session(profile_name=ACCESSOR_AWS_PROFILE)
-    s3_client = session.client("s3")
+    # session = boto3.Session(profile_name=ACCESSOR_AWS_PROFILE)
+    s3_client = boto3.client("s3")
 
     # If S3 object_name was not specified, use file_name
     object_name = f"{datestring}/{os.path.basename(file_name)}"

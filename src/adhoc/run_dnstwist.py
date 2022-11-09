@@ -157,6 +157,9 @@ for org_index, org_row in orgs.iterrows():
                 continue
             LOGGER.info(rd_row["root_domain"])
 
+            if not root_domain:
+                continue
+
             # Run dnstwist on each root domain
             cmd = f"dnstwist -r --tld /var/www/pe-reports/src/adhoc/common_tlds.dict -f json {root_domain}"
             dnstwist_result = json.loads(subprocess.check_output(cmd, shell=True))
