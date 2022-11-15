@@ -522,18 +522,35 @@ def addRootdomain(root_domain, pe_org_uid, source_uid, org_name):
     cur.close()
 
 
-def addSubdomain(domain, pe_org_uid, org_name):
-    """Add root to subdomain table."""
-    data_source_uid = get_data_source_uid("DNSMonitor")
-    try:
-        root_domain_uid = getRootdomain(domain)[0]
-    except Exception:
-        addRootdomain(domain, pe_org_uid, data_source_uid, org_name)
-        root_domain_uid = getRootdomain(domain)[0]
-    conn = connect()
-    sql = """insert into sub_domains(sub_domain, root_domain_uid, data_source_uid)
-            values ('{}', '{}','{}');"""
+def addSubdomain(conn, domain, pe_org_uid):
+    """Add a subdomain into the database."""
+    if conn is None:
+        conn = connect()
+        closeConn = True
+    root_domain = domain.split(".")[-2:]
+    root_domain = ".".join(root_domain)
     cur = conn.cursor()
-    cur.execute(sql.format(domain, root_domain_uid, data_source_uid))
-    conn.commit()
-    close(conn)
+    cur.callproc(
+        "insert_sub_domain", (domain, pe_org_uid, "findomain", root_domain, None)
+    )
+    LOGGER.info("Success adding domain %s to subdomains table.", domain)
+    if closeConn:
+        close(conn)
+
+
+def org_root_domains(conn, org_uid):
+    """Get root domains from database given the org_uid."""
+    sql = """
+        select * from root_domains rd
+        where rd.organizations_uid = %(org_id)s;
+    """
+    df = pd.read_sql_query(sql, conn, params={"org_id": org_uid})
+    return df
+
+
+def query_orgs_rev():
+    """Query orgs in reverse."""
+    conn = connect()
+    sql = "SELECT * FROM organizations WHERE report_on is True ORDER BY organizations_uid DESC;"
+    df = pd.read_sql_query(sql, conn)
+    return df

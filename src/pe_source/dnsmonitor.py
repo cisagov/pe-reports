@@ -96,7 +96,7 @@ class DNSMonitor:
                         root_domain,
                     )
                     try:
-                        addSubdomain(root_domain, org_uid, org_name)
+                        addSubdomain(None, root_domain, org_uid)
                         LOGGER.info(
                             "Success adding %s to subdomain table.", root_domain
                         )

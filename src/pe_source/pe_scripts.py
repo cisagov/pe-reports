@@ -39,6 +39,7 @@ import pe_reports
 from ._version import __version__
 from .cybersixgill import Cybersixgill
 from .dnsmonitor import DNSMonitor
+from .dnstwistscript import run_dnstwist
 from .shodan import Shodan
 
 LOGGER = logging.getLogger(__name__)
@@ -66,6 +67,8 @@ def run_pe_script(source, orgs_list, cybersix_methods):
     elif source == "dnsmonitor":
         dnsMonitor = DNSMonitor(orgs_list)
         dnsMonitor.run_dnsMonitor()
+    elif source == "dnstwist":
+        run_dnstwist(orgs_list)
 
 
 def main():
