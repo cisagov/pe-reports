@@ -1,4 +1,4 @@
-"""Use DNS twist to fuzz domain names and cross check with a blacklist."""
+"""Use dnstwist to fuzz domain names and cross check with a blocklist."""
 # Standard Python Libraries
 import datetime
 import json
@@ -28,20 +28,18 @@ LOGGER = app.config["LOGGER"]
 
 
 def checkBlocklist(dom, sub_domain_uid, source_uid, pe_org_uid, perm_list):
-    """Cross reference the dnstwist results with DShield Blocklist."""
+    """Cross reference the dnstwist results with DShield blocklist."""
     malicious = False
     attacks = 0
     reports = 0
-    if "original" in dom["fuzzer"]:
-        return None, perm_list
-    elif "dns_a" not in dom:
+    if "original" in dom["fuzzer"] or "dns_a" not in dom:
         return None, perm_list
     else:
         if str(dom["dns_a"][0]) == "!ServFail":
             return None, perm_list
         LOGGER.info(str(dom["dns_a"][0]))
 
-        # Check IP in Blocklist API
+        # Check IP in blocklist.de API
         response = requests.get(
             "http://api.blocklist.de/api.php?ip=" + str(dom["dns_a"][0])
         ).content
@@ -51,15 +49,12 @@ def checkBlocklist(dom, sub_domain_uid, source_uid, pe_org_uid, perm_list):
             attacks = int(str(response).split("attacks: ")[1].split("<")[0])
             reports = int(str(response).split("reports: ")[1].split("<")[0])
 
-        # Check IP in DSheild API
+        # Check IP in DShield API
         try:
-            results = dshield.ip(str(dom["dns_a"][0]), return_format=dshield.JSON)
-            results = json.loads(results)
+            results = json.loads(dshield.ip(domain_a, return_format=dshield.JSON))
             threats = results["ip"]["threatfeeds"]
-            attacks = results["ip"]["attacks"]
-            attacks = int(0 if attacks is None else attacks)
+            dshield_attacks = int(results["ip"].get("attacks", 0))
             malicious = True
-            dshield_attacks = attacks
             dshield_count = len(threats)
         except KeyError:
             dshield_attacks = 0
@@ -71,22 +66,20 @@ def checkBlocklist(dom, sub_domain_uid, source_uid, pe_org_uid, perm_list):
     elif str(dom["dns_aaaa"][0]) == "!ServFail":
         dom["dns_aaaa"] = [""]
     else:
+        domain_aaaa = str(dom["dns_aaaa"][0])
         # Check IP in Blocklist API
         response = requests.get(
-            "http://api.blocklist.de/api.php?ip=" + str(dom["dns_aaaa"][0])
+            "http://api.blocklist.de/api.php?ip=" + domain_aaaa
         ).content
         if str(response) != "b'attacks: 0<br />reports: 0<br />'":
             malicious = True
             attacks = int(str(response).split("attacks: ")[1].split("<")[0])
             reports = int(str(response).split("reports: ")[1].split("<")[0])
         try:
-            results = dshield.ip(str(dom["dns_aaaa"][0]), return_format=dshield.JSON)
-            results = json.loads(results)
+            results = json.loads(dshield.ip(damain_aaaa"), return_format=dshield.JSON))
             threats = results["ip"]["threatfeeds"]
-            attacks = results["ip"]["attacks"]
-            attacks = int(0 if attacks is None else attacks)
+            dshield_attacks = int(results["ip"].get("attacks", 0))
             malicious = True
-            dshield_attacks = attacks
             dshield_count = len(threats)
         except KeyError:
             dshield_attacks = 0
@@ -108,35 +101,35 @@ def checkBlocklist(dom, sub_domain_uid, source_uid, pe_org_uid, perm_list):
         perm_list.append(permutation)
 
     domain_dict = {
-        "organizations_uid": pe_org_uid,
-        "data_source_uid": source_uid,
-        "sub_domain_uid": sub_domain_uid,
-        "domain_permutation": dom["domain"],
-        "ipv4": dom["dns_a"][0],
-        "ipv6": dom["dns_aaaa"][0],
-        "mail_server": dom["dns_mx"][0],
-        "name_server": dom["dns_ns"][0],
-        "fuzzer": dom["fuzzer"],
-        "date_active": date,
-        "ssdeep_score": dom["ssdeep_score"],
-        "malicious": malicious,
         "blocklist_attack_count": attacks,
         "blocklist_report_count": reports,
-        "dshield_record_count": dshield_count,
+        "data_source_uid": source_uid,
+        "date_active": date,
+        "domain_permutation": dom["domain"],
         "dshield_attack_count": dshield_attacks,
+        "dshield_record_count": dshield_count,
+        "fuzzer": dom["fuzzer"],
+        "ipv4": domain_a,
+        "ipv6": domain_aaaa,
+        "mail_server": dom["dns_mx"][0],
+        "malicious": malicious,
+        "name_server": dom["dns_ns"][0],
+        "organizations_uid": pe_org_uid,
+        "ssdeep_score": dom["ssdeep_score"],
+        "sub_domain_uid": sub_domain_uid,
     }
     return domain_dict, perm_list
 
 
 def execute_dnstwist(root_domain, test=0):
     """Run dnstwist on each root domain."""
-    pathtoDict = str(pathlib.Path(__file__).parent.resolve()) + "/data/common_tlds.dict"
+    pathtoDict = f"{pathlib.Path(__file__).parent.resolve()}/data/common_tlds.dict"
     dnstwist_result = dnstwist.run(
-        registered=True,
-        tld=pathtoDict,
-        format="json",
-        threads=8,
         domain=root_domain,
+        format="json",
+        registered=True,
+        threads=8,
+        tld=pathtoDict,
     )
     if test == 1:
         return dnstwist_result
@@ -144,14 +137,13 @@ def execute_dnstwist(root_domain, test=0):
     for dom in dnstwist_result:
         if ("tld-swap" not in dom["fuzzer"]) and ("original" not in dom["fuzzer"]):
             LOGGER.info("Running again on %s", dom["domain"])
-            secondlist = dnstwist.run(
-                registered=True,
-                tld=pathtoDict,
-                format="json",
-                threads=8,
+            finalorglist += dnstwist.run(
                 domain=dom["domain"],
+                format="json",
+                registered=True,
+                threads=8,
+                tld=pathtoDict,
             )
-            finalorglist += secondlist
     return finalorglist
 
 
@@ -160,7 +152,7 @@ def run_dnstwist(orgs_list):
     PE_conn = connect()
     source_uid = getDataSource(PE_conn, "DNSTwist")[0]
 
-    """ Get P&E Orgs """
+    """ Get P&E orgs """
     orgs = query_orgs_rev()
     failures = []
     for org_index, org_row in orgs.iterrows():
@@ -171,9 +163,9 @@ def run_dnstwist(orgs_list):
         # Only run on orgs in the org list
         if pe_org_id in orgs_list or orgs_list == "all":
 
-            LOGGER.info("Running DNSTwist on %s", pe_org_id)
+            LOGGER.info("Running dnstwist on %s", pe_org_id)
 
-            """Collect DNSTwist data from Crossfeed"""
+            """Collect dnstwist data from Crossfeed"""
             try:
                 # Get root domains
                 rd_df = org_root_domains(PE_conn, pe_org_uid)
@@ -208,7 +200,7 @@ def run_dnstwist(orgs_list):
             except Exception:
                 # TODO: Create custom exceptions.
                 # Issue 265: https://github.com/cisagov/pe-reports/issues/265
-                LOGGER.info("Failed selecting DNSTwist data.", "Warning")
+                LOGGER.info("Failed selecting dnstwist data.", "Warning")
                 failures.append(org_name)
                 LOGGER.info(traceback.format_exc())
 
@@ -242,7 +234,7 @@ def run_dnstwist(orgs_list):
                     values,
                 )
                 PE_conn.commit()
-                LOGGER.info("Data inserted using execute_values() successfully..")
+                LOGGER.info("Data inserted using execute_values() successfully.")
 
             except Exception:
                 # TODO: Create custom exceptions.
