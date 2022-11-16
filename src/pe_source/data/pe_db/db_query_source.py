@@ -373,6 +373,7 @@ def query_orgs_rev():
     conn = connect()
     sql = "SELECT * FROM organizations WHERE report_on is True ORDER BY organizations_uid DESC;"
     df = pd.read_sql_query(sql, conn)
+    close(conn)
     return df
 
 
