@@ -35,9 +35,10 @@ def checkBlocklist(dom, sub_domain_uid, source_uid, pe_org_uid, perm_list):
     if "original" in dom["fuzzer"] or "dns_a" not in dom:
         return None, perm_list
     else:
-        if str(dom["dns_a"][0]) == "!ServFail":
+        domain_a = str(dom["dns_a"][0])
+        if domain_a == "!ServFail":
             return None, perm_list
-        LOGGER.info(str(dom["dns_a"][0]))
+        LOGGER.info(domain_a)
 
         # Check IP in blocklist.de API
         response = requests.get(
@@ -76,7 +77,7 @@ def checkBlocklist(dom, sub_domain_uid, source_uid, pe_org_uid, perm_list):
             attacks = int(str(response).split("attacks: ")[1].split("<")[0])
             reports = int(str(response).split("reports: ")[1].split("<")[0])
         try:
-            results = json.loads(dshield.ip(damain_aaaa"), return_format=dshield.JSON))
+            results = json.loads(dshield.ip(domain_aaaa, return_format=dshield.JSON))
             threats = results["ip"]["threatfeeds"]
             dshield_attacks = int(results["ip"].get("attacks", 0))
             malicious = True
