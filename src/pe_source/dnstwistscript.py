@@ -134,18 +134,17 @@ def execute_dnstwist(root_domain, test=0):
     )
     if test == 1:
         return dnstwist_result
-    finalorglist = dnstwist_result + []
-    for dom in dnstwist_result:
+    for dom in dnstwist_result.copy():
         if ("tld-swap" not in dom["fuzzer"]) and ("original" not in dom["fuzzer"]):
             LOGGER.info("Running again on %s", dom["domain"])
-            finalorglist += dnstwist.run(
+            dnstwist_result += dnstwist.run(
                 domain=dom["domain"],
                 format="json",
                 registered=True,
                 threads=8,
                 tld=pathtoDict,
             )
-    return finalorglist
+    return dnstwist_result
 
 
 def run_dnstwist(orgs_list):
