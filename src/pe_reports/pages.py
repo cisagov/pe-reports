@@ -347,7 +347,7 @@ def dark_web(
     alerts_exec_table = buildTable(exec_alerts[:8], ["table"], [15, 70, 15])
     asset_alerts = Cyber6.asset_alerts()
     summary_dict["dark_web_asset_alerts_count"] = len(asset_alerts)
-    asset_alerts_table = buildTable(asset_alerts[:10], ["table"], [15, 70, 15])
+    asset_alerts_table = buildTable(asset_alerts[:5], ["table"], [15, 70, 15])
     dark_web_act_table = buildTable(Cyber6.dark_web_most_act(), ["table"], [75, 25])
     social_med_act_table = buildTable(
         Cyber6.social_media_most_act(), ["table"], [75, 25]
@@ -424,7 +424,8 @@ def init(datestring, org_name, org_uid):
         "end_date": end_date,
         "ip_count": asset_dict["num_ips"],
         "root_count": asset_dict["num_root_domain"],
-        "sub_count": 5,
+        "sub_count": asset_dict["num_sub_domain"],
+        "ports_count": asset_dict["ports_count"]
     }
 
     summary_dict, chevron_dict, creds_sum, source_html = credential(

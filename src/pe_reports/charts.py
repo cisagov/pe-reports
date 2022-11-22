@@ -193,7 +193,7 @@ class Charts:
                     textcoords="offset points",  # how to position the text
                     xytext=(
                         0,
-                        5,
+                        -15,
                     ),  # distance from text to points (x,y)
                     ha="center",  # horizontal alignment can be left, right or center
                     # fontsize=2,
@@ -207,7 +207,7 @@ class Charts:
                         textcoords="offset points",  # how to position the text
                         xytext=(
                             0,
-                            5,
+                            -15,
                         ),  # distance from text to points (x,y)
                         ha="center",  # horizontal alignment can be left, right or center
                         # fontsize=2,

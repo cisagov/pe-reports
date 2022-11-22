@@ -152,7 +152,7 @@ def get_org_assets_count(uid):
     """Get asset counts for an organization."""
     conn = connect()
     cur = conn.cursor()
-    sql = """select sur.cyhy_db_name, sur.num_root_domain, sur.num_sub_domain, sur.num_ips  from
+    sql = """select sur.cyhy_db_name, sur.num_root_domain, sur.num_sub_domain, sur.num_ips, sur.num_ports from
             vw_orgs_attacksurface sur
             where sur.organizations_uid = %s"""
     cur.execute(sql, [uid])
@@ -165,6 +165,7 @@ def get_org_assets_count(uid):
         "num_root_domain": source[1],
         "num_sub_domain": source[2],
         "num_ips": source[3],
+        "ports_count": source[4]
     }
     return assets_dict
 
@@ -665,12 +666,12 @@ def execute_summary(summary_dict):
         conn = connect()
         cur = conn.cursor()
         sql = """
-        INSERT INTO report_summary_stats(organizations_uid, start_date, end_date, ip_count, root_count, sub_count, creds_count, breach_count, domain_alert_count, suspected_domain_count, insecure_port_count, verified_vuln_count, suspected_vuln_count,
+        INSERT INTO report_summary_stats(organizations_uid, start_date, end_date, ip_count, ports_count, root_count, sub_count, creds_count, breach_count, domain_alert_count, suspected_domain_count, insecure_port_count, verified_vuln_count, suspected_vuln_count,
         dark_web_alerts_count, dark_web_mentions_count, dark_web_executive_alerts_count, dark_web_asset_alerts_count)
-        VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+        VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
         ON CONFLICT(organizations_uid, start_date)
         DO
-        UPDATE SET ip_count = EXCLUDED.ip_count, root_count = EXCLUDED.root_count, sub_count = EXCLUDED.sub_count, creds_count = EXCLUDED.creds_count, breach_count = EXCLUDED.breach_count, domain_alert_count = EXCLUDED.domain_alert_count,
+        UPDATE SET ip_count = EXCLUDED.ip_count, ports_count = EXCLUDED.ports_count, root_count = EXCLUDED.root_count, sub_count = EXCLUDED.sub_count, creds_count = EXCLUDED.creds_count, breach_count = EXCLUDED.breach_count, domain_alert_count = EXCLUDED.domain_alert_count,
         suspected_domain_count = EXCLUDED.suspected_domain_count, insecure_port_count = EXCLUDED.insecure_port_count, verified_vuln_count = EXCLUDED.verified_vuln_count, suspected_vuln_count = EXCLUDED.suspected_vuln_count,
         dark_web_alerts_count = EXCLUDED.dark_web_alerts_count, dark_web_mentions_count = EXCLUDED.dark_web_mentions_count, dark_web_executive_alerts_count = EXCLUDED.dark_web_executive_alerts_count, dark_web_asset_alerts_count = EXCLUDED.dark_web_asset_alerts_count;
         """
@@ -681,6 +682,7 @@ def execute_summary(summary_dict):
                 summary_dict["start_date"],
                 summary_dict["end_date"],
                 AsIs(summary_dict["ip_count"]),
+                AsIs(summary_dict["ports_count"]),
                 AsIs(summary_dict["root_count"]),
                 AsIs(summary_dict["sub_count"]),
                 AsIs(summary_dict["creds_count"]),

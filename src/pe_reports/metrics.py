@@ -489,7 +489,7 @@ class Cyber_Six:
             columns=["organizations_uid", "date"],
             errors="ignore",
         )
-        asset_alerts["Title"] = asset_alerts["Title"].str[:100]
+        asset_alerts["Title"] = asset_alerts["Title"].str[:75]
         return asset_alerts
 
     def alerts_exec(self):

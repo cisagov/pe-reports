@@ -46,9 +46,14 @@ def checkBlocklist(dom, sub_domain_uid, source_uid, pe_org_uid, perm_list):
         ).content
 
         if str(response) != "b'attacks: 0<br />reports: 0<br />'":
-            malicious = True
-            attacks = int(str(response).split("attacks: ")[1].split("<")[0])
-            reports = int(str(response).split("reports: ")[1].split("<")[0])
+            try:
+                malicious = True
+                attacks = int(str(response).split("attacks: ")[1].split("<")[0])
+                reports = int(str(response).split("reports: ")[1].split("<")[0])
+            except:
+                malicious = False
+                dshield_attacks = 0
+                dshield_count = 0
 
         # Check IP in DSheild API
         try:
@@ -60,7 +65,7 @@ def checkBlocklist(dom, sub_domain_uid, source_uid, pe_org_uid, perm_list):
             malicious = True
             dshield_attacks = attacks
             dshield_count = len(threats)
-        except KeyError:
+        except:
             dshield_attacks = 0
             dshield_count = 0
 
@@ -75,9 +80,14 @@ def checkBlocklist(dom, sub_domain_uid, source_uid, pe_org_uid, perm_list):
             "http://api.blocklist.de/api.php?ip=" + str(dom["dns_aaaa"][0])
         ).content
         if str(response) != "b'attacks: 0<br />reports: 0<br />'":
-            malicious = True
-            attacks = int(str(response).split("attacks: ")[1].split("<")[0])
-            reports = int(str(response).split("reports: ")[1].split("<")[0])
+            try:
+                malicious = True
+                attacks = int(str(response).split("attacks: ")[1].split("<")[0])
+                reports = int(str(response).split("reports: ")[1].split("<")[0])
+            except:
+                malicious = False
+                dshield_attacks = 0
+                dshield_count = 0
         try:
             results = dshield.ip(str(dom["dns_aaaa"][0]), return_format=dshield.JSON)
             results = json.loads(results)
@@ -87,7 +97,7 @@ def checkBlocklist(dom, sub_domain_uid, source_uid, pe_org_uid, perm_list):
             malicious = True
             dshield_attacks = attacks
             dshield_count = len(threats)
-        except KeyError:
+        except:
             dshield_attacks = 0
             dshield_count = 0
 
