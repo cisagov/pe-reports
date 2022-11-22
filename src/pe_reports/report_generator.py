@@ -34,6 +34,7 @@ import pe_reports
 from ._version import __version__
 from .data.db_query import connect, get_orgs
 from .pages import init
+from .scorecard_generator import create_scorecard
 
 LOGGER = logging.getLogger(__name__)
 ACCESSOR_AWS_PROFILE = os.getenv("ACCESSOR_PROFILE")
@@ -41,7 +42,6 @@ ACCESSOR_AWS_PROFILE = os.getenv("ACCESSOR_PROFILE")
 
 def upload_file_to_s3(file_name, datestring, bucket):
     """Upload a file to an S3 bucket."""
-
     session = boto3.Session(profile_name=ACCESSOR_AWS_PROFILE)
     s3_client = session.client("s3")
 
@@ -50,7 +50,7 @@ def upload_file_to_s3(file_name, datestring, bucket):
 
     try:
         response = s3_client.upload_file(file_name, bucket, object_name)
-        if response == None:
+        if response is None:
             LOGGER.info("Success uploading to S3.")
         else:
             LOGGER.info(response)
@@ -152,7 +152,6 @@ def generate_reports(datestring, output_directory):
             org_uid = org[0]
             org_name = org[1]
             org_code = org[2]
-
             # if org_code not in ["DHS"]:
             #     continue
 
@@ -165,6 +164,7 @@ def generate_reports(datestring, output_directory):
 
             # Insert Charts and Metrics into PDF
             (
+                scorecard_dict,
                 source_html,
                 creds_sum,
                 masq_df,
@@ -180,6 +180,9 @@ def generate_reports(datestring, output_directory):
                 org_name,
                 org_uid,
             )
+            # Create scorecard
+            scorecard_filename = f"{output_directory}/{org_code}/Posture-and-Exposure-Scorecard_{org_code}_{scorecard_dict['end_date'].strftime('%Y-%m-%d')}.pdf"
+            create_scorecard(scorecard_dict, scorecard_filename)
             # Convert to HTML to PDF
             output_filename = f"{output_directory}/Posture_and_Exposure_Report-{org_code}-{datestring}.pdf"
             convert_html_to_pdf(source_html, output_filename)
@@ -236,7 +239,7 @@ def generate_reports(datestring, output_directory):
                     "%s is too large. File size: %s Limit: 20MB", org_code, filesize
                 )
 
-            upload_file_to_s3(output, datestring, "cisa-crossfeed-pe-reports")
+            # upload_file_to_s3(output, datestring, "cisa-crossfeed-pe-reports")
             generated_reports += 1
     else:
         LOGGER.error(

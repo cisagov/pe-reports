@@ -9,7 +9,11 @@ import os
 import chevron
 
 # cisagov Libraries
-from pe_reports.data.db_query import execute_summary, get_org_assets_count
+from pe_reports.data.db_query import (
+    execute_scorecard,
+    get_org_assets_count,
+    query_previous_period,
+)
 
 from .charts import Charts
 
@@ -108,7 +112,7 @@ def buildAppendixList(df):
 
 
 def credential(
-    summary_dict,
+    scorecard_dict,
     chevron_dict,
     trending_start_date,
     start_date,
@@ -149,8 +153,9 @@ def credential(
         "breach_table": breach_table,
     }
 
-    summary_dict["creds_count"] = creds_dict["creds"]
-    summary_dict["breach_count"] = creds_dict["breach"]
+    scorecard_dict["creds_count"] = creds_dict.get("creds", 0)
+    scorecard_dict["breach_count"] = creds_dict.get("breach", 0)
+    scorecard_dict["cred_password_count"] = creds_dict.get("pw_creds", 0)
 
     breach_appendix = Credential.breach_appendix()
 
@@ -192,10 +197,10 @@ def credential(
 
     chevron_dict.update(creds_dict)
 
-    return summary_dict, chevron_dict, Credential.creds_view, source_html
+    return scorecard_dict, chevron_dict, Credential.creds_view, source_html
 
 
-def masquerading(summary_dict, chevron_dict, start_date, end_date, org_uid):
+def masquerading(scorecard_dict, chevron_dict, start_date, end_date, org_uid):
     """Build masquerading page."""
     Domain_Masq = Domains_Masqs(start_date, end_date, org_uid)
     domain_count = Domain_Masq.count()
@@ -210,13 +215,17 @@ def masquerading(summary_dict, chevron_dict, start_date, end_date, org_uid):
             "domain_alerts": dom_alert_count,
         }
     )
-    summary_dict["domain_alert_count"] = dom_alert_count
-    summary_dict["suspected_domain_count"] = domain_count
+    df_mal = Domain_Masq.df_mal
+    df_mal["tld"] = "." + df_mal["domain_permutation"].str.split(".").str[-1]
+    count_df = df_mal.groupby(["tld"])["tld"].count().reset_index(name="count")
+    scorecard_dict["domain_alert_count"] = dom_alert_count
+    scorecard_dict["suspected_domain_count"] = domain_count
+    scorecard_dict["dns"] = count_df
 
-    return summary_dict, chevron_dict, Domain_Masq.df_mal, Domain_Masq.alerts_sum()
+    return scorecard_dict, chevron_dict, Domain_Masq.df_mal, Domain_Masq.alerts_sum()
 
 
-def mal_vuln(summary_dict, chevron_dict, start_date, end_date, org_uid, source_html):
+def mal_vuln(scorecard_dict, chevron_dict, start_date, end_date, org_uid, source_html):
     """Build Malwares and Vulnerabilities page."""
     Malware_Vuln = Malware_Vulns(start_date, end_date, org_uid)
     # Build insecure protocol horizontal bar chart
@@ -275,9 +284,10 @@ def mal_vuln(summary_dict, chevron_dict, start_date, end_date, org_uid, source_h
         "unverifVulns": unverif_vulns,
     }
 
-    summary_dict["insecure_port_count"] = risky_ports
-    summary_dict["verified_vuln_count"] = verif_vulns_count
-    summary_dict["suspected_vuln_count"] = unverif_vulns
+    scorecard_dict["insecure_port_count"] = risky_ports
+    scorecard_dict["verified_vuln_count"] = verif_vulns_count
+    scorecard_dict["suspected_vuln_count"] = unverif_vulns
+    scorecard_dict["suspected_vuln_addrs_count"] = Malware_Vuln.ip_count()
 
     verif_vulns_summary = Malware_Vuln.verif_vulns_summary()
     if len(verif_vulns_summary) > 0:
@@ -298,13 +308,13 @@ def mal_vuln(summary_dict, chevron_dict, start_date, end_date, org_uid, source_h
         except FileNotFoundError:
             logging.error("Template cannot be found. It must be named: '%s'", template)
             return 1
-        idx = source_html.index("<!-- Additional Information -->     ")
+        idx = source_html.index("<!-- Additional Information -->")
         source_html = source_html[:idx] + vuln_html + source_html[idx:]
         vulns_dict["verif_vulns_summary"] = verif_vulns_summary_table
 
     chevron_dict.update(vulns_dict)
     return (
-        summary_dict,
+        scorecard_dict,
         chevron_dict,
         Malware_Vuln.insecure_df,
         Malware_Vuln.vulns_df,
@@ -314,7 +324,7 @@ def mal_vuln(summary_dict, chevron_dict, start_date, end_date, org_uid, source_h
 
 
 def dark_web(
-    summary_dict, chevron_dict, trending_start_date, start_date, end_date, org_uid
+    scorecard_dict, chevron_dict, trending_start_date, start_date, end_date, org_uid
 ):
     """Dark Web Mentions."""
     Cyber6 = Cyber_Six(trending_start_date, start_date, end_date, org_uid)
@@ -339,19 +349,22 @@ def dark_web(
     # Build tables
     dark_web_sites_table = buildTable(Cyber6.dark_web_sites(), ["table"], [50, 50])
     alerts_threats_table = buildTable(Cyber6.alerts_threats(), ["table"], [40, 40, 20])
-    dark_web_actors_table = buildTable(
-        Cyber6.dark_web_bad_actors()[:10], ["table"], [50, 50]
+    dark_web_actors = Cyber6.dark_web_bad_actors()
+    # Threshold for notable threat actor
+    threshold = 7
+    scorecard_dict["threat_actor_count"] = len(
+        dark_web_actors[dark_web_actors["Grade"] > threshold]
     )
+    dark_web_actors_table = buildTable(dark_web_actors[:5], ["table"], [50, 50])
     exec_alerts = Cyber6.alerts_exec()
-    summary_dict["dark_web_executive_alerts_count"] = len(exec_alerts)
+    scorecard_dict["dark_web_executive_alerts_count"] = len(exec_alerts)
     alerts_exec_table = buildTable(exec_alerts[:8], ["table"], [15, 70, 15])
     asset_alerts = Cyber6.asset_alerts()
-    summary_dict["dark_web_asset_alerts_count"] = len(asset_alerts)
+    scorecard_dict["dark_web_asset_alerts_count"] = len(asset_alerts)
     asset_alerts_table = buildTable(asset_alerts[:10], ["table"], [15, 70, 15])
     dark_web_act_table = buildTable(Cyber6.dark_web_most_act(), ["table"], [75, 25])
-    social_med_act_table = buildTable(
-        Cyber6.social_media_most_act(), ["table"], [75, 25]
-    )
+    social_media = Cyber6.social_media_most_act()
+    social_med_act_table = buildTable(social_media, ["table"], [75, 25])
     invite_only_markets_table = buildTable(
         Cyber6.invite_only_markets(), ["table"], [50, 50]
     )
@@ -369,12 +382,14 @@ def dark_web(
         "markets_table": invite_only_markets_table,
         "top_cves": top_cves_table,
     }
-    summary_dict["dark_web_alerts_count"] = dark_web_count
-    summary_dict["dark_web_mentions_count"] = len(Cyber6.dark_web_mentions)
 
+    scorecard_dict["dark_web_alerts_count"] = dark_web_count
+    scorecard_dict["dark_web_mentions_count"] = len(Cyber6.dark_web_mentions)
+    circles_df = Cyber6.create_count_df()
+    scorecard_dict["circles_df"] = circles_df
     chevron_dict.update(dark_web_dict)
     return (
-        summary_dict,
+        scorecard_dict,
         chevron_dict,
         Cyber6.dark_web_mentions,
         Cyber6.alerts,
@@ -389,6 +404,7 @@ def init(datestring, org_name, org_uid):
     # Otherwise, the start_date will be the 16th of the respective month.
 
     # Load source HTML
+
     try:
         basedir = os.path.abspath(os.path.dirname(__file__))
         template = os.path.join(basedir, "template.html")
@@ -407,6 +423,7 @@ def init(datestring, org_name, org_uid):
         start_date = datetime.datetime(end_date.year, end_date.month, 16)
     days = datetime.timedelta(27)
     trending_start_date = end_date - days
+    previous_end_date = start_date - datetime.timedelta(days=1)
     # Get base directory to save images
     base_dir = os.path.abspath(os.path.dirname(__file__))
     start = start_date.strftime("%m/%d/%Y")
@@ -417,18 +434,23 @@ def init(datestring, org_name, org_uid):
         "endDate": end,
         "base_dir": base_dir,
     }
+    print(chevron_dict)
     asset_dict = get_org_assets_count(org_uid)
-    summary_dict = {
+    print(asset_dict)
+    scorecard_dict = {
         "organizations_uid": org_uid,
+        "org_name": org_name,
         "start_date": start_date,
         "end_date": end_date,
         "ip_count": asset_dict["num_ips"],
         "root_count": asset_dict["num_root_domain"],
-        "sub_count": 5,
+        "sub_count": asset_dict["num_sub_domain"],
+        "num_ports": asset_dict["num_ports"],
     }
+    print(scorecard_dict)
 
-    summary_dict, chevron_dict, creds_sum, source_html = credential(
-        summary_dict,
+    scorecard_dict, chevron_dict, creds_sum, source_html = credential(
+        scorecard_dict,
         chevron_dict,
         trending_start_date,
         start_date,
@@ -437,23 +459,32 @@ def init(datestring, org_name, org_uid):
         source_html,
     )
 
-    summary_dict, chevron_dict, masq_df, dom_alert_sum = masquerading(
-        summary_dict, chevron_dict, start_date, end_date, org_uid
+    scorecard_dict, chevron_dict, masq_df, dom_alert_sum = masquerading(
+        scorecard_dict, chevron_dict, start_date, end_date, org_uid
     )
 
     (
-        summary_dict,
+        scorecard_dict,
         chevron_dict,
         insecure_df,
         vulns_df,
         assets_df,
         source_html,
-    ) = mal_vuln(summary_dict, chevron_dict, start_date, end_date, org_uid, source_html)
-
-    summary_dict, chevron_dict, dark_web_mentions, alerts, top_cves = dark_web(
-        summary_dict, chevron_dict, trending_start_date, start_date, end_date, org_uid
+    ) = mal_vuln(
+        scorecard_dict, chevron_dict, start_date, end_date, org_uid, source_html
     )
-    execute_summary(summary_dict)
+
+    scorecard_dict, chevron_dict, dark_web_mentions, alerts, top_cves = dark_web(
+        scorecard_dict, chevron_dict, trending_start_date, start_date, end_date, org_uid
+    )
+    # TODO Generate Score for Scorecard
+    scorecard_dict["score_percentage"] = "N/A"
+    scorecard_dict["score_grade"] = "N/A"
+    scorecard_dict["score"] = "N/A"
+    execute_scorecard(scorecard_dict)
+    last_period_stats = query_previous_period(org_uid, previous_end_date)
+    scorecard_dict.update(last_period_stats)
+
     source_html = (
         source_html
         + """
@@ -463,8 +494,9 @@ def init(datestring, org_name, org_uid):
     """
     )
     html = chevron.render(source_html, chevron_dict)
-
+    print(scorecard_dict)
     return (
+        scorecard_dict,
         html,
         creds_sum,
         masq_df,

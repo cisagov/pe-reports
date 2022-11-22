@@ -246,7 +246,7 @@ class Malware_Vulns:
         return pro_count
 
     def risky_ports_count(self):
-        """Return total count of insecure protocols."""
+        """Return total count of insecure ports."""
         risky_assets = self.isolate_risky_assets(self.insecure_df)
 
         pro_count = risky_assets.groupby(["protocol"], as_index=False)["protocol"].agg(
@@ -274,6 +274,15 @@ class Malware_Vulns:
             verifVulns = 0
 
         return verifVulns
+
+    def ip_count(self):
+        """Return the number of total ips with suspected and confirmed vulns."""
+        vulns_df = self.vulns_df
+        unverif_df = self.insecure_df
+
+        combined_ips = vulns_df["ip"].append(unverif_df["ip"], ignore_index=True)
+
+        return len(pd.unique(combined_ips))
 
     @staticmethod
     def unverified_cve(df):
@@ -436,6 +445,57 @@ class Cyber_Six:
         dark_web_date = dark_web_date[["Count"]]
         return dark_web_date
 
+    def create_count_df(self):
+        """Retrieve dataframe of counts by mention type."""
+        name = []
+        value = []
+        markets = query_darkweb(
+            self.org_uid,
+            self.start_date,
+            self.end_date,
+            "vw_darkweb_inviteonlymarkets",
+        )
+        if len(markets) > 0:
+            name.append("INVITE ONLY MARKET")
+            value.append(len(markets))
+
+        soc_med = query_darkweb(
+            self.org_uid,
+            self.start_date,
+            self.end_date,
+            "vw_darkweb_socmedia_mostactposts",
+        )
+        if len(soc_med) > 0:
+            name.append("SOCIAL MEDIA")
+            value.append(len(soc_med))
+
+        dark_web_forum = query_darkweb(
+            self.org_uid,
+            self.start_date,
+            self.end_date,
+            "vw_darkweb_mostactposts",
+        )
+        if len(dark_web_forum) > 0:
+            name.append("DARK WEB FORUM")
+            value.append(len(dark_web_forum))
+
+        alerts_exec = query_darkweb(
+            self.org_uid,
+            self.start_date,
+            self.end_date,
+            "vw_darkweb_execalerts",
+        )
+        if len(alerts_exec) > 0:
+            name.append("EXECUTIVES")
+            value.append(len(alerts_exec))
+
+        if name:
+            circle_df = pd.DataFrame({"Name": name, "Value": value})
+
+            return circle_df
+        else:
+            return 0
+
     def social_media_most_act(self):
         """Get most active social media posts."""
         soc_med_most_act = query_darkweb(
@@ -521,7 +581,7 @@ class Cyber_Six:
         ).max()
         dark_web_bad_actors = dark_web_bad_actors.sort_values(
             by=["Grade"], ascending=False
-        )[:5]
+        )
         return dark_web_bad_actors
 
     def alerts_threats(self):

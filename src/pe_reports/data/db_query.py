@@ -86,7 +86,7 @@ def get_org_assets_count(uid):
     """Get asset counts for an organization."""
     conn = connect()
     cur = conn.cursor()
-    sql = """select sur.cyhy_db_name, sur.num_root_domain, sur.num_sub_domain, sur.num_ips  from
+    sql = """select sur.cyhy_db_name, sur.num_root_domain, sur.num_sub_domain, sur.num_ips, sur.num_ports  from
             vw_orgs_attacksurface sur
             where sur.organizations_uid = %s"""
     cur.execute(sql, [uid])
@@ -99,6 +99,7 @@ def get_org_assets_count(uid):
         "num_root_domain": source[1],
         "num_sub_domain": source[2],
         "num_ips": source[3],
+        "num_ports": source[4],
     }
     return assets_dict
 
@@ -593,20 +594,41 @@ def execute_ips(conn, dataframe):
     print("IPs inserted using execute_values() successfully..")
 
 
-def execute_summary(summary_dict):
+def execute_scorecard(summary_dict):
     """Save summary statistics for an organization to the database."""
     try:
         conn = connect()
         cur = conn.cursor()
         sql = """
-        INSERT INTO report_summary_stats(organizations_uid, start_date, end_date, ip_count, root_count, sub_count, creds_count, breach_count, domain_alert_count, suspected_domain_count, insecure_port_count, verified_vuln_count, suspected_vuln_count,
-        dark_web_alerts_count, dark_web_mentions_count, dark_web_executive_alerts_count, dark_web_asset_alerts_count)
-        VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+        INSERT INTO report_summary_stats(
+            organizations_uid, start_date, end_date, ip_count, root_count, sub_count, ports_count,
+            creds_count, breach_count, cred_password_count, domain_alert_count,
+            suspected_domain_count, insecure_port_count, verified_vuln_count,
+            suspected_vuln_count, suspected_vuln_addrs_count, threat_actor_count, dark_web_alerts_count,
+            dark_web_mentions_count, dark_web_executive_alerts_count, dark_web_asset_alerts_count
+        )
+        VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
         ON CONFLICT(organizations_uid, start_date)
         DO
-        UPDATE SET ip_count = EXCLUDED.ip_count, root_count = EXCLUDED.root_count, sub_count = EXCLUDED.sub_count, creds_count = EXCLUDED.creds_count, breach_count = EXCLUDED.breach_count, domain_alert_count = EXCLUDED.domain_alert_count,
-        suspected_domain_count = EXCLUDED.suspected_domain_count, insecure_port_count = EXCLUDED.insecure_port_count, verified_vuln_count = EXCLUDED.verified_vuln_count, suspected_vuln_count = EXCLUDED.suspected_vuln_count,
-        dark_web_alerts_count = EXCLUDED.dark_web_alerts_count, dark_web_mentions_count = EXCLUDED.dark_web_mentions_count, dark_web_executive_alerts_count = EXCLUDED.dark_web_executive_alerts_count, dark_web_asset_alerts_count = EXCLUDED.dark_web_asset_alerts_count;
+        UPDATE SET
+            ip_count = EXCLUDED.ip_count,
+            root_count = EXCLUDED.root_count,
+            sub_count = EXCLUDED.sub_count,
+            ports_count = EXCLUDED.ports_count,
+            creds_count = EXCLUDED.creds_count,
+            breach_count = EXCLUDED.breach_count,
+            cred_password_count = EXCLUDED.cred_password_count,
+            domain_alert_count = EXCLUDED.domain_alert_count,
+            suspected_domain_count = EXCLUDED.suspected_domain_count,
+            insecure_port_count = EXCLUDED.insecure_port_count,
+            verified_vuln_count = EXCLUDED.verified_vuln_count,
+            suspected_vuln_count = EXCLUDED.suspected_vuln_count,
+            suspected_vuln_addrs_count = EXCLUDED.suspected_vuln_addrs_count,
+            threat_actor_count = EXCLUDED.threat_actor_count,
+            dark_web_alerts_count = EXCLUDED.dark_web_alerts_count,
+            dark_web_mentions_count = EXCLUDED.dark_web_mentions_count,
+            dark_web_executive_alerts_count = EXCLUDED.dark_web_executive_alerts_count,
+            dark_web_asset_alerts_count = EXCLUDED.dark_web_asset_alerts_count;
         """
         cur.execute(
             sql,
@@ -617,13 +639,17 @@ def execute_summary(summary_dict):
                 AsIs(summary_dict["ip_count"]),
                 AsIs(summary_dict["root_count"]),
                 AsIs(summary_dict["sub_count"]),
+                AsIs(summary_dict["num_ports"]),
                 AsIs(summary_dict["creds_count"]),
                 AsIs(summary_dict["breach_count"]),
+                AsIs(summary_dict["cred_password_count"]),
                 AsIs(summary_dict["domain_alert_count"]),
                 AsIs(summary_dict["suspected_domain_count"]),
                 AsIs(summary_dict["insecure_port_count"]),
                 AsIs(summary_dict["verified_vuln_count"]),
                 AsIs(summary_dict["suspected_vuln_count"]),
+                AsIs(summary_dict["suspected_vuln_addrs_count"]),
+                AsIs(summary_dict["threat_actor_count"]),
                 AsIs(summary_dict["dark_web_alerts_count"]),
                 AsIs(summary_dict["dark_web_mentions_count"]),
                 AsIs(summary_dict["dark_web_executive_alerts_count"]),
@@ -635,3 +661,44 @@ def execute_summary(summary_dict):
     except (Exception, psycopg2.DatabaseError) as err:
         show_psycopg2_exception(err)
         cur.close()
+
+
+def query_previous_period(org_uid, previous_end_date):
+    """Get summary statistics for the previous period."""
+    conn = connect()
+    cur = conn.cursor()
+    sql = """select
+                sum.ip_count, sum.root_count, sum.sub_count, cred_password_count,
+                sum.suspected_vuln_addrs_count, sum.suspected_vuln_count, sum.insecure_port_count,
+                sum.threat_actor_count
+
+            from report_summary_stats sum
+            where sum.organizations_uid = %s and sum.end_date = %s"""
+    cur.execute(sql, [org_uid, previous_end_date])
+    source = cur.fetchone()
+    cur.close()
+    conn.close()
+    if source:
+        assets_dict = {
+            "last_ip_count": source[0],
+            "last_root_domain_count": source[1],
+            "last_sub_domain_count": source[2],
+            "last_cred_password_count": source[3],
+            "last_sus_vuln_addrs_count": source[4],
+            "last_suspected_vuln_count": source[5],
+            "last_insecure_port_count": source[6],
+            "last_actor_activity_count": source[7],
+        }
+    else:
+        assets_dict = {
+            "last_ip_count": 0,
+            "last_root_domain_count": 0,
+            "last_sub_domain_count": 0,
+            "last_cred_password_count": 0,
+            "last_sus_vuln_addrs_count": 0,
+            "last_suspected_vuln_count": 0,
+            "last_insecure_port_count": 0,
+            "last_actor_activity_count": 0,
+        }
+
+    return assets_dict
