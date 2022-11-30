@@ -3,7 +3,9 @@
 from configparser import ConfigParser
 
 
-def config(filename="/home/ubuntu/adhoc/data/database.ini", section="postgresql"):
+def config(
+    filename="/var/www/pe-reports/src/pe_reports/data/database.ini", section="postgres"
+):
     """Configure postgres."""
     # create a parser
     parser = ConfigParser()

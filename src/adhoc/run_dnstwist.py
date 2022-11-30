@@ -9,7 +9,7 @@ import time
 import traceback
 
 # Third-Party Libraries
-from data.run import query_orgs_rev
+from data.run import query_orgs_rev, connect
 import dshield
 import pandas as pd
 import psycopg2
@@ -106,22 +106,9 @@ def org_root_domains(conn, org_uid):
     return df
 
 
-# TODO: add creds
-DB_HOST = ""
-PE_DB_NAME = ""
-PE_DB_USERNAME = ""
-PE_DB_PASSWORD = ""
-
-
 """Connect to PE Database"""
 try:
-    PE_conn = psycopg2.connect(
-        host=DB_HOST,
-        database=PE_DB_NAME,
-        user=PE_DB_USERNAME,
-        password=PE_DB_PASSWORD,
-    )
-    LOGGER.info("Connected to PE database.")
+    PE_conn = connect("")
 except:
     LOGGER.error("Failed connecting to PE database.")
 
@@ -138,8 +125,8 @@ for org_index, org_row in orgs.iterrows():
     pe_org_uid = org_row["organizations_uid"]
     org_name = org_row["name"]
 
-    if org_name not in ["Commission of Fine Arts"]:
-        continue
+    # if org_name not in ["Commission of Fine Arts"]:
+    #     continue
 
     LOGGER.info(pe_org_uid)
     LOGGER.info(org_name)
