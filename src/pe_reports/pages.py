@@ -361,7 +361,7 @@ def dark_web(
     alerts_exec_table = buildTable(exec_alerts[:8], ["table"], [15, 70, 15])
     asset_alerts = Cyber6.asset_alerts()
     scorecard_dict["dark_web_asset_alerts_count"] = len(asset_alerts)
-    asset_alerts_table = buildTable(asset_alerts[:5], ["table"], [15, 70, 15])
+    asset_alerts_table = buildTable(asset_alerts[:4], ["table"], [15, 70, 15])
     dark_web_act_table = buildTable(Cyber6.dark_web_most_act(), ["table"], [75, 25])
     social_media = Cyber6.social_media_most_act()
     social_med_act_table = buildTable(social_media, ["table"], [75, 25])
