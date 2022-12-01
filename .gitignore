@@ -32,3 +32,4 @@ src/adhoc/Bulletin/Header2.png
 src/adhoc/Bulletin/Header_img.png
 src/adhoc/data/database.ini
 *.log
+src/pe_reports/assets/*.png
