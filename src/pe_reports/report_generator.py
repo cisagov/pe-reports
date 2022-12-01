@@ -183,6 +183,7 @@ def generate_reports(datestring, output_directory):
             # Create scorecard
             scorecard_filename = f"{output_directory}/{org_code}/Posture-and-Exposure-Scorecard_{org_code}_{scorecard_dict['end_date'].strftime('%Y-%m-%d')}.pdf"
             create_scorecard(scorecard_dict, scorecard_filename)
+
             # Convert to HTML to PDF
             output_filename = f"{output_directory}/Posture_and_Exposure_Report-{org_code}-{datestring}.pdf"
             convert_html_to_pdf(source_html, output_filename)
@@ -239,7 +240,13 @@ def generate_reports(datestring, output_directory):
                     "%s is too large. File size: %s Limit: 20MB", org_code, filesize
                 )
 
-            # upload_file_to_s3(output, datestring, "cisa-crossfeed-pe-reports")
+            # Upload report
+            upload_file_to_s3(output, datestring, "cisa-crossfeed-pe-reports")
+
+            # Upload scorecard
+            upload_file_to_s3(
+                scorecard_filename, datestring, "cisa-crossfeed-pe-reports"
+            )
             generated_reports += 1
     else:
         LOGGER.error(

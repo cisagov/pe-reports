@@ -6,6 +6,7 @@
 
 # Standard Python Libraries
 import logging
+from logging.handlers import RotatingFileHandler
 import os
 
 # Third-Party Libraries
@@ -54,12 +55,14 @@ if DEBUG is True:
 else:
     level = "INFO"
 
+# Logging will rotate at 2GB
 logging.basicConfig(
-    filename=CENTRAL_LOGGING_FILE,
-    filemode="a",
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     datefmt="%m/%d/%Y %I:%M:%S",
     level=level,
+    handlers=[
+        RotatingFileHandler(CENTRAL_LOGGING_FILE, maxBytes=2000000000, backupCount=20)
+    ],
 )
 
 app.config["LOGGER"] = logging.getLogger(__name__)

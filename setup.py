@@ -102,6 +102,7 @@ setup(
         "botocore == 1.24.10",
         "chevron == 0.14.0",
         "celery",
+        "circlify",
         "click",
         "docopt",
         "glob2 == 0.7",

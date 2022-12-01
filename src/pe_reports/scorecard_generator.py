@@ -31,6 +31,8 @@ pdfmetrics.registerFont(
 
 def build_kpi_string(value, last_value):
     """Build a string to show kpi and change since the last period."""
+    if not last_value:
+        last_value = 0
     value_diff = value - last_value
     if value_diff > 0:
         string = f" <font size=18> {value}</font><br></br> Increase of {value_diff}"
@@ -44,6 +46,8 @@ def build_kpi_string(value, last_value):
 
 def determine_arrow(value, last_value, color=False):
     """Determine the arrow color and direction based on current and previous values."""
+    if not last_value:
+        last_value = 0
     value_diff = value - last_value
     if color:
         if value_diff > 0:
@@ -328,32 +332,32 @@ def create_scorecard(data_dict, file_name):
         )
         dns_table1.hAlign = "LEFT"
         dns_activity_frame1.addFromList([dns_table1], can)
-
-        dns_activity_frame2 = Frame(335, 20, 85, 250, showBoundary=show_Border)
-        # dns_activity_paragraph = Paragraph(f"{data_dict['dns']}", style=date_style)
-        dns_table2 = Table(
-            np.array(dns_df2).tolist(),
-            colWidths=None,
-            rowHeights=None,
-            style=None,
-            splitByRow=1,
-            repeatRows=0,
-            repeatCols=0,
-            rowSplitRange=None,
-            spaceBefore=None,
-            spaceAfter=None,
-            cornerRadii=None,
-        )
-        dns_table2.setStyle(
-            TableStyle(
-                [
-                    ("FONTNAME", (0, 0), (-1, -1), "Frank_Goth_Book"),
-                    # ('GRID',(0,0),(-1,-1),0.5,colors.black),
-                ]
+        if len(dns_df2) > 0:
+            dns_activity_frame2 = Frame(335, 20, 85, 250, showBoundary=show_Border)
+            # dns_activity_paragraph = Paragraph(f"{data_dict['dns']}", style=date_style)
+            dns_table2 = Table(
+                np.array(dns_df2).tolist(),
+                colWidths=None,
+                rowHeights=None,
+                style=None,
+                splitByRow=1,
+                repeatRows=0,
+                repeatCols=0,
+                rowSplitRange=None,
+                spaceBefore=None,
+                spaceAfter=None,
+                cornerRadii=None,
             )
-        )
-        dns_table2.hAlign = "RIGHT"
-        dns_activity_frame2.addFromList([dns_table2], can)
+            dns_table2.setStyle(
+                TableStyle(
+                    [
+                        ("FONTNAME", (0, 0), (-1, -1), "Frank_Goth_Book"),
+                        # ('GRID',(0,0),(-1,-1),0.5,colors.black),
+                    ]
+                )
+            )
+            dns_table2.hAlign = "RIGHT"
+            dns_activity_frame2.addFromList([dns_table2], can)
 
     score_style = ParagraphStyle(
         "score_style",

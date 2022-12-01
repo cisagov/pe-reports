@@ -635,6 +635,20 @@ def query_cyberSix_creds(org_uid, start_date, end_date):
         if conn is not None:
             close(conn)
 
+def query_all_subs(conn):
+    """Query sub domains table """
+    try:
+        cur = conn.cursor()
+        sql = """SELECT * FROM sub_domains"""
+        cur.execute(sql)
+        pe_orgs = cur.fetchall()
+        cur.close()
+        return pe_orgs
+    except (Exception, psycopg2.DatabaseError) as error:
+        LOGGER.error("There was a problem with your database query %s", error)
+    finally:
+        if conn is not None:
+            close(conn)
 
 def query_subs(org_uid):
     """Query all subs for an organization."""
@@ -710,7 +724,6 @@ def execute_scorecard(summary_dict):
                 summary_dict["start_date"],
                 summary_dict["end_date"],
                 AsIs(summary_dict["ip_count"]),
-                AsIs(summary_dict["ports_count"]),
                 AsIs(summary_dict["root_count"]),
                 AsIs(summary_dict["sub_count"]),
                 AsIs(summary_dict["num_ports"]),
