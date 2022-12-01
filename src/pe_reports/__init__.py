@@ -61,7 +61,7 @@ logging.basicConfig(
     datefmt="%m/%d/%Y %I:%M:%S",
     level=level,
     handlers=[
-        RotatingFileHandler(CENTRAL_LOGGING_FILE, maxBytes=2000000000, backupCount=20)
+        RotatingFileHandler(CENTRAL_LOGGING_FILE, maxBytes=2000000, backupCount=10)
     ],
 )
 
