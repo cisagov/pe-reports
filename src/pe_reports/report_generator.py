@@ -33,6 +33,7 @@ import pe_reports
 
 from ._version import __version__
 from .data.db_query import connect, get_orgs
+from .helpers.generate_score import get_pe_scores
 from .pages import init
 from .scorecard_generator import create_scorecard
 
@@ -142,6 +143,8 @@ def generate_reports(datestring, output_directory):
     else:
         return 1
     generated_reports = 0
+    # Generate PE scores for all stakeholders.
+    pe_scores_df = get_pe_scores(datestring, 12)
 
     # Iterate over organizations
     if pe_orgs:
@@ -162,6 +165,13 @@ def generate_reports(datestring, output_directory):
                 if not os.path.exists(f"{output_directory}/{dir_name}"):
                     os.mkdir(f"{output_directory}/{dir_name}")
 
+            score = pe_scores_df.loc[
+                pe_scores_df["cyhy_db_name"] == org_code, "PE_score"
+            ].item()
+            grade = pe_scores_df.loc[
+                pe_scores_df["cyhy_db_name"] == org_code, "letter_grade"
+            ].item()
+
             # Insert Charts and Metrics into PDF
             (
                 scorecard_dict,
@@ -175,11 +185,7 @@ def generate_reports(datestring, output_directory):
                 dark_web_mentions,
                 alerts,
                 top_cves,
-            ) = init(
-                datestring,
-                org_name,
-                org_uid,
-            )
+            ) = init(datestring, org_name, org_uid, score, grade)
             # Create scorecard
             scorecard_filename = f"{output_directory}/{org_code}/Posture-and-Exposure-Scorecard_{org_code}_{scorecard_dict['end_date'].strftime('%Y-%m-%d')}.pdf"
             create_scorecard(scorecard_dict, scorecard_filename)

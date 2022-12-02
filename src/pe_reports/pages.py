@@ -397,7 +397,7 @@ def dark_web(
     )
 
 
-def init(datestring, org_name, org_uid):
+def init(datestring, org_name, org_uid, score, grade):
     """Call each page of the report."""
     # Format start_date and end_date for the bi-monthly reporting period.
     # If the given end_date is the 15th, then the start_date is the 1st.
@@ -446,6 +446,8 @@ def init(datestring, org_name, org_uid):
         "root_count": asset_dict["num_root_domain"],
         "sub_count": asset_dict["num_sub_domain"],
         "num_ports": asset_dict["num_ports"],
+        "pe_number_score": score,
+        "pe_letter_grade": grade,
     }
     print(scorecard_dict)
 
@@ -477,10 +479,7 @@ def init(datestring, org_name, org_uid):
     scorecard_dict, chevron_dict, dark_web_mentions, alerts, top_cves = dark_web(
         scorecard_dict, chevron_dict, trending_start_date, start_date, end_date, org_uid
     )
-    # TODO Generate Score for Scorecard
-    scorecard_dict["score_percentage"] = "N/A"
-    scorecard_dict["score_grade"] = "N/A"
-    scorecard_dict["score"] = "N/A"
+
     execute_scorecard(scorecard_dict)
     last_period_stats = query_previous_period(org_uid, previous_end_date)
     scorecard_dict.update(last_period_stats)

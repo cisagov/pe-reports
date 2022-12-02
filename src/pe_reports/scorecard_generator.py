@@ -370,7 +370,7 @@ def create_scorecard(data_dict, file_name):
 
     score_frame = Frame(430, 70, 180, 200, showBoundary=show_Border)
     score_paragraph = Paragraph(
-        f"{data_dict['score_percentage']}<br></br>{data_dict['score_grade']}<br></br>{data_dict['score']}",
+        f"{data_dict['pe_number_score']}<br></br>{data_dict['pe_letter_grade']}",
         style=score_style,
     )
     score_frame.addFromList([score_paragraph], can)

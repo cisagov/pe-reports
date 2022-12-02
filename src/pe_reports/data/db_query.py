@@ -692,9 +692,10 @@ def execute_scorecard(summary_dict):
             creds_count, breach_count, cred_password_count, domain_alert_count,
             suspected_domain_count, insecure_port_count, verified_vuln_count,
             suspected_vuln_count, suspected_vuln_addrs_count, threat_actor_count, dark_web_alerts_count,
-            dark_web_mentions_count, dark_web_executive_alerts_count, dark_web_asset_alerts_count
+            dark_web_mentions_count, dark_web_executive_alerts_count, dark_web_asset_alerts_count,
+            pe_number_score, pe_letter_grade
         )
-        VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+        VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
         ON CONFLICT(organizations_uid, start_date)
         DO
         UPDATE SET
@@ -715,7 +716,9 @@ def execute_scorecard(summary_dict):
             dark_web_alerts_count = EXCLUDED.dark_web_alerts_count,
             dark_web_mentions_count = EXCLUDED.dark_web_mentions_count,
             dark_web_executive_alerts_count = EXCLUDED.dark_web_executive_alerts_count,
-            dark_web_asset_alerts_count = EXCLUDED.dark_web_asset_alerts_count;
+            dark_web_asset_alerts_count = EXCLUDED.dark_web_asset_alerts_count,
+            pe_numeric_score = EXCLUDED.pe_numeric_score,
+            pe_letter_grade = EXCLUDED.pe_letter_grade;
         """
         cur.execute(
             sql,
@@ -741,6 +744,8 @@ def execute_scorecard(summary_dict):
                 AsIs(summary_dict["dark_web_mentions_count"]),
                 AsIs(summary_dict["dark_web_executive_alerts_count"]),
                 AsIs(summary_dict["dark_web_asset_alerts_count"]),
+                AsIs(summary_dict["pe_number_score"]),
+                AsIs(summary_dict["pe_percent_score"]),
             ),
         )
         conn.commit()
@@ -789,3 +794,17 @@ def query_previous_period(org_uid, previous_end_date):
         }
 
     return assets_dict
+
+
+def query_score_data(start, end, sql):
+    """Query data necessary to generate organization scores."""
+    conn = connect()
+    try:
+        df = pd.read_sql(sql, conn, params={"start": start, "end": end})
+        conn.close()
+        return df
+    except (Exception, psycopg2.DatabaseError) as error:
+        LOGGER.error("There was a problem with your database query %s", error)
+    finally:
+        if conn is not None:
+            close(conn)
