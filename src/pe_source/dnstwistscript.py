@@ -27,7 +27,9 @@ date = datetime.datetime.now().strftime("%Y-%m-%d")
 LOGGER = app.config["LOGGER"]
 
 
-def checkBlocklist(dom, sub_domain_uid, source_uid, pe_org_uid, perm_list):
+def checkBlocklist(
+    dom, sub_domain_uid, source_uid, pe_org_uid, perm_list, test_flag=False
+):
     """Cross reference the dnstwist results with DShield blocklist."""
     malicious = False
     attacks = 0
@@ -40,15 +42,16 @@ def checkBlocklist(dom, sub_domain_uid, source_uid, pe_org_uid, perm_list):
             return None, perm_list
         LOGGER.info(domain_a)
 
-        # Check IP in blocklist.de API
-        response = requests.get(
-            "http://api.blocklist.de/api.php?ip=" + str(dom["dns_a"][0])
-        ).content
+        # Check IP in blocklist.de API, if tetsing is true, for testing purposes skip this one as it may go offline
+        if not test_flag:
+            response = requests.get(
+                "http://api.blocklist.de/api.php?ip=" + domain_a
+            ).content
 
-        if str(response) != "b'attacks: 0<br />reports: 0<br />'":
-            malicious = True
-            attacks = int(str(response).split("attacks: ")[1].split("<")[0])
-            reports = int(str(response).split("reports: ")[1].split("<")[0])
+            if str(response) != "b'attacks: 0<br />reports: 0<br />'":
+                malicious = True
+                attacks = int(str(response).split("attacks: ")[1].split("<")[0])
+                reports = int(str(response).split("reports: ")[1].split("<")[0])
 
         # Check IP in DShield API
         try:
@@ -68,14 +71,18 @@ def checkBlocklist(dom, sub_domain_uid, source_uid, pe_org_uid, perm_list):
         dom["dns_aaaa"] = [""]
     else:
         domain_aaaa = str(dom["dns_aaaa"][0])
-        # Check IP in Blocklist API
-        response = requests.get(
-            "http://api.blocklist.de/api.php?ip=" + domain_aaaa
-        ).content
-        if str(response) != "b'attacks: 0<br />reports: 0<br />'":
-            malicious = True
-            attacks = int(str(response).split("attacks: ")[1].split("<")[0])
-            reports = int(str(response).split("reports: ")[1].split("<")[0])
+
+        if not test_flag:
+            # Check IP in Blocklist API
+            response = requests.get(
+                "http://api.blocklist.de/api.php?ip=" + domain_aaaa
+            ).content
+
+            if str(response) != "b'attacks: 0<br />reports: 0<br />'":
+                malicious = True
+                attacks = int(str(response).split("attacks: ")[1].split("<")[0])
+                reports = int(str(response).split("reports: ")[1].split("<")[0])
+
         try:
             results = json.loads(dshield.ip(domain_aaaa, return_format=dshield.JSON))
             threats = results["ip"]["threatfeeds"]
