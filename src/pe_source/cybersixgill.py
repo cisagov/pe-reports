@@ -6,6 +6,7 @@ import sys
 
 # cisagov Libraries
 from pe_reports import app
+from pe_reports.peExcept import SixGillApiException, SixGillDatabaseException
 
 from .data.pe_db.db_query_source import (
     get_breaches,
@@ -128,16 +129,19 @@ class Cybersixgill:
             alerts_df["data_source_uid"] = source_uid
             # Rename columns
             alerts_df = alerts_df.rename(columns={"id": "sixgill_id"})
-        except Exception as e:
-            LOGGER.error("Failed fetching alert data for %s", org_id)
+        except SixGillApiException(
+            org_id, sixgill_org_id, "Failed Fetching Alert Data"
+        ) as e:
+            # LOGGER.error("Failed fetching alert data for %s", org_id)
             LOGGER.error(e)
             return 1
 
         # Insert alert data into the PE database
         try:
             insert_sixgill_alerts(alerts_df)
-        except Exception as e:
-            LOGGER.error("Failed inserting alert data for %s", org_id)
+        except SixGillApiException(
+            org_id, sixgill_org_id, "Failed inserting alert data"
+        ) as e:
             LOGGER.error(e)
             return 1
         return 0
@@ -149,8 +153,10 @@ class Cybersixgill:
         # Fetch org aliases from Cybersixgill
         try:
             aliases = alias_organization(sixgill_org_id)
-        except Exception as e:
-            LOGGER.error("Failed fetching aliases for %s", org_id)
+        except SixGillApiException(
+            org_id, sixgill_org_id, "Failed fetching aliases"
+        ) as e:
+            # LOGGER.error("Failed fetching aliases for %s", org_id)
             LOGGER.error(e)
             return 1
 
@@ -161,15 +167,19 @@ class Cybersixgill:
             mentions_df["organizations_uid"] = pe_org_uid
             # Add data source uid
             mentions_df["data_source_uid"] = source_uid
-        except Exception as e:
-            LOGGER.error("Failed fetching mentions for %s", org_id)
+        except SixGillApiException(
+            org_id, sixgill_org_id, "Failed fetching mentions"
+        ) as e:
+            # LOGGER.error("Failed fetching mentions for %s", org_id)
             LOGGER.error(e)
             return 1
 
         # Insert mention data into the PE database
         try:
             insert_sixgill_mentions(mentions_df)
-        except Exception as e:
+        except SixGillApiException(
+            org_id, sixgill_org_id, "Failed Inserting Alert Data"
+        ) as e:
             LOGGER.error("Failed inserting mentions for %s", org_id)
             LOGGER.error(e)
             return 1
@@ -182,8 +192,10 @@ class Cybersixgill:
         # Fetch org root domains from Cybersixgill
         try:
             roots = root_domains(sixgill_org_id)
-        except Exception as e:
-            LOGGER.error("Failed fetching root domains for %s", org_id)
+        except SixGillApiException(
+            org_id, sixgill_org_id, "Failed fetching root domains"
+        ) as e:
+            # LOGGER.error("Failed fetching root domains for %s", org_id)
             LOGGER.error(e)
             return 1
 
@@ -193,8 +205,10 @@ class Cybersixgill:
             creds_df["organizations_uid"] = pe_org_uid
             # Add data source uid
             creds_df["data_source_uid"] = source_uid
-        except Exception as e:
-            LOGGER.error("Failed fetching credentials for %s", org_id)
+        except SixGillApiException(
+            org_id, sixgill_org_id, "Failed fetching credentials"
+        ) as e:
+            # LOGGER.error("Failed fetching credentials for %s", org_id)
             LOGGER.error(e)
             return 1
 
@@ -234,8 +248,10 @@ class Cybersixgill:
         # Insert breach data into the PE database
         try:
             insert_sixgill_breaches(creds_breach_df)
-        except Exception as e:
-            LOGGER.error("Failed inserting breaches for %s", org_id)
+        except SixGillDatabaseException(
+            org_id, sixgill_org_id, "Failed inserting data"
+        ) as e:
+            # LOGGER.error("Failed inserting breaches for %s", org_id)
             LOGGER.error(e)
             return 1
 
@@ -267,8 +283,10 @@ class Cybersixgill:
         ]
         try:
             insert_sixgill_credentials(creds_df)
-        except Exception as e:
-            LOGGER.error("Failed inserting credentials for %s", org_id)
+        except SixGillDatabaseException(
+            org_id, sixgill_org_id, "Failed Inserting Alert Data"
+        ) as e:
+            # LOGGER.error("Failed inserting credentials for %s", org_id)
             LOGGER.error(e)
             return 1
         return 0
@@ -293,16 +311,18 @@ class Cybersixgill:
                 except Exception:
                     summary = ""
                 top_cve_df.at[index, "summary"] = summary
-        except Exception as e:
-            LOGGER.error("Failed fetching top CVEs.")
+        except SixGillApiException(source_uid, 0, "Failed fetching CVEs") as e:
+            # LOGGER.error("Failed fetching top CVEs.")
             LOGGER.error(e)
             return 1
 
         # Insert credential data into the PE database
         try:
             insert_sixgill_topCVEs(top_cve_df)
-        except Exception as e:
-            LOGGER.error("Failed inserting top CVEs.")
+        except SixGillDatabaseException(
+            source_uid, 0, "Failed inserting top CVEs"
+        ) as e:
+            # LOGGER.error("Failed inserting top CVEs.")
             LOGGER.error(e)
             return 1
         return 0

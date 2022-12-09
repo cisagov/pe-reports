@@ -11,6 +11,7 @@ import shodan
 
 # cisagov Libraries
 from pe_reports import app
+from pe_reports.peExcept import ShodanIPFailure
 from pe_source.data.pe_db.db_query_source import (
     get_data_source_uid,
     get_ips,
@@ -31,9 +32,8 @@ def run_shodan_thread(api, org_chunk, thread_name):
         start, end = get_dates()
         try:
             ips = get_ips(org_uid)
-        except Exception as e:
-            LOGGER.error("{} Failed fetching IPs for {}.".format(thread_name, org_name))
-            LOGGER.error("{} {} - {}".format(thread_name, e, org_name))
+        except ShodanIPFailure(thread_name, org_name) as e:
+            LOGGER.error(e)
             failed.append("{} fetching IPs".format(org_name))
             continue
 
