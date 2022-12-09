@@ -381,13 +381,33 @@ class Malware_Vulns:
 class Cyber_Six:
     """Dark web and Cyber Six data class."""
 
-    def __init__(self, trending_start_date, start_date, end_date, org_uid):
+    def __init__(
+        self, trending_start_date, start_date, end_date, org_uid, soc_med_included
+    ):
         """Initialize Cybersixgill vulns and malware class."""
         self.trending_start_date = trending_start_date
         self.start_date = start_date
         self.end_date = end_date
         self.org_uid = org_uid
-
+        self.soc_med_included = soc_med_included
+        self.soc_med_platforms = [
+            "twitter",
+            "Twitter",
+            "reddit",
+            "Reddit",
+            "Parler",
+            "parler",
+            "linkedin",
+            "Linkedin",
+            "discord",
+            "forum_discord",
+            "raddle",
+            "telegram",
+            "jabber",
+            "ICQ",
+            "icq",
+            "mastodon",
+        ]
         dark_web_mentions = query_darkweb(
             org_uid,
             start_date,
@@ -398,6 +418,10 @@ class Cyber_Six:
             columns=["organizations_uid", "mentions_uid"],
             errors="ignore",
         )
+        if not soc_med_included:
+            dark_web_mentions = dark_web_mentions[
+                ~dark_web_mentions["site"].isin(self.soc_med_platforms)
+            ]
         self.dark_web_mentions = dark_web_mentions
 
         alerts = query_darkweb(
@@ -410,6 +434,8 @@ class Cyber_Six:
             columns=["organizations_uid", "alerts_uid"],
             errors="ignore",
         )
+        if not soc_med_included:
+            alerts = alerts[~alerts["site"].isin(self.soc_med_platforms)]
         self.alerts = alerts
 
         top_cves = query_darkweb_cves(
@@ -462,15 +488,16 @@ class Cyber_Six:
             name.append("INVITE ONLY MARKET")
             value.append(len(markets))
 
-        soc_med = query_darkweb(
-            self.org_uid,
-            self.start_date,
-            self.end_date,
-            "vw_darkweb_socmedia_mostactposts",
-        )
-        if len(soc_med) > 0:
-            name.append("SOCIAL MEDIA")
-            value.append(len(soc_med))
+        if self.soc_med_included:
+            soc_med = query_darkweb(
+                self.org_uid,
+                self.start_date,
+                self.end_date,
+                "vw_darkweb_socmedia_mostactposts",
+            )
+            if len(soc_med) > 0:
+                name.append("SOCIAL MEDIA")
+                value.append(len(soc_med))
 
         dark_web_forum = query_darkweb(
             self.org_uid,
@@ -549,6 +576,10 @@ class Cyber_Six:
             columns=["organizations_uid", "date"],
             errors="ignore",
         )
+        if not self.soc_med_included:
+            asset_alerts = asset_alerts[
+                ~asset_alerts["Site"].isin(self.soc_med_platforms)
+            ]
         asset_alerts["Title"] = asset_alerts["Title"].str[:75]
         return asset_alerts
 
@@ -564,6 +595,8 @@ class Cyber_Six:
             columns=["organizations_uid", "date"],
             errors="ignore",
         )
+        if not self.soc_med_included:
+            alerts_exec = alerts_exec[~alerts_exec["Site"].isin(self.soc_med_platforms)]
         alerts_exec["Title"] = alerts_exec["Title"].str[:100]
         return alerts_exec
 
@@ -599,6 +632,10 @@ class Cyber_Six:
             columns=["organizations_uid", "date"],
             errors="ignore",
         )
+        if not self.soc_med_included:
+            alerts_threats = alerts_threats[
+                ~alerts_threats["Site"].isin(self.soc_med_platforms)
+            ]
         alerts_threats = (
             alerts_threats.groupby(["Site", "Threats"])["Threats"]
             .count()
@@ -620,6 +657,10 @@ class Cyber_Six:
             columns=["organizations_uid", "date"],
             errors="ignore",
         )
+        if not self.soc_med_included:
+            dark_web_sites = dark_web_sites[
+                ~dark_web_sites["Site"].isin(self.soc_med_platforms)
+            ]
         dark_web_sites = (
             dark_web_sites.groupby(["Site"])["Site"]
             .count()

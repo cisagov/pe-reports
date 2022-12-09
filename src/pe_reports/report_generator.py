@@ -1,7 +1,7 @@
 """cisagov/pe-reports: A tool for creating Posture & Exposure reports.
 
 Usage:
-  pe-reports REPORT_DATE OUTPUT_DIRECTORY [--log-level=LEVEL]
+  pe-reports REPORT_DATE OUTPUT_DIRECTORY [--log-level=LEVEL] [--social-media]
 
 Options:
   -h --help                         Show this message.
@@ -11,6 +11,7 @@ Options:
   -l --log-level=LEVEL              If specified, then the log level will be set to
                                     the specified value.  Valid values are "debug", "info",
                                     "warning", "error", and "critical". [default: info]
+  -sc --soc_med_included                     Include social media posts from Cybersixgill in the report.
 """
 
 # Standard Python Libraries
@@ -134,7 +135,7 @@ def convert_html_to_pdf(source_html, output_filename):
     return pisa_status.err
 
 
-def generate_reports(datestring, output_directory):
+def generate_reports(datestring, output_directory, soc_med_included=False):
     """Process steps for generating report data."""
     # Get PE orgs from PE db
     conn = connect()
@@ -185,7 +186,7 @@ def generate_reports(datestring, output_directory):
                 dark_web_mentions,
                 alerts,
                 top_cves,
-            ) = init(datestring, org_name, org_uid, score, grade)
+            ) = init(datestring, org_name, org_uid, score, grade, soc_med_included)
             # Create scorecard
             scorecard_filename = f"{output_directory}/{org_code}/Posture-and-Exposure-Scorecard_{org_code}_{scorecard_dict['end_date'].strftime('%Y-%m-%d')}.pdf"
             create_scorecard(scorecard_dict, scorecard_filename)
@@ -309,6 +310,7 @@ def main():
     generate_reports(
         validated_args["REPORT_DATE"],
         validated_args["OUTPUT_DIRECTORY"],
+        validated_args["soc_med_included"],
     )
 
     # Stop logging and clean up

@@ -2,7 +2,7 @@
 
 # Third-Party Libraries
 from flask_wtf import FlaskForm
-from wtforms import StringField, SubmitField, TextAreaField
+from wtforms import RadioField, StringField, SubmitField, TextAreaField
 
 
 class InfoFormExternal(FlaskForm):
@@ -15,7 +15,11 @@ class InfoFormExternal(FlaskForm):
     output_directory = StringField(
         "The directory where the final PDF reports should be saved. "
     )
-
+    soc_media_included = RadioField(
+        "Do you want to include social media mentions or alerts?",
+        choices=[(False, "Filter out Social Media"), (True, "Include Social Media")],
+        default=False,
+    )
     submit = SubmitField("Submit", render_kw={"onclick": "loading()"})
 
 

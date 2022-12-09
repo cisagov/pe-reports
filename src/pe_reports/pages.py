@@ -324,10 +324,18 @@ def mal_vuln(scorecard_dict, chevron_dict, start_date, end_date, org_uid, source
 
 
 def dark_web(
-    scorecard_dict, chevron_dict, trending_start_date, start_date, end_date, org_uid
+    scorecard_dict,
+    chevron_dict,
+    trending_start_date,
+    start_date,
+    end_date,
+    org_uid,
+    soc_med_included,
 ):
     """Dark Web Mentions."""
-    Cyber6 = Cyber_Six(trending_start_date, start_date, end_date, org_uid)
+    Cyber6 = Cyber_Six(
+        trending_start_date, start_date, end_date, org_uid, soc_med_included
+    )
     # Build dark web mentions over time line chart
     width = 16.51
     height = 12
@@ -363,8 +371,12 @@ def dark_web(
     scorecard_dict["dark_web_asset_alerts_count"] = len(asset_alerts)
     asset_alerts_table = buildTable(asset_alerts[:4], ["table"], [15, 70, 15])
     dark_web_act_table = buildTable(Cyber6.dark_web_most_act(), ["table"], [75, 25])
+
     social_media = Cyber6.social_media_most_act()
+    if not soc_med_included:
+        social_media = social_media[0:0]
     social_med_act_table = buildTable(social_media, ["table"], [75, 25])
+
     invite_only_markets_table = buildTable(
         Cyber6.invite_only_markets(), ["table"], [50, 50]
     )
@@ -397,7 +409,7 @@ def dark_web(
     )
 
 
-def init(datestring, org_name, org_uid, score, grade):
+def init(datestring, org_name, org_uid, score, grade, soc_med_included=False):
     """Call each page of the report."""
     # Format start_date and end_date for the bi-monthly reporting period.
     # If the given end_date is the 15th, then the start_date is the 1st.
@@ -407,7 +419,10 @@ def init(datestring, org_name, org_uid, score, grade):
 
     try:
         basedir = os.path.abspath(os.path.dirname(__file__))
-        template = os.path.join(basedir, "template.html")
+        if soc_med_included:
+            template = os.path.join(basedir, "template.html")
+        else:
+            template = os.path.join(basedir, "template_sm.html")
         file = open(template)
         source_html = file.read().replace("\n", " ")
         # Close PDF
@@ -477,7 +492,13 @@ def init(datestring, org_name, org_uid, score, grade):
     )
 
     scorecard_dict, chevron_dict, dark_web_mentions, alerts, top_cves = dark_web(
-        scorecard_dict, chevron_dict, trending_start_date, start_date, end_date, org_uid
+        scorecard_dict,
+        chevron_dict,
+        trending_start_date,
+        start_date,
+        end_date,
+        org_uid,
+        soc_med_included,
     )
 
     execute_scorecard(scorecard_dict)

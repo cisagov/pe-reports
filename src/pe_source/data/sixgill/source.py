@@ -54,14 +54,28 @@ def root_domains(org_id):
     return root_domains
 
 
-def mentions(date, aliases):
+def mentions(date, aliases, soc_media_included=False):
     """Pull dark web mentions data for an organization."""
     token = cybersix_token()
     mentions = ""
     for mention in aliases:
         mentions += '"' + mention + '"' + ","
     mentions = mentions[:-1]
-    query = "date:" + date + " AND " + "(" + str(mentions) + ")"
+    if soc_media_included:
+        query = "date:" + date + " AND " + "(" + str(mentions) + ")"
+
+    else:
+        query = (
+            "date:"
+            + date
+            + " AND "
+            + "("
+            + str(mentions)
+            + """)
+                NOT site:(twitter, Twitter, reddit, Reddit, Parler, parler,
+                linkedin, Linkedin, discord, forum_discord, raddle, telegram,
+                jabber, ICQ, icq, mastodon)"""
+        )
     LOGGER.info("Query:")
     LOGGER.info(query)
     count = 1
@@ -145,7 +159,8 @@ def alerts(org_id):
             df_alerts = pd.DataFrame.from_dict(resp)
             all_alerts.append(df_alerts)
             df_all_alerts = pd.concat(all_alerts).reset_index(drop=True)
-        except:
+        except Exception as e:
+            print(e)
             print("HAD TO CONTINUE THROUGH ALERT CHUNK")
             continue
 

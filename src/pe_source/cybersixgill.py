@@ -1,7 +1,6 @@
 """Collect Cybersixgill data."""
 
 # Standard Python Libraries
-from ast import alias
 from datetime import date, datetime, timedelta
 import logging
 import sys
@@ -49,15 +48,17 @@ LOGGER = logging.getLogger(__name__)
 class Cybersixgill:
     """Fetch Cybersixgill data."""
 
-    def __init__(self, orgs_list, method_list):
+    def __init__(self, orgs_list, method_list, soc_med_included):
         """Initialize Cybersixgill class."""
         self.orgs_list = orgs_list
         self.method_list = method_list
+        self.soc_med_included = soc_med_included
 
     def run_cybersixgill(self):
         """Run Cybersixgill api calls."""
         orgs_list = self.orgs_list
         method_list = self.method_list
+        soc_med_included = self.soc_med_included
 
         # Get org info from PE database
         pe_orgs = get_orgs()
@@ -96,7 +97,13 @@ class Cybersixgill:
                 # Run alerts
                 if "alerts" in method_list:
                     if (
-                        self.get_alerts(org_id, sixgill_org_id, pe_org_uid, source_uid)
+                        self.get_alerts(
+                            org_id,
+                            sixgill_org_id,
+                            pe_org_uid,
+                            source_uid,
+                            soc_med_included,
+                        )
                         == 1
                     ):
                         failed.append("%s alerts" % org_id)
@@ -104,7 +111,11 @@ class Cybersixgill:
                 if "mentions" in method_list:
                     if (
                         self.get_mentions(
-                            org_id, sixgill_org_id, pe_org_uid, source_uid
+                            org_id,
+                            sixgill_org_id,
+                            pe_org_uid,
+                            source_uid,
+                            soc_med_included,
                         )
                         == 1
                     ):
@@ -121,10 +132,29 @@ class Cybersixgill:
         if len(failed) > 0:
             LOGGER.error("Failures: %s", failed)
 
-    def get_alerts(self, org_id, sixgill_org_id, pe_org_uid, source_uid):
+    def get_alerts(
+        self, org_id, sixgill_org_id, pe_org_uid, source_uid, soc_med_included
+    ):
         """Get alerts."""
         LOGGER.info("Fetching alert data for %s.", org_id)
-
+        soc_med_platforms = [
+            "twitter",
+            "Twitter",
+            "reddit",
+            "Reddit",
+            "Parler",
+            "parler",
+            "linkedin",
+            "Linkedin",
+            "discord",
+            "forum_discord",
+            "raddle",
+            "telegram",
+            "jabber",
+            "ICQ",
+            "icq",
+            "mastodon",
+        ]
         # if org_id not in ["DHS_FLETC","EAC","DOC_CENSUS","DOL_BLS","VA","HUD","NSF","OPM","DHS_CIS","SSA","NASA","DOC_BIS","DOC_NOAA","DOC_OS","DOC_OIG"]:
         #     return 1
 
@@ -132,6 +162,8 @@ class Cybersixgill:
         try:
             print(sixgill_org_id)
             alerts_df = alerts(sixgill_org_id)
+            if not soc_med_included:
+                alerts_df = alerts_df[~alerts_df["site"].isin(soc_med_platforms)]
             # Add pe_org_id
             alerts_df["organizations_uid"] = pe_org_uid
             # Add data source uid
@@ -156,23 +188,22 @@ class Cybersixgill:
                 try:
                     alert_id = alert_row["sixgill_id"]
 
-                    # content_snip, asset_mentioned, asset_type = get_alerts_content(
-                    #     sixgill_org_id, alert_id, org_assets_dict
-                    # )
+                    content_snip, asset_mentioned, asset_type = get_alerts_content(
+                        sixgill_org_id, alert_id, org_assets_dict
+                    )
 
                     alerts_df.at[alert_index, "content_snip"] = content_snip
                     alerts_df.at[alert_index, "asset_mentioned"] = asset_mentioned
                     alerts_df.at[alert_index, "asset_type"] = asset_type
                 except Exception as e:
-                    # LOGGER.error(
-                    #     "Failed fetching a specific alert content for %s", org_id
-                    # )
-                    # LOGGER.error(e)
-                    # print(traceback.format_exc())
+                    LOGGER.error(
+                        "Failed fetching a specific alert content for %s", org_id
+                    )
+                    LOGGER.error(e)
+                    print(traceback.format_exc())
                     alerts_df.at[alert_index, "content_snip"] = ""
                     alerts_df.at[alert_index, "asset_mentioned"] = ""
                     alerts_df.at[alert_index, "asset_type"] = ""
-            # print(alerts_df["asset_mentioned"])
 
         except Exception as e:
             LOGGER.error("Failed fetching alert content for %s", org_id)
@@ -189,7 +220,9 @@ class Cybersixgill:
             return 1
         return 0
 
-    def get_mentions(self, org_id, sixgill_org_id, pe_org_uid, source_uid):
+    def get_mentions(
+        self, org_id, sixgill_org_id, pe_org_uid, source_uid, soc_med_included
+    ):
         """Get mentions."""
         LOGGER.info("Fetching mention data for %s.", org_id)
 
@@ -267,7 +300,7 @@ class Cybersixgill:
                 aliases.remove("stb")
                 aliases.append("surface transportation")
             try:
-                mentions_df = mentions(DATE_SPAN, aliases)
+                mentions_df = mentions(DATE_SPAN, aliases, soc_med_included)
             except UnboundLocalError:
                 return 1
             mentions_df = mentions_df.rename(columns={"id": "sixgill_mention_id"})

@@ -10,8 +10,6 @@ import os
 from flask import Blueprint, flash, redirect, render_template, url_for
 import spacy
 
-LOGGER = logging.getLogger(__name__)
-
 # cisagov Libraries
 from adhoc.Bulletin.bulletin_generator import (
     generate_creds_bulletin,
@@ -24,6 +22,8 @@ from pe_reports.report_gen.forms import (
     InfoFormExternal,
 )
 from pe_reports.report_generator import generate_reports
+
+LOGGER = logging.getLogger(__name__)
 
 # If you are getting errors saying that a "en_core_web_lg" is loaded. Run the command " python -m spacy download en_core_web_trf" but might have to chagne the name fo the spacy model
 nlp = spacy.load("en_core_web_lg")
@@ -52,8 +52,10 @@ def report_gen():
         LOGGER.info("Got to the submit validate")
         report_date = formExternal.report_date.data
         output_directory = formExternal.output_directory.data
+        soc_media_included = formExternal.soc_media_included
         formExternal.report_date.data = ""
         formExternal.output_directory.data = ""
+        formExternal.soc_media_included.data = False
 
         try:
             datetime.datetime.strptime(report_date, "%Y-%m-%d")
@@ -65,7 +67,7 @@ def report_gen():
             os.mkdir(output_directory)
 
         # Generate reports
-        generate_reports(report_date, output_directory)
+        generate_reports(report_date, output_directory, soc_media_included)
 
     bulletinForm = BulletinFormExternal()
 
