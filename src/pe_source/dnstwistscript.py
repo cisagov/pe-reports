@@ -25,15 +25,15 @@ from .data.pe_db.db_query_source import (
 
 date = datetime.datetime.now().strftime("%Y-%m-%d")
 LOGGER = app.config["LOGGER"]
+blocklistStatus = True
 
 
-def checkBlocklist(
-    dom, sub_domain_uid, source_uid, pe_org_uid, perm_list, test_flag=False
-):
+def checkBlocklist(dom, sub_domain_uid, source_uid, pe_org_uid, perm_list):
     """Cross reference the dnstwist results with DShield blocklist."""
     malicious = False
     attacks = 0
     reports = 0
+    global blocklistStatus
     if "original" in dom["fuzzer"] or "dns_a" not in dom:
         return None, perm_list
     else:
@@ -42,16 +42,20 @@ def checkBlocklist(
             return None, perm_list
         LOGGER.info(domain_a)
 
-        # Check IP in blocklist.de API, if tetsing is true, for testing purposes skip this one as it may go offline
-        if not test_flag:
-            response = requests.get(
-                "http://api.blocklist.de/api.php?ip=" + domain_a
-            ).content
-
-            if str(response) != "b'attacks: 0<br />reports: 0<br />'":
-                malicious = True
-                attacks = int(str(response).split("attacks: ")[1].split("<")[0])
-                reports = int(str(response).split("reports: ")[1].split("<")[0])
+        # Making api request to blocklist.de, if timeout is reached, set blocklistStatus to False and not check it again
+        try:
+            if blocklistStatus:
+                response = requests.get(
+                    "http://api.blocklist.de/api.php?ip=" + str(dom["dns_a"][0]),
+                    timeout=10,
+                ).content
+                if str(response) != "b'attacks: 0<br />reports: 0<br />'":
+                    malicious = True
+                    attacks = int(str(response).split("attacks: ")[1].split("<")[0])
+                    reports = int(str(response).split("reports: ")[1].split("<")[0])
+        except requests.exceptions.Timeout:
+            blocklistStatus = False
+            LOGGER.info("Timeout on blocklist.de API")
 
         # Check IP in DShield API
         try:
@@ -72,7 +76,7 @@ def checkBlocklist(
     else:
         domain_aaaa = str(dom["dns_aaaa"][0])
 
-        if not test_flag:
+        if blocklistStatus:
             # Check IP in Blocklist API
             response = requests.get(
                 "http://api.blocklist.de/api.php?ip=" + domain_aaaa

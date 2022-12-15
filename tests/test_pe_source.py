@@ -358,9 +358,7 @@ def test_blocklist():
         "dns_mx": ["alt1.aspmx.l.google.com"],
         "ssdeep_score": "",
     }
-    test1, test2 = pe_source.dnstwistscript.checkBlocklist(
-        dom, 1, 1, 1, [], test_flag=True
-    )
+    test1, test2 = pe_source.dnstwistscript.checkBlocklist(dom, 1, 1, 1, [])
     assert test1["data_source_uid"] == 1
     assert test1["domain_permutation"] == "a0.com"
     assert test2[0] == "a0.com"
