@@ -13,8 +13,7 @@ import pytest
 from pe_reports import CENTRAL_LOGGING_FILE
 import pe_source.cybersixgill
 import pe_source.data.sixgill.api
-
-# import pe_source.dnstwistscript
+import pe_source.dnstwistscript
 import pe_source.pe_scripts
 import pe_source.shodan
 
@@ -335,6 +334,34 @@ def test_shodan_search(
             ],
             "Thread 1:",
         )
+
+
+def test_dnstwistfuzzing():
+    """Test if dnstwist is installed correctly."""
+    res = pe_source.dnstwistscript.execute_dnstwist("a.com", test=1)
+    assert len(res) != 0
+    assert res[1]["fuzzer"] == "addition"
+    assert res[1]["domain"] != ""
+    assert (
+        len(res[1]["dns_ns"]) != 0
+    )  # all domains returned should be registered so this must have something
+
+
+def test_blocklist():
+    """Test if blocklist is working correctly."""
+    dom = {
+        "fuzzer": "addition",
+        "domain": "a0.com",
+        "dns_ns": ["liz.ns.cloudflare.com"],
+        "dns_a": ["104.21.34.160"],
+        "dns_aaaa": ["2606:4700:3036::6815:22a0"],
+        "dns_mx": ["alt1.aspmx.l.google.com"],
+        "ssdeep_score": "",
+    }
+    test1, test2 = pe_source.dnstwistscript.checkBlocklist(dom, 1, 1, 1, [])
+    assert test1["data_source_uid"] == 1
+    assert test1["domain_permutation"] == "a0.com"
+    assert test2[0] == "a0.com"
 
 
 # TODO: Add shodan search once this issue is addressed
