@@ -46,7 +46,7 @@ def checkBlocklist(dom, sub_domain_uid, source_uid, pe_org_uid, perm_list):
         try:
             if blocklistStatus:
                 response = requests.get(
-                    "http://api.blocklist.de/api.php?ip=" + str(dom["dns_a"][0]),
+                    "http://api.blocklist.de/api.php?ip=" + domain_a,
                     timeout=10,
                 ).content
                 if str(response) != "b'attacks: 0<br />reports: 0<br />'":
@@ -66,7 +66,8 @@ def checkBlocklist(dom, sub_domain_uid, source_uid, pe_org_uid, perm_list):
             dshield_attacks = int(results["ip"].get("attacks", 0))
             malicious = True
             dshield_count = len(threats)
-        except KeyError:
+        except Exception:
+            LOGGER.info("Dshield API error")
             dshield_attacks = 0
             dshield_count = 0
 
@@ -81,7 +82,8 @@ def checkBlocklist(dom, sub_domain_uid, source_uid, pe_org_uid, perm_list):
         if blocklistStatus:
             # Check IP in Blocklist API
             response = requests.get(
-                "http://api.blocklist.de/api.php?ip=" + domain_aaaa
+                "http://api.blocklist.de/api.php?ip=" + domain_aaaa,
+                timeout=10,
             ).content
 
             if str(response) != "b'attacks: 0<br />reports: 0<br />'":
@@ -95,7 +97,8 @@ def checkBlocklist(dom, sub_domain_uid, source_uid, pe_org_uid, perm_list):
             dshield_attacks = int(results["ip"].get("attacks", 0))
             malicious = True
             dshield_count = len(threats)
-        except KeyError:
+        except Exception:
+            LOGGER.info("Dshield API error")
             dshield_attacks = 0
             dshield_count = 0
 
