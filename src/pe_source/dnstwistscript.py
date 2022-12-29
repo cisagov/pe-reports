@@ -59,9 +59,7 @@ def checkBlocklist(dom, sub_domain_uid, source_uid, pe_org_uid, perm_list):
 
         # Check IP in DShield API
         try:
-            results = json.loads(
-                dshield.ip(str(dom["dns_a"][0]), return_format=dshield.JSON)
-            )
+            results = json.loads(dshield.ip(domain_a), return_format=dshield.JSON)
             threats = results["ip"]["threatfeeds"]
             dshield_attacks = int(results["ip"].get("attacks", 0))
             malicious = True
