@@ -19,6 +19,7 @@ from .api import (
     dve_top_cves,
     intel_post,
     org_assets,
+    get_bulk_cve_resp,
 )
 
 LOGGER = logging.getLogger(__name__)
@@ -227,3 +228,108 @@ def creds(domain, from_date, to_date):
         subset=["email", "breach_name"], keep="first"
     ).reset_index(drop=True)
     return df
+
+
+def extract_bulk_cve_info(cve_list):
+    """
+    Make API call to CyberSixGill to retrieve the corresponding info for a
+    list of CVE names (10 max), and extract/format the relevant data.
+
+    Args:
+        cve_list: list of cve names (i.e. ['CVE-2022-123', 'CVE-2022-456'...])
+
+    Returns:
+        A dataframe with the name and all relevant info for the CVEs listed
+    """
+    # Call get_bulk_cve_info() function to get response
+    resp = get_bulk_cve_resp(cve_list)
+    # Check if there was a good response
+    if resp == None:
+        # If no response, return none
+        return pd.DataFrame()
+    else:
+        # If there is a response, extract relevant data
+        chunk_list = resp.get("objects")
+        chunk_df = pd.DataFrame()
+        # Iterate over each cve in chunk
+        # and extract data
+        for i in range(0, len(chunk_list)):
+            cve_name = chunk_list[i].get("name")
+            # CVSS 2.0 info
+            if chunk_list[i].get("x_sixgill_info").get("nvd").get("v2") != None:
+                cvss_2_0 = (
+                    chunk_list[i]
+                    .get("x_sixgill_info")
+                    .get("nvd")
+                    .get("v2")
+                    .get("current")
+                )
+                cvss_2_0_sev = (
+                    chunk_list[i]
+                    .get("x_sixgill_info")
+                    .get("nvd")
+                    .get("v2")
+                    .get("severity")
+                )
+                cvss_2_0_vec = (
+                    chunk_list[i]
+                    .get("x_sixgill_info")
+                    .get("nvd")
+                    .get("v2")
+                    .get("vector")
+                )
+            else:
+                [cvss_2_0, cvss_2_0_sev, cvss_2_0_vec] = [None, None, None]
+
+            # CVSS 3.0 info
+            if chunk_list[i].get("x_sixgill_info").get("nvd").get("v3") != None:
+                cvss_3_0 = (
+                    chunk_list[i]
+                    .get("x_sixgill_info")
+                    .get("nvd")
+                    .get("v3")
+                    .get("current")
+                )
+                cvss_3_0_sev = (
+                    chunk_list[i]
+                    .get("x_sixgill_info")
+                    .get("nvd")
+                    .get("v3")
+                    .get("severity")
+                )
+                cvss_3_0_vec = (
+                    chunk_list[i]
+                    .get("x_sixgill_info")
+                    .get("nvd")
+                    .get("v3")
+                    .get("vector")
+                )
+            else:
+                [cvss_3_0, cvss_3_0_sev, cvss_3_0_vec] = [None, None, None]
+
+            # DVE info
+            if chunk_list[i].get("x_sixgill_info").get("score") != None:
+                dve_score = (
+                    chunk_list[i].get("x_sixgill_info").get("score").get("current")
+                )
+            else:
+                dve_score = None
+
+            curr_info = {
+                "cve_name": cve_name,
+                "cvss_2_0": cvss_2_0,
+                "cvss_2_0_severity": cvss_2_0_sev,
+                "cvss_2_0_vector": cvss_2_0_vec,
+                "cvss_3_0": cvss_3_0,
+                "cvss_3_0_severity": cvss_3_0_sev,
+                "cvss_3_0_vector": cvss_3_0_vec,
+                "dve_score": dve_score,
+            }
+
+            # Append this CVE row to the chunk_df
+            chunk_df = pd.concat(
+                [chunk_df, pd.DataFrame(curr_info, index=[0])],
+                ignore_index=True,
+            )
+        # Return dataframe of relevant CVE/CVSS/DVE info
+        return chunk_df

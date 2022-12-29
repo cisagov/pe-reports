@@ -69,7 +69,7 @@ def create_scorecard(data_dict, file_name):
     """Create a scorecard from a user provided data dictionary."""
     show_Border = False
     packet = io.BytesIO()
-    print("starting")
+    print("Creating scorecard")
     # create a new PDF with Reportlab
     can = canvas.Canvas(packet, pagesize=letter)
     can.setFillColorRGB(0, 0, 0)  # choose your font colour
@@ -85,7 +85,7 @@ def create_scorecard(data_dict, file_name):
         splitLongWords=1,
     )
     org_name_len = len(data_dict["org_name"])
-    print(org_name_len)
+    # print(org_name_len)
     # Change font size of org name based on how long the string is
     if org_name_len < 26:
         org_name_style.fontSize = 20
@@ -396,14 +396,14 @@ def create_scorecard(data_dict, file_name):
 def generate_circle_chart(df, name):
     """Create the circle chart based on a pandas dataframe."""
     df = df.sort_values(by="Value", ascending=True)
-    print(df.head())
+    # print(df.head())
 
     circles = circlify.circlify(
         df["Value"].tolist(),
         show_enclosure=True,
         target_enclosure=circlify.Circle(x=0, y=0, r=1),
     )
-    print(circles)
+    # print(circles)
 
     fig, ax = plt.subplots(figsize=(10, 10))
     ax.axis("off")

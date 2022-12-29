@@ -12,7 +12,14 @@ from sklearn import preprocessing
 from sklearn.ensemble import IsolationForest
 
 # cisagov Libraries
-from pe_reports.data.db_query import get_orgs_df, query_score_data
+from pe_reports.data.db_query import (
+    get_orgs_df,
+    query_score_data,
+    get_new_cves_list,
+    upsert_new_cves,
+)
+from pe_source.data.sixgill.source import extract_bulk_cve_info
+
 
 # Version 1.0 of the PE scoring algorithm, still a WIP
 
@@ -82,8 +89,56 @@ def get_prev_startstop(curr_date, num_periods):
                     day=15
                 )
                 start_stops.insert(0, [start_date, end_date])
-    # Return array of start/stop dates
+    # Return 2D list of start/stop dates
     return start_stops
+
+
+def update_new_cve_info(start, end):
+    """
+    Get the full list of all new/unknown CVE names for a report period
+    and their associated CVSS/DVE data. Then upsert that data into the
+    cve_info table in the database.
+
+    Args:
+        start/end: The start/end date of the specified report period
+    """
+    # Get list of all new CVEs not yet in the database
+    print("Retrieving list of new CVEs...")
+    new_cve_sql_df = get_new_cves_list(start, end)
+    full_cve_list = new_cve_sql_df["cve_name"]
+
+    # Only continue if new CVEs were found
+    if len(full_cve_list) > 0:
+        # Break up full list into chunks of 10 CVEs
+        chunks = []
+        for i in range(0, len(full_cve_list), 10):
+            x = i
+            chunks.append(full_cve_list[x : x + 10])
+        print(f"Info for {len(full_cve_list)} CVEs requested:")
+        # Dataframe for full CVE list
+        full_cve_info_df = pd.DataFrame()
+        chunk_counter = 1
+        # For each chunk
+        for chunk in chunks:
+            # Converting to list
+            chunk = chunk.tolist()
+            print(f"Getting CVE info for chunk {chunk_counter}/{len(chunks)}...")
+            # Make API call/create dataframe for chunk
+            chunk_df = extract_bulk_cve_info(chunk)
+            print(f"\tChunk {chunk_counter} retrieved!")
+            full_cve_info_df = pd.concat(
+                [full_cve_info_df, chunk_df], ignore_index=True
+            )
+            chunk_counter += 1
+
+        # Upsert new CVE info into cve_info table
+        upsert_new_cves(full_cve_info_df)
+        print("Inserted/Updated new CVEs into cve_info table...\n")
+    else:
+        print("No new CVEs found for this report period...\n")
+
+
+# ---------- PE Score Function ----------
 
 
 def get_pe_scores(curr_date, num_periods):
@@ -111,55 +166,71 @@ def get_pe_scores(curr_date, num_periods):
     [hist_start, hist_stop] = [start_stops[0][0], curr_stop]
 
     # ORG DATA: List of orgs PE is reporting on
+    print("\nRetrieving list of orgs PE reports on...")
     all_orgs = get_orgs_df()
     reported_orgs = all_orgs[all_orgs["report_on"] == True]
     reported_orgs = reported_orgs[["organizations_uid", "cyhy_db_name"]].reset_index(
         drop=True
     )
+    print("\tDone\n")
 
     # BASE DATA: Base Metric Data, current Report period only
+    print("Retrieving PE score base data...")
     sql = "SELECT * FROM pes_base_metrics(%(start)s, %(end)s);"
     pe_base_data_df = query_score_data(
         curr_start.strftime("%m/%d/%Y"), curr_stop.strftime("%m/%d/%Y"), sql
     )
+    print("\tDone\n")
 
     # CVE DATA: verif and unverif CVE/CVSS data, current report period only:
+    print("Updating CVE archive...")
+    # Update CVE archive w/ any new CVEs
+    update_new_cve_info(curr_start.strftime("%Y-%m-%d"), curr_stop.strftime("%Y-%m-%d"))
     # Connect to SQL DB function:
     #   - pes_cve_metrics(curr_start, curr_stop)
-    # CVEDat = pd.read_csv("PES_cveDat_2022_08_15.csv") WIP
 
     # HIST DATA: historical data for anomaly detection for the past n report periods:
+    print("Retrieving PE score historical data...")
     sql = """SELECT * FROM pes_hist_data_totcred(%(start)s, %(end)s);"""
     anomaly_data_cred = query_score_data(
         hist_start.strftime("%m/%d/%Y"), hist_stop.strftime("%m/%d/%Y"), sql
     )
+    print("\tCredential data done")
 
     sql = """SELECT * FROM pes_hist_data_domalert(%(start)s, %(end)s);"""
     anomaly_data_domain = query_score_data(
         hist_start.strftime("%m/%d/%Y"), hist_stop.strftime("%m/%d/%Y"), sql
     )
+    print("\tDomain alert data done")
 
     sql = """SELECT * FROM pes_hist_data_dwalert(%(start)s, %(end)s);"""
     anomaly_data_darkweb_alert = query_score_data(
         hist_start.strftime("%m/%d/%Y"), hist_stop.strftime("%m/%d/%Y"), sql
     )
+    print("\tDark web alert data done")
 
     sql = """SELECT * FROM pes_hist_data_dwment(%(start)s, %(end)s);"""
     anomaly_data_darkweb_mention = query_score_data(
         hist_start.strftime("%m/%d/%Y"), hist_stop.strftime("%m/%d/%Y"), sql
     )
+    print("\tDark web mention data done\n")
 
     # ---------- Aggregate Historical Data ----------
+    print("Beginning PE score calculation...")
     # Prep historical data for use in anomaly detection
     # Converting string date to datetime objects
-    anomaly_data_cred["mod_date"] = pd.to_datetime(anomaly_data_cred["mod_date"])
-    anomaly_data_domain["mod_date"] = pd.to_datetime(anomaly_data_domain["mod_date"])
+    anomaly_data_cred["mod_date"] = pd.to_datetime(
+        anomaly_data_cred["mod_date"]
+    ).dt.date
+    anomaly_data_domain["mod_date"] = pd.to_datetime(
+        anomaly_data_domain["mod_date"]
+    ).dt.date
     anomaly_data_darkweb_alert["mod_date"] = pd.to_datetime(
         anomaly_data_darkweb_alert["mod_date"]
-    )
+    ).dt.date
     anomaly_data_darkweb_mention["date"] = pd.to_datetime(
         anomaly_data_darkweb_mention["date"]
-    )
+    ).dt.date
 
     # Separate lists of dataframes for each metric
     periods_total_cred = []
@@ -543,7 +614,7 @@ def get_pe_scores(curr_date, num_periods):
 
     # The taking the complement of the fully aggregated score to get the final PE score
     # (100 - aggregated score = PE Score)
-    pe_data_agg["PE_score"] = 100 - pe_data_agg["PE_score"]
+    pe_data_agg["PE_score"] = round(100 - pe_data_agg["PE_score"], 2)
     pe_data_agg = pe_data_agg.sort_values(by="PE_score", ascending=False).reset_index(
         drop=True
     )
@@ -571,11 +642,13 @@ def get_pe_scores(curr_date, num_periods):
         ["organizations_uid", "cyhy_db_name", "PE_score", "letter_grade"]
     ]
 
+    print("\nPE score calculation complete!\n")
     # Return dataframe with PE scores
     return pe_data_agg
 
 
-# Demo:
-curr_date = datetime.datetime(2022, 8, 15)  # current report period date
-num_periods = 12  # number of preceding report periods for historical analysis/trending
-print(get_pe_scores(curr_date, num_periods).to_string())
+# Demo/Testing:
+# curr_date = datetime.datetime(2022, 8, 15)  # current report period date
+# num_periods = 12  # number of preceding report periods for historical analysis/trending
+# print(get_pe_scores(curr_date, num_periods).to_string())
+# update_new_cve_info("2022-07-01", "2022-07-15")

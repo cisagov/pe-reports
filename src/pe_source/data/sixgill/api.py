@@ -260,3 +260,38 @@ def getUserInfo():
 
     userInfo = response[1]["assigned_users"]
     return userInfo
+
+
+def get_bulk_cve_resp(cve_list):
+    """
+    Make API call to retrieve the corresponding info for a list of CVE names (10 max).
+
+    Args:
+        cve_list: list of cve names (i.e. ['CVE-2022-123', 'CVE-2022-456'...])
+
+    Returns:
+        Raw API response for CVE list
+
+    """
+    c6g_url = "https://api.cybersixgill.com/dve_enrich/enrich"
+    auth = cybersix_token()
+    headers = {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache",
+        "Authorization": "Bearer " + auth,
+    }
+    body = {
+        "filters": {"ids": cve_list},
+        "results_size": len(cve_list),
+        "from_index": 0,
+    }
+    # Make API call for specified CVE list
+    resp = None
+    while resp is None:
+        try:
+            resp = requests.post(c6g_url, headers=headers, json=body).json()
+        except:
+            pass
+
+    # Return response
+    return resp
