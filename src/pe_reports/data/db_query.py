@@ -637,7 +637,7 @@ def query_cyberSix_creds(org_uid, start_date, end_date):
 
 
 def query_all_subs(conn):
-    """Query sub domains table"""
+    """Query sub domains table."""
     try:
         cur = conn.cursor()
         sql = """SELECT * FROM sub_domains"""
@@ -840,6 +840,7 @@ def get_new_cves_list(start, end):
 def upsert_new_cves(new_cves):
     """
     Upsert dataframe of new CVE data into the cve_info table in the database.
+
     Brand new CVEs will be inserted to the table.
     If there is a conflict, the newer CVE data will overwrite the older CVE data.
 
@@ -858,22 +859,22 @@ def upsert_new_cves(new_cves):
     # Add each CVE to the SQL query
     for idx, row in new_cves.iterrows():
         # Get cvss_2_0_severity
-        if row["cvss_2_0_severity"] == None:
+        if row["cvss_2_0_severity"] is None:
             cvss_2_0_severity = "None"
         else:
             cvss_2_0_severity = f"'{row['cvss_2_0_severity']}'"
         # Get cvss_2_0_vector
-        if row["cvss_2_0_vector"] == None:
+        if row["cvss_2_0_vector"] is None:
             cvss_2_0_vector = "None"
         else:
             cvss_2_0_vector = f"'{row['cvss_2_0_vector']}'"
         # Get cvss_3_0_severity
-        if row["cvss_3_0_severity"] == None:
+        if row["cvss_3_0_severity"] is None:
             cvss_3_0_severity = "None"
         else:
             cvss_3_0_severity = f"'{row['cvss_3_0_severity']}'"
         # Get cvss_3_0_vector
-        if row["cvss_3_0_vector"] == None:
+        if row["cvss_3_0_vector"] is None:
             cvss_3_0_vector = "None"
         else:
             cvss_3_0_vector = f"'{row['cvss_3_0_vector']}'"

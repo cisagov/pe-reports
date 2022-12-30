@@ -17,9 +17,9 @@ from .api import (
     alerts_list,
     credential_auth,
     dve_top_cves,
+    get_bulk_cve_resp,
     intel_post,
     org_assets,
-    get_bulk_cve_resp,
 )
 
 LOGGER = logging.getLogger(__name__)
@@ -232,8 +232,7 @@ def creds(domain, from_date, to_date):
 
 def extract_bulk_cve_info(cve_list):
     """
-    Make API call to CyberSixGill to retrieve the corresponding info for a
-    list of CVE names (10 max), and extract/format the relevant data.
+    Make API call to C6G and retrieve/extract relevant info for a list of CVE names (10 max).
 
     Args:
         cve_list: list of cve names (i.e. ['CVE-2022-123', 'CVE-2022-456'...])
@@ -244,7 +243,7 @@ def extract_bulk_cve_info(cve_list):
     # Call get_bulk_cve_info() function to get response
     resp = get_bulk_cve_resp(cve_list)
     # Check if there was a good response
-    if resp == None:
+    if resp is None:
         # If no response, return none
         return pd.DataFrame()
     else:
@@ -256,7 +255,7 @@ def extract_bulk_cve_info(cve_list):
         for i in range(0, len(chunk_list)):
             cve_name = chunk_list[i].get("name")
             # CVSS 2.0 info
-            if chunk_list[i].get("x_sixgill_info").get("nvd").get("v2") != None:
+            if chunk_list[i].get("x_sixgill_info").get("nvd").get("v2") is not None:
                 cvss_2_0 = (
                     chunk_list[i]
                     .get("x_sixgill_info")
@@ -282,7 +281,7 @@ def extract_bulk_cve_info(cve_list):
                 [cvss_2_0, cvss_2_0_sev, cvss_2_0_vec] = [None, None, None]
 
             # CVSS 3.0 info
-            if chunk_list[i].get("x_sixgill_info").get("nvd").get("v3") != None:
+            if chunk_list[i].get("x_sixgill_info").get("nvd").get("v3") is not None:
                 cvss_3_0 = (
                     chunk_list[i]
                     .get("x_sixgill_info")
@@ -308,7 +307,7 @@ def extract_bulk_cve_info(cve_list):
                 [cvss_3_0, cvss_3_0_sev, cvss_3_0_vec] = [None, None, None]
 
             # DVE info
-            if chunk_list[i].get("x_sixgill_info").get("score") != None:
+            if chunk_list[i].get("x_sixgill_info").get("score") is not None:
                 dve_score = (
                     chunk_list[i].get("x_sixgill_info").get("score").get("current")
                 )

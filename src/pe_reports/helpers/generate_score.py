@@ -13,13 +13,12 @@ from sklearn.ensemble import IsolationForest
 
 # cisagov Libraries
 from pe_reports.data.db_query import (
+    get_new_cves_list,
     get_orgs_df,
     query_score_data,
-    get_new_cves_list,
     upsert_new_cves,
 )
 from pe_source.data.sixgill.source import extract_bulk_cve_info
-
 
 # Version 1.0 of the PE scoring algorithm, still a WIP
 
@@ -95,9 +94,7 @@ def get_prev_startstop(curr_date, num_periods):
 
 def update_new_cve_info(start, end):
     """
-    Get the full list of all new/unknown CVE names for a report period
-    and their associated CVSS/DVE data. Then upsert that data into the
-    cve_info table in the database.
+    Get the list of all new CVEs (with CVSS/DVE data) for a report period, and upsert to the PE database.
 
     Args:
         start/end: The start/end date of the specified report period

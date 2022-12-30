@@ -219,6 +219,7 @@ def setOrganizationUsers(org_id):
             }
 
             response = requests.post(url, headers=headers).json()
+            LOGGER.info("The response is %s", response)
 
 
 def setOrganizationDetails(org_id, orgAliases, orgDomain, orgIP, orgExecs):
@@ -290,7 +291,8 @@ def get_bulk_cve_resp(cve_list):
     while resp is None:
         try:
             resp = requests.post(c6g_url, headers=headers, json=body).json()
-        except:
+        except Exception as e:
+            LOGGER.error("Error making bulk CVE API call: %s", e)
             pass
 
     # Return response
