@@ -114,7 +114,7 @@ setup(
         "Flask-SQLAlchemy",
         "importlib_metadata == 4.8.3",
         "importlib_resources == 5.4.0",
-        "matplotlib == 3.3.4",
+        "matplotlib == 3.6.2",
         "mongo-db-from-config@http://github.com/cisagov/mongo-db-from-config/tarball/develop",
         "openpyxl",
         "pandas == 1.1.5",
