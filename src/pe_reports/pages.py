@@ -76,7 +76,7 @@ def credential(chevron_dict, trending_start_date, start_date, end_date, org_uid)
     x_label = "Week Reported"
     y_label = "Creds Exposed"
     cred_date_chart = Charts(
-        Credential.by_days(),
+        Credential.by_week(),
         width,
         height,
         name,
@@ -274,7 +274,6 @@ def init(datestring, org_name, org_uid):
     # 27 days plus the last day is 4 weeks
     days = datetime.timedelta(27)
     trending_start_date = end_date - days
-
     start = start_date.strftime("%m/%d/%Y")
     end = end_date.strftime("%m/%d/%Y")
     chevron_dict = {

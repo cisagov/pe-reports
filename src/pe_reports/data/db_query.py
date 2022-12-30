@@ -33,9 +33,7 @@ def connect():
     """Connect to PostgreSQL database."""
     conn = None
     try:
-        LOGGER.info("Connecting to the PostgreSQL......")
         conn = psycopg2.connect(**CONN_PARAMS_DIC)
-        LOGGER.info("Connection successful......")
     except OperationalError as err:
         show_psycopg2_exception(err)
         conn = None
@@ -49,10 +47,10 @@ def close(conn):
 
 
 def get_orgs(conn):
-    """Query organizations table."""
+    """Query organizations table for orgs we report on."""
     try:
         cur = conn.cursor()
-        sql = """SELECT * FROM organizations"""
+        sql = """SELECT * FROM organizations WHERE report_on"""
         cur.execute(sql)
         pe_orgs = cur.fetchall()
         cur.close()
@@ -85,6 +83,47 @@ def query_creds_view(org_uid, start_date, end_date):
         sql = """SELECT * FROM vw_breachcomp
         WHERE organizations_uid = %(org_uid)s
         AND modified_date BETWEEN %(start_date)s AND %(end_date)s"""
+        df = pd.read_sql(
+            sql,
+            conn,
+            params={"org_uid": org_uid, "start_date": start_date, "end_date": end_date},
+        )
+        return df
+    except (Exception, psycopg2.DatabaseError) as error:
+        LOGGER.error("There was a problem with your database query %s", error)
+    finally:
+        if conn is not None:
+            close(conn)
+
+
+def query_credsbyday_view(org_uid, start_date, end_date):
+    """Query the credential exposures per day view."""
+    conn = connect()
+    try:
+        sql = """SELECT mod_date, no_password, password_included FROM vw_breachcomp_credsbydate
+        WHERE organizations_uid = %(org_uid)s
+        AND mod_date BETWEEN %(start_date)s AND %(end_date)s"""
+        df = pd.read_sql(
+            sql,
+            conn,
+            params={"org_uid": org_uid, "start_date": start_date, "end_date": end_date},
+        )
+        return df
+    except (Exception, psycopg2.DatabaseError) as error:
+        LOGGER.error("There was a problem with your database query %s", error)
+    finally:
+        if conn is not None:
+            close(conn)
+
+
+def query_breachdetails_view(org_uid, start_date, end_date):
+    """Query the breach details view."""
+    conn = connect()
+    try:
+        sql = """SELECT breach_name, mod_date modified_date, breach_date, password_included, number_of_creds
+        FROM vw_breachcomp_breachdetails
+        WHERE organizations_uid = %(org_uid)s
+        AND mod_date BETWEEN %(start_date)s AND %(end_date)s"""
         df = pd.read_sql(
             sql,
             conn,

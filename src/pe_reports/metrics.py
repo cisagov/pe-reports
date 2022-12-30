@@ -8,7 +8,9 @@ import datetime
 import pandas as pd
 
 from .data.db_query import (
+    query_breachdetails_view,
     query_creds_view,
+    query_credsbyday_view,
     query_darkweb,
     query_darkweb_cves,
     query_domMasq,
@@ -29,40 +31,31 @@ class Credentials:
             org_uid, trending_start_date, end_date
         )
         self.creds_view = query_creds_view(org_uid, start_date, end_date)
+        self.creds_by_day = query_credsbyday_view(
+            org_uid, trending_start_date, end_date
+        )
+        self.breach_details_view = query_breachdetails_view(
+            org_uid, start_date, end_date
+        )
 
-    def by_days(self):
-        """Return number of credentials by day."""
-        df = self.trending_creds_view
-        df = df[["modified_date", "password_included", "email"]].copy()
-        df.loc[:, "modified_date"] = pd.to_datetime(df["modified_date"]).dt.date
-        df = df.groupby(["modified_date", "password_included"], as_index=False).agg(
-            {"email": ["count"]}
-        )
+    def by_week(self):
+        """Return number of credentials by week."""
+        df = self.creds_by_day
         idx = pd.date_range(self.trending_start_date, self.end_date)
-        df.columns = df.columns.droplevel(1)
-        df = (
-            df.pivot(index="modified_date", columns="password_included", values="email")
-            .fillna(0)
-            .reset_index()
-            .rename_axis(None)
-        )
-        df.columns.name = None
-        df = (
-            df.set_index("modified_date")
-            .reindex(idx)
-            .fillna(0.0)
-            .rename_axis("added_date")
-        )
+        df = df.set_index("mod_date").reindex(idx).fillna(0.0).rename_axis("added_date")
         group_limit = self.end_date + datetime.timedelta(1)
         df = df.groupby(
-            pd.Grouper(  # lgtm [py/call/wrong-named-class-argument]
-                level="added_date", freq="7d", origin=group_limit
-            )
+            pd.Grouper(level="added_date", freq="7d", origin=group_limit)
         ).sum()
         df["modified_date"] = df.index
         df["modified_date"] = df["modified_date"].dt.strftime("%m/%d")
         df = df.set_index("modified_date")
-        df = df.rename(columns={True: "Passwords Included", False: "No Password"})
+        df = df.rename(
+            columns={
+                "password_included": "Passwords Included",
+                "no_password": "No Password",
+            }
+        )
         if len(df.columns) == 0:
             df["Passwords Included"] = 0
         return df
@@ -82,38 +75,7 @@ class Credentials:
 
     def breach_details(self):
         """Return breach details."""
-        view_df = self.creds_view
-        view_df = view_df[
-            [
-                "breach_name",
-                "modified_date",
-                "description",
-                "breach_date",
-                "password_included",
-                "email",
-            ]
-        ]
-        breach_df = view_df.groupby(
-            [
-                "breach_name",
-                "modified_date",
-                "description",
-                "breach_date",
-                "password_included",
-            ],
-            as_index=False,
-        ).agg({"email": ["count"]})
-        breach_df.columns = breach_df.columns.droplevel(1)
-        breach_df = breach_df.rename(columns={"email": "number_of_creds"})
-        breach_df = breach_df[
-            [
-                "breach_name",
-                "breach_date",
-                "modified_date",
-                "password_included",
-                "number_of_creds",
-            ]
-        ]
+        breach_df = self.breach_details_view
         breach_det_df = breach_df.rename(columns={"modified_date": "update_date"})
         breach_det_df["update_date"] = pd.to_datetime(breach_det_df["update_date"])
         if len(breach_det_df) > 0:
@@ -224,11 +186,13 @@ class Malware_Vulns:
             org_uid,
             start_date,
             end_date,
-            "shodan_insecure_protocols_unverified_vulns",
+            "vw_shodanvulns_suspected",
         )
         self.insecure_df = insecure_df
 
-        vulns_df = query_shodan(org_uid, start_date, end_date, "shodan_verified_vulns")
+        vulns_df = query_shodan(
+            org_uid, start_date, end_date, "vw_shodanvulns_verified"
+        )
         vulns_df["port"] = vulns_df["port"].astype(str)
         self.vulns_df = vulns_df
 
@@ -242,7 +206,26 @@ class Malware_Vulns:
         insecure = insecure[
             (insecure["protocol"] != "http") & (insecure["protocol"] != "smtp")
         ]
-        return insecure[["ip", "protocol"]].drop_duplicates(keep="first")
+        insecure["port"] = insecure["port"].astype(str)
+        return insecure[["protocol", "ip", "port"]].drop_duplicates(keep="first")
+
+    def insecure_protocols(self):
+        """Get risky assets grouped by protocol."""
+        risky_assets = self.isolate_risky_assets(self.insecure_df)
+        risky_assets = (
+            risky_assets.groupby("protocol")
+            .agg(lambda x: "  ".join(set(x)))
+            .reset_index()
+        )
+        # Limit the IP column to 32 characters so the table isn't too big.
+        # 30 characters is the max length of 2 IPs, plus the 2 spaces.
+        if len(risky_assets.index) > 0:
+            risky_assets["ip"] = risky_assets["ip"].str[:32]
+            risky_assets.loc[risky_assets["ip"].str.len() == 32, "ip"] = (
+                risky_assets["ip"] + "  ..."
+            )
+
+        return risky_assets
 
     def protocol_count(self):
         """Return a count for each insecure protocol."""
@@ -356,7 +339,7 @@ class Cyber_Six:
     """Dark web and Cyber Six data class."""
 
     def __init__(self, trending_start_date, start_date, end_date, org_uid):
-        """Initialize Shodan vulns and malware class."""
+        """Initialize Cybersixgill vulns and malware class."""
         self.trending_start_date = trending_start_date
         self.start_date = start_date
         self.end_date = end_date
