@@ -73,8 +73,9 @@ setup(
         "License :: CC0 1.0 Universal (CC0 1.0) Public Domain Dedication",
         # Specify the Python versions you support here. In particular, ensure
         # that you indicate whether you support Python 2, Python 3 or both.
-        # Temporarily Removed support for python 3.6 due to build failures, waiting for merge from python skeleton
-        # see issue Re-implement 3.6 compatibility #374
+        # Temporarily remove support for Python 3.6 due to build failures; will be reinstated
+        # after https://github.com/cisagov/skeleton-python-library/pull/110 is merged
+        # See issue #374 "Re-implement 3.6 compatibility"
         "Programming Language :: Python :: 3",
         # "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
