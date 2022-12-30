@@ -74,12 +74,15 @@ setup(
         # Specify the Python versions you support here. In particular, ensure
         # that you indicate whether you support Python 2, Python 3 or both.
         # Temporarily Removed support for python 3.6 due to build failures, waiting for merge from python skeleton
+        # see issue Re-implement 3.6 compatibility #374
         "Programming Language :: Python :: 3",
+        # "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
     ],
+    #Revert to 3.6 when issue is resolved, see issue Re-implement 3.6 compatibility #374
     python_requires=">=3.7",
     # What does your project relate to?
     keywords="posture and exposure report",
