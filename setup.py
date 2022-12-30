@@ -82,7 +82,7 @@ setup(
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
     ],
-    #Revert to 3.6 when issue is resolved, see issue Re-implement 3.6 compatibility #374
+    # Revert to 3.6 when issue is resolved, see issue Re-implement 3.6 compatibility #374
     python_requires=">=3.7",
     # What does your project relate to?
     keywords="posture and exposure report",
