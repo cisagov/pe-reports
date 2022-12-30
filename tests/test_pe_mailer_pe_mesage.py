@@ -19,7 +19,7 @@ class Test(unittest.TestCase):
         message = PEMessage(pdf, report_date, to)
         self.assertEqual(message["From"], "reports@cyber.dhs.gov")
         self.assertEqual(
-            message["Subject"], "Posture and Exposure Report - December 15, 2020"
+            message["Subject"], "Posture and Exposure Report - December 15, 2020 (TLP:AMBER)"
         )
         self.assertEqual(message.get("CC"), None)
         self.assertEqual(
@@ -99,7 +99,7 @@ Cybersecurity and Infrastructure Security Agency<br>
 
         self.assertEqual(message["From"], "reports@cyber.dhs.gov")
         self.assertEqual(
-            message["Subject"], "Posture and Exposure Report - December 15, 2020"
+            message["Subject"], "Posture and Exposure Report - December 15, 2020 (TLP:AMBER)"
         )
         self.assertEqual(message.get("CC"), None)
         self.assertEqual(
@@ -185,7 +185,7 @@ Cybersecurity and Infrastructure Security Agency<br>
 
         self.assertEqual(message["From"], fm)
         self.assertEqual(
-            message["Subject"], "Posture and Exposure Report - December 15, 2020"
+            message["Subject"], "Posture and Exposure Report - December 15, 2020 (TLP:AMBER)"
         )
         self.assertEqual(message["CC"], "cc@example.com")
         self.assertEqual(message["BCC"], "bcc@example.com,bcc2@example.com")
@@ -269,7 +269,7 @@ Cybersecurity and Infrastructure Security Agency<br>
 
         self.assertEqual(message["From"], fm)
         self.assertEqual(
-            message["Subject"], "Posture and Exposure Report - December 15, 2020"
+            message["Subject"], "Posture and Exposure Report - December 15, 2020 (TLP:AMBER)"
         )
         self.assertEqual(message["CC"], "cc@example.com,cc2@example.com")
         self.assertEqual(message["BCC"], "bcc@example.com,bcc2@example.com")
