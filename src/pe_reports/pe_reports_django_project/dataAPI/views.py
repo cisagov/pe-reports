@@ -32,15 +32,14 @@ from asgiref.sync import sync_to_async
 from decouple import config
 
 from home.models import Organizations
+
 from .models import apiUser
 from . import schemas
 
 LOGGER = logging.getLogger(__name__)
 
 
-api_keys = [
-    "akljnv13bvi2vfo0b0bw"
-]
+
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
@@ -53,13 +52,14 @@ ALGORITHM = "HS256"
 JWT_SECRET_KEY = config('JWT_SECRET_KEY')   # should be kept secret
 JWT_REFRESH_SECRET_KEY = config('JWT_REFRESH_SECRET_KEY')   # should be kept secret
 
-API_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE2NzIyNjExNzMsInN1YiI6Impha2U3NSJ9._lWhvicyif9LMDl7YkKOF1POVJ43KX8jUFN1G6sti3I"
 API_KEY_NAME = "access_token"
 COOKIE_DOMAIN = "localtest.me"
 
+# TODO following api_key_query was left intentionally for future development
+#   to pass query to api call see issue#
 # api_key_query = APIKeyQuery(name=API_KEY_NAME, auto_error=False)
 api_key_header = APIKeyHeader(name=API_KEY_NAME, auto_error=False)
-# api_key_cookie = APIKeyCookie(name=API_KEY_NAME, auto_error=False)
+
 
 
 def create_access_token(subject: Union[str, Any],
@@ -170,7 +170,7 @@ async def get_api_key(
 
 
 
-@api_router.get("/orgs", dependencies=[Depends(get_api_key)],
+@api_router.post("/orgs", dependencies=[Depends(get_api_key)],
                 response_model=List[schemas.Organization], tags=["List of all Organizations"])
 def read_orgs(tokens: dict = Depends(get_api_key)):
     orgs = list(Organizations.objects.all())
