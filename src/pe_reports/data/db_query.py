@@ -831,7 +831,6 @@ def get_new_cves_list(start, end):
         return df
     except (Exception, psycopg2.DatabaseError) as error:
         LOGGER.error("There was a problem with your database query %s", error)
-        print(error)
     finally:
         if conn is not None:
             close(conn)
@@ -852,50 +851,37 @@ def upsert_new_cves(new_cves):
         new_cves: Dataframe containing the new CVEs and their CVSS2.0/3.1/DVE data
     """
     # Building SQL query
-    upsert_query = (
-        "INSERT INTO\n\tpublic.cve_info(cve_name, cvss_2_0, cvss_2_0_severity, cvss_2_0_vector,"
-        " cvss_3_0, cvss_3_0_severity, cvss_3_0_vector, dve_score)\nVALUES\n"
-    )
-    # Add each CVE to the SQL query
+    upsert_query = """
+        INSERT INTO
+            public.cve_info(cve_name, cvss_2_0, cvss_2_0_severity, cvss_2_0_vector,
+            cvss_3_0, cvss_3_0_severity, cvss_3_0_vector, dve_score)
+        VALUES
+        """
+    # Replace None-type in dataframe with string "None"
+    new_cves = new_cves.fillna(value="None")
+    # Iterate over dataframe rows
     for idx, row in new_cves.iterrows():
-        # Get cvss_2_0_severity
-        if row["cvss_2_0_severity"] is None:
-            cvss_2_0_severity = "None"
-        else:
-            cvss_2_0_severity = f"'{row['cvss_2_0_severity']}'"
-        # Get cvss_2_0_vector
-        if row["cvss_2_0_vector"] is None:
-            cvss_2_0_vector = "None"
-        else:
-            cvss_2_0_vector = f"'{row['cvss_2_0_vector']}'"
-        # Get cvss_3_0_severity
-        if row["cvss_3_0_severity"] is None:
-            cvss_3_0_severity = "None"
-        else:
-            cvss_3_0_severity = f"'{row['cvss_3_0_severity']}'"
-        # Get cvss_3_0_vector
-        if row["cvss_3_0_vector"] is None:
-            cvss_3_0_vector = "None"
-        else:
-            cvss_3_0_vector = f"'{row['cvss_3_0_vector']}'"
-        # Add current CVE to query
+        # Add each row to the SQL query
         upsert_query += (
-            f"\t('{row['cve_name']}', {row['cvss_2_0']}, {cvss_2_0_severity}, {cvss_2_0_vector}, "
-            f"{row['cvss_3_0']}, {cvss_3_0_severity}, {cvss_3_0_vector}, {row['dve_score']})"
+            f"\t('{row['cve_name']}', {row['cvss_2_0']}, '{row['cvss_2_0_severity']}', '{row['cvss_2_0_vector']}',"
+            f" {row['cvss_3_0']}, '{row['cvss_3_0_severity']}', '{row['cvss_3_0_vector']}', {row['dve_score']})"
         )
         # Add trailing comma if needed
         if idx != len(new_cves) - 1:
             upsert_query += ",\n"
-        else:
-            upsert_query += "\n"
     # Add the rest of the SQL query
-    upsert_query += (
-        "ON CONFLICT (cve_name) DO UPDATE\nSET\n\tcve_name=EXCLUDED.cve_name,"
-        "\n\tcvss_2_0=EXCLUDED.cvss_2_0,\n\tcvss_2_0_severity=EXCLUDED.cvss_2_0_severity,"
-        "\n\tcvss_2_0_vector=EXCLUDED.cvss_2_0_vector,\n\tcvss_3_0=EXCLUDED.cvss_3_0,"
-        "\n\tcvss_3_0_severity=EXCLUDED.cvss_3_0_severity,\n\tcvss_3_0_vector=EXCLUDED.cvss_3_0_vector,"
-        "\n\tdve_score=EXCLUDED.dve_score"
-    )
+    upsert_query += """
+        ON CONFLICT (cve_name) DO UPDATE
+        SET
+            cve_name=EXCLUDED.cve_name,
+            cvss_2_0=EXCLUDED.cvss_2_0,
+            cvss_2_0_severity=EXCLUDED.cvss_2_0_severity,
+            cvss_2_0_vector=EXCLUDED.cvss_2_0_vector,
+            cvss_3_0=EXCLUDED.cvss_3_0,
+            cvss_3_0_severity=EXCLUDED.cvss_3_0_severity,
+            cvss_3_0_vector=EXCLUDED.cvss_3_0_vector,
+            dve_score=EXCLUDED.dve_score
+        """
 
     # Use finished SQL query to make call to database
     conn = connect()
@@ -906,9 +892,13 @@ def upsert_new_cves(new_cves):
         # Commit/Save insertion changes
         conn.commit()
         # Confirmation message
-        print(len(new_cves), " new CVEs successfully upserted into cve_info table...")
+        LOGGER.info(
+            len(new_cves), " new CVEs successfully upserted into cve_info table..."
+        )
     except (Exception, psycopg2.DatabaseError) as err:
         # Show error and close connection if failed
-        print("SQL error occurred: ", err)
-        show_psycopg2_exception(err)
+        LOGGER.error("There was a problem with your database query %s", err)
         cursor.close()
+    finally:
+        if conn is not None:
+            close(conn)

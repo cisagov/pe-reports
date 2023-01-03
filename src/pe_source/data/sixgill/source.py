@@ -244,76 +244,44 @@ def extract_bulk_cve_info(cve_list):
     resp = get_bulk_cve_resp(cve_list)
     # Check if there was a good response
     if resp is None:
-        # If no response, return none
+        # If no response, return empty dataframe
         return pd.DataFrame()
     else:
         # If there is a response, extract relevant data
         chunk_list = resp.get("objects")
         chunk_df = pd.DataFrame()
-        # Iterate over each cve in chunk
-        # and extract data
+        # For each cve in chunk, extract data
         for i in range(0, len(chunk_list)):
+            # CVE name
             cve_name = chunk_list[i].get("name")
             # CVSS 2.0 info
-            if chunk_list[i].get("x_sixgill_info").get("nvd").get("v2") is not None:
-                cvss_2_0 = (
-                    chunk_list[i]
-                    .get("x_sixgill_info")
-                    .get("nvd")
-                    .get("v2")
-                    .get("current")
-                )
-                cvss_2_0_sev = (
-                    chunk_list[i]
-                    .get("x_sixgill_info")
-                    .get("nvd")
-                    .get("v2")
-                    .get("severity")
-                )
-                cvss_2_0_vec = (
-                    chunk_list[i]
-                    .get("x_sixgill_info")
-                    .get("nvd")
-                    .get("v2")
-                    .get("vector")
-                )
+            cvss_2_info = chunk_list[i].get("x_sixgill_info").get("nvd").get("v2")
+            # Relevant CVSS 2.0 data fields
+            cvss_2_fields = ["current", "severity", "vector"]
+            if cvss_2_info is not None:
+                [cvss_2_0, cvss_2_0_sev, cvss_2_0_vec] = [
+                    cvss_2_info[x] for x in cvss_2_fields
+                ]
             else:
-                [cvss_2_0, cvss_2_0_sev, cvss_2_0_vec] = [None, None, None]
-
+                [cvss_2_0, cvss_2_0_sev, cvss_2_0_vec] = [None] * len(cvss_2_fields)
             # CVSS 3.0 info
-            if chunk_list[i].get("x_sixgill_info").get("nvd").get("v3") is not None:
-                cvss_3_0 = (
-                    chunk_list[i]
-                    .get("x_sixgill_info")
-                    .get("nvd")
-                    .get("v3")
-                    .get("current")
-                )
-                cvss_3_0_sev = (
-                    chunk_list[i]
-                    .get("x_sixgill_info")
-                    .get("nvd")
-                    .get("v3")
-                    .get("severity")
-                )
-                cvss_3_0_vec = (
-                    chunk_list[i]
-                    .get("x_sixgill_info")
-                    .get("nvd")
-                    .get("v3")
-                    .get("vector")
-                )
+            cvss_3_info = chunk_list[i].get("x_sixgill_info").get("nvd").get("v3")
+            # Relevant CVSS 3.0 data fields
+            cvss_3_fields = ["current", "severity", "vector"]
+            if cvss_3_info is not None:
+                [cvss_3_0, cvss_3_0_sev, cvss_3_0_vec] = [
+                    cvss_3_info[x] for x in cvss_3_fields
+                ]
             else:
-                [cvss_3_0, cvss_3_0_sev, cvss_3_0_vec] = [None, None, None]
-
+                [cvss_3_0, cvss_3_0_sev, cvss_3_0_vec] = [None] * len(cvss_3_fields)
             # DVE info
-            if chunk_list[i].get("x_sixgill_info").get("score") is not None:
-                dve_score = (
-                    chunk_list[i].get("x_sixgill_info").get("score").get("current")
-                )
+            dve_info = chunk_list[i].get("x_sixgill_info").get("score")
+            if dve_info is not None:
+                dve_score = dve_info.get("current")
             else:
                 dve_score = None
 
+            # Append this row of CVE info to the chunk_df
             curr_info = {
                 "cve_name": cve_name,
                 "cvss_2_0": cvss_2_0,
@@ -324,8 +292,6 @@ def extract_bulk_cve_info(cve_list):
                 "cvss_3_0_vector": cvss_3_0_vec,
                 "dve_score": dve_score,
             }
-
-            # Append this CVE row to the chunk_df
             chunk_df = pd.concat(
                 [chunk_df, pd.DataFrame(curr_info, index=[0])],
                 ignore_index=True,

@@ -7,6 +7,7 @@ import time
 # Third-Party Libraries
 import pandas as pd
 import requests
+from retry import retry
 
 # cisagov Libraries
 from pe_source.data.pe_db.config import cybersix_token
@@ -263,6 +264,7 @@ def getUserInfo():
     return userInfo
 
 
+@retry(tries=10, delay=1, logger=LOGGER)
 def get_bulk_cve_resp(cve_list):
     """
     Make API call to retrieve the corresponding info for a list of CVE names (10 max).
@@ -287,13 +289,10 @@ def get_bulk_cve_resp(cve_list):
         "from_index": 0,
     }
     # Make API call for specified CVE list
-    resp = None
-    while resp is None:
-        try:
-            resp = requests.post(c6g_url, headers=headers, json=body).json()
-        except Exception as e:
-            LOGGER.error("Error making bulk CVE API call: %s", e)
-            pass
-
-    # Return response
-    return resp
+    try:
+        # Attempt API call
+        resp = requests.post(c6g_url, headers=headers, json=body).json()
+        # Return response
+        return resp
+    except Exception as e:
+        LOGGER.error("Error making bulk CVE API call: %s", e)

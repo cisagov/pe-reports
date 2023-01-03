@@ -2,6 +2,7 @@
 # Standard Python Libraries
 import calendar
 import datetime
+import logging
 import math
 
 # Third-Party Libraries
@@ -21,6 +22,9 @@ from pe_reports.data.db_query import (
 from pe_source.data.sixgill.source import extract_bulk_cve_info
 
 # Version 1.0 of the PE scoring algorithm, still a WIP
+
+# Setup logging to central file
+LOGGER = logging.getLogger(__name__)
 
 # ---------- Misc. Helper Functions ----------
 
@@ -100,7 +104,7 @@ def update_new_cve_info(start, end):
         start/end: The start/end date of the specified report period
     """
     # Get list of all new CVEs not yet in the database
-    print("Retrieving list of new CVEs...")
+    LOGGER.info("Retrieving list of new CVEs...")
     new_cve_sql_df = get_new_cves_list(start, end)
     full_cve_list = new_cve_sql_df["cve_name"]
 
@@ -111,7 +115,7 @@ def update_new_cve_info(start, end):
         for i in range(0, len(full_cve_list), 10):
             x = i
             chunks.append(full_cve_list[x : x + 10])
-        print(f"Info for {len(full_cve_list)} CVEs requested:")
+        LOGGER.info(f"Info for {len(full_cve_list)} CVEs requested:")
         # Dataframe for full CVE list
         full_cve_info_df = pd.DataFrame()
         chunk_counter = 1
@@ -119,10 +123,10 @@ def update_new_cve_info(start, end):
         for chunk in chunks:
             # Converting to list
             chunk = chunk.tolist()
-            print(f"Getting CVE info for chunk {chunk_counter}/{len(chunks)}...")
+            LOGGER.info(f"Getting CVE info for chunk {chunk_counter}/{len(chunks)}...")
             # Make API call/create dataframe for chunk
             chunk_df = extract_bulk_cve_info(chunk)
-            print(f"\tChunk {chunk_counter} retrieved!")
+            LOGGER.info(f"\tChunk {chunk_counter} retrieved!")
             full_cve_info_df = pd.concat(
                 [full_cve_info_df, chunk_df], ignore_index=True
             )
@@ -130,9 +134,9 @@ def update_new_cve_info(start, end):
 
         # Upsert new CVE info into cve_info table
         upsert_new_cves(full_cve_info_df)
-        print("Inserted/Updated new CVEs into cve_info table...\n")
+        LOGGER.info("Inserted/Updated new CVEs into cve_info table...\n")
     else:
-        print("No new CVEs found for this report period...\n")
+        LOGGER.info("No new CVEs found for this report period...\n")
 
 
 # ---------- PE Score Function ----------
@@ -163,57 +167,57 @@ def get_pe_scores(curr_date, num_periods):
     [hist_start, hist_stop] = [start_stops[0][0], curr_stop]
 
     # ORG DATA: List of orgs PE is reporting on
-    print("\nRetrieving list of orgs PE reports on...")
+    LOGGER.info("\nRetrieving list of orgs PE reports on...")
     all_orgs = get_orgs_df()
     reported_orgs = all_orgs[all_orgs["report_on"] == True]
     reported_orgs = reported_orgs[["organizations_uid", "cyhy_db_name"]].reset_index(
         drop=True
     )
-    print("\tDone\n")
+    LOGGER.info("\tDone\n")
 
     # BASE DATA: Base Metric Data, current Report period only
-    print("Retrieving PE score base data...")
+    LOGGER.info("Retrieving PE score base data...")
     sql = "SELECT * FROM pes_base_metrics(%(start)s, %(end)s);"
     pe_base_data_df = query_score_data(
         curr_start.strftime("%m/%d/%Y"), curr_stop.strftime("%m/%d/%Y"), sql
     )
-    print("\tDone\n")
+    LOGGER.info("\tDone\n")
 
     # CVE DATA: verif and unverif CVE/CVSS data, current report period only:
-    print("Updating CVE archive...")
+    LOGGER.info("Updating CVE archive...")
     # Update CVE archive w/ any new CVEs
     update_new_cve_info(curr_start.strftime("%Y-%m-%d"), curr_stop.strftime("%Y-%m-%d"))
     # Connect to SQL DB function:
     #   - pes_cve_metrics(curr_start, curr_stop)
 
     # HIST DATA: historical data for anomaly detection for the past n report periods:
-    print("Retrieving PE score historical data...")
+    LOGGER.info("Retrieving PE score historical data...")
     sql = """SELECT * FROM pes_hist_data_totcred(%(start)s, %(end)s);"""
     anomaly_data_cred = query_score_data(
         hist_start.strftime("%m/%d/%Y"), hist_stop.strftime("%m/%d/%Y"), sql
     )
-    print("\tCredential data done")
+    LOGGER.info("\tCredential data done")
 
     sql = """SELECT * FROM pes_hist_data_domalert(%(start)s, %(end)s);"""
     anomaly_data_domain = query_score_data(
         hist_start.strftime("%m/%d/%Y"), hist_stop.strftime("%m/%d/%Y"), sql
     )
-    print("\tDomain alert data done")
+    LOGGER.info("\tDomain alert data done")
 
     sql = """SELECT * FROM pes_hist_data_dwalert(%(start)s, %(end)s);"""
     anomaly_data_darkweb_alert = query_score_data(
         hist_start.strftime("%m/%d/%Y"), hist_stop.strftime("%m/%d/%Y"), sql
     )
-    print("\tDark web alert data done")
+    LOGGER.info("\tDark web alert data done")
 
     sql = """SELECT * FROM pes_hist_data_dwment(%(start)s, %(end)s);"""
     anomaly_data_darkweb_mention = query_score_data(
         hist_start.strftime("%m/%d/%Y"), hist_stop.strftime("%m/%d/%Y"), sql
     )
-    print("\tDark web mention data done\n")
+    LOGGER.info("\tDark web mention data done\n")
 
     # ---------- Aggregate Historical Data ----------
-    print("Beginning PE score calculation...")
+    LOGGER.info("Beginning PE score calculation...")
     # Prep historical data for use in anomaly detection
     # Converting string date to datetime objects
     anomaly_data_cred["mod_date"] = pd.to_datetime(
@@ -363,7 +367,7 @@ def get_pe_scores(curr_date, num_periods):
 
     # Iterate over all orgs PE reports on
     for org in reported_orgs.iloc[:, 1]:
-        print("\nDoing anomaly search on: ", org)
+        LOGGER.info("\nDoing anomaly search on: ", org)
         # Arrays to hold historic counts for each preceding report period
         count_hist_total_cred = []
         count_hist_domain_alert = []
@@ -462,7 +466,7 @@ def get_pe_scores(curr_date, num_periods):
             current_data_total_creds["counts"].iloc[-1]
             > current_data_total_creds["counts"].iloc[-2]
         ):
-            print("\t", org, " current total creds is an anomaly")
+            LOGGER.info("\t", org, " current total creds is an anomaly")
             # Set flag for anomaly
             pe_base_data_df.loc[
                 pe_base_data_df["cyhy_db_name"] == org, "anomaly_totCred"
@@ -471,7 +475,7 @@ def get_pe_scores(curr_date, num_periods):
             current_data_domain_alerts["counts"].iloc[-1]
             > current_data_domain_alerts["counts"].iloc[-2]
         ):
-            print("\t", org, " current domain alerts is an anomaly")
+            LOGGER.info("\t", org, " current domain alerts is an anomaly")
             # Set flag for anomaly
             pe_base_data_df.loc[
                 pe_base_data_df["cyhy_db_name"] == org, "anomaly_domAlert"
@@ -480,7 +484,7 @@ def get_pe_scores(curr_date, num_periods):
             current_data_darkweb_alerts["counts"].iloc[-1]
             > current_data_darkweb_alerts["counts"].iloc[-2]
         ):
-            print("\t", org, " current dark web alerts is an anomaly")
+            LOGGER.info("\t", org, " current dark web alerts is an anomaly")
             # Set flag for anomaly
             pe_base_data_df.loc[
                 pe_base_data_df["cyhy_db_name"] == org, "anomaly_DWAlert"
@@ -490,7 +494,7 @@ def get_pe_scores(curr_date, num_periods):
             current_data_darkweb_mentions["counts"].iloc[-1]
             > current_data_darkweb_mentions["counts"].iloc[-2]
         ):
-            print("\t", org, " current dark web mentions is an anomaly")
+            LOGGER.info("\t", org, " current dark web mentions is an anomaly")
             # Set flag for anomaly
             pe_base_data_df.loc[
                 pe_base_data_df["cyhy_db_name"] == org, "anomaly_DWMent"
@@ -639,7 +643,7 @@ def get_pe_scores(curr_date, num_periods):
         ["organizations_uid", "cyhy_db_name", "PE_score", "letter_grade"]
     ]
 
-    print("\nPE score calculation complete!\n")
+    LOGGER.info("\nPE score calculation complete!\n")
     # Return dataframe with PE scores
     return pe_data_agg
 
