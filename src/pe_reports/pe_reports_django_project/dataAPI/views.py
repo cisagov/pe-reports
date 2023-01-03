@@ -64,6 +64,7 @@ api_key_header = APIKeyHeader(name=API_KEY_NAME, auto_error=False)
 
 def create_access_token(subject: Union[str, Any],
                         expires_delta: int = None) -> str:
+    """Create access token"""
     if expires_delta is not None:
         expires_delta = datetime.utcnow() + expires_delta
     else:
@@ -77,6 +78,7 @@ def create_access_token(subject: Union[str, Any],
 
 def create_refresh_token(subject: Union[str, Any],
                          expires_delta: int = None) -> str:
+    """Create a refresh token"""
     if expires_delta is not None:
         expires_delta = datetime.utcnow() + expires_delta
     else:
@@ -96,6 +98,8 @@ def userinfo(theuser):
 
 
 def userapiTokenUpdate(expiredaccessToken, user_refresh, theapiKey, user_id):
+    """When api apiKey is expired a new key is created
+    and updated in the database."""
     theusername = ''
     user_record = list(User.objects.filter(id=f'{user_id}'))
     # user_record = User.objects.get(id=user_id)
@@ -120,6 +124,7 @@ def userapiTokenUpdate(expiredaccessToken, user_refresh, theapiKey, user_id):
 
 
 def userapiTokenverify(theapiKey):
+    """Check to see if api key is expired."""
     tokenRecords = list(apiUser.objects.filter(apiKey=theapiKey))
     user_key = ''
     user_refresh = ''
@@ -149,6 +154,7 @@ async def get_api_key(
     api_key_header: str = Security(api_key_header),
     # api_key_cookie: str = Security(api_key_cookie),
 ):
+    """Get api key from header."""
 
     if api_key_header != '':
         return api_key_header
@@ -170,9 +176,10 @@ async def get_api_key(
 
 
 
-@api_router.get("/orgs", dependencies=[Depends(get_api_key)],
+@api_router.post("/orgs", dependencies=[Depends(get_api_key)],
                 response_model=List[schemas.Organization], tags=["List of all Organizations"])
 def read_orgs(tokens: dict = Depends(get_api_key)):
+    """API endpoint to get all stakeholders."""
     orgs = list(Organizations.objects.all())
 
     LOGGER.info(f"The api key submitted {tokens}")
@@ -187,6 +194,7 @@ def read_orgs(tokens: dict = Depends(get_api_key)):
 
 @api_router.post("/get_key", tags=["Get user api keys"])
 def read_orgs(data: schemas.UserAPI):
+    """API endpoint to get api by submitting refresh token."""
     user_key = ''
     userkey = list(apiUser.objects.filter(refresh_token=data.refresh_token))
     LOGGER.info(f'The input data requested was ***********{data.refresh_token[-10:]}')
@@ -214,6 +222,7 @@ def read_orgs(data: schemas.UserAPI):
 @api_router.post("/testingUsers",
                 tags=["List of user id"])
 def read_users(data: schemas.UserAuth):
+    """API endpoint for testing purposes."""
     user = userinfo(data.username)
 
     # user = list(User.objects.filter(username='cduhn75'))
@@ -235,6 +244,7 @@ def read_users(data: schemas.UserAuth):
 
 @api_router.post('/signup', summary='Create api key and access token on user', tags=['Sign-up to add api_key and access token to user'])
 def create_user(data: schemas.UserAuth):
+    """API endpoint to create new API users."""
     # querying database to check if user already exist
     user = userinfo(data.username)
 
