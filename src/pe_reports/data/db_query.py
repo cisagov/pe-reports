@@ -840,9 +840,6 @@ def upsert_new_cves(new_cves):
     """
     Upsert dataframe of new CVE data into the cve_info table in the database.
 
-    Brand new CVEs will be inserted to the table.
-    If there is a conflict, the newer CVE data will overwrite the older CVE data.
-
     Required dataframe columns:
         cve_name, cvss_2_0, cvss_2_0_severity, cvss_2_0_vector,
         cvss_3_0, cvss_3_0_severity, cvss_3_0_vector, dve_score
@@ -861,7 +858,7 @@ def upsert_new_cves(new_cves):
     new_cves = new_cves.fillna(value="None")
     # Iterate over dataframe rows
     for idx, row in new_cves.iterrows():
-        # Add each row to the SQL query
+        # Add each row of CVE data to the SQL query
         upsert_query += (
             f"\t('{row['cve_name']}', {row['cvss_2_0']}, '{row['cvss_2_0_severity']}', '{row['cvss_2_0_vector']}',"
             f" {row['cvss_3_0']}, '{row['cvss_3_0_severity']}', '{row['cvss_3_0_vector']}', {row['dve_score']})"
