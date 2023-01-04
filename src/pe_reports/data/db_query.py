@@ -635,8 +635,9 @@ def query_cyberSix_creds(org_uid, start_date, end_date):
         if conn is not None:
             close(conn)
 
+
 def query_all_subs(conn):
-    """Query sub domains table """
+    """Query sub domains table"""
     try:
         cur = conn.cursor()
         sql = """SELECT * FROM sub_domains"""
@@ -649,6 +650,7 @@ def query_all_subs(conn):
     finally:
         if conn is not None:
             close(conn)
+
 
 def query_subs(org_uid):
     """Query all subs for an organization."""
@@ -745,7 +747,7 @@ def execute_scorecard(summary_dict):
                 AsIs(summary_dict["dark_web_executive_alerts_count"]),
                 AsIs(summary_dict["dark_web_asset_alerts_count"]),
                 AsIs(summary_dict["pe_number_score"]),
-                AsIs(summary_dict["pe_percent_score"]),
+                AsIs(summary_dict["pe_letter_grade"]),
             ),
         )
         conn.commit()

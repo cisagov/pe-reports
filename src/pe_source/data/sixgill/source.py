@@ -57,13 +57,14 @@ def root_domains(org_id):
 def mentions(date, aliases, soc_media_included=False):
     """Pull dark web mentions data for an organization."""
     token = cybersix_token()
+
+    # Build the query using the org's aliases
     mentions = ""
     for mention in aliases:
         mentions += '"' + mention + '"' + ","
     mentions = mentions[:-1]
     if soc_media_included:
         query = "date:" + date + " AND " + "(" + str(mentions) + ")"
-
     else:
         query = (
             "date:"
@@ -78,66 +79,79 @@ def mentions(date, aliases, soc_media_included=False):
         )
     LOGGER.info("Query:")
     LOGGER.info(query)
+
+    # Get the total number of mentions
     count = 1
     while count < 7:
         try:
-            LOGGER.info("Intel post try #%s", count)
+            LOGGER.info("Total mentions try #%s", count)
             resp = intel_post(token, query, frm=0, scroll=False, result_size=1)
             break
         except Exception:
-            LOGGER.info("Error. Trying intel_post again...")
+            LOGGER.info("Error. Trying to get mentions count again...")
             count += 1
             continue
-    count_total = resp["total_intel_items"]
-    LOGGER.info("Total Mentions: %s", count_total)
+    total_mentions = resp["total_intel_items"]
+    LOGGER.info("Total Mentions: %s", total_mentions)
 
-    if count_total < 8000:
-        i = 0
-        all_mentions = []
-        count = 1
-        while i < count_total:
-            # Recommended "from" and "result_size" is 50. The maximum is 400.
-            while count < 7:
-                try:
-                    resp = intel_post(
-                        token, query, frm=i, scroll=False, result_size=100
+    # Fetch mentions in segments
+    # Recommended segment is 50. The maximum is 400.
+    i = 0
+    segment_size = 100
+    smaller_segment_count = 1
+    all_mentions = []
+    while i < total_mentions:
+        # Try to get a mentions segment 3 times
+        try_count = 1
+        while try_count < 4:
+            try:
+                # If segment size was decreased, only use for 10 iterations
+                if smaller_segment_count == 10:
+                    LOGGER.info("Switching back to a segment size of 100.")
+                    segment_size = 100
+                    smaller_segment_count = 1
+                if segment_size <= 10:
+                    smaller_segment_count += 1
+                # API post
+                resp = intel_post(
+                    token, query, frm=i, scroll=False, result_size=segment_size
+                )
+                i += segment_size
+                LOGGER.info(
+                    "Got %s-%s of %s...",
+                    i - segment_size,
+                    i,
+                    total_mentions,
+                )
+                intel_items = resp["intel_items"]
+                df_mentions = pd.DataFrame.from_dict(intel_items)
+                all_mentions.append(df_mentions)
+                df_all_mentions = pd.concat(all_mentions).reset_index(drop=True)
+                break
+            except Exception:
+                # Sleep for 2 seconds
+                time.sleep(2)
+                # If the API post failed 3 times
+                if try_count == 3:
+                    # If a segment was already decreased to 1, skip the mention
+                    if segment_size == 1:
+                        LOGGER.critical("Failed 3 times fetching 1 post. Skipping it.")
+                        i += segment_size
+                        break
+                    # Decrease the segment to 10, then if still failing, to 1
+                    if segment_size == 10:
+                        segment_size = 1
+                        smaller_segment_count = 1
+                    else:
+                        segment_size = 10
+                    LOGGER.error(
+                        "Failed 3 times. Switching to a segment size of %s",
+                        segment_size,
                     )
-                    i += 100
-                    LOGGER.info("Getting %s of %s....", i, count_total)
-                    intel_items = resp["intel_items"]
-                    df_mentions = pd.DataFrame.from_dict(intel_items)
-                    all_mentions.append(df_mentions)
-                    df_all_mentions = pd.concat(all_mentions).reset_index(drop=True)
-                    break
-                except Exception:
-                    time.sleep(5)
-                    LOGGER.info("Error. Trying query post again...")
-                    count += 1
+                    try_count = 1
                     continue
-    else:
-        i = 0
-        all_mentions = []
-        count = 1
-        while i < count_total:
-            # Recommended "from" and "result_size" is 50. The maximum is 400.
-            while count < 7:
-                try:
-                    resp = intel_post(
-                        token, query, frm=i, scroll=False, result_size=300
-                    )
-                    i += 300
-                    LOGGER.info("Getting %s of %s....", i, count_total)
-                    intel_items = resp["intel_items"]
-                    df_mentions = pd.DataFrame.from_dict(intel_items)
-                    all_mentions.append(df_mentions)
-                    df_all_mentions = pd.concat(all_mentions).reset_index(drop=True)
-                    break
-                except Exception:
-                    time.sleep(5)
-                    LOGGER.info("Error. Trying query post again...")
-                    count += 1
-                    continue
-
+                LOGGER.error("Try %s/3 failed.", try_count)
+                try_count += 1
     return df_all_mentions
 
 

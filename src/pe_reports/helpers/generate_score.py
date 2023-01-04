@@ -152,14 +152,18 @@ def get_pe_scores(curr_date, num_periods):
     # ---------- Aggregate Historical Data ----------
     # Prep historical data for use in anomaly detection
     # Converting string date to datetime objects
-    anomaly_data_cred["mod_date"] = pd.to_datetime(anomaly_data_cred["mod_date"])
-    anomaly_data_domain["mod_date"] = pd.to_datetime(anomaly_data_domain["mod_date"])
+    anomaly_data_cred["mod_date"] = pd.to_datetime(
+        anomaly_data_cred["mod_date"]
+    ).dt.date
+    anomaly_data_domain["mod_date"] = pd.to_datetime(
+        anomaly_data_domain["mod_date"]
+    ).dt.date
     anomaly_data_darkweb_alert["mod_date"] = pd.to_datetime(
         anomaly_data_darkweb_alert["mod_date"]
-    )
+    ).dt.date
     anomaly_data_darkweb_mention["date"] = pd.to_datetime(
         anomaly_data_darkweb_mention["date"]
-    )
+    ).dt.date
 
     # Separate lists of dataframes for each metric
     periods_total_cred = []
@@ -175,19 +179,19 @@ def get_pe_scores(curr_date, num_periods):
         end_dates.append(period[1])
 
         # Getting all data for the current report period
-        current_total_cred = anomaly_data_cred[
+        current_total_cred = anomaly_data_cred.loc[
             (anomaly_data_cred["mod_date"] >= period[0])
             & (anomaly_data_cred["mod_date"] <= period[1])
         ]
-        current_domain_alert = anomaly_data_domain[
+        current_domain_alert = anomaly_data_domain.loc[
             (anomaly_data_domain["mod_date"] >= period[0])
             & (anomaly_data_domain["mod_date"] <= period[1])
         ]
-        current_darkweb_alert = anomaly_data_darkweb_alert[
+        current_darkweb_alert = anomaly_data_darkweb_alert.loc[
             (anomaly_data_darkweb_alert["mod_date"] >= period[0])
             & (anomaly_data_darkweb_alert["mod_date"] <= period[1])
         ]
-        current_darkweb_mention = anomaly_data_darkweb_mention[
+        current_darkweb_mention = anomaly_data_darkweb_mention.loc[
             (anomaly_data_darkweb_mention["date"] >= period[0])
             & (anomaly_data_darkweb_mention["date"] <= period[1])
         ]
@@ -576,6 +580,6 @@ def get_pe_scores(curr_date, num_periods):
 
 
 # Demo:
-curr_date = datetime.datetime(2022, 8, 15)  # current report period date
-num_periods = 12  # number of preceding report periods for historical analysis/trending
-print(get_pe_scores(curr_date, num_periods).to_string())
+# curr_date = datetime.datetime(2022, 8, 15)  # current report period date
+# num_periods = 12  # number of preceding report periods for historical analysis/trending
+# print(get_pe_scores(curr_date, num_periods).to_string())

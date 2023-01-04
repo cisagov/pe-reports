@@ -11,7 +11,7 @@ from flask import Blueprint, flash, redirect, render_template, url_for
 import spacy
 
 # cisagov Libraries
-from adhoc.Bulletin.bulletin_generator import (
+from pe_reports.helpers.bulletin.bulletin_generator import (
     generate_creds_bulletin,
     generate_cybersix_bulletin,
 )
