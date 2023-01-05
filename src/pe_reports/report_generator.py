@@ -1,7 +1,7 @@
 """cisagov/pe-reports: A tool for creating Posture & Exposure reports.
 
 Usage:
-  pe-reports REPORT_DATE OUTPUT_DIRECTORY [--log-level=LEVEL] [--social-media]
+  pe-reports REPORT_DATE OUTPUT_DIRECTORY [--log-level=LEVEL] [--soc_med_included]
 
 Options:
   -h --help                         Show this message.
@@ -11,7 +11,7 @@ Options:
   -l --log-level=LEVEL              If specified, then the log level will be set to
                                     the specified value.  Valid values are "debug", "info",
                                     "warning", "error", and "critical". [default: info]
-  -sc --soc_med_included                     Include social media posts from Cybersixgill in the report.
+  -sc --soc_med_included            Include social media posts from Cybersixgill in the report.
 """
 
 # Standard Python Libraries
@@ -145,8 +145,9 @@ def generate_reports(datestring, output_directory, soc_med_included=False):
         return 1
     generated_reports = 0
     # Generate PE scores for all stakeholders.
+    LOGGER.info("Calculating P&E Scores")
     pe_scores_df = get_pe_scores(datestring, 12)
-
+    LOGGER.info("Finished calculating P&E Scores")
     # Iterate over organizations
     if pe_orgs:
         LOGGER.info("PE orgs count: %d", len(pe_orgs))
@@ -156,7 +157,7 @@ def generate_reports(datestring, output_directory, soc_med_included=False):
             org_uid = org[0]
             org_name = org[1]
             org_code = org[2]
-            # if org_code not in ["DHS"]:
+            # if org_code not in ["DHS", "NASA", "DOT", "DOJ", "DOE"]:
             #     continue
 
             LOGGER.info("Running on %s", org_code)
@@ -306,11 +307,15 @@ def main():
     if not os.path.exists(validated_args["OUTPUT_DIRECTORY"]):
         os.mkdir(validated_args["OUTPUT_DIRECTORY"])
 
+    try:
+        soc_med = validated_args["soc_med_included"]
+    except:
+        soc_med = False
     # Generate reports
     generate_reports(
         validated_args["REPORT_DATE"],
         validated_args["OUTPUT_DIRECTORY"],
-        validated_args["soc_med_included"],
+        soc_med,
     )
 
     # Stop logging and clean up
