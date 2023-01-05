@@ -151,6 +151,10 @@ def generate_reports(datestring, output_directory, soc_med_included=False):
     # Iterate over organizations
     if pe_orgs:
         LOGGER.info("PE orgs count: %d", len(pe_orgs))
+        
+        # Generate PE scores for all stakeholders.
+        pe_scores_df = get_pe_scores(datestring, 12)
+
         # pe_orgs.reverse()
         for org in pe_orgs:
             # Assign organization values
@@ -167,12 +171,16 @@ def generate_reports(datestring, output_directory, soc_med_included=False):
                 if not os.path.exists(f"{output_directory}/{dir_name}"):
                     os.mkdir(f"{output_directory}/{dir_name}")
 
-            score = pe_scores_df.loc[
-                pe_scores_df["cyhy_db_name"] == org_code, "PE_score"
-            ].item()
-            grade = pe_scores_df.loc[
-                pe_scores_df["cyhy_db_name"] == org_code, "letter_grade"
-            ].item()
+            if pe_scores_df:
+                score = pe_scores_df.loc[
+                    pe_scores_df["cyhy_db_name"] == org_code, "PE_score"
+                ].item()
+                grade = pe_scores_df.loc[
+                    pe_scores_df["cyhy_db_name"] == org_code, "letter_grade"
+                ].item()
+            else:
+                score = "NA"
+                grade = "NA"
 
             # Insert Charts and Metrics into PDF
             (
