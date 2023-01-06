@@ -747,7 +747,7 @@ def execute_scorecard(summary_dict):
                 AsIs(summary_dict["dark_web_executive_alerts_count"]),
                 AsIs(summary_dict["dark_web_asset_alerts_count"]),
                 AsIs(summary_dict["pe_number_score"]),
-                AsIs(summary_dict["pe_percent_score"]),
+                AsIs(summary_dict["pe_letter_grade"]),
             ),
         )
         conn.commit()
