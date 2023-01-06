@@ -151,7 +151,7 @@ def generate_reports(datestring, output_directory, soc_med_included=False):
     # Iterate over organizations
     if pe_orgs:
         LOGGER.info("PE orgs count: %d", len(pe_orgs))
-        
+
         # Generate PE scores for all stakeholders.
         pe_scores_df = get_pe_scores(datestring, 12)
 
