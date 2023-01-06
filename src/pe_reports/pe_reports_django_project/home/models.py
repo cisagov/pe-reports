@@ -9,7 +9,6 @@
 from django.db import models
 from django.conf import settings
 
-
 class Users(models.Model):
     id = models.UUIDField(primary_key=True)
     email = models.CharField(unique=True, max_length=64, blank=True, null=True)
@@ -945,4 +944,3 @@ class WebAssets(models.Model):
         managed = False
         db_table = 'web_assets'
         unique_together = (('asset', 'organizations_uid'),)
-
