@@ -190,7 +190,19 @@ def read_orgs(tokens: dict = Depends(get_api_key)):
     except:
         LOGGER.info('API key expired please try again')
 
-    # print(userapiTokenverify()[1])
+
+@api_router.post("/dnsMasq", dependencies=[Depends(get_api_key)],
+                response_model=List[schemas.Organization], tags=["List domain masquerading"])
+def read_orgs(tokens: dict = Depends(get_api_key)):
+    """API endpoint to get all stakeholders."""
+    masq = list(DnstwistDomainMasq.objects.all())
+
+    LOGGER.info(f"The api key submitted {tokens}")
+    try:
+        userapiTokenverify(theapiKey=tokens)
+        return masq
+    except:
+        LOGGER.info('API key expired please try again')
 
 
 @api_router.post("/get_key", tags=["Get user api keys"])
