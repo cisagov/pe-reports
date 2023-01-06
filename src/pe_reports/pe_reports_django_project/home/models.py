@@ -18,24 +18,10 @@ class Users(models.Model):
     role = models.IntegerField(blank=True, null=True)
     password_hash = models.CharField(max_length=128, blank=True, null=True)
     api_key = models.CharField(unique=True, max_length=128, blank=True, null=True)
-    refresh_token = models.CharField(unique=True, max_length=128, blank=True, null=True)
 
     class Meta:
         managed = False
         db_table = 'Users'
-
-
-class Usersapi(models.Model):
-    id = models.UUIDField(primary_key=True)
-    email = models.CharField(unique=True, max_length=64, blank=True, null=True)
-    username = models.CharField(unique=True, max_length=64, blank=True, null=True)
-    password_hash = models.CharField(max_length=255, blank=True, null=True)
-    api_key = models.CharField(unique=True, max_length=255, blank=True, null=True)
-    refresh_token = models.CharField(unique=True, max_length=255, blank=True, null=True)
-
-    class Meta:
-        managed = False
-        db_table = 'UsersAPI'
 
 
 class AlembicVersion(models.Model):
@@ -61,7 +47,11 @@ class Alerts(models.Model):
     user_id = models.TextField(blank=True, null=True)
     category = models.TextField(blank=True, null=True)
     lang = models.TextField(blank=True, null=True)
-    organizations_uid = models.ForeignKey('Organizations', models.DO_NOTHING, db_column='organizations_uid')
+    organizations_uid = models.ForeignKey('Organizations', on_delete=models.CASCADE, db_column='organizations_uid')
+    data_source_uid = models.ForeignKey('DataSource', on_delete=models.CASCADE, db_column='data_source_uid')
+    content_snip = models.TextField(blank=True, null=True)
+    asset_mentioned = models.TextField(blank=True, null=True)
+    asset_type = models.TextField(blank=True, null=True)
 
     class Meta:
         managed = False
@@ -70,7 +60,7 @@ class Alerts(models.Model):
 
 class Alias(models.Model):
     alias_uid = models.UUIDField(primary_key=True)
-    organizations_uid = models.ForeignKey('Organizations', models.DO_NOTHING, db_column='organizations_uid')
+    organizations_uid = models.ForeignKey('Organizations', on_delete=models.CASCADE, db_column='organizations_uid')
     alias = models.TextField(unique=True)
 
     class Meta:
@@ -79,70 +69,107 @@ class Alias(models.Model):
 
 
 class AssetHeaders(models.Model):
+    field_id = models.UUIDField(db_column='_id', primary_key=True)  # Field renamed because it started with '_'.
+    organizations_uid = models.UUIDField()
     sub_url = models.TextField()
     tech_detected = models.TextField()  # This field type is a guess.
     interesting_header = models.TextField()  # This field type is a guess.
-    field_id = models.UUIDField(db_column='_id', primary_key=True)  # Field renamed because it started with '_'.
+    ssl2 = models.TextField(blank=True, null=True)  # This field type is a guess.
+    tls1 = models.TextField(blank=True, null=True)  # This field type is a guess.
+    certificate = models.TextField(blank=True, null=True)  # This field type is a guess.
+    scanned = models.BooleanField(blank=True, null=True)
+    ssl_scanned = models.BooleanField(blank=True, null=True)
 
     class Meta:
         managed = False
         db_table = 'asset_headers'
+        unique_together = (('organizations_uid', 'sub_url'),)
 
 
-class CybersixExposedCredentials(models.Model):
-    csg_exposed_credentials_uid = models.UUIDField(primary_key=True)
-    organizations_uid = models.ForeignKey('Organizations', models.DO_NOTHING, db_column='organizations_uid')
-    breach_date = models.DateField(blank=True, null=True)
-    breach_id = models.IntegerField(blank=True, null=True)
-    breach_name = models.TextField()
-    create_time = models.DateTimeField(blank=True, null=True)
-    description = models.TextField(blank=True, null=True)
-    domain = models.TextField(blank=True, null=True)
-    email = models.TextField()
-    password = models.TextField(blank=True, null=True)
-    hash_type = models.TextField(blank=True, null=True)
-    login_id = models.TextField(blank=True, null=True)
-    name = models.TextField(blank=True, null=True)
-    phone = models.TextField(blank=True, null=True)
+class AuthGroup(models.Model):
+    name = models.CharField(unique=True, max_length=150)
 
     class Meta:
         managed = False
-        db_table = 'cybersix_exposed_credentials'
-        unique_together = (('email', 'breach_id'),)
+        db_table = 'auth_group'
 
 
-class DnstwistDomainMasq(models.Model):
-    suspected_domain_uid = models.UUIDField(primary_key=True)
-    organizations_uid = models.ForeignKey('Organizations', models.DO_NOTHING, db_column='organizations_uid')
-    domain_permutation = models.TextField(unique=True, blank=True, null=True)
-    ipv4 = models.TextField(blank=True, null=True)
-    ipv6 = models.TextField(blank=True, null=True)
-    mail_server = models.TextField(blank=True, null=True)
-    name_server = models.TextField(blank=True, null=True)
-    fuzzer = models.TextField(blank=True, null=True)
-    date_observed = models.DateField(blank=True, null=True)
-    ssdeep_score = models.TextField(blank=True, null=True)
-    malicious = models.BooleanField(blank=True, null=True)
-    blocklist_attack_count = models.IntegerField(blank=True, null=True)
-    blocklist_report_count = models.IntegerField(blank=True, null=True)
+class AuthGroupPermissions(models.Model):
+    id = models.BigAutoField(primary_key=True)
+    group = models.ForeignKey(AuthGroup, on_delete=models.CASCADE)
+    permission = models.ForeignKey('AuthPermission', on_delete=models.CASCADE)
 
     class Meta:
         managed = False
-        db_table = 'dnstwist_domain_masq'
+        db_table = 'auth_group_permissions'
+        unique_together = (('group', 'permission'),)
 
 
-class Executives(models.Model):
-    executives_uid = models.UUIDField(primary_key=True)
-    organizations_uid = models.ForeignKey('Organizations', models.DO_NOTHING, db_column='organizations_uid')
-    executives = models.TextField()
+class AuthPermission(models.Model):
+    name = models.CharField(max_length=255)
+    content_type = models.ForeignKey('DjangoContentType', on_delete=models.CASCADE)
+    codename = models.CharField(max_length=100)
 
     class Meta:
         managed = False
-        db_table = 'executives'
+        db_table = 'auth_permission'
+        unique_together = (('content_type', 'codename'),)
 
 
-class HibpBreaches(models.Model):
-    hibp_breaches_uid = models.UUIDField(primary_key=True)
+class AuthUser(models.Model):
+    password = models.CharField(max_length=128)
+    last_login = models.DateTimeField(blank=True, null=True)
+    is_superuser = models.BooleanField()
+    username = models.CharField(unique=True, max_length=150)
+    first_name = models.CharField(max_length=150)
+    last_name = models.CharField(max_length=150)
+    email = models.CharField(max_length=254)
+    is_staff = models.BooleanField()
+    is_active = models.BooleanField()
+    date_joined = models.DateTimeField()
+
+    class Meta:
+        managed = False
+        db_table = 'auth_user'
+
+
+class AuthUserGroups(models.Model):
+    id = models.BigAutoField(primary_key=True)
+    user = models.ForeignKey(AuthUser, on_delete=models.CASCADE)
+    group = models.ForeignKey(AuthGroup, on_delete=models.CASCADE)
+
+    class Meta:
+        managed = False
+        db_table = 'auth_user_groups'
+        unique_together = (('user', 'group'),)
+
+
+class AuthUserUserPermissions(models.Model):
+    id = models.BigAutoField(primary_key=True)
+    user = models.ForeignKey(AuthUser, on_delete=models.CASCADE)
+    permission = models.ForeignKey(AuthPermission, on_delete=models.CASCADE)
+
+    class Meta:
+        managed = False
+        db_table = 'auth_user_user_permissions'
+        unique_together = (('user', 'permission'),)
+
+
+class Cidrs(models.Model):
+    cidr_uid = models.UUIDField(primary_key=True)
+    network = models.TextField()  # This field type is a guess.
+    organizations_uid = models.ForeignKey('Organizations', on_delete=models.CASCADE, db_column='organizations_uid', blank=True, null=True)
+    data_source_uid = models.ForeignKey('DataSource', on_delete=models.CASCADE, db_column='data_source_uid', blank=True, null=True)
+    insert_alert = models.TextField(blank=True, null=True)
+
+    class Meta:
+        managed = False
+        db_table = 'cidrs'
+        unique_together = (('organizations_uid', 'network'),)
+
+
+class CredentialBreaches(models.Model):
+    credential_breaches_uid = models.UUIDField(primary_key=True)
     breach_name = models.TextField(unique=True)
     description = models.TextField(blank=True, null=True)
     exposed_cred_count = models.BigIntegerField(blank=True, null=True)
@@ -156,26 +183,326 @@ class HibpBreaches(models.Model):
     is_sensitive = models.BooleanField(blank=True, null=True)
     is_retired = models.BooleanField(blank=True, null=True)
     is_spam_list = models.BooleanField(blank=True, null=True)
+    data_source_uid = models.ForeignKey('DataSource', on_delete=models.CASCADE, db_column='data_source_uid')
 
     class Meta:
         managed = False
-        db_table = 'hibp_breaches'
+        db_table = 'credential_breaches'
 
 
-class HibpExposedCredentials(models.Model):
-    hibp_exposed_credentials_uid = models.UUIDField(primary_key=True)
+class CredentialExposures(models.Model):
+    credential_exposures_uid = models.UUIDField(primary_key=True)
     email = models.TextField()
-    organizations_uid = models.ForeignKey('Organizations', models.DO_NOTHING, db_column='organizations_uid')
+    organizations_uid = models.ForeignKey('Organizations', on_delete=models.CASCADE, db_column='organizations_uid')
     root_domain = models.TextField(blank=True, null=True)
     sub_domain = models.TextField(blank=True, null=True)
     breach_name = models.TextField(blank=True, null=True)
     modified_date = models.DateTimeField(blank=True, null=True)
-    breach = models.ForeignKey(HibpBreaches, models.DO_NOTHING)
+    credential_breaches_uid = models.ForeignKey(CredentialBreaches, on_delete=models.CASCADE, db_column='credential_breaches_uid')
+    data_source_uid = models.ForeignKey('DataSource', on_delete=models.CASCADE, db_column='data_source_uid')
+    name = models.TextField(blank=True, null=True)
+    login_id = models.TextField(blank=True, null=True)
+    phone = models.TextField(blank=True, null=True)
+    password = models.TextField(blank=True, null=True)
+    hash_type = models.TextField(blank=True, null=True)
 
     class Meta:
         managed = False
-        db_table = 'hibp_exposed_credentials'
-        unique_together = (('email', 'breach_name'),)
+        db_table = 'credential_exposures'
+        unique_together = (('breach_name', 'email'),)
+
+
+class CveInfo(models.Model):
+    cve_uuid = models.UUIDField(primary_key=True)
+    cve_name = models.TextField(unique=True, blank=True, null=True)
+    cvss_2_0 = models.DecimalField(max_digits=65535, decimal_places=65535, blank=True, null=True)
+    cvss_2_0_severity = models.TextField(blank=True, null=True)
+    cvss_2_0_vector = models.TextField(blank=True, null=True)
+    cvss_3_0 = models.DecimalField(max_digits=65535, decimal_places=65535, blank=True, null=True)
+    cvss_3_0_severity = models.TextField(blank=True, null=True)
+    cvss_3_0_vector = models.TextField(blank=True, null=True)
+    dve_score = models.DecimalField(max_digits=65535, decimal_places=65535, blank=True, null=True)
+
+    class Meta:
+        managed = False
+        db_table = 'cve_info'
+
+
+class CyhyContacts(models.Model):
+    field_id = models.UUIDField(db_column='_id', primary_key=True)  # Field renamed because it started with '_'.
+    org_id = models.TextField()
+    org_name = models.TextField()
+    phone = models.TextField(blank=True, null=True)
+    contact_type = models.TextField()
+    email = models.TextField(blank=True, null=True)
+    name = models.TextField(blank=True, null=True)
+    date_pulled = models.DateField(blank=True, null=True)
+
+    class Meta:
+        managed = False
+        db_table = 'cyhy_contacts'
+        unique_together = (('org_id', 'contact_type', 'email', 'name'),)
+
+
+class CyhyDbAssets(models.Model):
+    field_id = models.UUIDField(db_column='_id', primary_key=True)  # Field renamed because it started with '_'.
+    org_id = models.TextField(blank=True, null=True)
+    org_name = models.TextField(blank=True, null=True)
+    contact = models.TextField(blank=True, null=True)
+    network = models.GenericIPAddressField(blank=True, null=True)
+    type = models.TextField(blank=True, null=True)
+    first_seen = models.DateField(blank=True, null=True)
+    last_seen = models.DateField(blank=True, null=True)
+    currently_in_cyhy = models.BooleanField(blank=True, null=True)
+
+    class Meta:
+        managed = False
+        db_table = 'cyhy_db_assets'
+        unique_together = (('org_id', 'network'),)
+
+
+class DataapiApiuser(models.Model):
+    id = models.BigAutoField(primary_key=True)
+    apikey = models.CharField(db_column='apiKey', max_length=200, blank=True, null=True)  # Field name made lowercase.
+    user = models.OneToOneField(AuthUser, on_delete=models.CASCADE)
+    refresh_token = models.CharField(max_length=200, blank=True, null=True)
+
+    class Meta:
+        managed = False
+        db_table = 'dataAPI_apiuser'
+
+
+class DataSource(models.Model):
+    data_source_uid = models.UUIDField(primary_key=True)
+    name = models.TextField()
+    description = models.TextField()
+    last_run = models.DateField()
+
+    class Meta:
+        managed = False
+        db_table = 'data_source'
+
+
+class DjangoAdminLog(models.Model):
+    action_time = models.DateTimeField()
+    object_id = models.TextField(blank=True, null=True)
+    object_repr = models.CharField(max_length=200)
+    action_flag = models.SmallIntegerField()
+    change_message = models.TextField()
+    content_type = models.ForeignKey('DjangoContentType', on_delete=models.CASCADE, blank=True, null=True)
+    user = models.ForeignKey(AuthUser, on_delete=models.CASCADE)
+
+    class Meta:
+        managed = False
+        db_table = 'django_admin_log'
+
+
+class DjangoContentType(models.Model):
+    app_label = models.CharField(max_length=100)
+    model = models.CharField(max_length=100)
+
+    class Meta:
+        managed = False
+        db_table = 'django_content_type'
+        unique_together = (('app_label', 'model'),)
+
+
+class DjangoMigrations(models.Model):
+    id = models.BigAutoField(primary_key=True)
+    app = models.CharField(max_length=255)
+    name = models.CharField(max_length=255)
+    applied = models.DateTimeField()
+
+    class Meta:
+        managed = False
+        db_table = 'django_migrations'
+
+
+class DjangoSession(models.Model):
+    session_key = models.CharField(primary_key=True, max_length=40)
+    session_data = models.TextField()
+    expire_date = models.DateTimeField()
+
+    class Meta:
+        managed = False
+        db_table = 'django_session'
+
+
+class DnsRecords(models.Model):
+    dns_record_uid = models.UUIDField(primary_key=True)
+    domain_name = models.TextField(blank=True, null=True)
+    domain_type = models.TextField(blank=True, null=True)
+    created_date = models.DateTimeField(blank=True, null=True)
+    updated_date = models.DateTimeField(blank=True, null=True)
+    expiration_date = models.DateTimeField(blank=True, null=True)
+    name_servers = models.TextField(blank=True, null=True)  # This field type is a guess.
+    whois_server = models.TextField(blank=True, null=True)
+    registrar_name = models.TextField(blank=True, null=True)
+    status = models.TextField(blank=True, null=True)
+    clean_text = models.TextField(blank=True, null=True)
+    raw_text = models.TextField(blank=True, null=True)
+    registrant_name = models.TextField(blank=True, null=True)
+    registrant_organization = models.TextField(blank=True, null=True)
+    registrant_street = models.TextField(blank=True, null=True)
+    registrant_city = models.TextField(blank=True, null=True)
+    registrant_state = models.TextField(blank=True, null=True)
+    registrant_post_code = models.TextField(blank=True, null=True)
+    registrant_country = models.TextField(blank=True, null=True)
+    registrant_email = models.TextField(blank=True, null=True)
+    registrant_phone = models.TextField(blank=True, null=True)
+    registrant_phone_ext = models.TextField(blank=True, null=True)
+    registrant_fax = models.TextField(blank=True, null=True)
+    registrant_fax_ext = models.TextField(blank=True, null=True)
+    registrant_raw_text = models.TextField(blank=True, null=True)
+    administrative_name = models.TextField(blank=True, null=True)
+    administrative_organization = models.TextField(blank=True, null=True)
+    administrative_street = models.TextField(blank=True, null=True)
+    administrative_city = models.TextField(blank=True, null=True)
+    administrative_state = models.TextField(blank=True, null=True)
+    administrative_post_code = models.TextField(blank=True, null=True)
+    administrative_country = models.TextField(blank=True, null=True)
+    administrative_email = models.TextField(blank=True, null=True)
+    administrative_phone = models.TextField(blank=True, null=True)
+    administrative_phone_ext = models.TextField(blank=True, null=True)
+    administrative_fax = models.TextField(blank=True, null=True)
+    administrative_fax_ext = models.TextField(blank=True, null=True)
+    administrative_raw_text = models.TextField(blank=True, null=True)
+    technical_name = models.TextField(blank=True, null=True)
+    technical_organization = models.TextField(blank=True, null=True)
+    technical_street = models.TextField(blank=True, null=True)
+    technical_city = models.TextField(blank=True, null=True)
+    technical_state = models.TextField(blank=True, null=True)
+    technical_post_code = models.TextField(blank=True, null=True)
+    technical_country = models.TextField(blank=True, null=True)
+    technical_email = models.TextField(blank=True, null=True)
+    technical_phone = models.TextField(blank=True, null=True)
+    technical_phone_ext = models.TextField(blank=True, null=True)
+    technical_fax = models.TextField(blank=True, null=True)
+    technical_fax_ext = models.TextField(blank=True, null=True)
+    technical_raw_text = models.TextField(blank=True, null=True)
+    billing_name = models.TextField(blank=True, null=True)
+    billing_organization = models.TextField(blank=True, null=True)
+    billing_street = models.TextField(blank=True, null=True)
+    billing_city = models.TextField(blank=True, null=True)
+    billing_state = models.TextField(blank=True, null=True)
+    billing_post_code = models.TextField(blank=True, null=True)
+    billing_country = models.TextField(blank=True, null=True)
+    billing_email = models.TextField(blank=True, null=True)
+    billing_phone = models.TextField(blank=True, null=True)
+    billing_phone_ext = models.TextField(blank=True, null=True)
+    billing_fax = models.TextField(blank=True, null=True)
+    billing_fax_ext = models.TextField(blank=True, null=True)
+    billing_raw_text = models.TextField(blank=True, null=True)
+    zone_name = models.TextField(blank=True, null=True)
+    zone_organization = models.TextField(blank=True, null=True)
+    zone_street = models.TextField(blank=True, null=True)
+    zone_city = models.TextField(blank=True, null=True)
+    zone_state = models.TextField(blank=True, null=True)
+    zone_post_code = models.TextField(blank=True, null=True)
+    zone_country = models.TextField(blank=True, null=True)
+    zone_email = models.TextField(blank=True, null=True)
+    zone_phone = models.TextField(blank=True, null=True)
+    zone_phone_ext = models.TextField(blank=True, null=True)
+    zone_fax = models.TextField(blank=True, null=True)
+    zone_fax_ext = models.TextField(blank=True, null=True)
+    zone_raw_text = models.TextField(blank=True, null=True)
+
+    class Meta:
+        managed = False
+        db_table = 'dns_records'
+
+
+class DomainAlerts(models.Model):
+    domain_alert_uid = models.UUIDField(primary_key=True)
+    sub_domain_uid = models.ForeignKey('SubDomains', on_delete=models.CASCADE, db_column='sub_domain_uid')
+    data_source_uid = models.ForeignKey(DataSource, on_delete=models.CASCADE, db_column='data_source_uid')
+    organizations_uid = models.UUIDField()
+    alert_type = models.TextField(blank=True, null=True)
+    message = models.TextField(blank=True, null=True)
+    previous_value = models.TextField(blank=True, null=True)
+    new_value = models.TextField(blank=True, null=True)
+    date = models.DateField(blank=True, null=True)
+
+    class Meta:
+        managed = False
+        db_table = 'domain_alerts'
+        unique_together = (('alert_type', 'sub_domain_uid', 'date', 'new_value'),)
+
+
+class DomainPermutations(models.Model):
+    suspected_domain_uid = models.UUIDField()
+    organizations_uid = models.ForeignKey('Organizations', on_delete=models.CASCADE, db_column='organizations_uid')
+    domain_permutation = models.TextField(blank=True, null=True)
+    ipv4 = models.TextField(blank=True, null=True)
+    ipv6 = models.TextField(blank=True, null=True)
+    mail_server = models.TextField(blank=True, null=True)
+    name_server = models.TextField(blank=True, null=True)
+    fuzzer = models.TextField(blank=True, null=True)
+    date_observed = models.DateField(blank=True, null=True)
+    ssdeep_score = models.TextField(blank=True, null=True)
+    malicious = models.BooleanField(blank=True, null=True)
+    blocklist_attack_count = models.IntegerField(blank=True, null=True)
+    blocklist_report_count = models.IntegerField(blank=True, null=True)
+    data_source_uid = models.ForeignKey(DataSource, on_delete=models.CASCADE, db_column='data_source_uid')
+    sub_domain_uid = models.ForeignKey('SubDomains', on_delete=models.CASCADE, db_column='sub_domain_uid', blank=True, null=True)
+    dshield_record_count = models.IntegerField(blank=True, null=True)
+    dshield_attack_count = models.IntegerField(blank=True, null=True)
+    date_active = models.DateField(blank=True, null=True)
+
+    class Meta:
+        managed = False
+        db_table = 'domain_permutations'
+        unique_together = (('domain_permutation', 'organizations_uid'),)
+
+
+class DotgovDomains(models.Model):
+    dotgov_uid = models.UUIDField(primary_key=True)
+    domain_name = models.TextField(unique=True)
+    domain_type = models.TextField(blank=True, null=True)
+    agency = models.TextField(blank=True, null=True)
+    organization = models.TextField(blank=True, null=True)
+    city = models.TextField(blank=True, null=True)
+    state = models.TextField(blank=True, null=True)
+    security_contact_email = models.TextField(blank=True, null=True)
+
+    class Meta:
+        managed = False
+        db_table = 'dotgov_domains'
+
+
+class Executives(models.Model):
+    executives_uid = models.UUIDField(primary_key=True)
+    organizations_uid = models.ForeignKey('Organizations', on_delete=models.CASCADE, db_column='organizations_uid')
+    executives = models.TextField()
+
+    class Meta:
+        managed = False
+        db_table = 'executives'
+
+
+class Ips(models.Model):
+    ip_hash = models.TextField(primary_key=True)
+    ip = models.GenericIPAddressField(unique=True)
+    origin_cidr = models.ForeignKey(Cidrs, on_delete=models.CASCADE, db_column='origin_cidr', blank=True, null=True)
+    shodan_results = models.BooleanField(blank=True, null=True)
+    live = models.BooleanField(blank=True, null=True)
+    date_last_live = models.DateTimeField(blank=True, null=True)
+    last_reverse_lookup = models.DateTimeField(blank=True, null=True)
+
+    class Meta:
+        managed = False
+        db_table = 'ips'
+
+
+class IpsSubs(models.Model):
+    ips_subs_uid = models.UUIDField(primary_key=True)
+    ip_hash = models.ForeignKey(Ips, on_delete=models.CASCADE, db_column='ip_hash')
+    sub_domain_uid = models.ForeignKey('SubDomains', on_delete=models.CASCADE, db_column='sub_domain_uid')
+
+    class Meta:
+        managed = False
+        db_table = 'ips_subs'
+        unique_together = (('ip_hash', 'sub_domain_uid'),)
 
 
 class Mentions(models.Model):
@@ -198,28 +525,261 @@ class Mentions(models.Model):
     sub_category = models.TextField(blank=True, null=True)
     tags = models.TextField(blank=True, null=True)
     organizations_uid = models.UUIDField()
+    data_source_uid = models.ForeignKey(DataSource, on_delete=models.CASCADE, db_column='data_source_uid')
+    title_translated = models.TextField(blank=True, null=True)
+    content_translated = models.TextField(blank=True, null=True)
+    detected_lang = models.TextField(blank=True, null=True)
 
     class Meta:
         managed = False
         db_table = 'mentions'
 
 
+class OrgIdMap(models.Model):
+    cyhy_id = models.TextField(blank=True, null=True)
+    pe_org_id = models.TextField(blank=True, null=True)
+    merge_orgs = models.BooleanField(blank=True, null=True)
+
+    class Meta:
+        managed = False
+        db_table = 'org_id_map'
+        unique_together = (('cyhy_id', 'pe_org_id'),)
+
+
+class OrgType(models.Model):
+    org_type_uid = models.UUIDField(primary_key=True)
+    org_type = models.TextField(blank=True, null=True)
+
+    class Meta:
+        managed = False
+        db_table = 'org_type'
+
+
 class Organizations(models.Model):
     organizations_uid = models.UUIDField(primary_key=True)
-    name = models.TextField(unique=True)
-    cyhy_db_name = models.TextField(blank=True, null=True)
+    name = models.TextField()
+    cyhy_db_name = models.TextField(unique=True, blank=True, null=True)
+    org_type_uid = models.ForeignKey(OrgType, on_delete=models.CASCADE, db_column='org_type_uid', blank=True, null=True)
+    report_on = models.BooleanField(blank=True, null=True)
+    password = models.TextField(blank=True, null=True)
+    date_first_reported = models.DateTimeField(blank=True, null=True)
+    parent_org_uid = models.ForeignKey('self', on_delete=models.CASCADE, db_column='parent_org_uid', blank=True, null=True)
+    premium_report = models.BooleanField(blank=True, null=True)
+    agency_type = models.TextField(blank=True, null=True)
+    demo = models.BooleanField(blank=True, null=True)
 
     class Meta:
         managed = False
         db_table = 'organizations'
 
 
+class PshttResults(models.Model):
+    pshtt_results_uid = models.UUIDField(primary_key=True)
+    organizations_uid = models.ForeignKey(Organizations, on_delete=models.CASCADE, db_column='organizations_uid')
+    sub_domain_uid = models.ForeignKey('SubDomains', on_delete=models.CASCADE, db_column='sub_domain_uid')
+    data_source_uid = models.UUIDField()
+    sub_domain = models.TextField()
+    scanned = models.BooleanField(blank=True, null=True)
+    base_domain = models.TextField(blank=True, null=True)
+    base_domain_hsts_preloaded = models.BooleanField(blank=True, null=True)
+    canonical_url = models.TextField(blank=True, null=True)
+    defaults_to_https = models.BooleanField(blank=True, null=True)
+    domain = models.TextField(blank=True, null=True)
+    domain_enforces_https = models.BooleanField(blank=True, null=True)
+    domain_supports_https = models.BooleanField(blank=True, null=True)
+    domain_uses_strong_hsts = models.BooleanField(blank=True, null=True)
+    downgrades_https = models.BooleanField(blank=True, null=True)
+    htss = models.BooleanField(blank=True, null=True)
+    hsts_entire_domain = models.BooleanField(blank=True, null=True)
+    hsts_header = models.TextField(blank=True, null=True)
+    hsts_max_age = models.DecimalField(max_digits=65535, decimal_places=65535, blank=True, null=True)
+    hsts_preload_pending = models.BooleanField(blank=True, null=True)
+    hsts_preload_ready = models.BooleanField(blank=True, null=True)
+    hsts_preloaded = models.BooleanField(blank=True, null=True)
+    https_bad_chain = models.BooleanField(blank=True, null=True)
+    https_bad_hostname = models.BooleanField(blank=True, null=True)
+    https_cert_chain_length = models.IntegerField(blank=True, null=True)
+    https_client_auth_required = models.BooleanField(blank=True, null=True)
+    https_custom_truststore_trusted = models.BooleanField(blank=True, null=True)
+    https_expired_cert = models.BooleanField(blank=True, null=True)
+    https_full_connection = models.BooleanField(blank=True, null=True)
+    https_live = models.BooleanField(blank=True, null=True)
+    https_probably_missing_intermediate_cert = models.BooleanField(blank=True, null=True)
+    https_publicly_trusted = models.BooleanField(blank=True, null=True)
+    https_self_signed_cert = models.BooleanField(blank=True, null=True)
+    ip = models.GenericIPAddressField(blank=True, null=True)
+    live = models.BooleanField(blank=True, null=True)
+    notes = models.TextField(blank=True, null=True)
+    redirect = models.BooleanField(blank=True, null=True)
+    redirect_to = models.TextField(blank=True, null=True)
+    server_header = models.TextField(blank=True, null=True)
+    server_version = models.TextField(blank=True, null=True)
+    strictly_forces_https = models.BooleanField(blank=True, null=True)
+    unknown_error = models.BooleanField(blank=True, null=True)
+    valid_https = models.BooleanField(blank=True, null=True)
+    ep_http_headers = models.TextField(blank=True, null=True)  # This field type is a guess.
+    ep_http_ip = models.GenericIPAddressField(blank=True, null=True)
+    ep_http_live = models.BooleanField(blank=True, null=True)
+    ep_http_notes = models.TextField(blank=True, null=True)
+    ep_http_redirect = models.BooleanField(blank=True, null=True)
+    ep_http_redirect_eventually_to = models.TextField(blank=True, null=True)
+    ep_http_redirect_eventually_to_external = models.BooleanField(blank=True, null=True)
+    ep_http_redirect_eventually_to_http = models.BooleanField(blank=True, null=True)
+    ep_http_redirect_eventually_to_https = models.BooleanField(blank=True, null=True)
+    ep_http_redirect_eventually_to_subdomain = models.BooleanField(blank=True, null=True)
+    ep_http_redirect_immediately_to = models.TextField(blank=True, null=True)
+    ep_http_redirect_immediately_to_external = models.BooleanField(blank=True, null=True)
+    ep_http_redirect_immediately_to_http = models.BooleanField(blank=True, null=True)
+    ep_http_redirect_immediately_to_https = models.BooleanField(blank=True, null=True)
+    ep_http_redirect_immediately_to_subdomain = models.BooleanField(blank=True, null=True)
+    ep_http_redirect_immediately_to_www = models.BooleanField(blank=True, null=True)
+    ep_http_server_header = models.TextField(blank=True, null=True)
+    ep_http_server_version = models.TextField(blank=True, null=True)
+    ep_http_status = models.IntegerField(blank=True, null=True)
+    ep_http_unknown_error = models.BooleanField(blank=True, null=True)
+    ep_http_url = models.TextField(blank=True, null=True)
+    ep_https_headers = models.TextField(blank=True, null=True)  # This field type is a guess.
+    ep_https_hsts = models.BooleanField(blank=True, null=True)
+    ep_https_hsts_all_subdomains = models.BooleanField(blank=True, null=True)
+    ep_https_hsts_header = models.TextField(blank=True, null=True)
+    ep_https_hsts_max_age = models.DecimalField(max_digits=65535, decimal_places=65535, blank=True, null=True)
+    ep_https_hsts_preload = models.BooleanField(blank=True, null=True)
+    ep_https_https_bad_chain = models.BooleanField(blank=True, null=True)
+    ep_https_https_bad_hostname = models.BooleanField(blank=True, null=True)
+    ep_https_https_cert_chain_len = models.IntegerField(blank=True, null=True)
+    ep_https_https_client_auth_required = models.BooleanField(blank=True, null=True)
+    ep_https_https_custom_trusted = models.BooleanField(blank=True, null=True)
+    ep_https_https_expired_cert = models.BooleanField(blank=True, null=True)
+    ep_https_https_vull_connection = models.BooleanField(blank=True, null=True)
+    ep_https_https_missing_intermediate_cert = models.BooleanField(blank=True, null=True)
+    ep_https_https_public_trusted = models.BooleanField(blank=True, null=True)
+    ep_https_https_self_signed_cert = models.BooleanField(blank=True, null=True)
+    ep_https_https_valid = models.BooleanField(blank=True, null=True)
+    ep_https_ip = models.GenericIPAddressField(blank=True, null=True)
+    ep_https_live = models.BooleanField(blank=True, null=True)
+    ep_https_notes = models.TextField(blank=True, null=True)
+    ep_https_redirect = models.BooleanField(blank=True, null=True)
+    ep_https_redireect_eventually_to = models.TextField(blank=True, null=True)
+    ep_https_redirect_eventually_to_external = models.BooleanField(blank=True, null=True)
+    ep_https_redirect_eventually_to_http = models.BooleanField(blank=True, null=True)
+    ep_https_redirect_eventually_to_https = models.BooleanField(blank=True, null=True)
+    ep_https_redirect_eventually_to_subdomain = models.BooleanField(blank=True, null=True)
+    ep_https_redirect_immediately_to = models.TextField(blank=True, null=True)
+    ep_https_redirect_immediately_to_external = models.BooleanField(blank=True, null=True)
+    ep_https_redirect_immediately_to_http = models.BooleanField(blank=True, null=True)
+    ep_https_redirect_immediately_to_https = models.BooleanField(blank=True, null=True)
+    ep_https_redirect_immediately_to_subdomain = models.BooleanField(blank=True, null=True)
+    ep_https_redirect_immediately_to_www = models.BooleanField(blank=True, null=True)
+    ep_https_server_header = models.TextField(blank=True, null=True)
+    ep_https_server_version = models.TextField(blank=True, null=True)
+    ep_https_status = models.IntegerField(blank=True, null=True)
+    ep_https_unknown_error = models.BooleanField(blank=True, null=True)
+    ep_https_url = models.TextField(blank=True, null=True)
+    ep_httpswww_headers = models.TextField(blank=True, null=True)  # This field type is a guess.
+    ep_httpswww_hsts = models.BooleanField(blank=True, null=True)
+    ep_httpswww_hsts_all_subdomains = models.BooleanField(blank=True, null=True)
+    ep_httpswww_hsts_header = models.TextField(blank=True, null=True)
+    ep_httpswww_hsts_max_age = models.DecimalField(max_digits=65535, decimal_places=65535, blank=True, null=True)
+    ep_httpswww_hsts_preload = models.BooleanField(blank=True, null=True)
+    ep_httpswww_https_bad_chain = models.BooleanField(blank=True, null=True)
+    ep_httpswww_https_bad_hostname = models.BooleanField(blank=True, null=True)
+    ep_httpswww_https_cert_chain_len = models.IntegerField(blank=True, null=True)
+    ep_httpswww_https_client_auth_required = models.BooleanField(blank=True, null=True)
+    ep_httpswww_https_custom_trusted = models.BooleanField(blank=True, null=True)
+    ep_httpswww_https_expired_cert = models.BooleanField(blank=True, null=True)
+    ep_httpswww_https_full_connection = models.BooleanField(blank=True, null=True)
+    ep_httpswww_https_missing_intermediate_cert = models.BooleanField(blank=True, null=True)
+    ep_httpswww_https_public_trusted = models.BooleanField(blank=True, null=True)
+    ep_httpswww_https_self_signed_cert = models.BooleanField(blank=True, null=True)
+    ep_httpswww_https_valid = models.BooleanField(blank=True, null=True)
+    ep_httpswww_ip = models.GenericIPAddressField(blank=True, null=True)
+    ep_httpswww_live = models.BooleanField(blank=True, null=True)
+    ep_httpswww_notes = models.TextField(blank=True, null=True)
+    ep_httpswww_redirect = models.BooleanField(blank=True, null=True)
+    ep_httpswww_redirect_eventually_to = models.TextField(blank=True, null=True)
+    ep_httpswww_redirect_eventually_to_external = models.BooleanField(blank=True, null=True)
+    ep_httpswww_redirect_eventually_to_http = models.BooleanField(blank=True, null=True)
+    ep_httpswww_redirect_eventually_to_https = models.BooleanField(blank=True, null=True)
+    ep_httpswww_redirect_eventually_to_subdomain = models.BooleanField(blank=True, null=True)
+    ep_httpswww_redirect_immediately_to = models.TextField(blank=True, null=True)
+    ep_httpswww_redirect_immediately_to_external = models.BooleanField(blank=True, null=True)
+    ep_httpswww_redirect_immediately_to_http = models.BooleanField(blank=True, null=True)
+    ep_httpswww_redirect_immediately_to_https = models.BooleanField(blank=True, null=True)
+    ep_httpswww_redirect_immediately_to_subdomain = models.BooleanField(blank=True, null=True)
+    ep_httpswww_redirect_immediately_to_www = models.BooleanField(blank=True, null=True)
+    ep_httpswww_server_header = models.TextField(blank=True, null=True)
+    ep_httpswww_server_version = models.TextField(blank=True, null=True)
+    ep_httpswww_status = models.IntegerField(blank=True, null=True)
+    ep_httpswww_unknown_error = models.BooleanField(blank=True, null=True)
+    ep_httpswww_url = models.TextField(blank=True, null=True)
+    ep_httpwww_headers = models.TextField(blank=True, null=True)  # This field type is a guess.
+    ep_httpwww_ip = models.GenericIPAddressField(blank=True, null=True)
+    ep_httpwww_live = models.BooleanField(blank=True, null=True)
+    ep_httpwww_notes = models.TextField(blank=True, null=True)
+    ep_httpwww_redirect = models.BooleanField(blank=True, null=True)
+    ep_httpwww_redirect_eventually_to = models.TextField(blank=True, null=True)
+    ep_httpwww_redirect_eventually_to_external = models.BooleanField(blank=True, null=True)
+    ep_httpwww_redirect_eventually_to_http = models.BooleanField(blank=True, null=True)
+    ep_httpwww_redirect_eventually_to_https = models.BooleanField(blank=True, null=True)
+    ep_httpwww_redirect_eventually_to_subdomain = models.BooleanField(blank=True, null=True)
+    ep_httpwww_redirect_immediately_to = models.TextField(blank=True, null=True)
+    ep_httpwww_redirect_immediately_to_external = models.BooleanField(blank=True, null=True)
+    ep_httpwww_redirect_immediately_to_http = models.BooleanField(blank=True, null=True)
+    ep_httpwww_redirect_immediately_to_https = models.BooleanField(blank=True, null=True)
+    ep_httpwww_redirect_immediately_to_subdomain = models.BooleanField(blank=True, null=True)
+    ep_httpwww_redirect_immediately_to_www = models.BooleanField(blank=True, null=True)
+    ep_httpwww_server_header = models.TextField(blank=True, null=True)
+    ep_httpwww_server_version = models.TextField(blank=True, null=True)
+    ep_httpwww_status = models.IntegerField(blank=True, null=True)
+    ep_httpwww_unknown_error = models.BooleanField(blank=True, null=True)
+    ep_httpwww_url = models.TextField(blank=True, null=True)
+
+    class Meta:
+        managed = False
+        db_table = 'pshtt_results'
+        unique_together = (('organizations_uid', 'sub_domain_uid'),)
+
+
+class ReportSummaryStats(models.Model):
+    report_uid = models.UUIDField(primary_key=True)
+    organizations_uid = models.ForeignKey(Organizations, on_delete=models.CASCADE, db_column='organizations_uid')
+    start_date = models.DateField()
+    end_date = models.DateField(blank=True, null=True)
+    ip_count = models.IntegerField(blank=True, null=True)
+    root_count = models.IntegerField(blank=True, null=True)
+    sub_count = models.IntegerField(blank=True, null=True)
+    ports_count = models.IntegerField(blank=True, null=True)
+    creds_count = models.IntegerField(blank=True, null=True)
+    breach_count = models.IntegerField(blank=True, null=True)
+    cred_password_count = models.IntegerField(blank=True, null=True)
+    domain_alert_count = models.IntegerField(blank=True, null=True)
+    suspected_domain_count = models.IntegerField(blank=True, null=True)
+    insecure_port_count = models.IntegerField(blank=True, null=True)
+    verified_vuln_count = models.IntegerField(blank=True, null=True)
+    suspected_vuln_count = models.IntegerField(blank=True, null=True)
+    suspected_vuln_addrs_count = models.IntegerField(blank=True, null=True)
+    threat_actor_count = models.IntegerField(blank=True, null=True)
+    dark_web_alerts_count = models.IntegerField(blank=True, null=True)
+    dark_web_mentions_count = models.IntegerField(blank=True, null=True)
+    dark_web_executive_alerts_count = models.IntegerField(blank=True, null=True)
+    dark_web_asset_alerts_count = models.IntegerField(blank=True, null=True)
+    pe_number_score = models.TextField(blank=True, null=True)
+    pe_letter_grade = models.TextField(blank=True, null=True)
+    pe_percent_score = models.DecimalField(max_digits=65535, decimal_places=65535, blank=True, null=True)
+
+    class Meta:
+        managed = False
+        db_table = 'report_summary_stats'
+        unique_together = (('organizations_uid', 'start_date'),)
+
+
 class RootDomains(models.Model):
     root_domain_uid = models.UUIDField(primary_key=True)
-    organizations_uid = models.ForeignKey(Organizations, models.DO_NOTHING, db_column='organizations_uid')
-    organization_name = models.TextField()
+    organizations_uid = models.ForeignKey(Organizations, on_delete=models.CASCADE, db_column='organizations_uid')
     root_domain = models.TextField()
     ip_address = models.TextField(blank=True, null=True)
+    data_source_uid = models.ForeignKey(DataSource, on_delete=models.CASCADE, db_column='data_source_uid')
+    enumerate_subs = models.BooleanField(blank=True, null=True)
 
     class Meta:
         managed = False
@@ -229,7 +789,7 @@ class RootDomains(models.Model):
 
 class ShodanAssets(models.Model):
     shodan_asset_uid = models.UUIDField(primary_key=True)
-    organizations_uid = models.ForeignKey(Organizations, models.DO_NOTHING, db_column='organizations_uid')
+    organizations_uid = models.ForeignKey(Organizations, on_delete=models.CASCADE, db_column='organizations_uid')
     organization = models.TextField(blank=True, null=True)
     ip = models.TextField(blank=True, null=True)
     port = models.IntegerField(blank=True, null=True)
@@ -242,6 +802,7 @@ class ShodanAssets(models.Model):
     hostnames = models.TextField(blank=True, null=True)  # This field type is a guess.
     isn = models.TextField(blank=True, null=True)
     asn = models.IntegerField(blank=True, null=True)
+    data_source_uid = models.ForeignKey(DataSource, on_delete=models.CASCADE, db_column='data_source_uid')
 
     class Meta:
         managed = False
@@ -251,7 +812,7 @@ class ShodanAssets(models.Model):
 
 class ShodanInsecureProtocolsUnverifiedVulns(models.Model):
     insecure_product_uid = models.UUIDField(primary_key=True)
-    organizations_uid = models.ForeignKey(Organizations, models.DO_NOTHING, db_column='organizations_uid')
+    organizations_uid = models.ForeignKey(Organizations, on_delete=models.CASCADE, db_column='organizations_uid')
     organization = models.TextField(blank=True, null=True)
     ip = models.TextField(blank=True, null=True)
     port = models.IntegerField(blank=True, null=True)
@@ -268,6 +829,7 @@ class ShodanInsecureProtocolsUnverifiedVulns(models.Model):
     hostnames = models.TextField(blank=True, null=True)  # This field type is a guess.
     isn = models.TextField(blank=True, null=True)
     asn = models.IntegerField(blank=True, null=True)
+    data_source_uid = models.ForeignKey(DataSource, on_delete=models.CASCADE, db_column='data_source_uid')
 
     class Meta:
         managed = False
@@ -275,9 +837,9 @@ class ShodanInsecureProtocolsUnverifiedVulns(models.Model):
         unique_together = (('organizations_uid', 'ip', 'port', 'protocol', 'timestamp'),)
 
 
-class ShodanVerifiedVulns(models.Model):
-    verified_vuln_uid = models.UUIDField(primary_key=True)
-    organizations_uid = models.ForeignKey(Organizations, models.DO_NOTHING, db_column='organizations_uid')
+class ShodanVulns(models.Model):
+    shodan_vuln_uid = models.UUIDField(primary_key=True)
+    organizations_uid = models.ForeignKey(Organizations, on_delete=models.CASCADE, db_column='organizations_uid')
     organization = models.TextField(blank=True, null=True)
     ip = models.TextField(blank=True, null=True)
     port = models.TextField(blank=True, null=True)
@@ -303,32 +865,32 @@ class ShodanVerifiedVulns(models.Model):
     hostnames = models.TextField(blank=True, null=True)  # This field type is a guess.
     isn = models.TextField(blank=True, null=True)
     asn = models.IntegerField(blank=True, null=True)
+    data_source_uid = models.ForeignKey(DataSource, on_delete=models.CASCADE, db_column='data_source_uid')
+    type = models.TextField(blank=True, null=True)
+    name = models.TextField(blank=True, null=True)
+    potential_vulns = models.TextField(blank=True, null=True)  # This field type is a guess.
+    mitigation = models.TextField(blank=True, null=True)
+    server = models.TextField(blank=True, null=True)
+    is_verified = models.BooleanField(blank=True, null=True)
 
     class Meta:
         managed = False
-        db_table = 'shodan_verified_vulns'
+        db_table = 'shodan_vulns'
         unique_together = (('organizations_uid', 'ip', 'port', 'protocol', 'timestamp'),)
 
 
 class SubDomains(models.Model):
     sub_domain_uid = models.UUIDField(primary_key=True)
     sub_domain = models.TextField()
-    root_domain_uid = models.UUIDField()
-    root_domain = models.TextField()
+    root_domain_uid = models.ForeignKey(RootDomains, on_delete=models.CASCADE, db_column='root_domain_uid')
+    data_source_uid = models.ForeignKey(DataSource, on_delete=models.CASCADE, db_column='data_source_uid')
+    dns_record_uid = models.ForeignKey(DnsRecords, on_delete=models.CASCADE, db_column='dns_record_uid', blank=True, null=True)
+    status = models.BooleanField(blank=True, null=True)
 
     class Meta:
         managed = False
         db_table = 'sub_domains'
-
-
-class SubDomainsWebAssets(models.Model):
-    sub_domain_uid = models.OneToOneField(SubDomains, models.DO_NOTHING, db_column='sub_domain_uid', primary_key=True)
-    asset_uid = models.ForeignKey('WebAssets', models.DO_NOTHING, db_column='asset_uid')
-
-    class Meta:
-        managed = False
-        db_table = 'sub_domains_web_assets'
-        unique_together = (('sub_domain_uid', 'asset_uid'),)
+        unique_together = (('sub_domain', 'root_domain_uid'),)
 
 
 class TopCves(models.Model):
@@ -338,11 +900,23 @@ class TopCves(models.Model):
     nvd_base_score = models.TextField(blank=True, null=True)
     date = models.DateField(blank=True, null=True)
     summary = models.TextField(blank=True, null=True)
+    data_source_uid = models.ForeignKey(DataSource, on_delete=models.CASCADE, db_column='data_source_uid')
 
     class Meta:
         managed = False
         db_table = 'top_cves'
         unique_together = (('cve_id', 'date'),)
+
+
+class TopicTotals(models.Model):
+    cound_uuid = models.UUIDField(primary_key=True)
+    organizations_uid = models.UUIDField()
+    content_count = models.IntegerField()
+    count_date = models.TextField(blank=True, null=True)
+
+    class Meta:
+        managed = False
+        db_table = 'topic_totals'
 
 
 class UniqueSoftware(models.Model):
@@ -357,14 +931,17 @@ class UniqueSoftware(models.Model):
 class WebAssets(models.Model):
     asset_uid = models.UUIDField(primary_key=True)
     asset_type = models.TextField()
-    asset = models.TextField(unique=True)
+    asset = models.TextField()
     ip_type = models.TextField(blank=True, null=True)
     verified = models.BooleanField(blank=True, null=True)
-    organizations_uid = models.ForeignKey(Organizations, models.DO_NOTHING, db_column='organizations_uid')
+    organizations_uid = models.ForeignKey(Organizations, on_delete=models.CASCADE, db_column='organizations_uid')
     asset_origin = models.TextField(blank=True, null=True)
     report_on = models.BooleanField(blank=True, null=True)
     last_scanned = models.DateTimeField(blank=True, null=True)
+    report_status_reason = models.TextField(blank=True, null=True)
+    data_source_uid = models.ForeignKey(DataSource, on_delete=models.CASCADE, db_column='data_source_uid')
 
     class Meta:
         managed = False
         db_table = 'web_assets'
+        unique_together = (('asset', 'organizations_uid'),)

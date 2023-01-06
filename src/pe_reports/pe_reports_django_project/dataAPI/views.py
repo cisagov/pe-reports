@@ -90,6 +90,7 @@ def create_refresh_token(subject: Union[str, Any],
     return encoded_jwt
 
 def userinfo(theuser):
+    """Get all users in a list."""
     user_record = list(User.objects.filter(username=f'{theuser}'))
 
     if user_record:
@@ -119,7 +120,7 @@ def userapiTokenUpdate(expiredaccessToken, user_refresh, theapiKey, user_id):
 
     updateapiuseraccessToken.save(update_fields=['apiKey'])
     # updateapiuserrefreshToken.save(update_fields=['refresh_token'])
-    LOGGER.info(f'The user api key and refresh token have been updated from: {theapiKey} to: {updateapiuseraccessToken.apiKey}.')
+    LOGGER.info(f'The user api key and refresh token have been updated from: {theapiKey[-10:]} to: {updateapiuseraccessToken.apiKey[-10:]}.')
 
 
 
@@ -136,13 +137,13 @@ def userapiTokenverify(theapiKey):
         user_id = u.id
     # LOGGER.info(f'The user key is {user_key}')
     # LOGGER.info(f'The user refresh key is {user_refresh}')
-    LOGGER.info(f'the token being verified at verify {theapiKey}')
+    LOGGER.info(f'the token being verified at verify {theapiKey[-10:]}')
 
     try:
         jwt.decode(theapiKey, config('JWT_REFRESH_SECRET_KEY'),
                    algorithms=ALGORITHM,
                    options={"verify_signature": False})
-        LOGGER.info(f'The api key was alright {theapiKey}')
+        LOGGER.info(f'The api key was alright {theapiKey[-10:0]}')
 
     except exceptions.JWTError as e:
         LOGGER.warning('The access token has expired and will be updated')
@@ -182,7 +183,7 @@ def read_orgs(tokens: dict = Depends(get_api_key)):
     """API endpoint to get all stakeholders."""
     orgs = list(Organizations.objects.all())
 
-    LOGGER.info(f"The api key submitted {tokens}")
+    LOGGER.info(f"The api key submitted {tokens[-10:]}")
     try:
         userapiTokenverify(theapiKey=tokens)
         return orgs
@@ -197,7 +198,8 @@ def read_orgs(data: schemas.UserAPI):
     """API endpoint to get api by submitting refresh token."""
     user_key = ''
     userkey = list(apiUser.objects.filter(refresh_token=data.refresh_token))
-    LOGGER.info(f'The input data requested was ***********{data.refresh_token[-10:]}')
+    LOGGER.info(f'The input data requested was ***********'
+                f'{data.refresh_token[-10:]}')
 
     for u in userkey:
         user_key = u.apiKey
