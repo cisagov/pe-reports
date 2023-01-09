@@ -6,6 +6,7 @@
 .DS_Store
 
 ## Project Specific ##
+*.html
 *.log
 output/
 src/pe_reports/*.html
