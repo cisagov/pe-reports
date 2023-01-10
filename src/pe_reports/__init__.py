@@ -16,14 +16,14 @@ from flask_migrate import Migrate
 from flask_sqlalchemy import SQLAlchemy
 
 # cisagov Libraries
-from pe_reports.data.config import config
+from RemovedCode import config
 
 # Stakeholder views
-from pe_reports.home.views import home_blueprint
-from pe_reports.report_gen.views import report_gen_blueprint
-from pe_reports.stakeholder.views import stakeholder_blueprint
+from RemovedCode.home import home_blueprint
+from RemovedCode.report_gen.views import report_gen_blueprint
+from RemovedCode.stakeholder.views import stakeholder_blueprint
 
-from ._version import __version__  # noqa: F401
+from pe_reports._version import __version__  # noqa: F401
 
 params = config()
 # Initialize port if empty.
