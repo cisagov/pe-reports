@@ -449,9 +449,9 @@ def init(datestring, org_name, org_uid, score, grade, soc_med_included=False):
         "endDate": end,
         "base_dir": base_dir,
     }
-    print(chevron_dict)
+    # print(chevron_dict)
     asset_dict = get_org_assets_count(org_uid)
-    print(asset_dict)
+    # print(asset_dict)
     scorecard_dict = {
         "organizations_uid": org_uid,
         "org_name": org_name,
@@ -464,7 +464,7 @@ def init(datestring, org_name, org_uid, score, grade, soc_med_included=False):
         "pe_number_score": score,
         "pe_letter_grade": grade,
     }
-    print(scorecard_dict)
+    # print(scorecard_dict)
 
     scorecard_dict, chevron_dict, creds_sum, source_html = credential(
         scorecard_dict,
@@ -514,7 +514,7 @@ def init(datestring, org_name, org_uid, score, grade, soc_med_included=False):
     """
     )
     html = chevron.render(source_html, chevron_dict)
-    print(scorecard_dict)
+    # print(scorecard_dict)
     return (
         scorecard_dict,
         html,

@@ -17,6 +17,7 @@ from .api import (
     alerts_list,
     credential_auth,
     dve_top_cves,
+    get_bulk_cve_resp,
     intel_post,
     org_assets,
 )
@@ -57,13 +58,14 @@ def root_domains(org_id):
 def mentions(date, aliases, soc_media_included=False):
     """Pull dark web mentions data for an organization."""
     token = cybersix_token()
+
+    # Build the query using the org's aliases
     mentions = ""
     for mention in aliases:
         mentions += '"' + mention + '"' + ","
     mentions = mentions[:-1]
     if soc_media_included:
         query = "date:" + date + " AND " + "(" + str(mentions) + ")"
-
     else:
         query = (
             "date:"
@@ -78,66 +80,79 @@ def mentions(date, aliases, soc_media_included=False):
         )
     LOGGER.info("Query:")
     LOGGER.info(query)
+
+    # Get the total number of mentions
     count = 1
     while count < 7:
         try:
-            LOGGER.info("Intel post try #%s", count)
+            LOGGER.info("Total mentions try #%s", count)
             resp = intel_post(token, query, frm=0, scroll=False, result_size=1)
             break
         except Exception:
-            LOGGER.info("Error. Trying intel_post again...")
+            LOGGER.info("Error. Trying to get mentions count again...")
             count += 1
             continue
-    count_total = resp["total_intel_items"]
-    LOGGER.info("Total Mentions: %s", count_total)
+    total_mentions = resp["total_intel_items"]
+    LOGGER.info("Total Mentions: %s", total_mentions)
 
-    if count_total < 8000:
-        i = 0
-        all_mentions = []
-        count = 1
-        while i < count_total:
-            # Recommended "from" and "result_size" is 50. The maximum is 400.
-            while count < 7:
-                try:
-                    resp = intel_post(
-                        token, query, frm=i, scroll=False, result_size=100
+    # Fetch mentions in segments
+    # Recommended segment is 50. The maximum is 400.
+    i = 0
+    segment_size = 100
+    smaller_segment_count = 1
+    all_mentions = []
+    while i < total_mentions:
+        # Try to get a mentions segment 3 times
+        try_count = 1
+        while try_count < 4:
+            try:
+                # If segment size was decreased, only use for 10 iterations
+                if smaller_segment_count == 10:
+                    LOGGER.info("Switching back to a segment size of 100.")
+                    segment_size = 100
+                    smaller_segment_count = 1
+                if segment_size <= 10:
+                    smaller_segment_count += 1
+                # API post
+                resp = intel_post(
+                    token, query, frm=i, scroll=False, result_size=segment_size
+                )
+                i += segment_size
+                LOGGER.info(
+                    "Got %s-%s of %s...",
+                    i - segment_size,
+                    i,
+                    total_mentions,
+                )
+                intel_items = resp["intel_items"]
+                df_mentions = pd.DataFrame.from_dict(intel_items)
+                all_mentions.append(df_mentions)
+                df_all_mentions = pd.concat(all_mentions).reset_index(drop=True)
+                break
+            except Exception:
+                # Sleep for 2 seconds
+                time.sleep(2)
+                # If the API post failed 3 times
+                if try_count == 3:
+                    # If a segment was already decreased to 1, skip the mention
+                    if segment_size == 1:
+                        LOGGER.critical("Failed 3 times fetching 1 post. Skipping it.")
+                        i += segment_size
+                        break
+                    # Decrease the segment to 10, then if still failing, to 1
+                    if segment_size == 10:
+                        segment_size = 1
+                        smaller_segment_count = 1
+                    else:
+                        segment_size = 10
+                    LOGGER.error(
+                        "Failed 3 times. Switching to a segment size of %s",
+                        segment_size,
                     )
-                    i += 100
-                    LOGGER.info("Getting %s of %s....", i, count_total)
-                    intel_items = resp["intel_items"]
-                    df_mentions = pd.DataFrame.from_dict(intel_items)
-                    all_mentions.append(df_mentions)
-                    df_all_mentions = pd.concat(all_mentions).reset_index(drop=True)
-                    break
-                except Exception:
-                    time.sleep(5)
-                    LOGGER.info("Error. Trying query post again...")
-                    count += 1
+                    try_count = 1
                     continue
-    else:
-        i = 0
-        all_mentions = []
-        count = 1
-        while i < count_total:
-            # Recommended "from" and "result_size" is 50. The maximum is 400.
-            while count < 7:
-                try:
-                    resp = intel_post(
-                        token, query, frm=i, scroll=False, result_size=300
-                    )
-                    i += 300
-                    LOGGER.info("Getting %s of %s....", i, count_total)
-                    intel_items = resp["intel_items"]
-                    df_mentions = pd.DataFrame.from_dict(intel_items)
-                    all_mentions.append(df_mentions)
-                    df_all_mentions = pd.concat(all_mentions).reset_index(drop=True)
-                    break
-                except Exception:
-                    time.sleep(5)
-                    LOGGER.info("Error. Trying query post again...")
-                    count += 1
-                    continue
-
+                LOGGER.error("Try %s/3 failed.", try_count)
+                try_count += 1
     return df_all_mentions
 
 
@@ -227,3 +242,70 @@ def creds(domain, from_date, to_date):
         subset=["email", "breach_name"], keep="first"
     ).reset_index(drop=True)
     return df
+
+
+def extract_bulk_cve_info(cve_list):
+    """
+    Make API call to C6G and retrieve/extract relevant info for a list of CVE names (10 max).
+
+    Args:
+        cve_list: list of cve names (i.e. ['CVE-2022-123', 'CVE-2022-456'...])
+
+    Returns:
+        A dataframe with the name and all relevant info for the CVEs listed
+    """
+    # Call get_bulk_cve_info() function to get response
+    resp = get_bulk_cve_resp(cve_list)
+    # Check if there was a good response
+    if resp is None:
+        # If no response, return empty dataframe
+        return pd.DataFrame()
+    else:
+        # Proceed if there is a response
+        resp_list = resp.get("objects")
+        # Dataframe to hold finalized data
+        resp_df = pd.DataFrame()
+        # For each cve in api response, extract data
+        for i in range(0, len(resp_list)):
+            # CVE name
+            cve_name = resp_list[i].get("name")
+            # CVSS 2.0 info
+            cvss_2_info = resp_list[i].get("x_sixgill_info").get("nvd").get("v2")
+            if cvss_2_info is not None:
+                cvss_2_0 = cvss_2_info.get("current")
+                cvss_2_0_sev = cvss_2_info.get("severity")
+                cvss_2_0_vec = cvss_2_info.get("vector")
+            else:
+                [cvss_2_0, cvss_2_0_sev, cvss_2_0_vec] = [None, None, None]
+            # CVSS 3.0 info
+            cvss_3_info = resp_list[i].get("x_sixgill_info").get("nvd").get("v3")
+            if cvss_3_info is not None:
+                cvss_3_0 = cvss_3_info.get("current")
+                cvss_3_0 = cvss_3_info.get("severity")
+                cvss_3_0 = cvss_3_info.get("vector")
+            else:
+                [cvss_3_0, cvss_3_0_sev, cvss_3_0_vec] = [None, None, None]
+            # DVE info
+            dve_info = resp_list[i].get("x_sixgill_info").get("score")
+            if dve_info is not None:
+                dve_score = dve_info.get("current")
+            else:
+                dve_score = None
+
+            # Append this row of CVE info to the resp_df
+            curr_info = {
+                "cve_name": cve_name,
+                "cvss_2_0": cvss_2_0,
+                "cvss_2_0_severity": cvss_2_0_sev,
+                "cvss_2_0_vector": cvss_2_0_vec,
+                "cvss_3_0": cvss_3_0,
+                "cvss_3_0_severity": cvss_3_0_sev,
+                "cvss_3_0_vector": cvss_3_0_vec,
+                "dve_score": dve_score,
+            }
+            resp_df = pd.concat(
+                [resp_df, pd.DataFrame(curr_info, index=[0])],
+                ignore_index=True,
+            )
+        # Return dataframe of relevant CVE/CVSS/DVE info
+        return resp_df
