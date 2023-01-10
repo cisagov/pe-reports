@@ -8,6 +8,8 @@
 # Feel free to rename the models, but don't rename db_table values or field names.
 from django.db import models
 from django.conf import settings
+import uuid
+
 
 class Users(models.Model):
     id = models.UUIDField(primary_key=True)
@@ -155,7 +157,7 @@ class AuthUserUserPermissions(models.Model):
 
 
 class Cidrs(models.Model):
-    cidr_uid = models.UUIDField(primary_key=True)
+    cidr_uid = models.UUIDField(primary_key=True, default=uuid.uuid1())
     network = models.TextField()  # This field type is a guess.
     organizations_uid = models.ForeignKey('Organizations', on_delete=models.CASCADE, db_column='organizations_uid', blank=True, null=True)
     data_source_uid = models.ForeignKey('DataSource', on_delete=models.CASCADE, db_column='data_source_uid', blank=True, null=True)
@@ -212,15 +214,15 @@ class CredentialExposures(models.Model):
 
 
 class CveInfo(models.Model):
-    cve_uuid = models.UUIDField(primary_key=True)
+    cve_uuid = models.UUIDField(primary_key=True, default=uuid.uuid1())
     cve_name = models.TextField(unique=True, blank=True, null=True)
-    cvss_2_0 = models.DecimalField(max_digits=65535, decimal_places=65535, blank=True, null=True)
+    cvss_2_0 = models.DecimalField(max_digits=1000, decimal_places=1000, blank=True, null=True)
     cvss_2_0_severity = models.TextField(blank=True, null=True)
     cvss_2_0_vector = models.TextField(blank=True, null=True)
-    cvss_3_0 = models.DecimalField(max_digits=65535, decimal_places=65535, blank=True, null=True)
+    cvss_3_0 = models.DecimalField(max_digits=1000, decimal_places=1000, blank=True, null=True)
     cvss_3_0_severity = models.TextField(blank=True, null=True)
     cvss_3_0_vector = models.TextField(blank=True, null=True)
-    dve_score = models.DecimalField(max_digits=65535, decimal_places=65535, blank=True, null=True)
+    dve_score = models.DecimalField(max_digits=1000, decimal_places=1000, blank=True, null=True)
 
     class Meta:
         managed = False
@@ -228,7 +230,7 @@ class CveInfo(models.Model):
 
 
 class CyhyContacts(models.Model):
-    field_id = models.UUIDField(db_column='_id', primary_key=True)  # Field renamed because it started with '_'.
+    field_id = models.UUIDField(db_column='_id', primary_key=True, default=uuid.uuid1())  # Field renamed because it started with '_'.
     org_id = models.TextField()
     org_name = models.TextField()
     phone = models.TextField(blank=True, null=True)
@@ -244,7 +246,7 @@ class CyhyContacts(models.Model):
 
 
 class CyhyDbAssets(models.Model):
-    field_id = models.UUIDField(db_column='_id', primary_key=True)  # Field renamed because it started with '_'.
+    field_id = models.UUIDField(db_column='_id', primary_key=True, default=uuid.uuid1())  # Field renamed because it started with '_'.
     org_id = models.TextField(blank=True, null=True)
     org_name = models.TextField(blank=True, null=True)
     contact = models.TextField(blank=True, null=True)
@@ -272,7 +274,7 @@ class DataapiApiuser(models.Model):
 
 
 class DataSource(models.Model):
-    data_source_uid = models.UUIDField(primary_key=True)
+    data_source_uid = models.UUIDField(primary_key=True, default=uuid.uuid1())
     name = models.TextField()
     description = models.TextField()
     last_run = models.DateField()
@@ -328,7 +330,7 @@ class DjangoSession(models.Model):
 
 
 class DnsRecords(models.Model):
-    dns_record_uid = models.UUIDField(primary_key=True)
+    dns_record_uid = models.UUIDField(primary_key=True, default=uuid.uuid1())
     domain_name = models.TextField(blank=True, null=True)
     domain_type = models.TextField(blank=True, null=True)
     created_date = models.DateTimeField(blank=True, null=True)
@@ -412,7 +414,7 @@ class DnsRecords(models.Model):
 
 
 class DomainAlerts(models.Model):
-    domain_alert_uid = models.UUIDField(primary_key=True)
+    domain_alert_uid = models.UUIDField(primary_key=True, default=uuid.uuid1())
     sub_domain_uid = models.ForeignKey('SubDomains', on_delete=models.CASCADE, db_column='sub_domain_uid')
     data_source_uid = models.ForeignKey(DataSource, on_delete=models.CASCADE, db_column='data_source_uid')
     organizations_uid = models.UUIDField()
@@ -429,7 +431,7 @@ class DomainAlerts(models.Model):
 
 
 class DomainPermutations(models.Model):
-    suspected_domain_uid = models.UUIDField()
+    suspected_domain_uid = models.UUIDField(default=uuid.uuid1())
     organizations_uid = models.ForeignKey('Organizations', on_delete=models.CASCADE, db_column='organizations_uid')
     domain_permutation = models.TextField(blank=True, null=True)
     ipv4 = models.TextField(blank=True, null=True)
@@ -455,7 +457,7 @@ class DomainPermutations(models.Model):
 
 
 class DotgovDomains(models.Model):
-    dotgov_uid = models.UUIDField(primary_key=True)
+    dotgov_uid = models.UUIDField(primary_key=True, default=uuid.uuid1())
     domain_name = models.TextField(unique=True)
     domain_type = models.TextField(blank=True, null=True)
     agency = models.TextField(blank=True, null=True)
@@ -500,7 +502,7 @@ class IpsSubs(models.Model):
 
     class Meta:
         managed = False
-        db_table = 'ips_subs'
+        # db_table = 'ips_subs'
         unique_together = (('ip_hash', 'sub_domain_uid'),)
 
 
@@ -546,7 +548,7 @@ class OrgIdMap(models.Model):
 
 
 class OrgType(models.Model):
-    org_type_uid = models.UUIDField(primary_key=True)
+    org_type_uid = models.UUIDField(primary_key=True, default=uuid.uuid1())
     org_type = models.TextField(blank=True, null=True)
 
     class Meta:
@@ -573,7 +575,7 @@ class Organizations(models.Model):
 
 
 class PshttResults(models.Model):
-    pshtt_results_uid = models.UUIDField(primary_key=True)
+    pshtt_results_uid = models.UUIDField(primary_key=True, default=uuid.uuid1())
     organizations_uid = models.ForeignKey(Organizations, on_delete=models.CASCADE, db_column='organizations_uid')
     sub_domain_uid = models.ForeignKey('SubDomains', on_delete=models.CASCADE, db_column='sub_domain_uid')
     data_source_uid = models.UUIDField()
@@ -591,7 +593,7 @@ class PshttResults(models.Model):
     htss = models.BooleanField(blank=True, null=True)
     hsts_entire_domain = models.BooleanField(blank=True, null=True)
     hsts_header = models.TextField(blank=True, null=True)
-    hsts_max_age = models.DecimalField(max_digits=65535, decimal_places=65535, blank=True, null=True)
+    hsts_max_age = models.DecimalField(max_digits=1000, decimal_places=1000, blank=True, null=True)
     hsts_preload_pending = models.BooleanField(blank=True, null=True)
     hsts_preload_ready = models.BooleanField(blank=True, null=True)
     hsts_preloaded = models.BooleanField(blank=True, null=True)
@@ -641,7 +643,7 @@ class PshttResults(models.Model):
     ep_https_hsts = models.BooleanField(blank=True, null=True)
     ep_https_hsts_all_subdomains = models.BooleanField(blank=True, null=True)
     ep_https_hsts_header = models.TextField(blank=True, null=True)
-    ep_https_hsts_max_age = models.DecimalField(max_digits=65535, decimal_places=65535, blank=True, null=True)
+    ep_https_hsts_max_age = models.DecimalField(max_digits=1000, decimal_places=1000, blank=True, null=True)
     ep_https_hsts_preload = models.BooleanField(blank=True, null=True)
     ep_https_https_bad_chain = models.BooleanField(blank=True, null=True)
     ep_https_https_bad_hostname = models.BooleanField(blank=True, null=True)
@@ -678,7 +680,7 @@ class PshttResults(models.Model):
     ep_httpswww_hsts = models.BooleanField(blank=True, null=True)
     ep_httpswww_hsts_all_subdomains = models.BooleanField(blank=True, null=True)
     ep_httpswww_hsts_header = models.TextField(blank=True, null=True)
-    ep_httpswww_hsts_max_age = models.DecimalField(max_digits=65535, decimal_places=65535, blank=True, null=True)
+    ep_httpswww_hsts_max_age = models.DecimalField(max_digits=1000, decimal_places=1000, blank=True, null=True)
     ep_httpswww_hsts_preload = models.BooleanField(blank=True, null=True)
     ep_httpswww_https_bad_chain = models.BooleanField(blank=True, null=True)
     ep_httpswww_https_bad_hostname = models.BooleanField(blank=True, null=True)
@@ -740,7 +742,7 @@ class PshttResults(models.Model):
 
 
 class ReportSummaryStats(models.Model):
-    report_uid = models.UUIDField(primary_key=True)
+    report_uid = models.UUIDField(primary_key=True, default=uuid.uuid1())
     organizations_uid = models.ForeignKey(Organizations, on_delete=models.CASCADE, db_column='organizations_uid')
     start_date = models.DateField()
     end_date = models.DateField(blank=True, null=True)
@@ -764,7 +766,7 @@ class ReportSummaryStats(models.Model):
     dark_web_asset_alerts_count = models.IntegerField(blank=True, null=True)
     pe_number_score = models.TextField(blank=True, null=True)
     pe_letter_grade = models.TextField(blank=True, null=True)
-    pe_percent_score = models.DecimalField(max_digits=65535, decimal_places=65535, blank=True, null=True)
+    pe_percent_score = models.DecimalField(max_digits=1000, decimal_places=1000, blank=True, null=True)
 
     class Meta:
         managed = False
@@ -773,7 +775,7 @@ class ReportSummaryStats(models.Model):
 
 
 class RootDomains(models.Model):
-    root_domain_uid = models.UUIDField(primary_key=True)
+    root_domain_uid = models.UUIDField(primary_key=True, default=uuid.uuid1())
     organizations_uid = models.ForeignKey(Organizations, on_delete=models.CASCADE, db_column='organizations_uid')
     root_domain = models.TextField()
     ip_address = models.TextField(blank=True, null=True)
@@ -787,7 +789,7 @@ class RootDomains(models.Model):
 
 
 class ShodanAssets(models.Model):
-    shodan_asset_uid = models.UUIDField(primary_key=True)
+    shodan_asset_uid = models.UUIDField(primary_key=True, default=uuid.uuid1())
     organizations_uid = models.ForeignKey(Organizations, on_delete=models.CASCADE, db_column='organizations_uid')
     organization = models.TextField(blank=True, null=True)
     ip = models.TextField(blank=True, null=True)
@@ -810,7 +812,7 @@ class ShodanAssets(models.Model):
 
 
 class ShodanInsecureProtocolsUnverifiedVulns(models.Model):
-    insecure_product_uid = models.UUIDField(primary_key=True)
+    insecure_product_uid = models.UUIDField(primary_key=True, default=uuid.uuid1())
     organizations_uid = models.ForeignKey(Organizations, on_delete=models.CASCADE, db_column='organizations_uid')
     organization = models.TextField(blank=True, null=True)
     ip = models.TextField(blank=True, null=True)
@@ -837,7 +839,7 @@ class ShodanInsecureProtocolsUnverifiedVulns(models.Model):
 
 
 class ShodanVulns(models.Model):
-    shodan_vuln_uid = models.UUIDField(primary_key=True)
+    shodan_vuln_uid = models.UUIDField(primary_key=True, default=uuid.uuid1())
     organizations_uid = models.ForeignKey(Organizations, on_delete=models.CASCADE, db_column='organizations_uid')
     organization = models.TextField(blank=True, null=True)
     ip = models.TextField(blank=True, null=True)
@@ -846,7 +848,7 @@ class ShodanVulns(models.Model):
     timestamp = models.DateTimeField(blank=True, null=True)
     cve = models.TextField(blank=True, null=True)
     severity = models.TextField(blank=True, null=True)
-    cvss = models.DecimalField(max_digits=65535, decimal_places=65535, blank=True, null=True)
+    cvss = models.DecimalField(max_digits=1000, decimal_places=1000, blank=True, null=True)
     summary = models.TextField(blank=True, null=True)
     product = models.TextField(blank=True, null=True)
     attack_vector = models.TextField(blank=True, null=True)
@@ -879,7 +881,7 @@ class ShodanVulns(models.Model):
 
 
 class SubDomains(models.Model):
-    sub_domain_uid = models.UUIDField(primary_key=True)
+    sub_domain_uid = models.UUIDField(primary_key=True, default=uuid.uuid1())
     sub_domain = models.TextField()
     root_domain_uid = models.ForeignKey(RootDomains, on_delete=models.CASCADE, db_column='root_domain_uid')
     data_source_uid = models.ForeignKey(DataSource, on_delete=models.CASCADE, db_column='data_source_uid')
@@ -893,7 +895,7 @@ class SubDomains(models.Model):
 
 
 class TopCves(models.Model):
-    top_cves_uid = models.UUIDField(primary_key=True)
+    top_cves_uid = models.UUIDField(primary_key=True, default=uuid.uuid1())
     cve_id = models.TextField(blank=True, null=True)
     dynamic_rating = models.TextField(blank=True, null=True)
     nvd_base_score = models.TextField(blank=True, null=True)
@@ -908,7 +910,7 @@ class TopCves(models.Model):
 
 
 class TopicTotals(models.Model):
-    cound_uuid = models.UUIDField(primary_key=True)
+    cound_uuid = models.UUIDField(primary_key=True, default=uuid.uuid1())
     organizations_uid = models.UUIDField()
     content_count = models.IntegerField()
     count_date = models.TextField(blank=True, null=True)
@@ -919,7 +921,7 @@ class TopicTotals(models.Model):
 
 
 class UniqueSoftware(models.Model):
-    field_id = models.UUIDField(db_column='_id', primary_key=True)  # Field renamed because it started with '_'.
+    field_id = models.UUIDField(db_column='_id', primary_key=True, default=uuid.uuid1())  # Field renamed because it started with '_'.
     software_name = models.TextField()
 
     class Meta:
@@ -928,7 +930,7 @@ class UniqueSoftware(models.Model):
 
 
 class WebAssets(models.Model):
-    asset_uid = models.UUIDField(primary_key=True)
+    asset_uid = models.UUIDField(primary_key=True, default=uuid.uuid1())
     asset_type = models.TextField()
     asset = models.TextField()
     ip_type = models.TextField(blank=True, null=True)
@@ -944,3 +946,268 @@ class WebAssets(models.Model):
         managed = False
         db_table = 'web_assets'
         unique_together = (('asset', 'organizations_uid'),)
+
+class VwBreachcompCredsbydate(models.Model):
+    organizations_uid = models.UUIDField(blank=True, null=True)
+    mod_date = models.DateField(blank=True, null=True)
+    no_password = models.BigIntegerField(blank=True, null=True)
+    password_included = models.BigIntegerField(blank=True, null=True)
+
+    class Meta:
+        managed = False  # Created from a view. Don't remove.
+        db_table = 'vw_breachcomp_credsbydate'
+
+class VwDarkwebMentionsbydate(models.Model):
+    organizations_uid = models.UUIDField(blank=True, null=True)
+    date = models.DateField(blank=True, null=True)
+    count = models.BigIntegerField(db_column='Count', blank=True, null=True)  # Field name made lowercase.
+
+    class Meta:
+        managed = False  # Created from a view. Don't remove.
+        db_table = 'vw_darkweb_mentionsbydate'
+
+class VwShodanvulnsSuspected(models.Model):
+    organizations_uid = models.UUIDField(blank=True, null=True)
+    organization = models.TextField(blank=True, null=True)
+    ip = models.TextField(blank=True, null=True)
+    port = models.TextField(blank=True, null=True)
+    protocol = models.TextField(blank=True, null=True)
+    type = models.TextField(blank=True, null=True)
+    name = models.TextField(blank=True, null=True)
+    potential_vulns = models.TextField(blank=True, null=True)  # This field type is a guess.
+    mitigation = models.TextField(blank=True, null=True)
+    timestamp = models.DateTimeField(blank=True, null=True)
+    product = models.TextField(blank=True, null=True)
+    server = models.TextField(blank=True, null=True)
+    tags = models.TextField(blank=True, null=True)  # This field type is a guess.
+    domains = models.TextField(blank=True, null=True)  # This field type is a guess.
+    hostnames = models.TextField(blank=True, null=True)  # This field type is a guess.
+    isn = models.TextField(blank=True, null=True)
+    asn = models.IntegerField(blank=True, null=True)
+    data_source = models.TextField(blank=True, null=True)
+
+    class Meta:
+        managed = False  # Created from a view. Don't remove.
+        db_table = 'vw_shodanvulns_suspected'
+
+class VwShodanvulnsVerified(models.Model):
+    organizations_uid = models.UUIDField(blank=True, null=True)
+    organization = models.TextField(blank=True, null=True)
+    ip = models.TextField(blank=True, null=True)
+    port = models.TextField(blank=True, null=True)
+    protocol = models.TextField(blank=True, null=True)
+    timestamp = models.DateTimeField(blank=True, null=True)
+    cve = models.TextField(blank=True, null=True)
+    severity = models.TextField(blank=True, null=True)
+    cvss = models.DecimalField(max_digits=1000, decimal_places=1000, blank=True, null=True)
+    summary = models.TextField(blank=True, null=True)
+    product = models.TextField(blank=True, null=True)
+    attack_vector = models.TextField(blank=True, null=True)
+    av_description = models.TextField(blank=True, null=True)
+    attack_complexity = models.TextField(blank=True, null=True)
+    ac_description = models.TextField(blank=True, null=True)
+    confidentiality_impact = models.TextField(blank=True, null=True)
+    ci_description = models.TextField(blank=True, null=True)
+    integrity_impact = models.TextField(blank=True, null=True)
+    ii_description = models.TextField(blank=True, null=True)
+    availability_impact = models.TextField(blank=True, null=True)
+    ai_description = models.TextField(blank=True, null=True)
+    tags = models.TextField(blank=True, null=True)  # This field type is a guess.
+    domains = models.TextField(blank=True, null=True)  # This field type is a guess.
+    hostnames = models.TextField(blank=True, null=True)  # This field type is a guess.
+    isn = models.TextField(blank=True, null=True)
+    asn = models.IntegerField(blank=True, null=True)
+    data_source = models.TextField(blank=True, null=True)
+
+    class Meta:
+        managed = False  # Created from a view. Don't remove.
+        db_table = 'vw_shodanvulns_verified'
+
+class VwBreachcompBreachdetails(models.Model):
+    organizations_uid = models.UUIDField(blank=True, null=True)
+    breach_name = models.TextField(blank=True, null=True)
+    mod_date = models.DateField(blank=True, null=True)
+    description = models.TextField(blank=True, null=True)
+    breach_date = models.DateField(blank=True, null=True)
+    password_included = models.BooleanField(blank=True, null=True)
+    number_of_creds = models.BigIntegerField(blank=True, null=True)
+
+    class Meta:
+        managed = False  # Created from a view. Don't remove.
+        db_table = 'vw_breachcomp_breachdetails'
+
+class VwDarkwebSocmediaMostactposts(models.Model):
+    organizations_uid = models.UUIDField(blank=True, null=True)
+    date = models.DateField(blank=True, null=True)
+    title = models.TextField(db_column='Title', blank=True, null=True)  # Field name made lowercase.
+    comments_count = models.IntegerField(db_column='Comments Count', blank=True, null=True)  # Field name made lowercase. Field renamed to remove unsuitable characters.
+
+    class Meta:
+        managed = False  # Created from a view. Don't remove.
+        db_table = 'vw_darkweb_socmedia_mostactposts'
+
+class VwDarkwebMostactposts(models.Model):
+    organizations_uid = models.UUIDField(blank=True, null=True)
+    date = models.DateField(blank=True, null=True)
+    title = models.TextField(db_column='Title', blank=True, null=True)  # Field name made lowercase.
+    comments_count = models.IntegerField(db_column='Comments Count', blank=True, null=True)  # Field name made lowercase. Field renamed to remove unsuitable characters.
+
+    class Meta:
+        managed = False  # Created from a view. Don't remove.
+        db_table = 'vw_darkweb_mostactposts'
+
+class VwDarkwebAssetalerts(models.Model):
+    organizations_uid = models.UUIDField(blank=True, null=True)
+    date = models.DateField(blank=True, null=True)
+    site = models.TextField(db_column='Site', blank=True, null=True)  # Field name made lowercase.
+    title = models.TextField(db_column='Title', blank=True, null=True)  # Field name made lowercase.
+    events = models.BigIntegerField(db_column='Events', blank=True, null=True)  # Field name made lowercase.
+
+    class Meta:
+        managed = False  # Created from a view. Don't remove.
+        db_table = 'vw_darkweb_assetalerts'
+
+class VwDarkwebExecalerts(models.Model):
+    organizations_uid = models.UUIDField(blank=True, null=True)
+    date = models.DateField(blank=True, null=True)
+    site = models.TextField(db_column='Site', blank=True, null=True)  # Field name made lowercase.
+    title = models.TextField(db_column='Title', blank=True, null=True)  # Field name made lowercase.
+    events = models.BigIntegerField(db_column='Events', blank=True, null=True)  # Field name made lowercase.
+
+    class Meta:
+        managed = False  # Created from a view. Don't remove.
+        db_table = 'vw_darkweb_execalerts'
+
+class VwDarkwebThreatactors(models.Model):
+    organizations_uid = models.UUIDField(blank=True, null=True)
+    date = models.DateField(blank=True, null=True)
+    creator = models.TextField(db_column='Creator', blank=True, null=True)  # Field name made lowercase.
+    grade = models.DecimalField(db_column='Grade', max_digits=1000, decimal_places=1000, blank=True, null=True)  # Field name made lowercase.
+
+    class Meta:
+        managed = False  # Created from a view. Don't remove.
+        db_table = 'vw_darkweb_threatactors'
+
+class VwDarkwebPotentialthreats(models.Model):
+    organizations_uid = models.UUIDField(blank=True, null=True)
+    date = models.DateField(blank=True, null=True)
+    site = models.TextField(db_column='Site', blank=True, null=True)  # Field name made lowercase.
+    threats = models.TextField(db_column='Threats', blank=True, null=True)  # Field name made lowercase.
+
+    class Meta:
+        managed = False  # Created from a view. Don't remove.
+        db_table = 'vw_darkweb_potentialthreats'
+
+class VwDarkwebSites(models.Model):
+    organizations_uid = models.UUIDField(blank=True, null=True)
+    date = models.DateField(blank=True, null=True)
+    site = models.TextField(db_column='Site', blank=True, null=True)  # Field name made lowercase.
+
+    class Meta:
+        managed = False  # Created from a view. Don't remove.
+        db_table = 'vw_darkweb_sites'
+
+class VwDarkwebInviteonlymarkets(models.Model):
+    organizations_uid = models.UUIDField(blank=True, null=True)
+    date = models.DateField(blank=True, null=True)
+    site = models.TextField(db_column='Site', blank=True, null=True)  # Field name made lowercase.
+
+    class Meta:
+        managed = False  # Created from a view. Don't remove.
+        db_table = 'vw_darkweb_inviteonlymarkets'
+
+class VwDarkwebTopcves(models.Model):
+    top_cves_uid = models.UUIDField(blank=True, null=True)
+    cve_id = models.TextField(blank=True, null=True)
+    dynamic_rating = models.TextField(blank=True, null=True)
+    nvd_base_score = models.TextField(blank=True, null=True)
+    date = models.DateField(blank=True, null=True)
+    summary = models.TextField(blank=True, null=True)
+    data_source_uid = models.UUIDField(blank=True, null=True)
+
+    class Meta:
+        managed = False  # Created from a view. Don't remove.
+        db_table = 'vw_darkweb_topcves'
+
+class VwBreachcomp(models.Model):
+    credential_exposures_uid = models.UUIDField(blank=True, null=True)
+    email = models.TextField(blank=True, null=True)
+    breach_name = models.TextField(blank=True, null=True)
+    organizations_uid = models.UUIDField(blank=True, null=True)
+    root_domain = models.TextField(blank=True, null=True)
+    sub_domain = models.TextField(blank=True, null=True)
+    hash_type = models.TextField(blank=True, null=True)
+    name = models.TextField(blank=True, null=True)
+    login_id = models.TextField(blank=True, null=True)
+    password = models.TextField(blank=True, null=True)
+    phone = models.TextField(blank=True, null=True)
+    data_source_uid = models.UUIDField(blank=True, null=True)
+    description = models.TextField(blank=True, null=True)
+    breach_date = models.DateField(blank=True, null=True)
+    added_date = models.DateTimeField(blank=True, null=True)
+    modified_date = models.DateTimeField(blank=True, null=True)
+    data_classes = models.TextField(blank=True, null=True)  # This field type is a guess.
+    password_included = models.BooleanField(blank=True, null=True)
+    is_verified = models.BooleanField(blank=True, null=True)
+    is_fabricated = models.BooleanField(blank=True, null=True)
+    is_sensitive = models.BooleanField(blank=True, null=True)
+    is_retired = models.BooleanField(blank=True, null=True)
+    is_spam_list = models.BooleanField(blank=True, null=True)
+
+    class Meta:
+        managed = False  # Created from a view. Don't remove.
+        db_table = 'vw_breachcomp'
+
+class VwOrgsTotalDomains(models.Model):
+    organizations_uid = models.UUIDField(blank=True, null=True)
+    cyhy_db_name = models.TextField(blank=True, null=True)
+    num_root_domain = models.BigIntegerField(blank=True, null=True)
+    num_sub_domain = models.BigIntegerField(blank=True, null=True)
+
+    class Meta:
+        managed = False  # Created from a view. Don't remove.
+        db_table = 'vw_orgs_total_domains'
+
+class VwOrgsContactInfo(models.Model):
+    organizations_uid = models.UUIDField(blank=True, null=True)
+    cyhy_db_name = models.TextField(blank=True, null=True)
+    agency_name = models.TextField(blank=True, null=True)
+    contact_type = models.TextField(blank=True, null=True)
+    contact_name = models.TextField(blank=True, null=True)
+    email = models.TextField(blank=True, null=True)
+    phone = models.TextField(blank=True, null=True)
+    date_pulled = models.DateField(blank=True, null=True)
+
+    class Meta:
+        managed = False  # Created from a view. Don't remove.
+        db_table = 'vw_orgs_contact_info'
+
+class VwOrgsTotalIps(models.Model):
+    organizations_uid = models.UUIDField(blank=True, null=True)
+    cyhy_db_name = models.TextField(blank=True, null=True)
+    num_ips = models.BigIntegerField(blank=True, null=True)
+
+    class Meta:
+        managed = False  # Created from a view. Don't remove.
+        db_table = 'vw_orgs_total_ips'
+
+class VwOrgsAttacksurface(models.Model):
+    organizations_uid = models.UUIDField(blank=True, null=True)
+    cyhy_db_name = models.TextField(blank=True, null=True)
+    num_ports = models.BigIntegerField(blank=True, null=True)
+    num_root_domain = models.BigIntegerField(blank=True, null=True)
+    num_sub_domain = models.BigIntegerField(blank=True, null=True)
+    num_ips = models.BigIntegerField(blank=True, null=True)
+
+    class Meta:
+        managed = False  # Created from a view. Don't remove.
+        db_table = 'vw_orgs_attacksurface'
+
+class VwOrgsTotalPorts(models.Model):
+    organizations_uid = models.UUIDField(blank=True, null=True)
+    cyhy_db_name = models.TextField(blank=True, null=True)
+    num_ports = models.BigIntegerField(blank=True, null=True)
+
+    class Meta:
+        managed = False  # Created from a view. Don't remove.
+        db_table = 'vw_orgs_total_ports'
