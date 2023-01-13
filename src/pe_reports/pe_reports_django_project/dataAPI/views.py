@@ -190,7 +190,35 @@ def read_orgs(tokens: dict = Depends(get_api_key)):
     except:
         LOGGER.info('API key expired please try again')
 
-    # print(userapiTokenverify()[1])
+
+@api_router.post("/breachcomp",
+                 dependencies=[Depends(get_api_key)],
+                 response_model=List[schemas.VwBreachcomp],
+                 tags=["List all breaches"])
+def read_orgs(tokens: dict = Depends(get_api_key)):
+    """API endpoint to get all stakeholders."""
+    breachInfo = list(VwBreachcomp.objects.all())
+    print(breachInfo)
+
+    LOGGER.info(f"The api key submitted {tokens}")
+    try:
+        userapiTokenverify(theapiKey=tokens)
+        return breachInfo
+    except:
+        LOGGER.info('API key expired please try again')
+
+@api_router.post("/breachcomp_credsbydate", dependencies=[Depends(get_api_key)],
+                response_model=List[schemas.VwBreachcompCredsbydate], tags=["List all breaches by date"])
+def read_orgs(tokens: dict = Depends(get_api_key)):
+    """API endpoint to get all stakeholders."""
+    breachcomp_dateInfo = list(VwBreachcompCredsbydate.objects.all())
+
+    LOGGER.info(f"The api key submitted {tokens}")
+    try:
+        userapiTokenverify(theapiKey=tokens)
+        return breachcomp_dateInfo
+    except:
+        LOGGER.info('API key expired please try again')
 
 
 @api_router.post("/get_key", tags=["Get user api keys"])
@@ -204,19 +232,6 @@ def read_orgs(data: schemas.UserAPI):
     for u in userkey:
         user_key = u.apiKey
     return user_key
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
