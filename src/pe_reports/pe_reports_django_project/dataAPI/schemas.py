@@ -38,6 +38,24 @@ class VwBreachcompCredsbydate(BaseModel):
     no_password: str
     password_included: str
 
+class VwOrgsAttacksurface(BaseModel):
+    organizations_uid: UUID
+    cyhy_db_name: str
+    num_ports: str
+    num_root_domain: str
+    num_sub_domain: str
+    num_ips: str
+
+    class Config:
+        orm_mode = True
+
+
+class VwOrgsAttacksurfaceInput(BaseModel):
+    organizations_uid: UUID
+
+    class Config:
+        orm_mode = True
+
 class UserAPIBase(BaseModel):
     # user_id: int
     refresh_token: str
