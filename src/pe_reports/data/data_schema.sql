@@ -1215,6 +1215,19 @@ CREATE VIEW public.new_vw_breach_complete AS
     FROM (public.credential_exposures creds
         JOIN public.credential_breaches b ON ((creds.credential_breaches_uid = b.credential_breaches_uid)));
 
+--
+-- Name: vw_cidrs; Type: VIEW; Schema: public; Owner: pe
+--
+
+create view vw_cidrs
+            (cidr_uid, network, organizations_uid, data_source_uid,
+             insert_alert) as
+SELECT cidrs.cidr_uid,
+       cidrs.network,
+       cidrs.organizations_uid,
+       cidrs.data_source_uid,
+       cidrs.insert_alert
+FROM cidrs;
 
 --
 -- Name: SCHEMA public; Type: ACL; Schema: -; Owner: postgres

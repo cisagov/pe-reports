@@ -948,7 +948,7 @@ class WebAssets(models.Model):
         unique_together = (('asset', 'organizations_uid'),)
 
 class VwBreachcompCredsbydate(models.Model):
-    organizations_uid = models.UUIDField(blank=True, null=True)
+    organizations_uid = models.UUIDField(primary_key=True)
     mod_date = models.DateField(blank=True, null=True)
     no_password = models.BigIntegerField(blank=True, null=True)
     password_included = models.BigIntegerField(blank=True, null=True)
@@ -958,7 +958,7 @@ class VwBreachcompCredsbydate(models.Model):
         db_table = 'vw_breachcomp_credsbydate'
 
 class VwDarkwebMentionsbydate(models.Model):
-    organizations_uid = models.UUIDField(blank=True, null=True)
+    organizations_uid = models.UUIDField(primary_key=True)
     date = models.DateField(blank=True, null=True)
     count = models.BigIntegerField(db_column='Count', blank=True, null=True)  # Field name made lowercase.
 
@@ -967,7 +967,7 @@ class VwDarkwebMentionsbydate(models.Model):
         db_table = 'vw_darkweb_mentionsbydate'
 
 class VwShodanvulnsSuspected(models.Model):
-    organizations_uid = models.UUIDField(blank=True, null=True)
+    organizations_uid = models.UUIDField(primary_key=True)
     organization = models.TextField(blank=True, null=True)
     ip = models.TextField(blank=True, null=True)
     port = models.TextField(blank=True, null=True)
@@ -991,7 +991,7 @@ class VwShodanvulnsSuspected(models.Model):
         db_table = 'vw_shodanvulns_suspected'
 
 class VwShodanvulnsVerified(models.Model):
-    organizations_uid = models.UUIDField(blank=True, null=True)
+    organizations_uid = models.UUIDField(primary_key=True)
     organization = models.TextField(blank=True, null=True)
     ip = models.TextField(blank=True, null=True)
     port = models.TextField(blank=True, null=True)
@@ -1024,7 +1024,7 @@ class VwShodanvulnsVerified(models.Model):
         db_table = 'vw_shodanvulns_verified'
 
 class VwBreachcompBreachdetails(models.Model):
-    organizations_uid = models.UUIDField(blank=True, null=True)
+    organizations_uid = models.UUIDField(primary_key=True)
     breach_name = models.TextField(blank=True, null=True)
     mod_date = models.DateField(blank=True, null=True)
     description = models.TextField(blank=True, null=True)
@@ -1037,7 +1037,7 @@ class VwBreachcompBreachdetails(models.Model):
         db_table = 'vw_breachcomp_breachdetails'
 
 class VwDarkwebSocmediaMostactposts(models.Model):
-    organizations_uid = models.UUIDField(blank=True, null=True)
+    organizations_uid = models.UUIDField(primary_key=True)
     date = models.DateField(blank=True, null=True)
     title = models.TextField(db_column='Title', blank=True, null=True)  # Field name made lowercase.
     comments_count = models.IntegerField(db_column='Comments Count', blank=True, null=True)  # Field name made lowercase. Field renamed to remove unsuitable characters.
@@ -1047,7 +1047,7 @@ class VwDarkwebSocmediaMostactposts(models.Model):
         db_table = 'vw_darkweb_socmedia_mostactposts'
 
 class VwDarkwebMostactposts(models.Model):
-    organizations_uid = models.UUIDField(blank=True, null=True)
+    organizations_uid = models.UUIDField(primary_key=True)
     date = models.DateField(blank=True, null=True)
     title = models.TextField(db_column='Title', blank=True, null=True)  # Field name made lowercase.
     comments_count = models.IntegerField(db_column='Comments Count', blank=True, null=True)  # Field name made lowercase. Field renamed to remove unsuitable characters.
@@ -1057,7 +1057,7 @@ class VwDarkwebMostactposts(models.Model):
         db_table = 'vw_darkweb_mostactposts'
 
 class VwDarkwebAssetalerts(models.Model):
-    organizations_uid = models.UUIDField(blank=True, null=True)
+    organizations_uid = models.UUIDField(primary_key=True)
     date = models.DateField(blank=True, null=True)
     site = models.TextField(db_column='Site', blank=True, null=True)  # Field name made lowercase.
     title = models.TextField(db_column='Title', blank=True, null=True)  # Field name made lowercase.
@@ -1068,7 +1068,7 @@ class VwDarkwebAssetalerts(models.Model):
         db_table = 'vw_darkweb_assetalerts'
 
 class VwDarkwebExecalerts(models.Model):
-    organizations_uid = models.UUIDField(blank=True, null=True)
+    organizations_uid = models.UUIDField(primary_key=True)
     date = models.DateField(blank=True, null=True)
     site = models.TextField(db_column='Site', blank=True, null=True)  # Field name made lowercase.
     title = models.TextField(db_column='Title', blank=True, null=True)  # Field name made lowercase.
@@ -1079,7 +1079,7 @@ class VwDarkwebExecalerts(models.Model):
         db_table = 'vw_darkweb_execalerts'
 
 class VwDarkwebThreatactors(models.Model):
-    organizations_uid = models.UUIDField(blank=True, null=True)
+    organizations_uid = models.UUIDField(primary_key=True)
     date = models.DateField(blank=True, null=True)
     creator = models.TextField(db_column='Creator', blank=True, null=True)  # Field name made lowercase.
     grade = models.DecimalField(db_column='Grade', max_digits=1000, decimal_places=1000, blank=True, null=True)  # Field name made lowercase.
@@ -1089,7 +1089,7 @@ class VwDarkwebThreatactors(models.Model):
         db_table = 'vw_darkweb_threatactors'
 
 class VwDarkwebPotentialthreats(models.Model):
-    organizations_uid = models.UUIDField(blank=True, null=True)
+    organizations_uid = models.UUIDField(primary_key=True)
     date = models.DateField(blank=True, null=True)
     site = models.TextField(db_column='Site', blank=True, null=True)  # Field name made lowercase.
     threats = models.TextField(db_column='Threats', blank=True, null=True)  # Field name made lowercase.
@@ -1099,7 +1099,7 @@ class VwDarkwebPotentialthreats(models.Model):
         db_table = 'vw_darkweb_potentialthreats'
 
 class VwDarkwebSites(models.Model):
-    organizations_uid = models.UUIDField(blank=True, null=True)
+    organizations_uid = models.UUIDField(primary_key=True)
     date = models.DateField(blank=True, null=True)
     site = models.TextField(db_column='Site', blank=True, null=True)  # Field name made lowercase.
 
@@ -1108,7 +1108,7 @@ class VwDarkwebSites(models.Model):
         db_table = 'vw_darkweb_sites'
 
 class VwDarkwebInviteonlymarkets(models.Model):
-    organizations_uid = models.UUIDField(blank=True, null=True)
+    organizations_uid = models.UUIDField(primary_key=True)
     date = models.DateField(blank=True, null=True)
     site = models.TextField(db_column='Site', blank=True, null=True)  # Field name made lowercase.
 
@@ -1117,7 +1117,7 @@ class VwDarkwebInviteonlymarkets(models.Model):
         db_table = 'vw_darkweb_inviteonlymarkets'
 
 class VwDarkwebTopcves(models.Model):
-    top_cves_uid = models.UUIDField(blank=True, null=True)
+    top_cves_uid = models.UUIDField(primary_key=True)
     cve_id = models.TextField(blank=True, null=True)
     dynamic_rating = models.TextField(blank=True, null=True)
     nvd_base_score = models.TextField(blank=True, null=True)
@@ -1129,8 +1129,21 @@ class VwDarkwebTopcves(models.Model):
         managed = False  # Created from a view. Don't remove.
         db_table = 'vw_darkweb_topcves'
 
+class VwCidrs(models.Model):
+    cidr_uid = models.UUIDField(primary_key=True)
+    network = models.TextField(blank=True, null=True)  # This field type is a guess.
+    organizations_uid = models.UUIDField(blank=True, null=True)
+    data_source_uid = models.UUIDField(blank=True, null=True)
+    insert_alert = models.TextField(blank=True, null=True)
+
+    class Meta:
+        managed = False  # Created from a view. Don't remove.
+        db_table = 'vw_cidrs'
+
+
+
 class VwBreachcomp(models.Model):
-    credential_exposures_uid = models.UUIDField(blank=True, null=True)
+    credential_exposures_uid = models.UUIDField(primary_key=True)
     email = models.TextField(blank=True, null=True)
     breach_name = models.TextField(blank=True, null=True)
     organizations_uid = models.UUIDField(blank=True, null=True)
@@ -1159,7 +1172,7 @@ class VwBreachcomp(models.Model):
         db_table = 'vw_breachcomp'
 
 class VwOrgsTotalDomains(models.Model):
-    organizations_uid = models.UUIDField(blank=True, null=True)
+    organizations_uid = models.UUIDField(primary_key=True)
     cyhy_db_name = models.TextField(blank=True, null=True)
     num_root_domain = models.BigIntegerField(blank=True, null=True)
     num_sub_domain = models.BigIntegerField(blank=True, null=True)
@@ -1169,7 +1182,7 @@ class VwOrgsTotalDomains(models.Model):
         db_table = 'vw_orgs_total_domains'
 
 class VwOrgsContactInfo(models.Model):
-    organizations_uid = models.UUIDField(blank=True, null=True)
+    organizations_uid = models.UUIDField(primary_key=True)
     cyhy_db_name = models.TextField(blank=True, null=True)
     agency_name = models.TextField(blank=True, null=True)
     contact_type = models.TextField(blank=True, null=True)
@@ -1183,7 +1196,7 @@ class VwOrgsContactInfo(models.Model):
         db_table = 'vw_orgs_contact_info'
 
 class VwOrgsTotalIps(models.Model):
-    organizations_uid = models.UUIDField(blank=True, null=True)
+    organizations_uid = models.UUIDField(primary_key=True)
     cyhy_db_name = models.TextField(blank=True, null=True)
     num_ips = models.BigIntegerField(blank=True, null=True)
 
@@ -1191,8 +1204,9 @@ class VwOrgsTotalIps(models.Model):
         managed = False  # Created from a view. Don't remove.
         db_table = 'vw_orgs_total_ips'
 
+
 class VwOrgsAttacksurface(models.Model):
-    organizations_uid = models.UUIDField(blank=True, null=True)
+    organizations_uid = models.UUIDField(primary_key=True)
     cyhy_db_name = models.TextField(blank=True, null=True)
     num_ports = models.BigIntegerField(blank=True, null=True)
     num_root_domain = models.BigIntegerField(blank=True, null=True)
@@ -1204,7 +1218,7 @@ class VwOrgsAttacksurface(models.Model):
         db_table = 'vw_orgs_attacksurface'
 
 class VwOrgsTotalPorts(models.Model):
-    organizations_uid = models.UUIDField(blank=True, null=True)
+    organizations_uid = models.UUIDField(primary_key=True)
     cyhy_db_name = models.TextField(blank=True, null=True)
     num_ports = models.BigIntegerField(blank=True, null=True)
 

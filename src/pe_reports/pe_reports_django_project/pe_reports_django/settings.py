@@ -53,7 +53,6 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    "accounts.apps.AccountsConfig",
     "dataAPI.apps.DataapiConfig",
     "home.apps.HomeConfig",
     "manage_login.apps.ManageLoginConfig",

@@ -32,7 +32,12 @@ from jose import jwt, exceptions
 from asgiref.sync import sync_to_async
 from decouple import config
 
+from home.models import VwCidrs
 from home.models import Organizations
+from home.models import VwBreachcomp
+from home.models import VwBreachcompCredsbydate
+from home.models import VwOrgsAttacksurface
+from home.models import CyhyDbAssets
 
 from .models import apiUser
 from . import schemas
@@ -99,7 +104,7 @@ def userinfo(theuser):
             return u.id
 
 
-def userapiTokenUpdate(expiredaccessToken, user_refresh, theapiKey, user_id):
+async def userapiTokenUpdate(expiredaccessToken, user_refresh, theapiKey, user_id):
     """When api apiKey is expired a new key is created
        and updated in the database."""
     theusername = ''
@@ -124,8 +129,7 @@ def userapiTokenUpdate(expiredaccessToken, user_refresh, theapiKey, user_id):
     LOGGER.info(f'The user api key and refresh token have been updated from: {theapiKey} to: {updateapiuseraccessToken.apiKey}.')
 
 
-
-def userapiTokenverify(theapiKey):
+async def userapiTokenverify(theapiKey):
     """Check to see if api key is expired."""
     tokenRecords = list(apiUser.objects.filter(apiKey=theapiKey))
     user_key = ''
@@ -175,11 +179,9 @@ async def get_api_key(
 #         )
 
 
-
-
-
 @api_router.post("/orgs", dependencies=[Depends(get_api_key)],
-                response_model=List[schemas.Organization], tags=["List of all Organizations"])
+                 response_model=List[schemas.Organization],
+                 tags=["List of all Organizations"])
 def read_orgs(tokens: dict = Depends(get_api_key)):
     """API endpoint to get all stakeholders."""
     orgs = list(Organizations.objects.all())
@@ -192,18 +194,103 @@ def read_orgs(tokens: dict = Depends(get_api_key)):
         LOGGER.info('API key expired please try again')
 
 
-# @api_router.post("/dnsMasq", dependencies=[Depends(get_api_key)],
-#                 response_model=List[schemas.Organization], tags=["List domain masquerading"])
-# def read_orgs(tokens: dict = Depends(get_api_key)):
-#     """API endpoint to get all stakeholders."""
-#     masq = list(DnstwistDomainMasq.objects.all())
-#
-#     LOGGER.info(f"The api key submitted {tokens}")
-#     try:
-#         userapiTokenverify(theapiKey=tokens)
-#         return masq
-#     except:
-#         LOGGER.info('API key expired please try again')
+@api_router.post("/breachcomp",
+                 dependencies=[Depends(get_api_key)],
+                 response_model=List[schemas.VwBreachcomp],
+                 tags=["List all breaches"])
+def read_orgs(tokens: dict = Depends(get_api_key)):
+    """API endpoint to get all stakeholders."""
+    breachInfo = list(VwBreachcomp.objects.all())
+    print(breachInfo)
+
+    LOGGER.info(f"The api key submitted {tokens}")
+    try:
+        userapiTokenverify(theapiKey=tokens)
+        return breachInfo
+    except:
+        LOGGER.info('API key expired please try again')
+
+@api_router.post("/breachcomp_credsbydate", dependencies=[Depends(get_api_key)],
+                response_model=List[schemas.VwBreachcompCredsbydate], tags=["List all breaches by date"])
+def read_orgs(tokens: dict = Depends(get_api_key)):
+    """API endpoint to get all stakeholders."""
+    breachcomp_dateInfo = list(VwBreachcompCredsbydate.objects.all())
+
+    LOGGER.info(f"The api key submitted {tokens}")
+    try:
+        userapiTokenverify(theapiKey=tokens)
+        return breachcomp_dateInfo
+    except:
+        LOGGER.info('API key expired please try again')
+
+
+@api_router.post("/orgs_attacksurface", dependencies=[Depends(get_api_key)],
+                response_model=List[schemas.VwOrgsAttacksurface], tags=["Get asset counts for an organization"])
+def read_orgs(data: schemas.VwOrgsAttacksurfaceInput, tokens: dict = Depends(get_api_key)):
+    """Get asset counts for an organization."""
+    print(data.organizations_uid)
+    attackSurfaceInfo = list(VwOrgsAttacksurface.objects.filter(organizations_uid=data.organizations_uid))
+
+    LOGGER.info(f"The api key submitted {tokens}")
+    try:
+        userapiTokenverify(theapiKey=tokens)
+        return attackSurfaceInfo
+    except:
+        LOGGER.info('API key expired please try again')
+
+
+@api_router.post("/cyhy_db_asset", dependencies=[Depends(get_api_key)],
+                response_model=List[schemas.CyhyDbAssets], tags=["Get cyhy assets"])
+def read_orgs(data: schemas.CyhyDbAssetsInput, tokens: dict = Depends(get_api_key)):
+    """Get Query cyhy assets."""
+    print(data.org_id)
+    cyhyAssets = list(CyhyDbAssets.objects.filter(org_id=data.org_id))
+
+    LOGGER.info(f"The api key submitted {tokens}")
+    try:
+        userapiTokenverify(theapiKey=tokens)
+        return cyhyAssets
+    except:
+        LOGGER.info('API key expired please try again')
+
+
+
+
+
+
+
+@api_router.post("/cidrs", dependencies=[Depends(get_api_key)],
+                 response_model=List[schemas.Cidrs],
+                 tags=["List of all CIDRS"])
+def read_orgs(tokens: dict = Depends(get_api_key)):
+    """API endpoint to get all CIDRS."""
+    orgs = list(VwCidrs.objects.all())
+
+    LOGGER.info(f"The api key submitted {tokens}")
+    try:
+        userapiTokenverify(theapiKey=tokens)
+        return orgs
+    except:
+        LOGGER.info('API key expired please try again')
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 @api_router.post("/get_key", tags=["Get user api keys"])
