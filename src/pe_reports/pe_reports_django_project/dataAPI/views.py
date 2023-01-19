@@ -183,7 +183,7 @@ async def get_api_key(
                  response_model=List[schemas.Organization],
                  tags=["List of all Organizations"])
 def read_orgs(tokens: dict = Depends(get_api_key)):
-    """API endpoint to get all stakeholders."""
+    """API endpoint to get all organizations."""
     orgs = list(Organizations.objects.all())
 
     LOGGER.info(f"The api key submitted {tokens}")
@@ -199,7 +199,7 @@ def read_orgs(tokens: dict = Depends(get_api_key)):
                  response_model=List[schemas.VwBreachcomp],
                  tags=["List all breaches"])
 def read_orgs(tokens: dict = Depends(get_api_key)):
-    """API endpoint to get all stakeholders."""
+    """API endpoint to get all breaches."""
     breachInfo = list(VwBreachcomp.objects.all())
     print(breachInfo)
 
@@ -213,7 +213,7 @@ def read_orgs(tokens: dict = Depends(get_api_key)):
 @api_router.post("/breachcomp_credsbydate", dependencies=[Depends(get_api_key)],
                 response_model=List[schemas.VwBreachcompCredsbydate], tags=["List all breaches by date"])
 def read_orgs(tokens: dict = Depends(get_api_key)):
-    """API endpoint to get all stakeholders."""
+    """API endpoint to get all breach creds by date."""
     breachcomp_dateInfo = list(VwBreachcompCredsbydate.objects.all())
 
     LOGGER.info(f"The api key submitted {tokens}")
@@ -227,7 +227,7 @@ def read_orgs(tokens: dict = Depends(get_api_key)):
 @api_router.post("/orgs_attacksurface", dependencies=[Depends(get_api_key)],
                 response_model=List[schemas.VwOrgsAttacksurface], tags=["Get asset counts for an organization"])
 def read_orgs(data: schemas.VwOrgsAttacksurfaceInput, tokens: dict = Depends(get_api_key)):
-    """Get asset counts for an organization."""
+    """Get asset counts for an organization attack surfaces."""
     print(data.organizations_uid)
     attackSurfaceInfo = list(VwOrgsAttacksurface.objects.filter(organizations_uid=data.organizations_uid))
 
