@@ -108,7 +108,7 @@ setup(
         "dnstwist",
         "dshield",
         "glob2 == 0.7",
-        "flask == 2.2.2",
+        "flask == 2.1.2",
         "Flask-Login",
         "flask_migrate",
         "flask_wtf",
@@ -144,6 +144,7 @@ setup(
         "urllib3 == 1.26",
         "wtforms",
         "xhtml2pdf == 0.2.5",
+        "werkzeug == 2.1.2"
     ],
     extras_require={
         "test": [

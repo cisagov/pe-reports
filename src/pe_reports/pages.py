@@ -462,7 +462,7 @@ def init(datestring, org_name, org_uid, score, grade, soc_med_included=False):
         "sub_count": asset_dict["num_sub_domain"],
         "num_ports": asset_dict["num_ports"],
         "pe_number_score": score,
-        "pe_letter_grade": grade,
+        "pe_letter_grade": str(grade),
     }
     # print(scorecard_dict)
 

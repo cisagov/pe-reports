@@ -144,24 +144,24 @@ def generate_reports(datestring, output_directory, soc_med_included=False):
     else:
         return 1
     generated_reports = 0
-    # Generate PE scores for all stakeholders.
-    LOGGER.info("Calculating P&E Scores")
-    pe_scores_df = get_pe_scores(datestring, 12)
-    LOGGER.info("Finished calculating P&E Scores")
+    
     # Iterate over organizations
     if pe_orgs:
         LOGGER.info("PE orgs count: %d", len(pe_orgs))
 
         # Generate PE scores for all stakeholders.
+        LOGGER.info("Calculating P&E Scores")
         pe_scores_df = get_pe_scores(datestring, 12)
+        LOGGER.info("Finished calculating P&E Scores")
 
-        # pe_orgs.reverse()
+        pe_orgs.reverse()
         for org in pe_orgs:
             # Assign organization values
             org_uid = org[0]
             org_name = org[1]
             org_code = org[2]
-            # if org_code not in ["DHS", "NASA", "DOT", "DOJ", "DOE"]:
+
+            # if org_code not in ["PBGC","PC","PCLOB","PRC","PT","ED","GSEC","GSA"]:
             #     continue
 
             LOGGER.info("Running on %s", org_code)
@@ -171,7 +171,7 @@ def generate_reports(datestring, output_directory, soc_med_included=False):
                 if not os.path.exists(f"{output_directory}/{dir_name}"):
                     os.mkdir(f"{output_directory}/{dir_name}")
 
-            if pe_scores_df:
+            if not pe_scores_df.empty:
                 score = pe_scores_df.loc[
                     pe_scores_df["cyhy_db_name"] == org_code, "PE_score"
                 ].item()

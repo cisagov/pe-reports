@@ -89,7 +89,7 @@ def search_shodan(thread_name, ips, api, start, end, org_uid, org_name, failed):
 
     # Break up IPs into chunks of 100
     tot_ips = len(ips)
-    ip_chunks = [ips[i : i + 100] for i in range(0, tot_ips, 100)]
+    ip_chunks = [ips[i : i + 10] for i in range(0, tot_ips, 10)]
     tot = len(ip_chunks)
     LOGGER.info(
         "{} Split {} IPs into {} chunks - {}".format(

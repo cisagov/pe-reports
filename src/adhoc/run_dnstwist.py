@@ -125,7 +125,7 @@ for org_index, org_row in orgs.iterrows():
     pe_org_uid = org_row["organizations_uid"]
     org_name = org_row["name"]
 
-    # if org_name not in ["Commission of Fine Arts"]:
+    # if org_name not in ["Federal Aviation Administration"]:
     #     continue
 
     LOGGER.info(pe_org_uid)
@@ -187,6 +187,9 @@ for org_index, org_row in orgs.iterrows():
                     if str(dom["dns_a"][0]) == "!ServFail":
                         continue
 
+                    if str(dom["dns_a"][0]) == "0.0.0.0":
+                        continue
+
                     results = dshield.ip(
                         str(dom["dns_a"][0]), return_format=dshield.JSON
                     )
@@ -223,6 +226,8 @@ for org_index, org_row in orgs.iterrows():
 
                     # check dns-a record in DSheild API
                     if str(dom["dns_aaaa"][0]) == "!ServFail":
+                        continue
+                    if str(dom["dns_aaaa"][0]) == "0.0.0.0":
                         continue
                     results = dshield.ip(
                         str(dom["dns_aaaa"][0]), return_format=dshield.JSON

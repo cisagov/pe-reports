@@ -281,8 +281,8 @@ def extract_bulk_cve_info(cve_list):
             cvss_3_info = resp_list[i].get("x_sixgill_info").get("nvd").get("v3")
             if cvss_3_info is not None:
                 cvss_3_0 = cvss_3_info.get("current")
-                cvss_3_0 = cvss_3_info.get("severity")
-                cvss_3_0 = cvss_3_info.get("vector")
+                cvss_3_0_sev = cvss_3_info.get("severity")
+                cvss_3_0_vec = cvss_3_info.get("vector")
             else:
                 [cvss_3_0, cvss_3_0_sev, cvss_3_0_vec] = [None, None, None]
             # DVE info
