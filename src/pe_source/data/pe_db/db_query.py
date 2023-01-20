@@ -3,6 +3,7 @@
 
 # Standard Python Libraries
 from datetime import datetime
+import os
 import logging
 import socket
 import sys
@@ -14,7 +15,7 @@ from psycopg2 import OperationalError
 import psycopg2.extras as extras
 
 # cisagov Libraries
-from pe_reports.data.config import config
+from pe_source.data.pe_db.config import config
 
 LOGGER = logging.getLogger(__name__)
 
@@ -32,7 +33,16 @@ def show_psycopg2_exception(err):
 def connect():
     """Connect to PostgreSQL database."""
     try:
-        conn = psycopg2.connect(**CONN_PARAMS_DIC)
+        print(os.environ.get('password'))
+        LOGGER.info(os.environ.get('host'))
+        logging.info(os.environ.get('password'))
+        conn = psycopg2.connect(
+            host=os.environ.get('host'),
+            database=os.environ.get('db'),
+            user=os.environ.get('user'),
+            password=os.environ.get('password'),
+            port=os.environ.get('port')
+        )
     except OperationalError as err:
         show_psycopg2_exception(err)
         conn = None

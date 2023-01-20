@@ -1,0 +1,20 @@
+FROM debian:11-slim
+
+RUN apt-get update && apt-get install -y \
+    python3.10 \
+    python3-pip
+
+WORKDIR /app
+
+COPY src/pe_source ./src/pe_source
+COPY setup_source.py pe_reports_logging.log README.md worker.sh ./
+
+RUN python3 setup_source.py build && python3 setup_source.py install
+
+RUN groupadd -g 999 peuser && \
+    useradd -r -u 999 -g peuser peuser
+RUN chown -R peuser:peuser /app
+RUN chmod 755 /app/pe_reports_logging.log
+USER peuser
+
+CMD ["./worker.sh"]

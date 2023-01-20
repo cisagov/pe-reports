@@ -35,7 +35,7 @@ import docopt
 from schema import And, Schema, SchemaError, Use
 
 # cisagov Libraries
-import pe_reports
+import pe_source
 
 from ._version import __version__
 from .cybersixgill import Cybersixgill
@@ -101,7 +101,7 @@ def main():
 
     # Set up logging
     logging.basicConfig(
-        filename=pe_reports.CENTRAL_LOGGING_FILE,
+        filename=pe_source.CENTRAL_LOGGING_FILE,
         filemode="a",
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
         datefmt="%m/%d/%Y %I:%M:%S",
