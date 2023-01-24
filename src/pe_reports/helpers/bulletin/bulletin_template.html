@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+
+    <title>Hello, world!</title>
+
+    <style>
+      @page {
+          size: letter portrait;  
+          margin: 70pt 60pt 70pt;
+        }
+        .row
+        {
+            display: -webkit-box;
+        }
+        /* Container holding the image and the text */
+         body { 
+          font-family: "Franklin Gothic Book";
+          background-repeat: repeat-y;
+          background-position: center;
+          background-attachment: fixed;
+          background-size: 100%;
+        }
+        .container {
+        position: relative;
+        font-family: "Franklin Gothic Book";
+        }
+
+        /* Centered text */
+        .centered {
+        position: absolute;
+        top: 45%;
+        left: 20%;
+        width:50%;
+        /* transform: translate(-50%, -50%); */
+        color:white;
+        }
+        h1 {
+        font-size: 30px;
+        }
+        h2 {
+          font-size:25px;
+          font-family: "Franklin Gothic Book";
+        }
+        @font-face {
+            font-family: "Franklin Gothic Book";
+            src: url("/var/www/pe-reports/src/pe_reports/helpers/bulletin/Franklin_Gothic_Book_Regular.ttf");
+        }
+        
+    </style>
+
+  </head>
+  <body>
+
+    <div style="padding:2em">
+        <p style="font-size:18px">The Posture and Exposure Bulletin Service was designed to serve as a way to communicate imminent risks outside of the normal semimonthly reporting period.  These risks include but are not limited to, PII exposures, data leaks, documented system access, etc.  This report similar to the standard P&E report will not attempt to verify any of the information stored, and in the case of PII will not store the information within any DHS hosted systems.  If you have any questions about the findings, please email us at vulnerability@cisa.dhs.gov.</p>
+        <h2 style="color:#005288">HIGHLIGHTS</h2>
+        <p>
+          <ul>
+            <li>Posted on {{site}} on {{date|date_format}}</li>
+            <li>Posted information includes:</li>
+              {{user_provided_content|safe}}
+          </ul>
+        </p>
+        <p>
+
+        <h2 style="color:#005288">DETAILED INFORMATION (Warning Sensitive Content)</h2>
+        <p>
+        <b>Post 1:</b> {{title}}<br>
+        <br>
+        <b>Site:</b> {{site}}<br>
+        <b>Type:</b> {{type}}<br>
+        <b>Date posted:</b> {{date|date_format}}<br>
+        <b>Actor:</b> {{creator}}<br>
+        <b>Actor reputation:</b> {{rep_grade}}/10<br>
+        <b>ID:</b> {{id}}<br>
+        </p>
+        <b><div>Content:</b> {{content}}<br></div>
+        <br>
+        {% for image in images %}
+        <img src="https://s3.amazonaws.com/sixgill-production-images/{{image['key']}}" style="width:75%"><br><br>
+        <p>{{image['key']}}</p>
+        <p>{{image['pos']}}</p>
+        <p>{{image.get('text')}}</p>
+        {% endfor %}
+
+    <!-- Optional JavaScript -->
+    <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.14.7/dist/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+  </body>
+</html> 

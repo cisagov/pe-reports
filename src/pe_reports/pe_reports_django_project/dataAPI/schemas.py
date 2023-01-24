@@ -7,6 +7,55 @@ class OrganizationBase(BaseModel):
     name: str
     cyhy_db_name: str = None
 
+class VwBreachcomp(BaseModel):
+    credential_exposures_uid: str
+    email: str
+    breach_name: str
+    organizations_uid: str
+    root_domain: str
+    sub_domain: str
+    hash_type: str
+    name: str
+    login_id: str
+    password: str
+    phone: str
+    data_source_uid: str
+    description: str
+    breach_date: str
+    added_date: str
+    modified_date: str
+    data_classes: str
+    password_included: str
+    is_verified: str
+    is_fabricated: str
+    is_sensitive: str
+    is_retired: str
+    is_spam_list: str
+
+class VwBreachcompCredsbydate(BaseModel):
+    organizations_uid: str
+    mod_date: str
+    no_password: str
+    password_included: str
+
+class VwOrgsAttacksurface(BaseModel):
+    organizations_uid: UUID
+    cyhy_db_name: str
+    num_ports: str
+    num_root_domain: str
+    num_sub_domain: str
+    num_ips: str
+
+    class Config:
+        orm_mode = True
+
+
+class VwOrgsAttacksurfaceInput(BaseModel):
+    organizations_uid: UUID
+
+    class Config:
+        orm_mode = True
+
 class UserAPIBase(BaseModel):
     # user_id: int
     refresh_token: str

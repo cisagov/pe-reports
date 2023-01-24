@@ -40,6 +40,7 @@ cursor = None
 
 
 def report_gen(request):
+    """Route to get to report generator page."""
     try:
         return render(request=request,
                       template_name="report_gen/report_gen.html")

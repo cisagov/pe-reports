@@ -635,8 +635,9 @@ def query_cyberSix_creds(org_uid, start_date, end_date):
         if conn is not None:
             close(conn)
 
+
 def query_all_subs(conn):
-    """Query sub domains table """
+    """Query sub domains table."""
     try:
         cur = conn.cursor()
         sql = """SELECT * FROM sub_domains"""
@@ -649,6 +650,7 @@ def query_all_subs(conn):
     finally:
         if conn is not None:
             close(conn)
+
 
 def query_subs(org_uid):
     """Query all subs for an organization."""
@@ -745,7 +747,7 @@ def execute_scorecard(summary_dict):
                 AsIs(summary_dict["dark_web_executive_alerts_count"]),
                 AsIs(summary_dict["dark_web_asset_alerts_count"]),
                 AsIs(summary_dict["pe_number_score"]),
-                AsIs(summary_dict["pe_percent_score"]),
+                AsIs(summary_dict["pe_letter_grade"]),
             ),
         )
         conn.commit()
@@ -805,6 +807,95 @@ def query_score_data(start, end, sql):
         return df
     except (Exception, psycopg2.DatabaseError) as error:
         LOGGER.error("There was a problem with your database query %s", error)
+    finally:
+        if conn is not None:
+            close(conn)
+
+
+def get_new_cves_list(start, end):
+    """
+    Get the list of all new CVEs for this report period that are not in the database yet.
+
+    Args:
+        start: The start date of the specified report period
+        end: The end date of the specified report period
+
+    Returns:
+        Dataframe containing all the new CVE names that aren't in the PE database yet
+    """
+    conn = connect()
+    sql = "SELECT * FROM pes_check_new_cve(%(start)s, %(end)s);"
+    try:
+        df = pd.read_sql(sql, conn, params={"start": start, "end": end})
+        conn.close()
+        return df
+    except (Exception, psycopg2.DatabaseError) as error:
+        LOGGER.error("There was a problem with your database query %s", error)
+    finally:
+        if conn is not None:
+            close(conn)
+
+
+def upsert_new_cves(new_cves):
+    """
+    Upsert dataframe of new CVE data into the cve_info table in the database.
+
+    Required dataframe columns:
+        cve_name, cvss_2_0, cvss_2_0_severity, cvss_2_0_vector,
+        cvss_3_0, cvss_3_0_severity, cvss_3_0_vector, dve_score
+
+    Args:
+        new_cves: Dataframe containing the new CVEs and their CVSS2.0/3.1/DVE data
+    """
+    # Building SQL query
+    upsert_query = """
+        INSERT INTO
+            public.cve_info(cve_name, cvss_2_0, cvss_2_0_severity, cvss_2_0_vector,
+            cvss_3_0, cvss_3_0_severity, cvss_3_0_vector, dve_score)
+        VALUES
+        """
+    # Replace None-type in dataframe with string "None"
+    new_cves = new_cves.fillna(value="None")
+    # Iterate over dataframe rows
+    for idx, row in new_cves.iterrows():
+        # Add each row of CVE data to the SQL query
+        upsert_query += (
+            f"\t('{row['cve_name']}', {row['cvss_2_0']}, '{row['cvss_2_0_severity']}', '{row['cvss_2_0_vector']}',"
+            f" {row['cvss_3_0']}, '{row['cvss_3_0_severity']}', '{row['cvss_3_0_vector']}', {row['dve_score']})"
+        )
+        # Add trailing comma if needed
+        if idx != len(new_cves) - 1:
+            upsert_query += ",\n"
+    # Add the rest of the SQL query
+    upsert_query += """
+        ON CONFLICT (cve_name) DO UPDATE
+        SET
+            cve_name=EXCLUDED.cve_name,
+            cvss_2_0=EXCLUDED.cvss_2_0,
+            cvss_2_0_severity=EXCLUDED.cvss_2_0_severity,
+            cvss_2_0_vector=EXCLUDED.cvss_2_0_vector,
+            cvss_3_0=EXCLUDED.cvss_3_0,
+            cvss_3_0_severity=EXCLUDED.cvss_3_0_severity,
+            cvss_3_0_vector=EXCLUDED.cvss_3_0_vector,
+            dve_score=EXCLUDED.dve_score
+        """
+
+    # Use finished SQL query to make call to database
+    conn = connect()
+    cursor = conn.cursor()
+    try:
+        # Execute SQL query
+        cursor.execute(upsert_query)
+        # Commit/Save insertion changes
+        conn.commit()
+        # Confirmation message
+        LOGGER.info(
+            len(new_cves), " new CVEs successfully upserted into cve_info table..."
+        )
+    except (Exception, psycopg2.DatabaseError) as err:
+        # Show error and close connection if failed
+        LOGGER.error("There was a problem with your database query %s", err)
+        cursor.close()
     finally:
         if conn is not None:
             close(conn)
