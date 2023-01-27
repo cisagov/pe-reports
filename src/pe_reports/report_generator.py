@@ -144,7 +144,7 @@ def generate_reports(datestring, output_directory, soc_med_included=False):
     else:
         return 1
     generated_reports = 0
-    
+
     # Iterate over organizations
     if pe_orgs:
         LOGGER.info("PE orgs count: %d", len(pe_orgs))
@@ -152,7 +152,6 @@ def generate_reports(datestring, output_directory, soc_med_included=False):
         # Generate PE scores for all stakeholders.
         LOGGER.info("Calculating P&E Scores")
         pe_scores_df = get_pe_scores(datestring, 12)
-        LOGGER.info("Finished calculating P&E Scores")
 
         pe_orgs.reverse()
         for org in pe_orgs:
@@ -161,7 +160,7 @@ def generate_reports(datestring, output_directory, soc_med_included=False):
             org_name = org[1]
             org_code = org[2]
 
-            # if org_code not in ["PBGC","PC","PCLOB","PRC","PT","ED","GSEC","GSA"]:
+            # if org_code not in ["GSA"]:
             #     continue
 
             LOGGER.info("Running on %s", org_code)
@@ -186,16 +185,20 @@ def generate_reports(datestring, output_directory, soc_med_included=False):
             (
                 scorecard_dict,
                 source_html,
-                creds_sum,
-                masq_df,
-                dom_alerts_sum,
-                insecure_df,
-                vulns_df,
-                assets_df,
-                dark_web_mentions,
-                alerts,
-                top_cves,
-            ) = init(datestring, org_name, org_uid, score, grade, soc_med_included)
+                cred_xlsx,
+                da_xlsx,
+                vuln_xlsx,
+                mi_xlsx,
+            ) = init(
+                datestring,
+                org_name,
+                org_code,
+                org_uid,
+                score,
+                grade,
+                output_directory,
+                soc_med_included,
+            )
             # Create scorecard
             scorecard_filename = f"{output_directory}/{org_code}/Posture-and-Exposure-Scorecard_{org_code}_{scorecard_dict['end_date'].strftime('%Y-%m-%d')}.pdf"
             create_scorecard(scorecard_dict, scorecard_filename)
@@ -204,40 +207,10 @@ def generate_reports(datestring, output_directory, soc_med_included=False):
             output_filename = f"{output_directory}/Posture_and_Exposure_Report-{org_code}-{datestring}.pdf"
             convert_html_to_pdf(source_html, output_filename)
 
-            # Create Credential Exposure Excel file
-            cred_xlsx = f"{output_directory}/{org_code}/compromised_credentials.xlsx"
-            credWriter = pd.ExcelWriter(cred_xlsx, engine="xlsxwriter")
-            creds_sum.to_excel(credWriter, sheet_name="Credentials", index=False)
-            credWriter.save()
-
-            # Create Domain Masquerading Excel file
-            da_xlsx = f"{output_directory}/{org_code}/domain_alerts.xlsx"
-            domWriter = pd.ExcelWriter(da_xlsx, engine="xlsxwriter")
-            masq_df.to_excel(domWriter, sheet_name="Suspected Domains", index=False)
-            dom_alerts_sum.to_excel(domWriter, sheet_name="Domain Alerts", index=False)
-            domWriter.save()
-
-            # Create Suspected vulnerability Excel file
-            vuln_xlsx = f"{output_directory}/{org_code}/vuln_alerts.xlsx"
-            vulnWriter = pd.ExcelWriter(vuln_xlsx, engine="xlsxwriter")
-            assets_df.to_excel(vulnWriter, sheet_name="Assets", index=False)
-            insecure_df.to_excel(vulnWriter, sheet_name="Insecure", index=False)
-            vulns_df.to_excel(vulnWriter, sheet_name="Verified Vulns", index=False)
-            vulnWriter.save()
-
-            # Create dark web Excel file
-            mi_xlsx = f"{output_directory}/{org_code}/mention_incidents.xlsx"
-            miWriter = pd.ExcelWriter(mi_xlsx, engine="xlsxwriter")
-            dark_web_mentions.to_excel(
-                miWriter, sheet_name="Dark Web Mentions", index=False
-            )
-            alerts.to_excel(miWriter, sheet_name="Dark Web Alerts", index=False)
-            top_cves.to_excel(miWriter, sheet_name="Top CVEs", index=False)
-            miWriter.save()
-
             # Grab the PDF
             pdf = f"{output_directory}/Posture_and_Exposure_Report-{org_code}-{datestring}.pdf"
 
+            # Embed Excel files
             (filesize, tooLarge, output) = embed(
                 output_directory,
                 org_code,
@@ -316,7 +289,7 @@ def main():
         os.mkdir(validated_args["OUTPUT_DIRECTORY"])
 
     try:
-        soc_med = validated_args["soc_med_included"]
+        soc_med = validated_args["--soc_med_included"]
     except:
         soc_med = False
     # Generate reports

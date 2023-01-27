@@ -382,13 +382,20 @@ class Cyber_Six:
     """Dark web and Cyber Six data class."""
 
     def __init__(
-        self, trending_start_date, start_date, end_date, org_uid, soc_med_included
+        self,
+        trending_start_date,
+        start_date,
+        end_date,
+        org_uid,
+        all_cves_df,
+        soc_med_included,
     ):
         """Initialize Cybersixgill vulns and malware class."""
         self.trending_start_date = trending_start_date
         self.start_date = start_date
         self.end_date = end_date
         self.org_uid = org_uid
+        self.all_cves_df = all_cves_df
         self.soc_med_included = soc_med_included
         self.soc_med_platforms = [
             "twitter",
@@ -700,9 +707,7 @@ class Cyber_Six:
         top_cve_table["Identified By"] = "Cybersixgill"
 
         # Get all CVEs found in shodan
-        shodan_cves = Malware_Vulns(
-            self.start_date, self.end_date, self.org_uid
-        ).all_cves()
+        shodan_cves = self.all_cves_df
         for cve_index, cve_row in top_cve_table.iterrows():
             if cve_row["CVE"] in shodan_cves:
                 print("we got a match")

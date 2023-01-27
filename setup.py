@@ -86,7 +86,7 @@ setup(
     package_dir={"": "src"},
     package_data={
         "pe_mailer": ["data/*"],
-        "pe_reports": ["*.html", "*.css", "data/*", "assets/*","*.ttf"],
+        "pe_reports": ["*.html", "*.css", "data/*", "assets/*", "*.ttf"],
         "pe_source": [
             "data/*",
             "data/shodan/*",
@@ -144,7 +144,7 @@ setup(
         "urllib3 == 1.26",
         "wtforms",
         "xhtml2pdf == 0.2.5",
-        "werkzeug == 2.1.2"
+        "werkzeug == 2.1.2",
     ],
     extras_require={
         "test": [

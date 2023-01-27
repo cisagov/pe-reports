@@ -7,6 +7,7 @@ import os
 
 # Third-Party Libraries
 import chevron
+import pandas as pd
 
 # cisagov Libraries
 from pe_reports.data.db_query import (
@@ -20,6 +21,8 @@ from .charts import Charts
 # Import Classes
 from .metrics import Credentials, Cyber_Six, Domains_Masqs, Malware_Vulns
 
+# Setup logging to central file
+LOGGER = logging.getLogger(__name__)
 
 # Style and build tables
 def buildTable(
@@ -119,6 +122,8 @@ def credential(
     end_date,
     org_uid,
     source_html,
+    org_code,
+    output_directory,
 ):
     """Build exposed credential page."""
     Credential = Credentials(trending_start_date, start_date, end_date, org_uid)
@@ -197,10 +202,24 @@ def credential(
 
     chevron_dict.update(creds_dict)
 
-    return scorecard_dict, chevron_dict, Credential.creds_view, source_html
+    # Create Credential Exposure Excel file
+    cred_xlsx = f"{output_directory}/{org_code}/compromised_credentials.xlsx"
+    credWriter = pd.ExcelWriter(cred_xlsx, engine="xlsxwriter")
+    Credential.creds_view.to_excel(credWriter, sheet_name="Credentials", index=False)
+    credWriter.save()
+
+    return scorecard_dict, chevron_dict, cred_xlsx, source_html
 
 
-def masquerading(scorecard_dict, chevron_dict, start_date, end_date, org_uid):
+def masquerading(
+    scorecard_dict,
+    chevron_dict,
+    start_date,
+    end_date,
+    org_uid,
+    org_code,
+    output_directory,
+):
     """Build masquerading page."""
     Domain_Masq = Domains_Masqs(start_date, end_date, org_uid)
     domain_count = Domain_Masq.count()
@@ -222,10 +241,28 @@ def masquerading(scorecard_dict, chevron_dict, start_date, end_date, org_uid):
     scorecard_dict["suspected_domain_count"] = domain_count
     scorecard_dict["dns"] = count_df
 
-    return scorecard_dict, chevron_dict, Domain_Masq.df_mal, Domain_Masq.alerts_sum()
+    # Create Domain Masquerading Excel file
+    da_xlsx = f"{output_directory}/{org_code}/domain_alerts.xlsx"
+    domWriter = pd.ExcelWriter(da_xlsx, engine="xlsxwriter")
+    Domain_Masq.df_mal.to_excel(domWriter, sheet_name="Suspected Domains", index=False)
+    Domain_Masq.alerts_sum().to_excel(
+        domWriter, sheet_name="Domain Alerts", index=False
+    )
+    domWriter.save()
+
+    return scorecard_dict, chevron_dict, da_xlsx
 
 
-def mal_vuln(scorecard_dict, chevron_dict, start_date, end_date, org_uid, source_html):
+def mal_vuln(
+    scorecard_dict,
+    chevron_dict,
+    start_date,
+    end_date,
+    org_uid,
+    source_html,
+    org_code,
+    output_directory,
+):
     """Build Malwares and Vulnerabilities page."""
     Malware_Vuln = Malware_Vulns(start_date, end_date, org_uid)
     # Build insecure protocol horizontal bar chart
@@ -288,8 +325,8 @@ def mal_vuln(scorecard_dict, chevron_dict, start_date, end_date, org_uid, source
     scorecard_dict["verified_vuln_count"] = verif_vulns_count
     scorecard_dict["suspected_vuln_count"] = unverif_vulns
     scorecard_dict["suspected_vuln_addrs_count"] = Malware_Vuln.ip_count()
-
     verif_vulns_summary = Malware_Vuln.verif_vulns_summary()
+
     if len(verif_vulns_summary) > 0:
 
         verif_vulns_summary_table = buildTable(
@@ -312,13 +349,22 @@ def mal_vuln(scorecard_dict, chevron_dict, start_date, end_date, org_uid, source
         source_html = source_html[:idx] + vuln_html + source_html[idx:]
         vulns_dict["verif_vulns_summary"] = verif_vulns_summary_table
 
+    all_cves_df = Malware_Vuln.all_cves()
     chevron_dict.update(vulns_dict)
+
+    # Create Suspected vulnerability Excel file
+    vuln_xlsx = f"{output_directory}/{org_code}/vuln_alerts.xlsx"
+    vulnWriter = pd.ExcelWriter(vuln_xlsx, engine="xlsxwriter")
+    Malware_Vuln.assets_df.to_excel(vulnWriter, sheet_name="Assets", index=False)
+    Malware_Vuln.insecure_df.to_excel(vulnWriter, sheet_name="Insecure", index=False)
+    Malware_Vuln.vulns_df.to_excel(vulnWriter, sheet_name="Verified Vulns", index=False)
+    vulnWriter.save()
+
     return (
         scorecard_dict,
         chevron_dict,
-        Malware_Vuln.insecure_df,
-        Malware_Vuln.vulns_df,
-        Malware_Vuln.assets_df,
+        vuln_xlsx,
+        all_cves_df,
         source_html,
     )
 
@@ -330,11 +376,19 @@ def dark_web(
     start_date,
     end_date,
     org_uid,
+    all_cves_df,
     soc_med_included,
+    org_code,
+    output_directory,
 ):
     """Dark Web Mentions."""
     Cyber6 = Cyber_Six(
-        trending_start_date, start_date, end_date, org_uid, soc_med_included
+        trending_start_date,
+        start_date,
+        end_date,
+        org_uid,
+        all_cves_df,
+        soc_med_included,
     )
     # Build dark web mentions over time line chart
     width = 16.51
@@ -371,7 +425,6 @@ def dark_web(
     scorecard_dict["dark_web_asset_alerts_count"] = len(asset_alerts)
     asset_alerts_table = buildTable(asset_alerts[:4], ["table"], [15, 70, 15])
     dark_web_act_table = buildTable(Cyber6.dark_web_most_act(), ["table"], [75, 25])
-
     social_media = Cyber6.social_media_most_act()
     if not soc_med_included:
         social_media = social_media[0:0]
@@ -400,23 +453,39 @@ def dark_web(
     circles_df = Cyber6.create_count_df()
     scorecard_dict["circles_df"] = circles_df
     chevron_dict.update(dark_web_dict)
+
+    # Create dark web Excel file
+    mi_xlsx = f"{output_directory}/{org_code}/mention_incidents.xlsx"
+    miWriter = pd.ExcelWriter(mi_xlsx, engine="xlsxwriter")
+    Cyber6.dark_web_mentions.to_excel(
+        miWriter, sheet_name="Dark Web Mentions", index=False
+    )
+    Cyber6.alerts.to_excel(miWriter, sheet_name="Dark Web Alerts", index=False)
+    Cyber6.top_cves.to_excel(miWriter, sheet_name="Top CVEs", index=False)
+    miWriter.save()
     return (
         scorecard_dict,
         chevron_dict,
-        Cyber6.dark_web_mentions,
-        Cyber6.alerts,
-        Cyber6.top_cves,
+        mi_xlsx,
     )
 
 
-def init(datestring, org_name, org_uid, score, grade, soc_med_included=False):
+def init(
+    datestring,
+    org_name,
+    org_code,
+    org_uid,
+    score,
+    grade,
+    output_directory,
+    soc_med_included=False,
+):
     """Call each page of the report."""
     # Format start_date and end_date for the bi-monthly reporting period.
     # If the given end_date is the 15th, then the start_date is the 1st.
     # Otherwise, the start_date will be the 16th of the respective month.
 
     # Load source HTML
-
     try:
         basedir = os.path.abspath(os.path.dirname(__file__))
         if soc_med_included:
@@ -430,7 +499,6 @@ def init(datestring, org_name, org_uid, score, grade, soc_med_included=False):
     except FileNotFoundError:
         logging.error("Template cannot be found. It must be named: '%s'", template)
         return 1
-
     end_date = datetime.datetime.strptime(datestring, "%Y-%m-%d").date()
     if end_date.day == 15:
         start_date = datetime.datetime(end_date.year, end_date.month, 1)
@@ -439,6 +507,7 @@ def init(datestring, org_name, org_uid, score, grade, soc_med_included=False):
     days = datetime.timedelta(27)
     trending_start_date = end_date - days
     previous_end_date = start_date - datetime.timedelta(days=1)
+
     # Get base directory to save images
     base_dir = os.path.abspath(os.path.dirname(__file__))
     start = start_date.strftime("%m/%d/%Y")
@@ -449,9 +518,11 @@ def init(datestring, org_name, org_uid, score, grade, soc_med_included=False):
         "endDate": end,
         "base_dir": base_dir,
     }
-    # print(chevron_dict)
+
+    # Get ASM values
     asset_dict = get_org_assets_count(org_uid)
-    # print(asset_dict)
+
+    # Create Scorecard dictionary
     scorecard_dict = {
         "organizations_uid": org_uid,
         "org_name": org_name,
@@ -462,11 +533,11 @@ def init(datestring, org_name, org_uid, score, grade, soc_med_included=False):
         "sub_count": asset_dict["num_sub_domain"],
         "num_ports": asset_dict["num_ports"],
         "pe_number_score": score,
-        "pe_letter_grade": str(grade),
+        "pe_letter_grade": grade,
     }
-    # print(scorecard_dict)
 
-    scorecard_dict, chevron_dict, creds_sum, source_html = credential(
+    # Credentials
+    (scorecard_dict, chevron_dict, cred_xlsx, source_html) = credential(
         scorecard_dict,
         chevron_dict,
         trending_start_date,
@@ -474,31 +545,45 @@ def init(datestring, org_name, org_uid, score, grade, soc_med_included=False):
         end_date,
         org_uid,
         source_html,
+        org_code,
+        output_directory,
     )
 
-    scorecard_dict, chevron_dict, masq_df, dom_alert_sum = masquerading(
-        scorecard_dict, chevron_dict, start_date, end_date, org_uid
-    )
-
-    (
+    # Domain Masquerading
+    scorecard_dict, chevron_dict, da_xlsx = masquerading(
         scorecard_dict,
         chevron_dict,
-        insecure_df,
-        vulns_df,
-        assets_df,
-        source_html,
-    ) = mal_vuln(
-        scorecard_dict, chevron_dict, start_date, end_date, org_uid, source_html
+        start_date,
+        end_date,
+        org_uid,
+        org_code,
+        output_directory,
     )
 
-    scorecard_dict, chevron_dict, dark_web_mentions, alerts, top_cves = dark_web(
+    # Inferred/Verified Vulnerabilities
+    (scorecard_dict, chevron_dict, vuln_xlsx, all_cves_df, source_html) = mal_vuln(
+        scorecard_dict,
+        chevron_dict,
+        start_date,
+        end_date,
+        org_uid,
+        source_html,
+        org_code,
+        output_directory,
+    )
+
+    # Dark web mentions and alerts
+    scorecard_dict, chevron_dict, mi_xlsx = dark_web(
         scorecard_dict,
         chevron_dict,
         trending_start_date,
         start_date,
         end_date,
         org_uid,
+        all_cves_df,
         soc_med_included,
+        org_code,
+        output_directory,
     )
 
     execute_scorecard(scorecard_dict)
@@ -514,17 +599,4 @@ def init(datestring, org_name, org_uid, score, grade, soc_med_included=False):
     """
     )
     html = chevron.render(source_html, chevron_dict)
-    # print(scorecard_dict)
-    return (
-        scorecard_dict,
-        html,
-        creds_sum,
-        masq_df,
-        dom_alert_sum,
-        insecure_df,
-        vulns_df,
-        assets_df,
-        dark_web_mentions,
-        alerts,
-        top_cves,
-    )
+    return (scorecard_dict, html, cred_xlsx, da_xlsx, vuln_xlsx, mi_xlsx)

@@ -115,7 +115,7 @@ def update_new_cve_info(start, end):
         for i in range(0, len(full_cve_list), 10):
             x = i
             chunks.append(full_cve_list[x : x + 10])
-        LOGGER.info(f"Info for {len(full_cve_list)} CVEs requested:")
+        LOGGER.info("Info for %s CVEs requested:", len(full_cve_list))
         # Dataframe for full CVE list
         full_cve_info_df = pd.DataFrame()
         chunk_counter = 1
@@ -123,10 +123,12 @@ def update_new_cve_info(start, end):
         for chunk in chunks:
             # Converting to list
             chunk = chunk.tolist()
-            LOGGER.info(f"Getting CVE info for chunk {chunk_counter}/{len(chunks)}...")
+            LOGGER.info(
+                "Getting CVE info for chunk %s/%s...", chunk_counter, len(chunks)
+            )
             # Make API call/create dataframe for chunk
             chunk_df = extract_bulk_cve_info(chunk)
-            LOGGER.info(f"\tChunk {chunk_counter} retrieved!")
+            LOGGER.info("\tChunk %s retrieved!", chunk_counter)
             full_cve_info_df = pd.concat(
                 [full_cve_info_df, chunk_df], ignore_index=True
             )
@@ -134,9 +136,9 @@ def update_new_cve_info(start, end):
 
         # Upsert new CVE info into cve_info table
         upsert_new_cves(full_cve_info_df)
-        LOGGER.info("Inserted/Updated new CVEs into cve_info table...\n")
+        LOGGER.info("Inserted/Updated new CVEs into cve_info table...")
     else:
-        LOGGER.info("No new CVEs found for this report period...\n")
+        LOGGER.info("No new CVEs found for this report period...")
 
 
 # ---------- PE Score Function ----------
@@ -167,13 +169,13 @@ def get_pe_scores(curr_date, num_periods):
     [hist_start, hist_stop] = [start_stops[0][0], curr_stop]
 
     # ORG DATA: List of orgs PE is reporting on
-    LOGGER.info("\nRetrieving list of orgs PE reports on...")
+    LOGGER.info("Retrieving list of orgs PE reports on...")
     all_orgs = get_orgs_df()
     reported_orgs = all_orgs[all_orgs["report_on"] == True]
     reported_orgs = reported_orgs[["organizations_uid", "cyhy_db_name"]].reset_index(
         drop=True
     )
-    LOGGER.info("\tDone\n")
+    LOGGER.info("Done")
 
     # BASE DATA: Base Metric Data, current Report period only
     LOGGER.info("Retrieving PE score base data...")
@@ -181,7 +183,7 @@ def get_pe_scores(curr_date, num_periods):
     pe_base_data_df = query_score_data(
         curr_start.strftime("%m/%d/%Y"), curr_stop.strftime("%m/%d/%Y"), sql
     )
-    LOGGER.info("\tDone\n")
+    LOGGER.info("Done")
 
     # CVE DATA: verif and unverif CVE/CVSS data, current report period only:
     LOGGER.info("Updating CVE archive...")
@@ -196,25 +198,25 @@ def get_pe_scores(curr_date, num_periods):
     anomaly_data_cred = query_score_data(
         hist_start.strftime("%m/%d/%Y"), hist_stop.strftime("%m/%d/%Y"), sql
     )
-    LOGGER.info("\tCredential data done")
+    LOGGER.info("Credential data done.")
 
     sql = """SELECT * FROM pes_hist_data_domalert(%(start)s, %(end)s);"""
     anomaly_data_domain = query_score_data(
         hist_start.strftime("%m/%d/%Y"), hist_stop.strftime("%m/%d/%Y"), sql
     )
-    LOGGER.info("\tDomain alert data done")
+    LOGGER.info("Domain alert data done.")
 
     sql = """SELECT * FROM pes_hist_data_dwalert(%(start)s, %(end)s);"""
     anomaly_data_darkweb_alert = query_score_data(
         hist_start.strftime("%m/%d/%Y"), hist_stop.strftime("%m/%d/%Y"), sql
     )
-    LOGGER.info("\tDark web alert data done")
+    LOGGER.info("Dark web alert data done.")
 
     sql = """SELECT * FROM pes_hist_data_dwment(%(start)s, %(end)s);"""
     anomaly_data_darkweb_mention = query_score_data(
         hist_start.strftime("%m/%d/%Y"), hist_stop.strftime("%m/%d/%Y"), sql
     )
-    LOGGER.info("\tDark web mention data done\n")
+    LOGGER.info("Dark web mention data done.")
 
     # ---------- Aggregate Historical Data ----------
     LOGGER.info("Beginning PE score calculation...")
@@ -367,7 +369,7 @@ def get_pe_scores(curr_date, num_periods):
 
     # Iterate over all orgs PE reports on
     for org in reported_orgs.iloc[:, 1]:
-        LOGGER.info("\nDoing anomaly search on: ", org)
+        LOGGER.info("Doing anomaly search on: %s", org)
         # Arrays to hold historic counts for each preceding report period
         count_hist_total_cred = []
         count_hist_domain_alert = []
@@ -466,7 +468,7 @@ def get_pe_scores(curr_date, num_periods):
             current_data_total_creds["counts"].iloc[-1]
             > current_data_total_creds["counts"].iloc[-2]
         ):
-            LOGGER.info("\t", org, " current total creds is an anomaly")
+            LOGGER.info("\t\t%s current total creds is an anomaly", org)
             # Set flag for anomaly
             pe_base_data_df.loc[
                 pe_base_data_df["cyhy_db_name"] == org, "anomaly_totCred"
@@ -475,7 +477,7 @@ def get_pe_scores(curr_date, num_periods):
             current_data_domain_alerts["counts"].iloc[-1]
             > current_data_domain_alerts["counts"].iloc[-2]
         ):
-            LOGGER.info("\t", org, " current domain alerts is an anomaly")
+            LOGGER.info("\t\t%s current domain alerts is an anomaly", org)
             # Set flag for anomaly
             pe_base_data_df.loc[
                 pe_base_data_df["cyhy_db_name"] == org, "anomaly_domAlert"
@@ -484,7 +486,7 @@ def get_pe_scores(curr_date, num_periods):
             current_data_darkweb_alerts["counts"].iloc[-1]
             > current_data_darkweb_alerts["counts"].iloc[-2]
         ):
-            LOGGER.info("\t", org, " current dark web alerts is an anomaly")
+            LOGGER.info("\t\t%s current dark web alerts is an anomaly", org)
             # Set flag for anomaly
             pe_base_data_df.loc[
                 pe_base_data_df["cyhy_db_name"] == org, "anomaly_DWAlert"
@@ -494,7 +496,7 @@ def get_pe_scores(curr_date, num_periods):
             current_data_darkweb_mentions["counts"].iloc[-1]
             > current_data_darkweb_mentions["counts"].iloc[-2]
         ):
-            LOGGER.info("\t", org, " current dark web mentions is an anomaly")
+            LOGGER.info("\t\t%s current dark web mentions is an anomaly", org)
             # Set flag for anomaly
             pe_base_data_df.loc[
                 pe_base_data_df["cyhy_db_name"] == org, "anomaly_DWMent"
@@ -643,7 +645,7 @@ def get_pe_scores(curr_date, num_periods):
         ["organizations_uid", "cyhy_db_name", "PE_score", "letter_grade"]
     ]
 
-    LOGGER.info("\nPE score calculation complete!\n")
+    LOGGER.info("PE score calculation complete!\n")
     # Return dataframe with PE scores
     return pe_data_agg
 

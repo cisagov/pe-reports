@@ -542,10 +542,15 @@ def query_shodan(org_uid, start_date, end_date, table):
     """Query Shodan table."""
     conn = connect()
     try:
+        df = pd.DataFrame()
+        df_list = []
+        chunk_size = 1000
         sql = """SELECT * FROM %(table)s
         WHERE organizations_uid = %(org_uid)s
         AND timestamp BETWEEN %(start_date)s AND %(end_date)s"""
-        df = pd.read_sql(
+        count = 0
+        # Batch SQL call to reduce memory (https://pythonspeed.com/articles/pandas-sql-chunking/)
+        for chunk_df in pd.read_sql(
             sql,
             conn,
             params={
@@ -554,7 +559,25 @@ def query_shodan(org_uid, start_date, end_date, table):
                 "start_date": start_date,
                 "end_date": end_date,
             },
-        )
+            chunksize=chunk_size,
+        ):
+            count += 1
+            print(count)
+            df_list.append(chunk_df)
+
+        if len(df_list) == 0:
+            df = pd.read_sql(
+                sql,
+                conn,
+                params={
+                    "table": AsIs(table),
+                    "org_uid": org_uid,
+                    "start_date": start_date,
+                    "end_date": end_date,
+                },
+            )
+        else:
+            df = pd.concat(df_list, ignore_index=True)
         return df
     except (Exception, psycopg2.DatabaseError) as error:
         LOGGER.error("There was a problem with your database query %s", error)
@@ -719,7 +742,7 @@ def execute_scorecard(summary_dict):
             dark_web_mentions_count = EXCLUDED.dark_web_mentions_count,
             dark_web_executive_alerts_count = EXCLUDED.dark_web_executive_alerts_count,
             dark_web_asset_alerts_count = EXCLUDED.dark_web_asset_alerts_count,
-            pe_numeric_score = EXCLUDED.pe_numeric_score,
+            pe_number_score = EXCLUDED.pe_number_score,
             pe_letter_grade = EXCLUDED.pe_letter_grade;
         """
         cur.execute(
@@ -747,7 +770,7 @@ def execute_scorecard(summary_dict):
                 AsIs(summary_dict["dark_web_executive_alerts_count"]),
                 AsIs(summary_dict["dark_web_asset_alerts_count"]),
                 AsIs(summary_dict["pe_number_score"]),
-                AsIs(summary_dict["pe_letter_grade"]),
+                summary_dict["pe_letter_grade"],
             ),
         )
         conn.commit()
@@ -847,29 +870,18 @@ def upsert_new_cves(new_cves):
     Args:
         new_cves: Dataframe containing the new CVEs and their CVSS2.0/3.1/DVE data
     """
-    # Building SQL query
-    upsert_query = """
-        INSERT INTO
-            public.cve_info(cve_name, cvss_2_0, cvss_2_0_severity, cvss_2_0_vector,
-            cvss_3_0, cvss_3_0_severity, cvss_3_0_vector, dve_score)
-        VALUES
-        """
-    # Replace None-type in dataframe with string "None"
-    new_cves = new_cves.fillna(value="None")
-    # Iterate over dataframe rows
-    for idx, row in new_cves.iterrows():
-        # Add each row of CVE data to the SQL query
-        upsert_query += (
-            f"\t('{row['cve_name']}', {row['cvss_2_0']}, '{row['cvss_2_0_severity']}', '{row['cvss_2_0_vector']}',"
-            f" {row['cvss_3_0']}, '{row['cvss_3_0_severity']}', '{row['cvss_3_0_vector']}', {row['dve_score']})"
-        )
-        # Add trailing comma if needed
-        if idx != len(new_cves) - 1:
-            upsert_query += ",\n"
-    # Add the rest of the SQL query
-    upsert_query += """
-        ON CONFLICT (cve_name) DO UPDATE
-        SET
+    try:
+        # Drop duplicates in dataframe
+        new_cves = new_cves.drop_duplicates()
+
+        # Execute insert query
+        conn = connect()
+        tpls = [tuple(x) for x in new_cves.to_numpy()]
+        cols = ",".join(list(new_cves.columns))
+        table = "cve_info"
+        sql = """INSERT INTO {}({}) VALUES %s
+        ON CONFLICT (cve_name) 
+        DO UPDATE SET
             cve_name=EXCLUDED.cve_name,
             cvss_2_0=EXCLUDED.cvss_2_0,
             cvss_2_0_severity=EXCLUDED.cvss_2_0_severity,
@@ -877,20 +889,17 @@ def upsert_new_cves(new_cves):
             cvss_3_0=EXCLUDED.cvss_3_0,
             cvss_3_0_severity=EXCLUDED.cvss_3_0_severity,
             cvss_3_0_vector=EXCLUDED.cvss_3_0_vector,
-            dve_score=EXCLUDED.dve_score
+            dve_score=EXCLUDED.dve_score;
         """
-
-    # Use finished SQL query to make call to database
-    conn = connect()
-    cursor = conn.cursor()
-    try:
-        # Execute SQL query
-        cursor.execute(upsert_query)
-        # Commit/Save insertion changes
+        cursor = conn.cursor()
+        extras.execute_values(
+            cursor,
+            sql.format(table, cols),
+            tpls,
+        )
         conn.commit()
-        # Confirmation message
         LOGGER.info(
-            len(new_cves), " new CVEs successfully upserted into cve_info table..."
+            "%s new CVEs successfully upserted into cve_info table...", len(new_cves)
         )
     except (Exception, psycopg2.DatabaseError) as err:
         # Show error and close connection if failed
