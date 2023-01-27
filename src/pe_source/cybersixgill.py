@@ -391,6 +391,7 @@ class Cybersixgill:
             creds_breach_df.drop_duplicates(
                 subset=["breach_name"], keep="first", inplace=True
             )
+            creds_breach_df.drop(columns=["exposed_cred_count"], inplace=True)
         except Exception as e:
             LOGGER.error("Probably no credential breaches for %s", org_id)
             LOGGER.error(e)
