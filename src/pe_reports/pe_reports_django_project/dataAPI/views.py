@@ -32,6 +32,9 @@ from asgiref.sync import sync_to_async
 from decouple import config
 
 from home.models import Organizations
+from home.models import VwBreachcomp
+from home.models import VwBreachcompCredsbydate
+from home.models import VwOrgsAttacksurface
 
 from .models import apiUser
 from . import schemas
@@ -90,6 +93,7 @@ def create_refresh_token(subject: Union[str, Any],
     return encoded_jwt
 
 def userinfo(theuser):
+    """Get all users in a list."""
     user_record = list(User.objects.filter(username=f'{theuser}'))
 
     if user_record:
@@ -119,7 +123,7 @@ def userapiTokenUpdate(expiredaccessToken, user_refresh, theapiKey, user_id):
 
     updateapiuseraccessToken.save(update_fields=['apiKey'])
     # updateapiuserrefreshToken.save(update_fields=['refresh_token'])
-    LOGGER.info(f'The user api key and refresh token have been updated from: {theapiKey} to: {updateapiuseraccessToken.apiKey}.')
+    LOGGER.info(f'The user api key and refresh token have been updated from: {theapiKey[-10:]} to: {updateapiuseraccessToken.apiKey[-10:]}.')
 
 
 
@@ -136,13 +140,13 @@ def userapiTokenverify(theapiKey):
         user_id = u.id
     # LOGGER.info(f'The user key is {user_key}')
     # LOGGER.info(f'The user refresh key is {user_refresh}')
-    LOGGER.info(f'the token being verified at verify {theapiKey}')
+    LOGGER.info(f'the token being verified at verify {theapiKey[-10:]}')
 
     try:
         jwt.decode(theapiKey, config('JWT_REFRESH_SECRET_KEY'),
                    algorithms=ALGORITHM,
                    options={"verify_signature": False})
-        LOGGER.info(f'The api key was alright {theapiKey}')
+        LOGGER.info(f'The api key was alright {theapiKey[-10:0]}')
 
     except exceptions.JWTError as e:
         LOGGER.warning('The access token has expired and will be updated')
@@ -182,39 +186,69 @@ def read_orgs(tokens: dict = Depends(get_api_key)):
     """API endpoint to get all stakeholders."""
     orgs = list(Organizations.objects.all())
 
-    LOGGER.info(f"The api key submitted {tokens}")
+    LOGGER.info(f"The api key submitted {tokens[-10:]}")
     try:
         userapiTokenverify(theapiKey=tokens)
         return orgs
     except:
         LOGGER.info('API key expired please try again')
 
-    # print(userapiTokenverify()[1])
 
+@api_router.post("/breachcomp",
+                 dependencies=[Depends(get_api_key)],
+                 response_model=List[schemas.VwBreachcomp],
+                 tags=["List all breaches"])
+def read_orgs(tokens: dict = Depends(get_api_key)):
+    """API endpoint to get all stakeholders."""
+    breachInfo = list(VwBreachcomp.objects.all())
+    print(breachInfo)
+
+    LOGGER.info(f"The api key submitted {tokens}")
+    try:
+        userapiTokenverify(theapiKey=tokens)
+        return breachInfo
+    except:
+        LOGGER.info('API key expired please try again')
+
+@api_router.post("/breachcomp_credsbydate", dependencies=[Depends(get_api_key)],
+                response_model=List[schemas.VwBreachcompCredsbydate], tags=["List all breaches by date"])
+def read_orgs(tokens: dict = Depends(get_api_key)):
+    """API endpoint to get all stakeholders."""
+    breachcomp_dateInfo = list(VwBreachcompCredsbydate.objects.all())
+
+    LOGGER.info(f"The api key submitted {tokens}")
+    try:
+        userapiTokenverify(theapiKey=tokens)
+        return breachcomp_dateInfo
+    except:
+        LOGGER.info('API key expired please try again')
+
+
+@api_router.post("/orgs_attacksurface", dependencies=[Depends(get_api_key)],
+                response_model=List[schemas.VwOrgsAttacksurface], tags=["Get asset counts for an organization"])
+def read_orgs(data: schemas.VwOrgsAttacksurfaceInput, tokens: dict = Depends(get_api_key)):
+    """Get asset counts for an organization."""
+    print(data.organizations_uid)
+    attackSurfaceInfo = list(VwOrgsAttacksurface.objects.filter(organizations_uid=data.organizations_uid))
+
+    LOGGER.info(f"The api key submitted {tokens}")
+    try:
+        userapiTokenverify(theapiKey=tokens)
+        return attackSurfaceInfo
+    except:
+        LOGGER.info('API key expired please try again')
 
 @api_router.post("/get_key", tags=["Get user api keys"])
 def read_orgs(data: schemas.UserAPI):
     """API endpoint to get api by submitting refresh token."""
     user_key = ''
     userkey = list(apiUser.objects.filter(refresh_token=data.refresh_token))
-    LOGGER.info(f'The input data requested was ***********{data.refresh_token[-10:]}')
+    LOGGER.info(f'The input data requested was ***********'
+                f'{data.refresh_token[-10:]}')
 
     for u in userkey:
         user_key = u.apiKey
     return user_key
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

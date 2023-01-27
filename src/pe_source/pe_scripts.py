@@ -5,7 +5,7 @@ Usage:
 
 Arguments:
   DATA_SOURCE                       Source to collect data from. Valid values are "cybersixgill",
-                                    "dnstwist", "hibp", and "shodan".
+                                    "dnstwist", "hibp", "intelx", and "shodan".
 
 Options:
   -h --help                         Show this message.
@@ -41,6 +41,7 @@ from ._version import __version__
 from .cybersixgill import Cybersixgill
 from .dnsmonitor import DNSMonitor
 from .dnstwistscript import run_dnstwist
+from .intelx_identity import IntelX
 from .shodan import Shodan
 
 LOGGER = logging.getLogger(__name__)
@@ -70,6 +71,9 @@ def run_pe_script(source, orgs_list, cybersix_methods, soc_med_included):
         dnsMonitor.run_dnsMonitor()
     elif source == "dnstwist":
         run_dnstwist(orgs_list)
+    elif source == "intelx":
+        intelx = IntelX(orgs_list)
+        intelx.run_intelx()
 
 
 def main():

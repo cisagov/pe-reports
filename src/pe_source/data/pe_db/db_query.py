@@ -315,7 +315,6 @@ def insert_sixgill_breaches(df):
     # SQL query to execute
     query = """INSERT INTO {}({}) VALUES %s
     ON CONFLICT (breach_name) DO UPDATE SET
-    exposed_cred_count = EXCLUDED.exposed_cred_count,
     password_included = EXCLUDED.password_included;"""
     cursor = conn.cursor()
     try:
@@ -554,3 +553,82 @@ def query_orgs_rev():
     sql = "SELECT * FROM organizations WHERE report_on is True ORDER BY organizations_uid DESC;"
     df = pd.read_sql_query(sql, conn)
     return df
+
+
+def insert_intelx_breaches(df):
+    """Insert intelx breach data."""
+    conn = connect()
+    table = "credential_breaches"
+    # Create a list of tuples from the dataframe values
+    tuples = [tuple(x) for x in df.to_numpy()]
+    # Comma-separated dataframe columns
+    cols = ",".join(list(df.columns))
+    # SQL query to execute
+    query = """INSERT INTO {}({}) VALUES %s
+    ON CONFLICT (breach_name) DO UPDATE SET
+    password_included = EXCLUDED.password_included;"""
+    cursor = conn.cursor()
+    try:
+        extras.execute_values(
+            cursor,
+            query.format(
+                table,
+                cols,
+            ),
+            tuples,
+        )
+        conn.commit()
+        logging.info("Successfully inserted/updated breaches into PE database.")
+    except (Exception, psycopg2.DatabaseError) as error:
+        logging.info(error)
+        conn.rollback()
+    cursor.close()
+
+
+def get_intelx_breaches(source_uid):
+    """Get IntelX credential breaches."""
+    conn = connect()
+    try:
+        cur = conn.cursor()
+        sql = """SELECT breach_name, credential_breaches_uid FROM credential_breaches where data_source_uid = %s"""
+        cur.execute(sql, [source_uid])
+        all_breaches = cur.fetchall()
+        cur.close()
+        return all_breaches
+    except (Exception, psycopg2.DatabaseError) as error:
+        logging.error("There was a problem with your database query %s", error)
+    finally:
+        if conn is not None:
+            close(conn)
+
+
+def insert_intelx_credentials(df):
+    """Insert sixgill credential data."""
+    conn = connect()
+    table = "credential_exposures"
+    # Create a list of tuples from the dataframe values
+    tuples = [tuple(x) for x in df.to_numpy()]
+    # Comma-separated dataframe columns
+    cols = ",".join(list(df.columns))
+    # SQL query to execute
+    query = """INSERT INTO {}({}) VALUES %s
+    ON CONFLICT (breach_name, email) DO UPDATE SET
+    modified_date = EXCLUDED.modified_date;"""
+    cursor = conn.cursor()
+    try:
+        extras.execute_values(
+            cursor,
+            query.format(
+                table,
+                cols,
+            ),
+            tuples,
+        )
+        conn.commit()
+        logging.info(
+            "Successfully inserted/updated exposed credentials into PE database."
+        )
+    except (Exception, psycopg2.DatabaseError) as error:
+        logging.info(error)
+        conn.rollback()
+    cursor.close()
