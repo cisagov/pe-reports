@@ -26,8 +26,7 @@ TODAY = datetime.date.today()
 DAYS_BACK = datetime.timedelta(days=16)
 START_DATE = (TODAY - DAYS_BACK).strftime("%Y-%m-%d %H:%M:%S")
 END_DATE = TODAY.strftime("%Y-%m-%d %H:%M:%S")
-# Get data source uid
-SOURCE_UID = get_data_source_uid("IntelX")
+
 
 section = "intelx"
 params = get_params(section)
@@ -61,7 +60,7 @@ class IntelX:
     def get_credentials(self, cyhy_org_id, pe_org_uid):
         """Get credentials for a provided org."""
         LOGGER.info("Fetching credential data for %s.", cyhy_org_id)
-
+        source_uid = get_data_source_uid("IntelX")
         try:
             conn = connect()
             roots_df = org_root_domains(conn, pe_org_uid)
@@ -86,7 +85,7 @@ class IntelX:
             LOGGER.error(e)
             return 1
 
-        breach_dict = get_intelx_breaches(SOURCE_UID)
+        breach_dict = get_intelx_breaches(source_uid)
         breach_dict = dict(breach_dict)
         for cred_index, cred_row in creds_df.iterrows():
             breach_uid = breach_dict[cred_row["breach_name"]]
@@ -221,7 +220,7 @@ class IntelX:
         # Create new column for subdomain, organization uid, and data source uid
         all_df["sub_domain"] = all_df["user"].str.split("@").str[1]
         all_df["organizations_uid"] = org_uid
-        all_df["data_source_uid"] = SOURCE_UID
+        all_df["data_source_uid"] = get_data_source_uid("IntelX")
 
         # rename fields to match database
         all_df.rename(
