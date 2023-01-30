@@ -69,6 +69,11 @@ def run_pe_script(source, orgs_list, cybersix_methods):
     elif source == "intelx":
         intelx = IntelX(orgs_list)
         intelx.run_intelx()
+    else:
+        logging.error(
+            "Not a valid source name. Correct values are cybersixgill or shodan."
+        )
+        sys.exit(1)
 
 
 def main():
