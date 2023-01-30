@@ -11,7 +11,7 @@ import pandas as pd
 import requests
 
 from .data.pe_db.config import get_params
-from .data.pe_db.db_query import (
+from .data.pe_db.db_query_source import (
     connect,
     get_data_source_uid,
     get_intelx_breaches,
