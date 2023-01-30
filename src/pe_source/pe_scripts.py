@@ -39,7 +39,6 @@ import pe_reports
 
 from ._version import __version__
 from .cybersixgill import Cybersixgill
-from .dnsmonitor import DNSMonitor
 from .dnstwistscript import run_dnstwist
 from .intelx_identity import IntelX
 from .shodan import Shodan
@@ -66,9 +65,6 @@ def run_pe_script(source, orgs_list, cybersix_methods, soc_med_included):
     elif source == "shodan":
         shodan = Shodan(orgs_list)
         shodan.run_shodan()
-    elif source == "dnsmonitor":
-        dnsMonitor = DNSMonitor(orgs_list)
-        dnsMonitor.run_dnsMonitor()
     elif source == "dnstwist":
         run_dnstwist(orgs_list)
     elif source == "intelx":
