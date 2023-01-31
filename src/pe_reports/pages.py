@@ -524,26 +524,44 @@ def init(
     # Get ASM values
     asset_dict = get_org_assets_count(org_uid)
     asset_dict_past = get_org_assets_count_past(org_uid, end_date - timedelta(days=15))
-    
+    LOGGER.info("Past report date: %s", end_date - timedelta(days=15))
+
+    if asset_dict_past.empty:
+        LOGGER.error("No ASM summary data for the last report period.")
+        past_ip_count = 0
+        past_cidr_count = 0
+        past_port_protocol_count = 0
+        past_root_count = 0
+        past_sub_count = 0
+        past_software_count = 0
+        past_for_ip_count = 0
+    else:
+        past_ip_count = asset_dict_past["ip_count"][0]
+        past_cidr_count = asset_dict_past["cidr_count"][0]
+        past_port_protocol_count = asset_dict_past["port_protocol_count"][0]
+        past_root_count = asset_dict_past["root_count"][0]
+        past_sub_count = asset_dict_past["sub_count"][0]
+        past_software_count = asset_dict_past["software_count"][0]
+        past_for_ip_count = asset_dict_past["foreign_ips_count"][0]
 
     # Create Summary dictionary
     summary_dict = {
         "org_name": org_name,
         "date": end_date.strftime("%B %d, %Y"),
         "ip_address": asset_dict["num_ips"],
-        "last_ip_address": asset_dict_past["ip_count"][0],
+        "last_ip_address": past_ip_count,
         "cidrs": asset_dict["num_cidrs"],
-        "last_cidrs": asset_dict_past["cidr_count"][0],
+        "last_cidrs": past_cidr_count,
         "ports_and_protocols": asset_dict["num_ports_protocols"],
-        "last_ports_and_protocols": asset_dict_past["port_protocol_count"][0],
+        "last_ports_and_protocols": past_port_protocol_count,
         "root_domains": asset_dict["num_root_domain"],
-        "last_root_domains": asset_dict_past["root_count"][0],
+        "last_root_domains": past_root_count,
         "sub_domains": asset_dict["num_sub_domain"],
-        "last_sub_domains": asset_dict_past["sub_count"][0],
+        "last_sub_domains": past_sub_count,
         "software": asset_dict["num_software"],
-        "last_software": asset_dict_past["software_count"][0],
+        "last_software": past_software_count,
         "foreign_ips": asset_dict["num_foreign_ips"],
-        "last_foreign_ips": asset_dict_past["foreign_ips_count"][0],
+        "last_foreign_ips": past_for_ip_count,
     }
 
     # Create Scorecard dictionary

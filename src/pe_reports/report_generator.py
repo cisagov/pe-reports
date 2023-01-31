@@ -162,7 +162,7 @@ def generate_reports(datestring, output_directory, soc_med_included=False):
             org_name = org[1]
             org_code = org[2]
 
-            # if org_code not in ["DHS","USAID"]:
+            # if org_code not in ["DHS", "NASA"]:
             #     continue
 
             LOGGER.info("Running on %s", org_code)
@@ -206,9 +206,15 @@ def generate_reports(datestring, output_directory, soc_med_included=False):
             # Create ASM Summary
             LOGGER.info("Creating ASM Summary")
             summary_filename = f"{output_directory}/Posture-and-Exposure-ASM-Summary_{org_code}_{scorecard_dict['end_date'].strftime('%Y-%m-%d')}.pdf"
-            final_output = f"{output_directory}/{org_code}/Posture-and-Exposure-ASM-Summary_{org_code}_{scorecard_dict['end_date'].strftime('%Y-%m-%d')}.pdf"
+            final_summary_output = f"{output_directory}/{org_code}/Posture-and-Exposure-ASM-Summary_{org_code}_{scorecard_dict['end_date'].strftime('%Y-%m-%d')}.pdf"
             summary_xlsx_filename = f"{output_directory}/{org_code}/ASM_Summary.xlsx"
-            create_summary(org_uid, final_output, summary_dict, summary_filename, summary_xlsx_filename)
+            create_summary(
+                org_uid,
+                final_summary_output,
+                summary_dict,
+                summary_filename,
+                summary_xlsx_filename,
+            )
             LOGGER.info("Done")
 
             # Create scorecard
@@ -247,6 +253,11 @@ def generate_reports(datestring, output_directory, soc_med_included=False):
             upload_file_to_s3(output, datestring, "cisa-crossfeed-pe-reports")
 
             # Upload scorecard
+            upload_file_to_s3(
+                final_summary_output, datestring, "cisa-crossfeed-pe-reports"
+            )
+
+            # Upload ASM Summary
             upload_file_to_s3(
                 scorecard_filename, datestring, "cisa-crossfeed-pe-reports"
             )

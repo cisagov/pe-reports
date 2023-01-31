@@ -7,7 +7,7 @@ import os
 
 # Third-Party Libraries
 import fitz
-from PyPDF2 import PdfReader, PdfWriter
+from PyPDF2 import PdfFileReader, PdfFileWriter
 import numpy as np
 import pandas as pd
 from reportlab.lib.pagesizes import letter
@@ -26,7 +26,7 @@ from pe_reports.data.db_query import (
     query_ports_protocols,
     query_roots,
     query_software,
-    query_subs
+    query_subs,
 )
 
 # Setup logging to central file
@@ -101,6 +101,7 @@ def add_stat_frame(current_value, last_value, x, y, width, height, style, can):
     )
     return can
 
+
 def add_attachment(org_uid, final_output, pdf_file, asm_xlsx):
 
     # Create ASM Excel file
@@ -108,50 +109,46 @@ def add_attachment(org_uid, final_output, pdf_file, asm_xlsx):
 
     # IPs
     ip_lst = query_ips(org_uid)
-    ips_df = pd.DataFrame(ip_lst, columns =['ip'])
-    ips_df.to_excel(
-        asmWriter, sheet_name="IPs", index=False
-    )
+    ips_df = pd.DataFrame(ip_lst, columns=["ip"])
+    ips_df.to_excel(asmWriter, sheet_name="IPs", index=False)
 
     # CIDRs
     cidr_df = query_cidrs_by_org(org_uid)
     cidr_df = cidr_df[["network"]]
-    cidr_df.to_excel(
-        asmWriter, sheet_name="CIDRs", index=False
-    )
+    cidr_df.to_excel(asmWriter, sheet_name="CIDRs", index=False)
 
     # Ports/protocols
     ports_protocols_df = query_ports_protocols(org_uid)
-    ports_protocols_df.to_excel(
-        asmWriter, sheet_name="Ports_Protocols", index=False
-    )
+    ports_protocols_df.to_excel(asmWriter, sheet_name="Ports_Protocols", index=False)
 
     # Root domains
     rd_df = query_roots(org_uid)
     rd_df = rd_df[["root_domain"]]
-    rd_df.to_excel(
-        asmWriter, sheet_name="Root Domains", index=False
-    )
+    rd_df.to_excel(asmWriter, sheet_name="Root Domains", index=False)
 
     # Sub-domains
     sd_df = query_subs(org_uid)
     sd_df = sd_df[["sub_domain"]]
-    sd_df.to_excel(
-        asmWriter, sheet_name="Sub-domains", index=False
-    )
+    sd_df.to_excel(asmWriter, sheet_name="Sub-domains", index=False)
 
     # Software
     soft_df = query_software(org_uid)
-    soft_df.to_excel(
-        asmWriter, sheet_name="Software", index=False
-    )
+    soft_df.to_excel(asmWriter, sheet_name="Software", index=False)
 
     # Foreign Ips
     for_ips_df = query_foreign_IPs(org_uid)
-    for_ips_df = for_ips_df[["organization", "ip", "port", "protocol", "product", "country_code","location"]]
-    for_ips_df.to_excel(
-        asmWriter, sheet_name="Foreign IPs", index=False
-    )
+    for_ips_df = for_ips_df[
+        [
+            "organization",
+            "ip",
+            "port",
+            "protocol",
+            "product",
+            "country_code",
+            "location",
+        ]
+    ]
+    for_ips_df.to_excel(asmWriter, sheet_name="Foreign IPs", index=False)
 
     asmWriter.save()
 
@@ -170,6 +167,7 @@ def add_attachment(org_uid, final_output, pdf_file, asm_xlsx):
         garbage=4,
         deflate=True,
     )
+
 
 def create_summary(org_uid, final_output, data_dict, file_name, excel_filename):
     """Create ASM summary PDF."""
@@ -270,17 +268,17 @@ def create_summary(org_uid, final_output, data_dict, file_name, excel_filename):
 
     # Move to the beginning of the StringIO buffer
     packet.seek(0)
-    new_pdf = PdfReader(packet)
+    new_pdf = PdfFileReader(packet)
 
     # Read existing PDF template
-    existing_pdf = PdfReader(open(BASE_DIR + "/empty_asm.pdf", "rb"))
-    output = PdfWriter()
+    existing_pdf = PdfFileReader(open(BASE_DIR + "/empty_asm.pdf", "rb"))
+    output = PdfFileWriter()
 
     # Add the "watermark" (which is the new pdf) on the existing page
-    page = existing_pdf.pages[0]
-    page2 = new_pdf.pages[0]
-    page.merge_page(page2)
-    output.add_page(page)
+    page = existing_pdf.getPage(0)
+    page2 = new_pdf.getPage(0)
+    page.mergePage(page2)
+    output.addPage(page)
 
     # Finally, write "output" to a real file
     outputStream = open(file_name, "wb")

@@ -4,7 +4,7 @@ import io
 import os
 
 # Third-Party Libraries
-from PyPDF2 import PdfReader, PdfWriter
+from PyPDF2 import PdfFileReader, PdfFileWriter
 import circlify
 import matplotlib.pyplot as plt
 import numpy as np
@@ -377,15 +377,15 @@ def create_scorecard(data_dict, file_name):
 
     # move to the beginning of the StringIO buffer
     packet.seek(0)
-    new_pdf = PdfReader(packet)
+    new_pdf = PdfFileReader(packet)
     # read your existing PDF
-    existing_pdf = PdfReader(open(BASE_DIR + "/empty_scorecard.pdf", "rb"))
-    output = PdfWriter()
+    existing_pdf = PdfFileReader(open(BASE_DIR + "/empty_scorecard.pdf", "rb"))
+    output = PdfFileWriter()
     # add the "watermark" (which is the new pdf) on the existing page
-    page = existing_pdf.pages[0]
-    page2 = new_pdf.pages[0]
-    page.merge_page(page2)
-    output.add_page(page)
+    page = existing_pdf.getPage(0)
+    page2 = new_pdf.getPage(0)
+    page.mergePage(page2)
+    output.addPage(page)
     # finally, write "output" to a real file
     outputStream = open(file_name, "wb")
     output.write(outputStream)

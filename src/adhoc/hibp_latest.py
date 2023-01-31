@@ -4,7 +4,7 @@ import logging
 import time
 
 # Third-Party Libraries
-from data.config import config, config2
+from data.config import config, config2, get_hibp_token
 from data.run import query_orgs
 import pandas as pd
 import psycopg2
@@ -102,7 +102,8 @@ except Exception:
 Emails_URL = "https://haveibeenpwned.com/api/v2/enterprisesubscriber/domainsearch/"
 Breaches_URL = "https://haveibeenpwned.com/api/v2/breaches"
 # TODO: Add bearer token
-params = {"Authorization": "Bearer "}
+token = get_hibp_token()
+params = {"Authorization": f"Bearer {token}"}
 
 
 def flatten_data(response, subdomain, breaches_dict):
