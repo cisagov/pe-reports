@@ -117,6 +117,7 @@ def search_shodan(thread_name, ips, api, start, end, org_uid, org_name, failed):
                             serv = d.get("http", {}).get("server")
                             asn = d.get("ASN", None)
                             vulns = d.get("vulns", None)
+                            location = d.get("location", None)
                             if vulns is not None:
                                 unverified = []
                                 for cve in list(vulns.keys()):
@@ -218,6 +219,8 @@ def search_shodan(thread_name, ips, api, start, end, org_uid, org_name, failed):
                                     "server": serv,
                                     "tags": r["tags"],
                                     "timestamp": d["timestamp"],
+                                    "country_code": location["country_code"],
+                                    "location": str(location),
                                 }
                             )
 

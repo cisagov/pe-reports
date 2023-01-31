@@ -37,6 +37,7 @@ from .data.db_query import connect, get_orgs
 from .helpers.generate_score import get_pe_scores
 from .pages import init
 from .scorecard_generator import create_scorecard
+from .asm_generator import create_summary
 
 LOGGER = logging.getLogger(__name__)
 ACCESSOR_AWS_PROFILE = os.getenv("ACCESSOR_PROFILE")
@@ -152,6 +153,7 @@ def generate_reports(datestring, output_directory, soc_med_included=False):
         # Generate PE scores for all stakeholders.
         LOGGER.info("Calculating P&E Scores")
         pe_scores_df = get_pe_scores(datestring, 12)
+        # pe_scores_df = pd.DataFrame()
 
         pe_orgs.reverse()
         for org in pe_orgs:
@@ -160,7 +162,7 @@ def generate_reports(datestring, output_directory, soc_med_included=False):
             org_name = org[1]
             org_code = org[2]
 
-            # if org_code not in ["GSA"]:
+            # if org_code not in ["DHS","USAID"]:
             #     continue
 
             LOGGER.info("Running on %s", org_code)
@@ -184,6 +186,7 @@ def generate_reports(datestring, output_directory, soc_med_included=False):
             # Insert Charts and Metrics into PDF
             (
                 scorecard_dict,
+                summary_dict,
                 source_html,
                 cred_xlsx,
                 da_xlsx,
@@ -199,9 +202,20 @@ def generate_reports(datestring, output_directory, soc_med_included=False):
                 output_directory,
                 soc_med_included,
             )
+
+            # Create ASM Summary
+            LOGGER.info("Creating ASM Summary")
+            summary_filename = f"{output_directory}/Posture-and-Exposure-ASM-Summary_{org_code}_{scorecard_dict['end_date'].strftime('%Y-%m-%d')}.pdf"
+            final_output = f"{output_directory}/{org_code}/Posture-and-Exposure-ASM-Summary_{org_code}_{scorecard_dict['end_date'].strftime('%Y-%m-%d')}.pdf"
+            summary_xlsx_filename = f"{output_directory}/{org_code}/ASM_Summary.xlsx"
+            create_summary(org_uid, final_output, summary_dict, summary_filename, summary_xlsx_filename)
+            LOGGER.info("Done")
+
             # Create scorecard
+            LOGGER.info("Creating scorecard")
             scorecard_filename = f"{output_directory}/{org_code}/Posture-and-Exposure-Scorecard_{org_code}_{scorecard_dict['end_date'].strftime('%Y-%m-%d')}.pdf"
             create_scorecard(scorecard_dict, scorecard_filename)
+            LOGGER.info("Done")
 
             # Convert to HTML to PDF
             output_filename = f"{output_directory}/Posture_and_Exposure_Report-{org_code}-{datestring}.pdf"
