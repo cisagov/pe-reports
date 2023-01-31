@@ -2,6 +2,7 @@
 
 # Standard Python Libraries
 import datetime
+from datetime import timedelta
 import logging
 import os
 
@@ -13,6 +14,7 @@ import pandas as pd
 from pe_reports.data.db_query import (
     execute_scorecard,
     get_org_assets_count,
+    get_org_assets_count_past,
     query_previous_period,
 )
 
@@ -521,6 +523,28 @@ def init(
 
     # Get ASM values
     asset_dict = get_org_assets_count(org_uid)
+    asset_dict_past = get_org_assets_count_past(org_uid, end_date - timedelta(days=15))
+    
+
+    # Create Summary dictionary
+    summary_dict = {
+        "org_name": org_name,
+        "date": end_date.strftime("%B %d, %Y"),
+        "ip_address": asset_dict["num_ips"],
+        "last_ip_address": asset_dict_past["ip_count"][0],
+        "cidrs": asset_dict["num_cidrs"],
+        "last_cidrs": asset_dict_past["cidr_count"][0],
+        "ports_and_protocols": asset_dict["num_ports_protocols"],
+        "last_ports_and_protocols": asset_dict_past["port_protocol_count"][0],
+        "root_domains": asset_dict["num_root_domain"],
+        "last_root_domains": asset_dict_past["root_count"][0],
+        "sub_domains": asset_dict["num_sub_domain"],
+        "last_sub_domains": asset_dict_past["sub_count"][0],
+        "software": asset_dict["num_software"],
+        "last_software": asset_dict_past["software_count"][0],
+        "foreign_ips": asset_dict["num_foreign_ips"],
+        "last_foreign_ips": asset_dict_past["foreign_ips_count"][0],
+    }
 
     # Create Scorecard dictionary
     scorecard_dict = {
@@ -529,9 +553,13 @@ def init(
         "start_date": start_date,
         "end_date": end_date,
         "ip_count": asset_dict["num_ips"],
+        "cidr_count": asset_dict["num_cidrs"],
         "root_count": asset_dict["num_root_domain"],
         "sub_count": asset_dict["num_sub_domain"],
         "num_ports": asset_dict["num_ports"],
+        "port_protocol_count": asset_dict["num_ports_protocols"],
+        "software_count": asset_dict["num_software"],
+        "foreign_ips_count": asset_dict["num_foreign_ips"],
         "pe_number_score": score,
         "pe_letter_grade": grade,
     }
@@ -599,4 +627,4 @@ def init(
     """
     )
     html = chevron.render(source_html, chevron_dict)
-    return (scorecard_dict, html, cred_xlsx, da_xlsx, vuln_xlsx, mi_xlsx)
+    return (scorecard_dict, summary_dict, html, cred_xlsx, da_xlsx, vuln_xlsx, mi_xlsx)

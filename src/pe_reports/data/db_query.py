@@ -154,13 +154,22 @@ def get_orgs_contacts(conn):
         if conn is not None:
             close(conn)
 
+def get_org_assets_count_past(org_uid, date):
+    """Get asset counts for an organization."""
+    conn = connect()
+    sql = """select * from report_summary_stats rss 
+                where organizations_uid = %(org_id)s
+                and end_date = %(date)s;"""
+    df = pd.read_sql(sql, conn, params={"org_id": org_uid, "date": date})
+    conn.close()
+    return df
 
 def get_org_assets_count(uid):
     """Get asset counts for an organization."""
     conn = connect()
     cur = conn.cursor()
-    sql = """select sur.cyhy_db_name, sur.num_root_domain, sur.num_sub_domain, sur.num_ips, sur.num_ports  from
-            vw_orgs_attacksurface sur
+    sql = """select sur.cyhy_db_name, sur.num_root_domain, sur.num_sub_domain, sur.num_ips, sur.num_ports, sur.num_cidrs, sur.num_ports_protocols , sur.num_software, sur.num_foreign_ips
+            from vw_orgs_attacksurface sur
             where sur.organizations_uid = %s"""
     cur.execute(sql, [uid])
     source = cur.fetchone()
@@ -173,6 +182,10 @@ def get_org_assets_count(uid):
         "num_sub_domain": source[2],
         "num_ips": source[3],
         "num_ports": source[4],
+        "num_cidrs": source[5],
+        "num_ports_protocols": source[6],
+        "num_software": source[7],
+        "num_foreign_ips": source[8]
     }
     return assets_dict
 
@@ -370,6 +383,36 @@ def get_cidrs_and_ips(org_uid):
     LOGGER.info(cidrs_ips)
     return cidrs_ips
 
+def query_ips(org_uid):
+    """Get IP data."""
+    conn = connect()
+    sql1 = """SELECT i.ip_hash, i.ip, ct.network FROM ips i
+    JOIN cidrs ct on ct.cidr_uid = i.origin_cidr
+    JOIN organizations o on o.organizations_uid = ct.organizations_uid
+    where o.organizations_uid = %(org_uid)s
+    and i.origin_cidr is not null;"""
+    df1 = pd.read_sql(sql1, conn, params={"org_uid": org_uid})
+    ips1 = list(df1["ip"].values)
+
+    sql2 = """select i.ip_hash, i.ip
+    from ips i
+    join ips_subs is2 ON i.ip_hash = is2.ip_hash
+    join sub_domains sd on sd.sub_domain_uid = is2.sub_domain_uid
+    join root_domains rd on rd.root_domain_uid = sd.root_domain_uid
+    JOIN organizations o on o.organizations_uid = rd.organizations_uid
+    where o.organizations_uid = %(org_uid)s;"""
+    df2 = pd.read_sql(sql2, conn, params={"org_uid": org_uid})
+    ips2 = list(df2["ip"].values)
+
+    in_first = set(ips1)
+    in_second = set(ips2)
+
+    in_second_but_not_in_first = in_second - in_first
+
+    ips = ips1 + list(in_second_but_not_in_first)
+    conn.close()
+
+    return ips
 
 def query_cidrs():
     """Query all cidrs ordered by length."""
@@ -381,6 +424,53 @@ def query_cidrs():
     df = pd.read_sql(sql, conn)
     conn.close()
     return df
+
+def query_cidrs_by_org(org_uid):
+    """Query all CIDRs for a specific org."""
+    conn = connect()
+    sql = """select *
+            from cidrs c
+            where c.organizations_uid  = %(org_uid)s;
+            """
+    df = pd.read_sql(sql, conn, params={"org_uid": org_uid})
+    conn.close()
+    return df
+
+def query_ports_protocols(org_uid):
+    """Query distinct ports and protocols by org."""
+    conn = connect()
+    sql = """select distinct sa.port,sa.protocol 
+            from shodan_assets sa 
+            where sa.organizations_uid  = %(org_uid)s;
+            """
+    df = pd.read_sql(sql, conn, params={"org_uid": org_uid})
+    conn.close()
+    return df
+
+def query_software(org_uid):
+    """Query distinct software by org."""
+    conn = connect()
+    sql = """select distinct sa.product 
+            from shodan_assets sa 
+            where sa.organizations_uid  = %(org_uid)s
+            and sa.product notnull;
+            """
+    df = pd.read_sql(sql, conn, params={"org_uid": org_uid})
+    conn.close()
+    return df
+
+def query_foreign_IPs(org_uid):
+    """Query distinct software by org."""
+    conn = connect()
+    sql = """select * from
+            shodan_assets sa 
+            where (sa.country_code != 'US' or sa.country_code notnull)
+            and sa.organizations_uid  = %(org_uid)s;
+            """
+    df = pd.read_sql(sql, conn, params={"org_uid": org_uid})
+    conn.close()
+    return df
+
 
 
 def insert_roots(org, domain_list):
@@ -562,7 +652,6 @@ def query_shodan(org_uid, start_date, end_date, table):
             chunksize=chunk_size,
         ):
             count += 1
-            print(count)
             df_list.append(chunk_df)
 
         if len(df_list) == 0:
@@ -718,9 +807,9 @@ def execute_scorecard(summary_dict):
             suspected_domain_count, insecure_port_count, verified_vuln_count,
             suspected_vuln_count, suspected_vuln_addrs_count, threat_actor_count, dark_web_alerts_count,
             dark_web_mentions_count, dark_web_executive_alerts_count, dark_web_asset_alerts_count,
-            pe_number_score, pe_letter_grade
+            pe_number_score, pe_letter_grade, cidr_count, port_protocol_count, software_count, foreign_ips_count
         )
-        VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+        VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
         ON CONFLICT(organizations_uid, start_date)
         DO
         UPDATE SET
@@ -743,7 +832,11 @@ def execute_scorecard(summary_dict):
             dark_web_executive_alerts_count = EXCLUDED.dark_web_executive_alerts_count,
             dark_web_asset_alerts_count = EXCLUDED.dark_web_asset_alerts_count,
             pe_number_score = EXCLUDED.pe_number_score,
-            pe_letter_grade = EXCLUDED.pe_letter_grade;
+            pe_letter_grade = EXCLUDED.pe_letter_grade,
+            cidr_count = EXCLUDED.cidr_count,
+            port_protocol_count = EXCLUDED.port_protocol_count,
+            software_count = EXCLUDED.software_count,
+            foreign_ips_count = EXCLUDED.foreign_ips_count;
         """
         cur.execute(
             sql,
@@ -769,8 +862,12 @@ def execute_scorecard(summary_dict):
                 AsIs(summary_dict["dark_web_mentions_count"]),
                 AsIs(summary_dict["dark_web_executive_alerts_count"]),
                 AsIs(summary_dict["dark_web_asset_alerts_count"]),
-                AsIs(summary_dict["pe_number_score"]),
+                summary_dict["pe_number_score"],
                 summary_dict["pe_letter_grade"],
+                AsIs(summary_dict["cidr_count"]),
+                AsIs(summary_dict["port_protocol_count"]),
+                AsIs(summary_dict["software_count"]),
+                AsIs(summary_dict["foreign_ips_count"]),
             ),
         )
         conn.commit()

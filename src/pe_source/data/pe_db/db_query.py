@@ -92,8 +92,6 @@ def get_ips(org_uid):
     in_second_but_not_in_first = in_second - in_first
 
     ips = ips1 + list(in_second_but_not_in_first)
-    print(ips)
-    print(len(ips))
     conn.close()
 
     return ips
