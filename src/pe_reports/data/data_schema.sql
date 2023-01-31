@@ -2337,7 +2337,11 @@ CREATE TABLE public.report_summary_stats (
     dark_web_asset_alerts_count integer,
     pe_number_score text,
     pe_letter_grade text,
-    pe_percent_score numeric
+    pe_percent_score numeric,
+    cidr_count integer,
+    port_protocol_count integer,
+    software_count integer,
+    foreign_ips_count integer
 );
 
 
@@ -2378,7 +2382,9 @@ CREATE TABLE public.shodan_assets (
     hostnames text[],
     isn text,
     asn integer,
-    data_source_uid uuid NOT NULL
+    data_source_uid uuid NOT NULL,
+    country_code text,
+    location text
 );
 
 
@@ -2773,6 +2779,20 @@ CREATE VIEW public.vw_darkweb_topcves AS
 ALTER TABLE public.vw_darkweb_topcves OWNER TO pe;
 
 --
+-- Name: vw_orgs_total_cidrs; Type: VIEW; Schema: public; Owner: pe
+--
+
+CREATE VIEW public.vw_orgs_total_cidrs AS
+ SELECT c.organizations_uid,
+    count(c.network) AS count
+   FROM public.cidrs c
+  GROUP BY c.organizations_uid
+  ORDER BY (count(c.network)) DESC;
+
+
+ALTER TABLE public.vw_orgs_total_cidrs OWNER TO pe;
+
+--
 -- Name: vw_orgs_total_domains; Type: VIEW; Schema: public; Owner: pe
 --
 
@@ -2815,6 +2835,28 @@ ALTER TABLE public.vw_orgs_total_domains OWNER TO pe;
 
 COMMENT ON VIEW public.vw_orgs_total_domains IS 'Gets the total number of root and sub domains for all orgs.';
 
+
+--
+-- Name: vw_orgs_total_foreign_ips; Type: VIEW; Schema: public; Owner: pe
+--
+
+CREATE VIEW public.vw_orgs_total_foreign_ips AS
+ SELECT sa.organizations_uid,
+    count(
+        CASE
+            WHEN ((sa.country_code <> 'US'::text) OR (sa.country_code IS NOT NULL)) THEN 1
+            ELSE NULL::integer
+        END) AS num_foreign_ips
+   FROM public.shodan_assets sa
+  GROUP BY sa.organizations_uid
+  ORDER BY (count(
+        CASE
+            WHEN ((sa.country_code <> 'US'::text) OR (sa.country_code IS NOT NULL)) THEN 1
+            ELSE NULL::integer
+        END)) DESC;
+
+
+ALTER TABLE public.vw_orgs_total_foreign_ips OWNER TO pe;
 
 --
 -- Name: vw_orgs_total_ips; Type: VIEW; Schema: public; Owner: pe
@@ -2892,6 +2934,39 @@ COMMENT ON VIEW public.vw_orgs_total_ports IS 'Gets the total number of unique p
 
 
 --
+-- Name: vw_orgs_total_ports_protocols; Type: VIEW; Schema: public; Owner: pe
+--
+
+CREATE VIEW public.vw_orgs_total_ports_protocols AS
+ SELECT t.organizations_uid,
+    count(*) AS port_protocol
+   FROM ( SELECT DISTINCT sa.port,
+            sa.protocol,
+            sa.organizations_uid
+           FROM public.shodan_assets sa) t
+  GROUP BY t.organizations_uid
+  ORDER BY (count(*)) DESC;
+
+
+ALTER TABLE public.vw_orgs_total_ports_protocols OWNER TO pe;
+
+--
+-- Name: vw_orgs_total_software; Type: VIEW; Schema: public; Owner: pe
+--
+
+CREATE VIEW public.vw_orgs_total_software AS
+ SELECT t.organizations_uid,
+    count(*) AS num_software
+   FROM ( SELECT DISTINCT sa.product,
+            sa.organizations_uid
+           FROM public.shodan_assets sa) t
+  GROUP BY t.organizations_uid
+  ORDER BY (count(*)) DESC;
+
+
+ALTER TABLE public.vw_orgs_total_software OWNER TO pe;
+
+--
 -- Name: vw_orgs_attacksurface; Type: VIEW; Schema: public; Owner: pe
 --
 
@@ -2901,10 +2976,18 @@ CREATE VIEW public.vw_orgs_attacksurface AS
     ports_view.num_ports,
     domains_view.num_root_domain,
     domains_view.num_sub_domain,
-    ips_view.num_ips
-   FROM ((public.vw_orgs_total_domains domains_view
+    ips_view.num_ips,
+    cidrs_view.count AS num_cidrs,
+    port_prot_view.port_protocol AS num_ports_protocols,
+    soft_view.num_software,
+    for_ips_view.num_foreign_ips
+   FROM ((((((public.vw_orgs_total_domains domains_view
      JOIN public.vw_orgs_total_ips ips_view ON ((domains_view.organizations_uid = ips_view.organizations_uid)))
      JOIN public.vw_orgs_total_ports ports_view ON ((ips_view.organizations_uid = ports_view.organizations_uid)))
+     JOIN public.vw_orgs_total_cidrs cidrs_view ON ((cidrs_view.organizations_uid = ips_view.organizations_uid)))
+     JOIN public.vw_orgs_total_ports_protocols port_prot_view ON ((port_prot_view.organizations_uid = ports_view.organizations_uid)))
+     JOIN public.vw_orgs_total_software soft_view ON ((soft_view.organizations_uid = port_prot_view.organizations_uid)))
+     JOIN public.vw_orgs_total_foreign_ips for_ips_view ON ((for_ips_view.organizations_uid = soft_view.organizations_uid)))
   ORDER BY ips_view.num_ips, domains_view.num_sub_domain, domains_view.num_root_domain, ports_view.num_ports;
 
 
