@@ -523,8 +523,8 @@ def init(
 
     # Get ASM values
     asset_dict = get_org_assets_count(org_uid)
-    asset_dict_past = get_org_assets_count_past(org_uid, end_date - timedelta(days=15))
-    LOGGER.info("Past report date: %s", end_date - timedelta(days=15))
+    asset_dict_past = get_org_assets_count_past(org_uid, start_date - timedelta(days=1))
+    LOGGER.info("Past report date: %s", start_date - timedelta(days=1))
 
     if asset_dict_past.empty:
         LOGGER.error("No ASM summary data for the last report period.")

@@ -234,9 +234,10 @@ def creds(domain, from_date, to_date):
     resp = resp["leaks"]
     while total_hits > len(resp):
         skip += 1
-    params["skip"] = skip
-    next_resp = credential_auth(params)
-    resp = resp + next_resp["leaks"]
+        params["skip"] = skip
+        next_resp = credential_auth(params)
+        resp = resp + next_resp["leaks"]
+        print(len(resp))
     resp = pd.DataFrame(resp)
     df = resp.drop_duplicates(
         subset=["email", "breach_name"], keep="first"
