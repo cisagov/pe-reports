@@ -16,20 +16,15 @@ from docopt import docopt
 import boto3
 import os
 import logging
-from pe_reports.data.db_query import (
-    connect_to_staging,
-    get_orgs,
-    get_orgs_pass
-)
+from pe_reports.data.db_query import connect_to_staging, get_orgs, get_orgs_pass
 
 LOGGER = logging.getLogger(__name__)
 ACCESSOR_AWS_PROFILE = ""
 BUCKET_NAME = ""
 PASSWORD = ""
 
-def encrypt(
-    file, password, encrypted_file
-):
+
+def encrypt(file, password, encrypted_file):
     """Encrypt files."""
     doc = fitz.open(file)
     # Add encryption
@@ -58,13 +53,16 @@ def download_encrypt_reports(report_date, output_dir):
 
     # Fetch the correct AWS credentials and connect to S3
     session = boto3.Session(profile_name=ACCESSOR_AWS_PROFILE)
-    s3 = session.client('s3')
+    s3 = session.client("s3")
 
     download_count = 0
     total = len(pe_orgs)
     print(total)
     for org in pe_orgs:
         org_code = org[2]
+        if org_code == "FAA":
+            continue
+
         print(f"Downloading {org_code}")
         # Download each report
         try:
@@ -77,7 +75,7 @@ def download_encrypt_reports(report_date, output_dir):
             LOGGER.error(e)
             LOGGER.error("Report is not in S3 for %s", org_code)
             continue
-    
+
     # Encrypt the reports
     conn = connect_to_staging()
     pe_org_pass = get_orgs_pass(conn, PASSWORD)
@@ -90,7 +88,9 @@ def download_encrypt_reports(report_date, output_dir):
             LOGGER.error("NO PASSWORD")
             continue
         # Check if file exists before encrypting
-        current_file = f"{output_dir}/Posture_and_Exposure_Report-{org_pass[0]}-{report_date}.pdf"
+        current_file = (
+            f"{output_dir}/Posture_and_Exposure_Report-{org_pass[0]}-{report_date}.pdf"
+        )
         if not os.path.isfile(current_file):
             LOGGER.error("%s report does not exist.", org_pass[0])
             continue
@@ -117,6 +117,7 @@ def download_encrypt_reports(report_date, output_dir):
     LOGGER.info("%d/%d were downloaded.", download_count, total)
     LOGGER.info("%d/%d were encrypted.", encrypted_count, total)
 
+
 def main():
     """Download reports from S3 and encrypt."""
     # Parse command line arguments
@@ -130,7 +131,7 @@ def main():
 
     # Download the reports from S3
     download_encrypt_reports(report_date, output_dir)
-        
-    
+
+
 if __name__ == "__main__":
     main()

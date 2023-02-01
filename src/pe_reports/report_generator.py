@@ -162,7 +162,7 @@ def generate_reports(datestring, output_directory, soc_med_included=False):
             org_name = org[1]
             org_code = org[2]
 
-            # if org_code not in ["DHS", "NASA"]:
+            # if org_code not in ["DHS", "NASA", "USAID"]:
             #     continue
 
             LOGGER.info("Running on %s", org_code)
