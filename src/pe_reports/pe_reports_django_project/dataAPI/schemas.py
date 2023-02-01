@@ -49,6 +49,17 @@ class VwBreachcomp(BaseModel):
     is_retired: str
     is_spam_list: str
 
+
+class VwBreachDetails(BaseModel):
+    organizations_uid: str
+    breach_name: str
+    mod_date: str
+    description: str
+    breach_date: str
+    password_included: str
+    number_of_creds: str
+
+
 class VwBreachcompCredsbydate(BaseModel):
     organizations_uid: str
     mod_date: str
@@ -107,6 +118,7 @@ class Cidrs(BaseModel):
 
     class Config:
         orm_mode = True
+
 
 
 class VwCidrs(BaseModel):

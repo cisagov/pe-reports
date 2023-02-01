@@ -38,6 +38,7 @@ from home.models import VwBreachcomp
 from home.models import VwBreachcompCredsbydate
 from home.models import VwOrgsAttacksurface
 from home.models import CyhyDbAssets
+from home.models import VwBreachcompBreachdetails
 
 from .models import apiUser
 from . import schemas
@@ -254,11 +255,6 @@ def read_orgs(data: schemas.CyhyDbAssetsInput, tokens: dict = Depends(get_api_ke
         LOGGER.info('API key expired please try again')
 
 
-
-
-
-
-
 @api_router.post("/cidrs", dependencies=[Depends(get_api_key)],
                  response_model=List[schemas.Cidrs],
                  tags=["List of all CIDRS"])
@@ -270,6 +266,26 @@ def read_orgs(tokens: dict = Depends(get_api_key)):
     try:
         userapiTokenverify(theapiKey=tokens)
         return orgs
+    except:
+        LOGGER.info('API key expired please try again')
+
+
+
+
+
+
+
+@api_router.post("/breachdetails", dependencies=[Depends(get_api_key)],
+                 response_model=List[schemas.VwBreachDetails],
+                 tags=["List of all Breach Details"])
+def read_orgs(tokens: dict = Depends(get_api_key)):
+    """API endpoint to get all CIDRS."""
+    breachDetails = list(VwBreachcompBreachdetails.objects.all())
+
+    LOGGER.info(f"The api key submitted {tokens}")
+    try:
+        userapiTokenverify(theapiKey=tokens)
+        return breachDetails
     except:
         LOGGER.info('API key expired please try again')
 

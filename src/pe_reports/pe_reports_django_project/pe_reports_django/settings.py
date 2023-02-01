@@ -54,9 +54,11 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "dataAPI.apps.DataapiConfig",
+    "bulkupload.apps.BulkuploadConfig",
     "home.apps.HomeConfig",
     "manage_login.apps.ManageLoginConfig",
     "report_gen.apps.ReportGenConfig",
+    "stakeholder_lite.apps.StakeholderLiteConfig",
     "crispy_forms",
     "crispy_bootstrap5",
     "whitenoise.runserver_nostatic",
@@ -104,6 +106,21 @@ LOGGING = {
             'propagate': True,
         },
         'dataAPI.views': {
+            'handlers': ['file'],
+            'level': 'INFO',
+            'propagate': True,
+        },
+        'stakeholder_lite.views': {
+            'handlers': ['file'],
+            'level': 'INFO',
+            'propagate': True,
+        },
+        'report_gen.views': {
+            'handlers': ['file'],
+            'level': 'INFO',
+            'propagate': True,
+        },
+        'bulkupload.views': {
             'handlers': ['file'],
             'level': 'INFO',
             'propagate': True,
@@ -178,7 +195,7 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-LOGIN_URL = "login/"
+LOGIN_URL = "/login/"
 LOGOUT_REDIRECT_URL = "/"
 DJANGO_SETTINGS_MODULE = 'pe_reports_django.settings'
 
