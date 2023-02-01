@@ -181,26 +181,24 @@ class Cybersixgill:
             LOGGER.info("Fetching alert content data for %s.", org_id)
             # Fetch organization assets
             org_assets_dict = all_assets_list(sixgill_org_id)
-            print(org_assets_dict)
-            print(org_assets_dict)
             for alert_index, alert_row in alerts_df.iterrows():
                 print(org_id)
                 try:
                     alert_id = alert_row["sixgill_id"]
 
-                    content_snip, asset_mentioned, asset_type = get_alerts_content(
-                        sixgill_org_id, alert_id, org_assets_dict
-                    )
+                    # content_snip, asset_mentioned, asset_type = get_alerts_content(
+                    #     sixgill_org_id, alert_id, org_assets_dict
+                    # )
 
                     alerts_df.at[alert_index, "content_snip"] = content_snip
                     alerts_df.at[alert_index, "asset_mentioned"] = asset_mentioned
                     alerts_df.at[alert_index, "asset_type"] = asset_type
                 except Exception as e:
-                    LOGGER.error(
-                        "Failed fetching a specific alert content for %s", org_id
-                    )
-                    LOGGER.error(e)
-                    print(traceback.format_exc())
+                    # LOGGER.error(
+                    #     "Failed fetching a specific alert content for %s", org_id
+                    # )
+                    # LOGGER.error(e)
+                    # print(traceback.format_exc())
                     alerts_df.at[alert_index, "content_snip"] = ""
                     alerts_df.at[alert_index, "asset_mentioned"] = ""
                     alerts_df.at[alert_index, "asset_type"] = ""
