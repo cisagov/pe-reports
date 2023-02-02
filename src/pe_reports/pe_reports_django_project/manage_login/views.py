@@ -10,7 +10,6 @@ from django.http import  HttpResponseRedirect
 
 
 def register_request(request):
-    """Register new users into pe_reports."""
     if request.method == "POST":
         form = NewUserForm(request.POST)
         if form.is_valid():
@@ -27,7 +26,6 @@ def register_request(request):
 
 
 def login_request(request):
-    """Login the user."""
     if request.method == "POST":
         form = AuthenticationForm(request, data=request.POST)
         if form.is_valid():
@@ -48,6 +46,5 @@ def login_request(request):
 
 
 def logout_view(request):
-    """Logout user."""
     logout(request)
     return redirect("/")

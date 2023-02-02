@@ -163,6 +163,7 @@ def alerts(org_id):
     LOGGER.info(count)
     count_total = count["total"]
     LOGGER.info("Total Alerts: %s", count_total)
+    LOGGER.info("Total Alerts: %s", count_total)
 
     # Recommended "fetch_size" is 25. The maximum is 400.
     fetch_size = 25

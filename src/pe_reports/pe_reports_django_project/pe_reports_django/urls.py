@@ -18,9 +18,6 @@ from django.urls import path, include
 from django.http import HttpResponse
 
 
-
-
-
 urlpatterns = [
     path('', include('home.urls')),
     path('login/', include('manage_login.urls')),
@@ -28,6 +25,9 @@ urlpatterns = [
     # path("accounts/", include("django.contrib.auth.urls")),
     path('report_gen/', include('report_gen.urls')),
     path("admin/", admin.site.urls),
+    path("stakeholder_lite/", include('stakeholder_lite.urls')),
+    path("bulkupload/", include('bulkupload.urls')),
+
 ]
 
 

@@ -32,33 +32,13 @@ from xhtml2pdf import pisa
 # cisagov Libraries
 import pe_reports
 
+# cisagov Libraries
+import pe_reports
+
 from ._version import __version__
 from .data.db_query import connect, get_orgs
 from .helpers.generate_score import get_pe_scores
 from .pages import init
-from .scorecard_generator import create_scorecard
-from .asm_generator import create_summary
-
-LOGGER = logging.getLogger(__name__)
-ACCESSOR_AWS_PROFILE = os.getenv("ACCESSOR_PROFILE")
-
-
-def upload_file_to_s3(file_name, datestring, bucket):
-    """Upload a file to an S3 bucket."""
-    session = boto3.Session(profile_name=ACCESSOR_AWS_PROFILE)
-    s3_client = session.client("s3")
-
-    # If S3 object_name was not specified, use file_name
-    object_name = f"{datestring}/{os.path.basename(file_name)}"
-
-    try:
-        response = s3_client.upload_file(file_name, bucket, object_name)
-        if response is None:
-            LOGGER.info("Success uploading to S3.")
-        else:
-            LOGGER.info(response)
-    except ClientError as e:
-        LOGGER.error(e)
 
 
 def embed(
@@ -148,50 +128,46 @@ def generate_reports(datestring, output_directory, soc_med_included=False):
 
     # Iterate over organizations
     if pe_orgs:
-        LOGGER.info("PE orgs count: %d", len(pe_orgs))
-
-        # Generate PE scores for all stakeholders.
-        LOGGER.info("Calculating P&E Scores")
-        pe_scores_df = get_pe_scores(datestring, 12)
-        # pe_scores_df = pd.DataFrame()
-
-        pe_orgs.reverse()
+        logging.info("PE orgs count: %d", len(pe_orgs))
         for org in pe_orgs:
             # Assign organization values
             org_uid = org[0]
             org_name = org[1]
             org_code = org[2]
 
-            # if org_code not in ["DHS", "NASA", "USAID"]:
-            #     continue
-
-            LOGGER.info("Running on %s", org_code)
+            logging.info("Running on %s", org_code)
 
             # Create folders in output directory
             for dir_name in ("ppt", org_code):
                 if not os.path.exists(f"{output_directory}/{dir_name}"):
                     os.mkdir(f"{output_directory}/{dir_name}")
 
-            if not pe_scores_df.empty:
-                score = pe_scores_df.loc[
-                    pe_scores_df["cyhy_db_name"] == org_code, "PE_score"
-                ].item()
-                grade = pe_scores_df.loc[
-                    pe_scores_df["cyhy_db_name"] == org_code, "letter_grade"
-                ].item()
-            else:
-                score = "NA"
-                grade = "NA"
+            # Load source HTML
+            try:
+                basedir = os.path.abspath(os.path.dirname(__file__))
+                template = os.path.join(basedir, "template.html")
+                file = open(template)
+                source_html = file.read().replace("\n", " ")
+            except FileNotFoundError:
+                logging.error(
+                    "Template cannot be found. It must be named: '%s'", template
+                )
+                return 1
 
             # Insert Charts and Metrics into PDF
             (
                 scorecard_dict,
                 summary_dict,
                 source_html,
-                cred_xlsx,
-                da_xlsx,
-                vuln_xlsx,
-                mi_xlsx,
+                hibp_creds,
+                cyber_creds,
+                masq_df,
+                insecure_df,
+                vulns_df,
+                assets_df,
+                dark_web_mentions,
+                alerts,
+                top_cves,
             ) = init(
                 datestring,
                 org_name,
@@ -203,29 +179,45 @@ def generate_reports(datestring, output_directory, soc_med_included=False):
                 soc_med_included,
             )
 
-            # Create ASM Summary
-            LOGGER.info("Creating ASM Summary")
-            summary_filename = f"{output_directory}/Posture-and-Exposure-ASM-Summary_{org_code}_{scorecard_dict['end_date'].strftime('%Y-%m-%d')}.pdf"
-            final_summary_output = f"{output_directory}/{org_code}/Posture-and-Exposure-ASM-Summary_{org_code}_{scorecard_dict['end_date'].strftime('%Y-%m-%d')}.pdf"
-            summary_xlsx_filename = f"{output_directory}/{org_code}/ASM_Summary.xlsx"
-            create_summary(
-                org_uid,
-                final_summary_output,
-                summary_dict,
-                summary_filename,
-                summary_xlsx_filename,
-            )
-            LOGGER.info("Done")
-
-            # Create scorecard
-            LOGGER.info("Creating scorecard")
-            scorecard_filename = f"{output_directory}/{org_code}/Posture-and-Exposure-Scorecard_{org_code}_{scorecard_dict['end_date'].strftime('%Y-%m-%d')}.pdf"
-            create_scorecard(scorecard_dict, scorecard_filename)
-            LOGGER.info("Done")
+            # Close PDF
+            file.close()
 
             # Convert to HTML to PDF
             output_filename = f"{output_directory}/Posture_and_Exposure_Report-{org_code}-{datestring}.pdf"
             convert_html_to_pdf(source_html, output_filename)
+
+            # Create Credential Exposure Excel file
+            cred_xlsx = f"{output_directory}/{org_code}/compromised_credentials.xlsx"
+            credWriter = pd.ExcelWriter(cred_xlsx, engine="xlsxwriter")
+            hibp_creds.to_excel(credWriter, sheet_name="HIBP_Credentials", index=False)
+            cyber_creds.to_excel(
+                credWriter, sheet_name="Cyber6_Credentials", index=False
+            )
+            credWriter.save()
+
+            # Create Domain Masquerading Excel file
+            da_xlsx = f"{output_directory}/{org_code}/domain_alerts.xlsx"
+            domWriter = pd.ExcelWriter(da_xlsx, engine="xlsxwriter")
+            masq_df.to_excel(domWriter, sheet_name="Suspected Domains", index=False)
+            domWriter.save()
+
+            # Create Suspected vulnerability Excel file
+            vuln_xlsx = f"{output_directory}/{org_code}/vuln_alerts.xlsx"
+            vulnWriter = pd.ExcelWriter(vuln_xlsx, engine="xlsxwriter")
+            assets_df.to_excel(vulnWriter, sheet_name="Assets", index=False)
+            insecure_df.to_excel(vulnWriter, sheet_name="Insecure", index=False)
+            vulns_df.to_excel(vulnWriter, sheet_name="Verified Vulns", index=False)
+            vulnWriter.save()
+
+            # Create dark web Excel file
+            mi_xlsx = f"{output_directory}/{org_code}/mention_incidents.xlsx"
+            miWriter = pd.ExcelWriter(mi_xlsx, engine="xlsxwriter")
+            dark_web_mentions.to_excel(
+                miWriter, sheet_name="Dark Web Mentions", index=False
+            )
+            alerts.to_excel(miWriter, sheet_name="Dark Web Alerts", index=False)
+            top_cves.to_excel(miWriter, sheet_name="Top CVEs", index=False)
+            miWriter.save()
 
             # Grab the PDF
             pdf = f"{output_directory}/Posture_and_Exposure_Report-{org_code}-{datestring}.pdf"
@@ -267,7 +259,7 @@ def generate_reports(datestring, output_directory, soc_med_included=False):
             "Connection to pe database failed and/or there are 0 organizations stored."
         )
 
-    LOGGER.info("%s reports generated", generated_reports)
+    logging.info("%s reports generated", generated_reports)
 
 
 def main():
@@ -318,11 +310,13 @@ def main():
     except:
         soc_med = False
     # Generate reports
-    generate_reports(
+    generated_reports = generate_reports(
         validated_args["REPORT_DATE"],
         validated_args["OUTPUT_DIRECTORY"],
         soc_med,
     )
+
+    LOGGER.info("%s reports generated", generated_reports)
 
     # Stop logging and clean up
     logging.shutdown()

@@ -1,11 +1,28 @@
-from pydantic import BaseModel, Field, EmailStr
-from typing import Optional
-from uuid import UUID
+"""Pydantic models used by FastAPI"""
+from pydantic import BaseModel, Field, EmailStr, validator
+from pydantic.types import UUID1
+from typing import Optional, Any
+from uuid import UUID, uuid4
+from datetime import date, datetime
 
+'''
+Developer Note: If there comes an instance as in class Cidrs where there are
+foreign keys. The data type will not be what is stated in the database. What is
+happening is the data base is making a query back to the foreign key table and
+returning it as the column in its entirety i.e. select * from <table>, so it 
+will error and not be able to report on its data type. In these scenario's use
+the data type "Any" to see what the return is.
+'''
 
 class OrganizationBase(BaseModel):
     name: str
     cyhy_db_name: str = None
+
+class Organization(OrganizationBase):
+    pass
+
+    class Config:
+        orm_mode = True
 
 class VwBreachcomp(BaseModel):
     credential_exposures_uid: str
@@ -32,11 +49,23 @@ class VwBreachcomp(BaseModel):
     is_retired: str
     is_spam_list: str
 
+
+class VwBreachDetails(BaseModel):
+    organizations_uid: str
+    breach_name: str
+    mod_date: str
+    description: str
+    breach_date: str
+    password_included: str
+    number_of_creds: str
+
+
 class VwBreachcompCredsbydate(BaseModel):
     organizations_uid: str
     mod_date: str
     no_password: str
     password_included: str
+
 
 class VwOrgsAttacksurface(BaseModel):
     organizations_uid: UUID
@@ -56,6 +85,62 @@ class VwOrgsAttacksurfaceInput(BaseModel):
     class Config:
         orm_mode = True
 
+
+class CyhyDbAssets(BaseModel):
+    # field_id: str
+    org_id: str
+    org_name: str
+    contact: Optional[str] = None
+    network: str
+    type: str
+    first_seen: Optional[str] = None
+    last_seen: Optional[str] = None
+    currently_in_cyhy: Optional[str] = None
+
+    class Config:
+        orm_mode = True
+
+
+class CyhyDbAssetsInput(BaseModel):
+    org_id: str
+
+    class Config:
+        orm_mode = True
+
+
+class Cidrs(BaseModel):
+    cidr_uid: UUID
+    network: str
+    # organizations_uid: Any
+    data_source_uid: Any
+    insert_alert: Optional[str] = None
+
+
+    class Config:
+        orm_mode = True
+
+
+
+class VwCidrs(BaseModel):
+    cidr_uid: str
+    network: str
+    organizations_uid: str
+    data_source_uid: str
+    insert_alert: Optional[str] = None
+
+
+class DataSource(BaseModel):
+
+    data_source_uid: str
+    name: str
+    description: str
+    last_run: str
+
+    class Config:
+        orm_mode = True
+
+
+
 class UserAPIBase(BaseModel):
     # user_id: int
     refresh_token: str
@@ -67,11 +152,7 @@ class UserAPI(UserAPIBase):
         orm_mode = True
 
 
-class Organization(OrganizationBase):
-    pass
 
-    class Config:
-        orm_mode = True
 
 class TokenSchema(BaseModel):
     access_token: str

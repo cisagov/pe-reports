@@ -1129,6 +1129,18 @@ class VwDarkwebTopcves(models.Model):
         managed = False  # Created from a view. Don't remove.
         db_table = 'vw_darkweb_topcves'
 
+class VwCidrs(models.Model):
+    cidr_uid = models.UUIDField(primary_key=True)
+    network = models.TextField(blank=True, null=True)  # This field type is a guess.
+    organizations_uid = models.UUIDField(blank=True, null=True)
+    data_source_uid = models.UUIDField(blank=True, null=True)
+    insert_alert = models.TextField(blank=True, null=True)
+
+    class Meta:
+        managed = False  # Created from a view. Don't remove.
+        db_table = 'vw_cidrs'
+
+
 
 class VwBreachcomp(models.Model):
     credential_exposures_uid = models.UUIDField(primary_key=True)
@@ -1191,6 +1203,7 @@ class VwOrgsTotalIps(models.Model):
     class Meta:
         managed = False  # Created from a view. Don't remove.
         db_table = 'vw_orgs_total_ips'
+
 
 class VwOrgsAttacksurface(models.Model):
     organizations_uid = models.UUIDField(primary_key=True)

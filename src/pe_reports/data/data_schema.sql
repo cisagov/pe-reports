@@ -4242,8 +4242,51 @@ ALTER TABLE ONLY public.web_assets
 -- Name: SCHEMA public; Type: ACL; Schema: -; Owner: crossfeed
 --
 
-REVOKE ALL ON SCHEMA public FROM rdsadmin;
-REVOKE ALL ON SCHEMA public FROM PUBLIC;
+CREATE VIEW public.new_vw_breach_complete AS
+    SELECT creds.credential_exposures_uid,
+    creds.email,
+    creds.breach_name,
+    creds.organizations_uid,
+    creds.root_domain,
+    creds.sub_domain,
+    creds.hash_type,
+    creds.name,
+    creds.login_id,
+    creds.password,
+    creds.phone,
+    creds.data_source_uid,
+    b.description,
+    b.breach_date,
+    b.added_date,
+    b.modified_date,
+    b.data_classes,
+    b.password_included,
+    b.is_verified,
+    b.is_fabricated,
+    b.is_sensitive,
+    b.is_retired,
+    b.is_spam_list
+    FROM (public.credential_exposures creds
+        JOIN public.credential_breaches b ON ((creds.credential_breaches_uid = b.credential_breaches_uid)));
+
+--
+-- Name: vw_cidrs; Type: VIEW; Schema: public; Owner: pe
+--
+
+create view vw_cidrs
+            (cidr_uid, network, organizations_uid, data_source_uid,
+             insert_alert) as
+SELECT cidrs.cidr_uid,
+       cidrs.network,
+       cidrs.organizations_uid,
+       cidrs.data_source_uid,
+       cidrs.insert_alert
+FROM cidrs;
+
+--
+-- Name: SCHEMA public; Type: ACL; Schema: -; Owner: postgres
+--
+
 GRANT ALL ON SCHEMA public TO crossfeed;
 GRANT ALL ON SCHEMA public TO PUBLIC;
 

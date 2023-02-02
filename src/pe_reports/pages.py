@@ -116,17 +116,7 @@ def buildAppendixList(df):
     return html
 
 
-def credential(
-    scorecard_dict,
-    chevron_dict,
-    trending_start_date,
-    start_date,
-    end_date,
-    org_uid,
-    source_html,
-    org_code,
-    output_directory,
-):
+def credential(chevron_dict, start_date, end_date, org_uid):
     """Build exposed credential page."""
     Credential = Credentials(trending_start_date, start_date, end_date, org_uid)
     # Build exposed credential stacked bar chart
@@ -137,7 +127,7 @@ def credential(
     x_label = "Week Reported"
     y_label = "Creds Exposed"
     cred_date_chart = Charts(
-        Credential.by_days(),
+        Credential.by_week(),
         width,
         height,
         name,
@@ -145,13 +135,8 @@ def credential(
         x_label,
         y_label,
     )
-    cred_date_chart.line_chart()
-    breach_table = buildTable(
-        Credential.breach_details(),
-        ["table"],
-        [30, 20, 20, 20, 10],
-        link_to_appendix=True,
-    )
+    cred_date_chart.stacked_bar()
+    breach_table = buildTable(Credential.breach_details(), ["table"])
 
     creds_dict = {
         "breach": Credential.breaches(),
@@ -204,13 +189,7 @@ def credential(
 
     chevron_dict.update(creds_dict)
 
-    # Create Credential Exposure Excel file
-    cred_xlsx = f"{output_directory}/{org_code}/compromised_credentials.xlsx"
-    credWriter = pd.ExcelWriter(cred_xlsx, engine="xlsxwriter")
-    Credential.creds_view.to_excel(credWriter, sheet_name="Credentials", index=False)
-    credWriter.save()
-
-    return scorecard_dict, chevron_dict, cred_xlsx, source_html
+    return chevron_dict, Credential.query_hibp_view, Credential.query_cyberSix_creds
 
 
 def masquerading(
@@ -371,27 +350,9 @@ def mal_vuln(
     )
 
 
-def dark_web(
-    scorecard_dict,
-    chevron_dict,
-    trending_start_date,
-    start_date,
-    end_date,
-    org_uid,
-    all_cves_df,
-    soc_med_included,
-    org_code,
-    output_directory,
-):
+def dark_web(chevron_dict, start_date, end_date, org_uid):
     """Dark Web Mentions."""
-    Cyber6 = Cyber_Six(
-        trending_start_date,
-        start_date,
-        end_date,
-        org_uid,
-        all_cves_df,
-        soc_med_included,
-    )
+    Cyber6 = Cyber_Six(start_date, end_date, org_uid)
     # Build dark web mentions over time line chart
     width = 16.51
     height = 12
@@ -472,46 +433,17 @@ def dark_web(
     )
 
 
-def init(
-    datestring,
-    org_name,
-    org_code,
-    org_uid,
-    score,
-    grade,
-    output_directory,
-    soc_med_included=False,
-):
+def init(source_html, datestring, org_name, org_uid):
     """Call each page of the report."""
     # Format start_date and end_date for the bi-monthly reporting period.
     # If the given end_date is the 15th, then the start_date is the 1st.
     # Otherwise, the start_date will be the 16th of the respective month.
-
-    # Load source HTML
-    try:
-        basedir = os.path.abspath(os.path.dirname(__file__))
-        if soc_med_included:
-            template = os.path.join(basedir, "template.html")
-        else:
-            template = os.path.join(basedir, "template_sm.html")
-        file = open(template)
-        source_html = file.read().replace("\n", " ")
-        # Close PDF
-        file.close()
-    except FileNotFoundError:
-        logging.error("Template cannot be found. It must be named: '%s'", template)
-        return 1
-    end_date = datetime.datetime.strptime(datestring, "%Y-%m-%d").date()
+    end_date = datetime.strptime(datestring, "%Y-%m-%d").date()
     if end_date.day == 15:
         start_date = datetime.datetime(end_date.year, end_date.month, 1)
     else:
-        start_date = datetime.datetime(end_date.year, end_date.month, 16)
-    days = datetime.timedelta(27)
-    trending_start_date = end_date - days
-    previous_end_date = start_date - datetime.timedelta(days=1)
+        start_date = datetime(end_date.year, end_date.month, 16)
 
-    # Get base directory to save images
-    base_dir = os.path.abspath(os.path.dirname(__file__))
     start = start_date.strftime("%m/%d/%Y")
     end = end_date.strftime("%m/%d/%Y")
     chevron_dict = {
@@ -582,17 +514,8 @@ def init(
         "pe_letter_grade": grade,
     }
 
-    # Credentials
-    (scorecard_dict, chevron_dict, cred_xlsx, source_html) = credential(
-        scorecard_dict,
-        chevron_dict,
-        trending_start_date,
-        start_date,
-        end_date,
-        org_uid,
-        source_html,
-        org_code,
-        output_directory,
+    chevron_dict, hibp_creds, cyber_creds = credential(
+        chevron_dict, start_date, end_date, org_uid
     )
 
     # Domain Masquerading
@@ -618,18 +541,8 @@ def init(
         output_directory,
     )
 
-    # Dark web mentions and alerts
-    scorecard_dict, chevron_dict, mi_xlsx = dark_web(
-        scorecard_dict,
-        chevron_dict,
-        trending_start_date,
-        start_date,
-        end_date,
-        org_uid,
-        all_cves_df,
-        soc_med_included,
-        org_code,
-        output_directory,
+    chevron_dict, dark_web_mentions, alerts, top_cves = dark_web(
+        chevron_dict, start_date, end_date, org_uid
     )
 
     execute_scorecard(scorecard_dict)
@@ -645,4 +558,16 @@ def init(
     """
     )
     html = chevron.render(source_html, chevron_dict)
-    return (scorecard_dict, summary_dict, html, cred_xlsx, da_xlsx, vuln_xlsx, mi_xlsx)
+
+    return (
+        html,
+        hibp_creds,
+        cyber_creds,
+        masq_df,
+        insecure_df,
+        vulns_df,
+        assets_df,
+        dark_web_mentions,
+        alerts,
+        top_cves,
+    )

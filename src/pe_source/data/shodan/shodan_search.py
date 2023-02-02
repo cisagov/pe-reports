@@ -2,7 +2,6 @@
 
 # Standard Python Libraries
 import datetime
-import logging
 import time
 
 # Third-Party Libraries
@@ -11,13 +10,15 @@ import requests
 import shodan
 
 # cisagov Libraries
-from pe_source.data.pe_db.db_query import (
+from pe_reports import app
+from pe_source.data.pe_db.db_query_source import (
     get_data_source_uid,
     get_ips,
     insert_shodan_data,
 )
 
-LOGGER = logging.getLogger(__name__)
+# Setup logging to central file
+LOGGER = app.config["LOGGER"]
 
 
 def run_shodan_thread(api, org_chunk, thread_name):
@@ -26,18 +27,20 @@ def run_shodan_thread(api, org_chunk, thread_name):
     for org in org_chunk:
         org_name = org["cyhy_db_name"]
         org_uid = org["org_uid"]
-        LOGGER.info("{} Running IPs for {}".format(thread_name, org_name))
+        logging.info("{} Running IPs for {}".format(thread_name, org_name))
         start, end = get_dates()
         try:
             ips = get_ips(org_uid)
         except Exception as e:
-            LOGGER.error("{} Failed fetching IPs for {}.".format(thread_name, org_name))
-            LOGGER.error("{} {} - {}".format(thread_name, e, org_name))
+            logging.error(
+                "{} Failed fetching IPs for {}.".format(thread_name, org_name)
+            )
+            logging.error("{} {} - {}".format(thread_name, e, org_name))
             failed.append("{} fetching IPs".format(org_name))
             continue
 
         if len(ips) == 0:
-            LOGGER.error("{} No IPs for {}.".format(thread_name, org_name))
+            logging.error("{} No IPs for {}.".format(thread_name, org_name))
             failed.append("{} has 0 IPs".format(org_name))
             continue
 

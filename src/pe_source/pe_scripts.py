@@ -35,13 +35,11 @@ import docopt
 from schema import And, Schema, SchemaError, Use
 
 # cisagov Libraries
-import pe_reports
+from pe_reports import CENTRAL_LOGGING_FILE
 
 from ._version import __version__
 from .cybersixgill import Cybersixgill
-from .dnsmonitor import DNSMonitor
 from .dnstwistscript import run_dnstwist
-from .intelx_identity import IntelX
 from .shodan import Shodan
 
 LOGGER = logging.getLogger(__name__)
@@ -66,14 +64,8 @@ def run_pe_script(source, orgs_list, cybersix_methods, soc_med_included):
     elif source == "shodan":
         shodan = Shodan(orgs_list)
         shodan.run_shodan()
-    elif source == "dnsmonitor":
-        dnsMonitor = DNSMonitor(orgs_list)
-        dnsMonitor.run_dnsMonitor()
     elif source == "dnstwist":
         run_dnstwist(orgs_list)
-    elif source == "intelx":
-        intelx = IntelX(orgs_list)
-        intelx.run_intelx()
     else:
         logging.error(
             "Not a valid source name. Correct values are cybersixgill or shodan."
@@ -110,7 +102,7 @@ def main():
 
     # Set up logging
     logging.basicConfig(
-        filename=pe_reports.CENTRAL_LOGGING_FILE,
+        filename=CENTRAL_LOGGING_FILE,
         filemode="a",
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
         datefmt="%m/%d/%Y %I:%M:%S",

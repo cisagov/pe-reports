@@ -40,15 +40,66 @@ from schema import And, Schema, SchemaError, Use
 import yaml
 
 # cisagov Libraries
-import pe_reports
-from pe_reports.data.db_query import connect_to_staging, get_orgs, get_orgs_contacts
+from pe_reports import CENTRAL_LOGGING_FILE
 
 from ._version import __version__
 from .pe_message import PEMessage
 from .stats_message import StatsMessage
 
 LOGGER = logging.getLogger(__name__)
-MAILER_AWS_PROFILE = ""
+
+
+def get_emails_from_request(request):
+    """Return the agency's correspondence email address(es).
+
+    Given the request document, return the proper email address or
+    addresses to use for corresponding with the agency.
+
+    Parameters
+    ----------
+    request : dict
+        The request documents for which the corresponding email
+        address is desired.
+
+    Returns
+    -------
+    list of str: A list containing the proper email addresses to use
+    for corresponding with the agency
+
+    """
+    id = request["_id"]
+    # Drop any contacts that do not have a type and a non-empty email attribute
+    contacts = [
+        c
+        for c in request["agency"]["contacts"]
+        if "type" in c and "email" in c and c["email"].split()
+    ]
+
+    for c in request["agency"]["contacts"]:
+        if "type" not in c or "email" not in c or not c["email"].split():
+            logging.warning(
+                "Agency with ID %s has a contact that is missing an email and/or type attribute!",
+                id,
+            )
+
+    distro_emails = [c["email"] for c in contacts if c["type"] == "DISTRO"]
+    technical_emails = [c["email"] for c in contacts if c["type"] == "TECHNICAL"]
+
+    # There should be zero or one distro email
+    if len(distro_emails) > 1:
+        logging.warning("More than one DISTRO email address for agency with ID %s", id)
+
+    # Send to the distro email, else send to the technical emails.
+    to_emails = distro_emails
+    if not to_emails:
+        to_emails = technical_emails
+
+    # At this point to_emails should contain at least one email
+    if not to_emails:
+        logging.error("No emails found for ID %s", id)
+
+    return to_emails
+
 
 def get_all_descendants(db, parent):
     """Return all (non-retired) descendants of the parent.
@@ -278,8 +329,7 @@ def send_pe_reports(ses_client, pe_report_dir, to):
             if len(pe_report_filenames) > 1:
                 LOGGER.warning("More than one PDF report found")
             elif not pe_report_filenames:
-                LOGGER.error("No PDF report found")
-                continue
+                logging.error("No PDF report found")
 
             if pe_report_filenames:
                 # We take the last filename since, if there happens to be more than
@@ -331,8 +381,40 @@ def send_reports(pe_report_dir, summary_to, test_emails):
         LOGGER.critical("Directory to send reports does not exist")
         return 1
 
-    session = boto3.Session(profile_name=MAILER_AWS_PROFILE)
-    ses_client = session.client("ses", region_name="us-east-1")
+    try:
+        db = db_from_config(db_creds_file)
+    except OSError:
+        logging.critical("Database configuration file %s does not exist", db_creds_file)
+        return 1
+
+    except yaml.YAMLError:
+        logging.critical(
+            "Database configuration file %s does not contain valid YAML",
+            db_creds_file,
+            exc_info=True,
+        )
+        return 1
+    except KeyError:
+        logging.critical(
+            "Database configuration file %s does not contain the expected keys",
+            db_creds_file,
+            exc_info=True,
+        )
+        return 1
+    except pymongo.errors.ConnectionError:
+        logging.critical(
+            "Unable to connect to the database server in %s",
+            db_creds_file,
+            exc_info=True,
+        )
+        return 1
+    except pymongo.errors.InvalidName:
+        logging.critical(
+            "The database in %s does not exist", db_creds_file, exc_info=True
+        )
+        return 1
+
+    ses_client = boto3.client("ses", region_name="us-east-1")
 
     # Email the summary statistics, if necessary
     if test_emails is not None:
@@ -390,11 +472,7 @@ def main():
 
     # Setup logging to central file
     logging.basicConfig(
-        filename=pe_reports.CENTRAL_LOGGING_FILE,
-        filemode="a",
-        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-        datefmt="%m/%d/%Y %I:%M:%S",
-        level=log_level.upper(),
+        format="%(asctime)-15s %(levelname)s %(message)s", level=log_level.upper()
     )
 
     LOGGER.info("Sending Posture & Exposure Reports, Version : %s", __version__)

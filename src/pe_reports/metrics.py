@@ -14,7 +14,7 @@ from .data.db_query import (
     query_darkweb,
     query_darkweb_cves,
     query_domMasq,
-    query_domMasq_alerts,
+    query_hibp_view,
     query_shodan,
 )
 from .data.translator import translate
@@ -29,39 +29,50 @@ class Credentials:
         self.start_date = start_date
         self.end_date = end_date
         self.org_uid = org_uid
-        self.trending_creds_view = query_creds_view(
-            org_uid, trending_start_date, end_date
-        )
-        self.creds_view = query_creds_view(org_uid, start_date, end_date)
-        self.creds_by_day = query_credsbyday_view(
-            org_uid, trending_start_date, end_date
-        )
-        self.breach_details_view = query_breachdetails_view(
-            org_uid, start_date, end_date
-        )
+        self.query_cyberSix_creds = query_cyberSix_creds(org_uid, start_date, end_date)
+        self.query_hibp_view = query_hibp_view(org_uid, start_date, end_date)
 
     def by_days(self):
         """Return number of credentials by day."""
-        df = self.creds_by_day
-        # df = df[["mod_date", "no_password", "password_included"]].copy()
-        idx = pd.date_range(self.trending_start_date, self.end_date)
-        df = df.set_index("mod_date").reindex(idx).fillna(0.0).rename_axis("added_date")
-        group_limit = self.end_date + datetime.timedelta(1)
-        df = df.groupby(
-            pd.Grouper(level="added_date", freq="7d", origin=group_limit)
-        ).sum()
-        df["modified_date"] = df.index
-        df["modified_date"] = df["modified_date"].dt.strftime("%b %d")
-        df = df.set_index("modified_date")
-        df = df.rename(
-            columns={
-                "password_included": "Passwords Included",
-                "no_password": "No Password",
-            }
+        c6_df = self.query_cyberSix_creds
+        hibp_df = self.query_hibp_view
+        c6_df_2 = c6_df[["create_time", "password_included", "email"]]
+        c6_df_2 = c6_df_2.rename(columns={"create_time": "modified_date"})
+
+        hibp_df = hibp_df[["modified_date", "password_included", "email"]]
+        hibp_df = hibp_df.append(c6_df_2, ignore_index=True)
+        hibp_df["modified_date"] = pd.to_datetime(hibp_df["modified_date"]).dt.date
+
+        hibp_df = hibp_df.groupby(
+            ["modified_date", "password_included"], as_index=False
+        ).agg({"email": ["count"]})
+        idx = pd.date_range(self.start_date, self.end_date)
+        hibp_df.columns = hibp_df.columns.droplevel(1)
+        hibp_df = (
+            hibp_df.pivot(
+                index="modified_date", columns="password_included", values="email"
+            )
+            .fillna(0)
+            .reset_index()
+            .rename_axis(None)
         )
-        if len(df.columns) == 0:
-            df["Passwords Included"] = 0
-        return df
+        hibp_df.columns.name = None
+        hibp_df = (
+            hibp_df.set_index("modified_date")
+            .reindex(idx)
+            .fillna(0.0)
+            .rename_axis("added_date")
+        )
+        hibp_df["modified_date"] = hibp_df.index
+        hibp_df["modified_date"] = hibp_df["modified_date"].dt.strftime("%m/%d/%y")
+        hibp_df = hibp_df.set_index("modified_date")
+
+        ce_date_df = hibp_df.rename(
+            columns={True: "Passwords Included", False: "No Password"}
+        )
+        if len(ce_date_df.columns) == 0:
+            ce_date_df["Passwords Included"] = 0
+        return ce_date_df
 
     def breaches(self):
         """Return total number of breaches."""
@@ -88,7 +99,6 @@ class Credentials:
             breach_det_df["breach_date"] = pd.to_datetime(
                 breach_det_df["breach_date"]
             ).dt.strftime("%m/%d/%y")
-
         breach_det_df = breach_det_df.rename(
             columns={
                 "breach_name": "Breach Name",
@@ -102,13 +112,19 @@ class Credentials:
 
     def password(self):
         """Return total number of credentials with passwords."""
-        pw_creds = len(self.creds_view[self.creds_view["password_included"]])
-        return pw_creds
+        pw_creds_csg = len(
+            self.query_cyberSix_creds[self.query_cyberSix_creds["password_included"]]
+        )
+        pw_creds_hibp = len(
+            self.query_hibp_view[self.query_hibp_view["password_included"]]
+        )
+        return pw_creds_csg + pw_creds_hibp
 
     def total(self):
         """Return total number of credentials found in breaches."""
-        df_cred = self.creds_view.shape[0]
-        return df_cred
+        df_cred_csg = self.query_cyberSix_creds.shape[0]
+        df_cred_hibp = self.query_hibp_view.shape[0]
+        return df_cred_csg + df_cred_hibp
 
 
 class Domains_Masqs:
@@ -220,24 +236,7 @@ class Malware_Vulns:
         insecure = insecure[
             (insecure["protocol"] != "http") & (insecure["protocol"] != "smtp")
         ]
-        insecure["port"] = insecure["port"].astype(str)
-        return insecure[["protocol", "ip", "port"]].drop_duplicates(keep="first")
-
-    def insecure_protocols(self):
-        """Get risky assets grouped by protocol."""
-        risky_assets = self.isolate_risky_assets(self.insecure_df)
-        risky_assets = (
-            risky_assets.groupby("protocol")
-            .agg(lambda x: "  ".join(set(x)))
-            .reset_index()
-        )
-        if len(risky_assets.index) > 0:
-            risky_assets["ip"] = risky_assets["ip"].str[:30]
-            risky_assets.loc[risky_assets["ip"].str.len() == 30, "ip"] = (
-                risky_assets["ip"] + "  ..."
-            )
-
-        return risky_assets
+        return insecure[["ip", "protocol"]].drop_duplicates(keep="first")
 
     def protocol_count(self):
         """Return a count for each insecure protocol."""
@@ -381,40 +380,12 @@ class Malware_Vulns:
 class Cyber_Six:
     """Dark web and Cyber Six data class."""
 
-    def __init__(
-        self,
-        trending_start_date,
-        start_date,
-        end_date,
-        org_uid,
-        all_cves_df,
-        soc_med_included,
-    ):
-        """Initialize Cybersixgill vulns and malware class."""
-        self.trending_start_date = trending_start_date
+    def __init__(self, start_date, end_date, org_uid):
+        """Initialize Shodan vulns and malware class."""
         self.start_date = start_date
         self.end_date = end_date
         self.org_uid = org_uid
-        self.all_cves_df = all_cves_df
-        self.soc_med_included = soc_med_included
-        self.soc_med_platforms = [
-            "twitter",
-            "Twitter",
-            "reddit",
-            "Reddit",
-            "Parler",
-            "parler",
-            "linkedin",
-            "Linkedin",
-            "discord",
-            "forum_discord",
-            "raddle",
-            "telegram",
-            "jabber",
-            "ICQ",
-            "icq",
-            "mastodon",
-        ]
+
         dark_web_mentions = query_darkweb(
             org_uid,
             start_date,
@@ -457,28 +428,11 @@ class Cyber_Six:
 
     def dark_web_date(self):
         """Get dark web mentions by date."""
-        trending_dark_web_mentions = query_darkweb(
-            self.org_uid,
-            self.trending_start_date,
-            self.end_date,
-            "vw_darkweb_mentionsbydate",
-        )
-        dark_web_date = trending_dark_web_mentions.drop(
-            columns=["organizations_uid"],
-            errors="ignore",
-        )
-        idx = pd.date_range(self.trending_start_date, self.end_date)
+        dark_web_mentions = self.dark_web_mentions
+        dark_web_date = dark_web_mentions[["date"]]
         dark_web_date = (
             dark_web_date.set_index("date").reindex(idx).fillna(0.0).rename_axis("date")
         )
-        group_limit = self.end_date + datetime.timedelta(1)
-        dark_web_date = dark_web_date.groupby(
-            pd.Grouper(level="date", freq="7d", origin=group_limit)
-        ).sum()
-        dark_web_date["date"] = dark_web_date.index
-        dark_web_date["date"] = dark_web_date["date"].dt.strftime("%m/%d")
-        dark_web_date = dark_web_date.set_index("date")
-        dark_web_date = dark_web_date[["Count"]]
         return dark_web_date
 
     def create_count_df(self):

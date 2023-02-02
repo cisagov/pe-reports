@@ -25,9 +25,7 @@ class PEMessage(ReportMessage):
 
     """
 
-    Subject = (
-        "Posture and Exposure (P&E) Report - {{cyhy_id}} - {{report_date}} (TLP:AMBER)"
-    )
+    Subject = "Posture and Exposure Report - {{report_date}} (TLP:AMBER)"
 
     TextBody = """Greetings,
 
@@ -49,16 +47,8 @@ WARNING: This document is FOR OFFICIAL USE ONLY (FOUO). It contains information 
 
     HtmlBody = """<html>
 <head></head>
-<body style="font-family: 'Times New Roman'">
-<p style="color:#FFC000">TLP:AMBER</p>
-
-<p>Good afternoon,</p>
-
-<p>Posture and Exposure (P&E) offers stakeholders an opportunity 
-to view their organizational risk from the viewpoint of the adversary. 
-We utilize passive reconnaissance services, dark web analysis, and open-source 
-tools to identify spoofing in order to generate a risk profile report that is 
-delivered on a regular basis.</p>
+<body>
+<p>Greetings,</p>
 
 <p>As a customer of P&E you are receiving our regularly scheduled report 
 which contains a summary of the activity we have been tracking on your behalf 

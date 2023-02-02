@@ -7,6 +7,7 @@ import datetime
 from django.shortcuts import render, redirect
 from django.http import HttpResponseNotFound
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required
 from .forms import InfoFormExternal, BulletinFormExternal, CredsFormExternal
 #
 # # cisagov Libraries
@@ -36,11 +37,9 @@ LOGGER = logging.getLogger(__name__)
 conn = None
 cursor = None
 
-# Create your views here.
 
-
+@login_required
 def report_gen(request):
-    """Route to get to report generator page."""
     try:
         return render(request=request,
                       template_name="report_gen/report_gen.html")
