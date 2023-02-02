@@ -332,3 +332,75 @@ def getDataSource(source):
     source = cur.fetchone()
     cur.close()
     return source
+
+
+def insertWASIds(listIds):
+    """Insert WAS IDs into database."""
+    conn = connect("")
+    sql = """INSERT INTO was_customers (org_id)
+                VALUES ('{}')
+            ON"""
+    cur = conn.cursor()
+    for id in listIds:
+        cur.execute(sql.format(id))
+    conn.commit()
+    close(conn)
+    print("Success adding WAS IDs to database.")
+
+
+def insertCountData(dataList):
+    """Insert web application count an vulnerability count for each org into database."""
+    conn = connect("")
+    sql = """INSERT INTO was_customers(org_id,webapp_count,webapp_active_vuln_count, date)
+            VALUES ('{}','{}','{}','{}')
+            ON CONFLICT (org_id) DO UPDATE SET
+            webapp_count = excluded.webapp_count,
+            webapp_active_vuln_count = excluded.webapp_active_vuln_count,
+            date = excluded.date;"""
+    cur = conn.cursor()
+    for data in dataList:
+        cur.execute(
+            sql.format(
+                data["org_id"],
+                data["webapp_count"],
+                data["webapp_active_vuln_count"],
+                data["date"],
+            )
+        )
+    conn.commit()
+    close(conn)
+    print("Success adding WAS data to database.")
+
+
+def insertFindingData(findingList):
+    """Insert finding data into database."""
+    conn = connect("")
+    sql = """INSERT INTO findings (finding_uid, finding_type, org_id, name, owasp_category, type, severity, times_detected, base_score, temporal_score, status, last_detected, first_detected, date)
+            VALUES ('{}','{}','{}','{}','{}','{}','{}','{}','{}','{}','{}','{}','{}','{}')
+            ON CONFLICT (finding_uid) DO UPDATE SET
+            times_detected = excluded.times_detected,
+            last_detected = excluded.last_detected,
+            date = excluded.date;"""
+    cur = conn.cursor()
+    for finding in findingList:
+        cur.execute(
+            sql.format(
+                finding["finding_uid"],
+                finding["finding_type"],
+                finding["org_id"],
+                finding["name"],
+                finding["owasp_category"],
+                finding["type"],
+                finding["severity"],
+                finding["times_detected"],
+                finding["base_score"],
+                finding["temporal_score"],
+                finding["status"],
+                finding["last_detected"],
+                finding["first_detected"],
+                finding["date"],
+            )
+        )
+    conn.commit()
+    close(conn)
+    print("Success adding finding data to database.")
