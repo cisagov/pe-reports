@@ -172,21 +172,35 @@ def get_org_assets_count(uid):
             from vw_orgs_attacksurface sur
             where sur.organizations_uid = %s"""
     cur.execute(sql, [uid])
-    source = cur.fetchone()
-    cur.close()
-    conn.close()
-    assets_dict = {
-        "org_uid": uid,
-        "cyhy_db_name": source[0],
-        "num_root_domain": source[1],
-        "num_sub_domain": source[2],
-        "num_ips": source[3],
-        "num_ports": source[4],
-        "num_cidrs": source[5],
-        "num_ports_protocols": source[6],
-        "num_software": source[7],
-        "num_foreign_ips": source[8]
-    }
+    try:
+        source = cur.fetchone()
+        cur.close()
+        conn.close()
+        assets_dict = {
+            "org_uid": uid,
+            "cyhy_db_name": source[0],
+            "num_root_domain": source[1],
+            "num_sub_domain": source[2],
+            "num_ips": source[3],
+            "num_ports": source[4],
+            "num_cidrs": source[5],
+            "num_ports_protocols": source[6],
+            "num_software": source[7],
+            "num_foreign_ips": source[8]
+        }
+    except:
+        assets_dict = {
+            "org_uid": uid,
+            "cyhy_db_name": 'N/A',
+            "num_root_domain": 0,
+            "num_sub_domain": 0,
+            "num_ips": 0,
+            "num_ports": 0,
+            "num_cidrs": 0,
+            "num_ports_protocols": 0,
+            "num_software": 0,
+            "num_foreign_ips": 0
+        }
     return assets_dict
 
 
