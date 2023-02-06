@@ -1,6 +1,7 @@
 # Standard Python Libraries
 import datetime
 import json
+from json.decoder import JSONDecodeError
 import logging
 import os
 import socket
@@ -202,6 +203,9 @@ for org_index, org_row in orgs.iterrows():
                         dshield_attacks = attacks
                         dshield_count = len(threats)
                     except KeyError:
+                        dshield_attacks = 0
+                        dshield_count = 0
+                    except JSONDecodeError:
                         dshield_attacks = 0
                         dshield_count = 0
 
