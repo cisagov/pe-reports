@@ -2783,11 +2783,15 @@ ALTER TABLE public.vw_darkweb_topcves OWNER TO pe;
 --
 
 CREATE VIEW public.vw_orgs_total_cidrs AS
- SELECT c.organizations_uid,
-    count(c.network) AS count
-   FROM public.cidrs c
-  GROUP BY c.organizations_uid
-  ORDER BY (count(c.network)) DESC;
+ SELECT reported_orgs.organizations_uid,
+    COALESCE(cidr_counts.count, (0)::bigint) AS count
+   FROM (( SELECT organizations.organizations_uid
+           FROM public.organizations
+          WHERE (organizations.report_on = true)) reported_orgs
+     LEFT JOIN ( SELECT c.organizations_uid,
+            count(c.network) AS count
+           FROM public.cidrs c
+          GROUP BY c.organizations_uid) cidr_counts ON ((reported_orgs.organizations_uid = cidr_counts.organizations_uid)));
 
 
 ALTER TABLE public.vw_orgs_total_cidrs OWNER TO pe;
@@ -2841,19 +2845,19 @@ COMMENT ON VIEW public.vw_orgs_total_domains IS 'Gets the total number of root a
 --
 
 CREATE VIEW public.vw_orgs_total_foreign_ips AS
- SELECT sa.organizations_uid,
-    count(
-        CASE
-            WHEN ((sa.country_code <> 'US'::text) OR (sa.country_code IS NOT NULL)) THEN 1
-            ELSE NULL::integer
-        END) AS num_foreign_ips
-   FROM public.shodan_assets sa
-  GROUP BY sa.organizations_uid
-  ORDER BY (count(
-        CASE
-            WHEN ((sa.country_code <> 'US'::text) OR (sa.country_code IS NOT NULL)) THEN 1
-            ELSE NULL::integer
-        END)) DESC;
+ SELECT reported_orgs.organizations_uid,
+    COALESCE(foreign_ips.num_foreign_ips, (0)::bigint) AS num_foreign_ips
+   FROM (( SELECT organizations.organizations_uid
+           FROM public.organizations
+          WHERE (organizations.report_on = true)) reported_orgs
+     LEFT JOIN ( SELECT sa.organizations_uid,
+            count(
+                CASE
+                    WHEN ((sa.country_code <> 'US'::text) OR (sa.country_code IS NOT NULL)) THEN 1
+                    ELSE NULL::integer
+                END) AS num_foreign_ips
+           FROM public.shodan_assets sa
+          GROUP BY sa.organizations_uid) foreign_ips ON ((reported_orgs.organizations_uid = foreign_ips.organizations_uid)));
 
 
 ALTER TABLE public.vw_orgs_total_foreign_ips OWNER TO pe;
@@ -2938,14 +2942,18 @@ COMMENT ON VIEW public.vw_orgs_total_ports IS 'Gets the total number of unique p
 --
 
 CREATE VIEW public.vw_orgs_total_ports_protocols AS
- SELECT t.organizations_uid,
-    count(*) AS port_protocol
-   FROM ( SELECT DISTINCT sa.port,
-            sa.protocol,
-            sa.organizations_uid
-           FROM public.shodan_assets sa) t
-  GROUP BY t.organizations_uid
-  ORDER BY (count(*)) DESC;
+ SELECT reported_orgs.organizations_uid,
+    COALESCE(protocols.port_protocol, (0)::bigint) AS port_protocol
+   FROM (( SELECT organizations.organizations_uid
+           FROM public.organizations
+          WHERE (organizations.report_on = true)) reported_orgs
+     LEFT JOIN ( SELECT t.organizations_uid,
+            count(*) AS port_protocol
+           FROM ( SELECT DISTINCT sa.port,
+                    sa.protocol,
+                    sa.organizations_uid
+                   FROM public.shodan_assets sa) t
+          GROUP BY t.organizations_uid) protocols ON ((reported_orgs.organizations_uid = protocols.organizations_uid)));
 
 
 ALTER TABLE public.vw_orgs_total_ports_protocols OWNER TO pe;
@@ -2955,13 +2963,17 @@ ALTER TABLE public.vw_orgs_total_ports_protocols OWNER TO pe;
 --
 
 CREATE VIEW public.vw_orgs_total_software AS
- SELECT t.organizations_uid,
-    count(*) AS num_software
-   FROM ( SELECT DISTINCT sa.product,
-            sa.organizations_uid
-           FROM public.shodan_assets sa) t
-  GROUP BY t.organizations_uid
-  ORDER BY (count(*)) DESC;
+ SELECT reported_orgs.organizations_uid,
+    COALESCE(software.num_software, (0)::bigint) AS num_software
+   FROM (( SELECT organizations.organizations_uid
+           FROM public.organizations
+          WHERE (organizations.report_on = true)) reported_orgs
+     LEFT JOIN ( SELECT t.organizations_uid,
+            count(*) AS num_software
+           FROM ( SELECT DISTINCT sa.product,
+                    sa.organizations_uid
+                   FROM public.shodan_assets sa) t
+          GROUP BY t.organizations_uid) software ON ((reported_orgs.organizations_uid = software.organizations_uid)));
 
 
 ALTER TABLE public.vw_orgs_total_software OWNER TO pe;
@@ -2997,7 +3009,7 @@ ALTER TABLE public.vw_orgs_attacksurface OWNER TO pe;
 -- Name: VIEW vw_orgs_attacksurface; Type: COMMENT; Schema: public; Owner: pe
 --
 
-COMMENT ON VIEW public.vw_orgs_attacksurface IS 'Provides the total number of root domains, sub domains, and IPs for each organization that P&E is currently reporting on.';
+COMMENT ON VIEW public.vw_orgs_attacksurface IS 'gets all attack surface related metrics for the orgs PE reports on';
 
 
 --
