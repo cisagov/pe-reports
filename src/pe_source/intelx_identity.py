@@ -108,6 +108,7 @@ class IntelX:
         while attempts < 5:
             try:
                 response = requests.request("GET", url, headers=headers, data=payload)
+                response.raise_for_status()
                 break
             except requests.exceptions.Timeout:
                 time.sleep(5)
@@ -150,6 +151,8 @@ class IntelX:
         """Find leaks for a domain between two dates."""
         all_results_list = []
         for domain in domain_list:
+            if not domain: 
+                continue
             LOGGER.info("Finding credentials leaked associated with " + domain)
             response = self.query_identity_api(domain, start_date, end_date)
             if not response:
