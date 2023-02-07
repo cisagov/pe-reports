@@ -156,31 +156,23 @@ def add_stakeholders(orgs_df):
 
 
 class CustomCSVView(TemplateView):
+    """CBV route to bulk upload page"""
     template_name = "bulk_upload/upload.html"
     form_class = CSVUploadForm
 
 
 class CustomCSVForm(FormView):
+    """CBV form bulk upload csv file with file extension and header validation"""
     form_class = CSVUploadForm
     template_name = 'bulk_upload/upload.html'
 
     success_url = reverse_lazy('bulkupload')
 
     def form_valid(self, form):
-        # validators = FileExtensionValidator(allowed_extensions=['csv'])
+        """Validate form data"""
 
         csv_file = form.cleaned_data["file"]
-        # try:
-        #     print(validators(csv_file))
-        #     messages.success(self.request, "The upload success %s was entered.")
-        #
-        # except ValidationError as err:
-        #
-        #     messages.warning(self.request, "The upload failed %s was entered.",
-        #                      validators(csv_file))
-        #
-        #
-        #     LOGGER.info("The file extension is invalid please try again %s", err)
+
 
         f = TextIOWrapper(csv_file.file)
 
@@ -226,11 +218,6 @@ class CustomCSVForm(FormView):
             return super().form_invalid(form)
 
 
-
-
-
-
-
-    def process_item(self, item):
-        #     # TODO: Replace with the code for what you wish to do with the row of data in the CSV.
-        print("The item is %s" % item)
+def process_item(self, item):
+    #     # TODO: Replace with the code for what you wish to do with the row of data in the CSV.
+    print("The item is %s" % item)
