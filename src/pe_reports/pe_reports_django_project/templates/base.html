@@ -125,7 +125,7 @@
 <!-- Categories: success (green), info (blue), warning (yellow), danger (red) -->
 {% if messages %} {% for message in messages %}
     <div
-            {% if message.tags %} class="alert {% endif %} alert-success alert-dismissible fade show row"
+            {% if message.tags %} class="alert {{ message.tags }} {% endif %} alert-dismissible fade show row"
             style="justify-content: center"
             id="messageDiv"
             role="alert"

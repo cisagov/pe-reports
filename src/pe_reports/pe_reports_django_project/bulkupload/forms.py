@@ -1,4 +1,6 @@
 from django import forms
+from django.core.exceptions import ValidationError
+
 
 class CSVUploadForm(forms.Form):
     file = forms.FileField()
@@ -9,7 +11,7 @@ class CSVUploadForm(forms.Form):
         if not file.name.endswith(".csv"):
             raise ValidationError(
                 {
-                    "file": _("Filetype not supported, the file must be a '.csv'"),
+                    "file": "Filetype not supported, the file must be a '.csv'",
                 }
             )
         return cleaned_data
