@@ -218,6 +218,6 @@ class CustomCSVForm(FormView):
             return super().form_invalid(form)
 
 
-def process_item(self, item):
-    #     # TODO: Replace with the code for what you wish to do with the row of data in the CSV.
-    print("The item is %s" % item)
+    def process_item(self, item):
+        #     # TODO: Replace with the code for what you wish to do with the row of data in the CSV.
+        print("The item is %s" % item)
