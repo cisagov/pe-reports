@@ -1,11 +1,13 @@
 from pydantic import BaseModel, Field, EmailStr
 from typing import Optional
 from uuid import UUID
+import datetime
 
 
 class OrganizationBase(BaseModel):
     name: str
     cyhy_db_name: str = None
+
 
 class VwBreachcomp(BaseModel):
     credential_exposures_uid: str
@@ -32,11 +34,13 @@ class VwBreachcomp(BaseModel):
     is_retired: str
     is_spam_list: str
 
+
 class VwBreachcompCredsbydate(BaseModel):
     organizations_uid: str
     mod_date: str
     no_password: str
     password_included: str
+
 
 class VwOrgsAttacksurface(BaseModel):
     organizations_uid: UUID
@@ -56,14 +60,16 @@ class VwOrgsAttacksurfaceInput(BaseModel):
     class Config:
         orm_mode = True
 
+
 class UserAPIBase(BaseModel):
     # user_id: int
     refresh_token: str
 
+
 class UserAPI(UserAPIBase):
     pass
 
-    class Config():
+    class Config:
         orm_mode = True
 
 
@@ -72,6 +78,7 @@ class Organization(OrganizationBase):
 
     class Config:
         orm_mode = True
+
 
 class TokenSchema(BaseModel):
     access_token: str
@@ -89,6 +96,7 @@ class UserAuth(BaseModel):
     username: str = Field(..., description="user name")
     # password: str = Field(..., min_length=5, max_length=24,
     #                       description="user password")
+
 
 class UserOut(BaseModel):
     id: UUID
@@ -138,3 +146,56 @@ class UserInDB(UserInDBBase):
 class UserOut(BaseModel):
     id: UUID
     email: str
+
+
+# v ----- WAS Score Schemas ----- v
+
+# WAS Finding View
+class VwWASFindingMetrics(BaseModel):
+    finding_uid: str
+    finding_type: str
+    org_id: str
+    name: str
+    owasp_category: str
+    type: str
+    severity: int
+    times_detected: int
+    base_score: float
+    temporal_score: float
+    status: str
+    last_detected: datetime.date
+    first_detected: datetime.date
+    date: datetime.date
+
+    class Config:
+        orm_mode = True
+
+
+class VwWASFindingMetricsInput(BaseModel):
+    start_date: datetime.date
+    end_date: datetime.date
+
+    class Config:
+        orm_mode = True
+
+
+# WAS Customer View
+class VwWASCustomerMetrics(BaseModel):
+    org_id: str
+    webapp_count: int
+    webapp_active_vuln_count: int
+    date: datetime.date
+
+    class Config:
+        orm_mode = True
+
+
+class VwWASCustomerMetricsInput(BaseModel):
+    start_date: datetime.date
+    end_date: datetime.date
+
+    class Config:
+        orm_mode = True
+
+
+# ^ ----- WAS Score Schemas ----- ^
