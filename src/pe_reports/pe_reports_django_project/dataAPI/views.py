@@ -5,7 +5,9 @@ import requests
 import logging
 import re
 import asyncio
-
+from io import TextIOWrapper
+import csv
+#Third party imports
 from fastapi import \
     APIRouter,\
     FastAPI,\
@@ -13,16 +15,17 @@ from fastapi import \
     Depends,\
     HTTPException,\
     status,\
-    Security
+    Security,\
+    File,\
+    UploadFile
+
 from fastapi.security import OAuth2PasswordBearer
 from fastapi.security.api_key import \
     APIKeyQuery,\
     APIKeyCookie,\
     APIKeyHeader,\
     APIKey
-# from . import schemas
-# from .models import apiUser
-# from django.http import HttpResponse
+from django.core.exceptions import ValidationError
 from django.contrib.auth.models import User
 from django.contrib import messages
 
@@ -172,6 +175,11 @@ async def get_api_key(
         )
 
 
+def process_item(item):
+    #     # TODO: Replace with the code for what you wish to do with the row of data in the CSV.
+    LOGGER.info("The item is %s" % item)
+    print("The item is %s" % item)
+
 # def api_key_auth(api_key: str = Depends(oauth2_scheme)):
 #     if api_key not in api_keys:
 #         raise HTTPException(
@@ -291,24 +299,6 @@ def read_orgs(tokens: dict = Depends(get_api_key)):
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 @api_router.post("/get_key", tags=["Get user api keys"])
 def read_orgs(data: schemas.UserAPI):
     """API endpoint to get api by submitting refresh token."""
@@ -319,20 +309,6 @@ def read_orgs(data: schemas.UserAPI):
     for u in userkey:
         user_key = u.apiKey
     return user_key
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -384,5 +360,61 @@ def create_user(data: schemas.UserAuth):
 # @api_router.get("/items/")
 # async def read_items(token: str=Depends(oauth2_scheme)):
 #     return {"token": token}
+
+
+@api_router.post('/was_upload', dependencies=[Depends(get_api_key)],
+                 tags=["Upload WAS csv file"])
+def upload(file: UploadFile = File(...)):
+    """Upload csv file from WAS"""
+
+    f = TextIOWrapper(file.file)
+
+    dict_reader = csv.DictReader(f)
+    dict_reader = dict_reader.fieldnames
+    dict_reader = set(dict_reader)
+
+    required_columns = ["org",
+                        "org_code",
+                        "root_domain",
+                        "exec_url",
+                        "aliases",
+                        "premium",
+                        "demo"]
+    # Check needed columns exist
+    incorrect_col = []
+    testtheList = [i for i in required_columns if i in dict_reader]
+
+    try:
+        if not file.filename.endswith('csv'):
+
+            raise HTTPException(400, detail='Invalid document type')
+
+        if len(testtheList) == len(dict_reader):
+
+            for row, item in enumerate(dict_reader, start=1):
+                process_item(item)
+            return {"message": "Successfully uploaded %s" % file.filename}
+        else:
+            for col in required_columns:
+                if col in dict_reader:
+                    pass
+                else:
+                    incorrect_col.append(col)
+            raise HTTPException(400, detail="There was a missing or"
+                                            " incorrect column in file,"
+                                            " to columns %s" % incorrect_col)
+
+    except ValueError:
+        return {'message': 'There was an error uploading the file at %s.'
+                           % incorrect_col}
+    except ValidationError as e:
+
+        return {'message': 'There was an error uploading the file type at %s.'
+                           % e}
+
+    finally:
+        file.file.close()
+
+
 
 
