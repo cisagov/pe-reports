@@ -12,27 +12,44 @@ import requests
 import shodan
 
 # Configuration
-REPORT_DB_CONFIG = files("pe_reports").joinpath("data/database.ini")
+REPORT_DB_CONFIG = files("pe_source").joinpath("data/database.ini")
 
+def config(filename=REPORT_DB_CONFIG, section="postgres"):
+    """Parse Postgres configuration details from database configuration file."""
+    parser = ConfigParser()
+    parser.read(filename, encoding="utf-8")
 
+    db = dict()
+
+    if parser.has_section(section):
+        for key, value in parser.items(section):
+            db[key] = value
+
+    else:
+        raise Exception(f"Section {section} not found in {filename}")
+
+    return db
+    
 def shodan_api_init():
     """Connect to Shodan API."""
     section = "shodan"
     api_list = []
-    if os.path.isfile(REPORT_DB_CONFIG):
-        parser = ConfigParser()
-        parser.read(REPORT_DB_CONFIG, encoding="utf-8")
-        if parser.has_section(section):
-            params = parser.items(section)
-        else:
-            raise Exception(
-                "Section {} not found in the {} file".format(section, REPORT_DB_CONFIG)
-            )
-    else:
-        raise Exception(
-            "Database.ini file not found at this path: {}".format(REPORT_DB_CONFIG)
-        )
-
+    # if os.path.isfile(REPORT_DB_CONFIG):
+    #     parser = ConfigParser()
+    #     parser.read(REPORT_DB_CONFIG, encoding="utf-8")
+    #     if parser.has_section(section):
+    #         params = parser.items(section)
+    #     else:
+    #         raise Exception(
+    #             "Section {} not found in the {} file".format(section, REPORT_DB_CONFIG)
+    #         )
+    # else:
+    #     raise Exception(
+    #         "Database.ini file not found at this path: {}".format(REPORT_DB_CONFIG)
+    #     )
+    params = [
+        ('key1', os.environ.get('shodan_key')),
+        ]
     for key in params:
         try:
             api = shodan.Shodan(key[1])
