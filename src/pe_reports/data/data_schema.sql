@@ -559,6 +559,35 @@ CREATE TABLE public.unique_software (
 );
 
 --
+--Name: was_tracker_customerdata
+--
+
+create table was_tracker_customerdata
+(
+    customer_id              uuid default uuid_generate_v1() not null
+        constraint was_tracker_customerdata_pk
+            primary key,
+    tag                      text                            not null,
+    customer_name            text                            not null,
+    testing_sector           text                            not null,
+    ci_type                  text                            not null,
+    ticket                   text                            not null,
+    next_scheduled           text                            not null,
+    last_scanned             text                            not null,
+    frequency                text                            not null,
+    comments_notes           text                            not null,
+    was_report_poc           text                            not null,
+    was_report_email         text                            not null,
+    onboarding_date          date                            not null,
+    no_of_web_apps           integer                         not null,
+    no_web_apps_last_updated date,
+    elections                text
+);
+
+alter table was_tracker_customerdata
+    owner to pe;
+
+--
 -- Name: web_assets; Type: TABLE; Schema: public; Owner: pe
 --
 
