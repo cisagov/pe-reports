@@ -2,6 +2,7 @@
 # Standard Python Libraries
 import datetime
 import json
+import logging
 import pathlib
 import traceback
 
@@ -10,9 +11,6 @@ import dnstwist
 import dshield
 import psycopg2.extras as extras
 import requests
-
-# cisagov Libraries
-from pe_reports import app
 
 from .data.pe_db.db_query import (
     addSubdomain,
@@ -24,7 +22,7 @@ from .data.pe_db.db_query import (
 )
 
 date = datetime.datetime.now().strftime("%Y-%m-%d")
-LOGGER = app.config["LOGGER"]
+LOGGER = logging.getLogger(__name__)
 
 
 def checkBlocklist(dom, sub_domain_uid, source_uid, pe_org_uid, perm_list):
