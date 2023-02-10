@@ -128,7 +128,7 @@ class Charts:
         plt.gca().set_yticks(df.index)
         plt.gca().set_yticklabels(category_column)
         plt.gca().set_xlabel(x_label, fontdict={"size": 8})
-        plt.gca().set_ylabel(y_label)
+        plt.gca().set_ylabel(y_label, fontdict={"size": 8})
         plt.gcf().set_size_inches(
             width / CM_CONVERSION_FACTOR, height / CM_CONVERSION_FACTOR
         )
@@ -159,16 +159,33 @@ class Charts:
         height = self.height
         name = self.name
         value_column = df[df.columns[0]]
-        color = ["#1357BE", "#D0342C"]
+        color = ["#7aa5c1", "#e08493"]
         fig, ax = plt.subplots()
         ax.spines["right"].set_visible(False)
         ax.spines["top"].set_visible(False)
         plt.set_loglevel("WARNING")
-        plt.plot(df.index, value_column, color=color[0], label=df.columns[0])
+        plt.plot(
+            df.index,
+            value_column,
+            color=color[0],
+            label=df.columns[0],
+            linewidth=3,
+            marker=".",
+            markersize=10,
+        )
         if len(df.columns) == 2:
-            plt.plot(df.index, df[df.columns[1]], color=color[1], label=df.columns[1])
-
-        plt.ylim(ymin=0, ymax=int(df[df.columns].max().max() * 1.15))
+            plt.plot(
+                df.index,
+                df[df.columns[1]],
+                color=color[1],
+                label=df.columns[1],
+                linewidth=3,
+                linestyle="dashed",
+                marker=".",
+                markersize=10,
+            )
+        y_max = int(df[df.columns].max().max() * 1.1)
+        plt.ylim(ymin=0, ymax=y_max)
         # plt.legend(loc=9, ncol=2, framealpha=0, fontsize=8, bbox_to_anchor=(0.5, -0.5))
         plt.legend(loc="upper right")
         plt.gcf().set_size_inches(
@@ -182,36 +199,78 @@ class Charts:
         plt.grid(axis="y")
         plt.tight_layout()
 
-        # totals = df.sum(axis=1)
-        # for i, total in enumerate(totals):
-        #     ax.text(totals.index[i], total + 0, round(total), ha="center")
-        for i, j in df[df.columns[0]].items():
-            if int(j):
+        # loop through the dataframe
+        for row in df.itertuples():
+            # check if there is only one row of values
+            if len(row) == 2:
                 plt.annotate(
-                    str(int(j)),
-                    xy=(i, j),
+                    str(int(row[1])),
+                    xy=(row[0], row[1]),
                     textcoords="offset points",  # how to position the text
                     xytext=(
                         0,
-                        -15,
+                        8,
                     ),  # distance from text to points (x,y)
                     ha="center",  # horizontal alignment can be left, right or center
                     # fontsize=2,
+                    color="#003e67",
                 )
-        if len(df.columns) == 2:
-            for i, j in df[df.columns[1]].items():
-                if int(j):
-                    plt.annotate(
-                        str(int(j)),
-                        xy=(i, j),
-                        textcoords="offset points",  # how to position the text
-                        xytext=(
-                            0,
-                            -15,
-                        ),  # distance from text to points (x,y)
-                        ha="center",  # horizontal alignment can be left, right or center
-                        # fontsize=2,
-                    )
+                # check if there are two rows of data
+            elif len(row) == 3:
+                # check if the two values are within 1/10th of the max y value
+                value_diff = abs(row[1] - row[2])
+                if value_diff < y_max / 10:
+                    # if the values are on the bottom quarter of the graph don't label below values
+                    if min(row[1], row[2]) < y_max / 4:
+                        y1 = y2 = max(row[1], row[2])
+                        if row[1] > row[2]:
+                            y1_offset = 18
+                            y2_offset = 8
+                        else:
+                            y1_offset = 8
+                            y2_offset = 18
+                    else:
+                        y1 = row[1]
+                        y2 = row[2]
+                        if row[1] > row[2]:
+                            y1_offset = 8
+                            y2_offset = -17
+                        else:
+                            y1_offset = -17
+                            y2_offset = 8
+                # if values are not close to each other put the labels directly above
+                else:
+                    y1 = row[1]
+                    y2 = row[2]
+                    y1_offset = 8
+                    y2_offset = 8
+                print(y1)
+                print(y2)
+
+                plt.annotate(
+                    str(int(row[1])),
+                    xy=(row[0], y1),
+                    textcoords="offset points",  # how to position the text
+                    xytext=(
+                        0,
+                        y1_offset,
+                    ),  # distance from text to points (x,y)
+                    ha="center",  # horizontal alignment can be left, right or center
+                    # fontsize=2,
+                    color="#005288",
+                )
+                plt.annotate(
+                    str(int(row[2])),
+                    xy=(row[0], y2),
+                    textcoords="offset points",  # how to position the text
+                    xytext=(
+                        0,
+                        y2_offset,
+                    ),  # distance from text to points (x,y)
+                    ha="center",  # horizontal alignment can be left, right or center
+                    # fontsize=2,
+                    color="#c41230",
+                )
 
         plt.savefig(
             BASE_DIR + "/assets/" + name, transparent=True, dpi=500, bbox_inches="tight"
