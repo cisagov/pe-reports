@@ -1,5 +1,5 @@
 """
-This is the setup module for the pe-source project.
+This is the setup module for the pe-reports project.
 
 Based on:
 
@@ -42,10 +42,10 @@ def get_version(version_file):
 
 
 setup(
-    name="pe_source",
+    name="pe_reports",
     # Versions should comply with PEP440
-    version=get_version("src/pe_source/_version.py"),
-    description="Posture and Exposure Source Library",
+    version=get_version("src/pe_reports/_version.py"),
+    description="Posture and Exposure Reports library",
     long_description=readme(),
     long_description_content_type="text/markdown",
     # Landing page for CISA's cybersecurity mission
@@ -81,10 +81,12 @@ setup(
     ],
     python_requires=">=3.6",
     # What does your project relate to?
-    keywords="posture and exposure source",
+    keywords="posture and exposure report",
     packages=find_packages(where="src"),
     package_dir={"": "src"},
     package_data={
+        "pe_mailer": ["data/*"],
+        "pe_reports": ["*.html", "*.css", "data/*", "assets/*","*.ttf"],
         "pe_source": [
             "data/*",
             "data/shodan/*",
@@ -96,16 +98,53 @@ setup(
     py_modules=[splitext(basename(path))[0] for path in glob("src/*.py")],
     include_package_data=True,
     install_requires=[
+        "boto3 == 1.21.10",
+        "botocore == 1.24.10",
+        "chevron == 0.14.0",
+        "celery",
+        "circlify",
         "click",
         "docopt",
         "dnstwist",
         "dshield",
-        "dnspython == 2.2.1",
+        "glob2 == 0.7",
+        "flask",
+        "Flask-Login",
+        "flask_migrate",
+        "flask_wtf",
+        "Flask-SQLAlchemy",
+        "googletrans",
+        "idna == 2.05",
         "importlib_resources == 5.4.0",
+        "matplotlib == 3.3.4",
+        "openpyxl",
         "pandas == 1.1.5",
+        "pdfkit",
+        "psutil",
         "psycopg2-binary == 2.9.3",
+        "pymongo == 4.0.1",
+        "pymupdf == 1.19.0",
+        "python-dateutil >= 2.7.3",
+        "pytest-cov",
+        "python-pptx == 0.6.21",
+        "pytz",
+        "pyyaml == 6.0",
+        "reportlab == 3.6.6",
+        "requests",
         "schema == 0.7.5",
+        "setuptools == 58.1.0",
+        "scikit-learn",
         "shodan == 1.27.0",
+        "sshtunnel",
+        "spacy",
+        "nltk",
+        "beautifulsoup4",
+        "sublist3r",
+        "types-PyYAML == 6.0.4",
+        "urllib3 == 1.26",
+        "wtforms",
+        "xhtml2pdf == 0.2.5",
+        "Werkzeug"
     ],
     extras_require={
         "test": [
@@ -125,6 +164,8 @@ setup(
     # Conveniently allows one to run the CLI tool as `pe-reports` or 'pe-mailer'
     entry_points={
         "console_scripts": [
+            "pe-mailer = pe_mailer.email_reports:main",
+            "pe-reports = pe_reports.report_generator:main",
             "pe-source = pe_source.pe_scripts:main",
         ]
     },
