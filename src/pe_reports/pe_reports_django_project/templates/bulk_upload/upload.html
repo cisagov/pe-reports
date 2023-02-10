@@ -1,0 +1,51 @@
+{% extends '../base.html' %}
+
+{% load crispy_forms_tags %}
+
+{% block title %}
+    File Upload
+{% endblock title %}
+
+{% block content %}
+
+
+
+
+
+    <div id="TestsDiv" class="row justify-content-lg-center">
+        <div class="d-flex justify-content-center">
+            <div class="card" style="width: 25%;" id="content">
+                <div class="card-header text-white bg-primary mb-3">
+                    Upload/Process File
+                </div>
+                <div class="card-body">
+                    <form method="POST" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        {{ form.as_p }}
+                        <br>
+                        <input class="btn btn-primary" type="submit"
+                               value="Process CSV">
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+<script>
+    $(document).ready(function () {
+      console.log("Im ready ");
+
+
+
+      setTimeout(function () {
+        $("#messageDiv").fadeOut("fast");
+      }, 5000);
+
+    });
+  </script>
+
+
+
+
+{% endblock %}

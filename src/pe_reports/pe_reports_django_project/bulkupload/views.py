@@ -63,8 +63,7 @@ def theExecs(URL):
     final_exec_list = []
     regex_pattern = re.compile(r"[@_'’!#\-$%^&*()<>?/\|}{~:]")
     for hy in exec_list:
-        if ("PERSON" in hy) and (hy[1] not in final_exec_list) and (
-                len(hy[1]) < 50):
+        if ("PERSON" in hy) and (hy[1] not in final_exec_list) and (len(hy[1]) < 50):
             if not regex_pattern.search(hy[1]) and len(hy[1].split()) > 1:
                 person = hy[1].split("  ")
                 if len(person) <= 1:
@@ -77,7 +76,7 @@ def add_stakeholders(orgs_df):
     count = 0
     for org_index, org_row in orgs_df.iterrows():
         try:
-            logging.info("Beginning to add %s", org_row['org_code'])
+            logging.info("Beginning to add %s", org_row["org_code"])
 
             premium = org_row["premium"]
             # Set new org to report on
@@ -94,10 +93,8 @@ def add_stakeholders(orgs_df):
             # Enumerate and save subdomains
             roots = query_roots(new_org_df["organizations_uid"].iloc[0])
             for root_index, root in roots.iterrows():
-                enumerate_and_save_subs(root["root_domain_uid"],
-                                        root["root_domain"])
-            logging.info(
-                "Subdomains have been successfully added to the database.")
+                enumerate_and_save_subs(root["root_domain_uid"], root["root_domain"])
+            logging.info("Subdomains have been successfully added to the database.")
 
             # Fill the cidrs from cyhy assets
             logging.info("Filling all cidrs:")
@@ -120,8 +117,7 @@ def add_stakeholders(orgs_df):
                 logging.info(allExecutives)
 
                 # Insert org and all assets into Cybersixgill
-                allValidIP = get_cidrs_and_ips(
-                    new_org_df["organizations_uid"].iloc[0])
+                allValidIP = get_cidrs_and_ips(new_org_df["organizations_uid"].iloc[0])
                 aliases = org_row["aliases"].split(",")
                 logging.info("Addind these assets to Cybersixgill:")
                 logging.info(org_row["org_code"])
@@ -145,11 +141,11 @@ def add_stakeholders(orgs_df):
             logging.info("Running Shodan dedupe:")
             dedupe(new_org_df)
 
-            logging.info("Completely done with %s", org_row['org_code'])
+            logging.info("Completely done with %s", org_row["org_code"])
             count += 1
         except Exception as e:
             logging.info(e)
-            logging.error("%s failed.", org_row['org_code'])
+            logging.error("%s failed.", org_row["org_code"])
             logging.error(traceback.format_exc())
     logging.info("Finished %s orgs.", count)
     return count
@@ -157,22 +153,23 @@ def add_stakeholders(orgs_df):
 
 class CustomCSVView(TemplateView):
     """CBV route to bulk upload page"""
+
     template_name = "bulk_upload/upload.html"
     form_class = CSVUploadForm
 
 
 class CustomCSVForm(FormView):
     """CBV form bulk upload csv file with file extension and header validation"""
-    form_class = CSVUploadForm
-    template_name = 'bulk_upload/upload.html'
 
-    success_url = reverse_lazy('bulkupload')
+    form_class = CSVUploadForm
+    template_name = "bulk_upload/upload.html"
+
+    success_url = reverse_lazy("bulkupload")
 
     def form_valid(self, form):
         """Validate form data"""
 
         csv_file = form.cleaned_data["file"]
-
 
         f = TextIOWrapper(csv_file.file)
 
@@ -180,15 +177,17 @@ class CustomCSVForm(FormView):
         dict_reader = dict_reader.fieldnames
         dict_reader = set(dict_reader)
 
-        required_columns = ["org",
-                            "org_code",
-                            "root_domain",
-                            "exec_url",
-                            "aliases",
-                            "premium",
-                            "demo"]
+        required_columns = [
+            "org",
+            "org_code",
+            "root_domain",
+            "exec_url",
+            "aliases",
+            "premium",
+            "demo",
+        ]
         # Check needed columns exist
-        req_col = ''
+        req_col = ""
 
         # print(dict_reader)
         # print(required_columns)
@@ -198,8 +197,7 @@ class CustomCSVForm(FormView):
 
         if len(testtheList) == len(dict_reader):
 
-            messages.success(self.request,
-                             "The file was uploaded successfully.")
+            messages.success(self.request, "The file was uploaded successfully.")
 
             for row, item in enumerate(dict_reader, start=1):
                 self.process_item(item)
@@ -212,9 +210,11 @@ class CustomCSVForm(FormView):
                 else:
                     incorrect_col.append(col)
 
-            messages.warning(self.request,
-                           "A required column is missing"
-                           " from the uploaded CSV: %s " % incorrect_col)
+            messages.warning(
+                self.request,
+                "A required column is missing"
+                " from the uploaded CSV: %s " % incorrect_col,
+            )
             return super().form_invalid(form)
 
 
