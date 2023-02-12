@@ -32,6 +32,7 @@ import pe_reports
 from ._version import __version__
 from .data.db_query import connect, get_orgs
 from .pages import init
+from .asm_generator import create_summary
 
 LOGGER = logging.getLogger(__name__)
 
@@ -141,61 +142,49 @@ def generate_reports(datestring, output_directory):
 
             # Insert Charts and Metrics into PDF
             (
+                scorecard_dict,
+                summary_dict,
                 source_html,
-                creds_sum,
-                masq_df,
-                insecure_df,
-                vulns_df,
-                assets_df,
-                dark_web_mentions,
-                alerts,
-                top_cves,
+                cred_xlsx,
+                da_xlsx,
+                vuln_xlsx,
+                mi_xlsx,
             ) = init(
                 datestring,
                 org_name,
+                org_code,
                 org_uid,
+                score,
+                grade,
+                output_directory,
+                soc_med_included,
             )
+
+            # Create ASM Summary
+            LOGGER.info("Creating ASM Summary")
+            summary_filename = f"{output_directory}/Posture-and-Exposure-ASM-Summary_{org_code}_{scorecard_dict['end_date'].strftime('%Y-%m-%d')}.pdf"
+            final_summary_output = f"{output_directory}/{org_code}/Posture-and-Exposure-ASM-Summary_{org_code}_{scorecard_dict['end_date'].strftime('%Y-%m-%d')}.pdf"
+            summary_xlsx_filename = f"{output_directory}/{org_code}/ASM_Summary.xlsx"
+            create_summary(
+                org_uid,
+                final_summary_output,
+                summary_dict,
+                summary_filename,
+                summary_xlsx_filename,
+            )
+            LOGGER.info("Done")
+
+
 
             # Convert to HTML to PDF
-            output_filename = f"{output_directory}/{org_code}-Posture_and_Exposure_Report-{datestring}.pdf"
+            output_filename = f"{output_directory}/Posture_and_Exposure_Report-{org_code}-{datestring}.pdf"
             convert_html_to_pdf(source_html, output_filename)
 
-            # Create Credential Exposure Excel file
-            cred_xlsx = f"{output_directory}/{org_code}/compromised_credentials.xlsx"
-            credWriter = pd.ExcelWriter(cred_xlsx, engine="xlsxwriter")
-            creds_sum.to_excel(
-                credWriter, sheet_name="Exposed_Credentials", index=False
-            )
-            credWriter.save()
-
-            # Create Domain Masquerading Excel file
-            da_xlsx = f"{output_directory}/{org_code}/domain_alerts.xlsx"
-            domWriter = pd.ExcelWriter(da_xlsx, engine="xlsxwriter")
-            masq_df.to_excel(domWriter, sheet_name="Suspected Domains", index=False)
-            domWriter.save()
-
-            # Create Suspected vulnerability Excel file
-            vuln_xlsx = f"{output_directory}/{org_code}/vuln_alerts.xlsx"
-            vulnWriter = pd.ExcelWriter(vuln_xlsx, engine="xlsxwriter")
-            assets_df.to_excel(vulnWriter, sheet_name="Assets", index=False)
-            insecure_df.to_excel(vulnWriter, sheet_name="Insecure", index=False)
-            vulns_df.to_excel(vulnWriter, sheet_name="Verified Vulns", index=False)
-            vulnWriter.save()
-
-            # Create dark web Excel file
-            mi_xlsx = f"{output_directory}/{org_code}/mention_incidents.xlsx"
-            miWriter = pd.ExcelWriter(mi_xlsx, engine="xlsxwriter")
-            dark_web_mentions.to_excel(
-                miWriter, sheet_name="Dark Web Mentions", index=False
-            )
-            alerts.to_excel(miWriter, sheet_name="Dark Web Alerts", index=False)
-            top_cves.to_excel(miWriter, sheet_name="Top CVEs", index=False)
-            miWriter.save()
-
             # Grab the PDF
-            pdf = f"{output_directory}/{org_code}-Posture_and_Exposure_Report-{datestring}.pdf"
+            pdf = f"{output_directory}/Posture_and_Exposure_Report-{org_code}-{datestring}.pdf"
 
-            (filesize, tooLarge) = embed(
+            # Embed Excel files
+            (filesize, tooLarge, output) = embed(
                 output_directory,
                 org_code,
                 datestring,
@@ -205,6 +194,7 @@ def generate_reports(datestring, output_directory):
                 vuln_xlsx,
                 mi_xlsx,
             )
+
             # Log a message if the report is too large.  Our current mailer
             # cannot send files larger than 20MB.
             if tooLarge:
@@ -218,7 +208,7 @@ def generate_reports(datestring, output_directory):
             "Connection to pe database failed and/or there are 0 organizations stored."
         )
 
-    return generated_reports
+    LOGGER.info("%s reports generated", generated_reports)
 
 
 def main():
@@ -265,12 +255,10 @@ def main():
         os.mkdir(validated_args["OUTPUT_DIRECTORY"])
 
     # Generate reports
-    generated_reports = generate_reports(
+    generate_reports(
         validated_args["REPORT_DATE"],
         validated_args["OUTPUT_DIRECTORY"],
     )
-
-    LOGGER.info("%s reports generated", generated_reports)
 
     # Stop logging and clean up
     logging.shutdown()

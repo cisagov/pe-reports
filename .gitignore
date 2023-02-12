@@ -8,6 +8,7 @@
 ## Project Specific ##
 *.html
 *.log
+build/
 output/
 src/pe_reports/*.html
 src/pe_reports/assets/
