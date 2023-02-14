@@ -4,6 +4,8 @@
 
 ## macOS ##
 .DS_Store
+build/
+*.log
 
 ## Python ##
 __pycache__

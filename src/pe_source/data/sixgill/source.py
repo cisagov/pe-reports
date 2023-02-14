@@ -101,12 +101,6 @@ def alerts(org_id):
         all_alerts.append(df_alerts)
         df_all_alerts = pd.concat(all_alerts).reset_index(drop=True)
 
-    # Fetch the full content of each alert
-    # for i, r in df_all_alerts.iterrows():
-    #     print(r["id"])
-    #     content = alerts_content(org_id, r["id"])
-    #     df_all_alerts.at[i, "content"] = content
-
     return df_all_alerts
 
 

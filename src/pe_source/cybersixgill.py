@@ -83,7 +83,7 @@ class Cybersixgill:
                     sixgill_org_id = sixgill_orgs[org_id][5]
                 except KeyError as err:
                     logging.error("PE org is not listed in Cybersixgill.")
-                    print(err, file=sys.stderr)
+                    logging.error(err, file=sys.stderr)
                     failed.append("%s not in sixgill" % org_id)
                     continue
 
@@ -131,15 +131,15 @@ class Cybersixgill:
         except Exception as e:
             logging.error("Failed fetching alert data for %s", org_id)
             logging.error(e)
-            print(traceback.format_exc())
+            logging.error(traceback.format_exc())
             return 1
 
         # Get Alert content
         try:
             logging.info("Fetching alert content data for %s.", org_id)
+            
             # Fetch organization assets
             org_assets_dict = all_assets_list(sixgill_org_id)
-            print(org_assets_dict)
             for i, row in alerts_df.iterrows():
                 try:
                     alert_id = row["sixgill_id"]
@@ -154,16 +154,15 @@ class Cybersixgill:
                         "Failed fetching a specific alert content for %s", org_id
                     )
                     logging.error(e)
-                    print(traceback.format_exc())
                     alerts_df.at[i, "content_snip"] = ""
                     alerts_df.at[i, "asset_mentioned"] = ""
                     alerts_df.at[i, "asset_type"] = ""
-            print(alerts_df["asset_mentioned"])
+            logging.info(alerts_df["asset_mentioned"])
 
         except Exception as e:
             logging.error("Failed fetching alert content for %s", org_id)
             logging.error(e)
-            print(traceback.format_exc())
+            logging.error(traceback.format_exc())
             return 1
 
         # Insert alert data into the PE database
@@ -196,7 +195,7 @@ class Cybersixgill:
             mentions_df["data_source_uid"] = source_uid
         except Exception as e:
             logging.error("Failed fetching mentions for %s", org_id)
-            print(traceback.format_exc())
+            logging.error(traceback.format_exc())
             logging.error(e)
             return 1
 
@@ -274,7 +273,6 @@ class Cybersixgill:
             )
         except Exception as e:
             logging.error("Probably no credential breaches for %s", org_id)
-            print(creds_df)
             logging.error(e)
             return 1
 

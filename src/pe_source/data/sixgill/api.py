@@ -113,7 +113,6 @@ def alerts_content(organization_id, alert_id):
             content = content["_source"]["content"]
         elif "description" in content:
             content = content["description"]
-            print(content)
         else:
             content = ""
     except Exception as e:
