@@ -1,13 +1,13 @@
 """Cybersixgill API calls."""
-# Standard Python Libraries
-import logging
-
 # Third-Party Libraries
 import pandas as pd
 import requests
 
 # cisagov Libraries
+from pe_reports import app
 from pe_source.data.pe_db.config import cybersix_token
+
+LOGGER = app.config["LOGGER"]
 
 
 def get_sixgill_organizations():
@@ -116,7 +116,7 @@ def alerts_content(organization_id, alert_id):
         else:
             content = ""
     except Exception as e:
-        logging.error("Failed getting content snip: %s", e)
+        LOGGER.error("Failed getting content snip: %s", e)
         content = ""
     return content
 

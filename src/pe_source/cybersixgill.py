@@ -133,14 +133,14 @@ class Cybersixgill:
             # Rename columns
             alerts_df = alerts_df.rename(columns={"id": "sixgill_id"})
         except Exception as e:
-            logging.error("Failed fetching alert data for %s", org_id)
-            logging.error(e)
-            logging.error(traceback.format_exc())
+            LOGGER.error("Failed fetching alert data for %s", org_id)
+            LOGGER.error(e)
+            LOGGER.error(traceback.format_exc())
             return 1
 
         # Get Alert content
         try:
-            logging.info("Fetching alert content data for %s.", org_id)
+            LOGGER.info("Fetching alert content data for %s.", org_id)
             
             # Fetch organization assets
             org_assets_dict = all_assets_list(sixgill_org_id)
@@ -154,19 +154,19 @@ class Cybersixgill:
                     alerts_df.at[i, "asset_mentioned"] = asset_mentioned
                     alerts_df.at[i, "asset_type"] = asset_type
                 except Exception as e:
-                    logging.error(
+                    LOGGER.error(
                         "Failed fetching a specific alert content for %s", org_id
                     )
-                    logging.error(e)
+                    LOGGER.error(e)
                     alerts_df.at[i, "content_snip"] = ""
                     alerts_df.at[i, "asset_mentioned"] = ""
                     alerts_df.at[i, "asset_type"] = ""
-            logging.info(alerts_df["asset_mentioned"])
+            LOGGER.info(alerts_df["asset_mentioned"])
 
         except Exception as e:
-            logging.error("Failed fetching alert content for %s", org_id)
-            logging.error(e)
-            logging.error(traceback.format_exc())
+            LOGGER.error("Failed fetching alert content for %s", org_id)
+            LOGGER.error(e)
+            LOGGER.error(traceback.format_exc())
             return 1
 
         # Insert alert data into the PE database
@@ -279,8 +279,8 @@ class Cybersixgill:
                 subset=["breach_name"], keep="first", inplace=True
             )
         except Exception as e:
-            logging.error("Probably no credential breaches for %s", org_id)
-            logging.error(e)
+            LOGGER.error("Probably no credential breaches for %s", org_id)
+            LOGGER.error(e)
             return 1
 
         # Insert breach data into the PE database
