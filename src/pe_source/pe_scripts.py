@@ -33,9 +33,15 @@ from typing import Any, Dict
 import docopt
 from schema import And, Schema, SchemaError, Use
 
+# cisagov Libraries
+from pe_reports import CENTRAL_LOGGING_FILE
+
 from ._version import __version__
 from .cybersixgill import Cybersixgill
+from .dnstwistscript import run_dnstwist
 from .shodan import Shodan
+
+LOGGER = logging.getLogger(__name__)
 
 
 def run_pe_script(source, orgs_list, cybersix_methods):
@@ -49,7 +55,7 @@ def run_pe_script(source, orgs_list, cybersix_methods):
     else:
         cybersix_methods = cybersix_methods.split(",")
 
-    logging.info("Running %s on these orgs: %s", source, orgs_list)
+    LOGGER.info("Running %s on these orgs: %s", source, orgs_list)
 
     if source == "cybersixgill":
         cybersix = Cybersixgill(orgs_list, cybersix_methods)
@@ -57,6 +63,13 @@ def run_pe_script(source, orgs_list, cybersix_methods):
     elif source == "shodan":
         shodan = Shodan(orgs_list)
         shodan.run_shodan()
+    elif source == "dnstwist":
+        run_dnstwist(orgs_list)
+    else:
+        logging.error(
+            "Not a valid source name. Correct values are cybersixgill or shodan."
+        )
+        sys.exit(1)
 
 
 def main():
@@ -88,7 +101,11 @@ def main():
 
     # Set up logging
     logging.basicConfig(
-        format="%(asctime)-15s %(levelname)s %(message)s", level=log_level.upper()
+        filename=CENTRAL_LOGGING_FILE,
+        filemode="a",
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+        datefmt="%m/%d/%Y %I:%M:%S",
+        level=log_level.upper(),
     )
 
     # Run pe script on specified source

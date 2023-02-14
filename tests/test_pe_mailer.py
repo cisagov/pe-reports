@@ -10,6 +10,7 @@ import pytest
 
 # cisagov Libraries
 import pe_mailer.email_reports
+from pe_reports import CENTRAL_LOGGING_FILE
 
 log_levels = (
     "debug",
@@ -20,6 +21,18 @@ log_levels = (
 )
 
 PROJECT_VERSION = pe_mailer.__version__
+
+
+# Setup logging to central file
+logging.basicConfig(
+    filename=CENTRAL_LOGGING_FILE,
+    filemode="a",
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    datefmt="%m/%d/%Y %I:%M:%S",
+    level="INFO",
+)
+
+logger = logging.getLogger(__name__)
 
 
 def test_mailer_stdout_version(capsys):

@@ -14,6 +14,12 @@ import shodan
 REPORT_DB_CONFIG = files("pe_reports").joinpath("data/database.ini")
 
 
+# Setup logging to central file
+# To avoid a circular reference error which occurs when calling app.config["LOGGER"]
+# we are directly calling the logger here
+LOGGER = logging.getLogger(__name__)
+
+
 def shodan_api_init():
     """Connect to Shodan API."""
     section = "shodan"
@@ -38,10 +44,10 @@ def shodan_api_init():
             # Test api key
             api.info()
         except Exception:
-            logging.error("Invalid Shodan API key: {}".format(key))
+            LOGGER.error("Invalid Shodan API key: {}".format(key))
             continue
         api_list.append(api)
-    logging.info("Number of valid Shodan API keys: {}".format(len(api_list)))
+    LOGGER.info("Number of valid Shodan API keys: {}".format(len(api_list)))
     return api_list
 
 

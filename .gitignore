@@ -7,6 +7,13 @@
 build/
 *.log
 
+## Project Specific ##
+*.html
+*.log
+output/
+src/pe_reports/*.html
+src/pe_reports/assets/
+
 ## Python ##
 __pycache__
 .coverage

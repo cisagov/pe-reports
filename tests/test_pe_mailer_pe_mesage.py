@@ -19,7 +19,8 @@ class Test(unittest.TestCase):
         message = PEMessage(pdf, report_date, to)
         self.assertEqual(message["From"], "reports@cyber.dhs.gov")
         self.assertEqual(
-            message["Subject"], "Posture and Exposure Report - December 15, 2020"
+            message["Subject"],
+            "Posture and Exposure Report - December 15, 2020 (TLP:AMBER)",
         )
         self.assertEqual(message.get("CC"), None)
         self.assertEqual(
@@ -59,6 +60,8 @@ WARNING: This document is FOR OFFICIAL USE ONLY (FOUO). It contains information 
                 html_body = """<html>
 <head></head>
 <body>
+<p style="color:#FFC000">TLP:AMBER</p>
+
 <p>Greetings,</p>
 
 <p>The attached Posture and Exposure (P&E) report is the result of a
@@ -99,7 +102,8 @@ Cybersecurity and Infrastructure Security Agency<br>
 
         self.assertEqual(message["From"], "reports@cyber.dhs.gov")
         self.assertEqual(
-            message["Subject"], "Posture and Exposure Report - December 15, 2020"
+            message["Subject"],
+            "Posture and Exposure Report - December 15, 2020 (TLP:AMBER)",
         )
         self.assertEqual(message.get("CC"), None)
         self.assertEqual(
@@ -139,6 +143,8 @@ WARNING: This document is FOR OFFICIAL USE ONLY (FOUO). It contains information 
                 html_body = """<html>
 <head></head>
 <body>
+<p style="color:#FFC000">TLP:AMBER</p>
+
 <p>Greetings,</p>
 
 <p>The attached Posture and Exposure (P&E) report is the result of a
@@ -185,7 +191,8 @@ Cybersecurity and Infrastructure Security Agency<br>
 
         self.assertEqual(message["From"], fm)
         self.assertEqual(
-            message["Subject"], "Posture and Exposure Report - December 15, 2020"
+            message["Subject"],
+            "Posture and Exposure Report - December 15, 2020 (TLP:AMBER)",
         )
         self.assertEqual(message["CC"], "cc@example.com")
         self.assertEqual(message["BCC"], "bcc@example.com,bcc2@example.com")
@@ -223,6 +230,8 @@ WARNING: This document is FOR OFFICIAL USE ONLY (FOUO). It contains information 
                 html_body = """<html>
 <head></head>
 <body>
+<p style="color:#FFC000">TLP:AMBER</p>
+
 <p>Greetings,</p>
 
 <p>The attached Posture and Exposure (P&E) report is the result of a
@@ -269,7 +278,8 @@ Cybersecurity and Infrastructure Security Agency<br>
 
         self.assertEqual(message["From"], fm)
         self.assertEqual(
-            message["Subject"], "Posture and Exposure Report - December 15, 2020"
+            message["Subject"],
+            "Posture and Exposure Report - December 15, 2020 (TLP:AMBER)",
         )
         self.assertEqual(message["CC"], "cc@example.com,cc2@example.com")
         self.assertEqual(message["BCC"], "bcc@example.com,bcc2@example.com")
@@ -307,6 +317,8 @@ WARNING: This document is FOR OFFICIAL USE ONLY (FOUO). It contains information 
                 html_body = """<html>
 <head></head>
 <body>
+<p style="color:#FFC000">TLP:AMBER</p>
+
 <p>Greetings,</p>
 
 <p>The attached Posture and Exposure (P&E) report is the result of a

@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>{% block title %} {% endblock %} - P&E Application</title>
+
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+      integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3"
+      crossorigin="anonymous"
+    />
+    <link
+      rel="stylesheet"
+      type="text/css"
+      href="{{ url_for('static', filename='css/custom.css') }}"
+    />
+  </head>
+
+  <body>
+    <script
+      src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"
+      integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p"
+      crossorigin="anonymous"
+    ></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="../static/js/htmx.js"></script>
+
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+      <div class="container-fluid">
+        <a class="navbar-brand" href="#">PE Reports</a>
+        <button
+          class="navbar-toggler"
+          type="button"
+          data-bs-toggle="collapse"
+          data-bs-target="#navbarNav"
+          aria-controls="navbarNav"
+          aria-expanded="false"
+          aria-label="Toggle navigation"
+        >
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+          <ul class="navbar-nav">
+            <li class="nav-item">
+              <a
+                class="nav-link {% if request.endpoint=='home.index' %}active{%endif %}"
+                id="home"
+                aria-current="page"
+                href="{{ url_for('home.index') }}"
+                >Home</a
+              >
+            </li>
+            <li class="nav-item">
+              <a
+                class="nav-link {% if request.endpoint=='stakeholder.stakeholder' %}active{%endif %}"
+                id="add"
+                href="{{ url_for('stakeholder.stakeholder') }}"
+                >Add Stakeholder</a
+              >
+            </li>
+
+            <li class="nav-item">
+              <a
+                class="nav-link {% if request.endpoint=='report_gen.report_gen' %}active{%endif %}"
+                id="upload"
+                href="{{ url_for('report_gen.report_gen') }}"
+                >Report Generator</a
+              >
+            </li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+
+    <div class="d-flex justify-content-center Jumbotron">
+      <h1>Welcome to P&E Reports</h1>
+
+      <!--<img src="../static/" alt="">-->
+    </div>
+    <div class="row"></div>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    <!-- Categories: success (green), info (blue), warning (yellow), danger (red) -->
+    {% if messages %} {% for category, message in messages %}
+    <div
+      class="alert alert-{{ category }} alert-dismissible fade show row"
+      id="messageDiv"
+      role="alert"
+    >
+      <button
+        type="button"
+        class="btn-close"
+        data-bs-dismiss="alert"
+        aria-label="Close"
+      >
+        <span aria-hidden="true">&times;</span>
+      </button>
+      <!-- <strong>Title</strong> -->
+      {{ message }}
+    </div>
+    {% endfor %} {% endif %} {% endwith %} {%block content%} {% endblock%}
+  </body>
+</html>
