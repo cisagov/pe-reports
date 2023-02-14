@@ -141,7 +141,7 @@ class Cybersixgill:
         # Get Alert content
         try:
             LOGGER.info("Fetching alert content data for %s.", org_id)
-            
+
             # Fetch organization assets
             org_assets_dict = all_assets_list(sixgill_org_id)
             for i, row in alerts_df.iterrows():

@@ -134,7 +134,7 @@ def get_alerts_content(organization_id, alert_id, org_assets_dict):
                 snip = "..." + snip + "..."
                 asset_mentioned = asset
                 asset_type = type
-                logging.info("Asset mentioned: %s", asset_mentioned)
+                LOGGER.info("Asset mentioned: %s", asset_mentioned)
     return snip, asset_mentioned, asset_type
 
 
