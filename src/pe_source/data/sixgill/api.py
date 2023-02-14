@@ -4,7 +4,6 @@ import pandas as pd
 import requests
 
 # cisagov Libraries
-from pe_reports import app
 from pe_source.data.pe_db.config import cybersix_token
 
 
@@ -113,7 +112,7 @@ def alerts_content(organization_id, alert_id):
             content = content["description"]
         else:
             content = ""
-    except Exception as e:
+    except Exception:
         content = ""
     return content
 
