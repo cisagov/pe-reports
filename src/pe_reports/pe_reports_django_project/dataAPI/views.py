@@ -210,7 +210,7 @@ def read_orgs(tokens: dict = Depends(get_api_key)):
                  dependencies=[Depends(get_api_key)],
                  response_model=List[schemas.VwBreachcomp],
                  tags=["List all breaches"])
-def read_orgs(tokens: dict = Depends(get_api_key)):
+def read_breachcomp(tokens: dict = Depends(get_api_key)):
     """API endpoint to get all breaches."""
     breachInfo = list(VwBreachcomp.objects.all())
     print(breachInfo)
@@ -224,7 +224,7 @@ def read_orgs(tokens: dict = Depends(get_api_key)):
 
 @api_router.post("/breachcomp_credsbydate", dependencies=[Depends(get_api_key)],
                 response_model=List[schemas.VwBreachcompCredsbydate], tags=["List all breaches by date"])
-def read_orgs(tokens: dict = Depends(get_api_key)):
+def read_breachcomp_credsbydate(tokens: dict = Depends(get_api_key)):
     """API endpoint to get all breach creds by date."""
     breachcomp_dateInfo = list(VwBreachcompCredsbydate.objects.all())
 
@@ -238,7 +238,7 @@ def read_orgs(tokens: dict = Depends(get_api_key)):
 
 @api_router.post("/orgs_attacksurface", dependencies=[Depends(get_api_key)],
                 response_model=List[schemas.VwOrgsAttacksurface], tags=["Get asset counts for an organization"])
-def read_orgs(data: schemas.VwOrgsAttacksurfaceInput, tokens: dict = Depends(get_api_key)):
+def read_orgs_attacksurface(data: schemas.VwOrgsAttacksurfaceInput, tokens: dict = Depends(get_api_key)):
     """Get asset counts for an organization attack surfaces."""
     print(data.organizations_uid)
     attackSurfaceInfo = list(VwOrgsAttacksurface.objects.filter(organizations_uid=data.organizations_uid))
@@ -253,7 +253,7 @@ def read_orgs(data: schemas.VwOrgsAttacksurfaceInput, tokens: dict = Depends(get
 
 @api_router.post("/cyhy_db_asset", dependencies=[Depends(get_api_key)],
                 response_model=List[schemas.CyhyDbAssets], tags=["Get cyhy assets"])
-def read_orgs(data: schemas.CyhyDbAssetsInput, tokens: dict = Depends(get_api_key)):
+def read_cyhy_db_asset(data: schemas.CyhyDbAssetsInput, tokens: dict = Depends(get_api_key)):
     """Get Query cyhy assets."""
     print(data.org_id)
     cyhyAssets = list(CyhyDbAssets.objects.filter(org_id=data.org_id))
@@ -269,7 +269,7 @@ def read_orgs(data: schemas.CyhyDbAssetsInput, tokens: dict = Depends(get_api_ke
 @api_router.post("/cidrs", dependencies=[Depends(get_api_key)],
                  response_model=List[schemas.Cidrs],
                  tags=["List of all CIDRS"])
-def read_orgs(tokens: dict = Depends(get_api_key)):
+def read_cidrs(tokens: dict = Depends(get_api_key)):
     """API endpoint to get all CIDRS."""
     orgs = list(VwCidrs.objects.all())
 
@@ -289,7 +289,7 @@ def read_orgs(tokens: dict = Depends(get_api_key)):
 @api_router.post("/breachdetails", dependencies=[Depends(get_api_key)],
                  response_model=List[schemas.VwBreachDetails],
                  tags=["List of all Breach Details"])
-def read_orgs(tokens: dict = Depends(get_api_key)):
+def read_breachdetails(tokens: dict = Depends(get_api_key)):
     """API endpoint to get all CIDRS."""
     breachDetails = list(VwBreachcompBreachdetails.objects.all())
 
@@ -303,7 +303,7 @@ def read_orgs(tokens: dict = Depends(get_api_key)):
 
 
 @api_router.post("/get_key", tags=["Get user api keys"])
-def read_orgs(data: schemas.UserAPI):
+def read_get_key(data: schemas.UserAPI):
     """API endpoint to get api by submitting refresh token."""
     user_key = ''
     userkey = list(apiUser.objects.filter(refresh_token=data.refresh_token))
@@ -315,18 +315,18 @@ def read_orgs(data: schemas.UserAPI):
 
 
 
-@api_router.post("/testingUsers",
-                tags=["List of user id"])
-def read_users(data: schemas.UserAuth):
-    user = userinfo(data.username)
-
-    # user = list(User.objects.filter(username='cduhn75'))
-    if user is None:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="User with this name does exist"
-        )
-    return userinfo(data.username)
+# @api_router.post("/testingUsers",
+#                 tags=["List of user id"])
+# def read_users(data: schemas.UserAuth):
+#     user = userinfo(data.username)
+#
+#     # user = list(User.objects.filter(username='cduhn75'))
+#     if user is None:
+#         raise HTTPException(
+#             status_code=status.HTTP_400_BAD_REQUEST,
+#             detail="User with this name does exist"
+#         )
+#     return userinfo(data.username)
 
 
 

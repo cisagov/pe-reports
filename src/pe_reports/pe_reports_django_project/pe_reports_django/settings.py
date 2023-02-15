@@ -17,6 +17,7 @@ import os
 from django.contrib.messages import constants as messages
 import mimetypes
 
+
 mimetypes.add_type("text/css", ".css", True)
 mimetypes.add_type("text/html", ".html", True)
 
@@ -94,8 +95,11 @@ LOGGING = {
     'handlers': {
         'file': {
             'level': 'INFO',
-            'class': 'logging.FileHandler',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'maxBytes': 1024 * 1024 * 1,
+            'backupCount': 10,
             'filename': './pe_reportsLogFile.log',
+
             'formatter': 'verbose',
         },
     },

@@ -928,6 +928,28 @@ class UniqueSoftware(models.Model):
         managed = False
         db_table = 'unique_software'
 
+class WasTrackerCustomerdata(models.Model):
+    customer_id = models.UUIDField(primary_key=True)
+    tag = models.TextField()
+    customer_name = models.TextField()
+    testing_sector = models.TextField()
+    ci_type = models.TextField()
+    ticket = models.TextField()
+    next_scheduled = models.TextField()
+    last_scanned = models.TextField()
+    frequency = models.TextField()
+    comments_notes = models.TextField()
+    was_report_poc = models.TextField()
+    was_report_email = models.TextField()
+    onboarding_date = models.DateField()
+    no_of_web_apps = models.IntegerField()
+    no_web_apps_last_updated = models.DateField(blank=True, null=True)
+    elections = models.TextField(blank=True, null=True)
+
+    class Meta:
+        managed = False
+        db_table = 'was_tracker_customerdata'
+
 
 class WebAssets(models.Model):
     asset_uid = models.UUIDField(primary_key=True, default=uuid.uuid1())

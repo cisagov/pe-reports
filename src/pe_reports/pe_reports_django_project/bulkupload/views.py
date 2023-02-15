@@ -5,6 +5,7 @@ from django.views.generic.edit import FormView
 from django.urls import reverse_lazy
 from django.core.validators import FileExtensionValidator, ValidationError
 from django.contrib import messages
+from django.contrib.auth.mixins import LoginRequiredMixin
 from bs4 import BeautifulSoup
 import spacy
 
@@ -15,9 +16,12 @@ import traceback
 from io import TextIOWrapper
 import re
 import requests
+from datetime import datetime
+
 
 # CISA Imports
 from .forms import CSVUploadForm
+from home.models import WasTrackerCustomerdata
 from pe_reports.data.db_query import (
     get_cidrs_and_ips,
     insert_roots,
@@ -40,6 +44,8 @@ from pe_source.data.sixgill.api import setNewCSGOrg
 LOGGER = logging.getLogger(__name__)
 
 nlp = spacy.load("en_core_web_lg")
+
+
 
 
 def theExecs(URL):
@@ -161,7 +167,7 @@ class CustomCSVView(TemplateView):
     form_class = CSVUploadForm
 
 
-class CustomCSVForm(FormView):
+class CustomCSVForm(LoginRequiredMixin,FormView):
     """CBV form bulk upload csv file with file extension and header validation"""
     form_class = CSVUploadForm
     template_name = 'bulk_upload/upload.html'
@@ -174,40 +180,84 @@ class CustomCSVForm(FormView):
         csv_file = form.cleaned_data["file"]
 
 
+
+
         f = TextIOWrapper(csv_file.file)
 
+        # LOGGER.info(allInfo)
         dict_reader = csv.DictReader(f)
-        dict_reader = dict_reader.fieldnames
-        dict_reader = set(dict_reader)
+        dict_reader1 = dict_reader.fieldnames
+        dict_reader2 = set(dict_reader1)
 
-        required_columns = ["org",
-                            "org_code",
-                            "root_domain",
-                            "exec_url",
-                            "aliases",
-                            "premium",
-                            "demo"]
+        required_columns = [
+            "tag",
+            "customer_name",
+            "testing_sector",
+            "ci_type",
+            "ticket",
+            "next_scheduled",
+            "last_scanned",
+            "frequency",
+            "comments_notes",
+            "was_report_poc",
+            "was_report_email",
+            "onboarding_date",
+            "no_of_web_apps",
+            # "no_of_web_apps_last_updated",
+            "elections"
+            ]
+
         # Check needed columns exist
         req_col = ''
 
         # print(dict_reader)
         # print(required_columns)
-        incorrect_col = []
-        testtheList = [i for i in required_columns if i in dict_reader]
-        # print(testtheList)
 
-        if len(testtheList) == len(dict_reader):
+        for row in dict_reader:
+            # tag = row['no_of_web_apps_last_updated']
+            wasCustomer = WasTrackerCustomerdata(
+                tag=row['tag'],
+                customer_name=row['customer_name'],
+                testing_sector=row['testing_sector'],
+                ci_type=row['ci_type'],
+                ticket=row['ticket'],
+                next_scheduled=row['next_scheduled'],
+                last_scanned=row['last_scanned'],
+                frequency=row['frequency'],
+                comments_notes=row['comments_notes'],
+                was_report_poc=row['was_report_poc'],
+                was_report_email=row['was_report_email'],
+                onboarding_date=datetime.strptime(row['onboarding_date'],
+                                                  '%m/%d/%Y'),
+                no_of_web_apps=row['no_of_web_apps'],
+                # no_of_web_apps_last_updated=row['no_of_web_apps_last_updated'],
+                elections=row['elections']
+
+            )
+
+            # print(wasCustomer)
+
+            wasCustomer.save()
+
+
+        incorrect_col = []
+        testtheList = [i for i in required_columns if i in dict_reader2]
+        # LOGGER.info(testtheList)
+
+        if len(testtheList) == len(dict_reader2):
 
             messages.success(self.request,
                              "The file was uploaded successfully.")
 
-            for row, item in enumerate(dict_reader, start=1):
-                self.process_item(item)
+            # for row, item in enumerate(dict_reader, start=1):
+            # for item in allInfo:
+            #     # thetag = item['tag']
+            #     self.process_item(item)
             #
             return super().form_valid(form)
         else:
             for col in required_columns:
-                if col in dict_reader:
+                if col in dict_reader2:
                     pass
                 else:
                     incorrect_col.append(col)
@@ -218,6 +268,8 @@ class CustomCSVForm(FormView):
             return super().form_invalid(form)
 
 
-    def process_item(self, item):
+    def process_item(self, file):
         #     # TODO: Replace with the code for what you wish to do with the row of data in the CSV.
-        LOGGER.info("The item is %s" % item)
+        # LOGGER.info("The item is %s" % file)
+
+        print(file)
