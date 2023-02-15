@@ -578,9 +578,9 @@ create table was_tracker_customerdata
     comments_notes           text                            not null,
     was_report_poc           text                            not null,
     was_report_email         text                            not null,
-    onboarding_date          date                            not null,
+    onboarding_date          text                            not null,
     no_of_web_apps           integer                         not null,
-    no_web_apps_last_updated date,
+    no_web_apps_last_updated text,
     elections                text
 );
 
