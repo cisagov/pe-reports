@@ -197,7 +197,7 @@ def read_orgs(tokens: dict = Depends(get_api_key)):
     response_model=List[schemas.VwBreachcomp],
     tags=["List all breaches"],
 )
-def read_orgs(tokens: dict = Depends(get_api_key)):
+def breachcomp(tokens: dict = Depends(get_api_key)):
     """API endpoint to get all stakeholders."""
     breachInfo = list(VwBreachcomp.objects.all())
     print(breachInfo)
@@ -216,7 +216,7 @@ def read_orgs(tokens: dict = Depends(get_api_key)):
     response_model=List[schemas.VwBreachcompCredsbydate],
     tags=["List all breaches by date"],
 )
-def read_orgs(tokens: dict = Depends(get_api_key)):
+def breachcomp_credsbydate(tokens: dict = Depends(get_api_key)):
     """API endpoint to get all stakeholders."""
     breachcomp_dateInfo = list(VwBreachcompCredsbydate.objects.all())
 
@@ -234,7 +234,7 @@ def read_orgs(tokens: dict = Depends(get_api_key)):
     response_model=List[schemas.VwOrgsAttacksurface],
     tags=["Get asset counts for an organization"],
 )
-def read_orgs(
+def orgs_attacksurface(
     data: schemas.VwOrgsAttacksurfaceInput, tokens: dict = Depends(get_api_key)
 ):
     """Get asset counts for an organization."""
@@ -252,7 +252,7 @@ def read_orgs(
 
 
 @api_router.post("/get_key", tags=["Get user api keys"])
-def read_orgs(data: schemas.UserAPI):
+def get_key(data: schemas.UserAPI):
     """API endpoint to get api by submitting refresh token."""
     user_key = ""
     userkey = list(apiUser.objects.filter(refresh_token=data.refresh_token))
@@ -265,18 +265,18 @@ def read_orgs(data: schemas.UserAPI):
     return user_key
 
 
-@api_router.post("/testingUsers", tags=["List of user id"])
-def read_users(data: schemas.UserAuth):
-    """API endpoint for testing purposes."""
-    user = userinfo(data.username)
-
-    # user = list(User.objects.filter(username='cduhn75'))
-    if user is None:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="User with this name does exist",
-        )
-    return userinfo(data.username)
+# @api_router.post("/testingUsers", tags=["List of user id"])
+# def read_users(data: schemas.UserAuth):
+#    """API endpoint for testing purposes."""
+#    user = userinfo(data.username)
+#
+#    # user = list(User.objects.filter(username='cduhn75'))
+#    if user is None:
+#        raise HTTPException(
+#            status_code=status.HTTP_400_BAD_REQUEST,
+#            detail="User with this name does exist",
+#        )
+#    return userinfo(data.username)
 
 
 # @api_router.get("/secure_endpoint", tags=["test"])
@@ -327,14 +327,19 @@ def create_user(data: schemas.UserAuth):
     response_model=List[schemas.VwWASFindingMetrics],
     tags=["Get relevant findings data for WAS score"],
 )
-def read_orgs(
+def get_was_findings(
     data: schemas.VwWASFindingMetricsInput, tokens: dict = Depends(get_api_key)
 ):
     """API endpoint to get Finding data for WAS score."""
-    was_finding_metrics = VwWASFindingMetrics.objects.filter(
-        date__gte=data.start_date, date__lte=data.end_date
-    )
-    LOGGER.info(f"The api key submitted {tokens}")
+    try:
+        was_finding_metrics = VwWASFindingMetrics.objects.filter(
+            date__gte=data.start_date, date__lte=data.end_date
+        )
+        LOGGER.info(f"The api key submitted {tokens}")
+    except Exception as endpoint_err:
+        # Catch any errors w/ database
+        LOGGER.info("Error occured with database view: " + endpoint_err)
+
     try:
         userapiTokenverify(theapiKey=tokens)
         return was_finding_metrics
@@ -349,7 +354,7 @@ def read_orgs(
     response_model=List[schemas.VwWASCustomerMetrics],
     tags=["Get relevant customer data for WAS score"],
 )
-def read_orgs(
+def get_was_customers(
     data: schemas.VwWASCustomerMetricsInput, tokens: dict = Depends(get_api_key)
 ):
     """API endpoint to get customer data for WAS score."""
@@ -358,9 +363,9 @@ def read_orgs(
             date__gte=data.start_date, date__lte=data.end_date
         )
         LOGGER.info(f"The api key submitted {tokens}")
-    except:
+    except Exception as endpoint_err:
         # Catch any errors w/ database
-        LOGGER.info("")
+        LOGGER.info("Error occured with database view: " + endpoint_err)
 
     try:
         userapiTokenverify(theapiKey=tokens)

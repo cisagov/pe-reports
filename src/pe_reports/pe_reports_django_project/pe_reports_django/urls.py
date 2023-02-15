@@ -18,16 +18,11 @@ from django.urls import path, include
 from django.http import HttpResponse
 
 
-
-
-
 urlpatterns = [
-    path('', include('home.urls')),
-    path('login/', include('manage_login.urls')),
-    path('logout/', include('manage_login.urls')),
+    path("", include("home.urls")),
+    path("login/", include("manage_login.urls")),
+    path("logout/", include("manage_login.urls")),
     # path("accounts/", include("django.contrib.auth.urls")),
-    path('report_gen/', include('report_gen.urls')),
+    path("report_gen/", include("report_gen.urls")),
     path("admin/", admin.site.urls),
 ]
-
-

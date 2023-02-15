@@ -1,116 +1,23 @@
 """A file containing the WAS scoring algorithm, version 1.0."""
 # Standard Python Libraries
-import calendar
 import datetime
-import math
 
 # Third-Party Libraries
-from dateutil.relativedelta import relativedelta
+# from dateutil.relativedelta import relativedelta
 import numpy as np
 import pandas as pd
 from retry import retry
 from functools import reduce
 from scipy.stats import zscore
 import requests
-import json
 
 # cisagov Libraries
 # from pe_reports.data.db_query import get_orgs_df, query_score_data
+from pe_reports.helpers.generate_score import get_prev_startstop, rescale
 
 # VERSION 1.0 of the WAS scoring algorithm, still a WIP
 
 # ---------- Misc. Helper Functions ----------
-
-
-def get_prev_startstop(curr_date, num_periods):
-    """
-    Get the start/stop dates for the specified number of preceding report periods, given the current date.
-    i.e. If curr_date = 2022-08-15 and num_periods = 3, it'll return: [[7/1, 7/15], [7/16, 7/31], [8/1, 8/15]]
-    Args:
-        curr_date: current report period date (i.e. 2022-08-15)
-        num_periods: number of preceding report periods to calculate (i.e. 15)
-    Returns:
-        The start and stop dates for the specified number or report periods preceding the current date
-    """
-    # Array to hold start/stop dates
-    start_stops = []
-    month_diff = []
-    # Calculating month difference array
-    for n in range(0, math.ceil(num_periods / 2) + 1):
-        month_diff.append(n)
-        month_diff.append(n)
-    # Calculate start/stop dates
-    if curr_date.day == 15:
-        month_diff = month_diff[1 : num_periods + 1]
-        for i in range(0, num_periods):
-            if (i % 2) == 0:
-                # Even idx 1 - 15
-                start_date = (curr_date + relativedelta(months=-month_diff[i])).replace(
-                    day=1
-                )
-                end_date = curr_date + relativedelta(months=-month_diff[i])
-                start_stops.insert(0, [start_date.date(), end_date.date()])
-            else:
-                # odd idx 16 - 30/31
-                start_date = (curr_date + relativedelta(months=-month_diff[i])).replace(
-                    day=16
-                )
-                end_date = curr_date + relativedelta(months=-month_diff[i])
-                end_date = end_date.replace(
-                    day=calendar.monthrange(end_date.year, end_date.month)[1]
-                )
-                start_stops.insert(0, [start_date.date(), end_date.date()])
-    else:
-        month_diff = month_diff[:num_periods]
-        for i in range(0, num_periods):
-            if (i % 2) == 0:
-                # Even idx 16 - 30/31
-                start_date = (curr_date + relativedelta(months=-month_diff[i])).replace(
-                    day=16
-                )
-                end_date = curr_date + relativedelta(months=-month_diff[i])
-                end_date = end_date.replace(
-                    day=calendar.monthrange(end_date.year, end_date.month)[1]
-                )
-                start_stops.insert(0, [start_date.date(), end_date.date()])
-            else:
-                # odd idx 1 - 15
-                start_date = (curr_date + relativedelta(months=-month_diff[i])).replace(
-                    day=1
-                )
-                end_date = (curr_date + relativedelta(months=-month_diff[i])).replace(
-                    day=15
-                )
-                start_stops.insert(0, [start_date.date(), end_date.date()])
-    # Return 2D list of start/stop dates
-    return start_stops
-
-
-def rescale(values, width, offset):
-    """
-    Rescale Pandas Series of values to the specified width and offset.
-
-    Args:
-        values: Pandas Series of values that you want to rescale
-        width: The new width of the rescaled values
-        offset: The new starting point of the rescaled values
-            examples:
-            width = 42, offset = 5 results in values from 5-47
-            width = 100, offset = -3 results in values from -3-97
-    Returns:
-        A Pandas Series of the new, re-scaled values
-    """
-    # Get min/max values
-    min_val = values.min()
-    max_val = values.max()
-    # Catch edge case
-    if min_val == 0 and max_val == 0:
-        # If all zeros, just return all zeros
-        return pd.Series([0] * values.size)
-    else:
-        # Otherwise, rescale 0-100
-        values = ((values - min_val) / (max_val - min_val) * width) + offset
-        return values
 
 
 def import_was_data(curr_start, curr_end):
@@ -124,42 +31,60 @@ def import_was_data(curr_start, curr_end):
     Returns:
         A single dataframe containing all data necessary for WAS score calculation.
     """
+    # DJANGO TESTING
+    # url_attacksurface = "http://127.0.0.1:8000/apiv1/orgs"
+    # test_headers = {
+    #    "Content-Type": "application/json",
+    #    "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE2NzM1MzgxMTMsInN1YiI6Impha2U3NSJ9.9LvM-KISB2njow4ogk9MLuoXOECQnq9pmeDNSvH-A1Q",
+    # }
+    # test_payload = {"organizations_uid", "6d0a19e2-f247-11ec-b9ec-02c6a3fe975b"}
+    # try:
+    #    test_resp = requests.post(
+    #        url_attacksurface,
+    #        headers=test_headers,
+    #        # data=test_payload,
+    #    )
+    # except Exception as e_test:
+    #    print("Test API error occured: " + str(e_test))
+    # print(test_resp.text)
+    # x = 5 / 0
+    # DJANGO TESTING
+
     # ----- MAKE API CALL -----
     # Make call to database API endpoints to get WAS score data
     # API endpoint URLs
     url_was_customer = "http://127.0.0.1:8000/apiv1/was_customer_metrics"
     url_was_findings = "http://127.0.0.1:8000/apiv1/was_finding_metrics"
-    # API key
+    # Pass API key
     headers = {
         "Content-Type": "application/json",
-        # "access_token": f'{config("API_KEY")}',
-        "access_token": "API_KEY",
+        "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE2NzM1MzgxMTMsInN1YiI6Impha2U3NSJ9.9LvM-KISB2njow4ogk9MLuoXOECQnq9pmeDNSvH-A1Q",
     }
-    # API Token
-    payload = json.dumps(
-        {
-            # "refresh_token": f'{config("USER_REFRESH_TOKEN")}'
-            "refresh_token": "USER_REFRESH_TOKEN"
-        }
-    )
+    # Pass view input parameters
+    payload = {
+        "start_date": curr_start,
+        "end_date": curr_end,
+    }
     # Attempt to retrieve WAS customer data
     try:
         was_customer_resp = requests.post(
-            url_was_customer, headers=headers, payload=payload
-        ).json()
+            url_was_customer, headers=headers, data=payload
+        )
     except Exception as e_customer:
-        print("WAS customer API error occured: " + e_customer)
+        print("WAS customer API error occured: " + str(e_customer))
+
     # Attempt to retrieve WAS finding data
     try:
         was_finding_resp = requests.post(
-            url_was_findings, headers=headers, payload=payload
+            url_was_findings, headers=headers, data=payload
         ).json()
     except Exception as e_finding:
-        print("WAS finding API error occured" + e_finding)
+        print("WAS finding API error occured" + str(e_finding))
 
     # If API data sucessfully retrieved, convert to dataframe
     was_customer_df = pd.DataFrame(was_customer_resp)
     was_finding_df = pd.DataFrame(was_finding_resp)
+
     was_customer_df = pd.read_csv("test_customer_data_2023-02-15.csv")
     was_finding_df = pd.read_csv("test_finding_data_2023-02-15.csv")
 
@@ -242,13 +167,13 @@ def import_was_data(curr_start, curr_end):
             "owasp_category",
             (lambda x: (x == "Server Side Request Forgery (SSRF)").sum()),
         ),
-        # Info Gathered Metrics <-- FIX ODD BEHAVIOR
+        # Info Gathered Metrics
         num_info_gathered=(
             "finding_type",
             (lambda x: (x == "INFORMATION GATHERED").sum()),
         ),
-        num_diag_ig=("finding_type", (lambda x: (x == "DIAGNOSTIC").sum())),
-        num_weak_ig=("finding_type", (lambda x: (x == "WEAKNESS").sum())),
+        num_diag_ig=("type", (lambda x: (x == "DIAGNOSTIC").sum())),
+        num_weak_ig=("type", (lambda x: (x == "WEAKNESS").sum())),
         # Remediation Metrics
         avg_remed_time=("remed_time", "mean"),
         num_crit_remed_gt1=("crit_remed_gt30days", "sum"),
@@ -260,7 +185,9 @@ def import_was_data(curr_start, curr_end):
         was_customer_df, was_finding_df, on="org_id", how="left"
     ).fillna(0)
 
-    # TEMP FIX: STAKEHOLDER WITH NO WEBAPPS???
+    # TEMPORARY FIX:
+    # If stakeholder has no webapps -> just drop them from WAS score calculations
+    # Will need to determine what's going on with those orgs' Qualys scans
     was_data_df["num_webapp"].mask(was_data_df["num_webapp"] == 0, 1, inplace=True)
 
     # Return completed dataframe
@@ -427,5 +354,5 @@ def get_was_scores(curr_date):
 
 
 # Demo:
-# curr_date = datetime.datetime(2022, 8, 15)  # current report period date
-# print(get_was_scores(curr_date).to_string())
+curr_date = datetime.datetime(2022, 8, 15)  # current report period date
+print(get_was_scores(curr_date).to_string())

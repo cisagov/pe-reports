@@ -96,6 +96,33 @@ def get_prev_startstop(curr_date, num_periods):
     return start_stops
 
 
+def rescale(values, width, offset):
+    """
+    Rescale Pandas Series of values to the specified width and offset.
+
+    Args:
+        values: Pandas Series of values that you want to rescale
+        width: The new width of the rescaled values
+        offset: The new starting point of the rescaled values
+            examples:
+            width = 42, offset = 5 results in values from 5-47
+            width = 100, offset = -3 results in values from -3-97
+    Returns:
+        A Pandas Series of the new, re-scaled values
+    """
+    # Get min/max values
+    min_val = values.min()
+    max_val = values.max()
+    # Catch edge case
+    if min_val == 0 and max_val == 0:
+        # If all zeros, just return all zeros
+        return pd.Series([0] * values.size)
+    else:
+        # Otherwise, rescale 0-100
+        values = ((values - min_val) / (max_val - min_val) * width) + offset
+        return values
+
+
 def update_new_cve_info(start, end):
     """
     Get the list of all new CVEs (with CVSS/DVE data) for a report period, and upsert to the PE database.
