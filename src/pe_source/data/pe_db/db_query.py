@@ -119,51 +119,30 @@ def get_data_source_uid(source):
 def insert_sixgill_alerts(df):
     """Insert sixgill alert data."""
     conn = connect()
+    columns_to_subset = [
+        "alert_name",
+        "content",
+        "date",
+        "sixgill_id",
+        "read",
+        "severity",
+        "site",
+        "threat_level",
+        "threats",
+        "title",
+        "user_id",
+        "category",
+        "lang",
+        "organizations_uid",
+        "data_source_uid",
+        "content_snip",
+        "asset_mentioned",
+        "asset_type",
+    ]
     try:
-        df = df[
-            [
-                "alert_name",
-                "content",
-                "date",
-                "sixgill_id",
-                "read",
-                "severity",
-                "site",
-                "threat_level",
-                "threats",
-                "title",
-                "user_id",
-                "category",
-                "lang",
-                "organizations_uid",
-                "data_source_uid",
-                "content_snip",
-                "asset_mentioned",
-                "asset_type",
-            ]
-        ]
+        df = df.loc[:, df.columns.isin(columns_to_subset)]
     except Exception as e:
         logging.error(e)
-        df = df[
-            [
-                "alert_name",
-                "content",
-                "date",
-                "sixgill_id",
-                "read",
-                "severity",
-                "site",
-                "threat_level",
-                "threats",
-                "title",
-                "user_id",
-                "organizations_uid",
-                "data_source_uid",
-                "content_snip",
-                "asset_mentioned",
-                "asset_type",
-            ]
-        ]
     table = "alerts"
     # Create a list of tuples from the dataframe values
     tuples = [tuple(x) for x in df.to_numpy()]
@@ -197,78 +176,31 @@ def insert_sixgill_alerts(df):
 def insert_sixgill_mentions(df):
     """Insert sixgill mention data."""
     conn = connect()
+    columns_to_subset = [
+        "organizations_uid",
+        "data_source_uid",
+        "category",
+        "collection_date",
+        "content",
+        "creator",
+        "date",
+        "sixgill_mention_id",
+        "lang",
+        "post_id",
+        "rep_grade",
+        "site",
+        "site_grade",
+        "sub_category",
+        "title",
+        "type",
+        "url",
+        "comments_count",
+        "tags",
+    ]
     try:
-        df = df[
-            [
-                "organizations_uid",
-                "data_source_uid",
-                "category",
-                "collection_date",
-                "content",
-                "creator",
-                "date",
-                "sixgill_mention_id",
-                "lang",
-                "post_id",
-                "rep_grade",
-                "site",
-                "site_grade",
-                "sub_category",
-                "title",
-                "type",
-                "url",
-                "comments_count",
-                "tags",
-            ]
-        ]
+        df = df.loc[:, df.columns.isin(columns_to_subset)]
     except Exception as e:
         logging.error(e)
-        try:
-            df = df[
-                [
-                    "organizations_uid",
-                    "data_source_uid",
-                    "category",
-                    "collection_date",
-                    "content",
-                    "creator",
-                    "date",
-                    "sixgill_mention_id",
-                    "lang",
-                    "post_id",
-                    "rep_grade",
-                    "site",
-                    "site_grade",
-                    "sub_category",
-                    "title",
-                    "type",
-                    "url",
-                    "comments_count",
-                ]
-            ]
-        except Exception as e:
-            logging.error(e)
-            logging.info("Proceeded without sub_cat and commetns count.")
-            df = df[
-                [
-                    "organizations_uid",
-                    "data_source_uid",
-                    "category",
-                    "collection_date",
-                    "content",
-                    "creator",
-                    "date",
-                    "sixgill_mention_id",
-                    "lang",
-                    "post_id",
-                    "rep_grade",
-                    "site",
-                    "site_grade",
-                    "title",
-                    "type",
-                    "url",
-                ]
-            ]
 
     # Remove any "[\x00|NULL]" characters
     df = df.apply(

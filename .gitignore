@@ -32,5 +32,4 @@ src/adhoc/Bulletin/Header_img.png
 src/adhoc/data/database.ini
 *.log
 src/pe_reports/assets/*.png
-src/pe_reports/pe_reports_django_project/*.env
-src/pe_reports/pe_reports_django_project/.env
+src/pe_reports/pe_reports_django_project/.*

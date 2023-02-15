@@ -4,15 +4,18 @@ import json
 import socket
 
 # Third party packages
+from django.views.generic import TemplateView
+from django.views.generic.edit import FormView
 from django.shortcuts import render
 from django.http import HttpResponseNotFound, HttpResponseRedirect
 from django.core.exceptions import ObjectDoesNotExist
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.urls import reverse_lazy
 from django.contrib.auth import logout
 
 from .models import Organizations
-from .forms import GatherStakeholderForm
+from .forms import GatherStakeholderForm, WeeklyStatusesForm
 import requests
 
 # cisagov Libraries
@@ -334,8 +337,6 @@ def setNewCSGOrg(newOrgName, orgAliases, orgdomainNames, orgIP, orgExecs):
     return response
 
 
-
-
 @login_required
 def index(request):
     allUsers = Organizations.objects.filter(name='EAC')
@@ -345,12 +346,14 @@ def index(request):
     }
     return render(request, 'index.html', users)
 
+
 @login_required
 def home(request):
     try:
         return render(request, 'home.html')
     except:
         return HttpResponseNotFound('Nothing found')
+
 
 @login_required
 def stakeholder(request):
@@ -411,8 +414,8 @@ def stakeholder(request):
 
                 except ValueError as e:
                     messages.warning(request,
-                        f"The customer IP {e} is not a valid IP, please try again.",
-                        "danger")
+                                     "The customer IP %s is not a valid IP, please try again.",
+                                     "danger", e)
                     return HttpResponseRedirect("/stakeholder/")
                 messages.success(request,
                                  "The new stakeholder has been inserted.d")
@@ -427,3 +430,21 @@ def stakeholder(request):
 
     except:
         return HttpResponseNotFound('Nothing found')
+
+
+class StatusView(TemplateView):
+    template_name = 'weeklyStatus.html'
+    LOGGER.info('Got to Status')
+
+
+class StatusForm(FormView):
+    form_class = WeeklyStatusesForm
+    template_name = 'weeklyStatus.html'
+
+    success_url = reverse_lazy('weekly_status')
+
+    def form_valid(self, form):
+        theorgCount = form.cleaned_data['pto_time'].upper()
+        LOGGER.info(f'The org count was {theorgCount}')
+
+        return super().form_valid(form)

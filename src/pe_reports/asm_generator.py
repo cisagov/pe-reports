@@ -22,7 +22,7 @@ from reportlab.lib.enums import TA_CENTER
 from pe_reports.data.db_query import (
     query_cidrs_by_org,
     query_foreign_IPs,
-    query_ips,
+    query_extra_ips,
     query_ports_protocols,
     query_roots,
     query_software,
@@ -107,15 +107,15 @@ def add_attachment(org_uid, final_output, pdf_file, asm_xlsx):
     # Create ASM Excel file
     asmWriter = pd.ExcelWriter(asm_xlsx, engine="xlsxwriter")
 
-    # IPs
-    ip_lst = query_ips(org_uid)
-    ips_df = pd.DataFrame(ip_lst, columns=["ip"])
-    ips_df.to_excel(asmWriter, sheet_name="IPs", index=False)
-
     # CIDRs
     cidr_df = query_cidrs_by_org(org_uid)
     cidr_df = cidr_df[["network"]]
     cidr_df.to_excel(asmWriter, sheet_name="CIDRs", index=False)
+
+    # Extra IPs
+    ip_lst = query_extra_ips(org_uid)
+    ips_df = pd.DataFrame(ip_lst, columns=["ip"])
+    ips_df.to_excel(asmWriter, sheet_name="IPs", index=False)
 
     # Ports/protocols
     ports_protocols_df = query_ports_protocols(org_uid)

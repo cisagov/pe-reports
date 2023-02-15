@@ -154,6 +154,7 @@ def get_orgs_contacts(conn):
         if conn is not None:
             close(conn)
 
+
 def get_org_assets_count_past(org_uid, date):
     """Get asset counts for an organization."""
     conn = connect()
@@ -163,6 +164,7 @@ def get_org_assets_count_past(org_uid, date):
     df = pd.read_sql(sql, conn, params={"org_id": org_uid, "date": date})
     conn.close()
     return df
+
 
 def get_org_assets_count(uid):
     """Get asset counts for an organization."""
@@ -186,12 +188,12 @@ def get_org_assets_count(uid):
             "num_cidrs": source[5],
             "num_ports_protocols": source[6],
             "num_software": source[7],
-            "num_foreign_ips": source[8]
+            "num_foreign_ips": source[8],
         }
     except:
         assets_dict = {
             "org_uid": uid,
-            "cyhy_db_name": 'N/A',
+            "cyhy_db_name": "N/A",
             "num_root_domain": 0,
             "num_sub_domain": 0,
             "num_ips": 0,
@@ -199,7 +201,7 @@ def get_org_assets_count(uid):
             "num_cidrs": 0,
             "num_ports_protocols": 0,
             "num_software": 0,
-            "num_foreign_ips": 0
+            "num_foreign_ips": 0,
         }
     return assets_dict
 
@@ -397,6 +399,7 @@ def get_cidrs_and_ips(org_uid):
     LOGGER.info(cidrs_ips)
     return cidrs_ips
 
+
 def query_ips(org_uid):
     """Get IP data."""
     conn = connect()
@@ -428,6 +431,38 @@ def query_ips(org_uid):
 
     return ips
 
+
+def query_extra_ips(org_uid):
+    """Get IP data."""
+    conn = connect()
+    sql1 = """SELECT i.ip_hash, i.ip, ct.network FROM ips i
+    JOIN cidrs ct on ct.cidr_uid = i.origin_cidr
+    JOIN organizations o on o.organizations_uid = ct.organizations_uid
+    where o.organizations_uid = %(org_uid)s
+    and i.origin_cidr is not null;"""
+    df1 = pd.read_sql(sql1, conn, params={"org_uid": org_uid})
+    ips1 = list(df1["ip"].values)
+
+    sql2 = """select i.ip_hash, i.ip
+    from ips i
+    join ips_subs is2 ON i.ip_hash = is2.ip_hash
+    join sub_domains sd on sd.sub_domain_uid = is2.sub_domain_uid
+    join root_domains rd on rd.root_domain_uid = sd.root_domain_uid
+    JOIN organizations o on o.organizations_uid = rd.organizations_uid
+    where o.organizations_uid = %(org_uid)s;"""
+    df2 = pd.read_sql(sql2, conn, params={"org_uid": org_uid})
+    ips2 = list(df2["ip"].values)
+
+    in_first = set(ips1)
+    in_second = set(ips2)
+
+    extra_ips = in_second - in_first
+
+    conn.close()
+
+    return extra_ips
+
+
 def query_cidrs():
     """Query all cidrs ordered by length."""
     conn = connect()
@@ -438,6 +473,7 @@ def query_cidrs():
     df = pd.read_sql(sql, conn)
     conn.close()
     return df
+
 
 def query_cidrs_by_org(org_uid):
     """Query all CIDRs for a specific org."""
@@ -450,6 +486,7 @@ def query_cidrs_by_org(org_uid):
     conn.close()
     return df
 
+
 def query_ports_protocols(org_uid):
     """Query distinct ports and protocols by org."""
     conn = connect()
@@ -460,6 +497,7 @@ def query_ports_protocols(org_uid):
     df = pd.read_sql(sql, conn, params={"org_uid": org_uid})
     conn.close()
     return df
+
 
 def query_software(org_uid):
     """Query distinct software by org."""
@@ -473,6 +511,7 @@ def query_software(org_uid):
     conn.close()
     return df
 
+
 def query_foreign_IPs(org_uid):
     """Query distinct software by org."""
     conn = connect()
@@ -484,7 +523,6 @@ def query_foreign_IPs(org_uid):
     df = pd.read_sql(sql, conn, params={"org_uid": org_uid})
     conn.close()
     return df
-
 
 
 def insert_roots(org, domain_list):
