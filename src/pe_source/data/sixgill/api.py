@@ -93,6 +93,30 @@ def alerts_count(organization_id):
     return resp
 
 
+def alerts_content(organization_id, alert_id):
+    """Get total alert content."""
+    url = f"https://api.cybersixgill.com/alerts/actionable_alert_content/{alert_id}"
+    auth = cybersix_token()
+    headers = {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache",
+        "Authorization": "Bearer " + auth,
+    }
+    payload = {"organization_id": organization_id, "limit": 10000}
+    content = requests.get(url, headers=headers, params=payload).json()
+    try:
+        content = content["content"]["items"][0]
+        if "_source" in content:
+            content = content["_source"]["content"]
+        elif "description" in content:
+            content = content["description"]
+        else:
+            content = ""
+    except Exception:
+        content = ""
+    return content
+
+
 def dve_top_cves(size):
     """Get data about a specific CVE."""
     url = "https://api.cybersixgill.com/dve_enrich/top_cves"
