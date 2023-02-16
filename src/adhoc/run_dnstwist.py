@@ -129,21 +129,20 @@ for org_index, org_row in orgs.iterrows():
     # if org_name not in ["Federal Aviation Administration"]:
     #     continue
 
-    LOGGER.info(pe_org_uid)
-    LOGGER.info(org_name)
+    LOGGER.info("Running dnstwist on %s", org_row["cyhy_db_name"])
 
     """Collect DNSTwist data from Crossfeed"""
     try:
         # Get root domains
         rd_df = org_root_domains(PE_conn, pe_org_uid)
-        LOGGER.info(rd_df)
+        # LOGGER.info(rd_df)
         domain_list = []
         perm_list = []
         for rd_index, rd_row in rd_df.iterrows():
             root_domain = rd_row["root_domain"]
             if root_domain == "Null_Root":
                 continue
-            LOGGER.info(rd_row["root_domain"])
+            # LOGGER.info(rd_row["root_domain"])
 
             if not root_domain:
                 continue
@@ -155,10 +154,10 @@ for org_index, org_row in orgs.iterrows():
 
             # Get subdomain uid
             sub_domain = root_domain
-            LOGGER.info(sub_domain)
+            LOGGER.info("\t\t%s", sub_domain)
             try:
                 sub_domain_uid = getSubdomain(PE_conn, sub_domain)[0]
-                LOGGER.info(sub_domain_uid)
+                # LOGGER.info(sub_domain_uid)
             except:
                 # Add and then get it
                 addSubdomain(PE_conn, sub_domain, pe_org_uid, org_name)
@@ -173,16 +172,26 @@ for org_index, org_row in orgs.iterrows():
                 if "dns_a" not in dom:
                     continue
                 else:
-                    LOGGER.info(str(dom["dns_a"][0]))
+                    print(str(dom["dns_a"][0]))
                     # check IP in Blocklist API
                     response = requests.get(
                         "http://api.blocklist.de/api.php?ip=" + str(dom["dns_a"][0])
                     ).content
 
                     if str(response) != "b'attacks: 0<br />reports: 0<br />'":
-                        malicious = True
-                        attacks = int(str(response).split("attacks: ")[1].split("<")[0])
-                        reports = int(str(response).split("reports: ")[1].split("<")[0])
+                        try:
+                            malicious = True
+                            attacks = int(
+                                str(response).split("attacks: ")[1].split("<")[0]
+                            )
+                            reports = int(
+                                str(response).split("reports: ")[1].split("<")[0]
+                            )
+                        except:
+                            malicious = False
+                            attacks = 0
+                            reports = 0
+                            continue
 
                     # check dns-a record in DSheild API
                     if str(dom["dns_a"][0]) == "!ServFail":
@@ -218,7 +227,7 @@ for org_index, org_row in orgs.iterrows():
                 if "dns_aaaa" not in dom:
                     dom["dns_aaaa"] = [""]
                 else:
-                    LOGGER.info(str(dom["dns_aaaa"][0]))
+                    # LOGGER.info(str(dom["dns_aaaa"][0]))
                     # check IP in Blocklist API
                     response = requests.get(
                         "http://api.blocklist.de/api.php?ip=" + str(dom["dns_aaaa"][0])
@@ -250,7 +259,7 @@ for org_index, org_row in orgs.iterrows():
 
                 # Ignore duplicates
                 permutation = dom["domain"]
-                LOGGER.info(permutation)
+                print(permutation)
                 if permutation in perm_list:
                     continue
                 else:

@@ -115,7 +115,7 @@ def add_attachment(org_uid, final_output, pdf_file, asm_xlsx):
     # Extra IPs
     ip_lst = query_extra_ips(org_uid)
     ips_df = pd.DataFrame(ip_lst, columns=["ip"])
-    ips_df.to_excel(asmWriter, sheet_name="IPs", index=False)
+    ips_df.to_excel(asmWriter, sheet_name="Extra IPs", index=False)
 
     # Ports/protocols
     ports_protocols_df = query_ports_protocols(org_uid)

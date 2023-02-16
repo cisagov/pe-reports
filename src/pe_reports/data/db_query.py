@@ -187,7 +187,8 @@ def get_org_assets_count(uid):
             "num_ports": source[4],
             "num_cidrs": source[5],
             "num_ports_protocols": source[6],
-            "num_software": source[7],
+            "num_software": source[7]
+            - 1,  # Subtract 1 to remove the automatic null entry
             "num_foreign_ips": source[8],
         }
     except:

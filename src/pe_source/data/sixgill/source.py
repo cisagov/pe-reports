@@ -78,8 +78,6 @@ def mentions(date, aliases, soc_media_included=False):
                 linkedin, Linkedin, discord, forum_discord, raddle, telegram,
                 jabber, ICQ, icq, mastodon)"""
         )
-    LOGGER.info("Query:")
-    LOGGER.info(query)
 
     # Get the total number of mentions
     count = 1
