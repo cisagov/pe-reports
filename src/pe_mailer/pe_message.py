@@ -103,6 +103,7 @@ is not to be released to the public or other personnel who do not have a valid
     def __init__(
         self,
         pdf_filename,
+        pdf_asm_filename,
         report_date,
         id,
         to_addrs,
@@ -155,6 +156,7 @@ is not to be released to the public or other personnel who do not have a valid
             text_body,
             html_body,
             pdf_filename,
+            pdf_asm_filename,
             from_addr,
             cc_addrs,
             bcc_addrs,
