@@ -262,9 +262,6 @@ def send_pe_reports(ses_client, pe_report_dir, to):
                     to_emails = contact_dict["TECHNICAL"]
                 else:
                     to_emails = contact_dict["DISTRO"]
-
-            print(id)
-            print(to_emails)
             
             # to_emails should contain at least one email
             if not to_emails:
@@ -275,8 +272,8 @@ def send_pe_reports(ses_client, pe_report_dir, to):
             pe_report_filenames = sorted(glob.glob(pe_report_glob))
 
             # At most one Cybex report and CSV should match
-            if len(pe_report_filenames) > 1:
-                LOGGER.warning("More than one PDF report found")
+            if len(pe_report_filenames) > 2:
+                LOGGER.warning("More than two PDF reports found")
             elif not pe_report_filenames:
                 LOGGER.error("No PDF report found")
                 continue
@@ -285,23 +282,31 @@ def send_pe_reports(ses_client, pe_report_dir, to):
                 # We take the last filename since, if there happens to be more than
                 # one, it should the latest.  (This is because we sorted the glob
                 # results.)
-                pe_report_filename = pe_report_filenames[-1]
+                for file in pe_report_filenames:
+                    if "Posture-and-Exposure-ASM-Summary" in file:
+                        pe_asm_filename = file
+                    elif "Posture_and_Exposure_Report" in file:
+                        pe_report_filename = file
+                    else:
+                        LOGGER.error("Extra PDF file or named incorrectly.")
+                        continue
+
 
                 # Extract the report date from the report filename
                 match = re.search(
                     r"-(?P<date>\d{4}-[01]\d-[0-3]\d)",
                     pe_report_filename,
                 )
-                print(match)
                 report_date = datetime.datetime.strptime(
                     match.group("date"), "%Y-%m-%d"
                 ).strftime("%B %d, %Y")
 
                 # Construct the Posture and Exposure message to send
-                message = PEMessage(pe_report_filename, report_date, id, to_emails)
+                message = PEMessage(pe_report_filename, pe_asm_filename, report_date, id, to_emails)
 
                 print(to_emails)
                 print(pe_report_filename)
+                print(pe_asm_filename)
                 print(report_date)
 
                 try:
