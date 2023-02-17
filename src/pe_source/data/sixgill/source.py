@@ -17,6 +17,7 @@ from .api import (
     alerts_list,
     credential_auth,
     dve_top_cves,
+    get_bulk_cve_resp,
     intel_post,
     org_assets,
 )
@@ -77,8 +78,6 @@ def mentions(date, aliases, soc_media_included=False):
                 linkedin, Linkedin, discord, forum_discord, raddle, telegram,
                 jabber, ICQ, icq, mastodon)"""
         )
-    LOGGER.info("Query:")
-    LOGGER.info(query)
 
     # Get the total number of mentions
     count = 1
@@ -233,11 +232,79 @@ def creds(domain, from_date, to_date):
     resp = resp["leaks"]
     while total_hits > len(resp):
         skip += 1
-    params["skip"] = skip
-    next_resp = credential_auth(params)
-    resp = resp + next_resp["leaks"]
+        params["skip"] = skip
+        next_resp = credential_auth(params)
+        resp = resp + next_resp["leaks"]
+        print(len(resp))
     resp = pd.DataFrame(resp)
     df = resp.drop_duplicates(
         subset=["email", "breach_name"], keep="first"
     ).reset_index(drop=True)
     return df
+
+
+def extract_bulk_cve_info(cve_list):
+    """
+    Make API call to C6G and retrieve/extract relevant info for a list of CVE names (10 max).
+
+    Args:
+        cve_list: list of cve names (i.e. ['CVE-2022-123', 'CVE-2022-456'...])
+
+    Returns:
+        A dataframe with the name and all relevant info for the CVEs listed
+    """
+    # Call get_bulk_cve_info() function to get response
+    resp = get_bulk_cve_resp(cve_list)
+    # Check if there was a good response
+    if resp is None:
+        # If no response, return empty dataframe
+        return pd.DataFrame()
+    else:
+        # Proceed if there is a response
+        resp_list = resp.get("objects")
+        # Dataframe to hold finalized data
+        resp_df = pd.DataFrame()
+        # For each cve in api response, extract data
+        for i in range(0, len(resp_list)):
+            # CVE name
+            cve_name = resp_list[i].get("name")
+            # CVSS 2.0 info
+            cvss_2_info = resp_list[i].get("x_sixgill_info").get("nvd").get("v2")
+            if cvss_2_info is not None:
+                cvss_2_0 = cvss_2_info.get("current")
+                cvss_2_0_sev = cvss_2_info.get("severity")
+                cvss_2_0_vec = cvss_2_info.get("vector")
+            else:
+                [cvss_2_0, cvss_2_0_sev, cvss_2_0_vec] = [None, None, None]
+            # CVSS 3.0 info
+            cvss_3_info = resp_list[i].get("x_sixgill_info").get("nvd").get("v3")
+            if cvss_3_info is not None:
+                cvss_3_0 = cvss_3_info.get("current")
+                cvss_3_0_sev = cvss_3_info.get("severity")
+                cvss_3_0_vec = cvss_3_info.get("vector")
+            else:
+                [cvss_3_0, cvss_3_0_sev, cvss_3_0_vec] = [None, None, None]
+            # DVE info
+            dve_info = resp_list[i].get("x_sixgill_info").get("score")
+            if dve_info is not None:
+                dve_score = dve_info.get("current")
+            else:
+                dve_score = None
+
+            # Append this row of CVE info to the resp_df
+            curr_info = {
+                "cve_name": cve_name,
+                "cvss_2_0": cvss_2_0,
+                "cvss_2_0_severity": cvss_2_0_sev,
+                "cvss_2_0_vector": cvss_2_0_vec,
+                "cvss_3_0": cvss_3_0,
+                "cvss_3_0_severity": cvss_3_0_sev,
+                "cvss_3_0_vector": cvss_3_0_vec,
+                "dve_score": dve_score,
+            }
+            resp_df = pd.concat(
+                [resp_df, pd.DataFrame(curr_info, index=[0])],
+                ignore_index=True,
+            )
+        # Return dataframe of relevant CVE/CVSS/DVE info
+        return resp_df

@@ -4,7 +4,7 @@ import logging
 import time
 
 # Third-Party Libraries
-from data.config import config, config2
+from data.config import config, config2, get_hibp_token
 from data.run import query_orgs
 import pandas as pd
 import psycopg2
@@ -102,7 +102,8 @@ except Exception:
 Emails_URL = "https://haveibeenpwned.com/api/v2/enterprisesubscriber/domainsearch/"
 Breaches_URL = "https://haveibeenpwned.com/api/v2/breaches"
 # TODO: Add bearer token
-params = {"Authorization": "Bearer "}
+token = get_hibp_token()
+params = {"Authorization": f"Bearer {token}"}
 
 
 def flatten_data(response, subdomain, breaches_dict):
@@ -116,7 +117,6 @@ def flatten_data(response, subdomain, breaches_dict):
                 data = {"email": key + "@" + subdomain, "sub_domain": subdomain}
                 data.update(breaches_dict[b])
                 combined_data.append(data)
-    LOGGER.info(combined_data)
     return combined_data
 
 
@@ -150,7 +150,7 @@ def get_breaches():
             breach_dict[line["Name"]] = breach
         return (pd.DataFrame(breach_list), breach_dict)
     else:
-        LOGGER.info(breaches.text)
+        print(breaches.text)
 
 
 def get_emails(domain):
@@ -168,9 +168,6 @@ def get_emails(domain):
             run_failed = False
         else:
             run_failed = True
-            LOGGER.info(status)
-            LOGGER.info(r.text)
-            LOGGER.info(f"Trying to run on {domain} again")
             if status == 502:
                 time.sleep(60 * 3)
 
@@ -196,7 +193,7 @@ def execute_hibp_emails_values(conn, jsonList):
     # try:
     extras.execute_values(cursor, sql, values)
     conn.commit()
-    LOGGER.info("Data inserted into credential_exposures successfully..")
+    LOGGER.info("\t\tHIBP data inserted into credential_exposures successfully..")
     # except (Exception, psycopg2.DatabaseError) as err:
     #     show_psycopg2_exception(err)
     #     cursor.close()
@@ -260,7 +257,6 @@ def run_hibp(org_df):
     compiled_breaches = breaches[1]
     b_list = []
     for breach in compiled_breaches.values():
-        LOGGER.info(breach)
         breach_dict = {
             "breach_name": breach["breach_name"],
             "description": breach["description"],
@@ -291,22 +287,20 @@ def run_hibp(org_df):
         pe_org_uid = org_row["organizations_uid"]
         org_name = org_row["name"]
         cyhy_id = org_row["cyhy_db_name"]
-        LOGGER.info(cyhy_id)
 
         if cyhy_id not in orgs_to_run and orgs_to_run:
             continue
-        LOGGER.info(f"Running on {org_name}")
+        LOGGER.info(f"Running HIBP on {cyhy_id}")
 
         subs = query_PE_subs(PE_conn, pe_org_uid).sort_values(
             by="sub_domain", key=lambda col: col.str.count(".")
         )
 
-        LOGGER.info(subs)
 
         for sub_index, sub in subs.iterrows():
             sd = sub["sub_domain"]
             if sd.endswith(".gov"):
-                LOGGER.info(f"Finding breaches for {sd}")
+                print(f"Finding breaches for {sd}")
             else:
                 continue
             try:
@@ -336,7 +330,7 @@ def run_hibp(org_df):
                             "name": None,
                         }
                         creds_list.append(cred)
-                LOGGER.info(f"there are {len(creds_list)} creds found")
+                LOGGER.info("\t\tthere are %s creds found", len(creds_list))
                 # Insert new creds into the PE DB
                 execute_hibp_emails_values(PE_conn, creds_list)
 
