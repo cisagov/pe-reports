@@ -518,7 +518,7 @@ def query_foreign_IPs(org_uid):
     conn = connect()
     sql = """select * from
             shodan_assets sa 
-            where (sa.country_code != 'US' or sa.country_code notnull)
+            where (sa.country_code != 'US' and sa.country_code notnull)
             and sa.organizations_uid  = %(org_uid)s;
             """
     df = pd.read_sql(sql, conn, params={"org_uid": org_uid})

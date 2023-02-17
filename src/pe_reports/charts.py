@@ -173,6 +173,7 @@ class Charts:
             marker=".",
             markersize=10,
         )
+
         if len(df.columns) == 2:
             plt.plot(
                 df.index,
@@ -185,7 +186,7 @@ class Charts:
                 markersize=10,
             )
         y_max = int(df[df.columns].max().max() * 1.1)
-        plt.ylim(ymin=0, ymax=y_max)
+        plt.ylim(ymin=0, ymax=y_max * 1.10)
         # plt.legend(loc=9, ncol=2, framealpha=0, fontsize=8, bbox_to_anchor=(0.5, -0.5))
         plt.legend(loc="upper right")
         plt.gcf().set_size_inches(

@@ -122,7 +122,8 @@ source_uid = getDataSource(PE_conn, "DNSTwist")[0]
 
 orgs = query_orgs_rev()
 LOGGER.info(orgs["name"])
-for org_index, org_row in orgs.iterrows():
+LOGGER.info(orgs["cyhy_db_name"].tolist())
+for org_index, org_row in orgs.iloc[::-1].iterrows():
     pe_org_uid = org_row["organizations_uid"]
     org_name = org_row["name"]
 
