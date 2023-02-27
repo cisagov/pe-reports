@@ -115,7 +115,11 @@ jobs:
           - "3.8"
           - "3.9"
           - "3.10"
-          - "3.11"
+          # Temporarily hold back support for Python 3.11 due to the version pin
+          # for the PyMuPDF package. Pre-built wheels for Python 3.11 were not made
+          # available until the 1.21.0 release and building the PyMuPDF package from
+          # source proves problematic due to dependencies.
+          # - "3.11"
         include:
           - os: ubuntu-20.04
             python-version: "3.6"
@@ -211,7 +215,11 @@ jobs:
           - "3.8"
           - "3.9"
           - "3.10"
-          - "3.11"
+          # Temporarily hold back support for Python 3.11 due to the version pin
+          # for the PyMuPDF package. Pre-built wheels for Python 3.11 were not made
+          # available until the 1.21.0 release and building the PyMuPDF package from
+          # source proves problematic due to dependencies.
+          # - "3.11"
         include:
           - os: ubuntu-20.04
             python-version: "3.6"
@@ -264,7 +272,11 @@ jobs:
           - "3.8"
           - "3.9"
           - "3.10"
-          - "3.11"
+          # Temporarily hold back support for Python 3.11 due to the version pin
+          # for the PyMuPDF package. Pre-built wheels for Python 3.11 were not made
+          # available until the 1.21.0 release and building the PyMuPDF package from
+          # source proves problematic due to dependencies.
+          # - "3.11"
         include:
           - os: ubuntu-20.04
             python-version: "3.6"

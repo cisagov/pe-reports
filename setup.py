@@ -73,21 +73,21 @@ setup(
         "License :: CC0 1.0 Universal (CC0 1.0) Public Domain Dedication",
         # Specify the Python versions you support here. In particular, ensure
         # that you indicate whether you support Python 2, Python 3 or both.
-        # Temporarily remove support for Python 3.6 due to build failures; will be reinstated
-        # after https://github.com/cisagov/skeleton-python-library/pull/110 is merged
-        # See issue #374 "Re-implement 3.6 compatibility"
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3 :: Only",
-        # "Programming Language :: Python :: 3.6",
+        "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
-        "Programming Language :: Python :: 3.11",
+        # Temporarily hold back support for Python 3.11 due to the version pin
+        # for the PyMuPDF package. Pre-built wheels for Python 3.11 were not made
+        # available until the 1.21.0 release and building the PyMuPDF package from
+        # source proves problematic due to dependencies.
+        # "Programming Language :: Python :: 3.11",
         "Programming Language :: Python :: Implementation :: CPython",
     ],
-    # Revert to 3.6 when issue is resolved, see issue Re-implement 3.6 compatibility #374
-    python_requires=">=3.7",
+    python_requires=">=3.6",
     # What does your project relate to?
     keywords="posture and exposure report",
     packages=find_packages(where="src"),
