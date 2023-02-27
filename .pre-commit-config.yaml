@@ -116,6 +116,15 @@ repos:
     hooks:
       - id: mypy
         additional_dependencies:
+          - boto3-stubs
+          - celery-types
+          - pandas-stubs
+          - types-chevron
+          - types-colorama
+          - types-docopt
+          - types-Flask-Migrate
+          - types-psycopg2
+          - types-Pygments
           - types-PyYAML
           - types-requests
           - types-setuptools
