@@ -20,6 +20,9 @@
 - color: "5319e7"
   description: This issue or pull request improves or adds to documentation
   name: documentation
+- color: "fbca04"
+  description: PR in draft mode, not passing checks
+  name: Draft PR
 - color: "cfd3d7"
   description: This issue or pull request already exists or is covered in another issue or pull request
   name: duplicate
@@ -35,6 +38,9 @@
 - color: "ff7518"
   description: Pull request that should count toward Hacktoberfest participation
   name: hacktoberfest-accepted
+- color: "ed144f"
+  description: Issue is key to completion of Sprint
+  name: High Priority
 - color: "a2eeef"
   description: This issue or pull request will add or improve functionality, maintainability, or ease of use
   name: improvement
@@ -50,6 +56,9 @@
 - color: "fcdb45"
   description: This pull request is awaiting an action or decision to move forward
   name: on hold
+- color: "7f8892"
+  description: Code passing checks, internal code review done, merged into staging environment and remove draft PR
+  name: Production ready
 - color: "3772a4"
   description: Pull requests that update Python code
   name: python
@@ -59,9 +68,15 @@
 - color: "d73a4a"
   description: This issue or pull request addresses a security issue
   name: security
+- color: "8f4413"
+  description: Issue or PR from Previous Sprints
+  name: Tech Debt
 - color: "00008b"
   description: This issue or pull request adds or otherwise modifies test code
   name: test
+- color: "a4d70a"
+  description: Script is in testing and validation phase
+  name: Testing
 - color: "1d76db"
   description: This issue or pull request pulls in upstream updates
   name: upstream update
