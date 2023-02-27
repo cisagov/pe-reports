@@ -174,7 +174,7 @@ class Message(MIMEMultipart):
             The filename of the CSV file to attach.
 
         """
-        with open(csv_filename, "r") as attachment:
+        with open(csv_filename) as attachment:
             part = MIMEText(attachment.read(), "csv")
 
         # See https://en.wikipedia.org/wiki/MIME#Content-Disposition
