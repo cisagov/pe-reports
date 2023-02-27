@@ -77,11 +77,14 @@ setup(
         # after https://github.com/cisagov/skeleton-python-library/pull/110 is merged
         # See issue #374 "Re-implement 3.6 compatibility"
         "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 3 :: Only",
         # "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
+        "Programming Language :: Python :: Implementation :: CPython",
     ],
     # Revert to 3.6 when issue is resolved, see issue Re-implement 3.6 compatibility #374
     python_requires=">=3.7",
