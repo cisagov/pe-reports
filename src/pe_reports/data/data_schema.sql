@@ -562,30 +562,31 @@ CREATE TABLE public.unique_software (
 --Name: was_tracker_customerdata
 --
 
-create table was_tracker_customerdata
+CREATE TABLE was_tracker_customerdata
 (
-    customer_id              uuid default uuid_generate_v1() not null
+    customer_id              uuid DEFAULT uuid_generate_v1() NOT NULL
         constraint was_tracker_customerdata_pk
             primary key,
-    tag                      text                            not null,
-    customer_name            text                            not null,
-    testing_sector           text                            not null,
-    ci_type                  text                            not null,
-    ticket                   text                            not null,
-    next_scheduled           text                            not null,
-    last_scanned             text                            not null,
-    frequency                text                            not null,
-    comments_notes           text                            not null,
-    was_report_poc           text                            not null,
-    was_report_email         text                            not null,
-    onboarding_date          text                            not null,
-    no_of_web_apps           integer                         not null,
-    no_web_apps_last_updated text,
+
+    tag                      text                            NOT NULL,
+    customer_name            text                            NOT NULL,
+    testing_sector           text                            NOT NULL,
+    ci_type                  text                            NOT NULL,
+    ticket                   text                            NOT NULL,
+    next_scheduled           text                            NOT NULL,
+    last_scanned             text                            NOT NULL,
+    frequency                text                            NOT NULL,
+    comments_notes           text                            NOT NULL,
+    was_report_poc           text                            NOT NULL,
+    was_report_email         text                            NOT NULL,
+    onboarding_date          date                            NOT NULL,
+    no_of_web_apps           integer                         NOT NULL,
+    no_web_apps_last_updated date,
     elections                text
 );
 
-alter table was_tracker_customerdata
-    owner to pe;
+ALTER TABLE was_tracker_customerdata
+    OWNER TO pe;
 
 --
 -- Name: web_assets; Type: TABLE; Schema: public; Owner: pe
