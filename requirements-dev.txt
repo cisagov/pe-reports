@@ -1,4 +1,16 @@
 --requirement requirements-test.txt
+boto3-stubs
+celery-types
 ipython
 mypy
+pandas-stubs
 semver
+types-chevron
+types-colorama
+types-docopt
+types-Flask-Migrate
+types-psycopg2
+types-Pygments
+types-PyYAML
+types-requests
+types-setuptools
