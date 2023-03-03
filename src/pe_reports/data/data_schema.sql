@@ -559,7 +559,7 @@ CREATE TABLE public.unique_software (
 );
 
 --
---Name: was_tracker_customerdata
+-- Name: was_tracker_customerdata; Type: TABLE; Schema: public; Owner: pe
 --
 
 CREATE TABLE was_tracker_customerdata(
