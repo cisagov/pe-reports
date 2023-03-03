@@ -562,27 +562,24 @@ CREATE TABLE public.unique_software (
 --Name: was_tracker_customerdata
 --
 
-CREATE TABLE was_tracker_customerdata
-(
-    customer_id              uuid DEFAULT uuid_generate_v1() NOT NULL
-        constraint was_tracker_customerdata_pk
-            primary key,
-
-    tag                      text                            NOT NULL,
-    customer_name            text                            NOT NULL,
-    testing_sector           text                            NOT NULL,
-    ci_type                  text                            NOT NULL,
-    ticket                   text                            NOT NULL,
-    next_scheduled           text                            NOT NULL,
-    last_scanned             text                            NOT NULL,
-    frequency                text                            NOT NULL,
-    comments_notes           text                            NOT NULL,
-    was_report_poc           text                            NOT NULL,
-    was_report_email         text                            NOT NULL,
-    onboarding_date          date                            NOT NULL,
-    no_of_web_apps           integer                         NOT NULL,
+CREATE TABLE was_tracker_customerdata(
+    customer_id uuid DEFAULT uuid_generate_v1() NOT NULL
+        constraint was_tracker_customerdata_pk primary key,
+    tag text NOT NULL,
+    customer_name text NOT NULL,
+    testing_sector text NOT NULL,
+    ci_type text NOT NULL,
+    ticket text NOT NULL,
+    next_scheduled text NOT NULL,
+    last_scanned text NOT NULL,
+    frequency text NOT NULL,
+    comments_notes text NOT NULL,
+    was_report_poc text NOT NULL,
+    was_report_email text NOT NULL,
+    onboarding_date date NOT NULL,
+    no_of_web_apps integer NOT NULL,
     no_web_apps_last_updated date,
-    elections                text
+    elections text
 );
 
 ALTER TABLE was_tracker_customerdata
