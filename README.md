@@ -1,9 +1,8 @@
 # Posture & Exposure Reports (P&E Reports) #
 
 [![GitHub Build Status](https://github.com/cisagov/pe-reports/workflows/build/badge.svg)](https://github.com/cisagov/pe-reports/actions)
+[![CodeQL](https://github.com/cisagov/pe-reports/workflows/CodeQL/badge.svg)](https://github.com/cisagov/pe-reports/actions/workflows/codeql-analysis.yml)
 [![Coverage Status](https://coveralls.io/repos/github/cisagov/pe-reports/badge.svg?branch=develop)](https://coveralls.io/github/cisagov/pe-reports?branch=develop)
-[![Total alerts](https://img.shields.io/lgtm/alerts/g/cisagov/pe-reports.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/cisagov/pe-reports/alerts/)
-[![Language grade: Python](https://img.shields.io/lgtm/grade/python/g/cisagov/pe-reports.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/cisagov/pe-reports/context:python)
 [![Known Vulnerabilities](https://snyk.io/test/github/cisagov/pe-reports/develop/badge.svg)](https://snyk.io/test/github/cisagov/pe-reports)
 
 This package is used to generate and deliver CISA Posture & Exposure Reports
