@@ -13,6 +13,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.urls import reverse_lazy
 from django.contrib.auth import logout
+from django.contrib.auth.mixins import LoginRequiredMixin
 
 from .models import Organizations
 from .forms import GatherStakeholderForm, WeeklyStatusesForm
@@ -437,7 +438,7 @@ class StatusView(TemplateView):
     LOGGER.info('Got to Status')
 
 
-class StatusForm(FormView):
+class StatusForm(LoginRequiredMixin,FormView):
     form_class = WeeklyStatusesForm
     template_name = 'weeklyStatus.html'
 

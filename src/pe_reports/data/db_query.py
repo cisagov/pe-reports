@@ -4,11 +4,15 @@
 # Standard Python Libraries
 import datetime
 from ipaddress import ip_address, ip_network
+import json
 import logging
+import requests
 import socket
 import sys
 
+
 # Third-Party Libraries
+from decouple import config as api_config
 import numpy as np
 import pandas as pd
 import psycopg2
@@ -179,16 +183,29 @@ def get_org_assets_count(uid):
 
 def get_orgs_df():
     """Query organizations table for new orgs."""
-    conn = connect()
+    urlOrgs = 'http://127.0.0.1:8000/apiv1/orgs'
+
+    headers = {
+        'Content-Type': 'application/json',
+        'access_token': f'{api_config("API_KEY")}'
+    }
+
     try:
-        sql = """SELECT * FROM organizations"""
-        pe_orgs_df = pd.read_sql(sql, conn)
-        return pe_orgs_df
-    except (Exception, psycopg2.DatabaseError) as error:
-        LOGGER.error("There was a problem with your database query %s", error)
-    finally:
-        if conn is not None:
-            close(conn)
+
+        response = requests.post(urlOrgs, headers=headers).json()
+
+        return pd.DataFrame(response)
+
+    except requests.exceptions.HTTPError as errh:
+        LOGGER.error(errh)
+    except requests.exceptions.ConnectionError as errc:
+        LOGGER.error(errc)
+    except requests.exceptions.Timeout as errt:
+        LOGGER.error(errt)
+    except requests.exceptions.RequestException as err:
+        LOGGER.error(err)
+    except json.decoder.JSONDecodeError as err:
+        LOGGER.error(err)
 
 
 def get_new_orgs():

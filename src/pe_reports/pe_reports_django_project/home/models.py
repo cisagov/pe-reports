@@ -929,7 +929,8 @@ class UniqueSoftware(models.Model):
         db_table = 'unique_software'
 
 class WasTrackerCustomerdata(models.Model):
-    customer_id = models.UUIDField(primary_key=True)
+    customer_id = models.UUIDField(db_column='customer_id', primary_key=True,
+                                   default=uuid.uuid1)
     tag = models.TextField()
     customer_name = models.TextField()
     testing_sector = models.TextField()
@@ -941,9 +942,9 @@ class WasTrackerCustomerdata(models.Model):
     comments_notes = models.TextField()
     was_report_poc = models.TextField()
     was_report_email = models.TextField()
-    onboarding_date = models.DateField()
+    onboarding_date = models.TextField()
     no_of_web_apps = models.IntegerField()
-    no_web_apps_last_updated = models.DateField(blank=True, null=True)
+    no_web_apps_last_updated = models.TextField(blank=True, null=True)
     elections = models.TextField(blank=True, null=True)
 
     class Meta:

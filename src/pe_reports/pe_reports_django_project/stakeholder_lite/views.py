@@ -1,9 +1,9 @@
+import logging
 from django.views.generic import TemplateView
 from django.views.generic.edit import FormView
 from django.urls import reverse_lazy
-import logging
 
-from .forms import GatherStakeholderLiteForm
+
 
 # cisagov Libraries
 from pe_reports.data.db_query import get_new_orgs
@@ -12,6 +12,8 @@ from pe_reports.helpers.fill_ips_from_cidrs import fill_ips_from_cidrs
 from pe_reports.helpers.link_subs_and_ips_from_ips import connect_subs_from_ips
 from pe_reports.helpers.link_subs_and_ips_from_subs import connect_ips_from_subs
 from pe_reports.helpers.shodan_dedupe import dedupe
+
+from .forms import GatherStakeholderLiteForm
 
 # Create your views here.
 
@@ -30,11 +32,13 @@ def getAgenciesByCount(orgCount):
 
 
 class StakeholderLiteView(TemplateView):
+    """Stakeholder lite template"""
     template_name = 'stakeholder_lite/stakeholder_lite.html'
     LOGGER.info('Got to Stakeholder')
 
 
 class StakeholderLiteForm(FormView):
+    """Stahkeholder lite from"""
 
     form_class = GatherStakeholderLiteForm
     template_name = 'stakeholder_lite/stakeholder_lite.html'
@@ -66,7 +70,3 @@ class StakeholderLiteForm(FormView):
         LOGGER.info("Running dedupe:")
         dedupe(orgs)
         return super().form_valid(form)
-
-
-
-

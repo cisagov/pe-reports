@@ -10,7 +10,7 @@ import re
 import asyncio
 from io import TextIOWrapper
 import csv
-
+import pandas as pd
 #Third party imports
 from fastapi import \
     APIRouter,\
@@ -22,7 +22,7 @@ from fastapi import \
     Security,\
     File,\
     UploadFile
-
+from fastapi.encoders import jsonable_encoder
 from fastapi.security import OAuth2PasswordBearer
 from fastapi.security.api_key import \
     APIKeyQuery,\
@@ -50,8 +50,6 @@ from .models import apiUser
 from . import schemas
 
 LOGGER = logging.getLogger(__name__)
-
-
 
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
@@ -197,6 +195,8 @@ def process_item(item):
 def read_orgs(tokens: dict = Depends(get_api_key)):
     """API endpoint to get all organizations."""
     orgs = list(Organizations.objects.all())
+
+    # orgs_df = pd.DataFrame(orgs)
 
     LOGGER.info(f"The api key submitted {tokens}")
     try:

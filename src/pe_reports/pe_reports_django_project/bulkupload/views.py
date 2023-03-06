@@ -189,6 +189,7 @@ class CustomCSVForm(LoginRequiredMixin,FormView):
         dict_reader1 = dict_reader.fieldnames
         dict_reader2 = set(dict_reader1)
 
+
         required_columns = [
             "tag",
             "customer_name",
@@ -203,42 +204,12 @@ class CustomCSVForm(LoginRequiredMixin,FormView):
             "was_report_email",
             "onboarding_date",
             "no_of_web_apps",
-            # "no_of_web_apps_last_updated",
+            "no_of_web_apps_last_updated",
             "elections"
             ]
 
         # Check needed columns exist
         req_col = ''
-
-        # print(dict_reader)
-        # print(required_columns)
-
-        for row in dict_reader:
-            # tag = row['no_of_web_apps_last_updated']
-            wasCustomer = WasTrackerCustomerdata(
-                tag=row['tag'],
-                customer_name=row['customer_name'],
-                testing_sector=row['testing_sector'],
-                ci_type=row['ci_type'],
-                ticket=row['ticket'],
-                next_scheduled=row['next_scheduled'],
-                last_scanned=row['last_scanned'],
-                frequency=row['frequency'],
-                comments_notes=row['comments_notes'],
-                was_report_poc=row['was_report_poc'],
-                was_report_email=row['was_report_email'],
-                onboarding_date=datetime.strptime(row['onboarding_date'],
-                                                  '%m/%d/%Y'),
-                no_of_web_apps=row['no_of_web_apps'],
-                # no_of_web_apps_last_updated=row['no_of_web_apps_last_updated'],
-                elections=row['elections']
-
-            )
-
-            # print(wasCustomer)
-
-            wasCustomer.save()
-
 
         incorrect_col = []
         testtheList = [i for i in required_columns if i in dict_reader2]
@@ -249,11 +220,9 @@ class CustomCSVForm(LoginRequiredMixin,FormView):
             messages.success(self.request,
                              "The file was uploaded successfully.")
 
-            # for row, item in enumerate(dict_reader, start=1):
-            # for item in allInfo:
-            #     # thetag = item['tag']
-            #     self.process_item(item)
-            #
+
+            self.process_item(dict_reader)
+
             return super().form_valid(form)
         else:
             for col in required_columns:
@@ -268,8 +237,32 @@ class CustomCSVForm(LoginRequiredMixin,FormView):
             return super().form_invalid(form)
 
 
-    def process_item(self, file):
+    def process_item(self, dict):
         #     # TODO: Replace with the code for what you wish to do with the row of data in the CSV.
         # LOGGER.info("The item is %s" % file)
 
-        print(file)
+        # print(file)
+        for row in dict:
+            wasCustomer = WasTrackerCustomerdata(
+
+                tag=row['tag'],
+                customer_name=row['customer_name'],
+                testing_sector=row['testing_sector'],
+                ci_type=row['ci_type'],
+                ticket=row['ticket'],
+                next_scheduled=row['next_scheduled'],
+                last_scanned=row['last_scanned'],
+                frequency=row['frequency'],
+                comments_notes=row['comments_notes'],
+                was_report_poc=row['was_report_poc'],
+                was_report_email=row['was_report_email'],
+                onboarding_date=row['onboarding_date'],
+                no_of_web_apps=row['no_of_web_apps'],
+                # no_of_web_apps_last_updated=row['no_of_web_apps_last_updated'],
+                elections=row['elections']
+
+            )
+        #
+            # print(wasCustomer)
+            wasCustomer.save()
+
