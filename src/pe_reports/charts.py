@@ -119,7 +119,7 @@ class Charts:
         plt.set_loglevel("WARNING")
         ax.spines["right"].set_visible(False)
         ax.spines["top"].set_visible(False)
-        plt.barh(df.index, value_column, bar_width, align="center", color="#466fc6")
+        plt.barh(df.index, value_column, bar_width, align="center", color="#7aa5c1")
         plt.xticks(fontsize=7)
         plt.yticks(fontsize=7)
         plt.xlim(xmin=0)

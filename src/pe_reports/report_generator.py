@@ -25,19 +25,18 @@ import boto3
 from botocore.exceptions import ClientError
 import docopt
 import fitz
-import pandas as pd
 from schema import And, Schema, SchemaError, Use
-from xhtml2pdf import pisa
 
 # cisagov Libraries
 import pe_reports
 
 from ._version import __version__
+from .asm_generator import create_summary
 from .data.db_query import connect, get_orgs
 from .helpers.generate_score import get_pe_scores
 from .pages import init
+from .reportlab_generator import report_gen
 from .scorecard_generator import create_scorecard
-from .asm_generator import create_summary
 
 LOGGER = logging.getLogger(__name__)
 ACCESSOR_AWS_PROFILE = os.getenv("ACCESSOR_PROFILE")
@@ -85,10 +84,10 @@ def embed(
 
     # Insert link to CSV data in summary page of PDF.
     # Use coordinates to position them on the bottom.
-    p1 = fitz.Point(71, 632)
-    p2 = fitz.Point(71, 660)
-    p3 = fitz.Point(71, 688)
-    p5 = fitz.Point(71, 716)
+    p1 = fitz.Point(78, 607)
+    p2 = fitz.Point(78, 635)
+    p3 = fitz.Point(78, 663)
+    p5 = fitz.Point(78, 691)
 
     # Embed and add push-pin graphic
     page.add_file_annot(
@@ -119,23 +118,6 @@ def embed(
     return filesize, tooLarge, output
 
 
-def convert_html_to_pdf(source_html, output_filename):
-    """Convert HTML to PDF."""
-    # Open output file for writing (truncated binary)
-    result_file = open(output_filename, "w+b")
-
-    # Convert HTML to PDF
-    pisa_status = pisa.CreatePDF(
-        source_html, dest=result_file  # the HTML to convert
-    )  # file handle to receive result
-
-    # Close output file
-    result_file.close()  # close output file
-
-    # Return False on success and True on errors
-    return pisa_status.err
-
-
 def generate_reports(datestring, output_directory, soc_med_included=False):
     """Process steps for generating report data."""
     # Get PE orgs from PE db
@@ -155,15 +137,15 @@ def generate_reports(datestring, output_directory, soc_med_included=False):
         pe_scores_df = get_pe_scores(datestring, 12)
         # pe_scores_df = pd.DataFrame()
 
-        pe_orgs.reverse()
+        # pe_orgs.reverse()
         for org in pe_orgs:
             # Assign organization values
             org_uid = org[0]
             org_name = org[1]
             org_code = org[2]
 
-            # if org_code not in ["DHS", "NASA", "USAID"]:
-            #     continue
+            if org_code not in ["USAID"]:
+                continue
 
             LOGGER.info("Running on %s", org_code)
 
@@ -185,9 +167,9 @@ def generate_reports(datestring, output_directory, soc_med_included=False):
 
             # Insert Charts and Metrics into PDF
             (
+                chevron_dict,
                 scorecard_dict,
                 summary_dict,
-                source_html,
                 cred_xlsx,
                 da_xlsx,
                 vuln_xlsx,
@@ -225,7 +207,9 @@ def generate_reports(datestring, output_directory, soc_med_included=False):
 
             # Convert to HTML to PDF
             output_filename = f"{output_directory}/Posture_and_Exposure_Report-{org_code}-{datestring}.pdf"
-            convert_html_to_pdf(source_html, output_filename)
+            # convert_html_to_pdf(source_html, output_filename)#TODO possibly generate report here
+            chevron_dict["filename"] = output_filename
+            report_gen(chevron_dict, soc_med_included)
 
             # Grab the PDF
             pdf = f"{output_directory}/Posture_and_Exposure_Report-{org_code}-{datestring}.pdf"
@@ -315,7 +299,8 @@ def main():
 
     try:
         soc_med = validated_args["--soc_med_included"]
-    except:
+    except Exception as e:
+        LOGGER.info(f"Social media should not included: {e}")
         soc_med = False
     # Generate reports
     generate_reports(
