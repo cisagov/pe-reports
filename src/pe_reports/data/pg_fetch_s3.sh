@@ -3,7 +3,7 @@
 path=~/Desktop/db_backups
 profile=cool-dns-sesmanagesuppressionlist-cyber.dhs.gov
 
-latest_backup=$(aws s3 ls s3://cisa-crossfeed-pe-db-backups/ \
+latest_backup=$(aws s3 ls s3://cisa-crossfeed-pe-staging-db-backups/ \
 --profile $profile \
 --recursive \
 --human-readable \
@@ -11,7 +11,7 @@ latest_backup=$(aws s3 ls s3://cisa-crossfeed-pe-db-backups/ \
 
 aws s3 cp \
    --recursive \
-   s3://cisa-crossfeed-pe-db-backups/$latest_backup/ \
+   s3://cisa-crossfeed-pe-staging-db-backups/$latest_backup/ \
    $path/ \
    --profile $profile
 
