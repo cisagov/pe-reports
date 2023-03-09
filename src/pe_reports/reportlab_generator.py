@@ -64,18 +64,6 @@ pdfmetrics.registerFont(
     )
 )
 
-# pdfmetrics.registerFont(
-#     TTFont("Joanna_Regular", BASE_DIR + "/fonts/jor.ttf")
-# )
-
-# pdfmetrics.registerFont(
-#     TTFont("Joanna_Italic", BASE_DIR + "/fonts/joi.ttf")
-# )
-
-# pdfmetrics.registerFont(
-#     TTFont("Joanna_Bold", BASE_DIR + "/fonts/job.ttf")
-# )
-
 defaultPageSize = letter
 PAGE_HEIGHT = defaultPageSize[1]
 PAGE_WIDTH = defaultPageSize[0]
@@ -157,16 +145,6 @@ def format_table(
     df, header_style, column_widths, column_style_list, remove_symbols=False
 ):
     """Read in a dataframe and convert it to a table and format it with a provided style list."""
-    # if len(df) == 0:
-    #     return Paragraph("No Data to Report", ParagraphStyle(name = 'centered',
-    #         fontName="Franklin_Gothic_Medium_Regular",
-    #         textColor = HexColor('#a7a7a6'),
-    #         fontSize = 16,
-    #         leading = 16,
-    #         alignment = 1,
-    #         spaceAfter = 10,
-    #         spaceBefore = 10))
-
     header_row = [
         [Paragraph(str(cell), header_style) for cell in row] for row in [df.columns]
     ]
@@ -177,25 +155,11 @@ def format_table(
         for cell in row:
             if column_style_list[current_cell] is not None:
 
-                # cleaned_text = ""
-                # for char in str(cell):
-                #     # check the Unicode category of the character
-                #     # ["Co", "Cn", "Cs", "Cc", "Zl", "Zp", "Zs"]
-                #     if unicodedata.category(char) not in ["So"]:
-                #     # if not unicodedata.name(char).startswith(('EMOJI')):
-                #         # print(unicodedata.category(char))
-                #         # if the category is not "Other" or "Private Use", add the character to the cleaned text
-
-                #         cleaned_text += char
-                #     else:
-                #         print(char)
-                #         print(unicodedata.name(char))demoji.replace(text, '')
+                # Remove emojis from content because the report generator can't display them
                 cell = Paragraph(
                     demoji.replace(str(cell), ""), column_style_list[current_cell]
                 )
-                # cell = Paragraph( cleaned_text, column_style_list[current_cell])
-                # cell = Paragraph(re.sub(r'[^\x00-\x7F]+',' ',str(cell)), column_style_list[current_cell])
-                # re.sub(r'[^\x00-\x7F]+',' ',str(cell))
+
             current_row.append(cell)
             current_cell += 1
         data.append(current_row)
@@ -222,7 +186,6 @@ def format_table(
             ("ALIGN", (0, 0), (-1, -1), "CENTER"),
             ("VALIGN", (0, 1), (-1, -1), "MIDDLE"),
             ("INNERGRID", (0, 0), (-1, -1), 1, "white"),
-            # ('BOX', (0,0), (-1,-1), 0.25, 'black'),
             ("TEXTFONT", (0, 1), (-1, -1), "Franklin_Gothic_Book"),
             ("FONTSIZE", (0, 1), (-1, -1), 12),
             (
@@ -503,7 +466,6 @@ def report_gen(data_dict, soc_med_included=False):
         name="body",
         leading=14,
         fontName="Franklin_Gothic_Book",
-        # fontName = "Courier",
         fontSize=12,
     )
 
@@ -630,12 +592,12 @@ def report_gen(data_dict, soc_med_included=False):
     Story.append(
         Paragraph(
             """Posture and Exposure (P&E) offers stakeholders an opportunity to view their organizational
-                            risk from the viewpoint of the adversary. We utilize passive reconnaissance services,
-                            dark web analysis, and open-source tools to identify spoofing in order to generate a risk
-                             profile report that is delivered on a regular basis.<br/><br/>
-                            As a customer of P&E you are receiving our regularly scheduled report which contains a
-                            summary of the activity we have been tracking on your behalf for the following services:
-                            <br/><br/>""",
+                risk from the viewpoint of the adversary. We utilize passive reconnaissance services,
+                dark web analysis, and open-source tools to identify spoofing in order to generate a risk
+                    profile report that is delivered on a regular basis.<br/><br/>
+                As a customer of P&E you are receiving our regularly scheduled report which contains a
+                summary of the activity we have been tracking on your behalf for the following services:
+                <br/><br/>""",
             body,
         )
     )
@@ -773,16 +735,6 @@ def report_gen(data_dict, soc_med_included=False):
             body,
         )
     )
-
-    # Story.append(Paragraph(
-    #     """ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyzÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖØÙÚÛÜÝÞßàáâãäåæçèéêëìíîïð
-    #     """
-    # , body))
-
-    # for i in range(1,2000):
-    #     Story.append(Paragraph(str(i), body))
-    #     # Story.append(str(chr(i)))
-    # Story.append(point12_spacer)
 
     # Build row of kpi cells
     row = [

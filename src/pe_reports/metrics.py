@@ -228,7 +228,7 @@ class Malware_Vulns:
             .reset_index()
         )
         if len(risky_assets.index) > 0:
-            risky_assets["ip"] = risky_assets["ip"].str[:30]  # TODO possibly update
+            risky_assets["ip"] = risky_assets["ip"].str[:30]
             risky_assets.loc[risky_assets["ip"].str.len() == 30, "ip"] = (
                 risky_assets["ip"] + "  ..."
             )
