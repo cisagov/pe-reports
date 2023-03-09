@@ -134,7 +134,6 @@ def generate_reports(datestring, output_directory, soc_med_included=False):
         # Generate PE scores for all stakeholders.
         LOGGER.info("Calculating P&E Scores")
         pe_scores_df = get_pe_scores(datestring, 12)
-        # pe_scores_df = pd.DataFrame()
 
         # pe_orgs.reverse()
         for org in pe_orgs:
@@ -143,8 +142,8 @@ def generate_reports(datestring, output_directory, soc_med_included=False):
             org_name = org[1]
             org_code = org[2]
 
-            if org_code not in ["USAID"]:
-                continue
+            # if org_code not in ["USAID"]:
+            #     continue
 
             LOGGER.info("Running on %s", org_code)
 
