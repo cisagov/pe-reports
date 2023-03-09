@@ -5,7 +5,6 @@ import os
 # Third-Party Libraries
 import demoji
 import numpy as np
-import reportlab
 from reportlab.lib import utils
 from reportlab.lib.colors import HexColor
 from reportlab.lib.pagesizes import letter
@@ -34,7 +33,6 @@ from reportlab.platypus.flowables import BalancedColumns
 from reportlab.platypus.frames import Frame
 from reportlab.platypus.tableofcontents import TableOfContents
 
-reportlab.rl_config.warnOnMissingFontGlyphs = 1
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 
 pdfmetrics.registerFont(
