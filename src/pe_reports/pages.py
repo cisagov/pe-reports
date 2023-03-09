@@ -147,7 +147,7 @@ def credential(
     )
     cred_date_chart.line_chart()
     breach_table = buildTable(
-        Credential.breach_details(),
+        Credential.breach_details()[:10],
         ["table"],
         [30, 20, 20, 20, 10],
         link_to_appendix=True,

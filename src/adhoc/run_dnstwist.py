@@ -123,11 +123,11 @@ source_uid = getDataSource(PE_conn, "DNSTwist")[0]
 orgs = query_orgs_rev()
 LOGGER.info(orgs["name"])
 LOGGER.info(orgs["cyhy_db_name"].tolist())
-for org_index, org_row in orgs.iloc[::-1].iterrows():
+for org_index, org_row in orgs.iterrows():
     pe_org_uid = org_row["organizations_uid"]
     org_name = org_row["name"]
 
-    # if org_name not in ["Federal Aviation Administration"]:
+    # if org_row["cyhy_db_name"] not in ["DOI_FWS"]:
     #     continue
 
     LOGGER.info("Running dnstwist on %s", org_row["cyhy_db_name"])

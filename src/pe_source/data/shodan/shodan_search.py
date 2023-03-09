@@ -103,7 +103,7 @@ def search_shodan(thread_name, ips, api, start, end, org_uid, org_name, failed):
         try_count = 1
         while try_count < 7:
             try:
-                results = api.host(ip_chunk, history=True)
+                results = api.host(ip_chunk)
                 for r in results:
                     for d in r["data"]:
                         # Convert Shodan date string to UTC datetime

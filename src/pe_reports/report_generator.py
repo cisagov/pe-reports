@@ -149,7 +149,6 @@ def generate_reports(datestring, output_directory, soc_med_included=False):
     # Iterate over organizations
     if pe_orgs:
         LOGGER.info("PE orgs count: %d", len(pe_orgs))
-
         # Generate PE scores for all stakeholders.
         LOGGER.info("Calculating P&E Scores")
         pe_scores_df = get_pe_scores(datestring, 12)
@@ -249,18 +248,15 @@ def generate_reports(datestring, output_directory, soc_med_included=False):
                     "%s is too large. File size: %s Limit: 20MB", org_code, filesize
                 )
 
+            bucket_name = "cisa-crossfeed-staging-reports"
             # Upload report
-            upload_file_to_s3(output, datestring, "cisa-crossfeed-pe-reports")
+            upload_file_to_s3(output, datestring, bucket_name)
 
             # Upload scorecard
-            upload_file_to_s3(
-                final_summary_output, datestring, "cisa-crossfeed-pe-reports"
-            )
+            upload_file_to_s3(final_summary_output, datestring, bucket_name)
 
             # Upload ASM Summary
-            upload_file_to_s3(
-                scorecard_filename, datestring, "cisa-crossfeed-pe-reports"
-            )
+            upload_file_to_s3(scorecard_filename, datestring, bucket_name)
             generated_reports += 1
     else:
         LOGGER.error(
