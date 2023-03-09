@@ -17,11 +17,12 @@ import boto3
 import os
 import logging
 from pe_reports.data.db_query import connect_to_staging, get_orgs, get_orgs_pass
+from pe_reports.data.config import db_password_key
 
 LOGGER = logging.getLogger(__name__)
 ACCESSOR_AWS_PROFILE = ""
-BUCKET_NAME = ""
-PASSWORD = ""
+BUCKET_NAME = "cisa-crossfeed-staging-reports"
+PASSWORD = db_password_key()
 
 
 def encrypt(file, password, encrypted_file):
@@ -72,7 +73,9 @@ def download_encrypt_reports(report_date, output_dir):
             output_file = f"{output_dir}/{file_name}"
 
             # ASM Summary
-            asm_file_name = f"Posture-and-Exposure-ASM-Summary_{org_code}_{report_date}.pdf"
+            asm_file_name = (
+                f"Posture-and-Exposure-ASM-Summary_{org_code}_{report_date}.pdf"
+            )
             asm_object_name = f"{report_date}/{asm_file_name}"
             asm_output_file = f"{output_dir}/{asm_file_name}"
 
@@ -117,7 +120,6 @@ def download_encrypt_reports(report_date, output_dir):
             os.mkdir(encrypted_org_path)
         encrypted_file = f"{encrypted_org_path}/Posture_and_Exposure_Report-{org_pass[0]}-{report_date}.pdf"
         asm_encrypted_file = f"{encrypted_org_path}/Posture-and-Exposure-ASM-Summary_{org_pass[0]}_{report_date}.pdf"
-
 
         # Encrypt the reports
         try:

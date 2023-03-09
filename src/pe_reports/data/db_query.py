@@ -211,7 +211,10 @@ def get_orgs_df():
     """Query organizations table for new orgs."""
     conn = connect()
     try:
-        sql = """SELECT * FROM organizations"""
+        sql = """
+        SELECT * FROM organizations 
+        WHERE report_on is True
+        """
         pe_orgs_df = pd.read_sql(sql, conn)
         return pe_orgs_df
     except (Exception, psycopg2.DatabaseError) as error:
@@ -304,7 +307,8 @@ def query_cyhy_assets(cyhy_db_id, conn):
     sql = """
     SELECT *
     FROM cyhy_db_assets ca
-    where ca.org_id = %(org_id)s;
+    where ca.org_id = %(org_id)s
+    and currently_in_cyhy;
     """
 
     df = pd.read_sql_query(sql, conn, params={"org_id": cyhy_db_id})

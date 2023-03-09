@@ -26,6 +26,7 @@ def config(filename=REPORT_DB_CONFIG, section="postgres"):
 
     return db
 
+
 def staging_config(filename=REPORT_DB_CONFIG, section="staging"):
     """Parse Postgres configuration details from database configuration file."""
     parser = ConfigParser()
@@ -62,3 +63,16 @@ def whois_xml_api_key():
             "Database.ini file not found at this path: {}".format(REPORT_DB_CONFIG)
         )
     return key
+
+
+def db_password_key(filename=REPORT_DB_CONFIG, section="pe_db_password_key"):
+    """Get key to encrypt/decrypt P&E passwords."""
+    parser = ConfigParser()
+    parser.read(filename, encoding="utf-8")
+    dict = dict()
+    if parser.has_section(section):
+        for key, value in parser.items(section):
+            dict[key] = value
+    else:
+        raise Exception(f"Section {section} not found in {filename}")
+    return dict["key"]
