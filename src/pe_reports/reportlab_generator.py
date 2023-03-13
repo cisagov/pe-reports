@@ -1,5 +1,6 @@
 """Generate a P&E report using a passed data dictionary."""
 # Standard Python Libraries
+from hashlib import sha256
 import os
 
 # Third-Party Libraries
@@ -376,9 +377,6 @@ def report_gen(data_dict, soc_med_included=False):
 
     def doHeading(text, sty):
         """Add a bookmark to heading element to allow linking from the table of contents."""
-        # Standard Python Libraries
-        from hashlib import sha256
-
         # create bookmarkname
         bn = sha256((text + sty.name).encode("utf8")).hexdigest()
         # modify paragraph text to include an anchor point with name bn
@@ -1591,7 +1589,7 @@ def report_gen(data_dict, soc_med_included=False):
             """.format(
                         breach_name=row[0],
                         description=row[1].replace(' rel="noopener"', ""),
-                        link_name=row[0].replace(" ", "_"),
+                        link_name=demoji.replace(str(row[0]), "").replace(" ", "_"),
                     ),
                     body,
                 )
