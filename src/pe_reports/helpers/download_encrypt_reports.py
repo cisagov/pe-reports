@@ -20,7 +20,7 @@ from pe_reports.data.db_query import connect_to_staging, get_orgs, get_orgs_pass
 
 LOGGER = logging.getLogger(__name__)
 ACCESSOR_AWS_PROFILE = ""
-BUCKET_NAME = ""
+BUCKET_NAME = "cisa-crossfeed-staging-reports"
 PASSWORD = ""
 
 

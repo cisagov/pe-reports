@@ -1752,7 +1752,7 @@ def report_gen(data_dict, soc_med_included=False):
             """<font face="Franklin_Gothic_Medium_Regular">How will the results be provided to me?</font><br/>
             P&E will provide twice monthly P&E reports as password-protected attachments to emails from
             vulnerability@cisa.dhs.gov. The attachments will contain a PDF—providing a summary of the findings,
-            tables, graphs, as charts—as well as a CSV file containing the raw data used to generate the PDF
+            tables, graphs, as charts—as well as a JSON file containing the raw data used to generate the PDF
             report to facilitate your agencies own analysis.
         """,
             body,

@@ -2,10 +2,12 @@
 # Standard Python Libraries
 import logging
 import time
+import threading
 
 # Third-Party Libraries
 from data.config import config, config2, get_hibp_token
 from data.run import query_orgs
+import numpy as np
 import pandas as pd
 import psycopg2
 import psycopg2.extras as extras
@@ -176,7 +178,7 @@ def get_emails(domain):
                 time.sleep(60 * 3)
 
 
-def execute_hibp_emails_values(conn, jsonList):
+def execute_hibp_emails_values(conn, jsonList, thread):
     """Execute values."""
     "SQL 'INSERT' of a datafame"
     sql = """INSERT INTO public.credential_exposures (
@@ -197,7 +199,7 @@ def execute_hibp_emails_values(conn, jsonList):
     # try:
     extras.execute_values(cursor, sql, values)
     conn.commit()
-    LOGGER.info("\t\tHIBP data inserted into credential_exposures successfully..")
+    LOGGER.info("%s:\t\tHIBP data inserted into credential_exposures successfully..", thread)
     # except (Exception, psycopg2.DatabaseError) as err:
     #     show_psycopg2_exception(err)
     #     cursor.close()
@@ -248,6 +250,59 @@ def execute_hibp_breach_values(conn, jsonList, table):
         LOGGER.error(err)
         cursor.close()
 
+def hibp_thread(org_df, thread, compiled_breaches, breach_UIDS_Dict):
+    for org_index, org_row in org_df.iterrows():
+        pe_org_uid = org_row["organizations_uid"]
+        org_name = org_row["name"]
+        cyhy_id = org_row["cyhy_db_name"]
+        # LOGGER.info(cyhy_id)
+
+        if cyhy_id not in orgs_to_run and orgs_to_run:
+            continue
+        LOGGER.info(f"{thread}: Running HIBP on {cyhy_id}")
+
+        subs = query_PE_subs(PE_conn, pe_org_uid).sort_values(
+            by="sub_domain", key=lambda col: col.str.count(".")
+        )
+
+        # LOGGER.info(subs)
+
+        for sub_index, sub in subs.iterrows():
+            sd = sub["sub_domain"]
+            if sd.endswith(".gov"):
+                print(f"Finding breaches for {sd}")
+            else:
+                continue
+            try:
+                hibp_resp = get_emails(sd)
+            except:
+                LOGGER.info(f"{thread}: Failed after 5 tries.")
+                continue
+            if hibp_resp:
+                # LOGGER.info(emails)
+                # flat = flatten_data(emails, sub['name'], compiled_breaches)
+                creds_list = []
+                for email, breach_list in hibp_resp.items():
+                    # LOGGER.info(emails)
+                    # for email, breach_list in emails.items():
+                    subdomain = sd
+                    root_domain = sub["root_domain"]
+                    for b in breach_list:
+                        cred = {
+                            "email": email + "@" + subdomain,
+                            "organizations_uid": pe_org_uid,
+                            "root_domain": root_domain,
+                            "sub_domain": subdomain,
+                            "modified_date": compiled_breaches[b]["modified_date"],
+                            "breach_name": b,
+                            "credential_breaches_uid": breach_UIDS_Dict[b],
+                            "data_source_uid": source_uid,
+                            "name": None,
+                        }
+                        creds_list.append(cred)
+                LOGGER.info("%s:\t\tthere are %s creds found", thread, len(creds_list))
+                # Insert new creds into the PE DB
+                execute_hibp_emails_values(PE_conn, creds_list, thread)
 
 def run_hibp(org_df):
     PE_conn = connect(PE_CONN_PARAMS)
@@ -288,63 +343,29 @@ def run_hibp(org_df):
     for UID in breaches_UIDs:
         breach_UIDS_Dict.update({UID["breach_name"]: UID["credential_breaches_uid"]})
 
-    for org_index, org_row in org_df.iterrows():
-        pe_org_uid = org_row["organizations_uid"]
-        org_name = org_row["name"]
-        cyhy_id = org_row["cyhy_db_name"]
-        # LOGGER.info(cyhy_id)
 
-        if cyhy_id not in orgs_to_run and orgs_to_run:
-            continue
-        LOGGER.info(f"Running HIBP on {cyhy_id}")
-
-        subs = query_PE_subs(PE_conn, pe_org_uid).sort_values(
-            by="sub_domain", key=lambda col: col.str.count(".")
+    orgs_list = np.array_split(org_df, 5)
+    thread_list = []
+    x = 0
+    for org in orgs_list:
+        thread_name = f"Thread {x+1}: "
+        # Start thread
+        t = threading.Thread(
+            target=hibp_thread, args=(org, thread_name, compiled_breaches, breach_UIDS_Dict)
         )
+        t.start()
+        thread_list.append(t)
+        x += 1
 
-        # LOGGER.info(subs)
-
-        for sub_index, sub in subs.iterrows():
-            sd = sub["sub_domain"]
-            if sd.endswith(".gov"):
-                print(f"Finding breaches for {sd}")
-            else:
-                continue
-            try:
-                hibp_resp = get_emails(sd)
-            except:
-                LOGGER.info("Failed after 5 tries.")
-                continue
-            if hibp_resp:
-                # LOGGER.info(emails)
-                # flat = flatten_data(emails, sub['name'], compiled_breaches)
-                creds_list = []
-                for email, breach_list in hibp_resp.items():
-                    # LOGGER.info(emails)
-                    # for email, breach_list in emails.items():
-                    subdomain = sd
-                    root_domain = sub["root_domain"]
-                    for b in breach_list:
-                        cred = {
-                            "email": email + "@" + subdomain,
-                            "organizations_uid": pe_org_uid,
-                            "root_domain": root_domain,
-                            "sub_domain": subdomain,
-                            "modified_date": compiled_breaches[b]["modified_date"],
-                            "breach_name": b,
-                            "credential_breaches_uid": breach_UIDS_Dict[b],
-                            "data_source_uid": source_uid,
-                            "name": None,
-                        }
-                        creds_list.append(cred)
-                LOGGER.info("\t\tthere are %s creds found", len(creds_list))
-                # Insert new creds into the PE DB
-                execute_hibp_emails_values(PE_conn, creds_list)
+    for thread in thread_list:
+        thread.join()
+        
 
 
 def main():
     """Run main."""
     PE_orgs = query_orgs("")
+
     run_hibp(PE_orgs)
 
 
