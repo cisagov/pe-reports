@@ -2,6 +2,7 @@
 
 # Standard Python Libraries
 import io
+import json
 import logging
 import os
 
@@ -102,38 +103,35 @@ def add_stat_frame(current_value, last_value, x, y, width, height, style, can):
     return can
 
 
-def add_attachment(org_uid, final_output, pdf_file, asm_xlsx):
-
-    # Create ASM Excel file
-    asmWriter = pd.ExcelWriter(asm_xlsx, engine="xlsxwriter")
-
+def add_attachment(org_uid, final_output, pdf_file, asm_json):
+    """Create and add JSON attachment."""
     # CIDRs
     cidr_df = query_cidrs_by_org(org_uid)
     cidr_df = cidr_df[["network"]]
-    cidr_df.to_excel(asmWriter, sheet_name="CIDRs", index=False)
+    cidr_dict = cidr_df["network"].to_list()
 
     # Extra IPs
     ip_lst = query_extra_ips(org_uid)
     ips_df = pd.DataFrame(ip_lst, columns=["ip"])
-    ips_df.to_excel(asmWriter, sheet_name="Extra IPs", index=False)
+    ips_dict = ips_df["ip"].to_list()
 
     # Ports/protocols
     ports_protocols_df = query_ports_protocols(org_uid)
-    ports_protocols_df.to_excel(asmWriter, sheet_name="Ports_Protocols", index=False)
+    ports_protocols_dict = ports_protocols_df.to_dict(orient="records")
 
     # Root domains
     rd_df = query_roots(org_uid)
     rd_df = rd_df[["root_domain"]]
-    rd_df.to_excel(asmWriter, sheet_name="Root Domains", index=False)
+    rd_dict = rd_df["root_domain"].to_list()
 
     # Sub-domains
     sd_df = query_subs(org_uid)
     sd_df = sd_df[["sub_domain"]]
-    sd_df.to_excel(asmWriter, sheet_name="Sub-domains", index=False)
+    sd_dict = sd_df["sub_domain"].to_list()
 
     # Software
     soft_df = query_software(org_uid)
-    soft_df.to_excel(asmWriter, sheet_name="Software", index=False)
+    soft_dict = soft_df["product"].to_list()
 
     # Foreign Ips
     for_ips_df = query_foreign_IPs(org_uid)
@@ -148,19 +146,32 @@ def add_attachment(org_uid, final_output, pdf_file, asm_xlsx):
             "location",
         ]
     ]
-    for_ips_df.to_excel(asmWriter, sheet_name="Foreign IPs", index=False)
+    for_ips_dict = for_ips_df.to_dict(orient="records")
 
-    asmWriter.save()
+    # Write to a JSON file
+    final_dict = {
+        "cidrs": cidr_dict,
+        "extra_ips": ips_dict,
+        "ports_protocols": ports_protocols_dict,
+        "root_domains": rd_dict,
+        "sub_domains": sd_dict,
+        "software": soft_dict,
+        "foreign_ips": for_ips_dict,
+    }
+    with open(asm_json, "w") as outfile:
+        json.dump(final_dict, outfile, default=str)
 
+    # Attach to PDF
     doc = fitz.open(pdf_file)
+
     # Get the summary page of the PDF on page 4
     page = doc[0]
 
     # Open CSV data as binary
-    sheet = open(asm_xlsx, "rb").read()
+    sheet = open(asm_json, "rb").read()
     p1 = fitz.Point(455, 635)
     page.add_file_annot(
-        p1, sheet, "ASM_Summary.xlsx", desc="Open xlsx", icon="Paperclip"
+        p1, sheet, "ASM_Summary.json", desc="Open JSON", icon="Paperclip"
     )
     doc.save(
         final_output,
@@ -169,7 +180,7 @@ def add_attachment(org_uid, final_output, pdf_file, asm_xlsx):
     )
 
 
-def create_summary(org_uid, final_output, data_dict, file_name, excel_filename):
+def create_summary(org_uid, final_output, data_dict, file_name, json_filename):
     """Create ASM summary PDF."""
     packet = io.BytesIO()
 
@@ -285,4 +296,4 @@ def create_summary(org_uid, final_output, data_dict, file_name, excel_filename):
     output.write(outputStream)
     outputStream.close()
 
-    add_attachment(org_uid, final_output, file_name, excel_filename)
+    add_attachment(org_uid, final_output, file_name, json_filename)

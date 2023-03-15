@@ -65,10 +65,10 @@ def embed(
     org_code,
     datestring,
     file,
-    cred_xlsx,
-    da_xlsx,
-    vuln_xlsx,
-    mi_xlsx,
+    cred_json,
+    da_json,
+    vuln_json,
+    mi_json,
 ):
     """Embeds raw data into PDF and encrypts file."""
     doc = fitz.open(file)
@@ -77,10 +77,10 @@ def embed(
     output = f"{output_directory}/{org_code}/Posture_and_Exposure_Report-{org_code}-{datestring}.pdf"
 
     # Open CSV data as binary
-    cc = open(cred_xlsx, "rb").read()
-    da = open(da_xlsx, "rb").read()
-    ma = open(vuln_xlsx, "rb").read()
-    mi = open(mi_xlsx, "rb").read()
+    cc = open(cred_json, "rb").read()
+    da = open(da_json, "rb").read()
+    ma = open(vuln_json, "rb").read()
+    mi = open(mi_json, "rb").read()
 
     # Insert link to CSV data in summary page of PDF.
     # Use coordinates to position them on the bottom.
@@ -91,14 +91,14 @@ def embed(
 
     # Embed and add push-pin graphic
     page.add_file_annot(
-        p1, cc, "compromised_credentials.xlsx", desc="Open xlsx", icon="Paperclip"
+        p1, cc, "compromised_credentials.json", desc="Open JSON", icon="Paperclip"
     )
     page.add_file_annot(
-        p2, da, "domain_alerts.xlsx", desc="Open xlsx", icon="Paperclip"
+        p2, da, "domain_alerts.json", desc="Open JSON", icon="Paperclip"
     )
-    page.add_file_annot(p3, ma, "vuln_alerts.xlsx", desc="Open xlsx", icon="Paperclip")
+    page.add_file_annot(p3, ma, "vuln_alerts.json", desc="Open JSON", icon="Paperclip")
     page.add_file_annot(
-        p5, mi, "mention_incidents.xlsx", desc="Open xlsx", icon="Paperclip"
+        p5, mi, "mention_incidents.json", desc="Open JSON", icon="Paperclip"
     )
 
     # Save doc and set garbage=4 to reduce PDF size using all 4 methods:
@@ -142,7 +142,7 @@ def generate_reports(datestring, output_directory, soc_med_included=False):
             org_name = org[1]
             org_code = org[2]
 
-            # if org_code not in ["USAID"]:
+            # if org_code not in ["DOE"]:
             #     continue
 
             LOGGER.info("Running on %s", org_code)
@@ -168,10 +168,10 @@ def generate_reports(datestring, output_directory, soc_med_included=False):
                 chevron_dict,
                 scorecard_dict,
                 summary_dict,
-                cred_xlsx,
-                da_xlsx,
-                vuln_xlsx,
-                mi_xlsx,
+                cred_json,
+                da_json,
+                vuln_json,
+                mi_json,
             ) = init(
                 datestring,
                 org_name,
@@ -187,13 +187,13 @@ def generate_reports(datestring, output_directory, soc_med_included=False):
             LOGGER.info("Creating ASM Summary")
             summary_filename = f"{output_directory}/Posture-and-Exposure-ASM-Summary_{org_code}_{scorecard_dict['end_date'].strftime('%Y-%m-%d')}.pdf"
             final_summary_output = f"{output_directory}/{org_code}/Posture-and-Exposure-ASM-Summary_{org_code}_{scorecard_dict['end_date'].strftime('%Y-%m-%d')}.pdf"
-            summary_xlsx_filename = f"{output_directory}/{org_code}/ASM_Summary.xlsx"
+            summary_json_filename = f"{output_directory}/{org_code}/ASM_Summary.json"
             create_summary(
                 org_uid,
                 final_summary_output,
                 summary_dict,
                 summary_filename,
-                summary_xlsx_filename,
+                summary_json_filename,
             )
             LOGGER.info("Done")
 
@@ -218,10 +218,10 @@ def generate_reports(datestring, output_directory, soc_med_included=False):
                 org_code,
                 datestring,
                 pdf,
-                cred_xlsx,
-                da_xlsx,
-                vuln_xlsx,
-                mi_xlsx,
+                cred_json,
+                da_json,
+                vuln_json,
+                mi_json,
             )
 
             # Log a message if the report is too large.  Our current mailer
