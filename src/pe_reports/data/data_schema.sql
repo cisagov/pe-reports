@@ -603,7 +603,7 @@ CREATE TABLE was_tracker_customerdata
     was_report_email         text                            NOT NULL,
     onboarding_date          date                            NOT NULL,
     no_of_web_apps           integer                         NOT NULL,
-    no_web_apps_last_updated date,
+    no_web_apps_last_updated text,
     elections                text,
     fceb                     text,
     special_report           text,
