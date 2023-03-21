@@ -78,7 +78,13 @@ def credential(
     with open(cred_json, "w") as outfile:
         json.dump(final_dict, outfile, default=str)
 
-    return scorecard_dict, chevron_dict, cred_json
+    # Create Credential Exposure Excel file
+    cred_xlsx = f"{output_directory}/{org_code}/compromised_credentials.xlsx"
+    credWriter = pd.ExcelWriter(cred_xlsx, engine="xlsxwriter")
+    Credential.creds_view.to_excel(credWriter, sheet_name="Credentials", index=False)
+    credWriter.save()
+
+    return scorecard_dict, chevron_dict, cred_json, cred_xlsx
 
 
 def masquerading(
@@ -120,7 +126,16 @@ def masquerading(
     with open(da_json, "w") as outfile:
         json.dump(final_dict, outfile, default=str)
 
-    return scorecard_dict, chevron_dict, da_json
+    # Create Domain Masquerading Excel file
+    da_xlsx = f"{output_directory}/{org_code}/domain_alerts.xlsx"
+    domWriter = pd.ExcelWriter(da_xlsx, engine="xlsxwriter")
+    Domain_Masq.df_mal.to_excel(domWriter, sheet_name="Suspected Domains", index=False)
+    Domain_Masq.alerts_sum().to_excel(
+        domWriter, sheet_name="Domain Alerts", index=False
+    )
+    domWriter.save()
+
+    return scorecard_dict, chevron_dict, da_json, da_xlsx
 
 
 def mal_vuln(
@@ -207,12 +222,21 @@ def mal_vuln(
     }
     with open(vuln_json, "w") as outfile:
         json.dump(final_dict, outfile, default=str)
+    
+    # Create Suspected vulnerability Excel file
+    vuln_xlsx = f"{output_directory}/{org_code}/vuln_alerts.xlsx"
+    vulnWriter = pd.ExcelWriter(vuln_xlsx, engine="xlsxwriter")
+    Malware_Vuln.assets_df.to_excel(vulnWriter, sheet_name="Assets", index=False)
+    Malware_Vuln.insecure_df.to_excel(vulnWriter, sheet_name="Insecure", index=False)
+    Malware_Vuln.vulns_df.to_excel(vulnWriter, sheet_name="Verified Vulns", index=False)
+    vulnWriter.save()
 
     return (
         scorecard_dict,
         chevron_dict,
         vuln_json,
         all_cves_df,
+        vuln_xlsx
     )
 
 
@@ -301,11 +325,22 @@ def dark_web(
     }
     with open(mi_json, "w") as outfile:
         json.dump(final_dict, outfile, default=str)
+    
+    # Create dark web Excel file
+    mi_xlsx = f"{output_directory}/{org_code}/mention_incidents.xlsx"
+    miWriter = pd.ExcelWriter(mi_xlsx, engine="xlsxwriter")
+    Cyber6.dark_web_mentions.to_excel(
+        miWriter, sheet_name="Dark Web Mentions", index=False
+    )
+    Cyber6.alerts.to_excel(miWriter, sheet_name="Dark Web Alerts", index=False)
+    Cyber6.top_cves.to_excel(miWriter, sheet_name="Top CVEs", index=False)
+    miWriter.save()
 
     return (
         scorecard_dict,
         chevron_dict,
         mi_json,
+        mi_xlsx
     )
 
 
@@ -406,7 +441,7 @@ def init(
     }
 
     # Credentials
-    (scorecard_dict, chevron_dict, cred_json) = credential(
+    (scorecard_dict, chevron_dict, cred_json, cred_xlsx) = credential(
         scorecard_dict,
         chevron_dict,
         trending_start_date,
@@ -418,7 +453,7 @@ def init(
     )
 
     # Domain Masquerading
-    scorecard_dict, chevron_dict, da_json = masquerading(
+    scorecard_dict, chevron_dict, da_json, da_xlsx = masquerading(
         scorecard_dict,
         chevron_dict,
         start_date,
@@ -429,7 +464,7 @@ def init(
     )
 
     # Inferred/Verified Vulnerabilities
-    (scorecard_dict, chevron_dict, vuln_json, all_cves_df) = mal_vuln(
+    (scorecard_dict, chevron_dict, vuln_json, all_cves_df, vuln_xlsx) = mal_vuln(
         scorecard_dict,
         chevron_dict,
         start_date,
@@ -440,7 +475,7 @@ def init(
     )
 
     # Dark web mentions and alerts
-    scorecard_dict, chevron_dict, mi_json = dark_web(
+    scorecard_dict, chevron_dict, mi_json, mi_xlsx = dark_web(
         scorecard_dict,
         chevron_dict,
         trending_start_date,
@@ -465,4 +500,8 @@ def init(
         da_json,
         vuln_json,
         mi_json,
+        cred_xlsx,
+        da_xlsx,
+        vuln_xlsx,
+        mi_xlsx
     )

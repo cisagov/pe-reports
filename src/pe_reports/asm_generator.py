@@ -103,34 +103,43 @@ def add_stat_frame(current_value, last_value, x, y, width, height, style, can):
     return can
 
 
-def add_attachment(org_uid, final_output, pdf_file, asm_json):
+def add_attachment(org_uid, final_output, pdf_file, asm_json, asm_xlsx):
     """Create and add JSON attachment."""
+    # Create ASM Excel file
+    asmWriter = pd.ExcelWriter(asm_xlsx, engine="xlsxwriter")
+
     # CIDRs
     cidr_df = query_cidrs_by_org(org_uid)
     cidr_df = cidr_df[["network"]]
+    cidr_df.to_excel(asmWriter, sheet_name="CIDRs", index=False)
     cidr_dict = cidr_df["network"].to_list()
 
     # Extra IPs
     ip_lst = query_extra_ips(org_uid)
     ips_df = pd.DataFrame(ip_lst, columns=["ip"])
+    ips_df.to_excel(asmWriter, sheet_name="Extra IPs", index=False)
     ips_dict = ips_df["ip"].to_list()
 
     # Ports/protocols
     ports_protocols_df = query_ports_protocols(org_uid)
+    ports_protocols_df.to_excel(asmWriter, sheet_name="Ports_Protocols", index=False)
     ports_protocols_dict = ports_protocols_df.to_dict(orient="records")
 
     # Root domains
     rd_df = query_roots(org_uid)
     rd_df = rd_df[["root_domain"]]
+    rd_df.to_excel(asmWriter, sheet_name="Root Domains", index=False)
     rd_dict = rd_df["root_domain"].to_list()
 
     # Sub-domains
     sd_df = query_subs(org_uid)
     sd_df = sd_df[["sub_domain"]]
+    sd_df.to_excel(asmWriter, sheet_name="Sub-domains", index=False)
     sd_dict = sd_df["sub_domain"].to_list()
 
     # Software
     soft_df = query_software(org_uid)
+    soft_df.to_excel(asmWriter, sheet_name="Software", index=False)
     soft_dict = soft_df["product"].to_list()
 
     # Foreign Ips
@@ -146,7 +155,10 @@ def add_attachment(org_uid, final_output, pdf_file, asm_json):
             "location",
         ]
     ]
+    for_ips_df.to_excel(asmWriter, sheet_name="Foreign IPs", index=False)
     for_ips_dict = for_ips_df.to_dict(orient="records")
+
+    asmWriter.save()
 
     # Write to a JSON file
     final_dict = {
@@ -179,8 +191,10 @@ def add_attachment(org_uid, final_output, pdf_file, asm_json):
         deflate=True,
     )
 
+    return asm_xlsx
 
-def create_summary(org_uid, final_output, data_dict, file_name, json_filename):
+
+def create_summary(org_uid, final_output, data_dict, file_name, json_filename, excel_filename):
     """Create ASM summary PDF."""
     packet = io.BytesIO()
 
@@ -296,4 +310,6 @@ def create_summary(org_uid, final_output, data_dict, file_name, json_filename):
     output.write(outputStream)
     outputStream.close()
 
-    add_attachment(org_uid, final_output, file_name, json_filename)
+    asm_xlsx = add_attachment(org_uid, final_output, file_name, json_filename, excel_filename)
+    
+    return asm_xlsx
