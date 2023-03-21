@@ -29,7 +29,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/4.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "django-insecure-bm+3!&6u9u_-p68%i2=r$_o$sn1r*gp!sf8v&zg(7*q&9$xhkg"
+SECRET_KEY = config['SECRET_KEY']
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -96,7 +96,7 @@ LOGGING = {
         'file': {
             'level': 'INFO',
             'class': 'logging.handlers.RotatingFileHandler',
-            'maxBytes': 1024 * 1024 * 1,
+            'maxBytes': 1024 * 1024 * 15,
             'backupCount': 10,
             'filename': './pe_reportsLogFile.log',
 

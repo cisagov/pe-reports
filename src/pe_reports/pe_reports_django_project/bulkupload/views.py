@@ -6,6 +6,7 @@ from django.urls import reverse_lazy
 from django.core.validators import FileExtensionValidator, ValidationError
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.db import DataError
 from bs4 import BeautifulSoup
 import spacy
 
@@ -195,6 +196,7 @@ class CustomCSVForm(LoginRequiredMixin,FormView):
             "customer_name",
             "testing_sector",
             "ci_type",
+            "jira_ticket",
             "ticket",
             "next_scheduled",
             "last_scanned",
@@ -204,8 +206,12 @@ class CustomCSVForm(LoginRequiredMixin,FormView):
             "was_report_email",
             "onboarding_date",
             "no_of_web_apps",
-            "no_of_web_apps_last_updated",
-            "elections"
+            "no_web_apps_last_updated",
+            "elections",
+            "fceb",
+            "special_report",
+            "report_password",
+            "child_tags"
             ]
 
         # Check needed columns exist
@@ -238,10 +244,14 @@ class CustomCSVForm(LoginRequiredMixin,FormView):
 
 
     def process_item(self, dict):
-        #     # TODO: Replace with the code for what you wish to do with the row of data in the CSV.
+        """Delete all data and replace with the data from the file that is getting uploaded."""
+
         # LOGGER.info("The item is %s" % file)
 
-        # print(file)
+        if WasTrackerCustomerdata.objects.exists():
+            LOGGER.info("There was data that was deleted from the WAS table.")
+            WasTrackerCustomerdata.objects.all().delete()
+
         for row in dict:
             wasCustomer = WasTrackerCustomerdata(
 
@@ -249,6 +259,7 @@ class CustomCSVForm(LoginRequiredMixin,FormView):
                 customer_name=row['customer_name'],
                 testing_sector=row['testing_sector'],
                 ci_type=row['ci_type'],
+                jira_ticket=row['jira_ticket'],
                 ticket=row['ticket'],
                 next_scheduled=row['next_scheduled'],
                 last_scanned=row['last_scanned'],
@@ -258,11 +269,17 @@ class CustomCSVForm(LoginRequiredMixin,FormView):
                 was_report_email=row['was_report_email'],
                 onboarding_date=row['onboarding_date'],
                 no_of_web_apps=row['no_of_web_apps'],
-                # no_of_web_apps_last_updated=row['no_of_web_apps_last_updated'],
-                elections=row['elections']
+                no_web_apps_last_updated=row['no_web_apps_last_updated'],
+                elections=row['elections'],
+                fceb=row['fceb'],
+                special_report=row['special_report'],
+                report_password=row['report_password'],
+                child_tags=row['child_tags']
 
             )
-        #
-            # print(wasCustomer)
-            wasCustomer.save()
+            try:
+                wasCustomer.save()
+
+            except DataError as e:
+                LOGGER.error('There is an issue with the data type %s', e)
 

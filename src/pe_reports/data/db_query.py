@@ -105,21 +105,34 @@ def execute_values(conn, dataframe, table, except_condition=";"):
         cursor.close()
 
 
-def get_orgs(conn):
+def get_orgs():
     """Query organizations table."""
+    urlOrgs = 'http://127.0.0.1:8000/apiv1/orgs'
+    headers = {
+        'Content-Type': 'application/json',
+        'access_token': f'{api_config("API_KEY")}'
+    }
+
     try:
-        cur = conn.cursor()
-        sql = """SELECT * FROM organizations
-        WHERE report_on is True"""
-        cur.execute(sql)
-        pe_orgs = cur.fetchall()
-        cur.close()
-        return pe_orgs
-    except (Exception, psycopg2.DatabaseError) as error:
-        LOGGER.error("There was a problem with your database query %s", error)
-    finally:
-        if conn is not None:
-            close(conn)
+
+        response = requests.post(urlOrgs, headers=headers).json()
+        return response
+
+    except requests.exceptions.HTTPError as errh:
+
+        print(errh)
+    except requests.exceptions.ConnectionError as errc:
+
+        print(errc)
+    except requests.exceptions.Timeout as errt:
+
+        print(errt)
+    except requests.exceptions.RequestException as err:
+
+        print(err)
+    except json.decoder.JSONDecodeError as err:
+        # print('its 5')
+        print(err)
 
 
 def get_orgs_pass(conn, password):

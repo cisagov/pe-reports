@@ -22,6 +22,8 @@ from fastapi import \
     Security,\
     File,\
     UploadFile
+
+from fastapi.responses import ORJSONResponse
 from fastapi.encoders import jsonable_encoder
 from fastapi.security import OAuth2PasswordBearer
 from fastapi.security.api_key import \
@@ -33,18 +35,21 @@ from django.core.exceptions import ValidationError
 from django.contrib.auth.models import User
 from django.contrib import messages
 
+
 from starlette.status import HTTP_403_FORBIDDEN
 from jose import jwt, exceptions
 from decouple import config
 
 # cisagov Libraries
-from home.models import VwCidrs
+from home.models import CyhyDbAssets
+from home.models import SubDomains
 from home.models import Organizations
 from home.models import VwBreachcomp
 from home.models import VwBreachcompCredsbydate
+from home.models import VwCidrs
 from home.models import VwOrgsAttacksurface
-from home.models import CyhyDbAssets
 from home.models import VwBreachcompBreachdetails
+from home.models import WasTrackerCustomerdata
 
 from .models import apiUser
 from . import schemas
@@ -157,7 +162,7 @@ async def userapiTokenverify(theapiKey):
 
     except exceptions.JWTError as e:
         LOGGER.warning('The access token has expired and will be updated')
-        userapiTokenUpdate(user_key, user_refresh, theapiKey, user_id)
+        await userapiTokenUpdate(user_key, user_refresh, theapiKey, user_id)
 
 
 async def get_api_key(
@@ -194,7 +199,7 @@ def process_item(item):
                  tags=["List of all Organizations"])
 def read_orgs(tokens: dict = Depends(get_api_key)):
     """API endpoint to get all organizations."""
-    orgs = list(Organizations.objects.all())
+    orgs = Organizations.objects.all()
 
     # orgs_df = pd.DataFrame(orgs)
 
@@ -202,6 +207,34 @@ def read_orgs(tokens: dict = Depends(get_api_key)):
     try:
         userapiTokenverify(theapiKey=tokens)
         return orgs
+    except:
+        LOGGER.info('API key expired please try again')
+
+
+
+
+
+@api_router.post("/subdomains", dependencies=[Depends(get_api_key)],
+                 response_model=List[schemas.SubDomainBase],
+                 tags=["List of all Subdomains"])
+def read_sub_domain(tokens: dict = Depends(get_api_key), ):
+    """API endpoint to get all organizations."""
+    # count = SubDomains.objects.all().count()
+    # print(f'The count is {count}')
+    # finalList = []
+    # chunk_size = 1000
+    # for i in range(0, count, chunk_size):
+    #     records = list(SubDomains.objects.all()[i:i+chunk_size])
+    #     for record in records:
+    #         finalList.append(record)
+    subs = list(SubDomains.objects.all()[:99999])
+
+    # orgs_df = pd.DataFrame(orgs)
+
+    LOGGER.info(f"The api key submitted {tokens}")
+    try:
+        userapiTokenverify(theapiKey=tokens)
+        return subs
     except:
         LOGGER.info('API key expired please try again')
 
@@ -417,6 +450,22 @@ def upload(file: UploadFile = File(...)):
 
     finally:
         file.file.close()
+
+@api_router.post("/was_info", dependencies=[Depends(get_api_key)],
+                 response_model=List[schemas.WASDataBase],
+                 tags=["List of all WAS data"])
+def was_info(tokens: dict = Depends(get_api_key)):
+    """API endpoint to get all WAS data."""
+    was_data = list(WasTrackerCustomerdata.objects.all())
+
+    # orgs_df = pd.DataFrame(orgs)
+
+    LOGGER.info(f"The api key submitted {tokens}")
+    try:
+        userapiTokenverify(theapiKey=tokens)
+        return was_data
+    except:
+        LOGGER.info('API key expired please try again')
 
 
 

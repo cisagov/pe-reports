@@ -47,7 +47,6 @@ def report_gen(request):
         return HttpResponseNotFound('Nothing found')
 
 
-
 def validate_filename(filename):
     """Verify that a filename is the correct format."""
     if filename == "":

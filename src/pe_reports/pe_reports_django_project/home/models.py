@@ -935,6 +935,7 @@ class WasTrackerCustomerdata(models.Model):
     customer_name = models.TextField()
     testing_sector = models.TextField()
     ci_type = models.TextField()
+    jira_ticket = models.TextField()
     ticket = models.TextField()
     next_scheduled = models.TextField()
     last_scanned = models.TextField()
@@ -946,6 +947,10 @@ class WasTrackerCustomerdata(models.Model):
     no_of_web_apps = models.IntegerField()
     no_web_apps_last_updated = models.TextField(blank=True, null=True)
     elections = models.TextField(blank=True, null=True)
+    fceb = models.TextField()
+    special_report = models.TextField()
+    report_password = models.TextField()
+    child_tags = models.TextField()
 
     class Meta:
         managed = False

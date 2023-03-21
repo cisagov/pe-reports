@@ -48,6 +48,19 @@ class Organization(OrganizationBase):
     class Config:
         orm_mode = True
 
+class SubDomainBase(BaseModel):
+    sub_domain_uid: UUID
+    sub_domain: str
+    root_domain_uid: Any
+    data_source_uid: Any
+    dns_record_uid: Any
+    status: bool = False
+
+
+    class Config:
+        orm_mode = True
+        validate_assignment = True
+
 class VwBreachcomp(BaseModel):
     credential_exposures_uid: str
     email: str
@@ -108,6 +121,33 @@ class VwOrgsAttacksurfaceInput(BaseModel):
 
     class Config:
         orm_mode = True
+
+class WASDataBase(BaseModel):
+    customer_id: UUID
+    tag: str
+    customer_name: str
+    testing_sector: str
+    ci_type: str
+    jira_ticket: str
+    ticket: str
+    next_scheduled: str
+    last_scanned: str
+    frequency: str
+    comments_notes: str
+    was_report_poc: str
+    was_report_email: str
+    onboarding_date: str
+    no_of_web_apps: int
+    no_web_apps_last_updated: str
+    elections: str
+    fceb: str
+    special_report: str
+    report_password: str
+    child_tags: str
+
+    class Config:
+        orm_mode = True
+        validate_assignment = True
 
 
 class CyhyDbAssets(BaseModel):

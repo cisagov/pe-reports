@@ -13,6 +13,7 @@ from django.core.wsgi import get_wsgi_application
 # Following 2 lines custom code
 from django.apps import apps
 from django.conf import settings
+from fastapi.responses import ORJSONResponse
 
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "pe_reports_django.settings")
@@ -33,7 +34,9 @@ from dataAPI.views import api_router
 
 
 def get_application() -> FastAPI:
-    app1 = FastAPI(title=settings.PROJECT_NAME, debug=settings.DEBUG)
+    app1 = FastAPI(title=settings.PROJECT_NAME,
+                   debug=settings.DEBUG,
+                   default_response_class=ORJSONResponse)
     app1.add_middleware(
         CORSMiddleware,
         allow_origins=settings.ALLOWED_HOSTS or ["*"],
