@@ -1,9 +1,13 @@
 """Pydantic models used by FastAPI"""
-from pydantic import BaseModel, Field, EmailStr, validator
-from pydantic.types import UUID1
-from typing import Optional, Any
-from uuid import UUID, uuid4
+import uuid
+
+from pydantic import BaseModel, Field, EmailStr
+from pydantic.schema import Optional
+# from pydantic.types import UUID1, UUID
+from typing import Any, Optional
+from uuid import UUID, uuid4, uuid1
 from datetime import date, datetime
+
 
 '''
 Developer Note: If there comes an instance as in class Cidrs where there are
@@ -14,15 +18,48 @@ will error and not be able to report on its data type. In these scenario's use
 the data type "Any" to see what the return is.
 '''
 
+class OrgType(BaseModel):
+    org_type_uid: UUID
+
+    class Config:
+        orm_mode = True
+
 class OrganizationBase(BaseModel):
+    organizations_uid: UUID
     name: str
     cyhy_db_name: str = None
+    org_type_uid: Any
+    report_on: bool
+    password: Optional[str]
+    date_first_reported: Optional[datetime]
+    parent_org_uid: Any
+    premium_report: Optional[bool] = None
+    agency_type: Optional[str] = None
+    demo: bool = False
+
+    class Config:
+        orm_mode = True
+        validate_assignment = True
+
 
 class Organization(OrganizationBase):
     pass
 
     class Config:
         orm_mode = True
+
+class SubDomainBase(BaseModel):
+    sub_domain_uid: UUID
+    sub_domain: str
+    root_domain_uid: Any
+    data_source_uid: Any
+    dns_record_uid: Any
+    status: bool = False
+
+
+    class Config:
+        orm_mode = True
+        validate_assignment = True
 
 class VwBreachcomp(BaseModel):
     credential_exposures_uid: str
@@ -84,6 +121,33 @@ class VwOrgsAttacksurfaceInput(BaseModel):
 
     class Config:
         orm_mode = True
+
+class WASDataBase(BaseModel):
+    customer_id: UUID
+    tag: str
+    customer_name: str
+    testing_sector: str
+    ci_type: str
+    jira_ticket: str
+    ticket: str
+    next_scheduled: str
+    last_scanned: str
+    frequency: str
+    comments_notes: str
+    was_report_poc: str
+    was_report_email: str
+    onboarding_date: str
+    no_of_web_apps: int
+    no_web_apps_last_updated: str
+    elections: str
+    fceb: str
+    special_report: str
+    report_password: str
+    child_tags: str
+
+    class Config:
+        orm_mode = True
+        validate_assignment = True
 
 
 class CyhyDbAssets(BaseModel):

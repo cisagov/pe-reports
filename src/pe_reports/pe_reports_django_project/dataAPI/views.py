@@ -10,7 +10,7 @@ import re
 import asyncio
 from io import TextIOWrapper
 import csv
-
+import pandas as pd
 #Third party imports
 from fastapi import \
     APIRouter,\
@@ -23,6 +23,8 @@ from fastapi import \
     File,\
     UploadFile
 
+from fastapi.responses import ORJSONResponse
+from fastapi.encoders import jsonable_encoder
 from fastapi.security import OAuth2PasswordBearer
 from fastapi.security.api_key import \
     APIKeyQuery,\
@@ -33,25 +35,26 @@ from django.core.exceptions import ValidationError
 from django.contrib.auth.models import User
 from django.contrib import messages
 
+
 from starlette.status import HTTP_403_FORBIDDEN
 from jose import jwt, exceptions
 from decouple import config
 
 # cisagov Libraries
-from home.models import VwCidrs
+from home.models import CyhyDbAssets
+from home.models import SubDomains
 from home.models import Organizations
 from home.models import VwBreachcomp
 from home.models import VwBreachcompCredsbydate
+from home.models import VwCidrs
 from home.models import VwOrgsAttacksurface
-from home.models import CyhyDbAssets
 from home.models import VwBreachcompBreachdetails
+from home.models import WasTrackerCustomerdata
 
 from .models import apiUser
 from . import schemas
 
 LOGGER = logging.getLogger(__name__)
-
-
 
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
@@ -159,7 +162,7 @@ async def userapiTokenverify(theapiKey):
 
     except exceptions.JWTError as e:
         LOGGER.warning('The access token has expired and will be updated')
-        userapiTokenUpdate(user_key, user_refresh, theapiKey, user_id)
+        await userapiTokenUpdate(user_key, user_refresh, theapiKey, user_id)
 
 
 async def get_api_key(
@@ -196,7 +199,9 @@ def process_item(item):
                  tags=["List of all Organizations"])
 def read_orgs(tokens: dict = Depends(get_api_key)):
     """API endpoint to get all organizations."""
-    orgs = list(Organizations.objects.all())
+    orgs = Organizations.objects.all()
+
+    # orgs_df = pd.DataFrame(orgs)
 
     LOGGER.info(f"The api key submitted {tokens}")
     try:
@@ -206,11 +211,39 @@ def read_orgs(tokens: dict = Depends(get_api_key)):
         LOGGER.info('API key expired please try again')
 
 
+
+
+
+@api_router.post("/subdomains", dependencies=[Depends(get_api_key)],
+                 response_model=List[schemas.SubDomainBase],
+                 tags=["List of all Subdomains"])
+def read_sub_domain(tokens: dict = Depends(get_api_key), ):
+    """API endpoint to get all organizations."""
+    # count = SubDomains.objects.all().count()
+    # print(f'The count is {count}')
+    # finalList = []
+    # chunk_size = 1000
+    # for i in range(0, count, chunk_size):
+    #     records = list(SubDomains.objects.all()[i:i+chunk_size])
+    #     for record in records:
+    #         finalList.append(record)
+    subs = list(SubDomains.objects.all()[:99999])
+
+    # orgs_df = pd.DataFrame(orgs)
+
+    LOGGER.info(f"The api key submitted {tokens}")
+    try:
+        userapiTokenverify(theapiKey=tokens)
+        return subs
+    except:
+        LOGGER.info('API key expired please try again')
+
+
 @api_router.post("/breachcomp",
                  dependencies=[Depends(get_api_key)],
                  response_model=List[schemas.VwBreachcomp],
                  tags=["List all breaches"])
-def read_orgs(tokens: dict = Depends(get_api_key)):
+def read_breachcomp(tokens: dict = Depends(get_api_key)):
     """API endpoint to get all breaches."""
     breachInfo = list(VwBreachcomp.objects.all())
     print(breachInfo)
@@ -224,7 +257,7 @@ def read_orgs(tokens: dict = Depends(get_api_key)):
 
 @api_router.post("/breachcomp_credsbydate", dependencies=[Depends(get_api_key)],
                 response_model=List[schemas.VwBreachcompCredsbydate], tags=["List all breaches by date"])
-def read_orgs(tokens: dict = Depends(get_api_key)):
+def read_breachcomp_credsbydate(tokens: dict = Depends(get_api_key)):
     """API endpoint to get all breach creds by date."""
     breachcomp_dateInfo = list(VwBreachcompCredsbydate.objects.all())
 
@@ -238,7 +271,7 @@ def read_orgs(tokens: dict = Depends(get_api_key)):
 
 @api_router.post("/orgs_attacksurface", dependencies=[Depends(get_api_key)],
                 response_model=List[schemas.VwOrgsAttacksurface], tags=["Get asset counts for an organization"])
-def read_orgs(data: schemas.VwOrgsAttacksurfaceInput, tokens: dict = Depends(get_api_key)):
+def read_orgs_attacksurface(data: schemas.VwOrgsAttacksurfaceInput, tokens: dict = Depends(get_api_key)):
     """Get asset counts for an organization attack surfaces."""
     print(data.organizations_uid)
     attackSurfaceInfo = list(VwOrgsAttacksurface.objects.filter(organizations_uid=data.organizations_uid))
@@ -253,7 +286,7 @@ def read_orgs(data: schemas.VwOrgsAttacksurfaceInput, tokens: dict = Depends(get
 
 @api_router.post("/cyhy_db_asset", dependencies=[Depends(get_api_key)],
                 response_model=List[schemas.CyhyDbAssets], tags=["Get cyhy assets"])
-def read_orgs(data: schemas.CyhyDbAssetsInput, tokens: dict = Depends(get_api_key)):
+def read_cyhy_db_asset(data: schemas.CyhyDbAssetsInput, tokens: dict = Depends(get_api_key)):
     """Get Query cyhy assets."""
     print(data.org_id)
     cyhyAssets = list(CyhyDbAssets.objects.filter(org_id=data.org_id))
@@ -269,7 +302,7 @@ def read_orgs(data: schemas.CyhyDbAssetsInput, tokens: dict = Depends(get_api_ke
 @api_router.post("/cidrs", dependencies=[Depends(get_api_key)],
                  response_model=List[schemas.Cidrs],
                  tags=["List of all CIDRS"])
-def read_orgs(tokens: dict = Depends(get_api_key)):
+def read_cidrs(tokens: dict = Depends(get_api_key)):
     """API endpoint to get all CIDRS."""
     orgs = list(VwCidrs.objects.all())
 
@@ -289,7 +322,7 @@ def read_orgs(tokens: dict = Depends(get_api_key)):
 @api_router.post("/breachdetails", dependencies=[Depends(get_api_key)],
                  response_model=List[schemas.VwBreachDetails],
                  tags=["List of all Breach Details"])
-def read_orgs(tokens: dict = Depends(get_api_key)):
+def read_breachdetails(tokens: dict = Depends(get_api_key)):
     """API endpoint to get all CIDRS."""
     breachDetails = list(VwBreachcompBreachdetails.objects.all())
 
@@ -303,7 +336,7 @@ def read_orgs(tokens: dict = Depends(get_api_key)):
 
 
 @api_router.post("/get_key", tags=["Get user api keys"])
-def read_orgs(data: schemas.UserAPI):
+def read_get_key(data: schemas.UserAPI):
     """API endpoint to get api by submitting refresh token."""
     user_key = ''
     userkey = list(apiUser.objects.filter(refresh_token=data.refresh_token))
@@ -315,18 +348,18 @@ def read_orgs(data: schemas.UserAPI):
 
 
 
-@api_router.post("/testingUsers",
-                tags=["List of user id"])
-def read_users(data: schemas.UserAuth):
-    user = userinfo(data.username)
-
-    # user = list(User.objects.filter(username='cduhn75'))
-    if user is None:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="User with this name does exist"
-        )
-    return userinfo(data.username)
+# @api_router.post("/testingUsers",
+#                 tags=["List of user id"])
+# def read_users(data: schemas.UserAuth):
+#     user = userinfo(data.username)
+#
+#     # user = list(User.objects.filter(username='cduhn75'))
+#     if user is None:
+#         raise HTTPException(
+#             status_code=status.HTTP_400_BAD_REQUEST,
+#             detail="User with this name does exist"
+#         )
+#     return userinfo(data.username)
 
 
 
@@ -417,6 +450,22 @@ def upload(file: UploadFile = File(...)):
 
     finally:
         file.file.close()
+
+@api_router.post("/was_info", dependencies=[Depends(get_api_key)],
+                 response_model=List[schemas.WASDataBase],
+                 tags=["List of all WAS data"])
+def was_info(tokens: dict = Depends(get_api_key)):
+    """API endpoint to get all WAS data."""
+    was_data = list(WasTrackerCustomerdata.objects.all())
+
+    # orgs_df = pd.DataFrame(orgs)
+
+    LOGGER.info(f"The api key submitted {tokens}")
+    try:
+        userapiTokenverify(theapiKey=tokens)
+        return was_data
+    except:
+        LOGGER.info('API key expired please try again')
 
 
 
