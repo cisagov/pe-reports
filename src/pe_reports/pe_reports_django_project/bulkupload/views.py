@@ -246,8 +246,6 @@ class CustomCSVForm(LoginRequiredMixin,FormView):
     def process_item(self, dict):
         """Delete all data and replace with the data from the file that is getting uploaded."""
 
-        # LOGGER.info("The item is %s" % file)
-
         if WasTrackerCustomerdata.objects.exists():
             LOGGER.info("There was data that was deleted from the WAS table.")
             WasTrackerCustomerdata.objects.all().delete()
