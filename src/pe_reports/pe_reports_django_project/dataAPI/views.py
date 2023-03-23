@@ -1,7 +1,7 @@
 """Create all api enpoints"""
 
 # Standard Python Libraries
-from typing import List, Any, Union
+from typing import List, Any, Union, Dict
 from datetime import datetime, timedelta
 import json
 import requests
@@ -31,9 +31,11 @@ from fastapi.security.api_key import \
     APIKeyCookie,\
     APIKeyHeader,\
     APIKey
-from django.core.exceptions import ValidationError
+from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.contrib.auth.models import User
+from django.db import transaction
 from django.contrib import messages
+from uuid import UUID
 
 
 from starlette.status import HTTP_403_FORBIDDEN
@@ -50,6 +52,7 @@ from home.models import VwCidrs
 from home.models import VwOrgsAttacksurface
 from home.models import VwBreachcompBreachdetails
 from home.models import WasTrackerCustomerdata
+
 
 from .models import apiUser
 from . import schemas
@@ -465,6 +468,66 @@ def was_info(tokens: dict = Depends(get_api_key)):
         userapiTokenverify(theapiKey=tokens)
         return was_data
     except:
+        LOGGER.info('API key expired please try again')
+
+
+@api_router.delete("/was_info_delete/{tag}", dependencies=[Depends(get_api_key)],
+                 tags=["Delete WAS data"])
+def was_info_delete(tag: str, tokens: dict = Depends(get_api_key)):
+    """API endpoint to delete a record in database."""
+
+    was_data = WasTrackerCustomerdata.objects.get(tag=tag)
+
+    LOGGER.info(f"The api key submitted {tokens}")
+    try:
+        userapiTokenverify(theapiKey=tokens)
+        was_data.delete()
+        return {'deleted_tag': tag}
+    except:
+        LOGGER.info('API key expired please try again')
+
+@api_router.post("/was_info_create", dependencies=[Depends(get_api_key)],
+                 # response_model=Dict[schemas.WASDataBase],
+                 tags=["Create new WAS data"])
+def was_info_create(customer: schemas.WASDataBase, tokens: dict = Depends(get_api_key)):
+    """API endpoint to create a record in database."""
+
+    was_customer = WasTrackerCustomerdata(**customer.dict())
+
+    LOGGER.info(f"The api key submitted {tokens}")
+    try:
+        userapiTokenverify(theapiKey=tokens)
+        was_customer.save()
+        return {'saved_customer': was_customer}
+    except:
+        LOGGER.info('API key expired please try again')
+
+
+@api_router.put("/was_info_update/{tag}", dependencies=[Depends(get_api_key)],
+                # response_model=Dict[schemas.WASDataBase],
+                tags=["Update WAS data"])
+@transaction.atomic
+def was_info_update(tag: str, customer: schemas.WASDataBase,
+                    tokens: dict = Depends(get_api_key)):
+    """API endpoint to create a record in database."""
+
+    LOGGER.info(f"The api key submitted {tokens}")
+    try:
+        userapiTokenverify(theapiKey=tokens)
+        was_data = WasTrackerCustomerdata.objects.get(tag=tag)
+        updated_data = {}
+        for field, value in customer.dict(exclude_unset=True).items():
+            print(f'the field is {field} and the value is {value}')
+            if hasattr(was_data, field) and getattr(was_data, field) != value:
+                setattr(was_data, field, value)
+                updated_data[field] = value
+        was_data.save()
+        return {"message": "Record updated successfully.",
+                "updated_data": updated_data}
+
+        was_data.save()
+        return {'updated_customer': was_data}
+    except ObjectDoesNotExist:
         LOGGER.info('API key expired please try again')
 
 

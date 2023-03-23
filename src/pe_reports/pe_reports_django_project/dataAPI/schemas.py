@@ -123,27 +123,27 @@ class VwOrgsAttacksurfaceInput(BaseModel):
         orm_mode = True
 
 class WASDataBase(BaseModel):
-    customer_id: UUID
-    tag: str
-    customer_name: str
-    testing_sector: str
-    ci_type: str
-    jira_ticket: str
-    ticket: str
-    next_scheduled: str
-    last_scanned: str
-    frequency: str
-    comments_notes: str
-    was_report_poc: str
-    was_report_email: str
-    onboarding_date: str
-    no_of_web_apps: int
-    no_web_apps_last_updated: str
-    elections: str
-    fceb: str
-    special_report: str
-    report_password: str
-    child_tags: str
+    # customer_id: UUID
+    tag: Optional[str] = 'test'
+    customer_name: Optional[str] = 'test'
+    testing_sector: Optional[str] = 'test'
+    ci_type: Optional[str] = 'test'
+    jira_ticket: Optional[str] = 'test'
+    ticket: Optional[str] = 'test'
+    next_scheduled: Optional[str] = 'test'
+    last_scanned: Optional[str] = 'test'
+    frequency: Optional[str] = 'test'
+    comments_notes: Optional[str] = 'test'
+    was_report_poc: Optional[str] = 'test'
+    was_report_email: Optional[str] = 'test'
+    onboarding_date: Optional[str] = 'test'
+    no_of_web_apps: Optional[int]
+    no_web_apps_last_updated: Optional[str] = 'test'
+    elections: Optional[str] = 'test'
+    fceb: Optional[str] = 'test'
+    special_report: Optional[str] = 'test'
+    report_password: Optional[str] = 'test'
+    child_tags: Optional[str] = 'test'
 
     class Config:
         orm_mode = True
