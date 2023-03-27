@@ -44,7 +44,7 @@ def close(conn):
 
 
 def get_orgs():
-    """Query organizations that recieve reports and demo organizations."""
+    """Query organizations that receive reports and demo organizations."""
     conn = connect()
     try:
         cur = conn.cursor()
