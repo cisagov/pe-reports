@@ -185,7 +185,7 @@ class IntelX:
                     if current_results:
                         # Add the root_domain to each result object
                         LOGGER.info(
-                            "Intelx returned %s more credentials for %s",
+                            "IntelX returned %s more credentials for %s",
                             len(current_results),
                             domain,
                         )
