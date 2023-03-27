@@ -21,7 +21,7 @@ from .data.pe_db.db_query_source import (
     org_root_domains,
 )
 
-# Calculate Datetimes for collection period
+# Calculate datetimes for collection period
 TODAY = datetime.date.today()
 DAYS_BACK = datetime.timedelta(days=16)
 START_DATE = (TODAY - DAYS_BACK).strftime("%Y-%m-%d %H:%M:%S")
