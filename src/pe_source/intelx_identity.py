@@ -1,4 +1,4 @@
-"""Collect Intelx credential leak data."""
+"""Collect IntelX credential leak data."""
 # Standard Python Libraries
 import datetime
 import logging
