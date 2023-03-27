@@ -139,7 +139,7 @@ class IntelX:
                 sys.exit()
             LOGGER.info("IntelX Identity API response timed out. Trying again.")
         except Exception as e:
-            LOGGER.error(f"Error occured geting search results: {e}")
+            LOGGER.error(f"Error occurred getting search results: {e}")
             return 0
         response = response.json()
 
