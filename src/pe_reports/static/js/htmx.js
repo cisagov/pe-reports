@@ -823,7 +823,7 @@
                   },
                   function () {
                     return true;
-                  }
+                  },
                 );
                 s.source = i;
                 return s;
@@ -1146,11 +1146,11 @@
             Ne = false;
             B(
               P().querySelectorAll(
-                "[hx-trigger='revealed'],[data-hx-trigger='revealed']"
+                "[hx-trigger='revealed'],[data-hx-trigger='revealed']",
               ),
               function (e) {
                 De(e);
-              }
+              },
             );
           }
         }, 200);
@@ -1169,7 +1169,7 @@
             function () {
               Zt(t.verb, t.path, e);
             },
-            { once: true }
+            { once: true },
           );
         }
       }
@@ -1283,7 +1283,7 @@
         return n * Math.random();
       }
       ut(
-        'htmx.config.wsReconnectDelay must either be a function or the string "full-jitter"'
+        'htmx.config.wsReconnectDelay must either be a function or the string "full-jitter"',
       );
     }
 
@@ -1467,7 +1467,7 @@
           n +
             t +
             ", [hx-sse], [data-hx-sse], [hx-ws]," +
-            " [data-hx-ws], [hx-ext], [hx-data-ext]"
+            " [data-hx-ws], [hx-ext], [hx-data-ext]",
         );
         return r;
       } else {
@@ -2106,7 +2106,7 @@
             function () {
               return Function("return (" + o + ")")();
             },
-            {}
+            {},
           );
         } else {
           s = x(o);
@@ -2583,8 +2583,8 @@
                 " from " +
                 s.pathInfo.path,
             },
-            s
-          )
+            s,
+          ),
         );
       }
     }
@@ -2670,7 +2670,7 @@
             D.config.requestClass +
             "." +
             D.config.indicatorClass +
-            "{opacity:1}                    </style>"
+            "{opacity:1}                    </style>",
         );
       }
     }

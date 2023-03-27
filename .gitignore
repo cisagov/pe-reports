@@ -8,6 +8,7 @@
 ## Project Specific ##
 *.html
 *.log
+build/
 output/
 src/pe_reports/*.html
 src/pe_reports/assets/
@@ -19,3 +20,4 @@ __pycache__
 .pytest_cache
 .python-version
 *.egg-info
+dist

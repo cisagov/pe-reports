@@ -3,6 +3,7 @@
 # Standard Python Libraries
 from datetime import date, datetime, timedelta
 import sys
+import traceback
 
 # cisagov Libraries
 from pe_reports import app
@@ -21,8 +22,10 @@ from .data.sixgill.api import get_sixgill_organizations
 from .data.sixgill.source import (
     alerts,
     alias_organization,
+    all_assets_list,
     creds,
     cve_summary,
+    get_alerts_content,
     mentions,
     root_domains,
     top_cves,
@@ -33,9 +36,10 @@ LOGGER = app.config["LOGGER"]
 # Set todays date formatted YYYY-MM-DD and the start_date 30 days prior
 TODAY = date.today()
 DAYS_BACK = timedelta(days=30)
-START_DATE = str(TODAY - DAYS_BACK)
+MENTIONS_DAYS_BACK = timedelta(days=16)
+MENTIONS_START_DATE = str(TODAY - MENTIONS_DAYS_BACK)
 END_DATE = str(TODAY)
-DATE_SPAN = f"[{START_DATE} TO {END_DATE}]"
+DATE_SPAN = f"[{MENTIONS_START_DATE} TO {END_DATE}]"
 
 # Set dates to YYYY-MM-DD H:M:S format
 NOW = datetime.now()
@@ -83,7 +87,7 @@ class Cybersixgill:
                     sixgill_org_id = sixgill_orgs[org_id][5]
                 except KeyError as err:
                     LOGGER.error("PE org is not listed in Cybersixgill.")
-                    print(err, file=sys.stderr)
+                    LOGGER.error(err, file=sys.stderr)
                     failed.append("%s not in sixgill" % org_id)
                     continue
 
@@ -131,6 +135,38 @@ class Cybersixgill:
         except Exception as e:
             LOGGER.error("Failed fetching alert data for %s", org_id)
             LOGGER.error(e)
+            LOGGER.error(traceback.format_exc())
+            return 1
+
+        # Get Alert content
+        try:
+            LOGGER.info("Fetching alert content data for %s.", org_id)
+
+            # Fetch organization assets
+            org_assets_dict = all_assets_list(sixgill_org_id)
+            for i, row in alerts_df.iterrows():
+                try:
+                    alert_id = row["sixgill_id"]
+                    content_snip, asset_mentioned, asset_type = get_alerts_content(
+                        sixgill_org_id, alert_id, org_assets_dict
+                    )
+                    alerts_df.at[i, "content_snip"] = content_snip
+                    alerts_df.at[i, "asset_mentioned"] = asset_mentioned
+                    alerts_df.at[i, "asset_type"] = asset_type
+                except Exception as e:
+                    LOGGER.error(
+                        "Failed fetching a specific alert content for %s", org_id
+                    )
+                    LOGGER.error(e)
+                    alerts_df.at[i, "content_snip"] = ""
+                    alerts_df.at[i, "asset_mentioned"] = ""
+                    alerts_df.at[i, "asset_type"] = ""
+            LOGGER.info(alerts_df["asset_mentioned"])
+
+        except Exception as e:
+            LOGGER.error("Failed fetching alert content for %s", org_id)
+            LOGGER.error(e)
+            LOGGER.error(traceback.format_exc())
             return 1
 
         # Insert alert data into the PE database
@@ -203,33 +239,49 @@ class Cybersixgill:
             return 1
 
         # Change empty and ambiguous breach names
-        creds_df.loc[
-            creds_df["breach_name"] == "", "breach_name"
-        ] = "Cybersixgill_" + creds_df["breach_id"].astype(str)
+        try:
+            creds_df.loc[
+                creds_df["breach_name"] == "", "breach_name"
+            ] = "Cybersixgill_" + creds_df["breach_id"].astype(str)
 
-        creds_df.loc[
-            creds_df["breach_name"] == "Automatic leaked credentials detection",
-            "breach_name",
-        ] = "Cybersixgill_" + creds_df["breach_id"].astype(str)
-        creds_breach_df = creds_df[
-            ["breach_name", "description", "breach_date", "password", "data_source_uid"]
-        ].reset_index()
-
-        # Create password_included column
-        creds_breach_df["password_included"] = creds_breach_df["password"] != ""
-
-        # Group breaches and count the number of credentials
-        count_creds = creds_breach_df.groupby(
-            [
+            creds_df.loc[
+                creds_df["breach_name"] == "Automatic leaked credentials detection",
                 "breach_name",
-                "description",
-                "breach_date",
-                "password_included",
-                "data_source_uid",
-            ]
-        ).size()
-        creds_breach_df = count_creds.to_frame(name="exposed_cred_count").reset_index()
-        creds_breach_df["modified_date"] = creds_breach_df["breach_date"]
+            ] = "Cybersixgill_" + creds_df["breach_id"].astype(str)
+            creds_breach_df = creds_df[
+                [
+                    "breach_name",
+                    "description",
+                    "breach_date",
+                    "password",
+                    "data_source_uid",
+                ]
+            ].reset_index()
+
+            # Create password_included column
+            creds_breach_df["password_included"] = creds_breach_df["password"] != ""
+
+            # Group breaches and count the number of credentials
+            count_creds = creds_breach_df.groupby(
+                [
+                    "breach_name",
+                    "description",
+                    "breach_date",
+                    "password_included",
+                    "data_source_uid",
+                ]
+            ).size()
+            creds_breach_df = count_creds.to_frame(
+                name="exposed_cred_count"
+            ).reset_index()
+            creds_breach_df["modified_date"] = creds_breach_df["breach_date"]
+            creds_breach_df.drop_duplicates(
+                subset=["breach_name"], keep="first", inplace=True
+            )
+        except Exception as e:
+            LOGGER.error("Probably no credential breaches for %s", org_id)
+            LOGGER.error(e)
+            return 1
 
         # Insert breach data into the PE database
         try:
