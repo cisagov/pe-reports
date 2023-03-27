@@ -175,7 +175,7 @@ class IntelX:
                     time.sleep(3)
                 # If still waiting on new results wait
                 elif results["status"] == 1:
-                    LOGGER.info("Intelx still searching for more credentials")
+                    LOGGER.info("IntelX still searching for more credentials")
                     time.sleep(7)
                 # if status is two collect the last remaining values and exit loop
                 elif results["status"] == 2:
