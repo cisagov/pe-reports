@@ -466,7 +466,7 @@ def get_intelx_breaches(source_uid):
 
 
 def insert_intelx_credentials(df):
-    """Insert sixgill credential data."""
+    """Insert IntelX credential data."""
     conn = connect()
     table = "credential_exposures"
     # Create a list of tuples from the dataframe values
