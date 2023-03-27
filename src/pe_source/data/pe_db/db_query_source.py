@@ -489,7 +489,7 @@ def insert_intelx_credentials(df):
         )
         conn.commit()
         LOGGER.info(
-            "Successfully inserted/updated exposed credentials into PE database."
+            "Successfully inserted/updated exposed IntelX credentials into PE database."
         )
     except (Exception, psycopg2.DatabaseError) as error:
         LOGGER.info(error)
