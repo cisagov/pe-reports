@@ -419,7 +419,7 @@ def org_root_domains(conn, org_uid):
 
 
 def insert_intelx_breaches(df):
-    """Insert intelx breach data."""
+    """Insert IntelX breach data."""
     conn = connect()
     table = "credential_breaches"
     # Create a list of tuples from the dataframe values
