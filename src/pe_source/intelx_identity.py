@@ -81,7 +81,7 @@ class IntelX:
         try:
             insert_intelx_breaches(breaches_df)
         except Exception as e:
-            LOGGER.error("Failed inserting breaches for %s", cyhy_org_id)
+            LOGGER.error("Failed inserting IntelX breaches for %s", cyhy_org_id)
             LOGGER.error(e)
             return 1
 
