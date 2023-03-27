@@ -116,7 +116,7 @@ class IntelX:
                     sys.exit()
                 LOGGER.info("IntelX Identity API response timed out. Trying again.")
             except Exception as e:
-                LOGGER.error(f"Error occured geting search id: {e}")
+                LOGGER.error(f"Error occurred getting search id: {e}")
                 return 0
         LOGGER.info("Acquired search id.")
         time.sleep(5)
