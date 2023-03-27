@@ -441,7 +441,7 @@ def insert_intelx_breaches(df):
             tuples,
         )
         conn.commit()
-        LOGGER.info("Successfully inserted/updated breaches into PE database.")
+        LOGGER.info("Successfully inserted/updated IntelX breaches into PE database.")
     except (Exception, psycopg2.DatabaseError) as error:
         LOGGER.info(error)
         conn.rollback()
