@@ -104,7 +104,7 @@ class IntelX:
         payload = {}
         headers = {}
         attempts = 0
-        while attempts < 5:
+        while True:
             try:
                 response = requests.request("GET", url, headers=headers, data=payload)
                 break
@@ -129,7 +129,7 @@ class IntelX:
         payload = {}
         headers = {}
         attempts = 0
-        while attempts < 5:
+        while True:
             try:
                 response = requests.request("GET", url, headers=headers, data=payload)
                 break
