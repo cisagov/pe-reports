@@ -165,7 +165,7 @@ class IntelX:
                     if current_results:
                         # Add the root_domain to each result object
                         LOGGER.info(
-                            f"Intelx returned {len(current_results)} more credentials for {domain}"
+                            f"IntelX returned {len(current_results)} more credentials for {domain}"
                         )
                         result = [
                             dict(item, **{"root_domain": domain})
