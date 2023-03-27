@@ -129,18 +129,20 @@ class IntelX:
         payload = {}
         headers = {}
         attempts = 0
-        try:
-            response = requests.request("GET", url, headers=headers, data=payload)
-        except requests.exceptions.Timeout:
-            time.sleep(5)
-            attempts += 1
-            if attempts == 5:
-                LOGGER.error("IntelX Identity is not responding. Exiting program.")
-                sys.exit()
-            LOGGER.info("IntelX Identity API response timed out. Trying again.")
-        except Exception as e:
-            LOGGER.error(f"Error occurred getting search results: {e}")
-            return 0
+        while attempts < 5:
+            try:
+                response = requests.request("GET", url, headers=headers, data=payload)
+                break
+            except requests.exceptions.Timeout:
+                time.sleep(5)
+                attempts += 1
+                if attempts == 5:
+                    LOGGER.error("IntelX Identity is not responding. Exiting program.")
+                    sys.exit()
+                LOGGER.info("IntelX Identity API response timed out. Trying again.")
+            except Exception as e:
+                LOGGER.error(f"Error occurred getting search results: {e}")
+                return 0
         response = response.json()
 
         return response
