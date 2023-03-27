@@ -74,7 +74,7 @@ class IntelX:
             roots_df["root_domain"].values.tolist(), START_DATE, END_DATE
         )
         if len(leaks_json) < 1:
-            LOGGER.info(f"No credentials found for {cyhy_org_id}")
+            LOGGER.info("No credentials found for %s", cyhy_org_id)
             return 0
         creds_df, breaches_df = self.process_leaks_results(leaks_json, pe_org_uid)
         # Insert breach data into the PE database
