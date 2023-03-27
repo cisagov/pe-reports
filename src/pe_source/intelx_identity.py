@@ -44,7 +44,7 @@ class IntelX:
         self.orgs_list = orgs_list
 
     def run_intelx(self):
-        """Run IntelX api calls."""
+        """Run IntelX API calls."""
         orgs_list = self.orgs_list
 
         pe_orgs = get_orgs()
