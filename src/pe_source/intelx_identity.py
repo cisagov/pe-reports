@@ -135,7 +135,7 @@ class IntelX:
             time.sleep(5)
             attempts += 1
             if attempts == 5:
-                LOGGER.error("IntelX identity is not responding. Exiting program.")
+                LOGGER.error("IntelX Identity is not responding. Exiting program.")
                 sys.exit()
             LOGGER.info("IntelX Identity API response timed out. Trying again.")
         except Exception as e:
