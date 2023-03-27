@@ -93,7 +93,7 @@ class IntelX:
         try:
             insert_intelx_credentials(creds_df)
         except Exception as e:
-            LOGGER.error("Failed inserting credentials for %s", cyhy_org_id)
+            LOGGER.error("Failed inserting IntelX credentials for %s", cyhy_org_id)
             LOGGER.error(e)
             return 1
         return 0
