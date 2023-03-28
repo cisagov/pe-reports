@@ -82,3 +82,21 @@ def cybersix_token():
     }
     resp = requests.post(url, headers=headers, data=payload).json()
     return resp["access_token"]
+
+
+def get_params(section):
+    """Get data source parameters."""
+    if os.path.isfile(REPORT_DB_CONFIG):
+        parser = ConfigParser()
+        parser.read(REPORT_DB_CONFIG, encoding="utf-8")
+        if parser.has_section(section):
+            params = parser.items(section)
+        else:
+            raise Exception(
+                "Section {} not found in the {} file".format(section, REPORT_DB_CONFIG)
+            )
+    else:
+        raise Exception(
+            "Database.ini file not found at this path: {}".format(REPORT_DB_CONFIG)
+        )
+    return params

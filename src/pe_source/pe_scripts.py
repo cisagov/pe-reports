@@ -1,11 +1,11 @@
 """A tool for gathering pe source data.
 
 Usage:
-    pe-source DATA_SOURCE [--log-level=LEVEL] [--orgs=ORG_LIST] [--cybersix-methods=METHODS]
+    pe-source DATA_SOURCE [--log-level=LEVEL] [--orgs=ORG_LIST] [--cybersix-methods=METHODS] [--soc_med_included]
 
 Arguments:
   DATA_SOURCE                       Source to collect data from. Valid values are "cybersixgill",
-                                    "dnstwist", "hibp", and "shodan".
+                                    "dnstwist", "hibp", "intelx", and "shodan".
 
 Options:
   -h --help                         Show this message.
@@ -34,11 +34,12 @@ import docopt
 from schema import And, Schema, SchemaError, Use
 
 # cisagov Libraries
-from pe_reports import CENTRAL_LOGGING_FILE
+import pe_reports
 
 from ._version import __version__
 from .cybersixgill import Cybersixgill
 from .dnstwistscript import run_dnstwist
+from .intelx_identity import IntelX
 from .shodan import Shodan
 
 LOGGER = logging.getLogger(__name__)
@@ -65,6 +66,9 @@ def run_pe_script(source, orgs_list, cybersix_methods):
         shodan.run_shodan()
     elif source == "dnstwist":
         run_dnstwist(orgs_list)
+    elif source == "intelx":
+        intelx = IntelX(orgs_list)
+        intelx.run_intelx()
     else:
         logging.error(
             "Not a valid source name. Correct values are cybersixgill or shodan."
@@ -101,7 +105,7 @@ def main():
 
     # Set up logging
     logging.basicConfig(
-        filename=CENTRAL_LOGGING_FILE,
+        filename=pe_reports.CENTRAL_LOGGING_FILE,
         filemode="a",
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
         datefmt="%m/%d/%Y %I:%M:%S",
