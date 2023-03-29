@@ -175,7 +175,7 @@ class CyhyDbAssetsInput(BaseModel):
 class Cidrs(BaseModel):
     cidr_uid: UUID
     network: str
-    # organizations_uid: Any
+    organizations_uid: Any
     data_source_uid: Any
     insert_alert: Optional[str] = None
 

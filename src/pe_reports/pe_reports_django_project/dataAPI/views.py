@@ -23,7 +23,7 @@ from fastapi import \
     File,\
     UploadFile
 
-from fastapi.responses import ORJSONResponse
+from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder
 from fastapi.security import OAuth2PasswordBearer
 from fastapi.security.api_key import \
@@ -117,11 +117,13 @@ def userinfo(theuser):
             return u.id
 
 
-async def userapiTokenUpdate(expiredaccessToken, user_refresh, theapiKey, user_id):
+def userapiTokenUpdate(expiredaccessToken, user_refresh, theapiKey, user_id):
     """When api apiKey is expired a new key is created
        and updated in the database."""
+    print(f'Got to update token {expiredaccessToken}')
     theusername = ''
     user_record = list(User.objects.filter(id=f'{user_id}'))
+
     # user_record = User.objects.get(id=user_id)
 
 
@@ -142,7 +144,7 @@ async def userapiTokenUpdate(expiredaccessToken, user_refresh, theapiKey, user_i
     LOGGER.info(f'The user api key and refresh token have been updated from: {theapiKey} to: {updateapiuseraccessToken.apiKey}.')
 
 
-async def userapiTokenverify(theapiKey):
+def userapiTokenverify(theapiKey):
     """Check to see if api key is expired."""
     tokenRecords = list(apiUser.objects.filter(apiKey=theapiKey))
     user_key = ''
@@ -153,8 +155,8 @@ async def userapiTokenverify(theapiKey):
         user_refresh = u.refresh_token
         user_key = u.apiKey
         user_id = u.id
-    # LOGGER.info(f'The user key is {user_key}')
-    # LOGGER.info(f'The user refresh key is {user_refresh}')
+    LOGGER.info(f'The user key is {user_key}')
+    LOGGER.info(f'The user refresh key is {user_refresh}')
     LOGGER.info(f'the token being verified at verify {theapiKey}')
 
     try:
@@ -165,7 +167,7 @@ async def userapiTokenverify(theapiKey):
 
     except exceptions.JWTError as e:
         LOGGER.warning('The access token has expired and will be updated')
-        await userapiTokenUpdate(user_key, user_refresh, theapiKey, user_id)
+        userapiTokenUpdate(user_key, user_refresh, theapiKey, user_id)
 
 
 async def get_api_key(
@@ -198,20 +200,25 @@ def process_item(item):
 
 
 @api_router.post("/orgs", dependencies=[Depends(get_api_key)],
-                 response_model=List[schemas.Organization],
+                 # response_model=List[schemas.Organization],
                  tags=["List of all Organizations"])
 def read_orgs(tokens: dict = Depends(get_api_key)):
     """API endpoint to get all organizations."""
-    orgs = Organizations.objects.all()
+    orgs = list(Organizations.objects.all())
 
-    # orgs_df = pd.DataFrame(orgs)
+    if tokens:
 
-    LOGGER.info(f"The api key submitted {tokens}")
-    try:
-        userapiTokenverify(theapiKey=tokens)
-        return orgs
-    except:
-        LOGGER.info('API key expired please try again')
+        # LOGGER.info(f"The api key submitted {tokens}")
+        try:
+
+            userapiTokenverify(theapiKey=tokens)
+            return orgs
+        except:
+            LOGGER.info('API key expired please try again')
+    else:
+        return {'message': "No api key was submitted"}
+
+
 
 
 
@@ -220,7 +227,7 @@ def read_orgs(tokens: dict = Depends(get_api_key)):
 @api_router.post("/subdomains", dependencies=[Depends(get_api_key)],
                  response_model=List[schemas.SubDomainBase],
                  tags=["List of all Subdomains"])
-def read_sub_domain(tokens: dict = Depends(get_api_key), ):
+def read_sub_domain(root_domain_uid: str,tokens: dict = Depends(get_api_key), ):
     """API endpoint to get all organizations."""
     # count = SubDomains.objects.all().count()
     # print(f'The count is {count}')
@@ -230,16 +237,21 @@ def read_sub_domain(tokens: dict = Depends(get_api_key), ):
     #     records = list(SubDomains.objects.all()[i:i+chunk_size])
     #     for record in records:
     #         finalList.append(record)
-    subs = list(SubDomains.objects.all()[:99999])
+    # subs = list(SubDomains.objects.all()[:999])
+    subs = list(SubDomains.objects.select_related().filter(root_domain_uid=root_domain_uid))
 
     # orgs_df = pd.DataFrame(orgs)
 
     LOGGER.info(f"The api key submitted {tokens}")
-    try:
-        userapiTokenverify(theapiKey=tokens)
-        return subs
-    except:
-        LOGGER.info('API key expired please try again')
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            return subs
+        except:
+            LOGGER.info('API key expired please try again')
+    else:
+        return {'message': "No api key was submitted"}
+
 
 
 @api_router.post("/breachcomp",
@@ -252,11 +264,14 @@ def read_breachcomp(tokens: dict = Depends(get_api_key)):
     print(breachInfo)
 
     LOGGER.info(f"The api key submitted {tokens}")
-    try:
-        userapiTokenverify(theapiKey=tokens)
-        return breachInfo
-    except:
-        LOGGER.info('API key expired please try again')
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            return breachInfo
+        except:
+            LOGGER.info('API key expired please try again')
+
+    return {'message': "No api key was submitted"}
 
 @api_router.post("/breachcomp_credsbydate", dependencies=[Depends(get_api_key)],
                 response_model=List[schemas.VwBreachcompCredsbydate], tags=["List all breaches by date"])
@@ -265,11 +280,14 @@ def read_breachcomp_credsbydate(tokens: dict = Depends(get_api_key)):
     breachcomp_dateInfo = list(VwBreachcompCredsbydate.objects.all())
 
     LOGGER.info(f"The api key submitted {tokens}")
-    try:
-        userapiTokenverify(theapiKey=tokens)
-        return breachcomp_dateInfo
-    except:
-        LOGGER.info('API key expired please try again')
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            return breachcomp_dateInfo
+        except:
+            LOGGER.info('API key expired please try again')
+    else:
+        return {'message': "No api key was submitted"}
 
 
 @api_router.post("/orgs_attacksurface", dependencies=[Depends(get_api_key)],
@@ -280,11 +298,15 @@ def read_orgs_attacksurface(data: schemas.VwOrgsAttacksurfaceInput, tokens: dict
     attackSurfaceInfo = list(VwOrgsAttacksurface.objects.filter(organizations_uid=data.organizations_uid))
 
     LOGGER.info(f"The api key submitted {tokens}")
-    try:
-        userapiTokenverify(theapiKey=tokens)
-        return attackSurfaceInfo
-    except:
-        LOGGER.info('API key expired please try again')
+    if tokens:
+
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            return attackSurfaceInfo
+        except:
+            LOGGER.info('API key expired please try again')
+    else:
+        return {'message': "No api key was submitted"}
 
 
 @api_router.post("/cyhy_db_asset", dependencies=[Depends(get_api_key)],
@@ -295,11 +317,15 @@ def read_cyhy_db_asset(data: schemas.CyhyDbAssetsInput, tokens: dict = Depends(g
     cyhyAssets = list(CyhyDbAssets.objects.filter(org_id=data.org_id))
 
     LOGGER.info(f"The api key submitted {tokens}")
-    try:
-        userapiTokenverify(theapiKey=tokens)
-        return cyhyAssets
-    except:
-        LOGGER.info('API key expired please try again')
+    if tokens:
+
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            return cyhyAssets
+        except:
+            LOGGER.info('API key expired please try again')
+    else:
+        return {'message': "No api key was submitted"}
 
 
 @api_router.post("/cidrs", dependencies=[Depends(get_api_key)],
@@ -310,11 +336,15 @@ def read_cidrs(tokens: dict = Depends(get_api_key)):
     orgs = list(VwCidrs.objects.all())
 
     LOGGER.info(f"The api key submitted {tokens}")
-    try:
-        userapiTokenverify(theapiKey=tokens)
-        return orgs
-    except:
-        LOGGER.info('API key expired please try again')
+    if tokens:
+
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            return orgs
+        except:
+            LOGGER.info('API key expired please try again')
+    else:
+        return {'message': "No api key was submitted"}
 
 
 
@@ -330,11 +360,15 @@ def read_breachdetails(tokens: dict = Depends(get_api_key)):
     breachDetails = list(VwBreachcompBreachdetails.objects.all())
 
     LOGGER.info(f"The api key submitted {tokens}")
-    try:
-        userapiTokenverify(theapiKey=tokens)
-        return breachDetails
-    except:
-        LOGGER.info('API key expired please try again')
+    if tokens:
+
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            return breachDetails
+        except:
+            LOGGER.info('API key expired please try again')
+    else:
+        return {'message': "No api key was submitted"}
 
 
 
@@ -464,11 +498,14 @@ def was_info(tokens: dict = Depends(get_api_key)):
     # orgs_df = pd.DataFrame(orgs)
 
     LOGGER.info(f"The api key submitted {tokens}")
-    try:
-        userapiTokenverify(theapiKey=tokens)
-        return was_data
-    except:
-        LOGGER.info('API key expired please try again')
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            return was_data
+        except:
+            LOGGER.info('API key expired please try again')
+    else:
+        return {'message': "No api key was submitted"}
 
 
 @api_router.delete("/was_info_delete/{tag}", dependencies=[Depends(get_api_key)],
@@ -479,12 +516,16 @@ def was_info_delete(tag: str, tokens: dict = Depends(get_api_key)):
     was_data = WasTrackerCustomerdata.objects.get(tag=tag)
 
     LOGGER.info(f"The api key submitted {tokens}")
-    try:
-        userapiTokenverify(theapiKey=tokens)
-        was_data.delete()
-        return {'deleted_tag': tag}
-    except:
-        LOGGER.info('API key expired please try again')
+    if tokens:
+
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            was_data.delete()
+            return {'deleted_tag': tag}
+        except:
+            LOGGER.info('API key expired please try again')
+    else:
+        return {'message': "No api key was submitted"}
 
 @api_router.post("/was_info_create", dependencies=[Depends(get_api_key)],
                  # response_model=Dict[schemas.WASDataBase],
@@ -495,12 +536,16 @@ def was_info_create(customer: schemas.WASDataBase, tokens: dict = Depends(get_ap
     was_customer = WasTrackerCustomerdata(**customer.dict())
 
     LOGGER.info(f"The api key submitted {tokens}")
-    try:
-        userapiTokenverify(theapiKey=tokens)
-        was_customer.save()
-        return {'saved_customer': was_customer}
-    except:
-        LOGGER.info('API key expired please try again')
+    if tokens:
+
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            was_customer.save()
+            return {'saved_customer': was_customer}
+        except:
+            LOGGER.info('API key expired please try again')
+    else:
+        return {'message': "No api key was submitted"}
 
 
 @api_router.put("/was_info_update/{tag}", dependencies=[Depends(get_api_key)],
@@ -512,24 +557,24 @@ def was_info_update(tag: str, customer: schemas.WASDataBase,
     """API endpoint to create a record in database."""
 
     LOGGER.info(f"The api key submitted {tokens}")
-    try:
-        userapiTokenverify(theapiKey=tokens)
-        was_data = WasTrackerCustomerdata.objects.get(tag=tag)
-        updated_data = {}
-        for field, value in customer.dict(exclude_unset=True).items():
-            print(f'the field is {field} and the value is {value}')
-            if hasattr(was_data, field) and getattr(was_data, field) != value:
-                setattr(was_data, field, value)
-                updated_data[field] = value
-        was_data.save()
-        return {"message": "Record updated successfully.",
-                "updated_data": updated_data}
+    if tokens:
 
-        was_data.save()
-        return {'updated_customer': was_data}
-    except ObjectDoesNotExist:
-        LOGGER.info('API key expired please try again')
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            was_data = WasTrackerCustomerdata.objects.get(tag=tag)
+            updated_data = {}
+            for field, value in customer.dict(exclude_unset=True).items():
+                print(f'the field is {field} and the value is {value}')
+                if hasattr(was_data, field) and getattr(was_data, field) != value:
+                    setattr(was_data, field, value)
+                    updated_data[field] = value
+            was_data.save()
+            return {"message": "Record updated successfully.",
+                    "updated_data": updated_data}
 
 
-
+        except ObjectDoesNotExist:
+            LOGGER.info('API key expired please try again')
+    else:
+        return {'message': "No api key was submitted"}
 
