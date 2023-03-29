@@ -27,7 +27,7 @@ import spacy
 from pe_reports.data.config import config
 from pe_reports.data.db_query import execute_values, get_orgs_df
 from pe_reports.data.tasks.tasks import add, fill_ips_task
-from pe_asm.helpers.enumerate_subs_from_root import (
+from pe_reports.helpers.enumerate_subs_from_root import (
     enumerate_and_save_subs,
     query_roots,
 )
@@ -39,7 +39,7 @@ from pe_asm.helpers.shodan_dedupe import dedupe
 from pe_reports.stakeholder_full.forms import InfoFormExternal
 
 # If you are getting errors saying that a "en_core_web_lg" is loaded. Run the command " python -m spacy download en_core_web_trf" but might have to chagne the name fo the spacy model
-nlp = spacy.load("en_core_web_lg")
+# nlp = spacy.load("en_core_web_lg")
 
 LOGGER = logging.getLogger(__name__)
 

@@ -69,10 +69,10 @@ def db_password_key(filename=REPORT_DB_CONFIG, section="pe_db_password_key"):
     """Get key to encrypt/decrypt P&E passwords."""
     parser = ConfigParser()
     parser.read(filename, encoding="utf-8")
-    dict = dict()
+    db = dict()
     if parser.has_section(section):
         for key, value in parser.items(section):
-            dict[key] = value
+            db[key] = value
     else:
         raise Exception(f"Section {section} not found in {filename}")
-    return dict["key"]
+    return db["key"]

@@ -12,14 +12,22 @@ import requests
 
 # cisagov Libraries
 from pe_reports.data.config import whois_xml_api_key
-from pe_reports.data.db_query import connect
+from pe_asm.data.cyhy_db_query import (
+    pe_db_connect,
+    pe_db_staging_connect,
+    query_pe_report_on_orgs,
+    query_ips,
+)
+
+LOGGER = logging.getLogger(__name__)
+WHOIS_KEY = whois_xml_api_key()
+DATE = datetime.datetime.today().date()
 
 
-def reverseLookup(ip, failed_ips):
+def reverseLookup(ip, failed_ips, conn, thread):
     """Take an ip and find all associated subdomains."""
-    # TODO: Add API key
-    api = whois_xml_api_key()
-    url = f"https://dns-history.whoisxmlapi.com/api/v1?apiKey={api}&ip={ip}"
+    # Query WHOisXML
+    url = f"https://dns-history.whoisxmlapi.com/api/v1?apiKey={WHOIS_KEY}&ip={ip}"
     payload = {}
     headers = {}
     response = requests.request("GET", url, headers=headers, data=payload).json()
@@ -31,11 +39,11 @@ def reverseLookup(ip, failed_ips):
             ).json()
             if response.get("code") == 429:
                 failed_ips.append(ip)
+
     found_domains = []
     try:
         try:
             # Update last_reverse_lookup field
-            conn = connect()
             cur = conn.cursor()
             date = datetime.datetime.today().strftime("%Y-%m-%d")
             sql = """update ips set last_reverse_lookup = %s
@@ -43,12 +51,12 @@ def reverseLookup(ip, failed_ips):
             cur.execute(sql, (date, str(ip)))
             conn.commit()
             cur.close()
-            conn.close()
         except Exception as e:
-            print("failed to update timestamp field")
-            print(e)
-        if response["size"] > 0:
+            LOGGER.error("Failed to update timestamp field")
+            LOGGER.error(e)
 
+        # If there is a response, save domain
+        if response["size"] > 0:
             result = response["result"]
             for domain in result:
                 print(domain)
@@ -63,36 +71,22 @@ def reverseLookup(ip, failed_ips):
                     continue
 
     except Exception as e:
-        print(response)
-        print("failed to return response")
-        print(e)
-    return found_domains
+        LOGGER.error(f"{thread}: Failed to return WHOIsXML response")
+        LOGGER.error(f"{thread}: {response}")
+        LOGGER.error(f"{thread}: {e}")
+    return found_domains, failed_ips
 
 
-def query_ips(org_uid):
-    """Query all ips that link to a cidr related to a specific org."""
-    print(org_uid)
-    conn = connect()
-    sql = """SELECT i.ip_hash, i.ip, ct.network FROM ips i
-            JOIN cidrs ct on ct.cidr_uid = i.origin_cidr
-            where ct.organizations_uid = %(org_uid)s
-            and i.origin_cidr is not null
-            and (i.last_reverse_lookup < current_date - interval '7 days' or i.last_reverse_lookup is null)
-            """
-    df = pd.read_sql(sql, conn, params={"org_uid": org_uid})
-    conn.close()
-    return df
-
-
-def link_domain_from_ip(ip_hash, ip, org_uid, data_source, failed_ips):
+def link_domain_from_ip(ip_hash, ip, org_uid, data_source, failed_ips, conn, thread):
     """From a provided ip find domains and link them in the db."""
-    conn = connect()
-    found_domains = reverseLookup(ip, failed_ips)
+    # Lookup domains from IP
+    found_domains, failed_ips = reverseLookup(ip, failed_ips, conn, thread)
     for domain in found_domains:
         cur = conn.cursor()
         cur.callproc(
             "link_ips_and_subs",
             (
+                DATE,
                 ip_hash,
                 ip,
                 org_uid,
@@ -103,62 +97,100 @@ def link_domain_from_ip(ip_hash, ip, org_uid, data_source, failed_ips):
             ),
         )
         row = cur.fetchone()
+        print("Row after procedure")
         print(row)
         conn.commit()
         cur.close()
-    return 1
+    return found_domains
 
 
-def run_ip_chunk(org, ips, thread):
+def run_ip_chunk(org_uid, ips_df, thread, conn):
     """Run the provided chunk through the linking process."""
-    org_uid = org["organizations_uid"]
     count = 0
     start_time = time.time()
-    last_50 = time.time()
+    last_100 = time.time()
     failed_ips = []
-    for ip_index, ip in ips.iterrows():
+    for ip_index, ip in ips_df.iterrows():
+        # Set up logging for every 100 IPs
         count += 1
-        if count % 50 == 0:
-            logging.info(f"{thread} Currently Running ips: {count}/{len(ips)}")
-            logging.info(
-                f"{thread} {time.time() - last_50} seconds for the last 50 IPs"
+        if count % 100 == 0:
+            LOGGER.info(f"{thread}: Currently Running ips: {count}/{len(ips_df)}")
+            LOGGER.info(
+                f"{thread}: {time.time() - last_100} seconds for the last 50 IPs"
             )
-            last_50 = time.time()
+            last_100 = time.time()
+
+        # Link domain from IP
         try:
-            link_domain_from_ip(
-                ip["ip_hash"], ip["ip"], org_uid, "WhoisXML", failed_ips
+            found_domains = link_domain_from_ip(
+                ip["ip_hash"], ip["ip"], org_uid, "WhoisXML", failed_ips, conn, thread
             )
         except requests.exceptions.SSLError as e:
-            logging.error(e)
+            LOGGER.error(e)
             time.sleep(1)
             continue
-    logging.info(f"{thread} Ips took {time.time() - start_time} to link to subs")
+    LOGGER.info(f"{thread} Ips took {time.time() - start_time} to link to subs")
 
 
-def connect_subs_from_ips(orgs):
+def connect_subs_from_ips(staging):
     """For each org find all domains that are associated to an ip and create link in the ip_subs table."""
-    for org_index, org in orgs.iterrows():
-        print(f"Running on {org['name']}")
-        org_uid = org["organizations_uid"]
-        ips = query_ips(org_uid)
-        print(ips)
-        # run_ip_chunk(org,ips,"")
-        num_chunks = 8
-        ips_split = np.array_split(ips, num_chunks)
+    # Connect to database
+    if staging:
+        conn = pe_db_staging_connect()
+    else:
+        conn = pe_db_connect()
 
-        x = 0
+    # Get P&E organizations DataFrame
+    orgs_df = query_pe_report_on_orgs(conn)
+    num_orgs = len(orgs_df.index)
+
+    # Close database connection
+    conn.close()
+
+    # Loop through orgs
+    org_count = 0
+    for org_index, org in orgs_df.iterrows():
+        # Connect to database
+        if staging:
+            conn = pe_db_staging_connect()
+        else:
+            conn = pe_db_connect()
+        LOGGER.info(
+            "Running on %s. %d/%d complete.", org["cyhy_db_name"], org_count, num_orgs
+        )
+        # Query IPs
+        org_uid = org["organizations_uid"]
+        print(org_uid)
+        ips_df = query_ips(org_uid, conn)
+        LOGGER.info("Number of IPs: %d", len(ips_df.index))
+
+        # if no IPS, continue to next org
+        if len(ips_df.index) == 0:
+            conn.close()
+            org_count += 1
+            continue
+
+        # Split IPs into 8 threads, then call run_ip_chunk function
+        num_chunks = 8
+        ips_split = np.array_split(ips_df, num_chunks)
+        thread_num = 0
         thread_list = []
-        while x < len(ips_split):
-            thread_name = f"Thread {x+1}: "
+        while thread_num < len(ips_split):
+            thread_name = f"Thread {thread_num + 1}: "
             # Start thread
             t = threading.Thread(
-                target=run_ip_chunk, args=(org, ips_split[x], thread_name)
+                target=run_ip_chunk,
+                args=(org_uid, ips_split[thread_num], thread_name, conn),
             )
             t.start()
             thread_list.append(t)
-            x += 1
+            thread_num += 1
 
         for thread in thread_list:
             thread.join()
 
-        print("All threads have finished.")
+        LOGGER.info("All threads have finished.")
+
+        org_count += 1
+
+        conn.close()

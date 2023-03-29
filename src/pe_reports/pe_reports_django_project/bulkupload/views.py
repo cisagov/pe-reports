@@ -39,7 +39,7 @@ from pe_source.data.sixgill.api import setNewCSGOrg
 
 LOGGER = logging.getLogger(__name__)
 
-nlp = spacy.load("en_core_web_lg")
+# nlp = spacy.load("en_core_web_lg")
 
 
 def theExecs(URL):

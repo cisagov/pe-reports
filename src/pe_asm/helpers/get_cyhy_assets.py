@@ -51,10 +51,6 @@ def dotgov_domains():
 
 def get_cyhy_assets(staging=False):
     """Get CyHy assets."""
-    # Connect to the CyHy database and fetch all request data
-    cyhy_db = mongo_connect()
-    collection = cyhy_db["requests"]
-    cyhy_request_data = collection.find()
 
     # Connect to P&E postgres database
     if staging:
@@ -64,6 +60,13 @@ def get_cyhy_assets(staging=False):
 
     # Get the P&E org mapping table
     pe_org_map = get_pe_org_map(pe_db_conn)
+
+    # Connect to the CyHy database and fetch all request data
+    LOGGER.info("Connecting to Mongo DB")
+    cyhy_db = mongo_connect()
+    LOGGER.info("Connection successful")
+    collection = cyhy_db["requests"]
+    cyhy_request_data = collection.find()
 
     # Loop through all CyHy agencies
     cyhy_agencies = []
@@ -125,8 +128,11 @@ def get_cyhy_assets(staging=False):
                 else:
                     cidr_dict["type"] = "ip"
                 assets.append(cidr_dict)
+
         else:
             continue
+
+    LOGGER.info("%d total assets found.", len(assets))
 
     # Create DataFrames from the json lists
     cyhy_agency_df = pd.DataFrame(cyhy_agencies)
@@ -149,6 +155,7 @@ def get_cyhy_assets(staging=False):
 
     # For each parent/child relationship,
     # add the parent's org_uid to the child org
+    LOGGER.info("Update parent/child relationships")
     pe_orgs = query_pe_orgs(pe_db_conn)
     for child_name, parent_name in child_parent_dict.items():
         parent_uid = pe_orgs.loc[
@@ -157,11 +164,13 @@ def get_cyhy_assets(staging=False):
         update_child_parent_orgs(pe_db_conn, parent_uid, child_name)
 
     # Scrape dot gov domains and insert into P&E database
+    LOGGER.info("Lookup and insert dot_gov domains.")
     dotgov_df = dotgov_domains()
     insert_dot_gov_domains(pe_db_conn, dotgov_df, "dotgov_domains")
 
     # Identify org changes. If an asset's last seen field is not today,
     # then mark set currently_in_cyhy to False
+    LOGGER.info("Identify changes in cyhy_db_assets table")
     identify_org_asset_changes(pe_db_conn)
 
     pe_db_conn.close()

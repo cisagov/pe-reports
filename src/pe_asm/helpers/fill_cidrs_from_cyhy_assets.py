@@ -5,26 +5,35 @@ import logging
 import datetime
 
 # cisagov Libraries
-from pe_reports.data.db_query import connect, query_cyhy_assets, get_orgs_df
-from pe_asm.data.cyhy_db_query import identify_cidr_changes
+from pe_reports.data.db_query import query_cyhy_assets, get_orgs_df
+from pe_asm.data.cyhy_db_query import (
+    pe_db_connect,
+    pe_db_staging_connect,
+    identify_cidr_changes,
+)
 
 LOGGER = logging.getLogger(__name__)
 
 
-def fill_cidrs(orgs):
+def fill_cidrs(orgs, staging):
     """Fill CIDRs."""
 
-    # Fetch all orgs if not specified
+    # Fetch all reporting on if not specified
     if orgs == "all_orgs":
-        orgs = get_orgs_df()
+        orgs = get_orgs_df(staging)
 
     network_count = 0
     first_seen = datetime.datetime.today().date()
     last_seen = datetime.datetime.today().date()
-    conn = connect()
+
+    if staging:
+        conn = pe_db_staging_connect()
+    else:
+        conn = pe_db_connect()
+
+    # Loop through P&E organizations and insert current CIDRs
     for org_index, org_row in orgs.iterrows():
         org_id = org_row["organizations_uid"]
-        LOGGER.info(org_row["cyhy_db_name"])
         networks = query_cyhy_assets(org_row["cyhy_db_name"], conn)
         for network_index, network in networks.iterrows():
             network_count += 1
@@ -44,8 +53,8 @@ def fill_cidrs(orgs):
             print(row)
             conn.commit()
             cur.close()
-        LOGGER.info(network_count)
 
     # Identify which CIDRs are current
+    LOGGER.info("Identify CIDR changes")
     identify_cidr_changes(conn)
     conn.close()

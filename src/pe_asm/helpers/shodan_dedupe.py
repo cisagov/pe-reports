@@ -10,8 +10,18 @@ import pandas as pd
 import shodan
 
 # cisagov Libraries
-from pe_reports.data.db_query import close, connect, execute_values, get_orgs_df
+from pe_reports.data.db_query import execute_values, get_orgs_df
 from pe_source.data.pe_db.config import shodan_api_init
+from pe_asm.data.cyhy_db_query import (
+    pe_db_connect,
+    pe_db_staging_connect,
+    query_pe_report_on_orgs,
+    query_cidrs_by_org,
+    update_shodan_ips,
+    query_floating_ips,
+)
+
+LOGGER = logging.getLogger(__name__)
 
 states = [
     "AL",
@@ -134,38 +144,7 @@ def state_check(host_org):
     return found
 
 
-def query_floating_ips(conn, org_id):
-    """Query floating IPs."""
-    sql = """
-    SELECT i.ip
-    FROM ips i
-    join ips_subs ip_s on ip_s.ip_hash = i.ip_hash
-    join sub_domains sd on sd.sub_domain_uid = ip_s.sub_domain_uid
-    join root_domains rd on rd.root_domain_uid = sd.root_domain_uid
-    WHERE rd.organizations_uid = %(org_id)s
-    AND i.origin_cidr is null;
-    """
-    df = pd.read_sql(sql, conn, params={"org_id": org_id})
-    ips = set(df["ip"])
-    conn.close()
-    return ips
-
-
-def query_cidrs(conn, org_id):
-    """Query Cidr."""
-    print(org_id)
-    sql = """
-    SELECT network, cidr_uid
-    FROM cidrs ct
-    join organizations o on o.organizations_uid = ct.organizations_uid
-    WHERE o.organizations_uid = %(org_id)s;
-    """
-    df = pd.read_sql(sql, conn, params={"org_id": org_id})
-    conn.close()
-    return df
-
-
-def cidr_dedupe(cidrs, api, org_type):
+def cidr_dedupe(cidrs, api, org_type, conn):
     """Dedupe CIDR."""
     ip_obj = []
     results = []
@@ -174,19 +153,14 @@ def cidr_dedupe(cidrs, api, org_type):
         result = search(api, query, ip_obj, cidr["cidr_uid"], org_type)
         results.append(result)
     found = len([i for i in results if i != 0])
-    logging.info(f"CIDRs with IPs found: {found}")
+    LOGGER.info(f"CIDRs with IPs found: {found}")
     new_ips = pd.DataFrame(ip_obj)
     if len(new_ips) > 0:
         new_ips = new_ips.drop_duplicates(subset="ip", keep="first")
-        conn = connect()
-        except_clause = """ ON CONFLICT (ip)
-                    DO
-                    UPDATE SET shodan_results = EXCLUDED.shodan_results"""
-        execute_values(conn, new_ips, "public.ips", except_clause)
-        close(conn)
+        update_shodan_ips(conn, new_ips)
 
 
-def ip_dedupe(api, ips, agency_type):
+def ip_dedupe(api, ips, agency_type, conn):
     """Count number of IPs with data on Shodan."""
     matched = 0
     ips = list(ips)
@@ -200,10 +174,10 @@ def ip_dedupe(api, ips, agency_type):
                     time.sleep(2)
                     hosts = api.host(ips[i * 100 : len(ips)])
                 except Exception:
-                    logging.error(f"{i} failed again")
+                    LOGGER.error(f"{i} failed again")
                     continue
             except shodan.APIError as e:
-                logging.error("Error: {}".format(e))
+                LOGGER.error("Error: {}".format(e))
         else:
             try:
                 hosts = api.host(ips[i * 100 : (i + 1) * 100])
@@ -263,19 +237,14 @@ def ip_dedupe(api, ips, agency_type):
     new_ips = pd.DataFrame(float_ips)
     if len(new_ips) > 0:
         new_ips = new_ips.drop_duplicates(subset="ip", keep="first")
-        conn = connect()
-        except_clause = """ ON CONFLICT (ip)
-                    DO
-                    UPDATE SET shodan_results = EXCLUDED.shodan_results"""
-        execute_values(conn, new_ips, "public.ips", except_clause)
-        close(conn)
+        update_shodan_ips(conn, new_ips)
 
 
 def search(api, query, ip_obj, cidr_uid, org_type):
     """Search Shodan API using query and add IPs to set."""
     # Wrap the request in a try/ except block to catch errors
     try:
-        logging.info(query)
+        LOGGER.info(query)
         # Search Shodan
         try:
             results = api.search(query)
@@ -349,47 +318,73 @@ def search(api, query, ip_obj, cidr_uid, org_type):
                         )
                 i = i + 1
             except shodan.APIError as e:
-                logging.error("Error: {}".format(e))
-                logging.error(query)
+                LOGGER.error("Error: {}".format(e))
+                LOGGER.error(query)
                 results = {"total": 0}
     except shodan.APIError as e:
-        logging.error("Error: {}".format(e))
+        LOGGER.error("Error: {}".format(e))
         # IF it breaks to here it fails
-        logging.error(f"Failed on {query}")
+        LOGGER.error(f"Failed on {query}")
         return 0
     return results["total"]
 
 
-def dedupe(orgs):
+def dedupe(staging):
     """Check list of IPs, CIDRs, ASNS, and FQDNs in Shodan and output set of IPs."""
-    # get username and password from config file
-    # TODO: Add key
-    api = shodan_api_init()[0]
-    for org_index, org in orgs.iterrows():
+    # Connect to database
+    if staging:
+        conn = pe_db_staging_connect()
+    else:
+        conn = pe_db_connect()
 
-        logging.info(f"Running on {org['name']}")
-        conn = connect()
-        cidrs = query_cidrs(conn, org["organizations_uid"])
-        logging.info(f"{len(cidrs)} cidrs found")
+    # Get P&E organizations DataFrame
+    orgs_df = query_pe_report_on_orgs(conn)
+    num_orgs = len(orgs_df.index)
+
+    # Close database connection
+    conn.close()
+
+    # Get Shodan key from config file
+    api = shodan_api_init()[0]
+
+    # Loop through orgs
+    org_count = 0
+    for org_index, org in orgs_df.iterrows():
+        # Connect to database
+        if staging:
+            conn = pe_db_staging_connect()
+        else:
+            conn = pe_db_connect()
+        LOGGER.info(
+            "Running on %s. %d/%d complete.",
+            org["cyhy_db_name"],
+            org_count,
+            num_orgs,
+        )
+        # Query CIDRS
+        cidrs = query_cidrs_by_org(conn, org["organizations_uid"])
+        LOGGER.info(f"{len(cidrs)} cidrs found")
+
+        # Run cidr dedupe if there are CIDRs
         if len(cidrs) > 0:
-            cidr_dedupe(cidrs, api, org["agency_type"])
-        conn = connect()
-        logging.info("Grabbing floating IPs")
+            cidr_dedupe(cidrs, api, org["agency_type"], conn)
+
+        # Get IPs related to current sub-domains
+        LOGGER.info("Grabbing floating IPs")
         ips = query_floating_ips(conn, org["organizations_uid"])
-        logging.info("Got Ips")
+        LOGGER.info("Got Ips")
         if len(ips) > 0:
-            logging.info("Running dedupe on IPs")
-            ip_dedupe(api, ips, org["agency_type"])
-        logging.info("Finished dedupe")
+            LOGGER.info("Running dedupe on IPs")
+            ip_dedupe(api, ips, org["agency_type"], conn)
+        LOGGER.info("Finished dedupe")
+
+        org_count += 1
+        conn.close()
 
 
 def main():
     """Run all orgs net assets through the dedupe process."""
-    orgs = get_orgs_df()
-    orgs = orgs[orgs["report_on"] == True | orgs["demo"]]
-    print(orgs)
-
-    dedupe(orgs)
+    dedupe(False)
 
 
 if __name__ == "__main__":
