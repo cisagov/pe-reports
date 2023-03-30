@@ -185,7 +185,7 @@ def insert_cyhy_agencies(conn, cyhy_agency_df):
             cur = conn.cursor()
             sql = """
             INSERT INTO organizations(name, cyhy_db_name, agency_type, retired,
-            recieves_cyhy_reports, recieves_bod_reports, recieves_cybex_reports,
+            receives_cyhy_report, receives_bod_report, receives_cybex_report,
             is_parent, fceb, password) VALUES (%s, %s, %s, %s,
              %s, %s, %s,
              %s, %s, PGP_SYM_ENCRYPT(%s, %s))
@@ -195,9 +195,9 @@ def insert_cyhy_agencies(conn, cyhy_agency_df):
                 password = EXCLUDED.password,
                 agency_type = EXCLUDED.agency_type,
                 retired = EXCLUDED.retired,
-                recieves_cyhy_reports = EXCLUDED.recieves_cyhy_reports,
-                recieves_bod_reports= EXCLUDED.recieves_bod_reports,
-                recieves_cybex_reports = EXCLUDED.recieves_cybex_reports,
+                receives_cyhy_report = EXCLUDED.receives_cyhy_report,
+                receives_bod_report= EXCLUDED.receives_bod_report,
+                receives_cybex_report = EXCLUDED.receives_cybex_report,
                 is_parent = EXCLUDED.is_parent,
                 fceb = EXCLUDED.fceb
             """
@@ -208,9 +208,9 @@ def insert_cyhy_agencies(conn, cyhy_agency_df):
                     row["cyhy_db_name"],
                     row["agency_type"],
                     row["retired"],
-                    row["recieves_cyhy_reports"],
-                    row["recieves_bod_reports"],
-                    row["recieves_cybex_reports"],
+                    row["receives_cyhy_report"],
+                    row["receives_bod_report"],
+                    row["receives_cybex_report"],
                     row["is_parent"],
                     row["fceb"],
                     row["password"],
@@ -218,6 +218,7 @@ def insert_cyhy_agencies(conn, cyhy_agency_df):
                 ),
             )
             conn.commit()
+            cur.close()
         except (Exception, psycopg2.DatabaseError) as err:
             show_psycopg2_exception(err)
             cur.close()
@@ -269,7 +270,7 @@ def update_scan_status(conn, child_name):
         """
         UPDATE organizations
         set run_scans = True
-        where cyhy_db_name = {}
+        where cyhy_db_name = '{}'
         """.format(
             child_name
         ),
