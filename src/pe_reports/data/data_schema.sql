@@ -4276,17 +4276,30 @@ CREATE TABLE public.was_findings (
     last_detected date,
     first_detected date);
 --
--- Name: was_customers public; Type: ACL; Schema: -; Owner: postgres
--- TODO: Make customer_id a foreign from was tracker once that information is available
-CREATE TABLE public.was_summary (
-    customer_id uuid,
-    was_org_id text UNIQUE,
-    webapp_count int,
-    active_vuln_count int,
-    webapp_with_vulns_count int,
-    last_updated date
-);
-
+-- Name: was_history public; Type: ACL; Schema: -; Owner: postgres
+--
+CREATE TABLE public.was_history(
+	was_org_id TEXT NOT NULL, 
+	date_scanned date NOT NULL,
+	vuln_cnt int,
+	vuln_webapp_cnt int,
+	web_app_cnt int,
+	high_rem_time int,
+	crit_rem_time int,
+	PRIMARY KEY (was_org_id,date_scanned)
+)
+--
+-- Name: was_map public; Type: ACL; Schema: -; Owner: postgres
+--
+CREATE TABLE public.was_map(
+	was_org_id text NOT NULL,
+	pe_org_id UUID,
+	report_on bool,
+	last_scanned date,
+	primary key(was_org_id),
+	CONSTRAINT pe_org_id_fk 
+	FOREIGN KEY (pe_org_id) REFERENCES public.organizations(organizations_uid)
+)
 
 
 --

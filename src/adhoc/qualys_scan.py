@@ -17,7 +17,7 @@ url = "https://qualysapi.qg3.apps.qualys.com/"
 username = ""
 password = ""
 
-from data.run import insertWASIds, insertFindingData, insertCountData,queryVulnWebAppCount,queryWASOrgList
+from data.run import insertWASIds,getPreviousFindingsHistorical, insertFindingData,queryVulnWebAppCount,queryWASOrgList,getPEuuid,getPreviousFindings,queryVulnCount,insertWASVulnData
 
 exampleData = [{
     'finding_uid':'803ecd02-71ee-456f-b8d0-3ee5f4022fb7',
@@ -48,7 +48,6 @@ class InvalidQualysCall(Exception):
 class InvalidApiCall(Exception):
     """Raise when the API call is invalid or no data is returned."""
 
-
 @retry((InvalidApiCall,InvalidQualysCall), tries=3, delay=2, backoff=2)
 def qualys_call(link,header,data):
     """Make a call to Qualys API."""
@@ -62,7 +61,6 @@ def qualys_call(link,header,data):
         raise InvalidApiCall
     return responseJson
 
-
 def iterateCustomers():
     """Iterate through all customers from the stakeholders csv file."""
     customerID = []
@@ -70,7 +68,7 @@ def iterateCustomers():
         datareader = csv.reader(csvfile)
         for row in datareader:
             if row[4] != '':
-                customerID.append(row[4])
+                customerID.append((row[4],row[3]))
     return customerID
 
 def getWebAppFromTag(tagStr):
@@ -184,7 +182,6 @@ def getFindingsFromId(idStr,block=0):
                             'fstatus':status,
                             'last_detected':lastDetected,
                             'first_detected':firstDetected,
-                            'date':now
                             })
     if we['ServiceResponse']['hasMoreRecords'] == 'true':
         findingsList.extend(getFindingsFromId(idStr,block+1))
@@ -250,55 +247,125 @@ def getWebAppCount(idStr):
     we = qualys_call(url+endpoint,headers,data)
     return we['ServiceResponse']['count']
 
-def remidiationTime(firstDetected,lastDetected):
-    """Calculate the time between first detected and last detected."""
-    firstDetected = datetime.strptime(firstDetected, "%Y-%m-%dT%H:%M:%S")
-    lastDetected = datetime.strptime(lastDetected, "%Y-%m-%dT%H:%M:%S")
-    time = lastDetected - firstDetected
-    return time.days
-
-
-def getAllRemidiationTime(findingList):
-    crit = []
-    high = []
-    for finding in findingList:
-        if finding['severity'] == 4:
-            high.append(remidiationTime(finding['first_detected'][0:19],finding['last_detected'][0:19]))
-        if finding['severity'] == 5:
-            crit.append(remidiationTime(finding['first_detected'][0:19],finding['last_detected'][0:19]))
-        
-    return sum(crit)/len(crit),sum(high)/len(high)
-
-def print_this(ok):
-    with open("vuln.csv",'a',newline='') as file:
-        writer = csv.writer(file)
-        writer.writerow(list(ok[0]))
-        for x in ok:
-            keys = list(x)
-            values = []
-            for key in keys:
-                values.append(x[key])
-            writer.writerow(values)
-
-def main():
+def initializeWasMap():
+    """Initialize the was_map table with all the orgs and their PE uuids."""
     customers = iterateCustomers()[1:]
-    insertWASIds(customers)
+    insertList = []
+    for org in customers:
+        if org[1] != '':
+            insertList.append((org[0],getPEuuid(org[1])))
+        else:
+            insertList.append((org[0],''))
+    insertWASIds(insertList)
+    
+def fillFindings():
+    """fill was_findings table for current month."""
     query = queryWASOrgList()
     for was_org_id in query:
         findingList = getFindingsFromId(was_org_id)
+        print('Got Data for ' + was_org_id)
         if findingList != []:
             insertFindingData(findingList)
-        
-    for x in query:
-        wasFrame = {
-            'was_org_id': x,
-            'webapp_count' : getWebAppCount(x),
-            'active_vuln_count' : getActiveVulnCount(x,'ACTIVE') + getActiveVulnCount(x,'REOPENED') + getActiveVulnCount(x,'NEW'),
-            'webapp_with_vulns_count' :queryVulnWebAppCount(x),
-            'last_updated' : now
+
+def fillData():
+    """fill was_history table for current month."""
+    query = queryWASOrgList()
+    for was_org_id in query:
+        recentFindings = getPreviousFindingsHistoryical(was_org_id,1) #gets the uid to all the findings that were fixed in the last month
+        highRemTimeList = []
+        critRemTimeList = []
+        for finding in recentFindings:
+            highRemTime = 0
+            critRemTime = 0
+            firstDetected = finding[11]
+            lastDetected = finding[10]
+            severity = finding[5]
+            if severity == 4:
+                delta = lastDetected - firstDetected
+                highRemTimeList.append(delta.days)
+            if severity == 5:
+                delta = lastDetected - firstDetected
+                critRemTimeList.append(delta.days)
+        if len(highRemTimeList) == 0:
+            highRemTime = 0
+        else:
+            highRemTime = sum(highRemTimeList)/len(highRemTimeList)
+        if len(critRemTimeList) == 0:
+            critRemTime = 0
+        else:
+            critRemTime = sum(critRemTimeList)/len(critRemTimeList)
+        was_data = {
+            'was_org_id' : was_org_id,
+            'date_scanned' : now,
+            'vuln_cnt':queryVulnCount(was_org_id),
+            'vuln_webapp_cnt': queryVulnWebAppCount(was_org_id),
+            'web_app_cnt': getWebAppCount(was_org_id),
+            'high_rem_time' : highRemTime,
+            'crit_rem_time' : critRemTime
         }
-        insertCountData(wasFrame)
-        LOGGER.info("Successfully inserted Data for " + x)
+        insertWASVulnData(was_data)
+    
+def lastMonthData():
+    """Fill was_history table for last months data."""
+    query = queryWASOrgList()
+    for was_org_id in query:
+        recentFindings = getPreviousFindingsHistorical(was_org_id,2) #gets the uid to all the findings that were fixed in the last month
+        highRemTimeList = []
+        critRemTimeList = []
+        vuln_cnt = 0
+        vuln_webapp_set = {}
+        for finding in recentFindings:  
+            vuln_cnt += 1
+            highRemTime = 0
+            critRemTime = 0
+            firstDetected = finding[11]
+            lastDetected = finding[10]
+            severity = finding[5]
+            fstatus = finding[9]
+            webapp_id = finding[0]
+            vuln_webapp_set.add(finding[0])# add finding uid to set
+            
+            if severity == 4:
+                delta = lastDetected - firstDetected
+                highRemTimeList.append(delta.days)
+            if severity == 5:
+                delta = lastDetected - firstDetected
+                critRemTimeList.append(delta.days)
+        if len(highRemTimeList) == 0:
+            highRemTime = 0
+        else:
+            highRemTime = sum(highRemTimeList)/len(highRemTimeList)
+        if len(critRemTimeList) == 0:
+            critRemTime = 0
+        else:
+            critRemTime = sum(critRemTimeList)/len(critRemTimeList)
+        
+        
+        #get the first day of the previoud month
+        first = now.replace(day=1)
+        last_month = first - datetime.timedelta(days=1)
+        firstPrevMonth = last_month.replace(day=1)
+        
+        was_data = {
+            'was_org_id' : was_org_id,
+            'date_scanned' : firstPrevMonth,
+            'vuln_cnt': len(recentFindings),
+            'vuln_webapp_cnt': len(vuln_webapp_set),
+            'web_app_cnt': getWebAppCount(was_org_id),
+            'high_rem_time' : highRemTime,
+            'crit_rem_time' : critRemTime
+        }
+        insertWASVulnData(was_data)
+
+
+    
+#write a main function that takes in command line arguments
+def main(argv):
+    """Main function."""
+    initializeWasMap()
+    fillFindings()
+    fillData()
+    lastMonthData()
 
 if __name__ == "__main__":
     main()
