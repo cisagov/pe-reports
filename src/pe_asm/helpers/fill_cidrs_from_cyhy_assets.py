@@ -19,9 +19,15 @@ LOGGER = logging.getLogger(__name__)
 def fill_cidrs(orgs, staging):
     """Fill CIDRs."""
 
+    # Connect to database
+    if staging:
+        conn = pe_db_staging_connect()
+    else:
+        conn = pe_db_connect()
+
     # Fetch all reporting on if not specified
     if orgs == "all_orgs":
-        orgs = query_pe_report_on_orgs(staging)
+        orgs = query_pe_report_on_orgs(conn)
 
     network_count = 0
     first_seen = datetime.datetime.today().date()
