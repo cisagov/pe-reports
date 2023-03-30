@@ -5,7 +5,7 @@ import logging
 import datetime
 
 # cisagov Libraries
-from pe_reports.data.db_query import query_cyhy_assets, 
+from pe_reports.data.db_query import query_cyhy_assets
 from pe_asm.data.cyhy_db_query import (
     query_pe_report_on_orgs,
     pe_db_connect,
