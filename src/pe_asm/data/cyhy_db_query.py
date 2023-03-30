@@ -3,21 +3,19 @@
 
 # Standard Python Libraries
 import logging
-import time
 import sys
+import time
 
 # Third-Party Libraries
 import pandas as pd
-from pymongo import MongoClient
 import psycopg2
 from psycopg2 import OperationalError
-from psycopg2.extensions import AsIs
 import psycopg2.extras as extras
+from pymongo import MongoClient
 from sshtunnel import SSHTunnelForwarder
 
-# cisagov Libraries
+from .checkAccessor import checkCyhyRunning, checkVMrunning
 from .config import db_config, db_password_key
-from .checkAccessor import checkVMrunning, checkCyhyRunning
 
 LOGGER = logging.getLogger(__name__)
 
@@ -136,15 +134,15 @@ def insert_assets(conn, assets_df, table):
     """Insert CyHy assets into the P&E databse."""
     on_conflict = """
         ON CONFLICT (org_id, network)
-        DO UPDATE SET 
-            contact = EXCLUDED.contact, 
-            org_name = EXCLUDED.org_name, 
+        DO UPDATE SET
+            contact = EXCLUDED.contact,
+            org_name = EXCLUDED.org_name,
             type = EXCLUDED.type,
             last_seen = EXCLUDED.last_seen;
     """
     tpls = [tuple(x) for x in assets_df.to_numpy()]
     cols = ",".join(list(assets_df.columns))
-    sql = "INSERT INTO %s(%s) VALUES %%s" % (table, cols)
+    sql = "INSERT INTO {}({}) VALUES %s".format(table, cols)
     sql = sql + on_conflict
     cursor = conn.cursor()
     try:
@@ -161,13 +159,13 @@ def insert_contacts(conn, contacts_df, table):
     on_conflict = """
         ON CONFLICT (org_id, contact_type, email, name)
         DO UPDATE SET
-            org_name = EXCLUDED.org_name, 
-            phone = EXCLUDED.phone, 
+            org_name = EXCLUDED.org_name,
+            phone = EXCLUDED.phone,
             date_pulled = EXCLUDED.date_pulled;
     """
     tpls = [tuple(x) for x in contacts_df.to_numpy()]
     cols = ",".join(list(contacts_df.columns))
-    sql = "INSERT INTO %s(%s) VALUES %%s" % (table, cols)
+    sql = "INSERT INTO {}({}) VALUES %s".format(table, cols)
     sql = sql + on_conflict
     cursor = conn.cursor()
     try:
@@ -186,11 +184,22 @@ def insert_cyhy_agencies(conn, cyhy_agency_df):
         try:
             cur = conn.cursor()
             sql = """
-            INSERT INTO organizations(name, cyhy_db_name, agency_type, password) VALUES (%s, %s, %s, PGP_SYM_ENCRYPT(%s, %s))
+            INSERT INTO organizations(name, cyhy_db_name, agency_type, retired,
+            recieves_cyhy_reports, recieves_bod_reports, recieves_cybex_reports,
+            is_parent, fceb, password) VALUES (%s, %s, %s, %s,
+             %s, %s, %s,
+             %s, %s, PGP_SYM_ENCRYPT(%s, %s))
             ON CONFLICT (cyhy_db_name)
-            DO UPDATE SET 
-                password = EXCLUDED.password, 
-                agency_type = EXCLUDED.agency_type
+            DO UPDATE SET
+                name = EXCLUDED.name
+                password = EXCLUDED.password,
+                agency_type = EXCLUDED.agency_type,
+                retired = EXCLUDED.retired,
+                recieves_cyhy_reports = EXCLUDED.recieves_cyhy_reports,
+                recieves_bod_reports= EXCLUDED.recieves_bod_reports,
+                recieves_cybex_reports = EXCLUDED.recieves_cybex_reports,
+                is_parent = EXCLUDED.is_parent,
+                fceb = EXCLUDED.fceb
             """
             cur.execute(
                 sql,
@@ -198,6 +207,12 @@ def insert_cyhy_agencies(conn, cyhy_agency_df):
                     row["name"],
                     row["cyhy_db_name"],
                     row["agency_type"],
+                    row["retired"],
+                    row["recieves_cyhy_reports"],
+                    row["recieves_bod_reports"],
+                    row["recieves_cybex_reports"],
+                    row["is_parent"],
+                    row["fceb"],
                     row["password"],
                     password,
                 ),
@@ -213,7 +228,7 @@ def insert_cyhy_agencies(conn, cyhy_agency_df):
 def query_pe_orgs(conn):
     """Query P&E organizations."""
     sql = """
-    SELECT organizations_uid, cyhy_db_name, name, agency_type
+    SELECT organizations_uid, cyhy_db_name, name, agency_type, report_on
     FROM organizations o
     """
     df = pd.read_sql(sql, conn)
@@ -247,6 +262,22 @@ def update_child_parent_orgs(conn, parent_uid, child_name):
     cursor.close()
 
 
+def update_scan_status(conn, child_name):
+    """Update child parent relationships between organizations."""
+    cursor = conn.cursor()
+    cursor.execute(
+        """
+        UPDATE organizations
+        set run_scans = True
+        where cyhy_db_name = %s
+        """,
+        (child_name),
+    )
+
+    conn.commit()
+    cursor.close()
+
+
 def insert_dot_gov_domains(conn, dotgov_df, table):
     """Insert dot gov domains."""
     conflict = """
@@ -255,7 +286,7 @@ def insert_dot_gov_domains(conn, dotgov_df, table):
     """
     tpls = [tuple(x) for x in dotgov_df.to_numpy()]
     cols = ",".join(list(dotgov_df.columns))
-    sql = "INSERT INTO %s(%s) VALUES %%s" % (table, cols)
+    sql = "INSERT INTO {}({}) VALUES %s".format(table, cols)
     sql = sql + conflict
     cursor = conn.cursor()
     try:
@@ -269,7 +300,6 @@ def insert_dot_gov_domains(conn, dotgov_df, table):
 
 def query_cidrs(conn):
     """Query all cidrs ordered by length."""
-
     sql = """SELECT tc.cidr_uid, tc.network, tc.organizations_uid, tc.insert_alert
             FROM cidrs tc
             WHERE current
@@ -289,7 +319,7 @@ def execute_ips(conn, df):
         sql = """
         INSERT INTO {}({}) VALUES %s
         ON CONFLICT (ip)
-        DO UPDATE SET 
+        DO UPDATE SET
             origin_cidr = UUID(EXCLUDED.origin_cidr),
             last_seen = EXCLUDED.last_seen;
         """
@@ -373,12 +403,12 @@ def query_cidrs_by_org(conn, org_id):
 
 
 def update_shodan_ips(conn, df):
-    """Update if an IP is a shodan IP"""
+    """Update if an IP is a shodan IP."""
     tpls = [tuple(x) for x in df.to_numpy()]
     cols = ",".join(list(df.columns))
     table = "ips"
     sql = """
-        INSERT INTO {}({}) 
+        INSERT INTO {}({})
         VALUES %s
         ON CONFLICT (ip)
             DO UPDATE SET shodan_results = EXCLUDED.shodan_results"""

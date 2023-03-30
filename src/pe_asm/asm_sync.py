@@ -123,7 +123,7 @@ def run_asm_sync(staging, method):
 
     else:
         LOGGER.error(
-            "In command please specify either 'scorecard' or 'asm'. i.e. pe-asm-sync scorecard"
+            "Please specify either 'scorecard' or 'asm' in your command. i.e. pe-asm-sync scorecard"
         )
 
 

@@ -4,31 +4,32 @@
 # Standard Python Libraries
 import datetime
 import logging
-import requests
 
 # Third-Party Libraries
 from bs4 import BeautifulSoup
 import pandas as pd
+import requests
 
 # cisagov Libraries
-from ..data.cyhy_db_query import (
-    mongo_connect,
-    pe_db_connect,
-    pe_db_staging_connect,
-    get_pe_org_map,
+from pe_asm.data.cyhy_db_query import (  # get_pe_org_map,
+    identify_org_asset_changes,
     insert_assets,
     insert_contacts,
     insert_cyhy_agencies,
+    insert_dot_gov_domains,
+    mongo_connect,
+    pe_db_connect,
+    pe_db_staging_connect,
     query_pe_orgs,
     update_child_parent_orgs,
-    insert_dot_gov_domains,
-    identify_org_asset_changes,
+    update_scan_status,
 )
 
 LOGGER = logging.getLogger(__name__)
 
 
 def dotgov_domains():
+    """Get list of dotgov domains from the github repo."""
     URL = "https://github.com/cisagov/dotgov-data/blob/main/current-federal.csv"
     r = requests.get(URL)
     soup = BeautifulSoup(r.content, features="lxml")
@@ -51,7 +52,6 @@ def dotgov_domains():
 
 def get_cyhy_assets(staging=False):
     """Get CyHy assets."""
-
     # Connect to P&E postgres database
     if staging:
         pe_db_conn = pe_db_staging_connect()
@@ -59,13 +59,20 @@ def get_cyhy_assets(staging=False):
         pe_db_conn = pe_db_connect()
 
     # Get the P&E org mapping table
-    pe_org_map = get_pe_org_map(pe_db_conn)
+    # pe_org_map = get_pe_org_map(pe_db_conn)
 
     # Connect to the CyHy database and fetch all request data
     LOGGER.info("Connecting to Mongo DB")
     cyhy_db = mongo_connect()
     LOGGER.info("Connection successful")
     collection = cyhy_db["requests"]
+
+    query = {"_id": "EXECUTIVE"}
+    fceb_doc = collection.find(query)
+    for row in fceb_doc:
+        fceb_list = list(row["children"])
+
+    print(fceb_list)
     cyhy_request_data = collection.find()
 
     # Loop through all CyHy agencies
@@ -75,12 +82,19 @@ def get_cyhy_assets(staging=False):
     child_parent_dict = {}
     for cyhy_request in cyhy_request_data:
         # If the CyHy org has a type and network, get the org info
-        if cyhy_request["agency"].get("type") and len(cyhy_request["networks"]) > 0:
+        # if cyhy_request["agency"].get("type") and len(cyhy_request["networks"]) > 0:
+        if cyhy_request["agency"].get("type"):
             agency = {
                 "name": cyhy_request["agency"]["name"],
                 "cyhy_db_name": cyhy_request["_id"],
                 "password": cyhy_request["key"],
                 "agency_type": cyhy_request["agency"].get("type"),
+                "retired": cyhy_request["retired"],
+                "recieves_cyhy_reports": "CYHY" in cyhy_request["report_types"],
+                "recieves_bod_reports": "BOD" in cyhy_request["report_types"],
+                "recieves_cybex_reports": "CYBEX" in cyhy_request["report_types"],
+                "is_parent": len(cyhy_request["children"] > 0),
+                "fceb": cyhy_request["_id"] in fceb_list,
             }
             cyhy_agencies.append(agency)
 
@@ -105,13 +119,13 @@ def get_cyhy_assets(staging=False):
                 }
                 contact_list.append(contact_object)
 
-            # Replace mismatching cyhy org ids. For example, Treasury should be TREASURY
-            if cyhy_request["_id"] in pe_org_map["cyhy_id"].values:
-                new_org_id = pe_org_map.loc[
-                    pe_org_map["cyhy_id"] == cyhy_request["_id"], "pe_org_id"
-                ].item()
-                LOGGER.info("Replacing %s with %s", cyhy_request["_id"], new_org_id)
-                cyhy_request["_id"] = new_org_id
+            # # Replace mismatching cyhy org ids. For example, Treasury should be TREASURY
+            # if cyhy_request["_id"] in pe_org_map["cyhy_id"].values:
+            #     new_org_id = pe_org_map.loc[
+            #         pe_org_map["cyhy_id"] == cyhy_request["_id"], "pe_org_id"
+            #     ].item()
+            #     LOGGER.info("Replacing %s with %s", cyhy_request["_id"], new_org_id)
+            #     cyhy_request["_id"] = new_org_id
 
             # Create network dictionary for CIDRs and IPs
             for network in cyhy_request["networks"]:
@@ -162,6 +176,12 @@ def get_cyhy_assets(staging=False):
             pe_orgs["cyhy_db_name"] == parent_name, "organizations_uid"
         ].item()
         update_child_parent_orgs(pe_db_conn, parent_uid, child_name)
+
+        parent_report_on = pe_orgs.loc[
+            pe_orgs["cyhy_db_name"] == parent_name, "report_on"
+        ].item()
+        if parent_report_on:
+            update_scan_status(pe_db_conn, child_name)
 
     # Scrape dot gov domains and insert into P&E database
     LOGGER.info("Lookup and insert dot_gov domains.")
