@@ -52,6 +52,7 @@ def enumerate_roots(root_domain, root_uid):
             "data_source_uid": data_source,
             "first_seen": DATE,
             "last_seen": DATE,
+            "identified": False,
         }
     ]
 
@@ -65,6 +66,7 @@ def enumerate_roots(root_domain, root_uid):
                     "data_source_uid": data_source,
                     "first_seen": DATE,
                     "last_seen": DATE,
+                    "identified": False,
                 }
             )
     return found_subs

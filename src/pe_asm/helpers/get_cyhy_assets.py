@@ -72,7 +72,6 @@ def get_cyhy_assets(staging=False):
     for row in fceb_doc:
         fceb_list = list(row["children"])
 
-    print(fceb_list)
     cyhy_request_data = collection.find()
 
     # Loop through all CyHy agencies
@@ -84,16 +83,20 @@ def get_cyhy_assets(staging=False):
         # If the CyHy org has a type and network, get the org info
         # if cyhy_request["agency"].get("type") and len(cyhy_request["networks"]) > 0:
         if cyhy_request["agency"].get("type"):
+            try:
+                children = len(cyhy_request.get("children"))
+            except Exception:
+                children = 0
             agency = {
                 "name": cyhy_request["agency"]["name"],
                 "cyhy_db_name": cyhy_request["_id"],
                 "password": cyhy_request["key"],
                 "agency_type": cyhy_request["agency"].get("type"),
-                "retired": cyhy_request["retired"],
+                "retired": cyhy_request.get("retired"),
                 "recieves_cyhy_reports": "CYHY" in cyhy_request["report_types"],
                 "recieves_bod_reports": "BOD" in cyhy_request["report_types"],
                 "recieves_cybex_reports": "CYBEX" in cyhy_request["report_types"],
-                "is_parent": len(cyhy_request["children"] > 0),
+                "is_parent": children,
                 "fceb": cyhy_request["_id"] in fceb_list,
             }
             cyhy_agencies.append(agency)

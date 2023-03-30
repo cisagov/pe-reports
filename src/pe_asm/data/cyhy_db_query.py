@@ -191,7 +191,7 @@ def insert_cyhy_agencies(conn, cyhy_agency_df):
              %s, %s, PGP_SYM_ENCRYPT(%s, %s))
             ON CONFLICT (cyhy_db_name)
             DO UPDATE SET
-                name = EXCLUDED.name
+                name = EXCLUDED.name,
                 password = EXCLUDED.password,
                 agency_type = EXCLUDED.agency_type,
                 retired = EXCLUDED.retired,
@@ -269,9 +269,10 @@ def update_scan_status(conn, child_name):
         """
         UPDATE organizations
         set run_scans = True
-        where cyhy_db_name = %s
-        """,
-        (child_name),
+        where cyhy_db_name = {}
+        """.format(
+            child_name
+        ),
     )
 
     conn.commit()
@@ -354,7 +355,8 @@ def insert_sub_domains(conn, df):
             INSERT INTO {}({}) VALUES %s
             ON CONFLICT (sub_domain, root_domain_uid)
             DO UPDATE SET
-                last_seen = EXCLUDED.last_seen;
+                last_seen = EXCLUDED.last_seen,
+                identified = EXCLUDED.identified;
             """
         cursor = conn.cursor()
         extras.execute_values(cursor, sql.format(table, cols), tpls)
