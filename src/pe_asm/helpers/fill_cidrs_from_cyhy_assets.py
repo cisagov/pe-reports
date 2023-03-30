@@ -5,8 +5,9 @@ import logging
 import datetime
 
 # cisagov Libraries
-from pe_reports.data.db_query import query_cyhy_assets, get_orgs_df
+from pe_reports.data.db_query import query_cyhy_assets, 
 from pe_asm.data.cyhy_db_query import (
+    query_pe_report_on_orgs,
     pe_db_connect,
     pe_db_staging_connect,
     identify_cidr_changes,
@@ -20,7 +21,7 @@ def fill_cidrs(orgs, staging):
 
     # Fetch all reporting on if not specified
     if orgs == "all_orgs":
-        orgs = get_orgs_df(staging)
+        orgs = query_pe_report_on_orgs(staging)
 
     network_count = 0
     first_seen = datetime.datetime.today().date()
