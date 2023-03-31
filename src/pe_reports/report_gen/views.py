@@ -26,7 +26,7 @@ from pe_reports.report_generator import generate_reports
 LOGGER = logging.getLogger(__name__)
 
 # If you are getting errors saying that a "en_core_web_lg" is loaded. Run the command " python -m spacy download en_core_web_trf" but might have to chagne the name fo the spacy model
-nlp = spacy.load("en_core_web_lg")
+# nlp = spacy.load("en_core_web_lg")
 
 LOGGER = logging.getLogger(__name__)
 

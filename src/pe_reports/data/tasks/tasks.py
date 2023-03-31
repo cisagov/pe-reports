@@ -7,7 +7,7 @@ import traceback
 
 # cisagov Libraries
 from pe_reports.data.tasks.celery1 import app
-from pe_reports.helpers.fill_ips_from_cidrs import fill_ips_from_cidrs
+from pe_asm.helpers.fill_ips_from_cidrs import fill_ips_from_cidrs
 
 # from adhoc.run_dnstwist import run_main_dnstwist
 

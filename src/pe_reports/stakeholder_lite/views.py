@@ -11,11 +11,11 @@ from flask import Blueprint, redirect, render_template, url_for
 
 # cisagov Libraries
 from pe_reports.data.db_query import get_new_orgs
-from pe_reports.helpers.fill_cidrs_from_cyhy_assets import fill_cidrs
-from pe_reports.helpers.fill_ips_from_cidrs import fill_ips_from_cidrs
-from pe_reports.helpers.link_subs_and_ips_from_ips import connect_subs_from_ips
-from pe_reports.helpers.link_subs_and_ips_from_subs import connect_ips_from_subs
-from pe_reports.helpers.shodan_dedupe import dedupe
+from pe_asm.helpers.fill_cidrs_from_cyhy_assets import fill_cidrs
+from pe_asm.helpers.fill_ips_from_cidrs import fill_ips_from_cidrs
+from pe_asm.helpers.link_subs_and_ips_from_ips import connect_subs_from_ips
+from pe_asm.helpers.link_subs_and_ips_from_subs import connect_ips_from_subs
+from pe_asm.helpers.shodan_dedupe import dedupe
 from pe_reports.stakeholder_lite.forms import InfoFormExternal
 
 LOGGER = logging.getLogger(__name__)

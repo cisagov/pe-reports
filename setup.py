@@ -94,6 +94,7 @@ setup(
             "data/dnsmonitor/*",
             "data/pe_db/*",
         ],
+        "pe_asm": ["data/*"],
     },
     py_modules=[splitext(basename(path))[0] for path in glob("src/*.py")],
     include_package_data=True,
@@ -145,7 +146,7 @@ setup(
         "urllib3 == 1.26",
         "wtforms",
         "xhtml2pdf == 0.2.5",
-        "werkzeug == 2.1.2",
+        "werkzeug == 2.0.0",
     ],
     extras_require={
         "test": [
@@ -168,6 +169,7 @@ setup(
             "pe-mailer = pe_mailer.email_reports:main",
             "pe-reports = pe_reports.report_generator:main",
             "pe-source = pe_source.pe_scripts:main",
+            "pe-asm-sync = pe_asm.asm_sync:main",
         ]
     },
 )

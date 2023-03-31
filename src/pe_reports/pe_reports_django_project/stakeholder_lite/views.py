@@ -7,11 +7,11 @@ from .forms import GatherStakeholderLiteForm
 
 # cisagov Libraries
 from pe_reports.data.db_query import get_new_orgs
-from pe_reports.helpers.fill_cidrs_from_cyhy_assets import fill_cidrs
-from pe_reports.helpers.fill_ips_from_cidrs import fill_ips_from_cidrs
-from pe_reports.helpers.link_subs_and_ips_from_ips import connect_subs_from_ips
-from pe_reports.helpers.link_subs_and_ips_from_subs import connect_ips_from_subs
-from pe_reports.helpers.shodan_dedupe import dedupe
+from pe_asm.helpers.fill_cidrs_from_cyhy_assets import fill_cidrs
+from pe_asm.helpers.fill_ips_from_cidrs import fill_ips_from_cidrs
+from pe_asm.helpers.link_subs_and_ips_from_ips import connect_subs_from_ips
+from pe_asm.helpers.link_subs_and_ips_from_subs import connect_ips_from_subs
+from pe_asm.helpers.shodan_dedupe import dedupe
 
 # Create your views here.
 
@@ -30,21 +30,21 @@ def getAgenciesByCount(orgCount):
 
 
 class StakeholderLiteView(TemplateView):
-    template_name = 'stakeholder_lite/stakeholder_lite.html'
-    LOGGER.info('Got to Stakeholder')
+    template_name = "stakeholder_lite/stakeholder_lite.html"
+    LOGGER.info("Got to Stakeholder")
 
 
 class StakeholderLiteForm(FormView):
 
     form_class = GatherStakeholderLiteForm
-    template_name = 'stakeholder_lite/stakeholder_lite.html'
+    template_name = "stakeholder_lite/stakeholder_lite.html"
 
-    success_url = reverse_lazy('stakeholder_lite')
+    success_url = reverse_lazy("stakeholder_lite")
 
     def form_valid(self, form):
 
-        theorgCount = form.cleaned_data['orgCount'].upper()
-        LOGGER.info(f'The org count was {theorgCount}')
+        theorgCount = form.cleaned_data["orgCount"].upper()
+        LOGGER.info(f"The org count was {theorgCount}")
 
         orgs = getAgenciesByCount(theorgCount)
 
@@ -66,7 +66,3 @@ class StakeholderLiteForm(FormView):
         LOGGER.info("Running dedupe:")
         dedupe(orgs)
         return super().form_valid(form)
-
-
-
-
