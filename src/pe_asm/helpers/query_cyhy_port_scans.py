@@ -28,12 +28,13 @@ from functools import partial
 
 LOGGER = logging.getLogger(__name__)
 DATE = datetime.datetime.today()
-DAYS_BACK = datetime.timedelta(days=30)
+DAYS_BACK = datetime.timedelta(days=7)
 ONE_MONTH_AGO = DATE - DAYS_BACK
 
 
 # Define a function to process a chunk of documents
 def process_batch(batch, staging):
+    """Process batch."""
     # Connect to P&E postgres database
     if staging:
         pe_db_conn = pe_db_staging_connect()
@@ -46,12 +47,11 @@ def process_batch(batch, staging):
     # Get P&E orgs for org_uid
     pe_orgs = query_pe_orgs(pe_db_conn)
 
-    """Process chunk."""
     port_scans_list = []
     port_scans_count = 0
     small_list = []
     skip_count = 0
-    port_scans_total = 100000000
+    port_scans_total = 1000000
     for port_scans in batch:
         # Replace mismatching cyhy org ids. For example, Treasury should be TREASURY
         if port_scans["owner"] in pe_org_map["cyhy_id"].values:
@@ -142,25 +142,42 @@ def get_cyhy_port_scans(staging=False):
 
     # Only query documents that are a year old
     query = {"time": {"$gt": ONE_MONTH_AGO}}
-    port_scans_data = collection.find(query, no_cursor_timeout=True)
+    # port_scans_data = collection.find(query, no_cursor_timeout=True)
 
     # Split the cursor into chunks and process each chunk in a separate worker process
     port_scans_total = collection.count_documents(query)
     LOGGER.info("%s total documents.", port_scans_total)
-    chunk_size = 100000000
+    chunk_size = 1000000
     num_processes = multiprocessing.cpu_count()
     pool = multiprocessing.Pool(num_processes)  # Use 4 worker processes
-    cursor = collection.find(query)
+
+    LOGGER.info("Connecting to Mongo DB")
+    cyhy_db = mongo_connect()
+    LOGGER.info("Connection successful")
+    port_scans_data = collection.find(query)
     LOGGER.info("Find complete. Now breaking into batches.")
-    batches = []
-    batch_count = 0
-    while True:
-        documents = list(cursor.limit(chunk_size))
-        batch_count += 1
-        LOGGER.info("%s batches created.", batch_count)
-        if not documents:
-            break
-        batches.append(documents)
+    # batches = []
+    # batch_count = 0
+    # while True:
+    #     documents = list(cursor.limit(chunk_size))
+    #     batch_count += 1
+    #     LOGGER.info("%s batches created.", batch_count)
+    #     if not documents:
+    #         break
+    #     batches.append(documents)
+    batches = [
+        list(
+            collection.aggregate(
+                [
+                    {"$match": query},
+                    {"$sort": {"_id": 1}},
+                    {"$skip": i},
+                    {"$limit": chunk_size},
+                ]
+            )
+        )
+        for i in range(0, collection.count_documents(query), chunk_size)
+    ]
     LOGGER.info("%s batches will be run.", len(batches))
 
     function = partial(process_batch, staging)
