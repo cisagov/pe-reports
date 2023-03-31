@@ -24,7 +24,7 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA public;
 
 
 --
--- Name: EXTENSION pgcrypto; Type: COMMENT; Schema: -; Owner: 
+-- Name: EXTENSION pgcrypto; Type: COMMENT; Schema: -; Owner:
 --
 
 COMMENT ON EXTENSION pgcrypto IS 'cryptographic functions';
@@ -38,7 +38,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA public;
 
 
 --
--- Name: EXTENSION "uuid-ossp"; Type: COMMENT; Schema: -; Owner: 
+-- Name: EXTENSION "uuid-ossp"; Type: COMMENT; Schema: -; Owner:
 --
 
 COMMENT ON EXTENSION "uuid-ossp" IS 'generate universally unique identifiers (UUIDs)';
@@ -53,7 +53,7 @@ CREATE FUNCTION public.get_cred_metrics(start_date date, end_date date) RETURNS 
     AS $$
 BEGIN
 RETURN QUERY
-	SELECT 
+	SELECT
 		cred_metrics.organizations_uid,
 		cred_metrics.password_creds,
 		cred_metrics.total_creds,
@@ -65,7 +65,7 @@ RETURN QUERY
 				CAST(COALESCE(creds.password_included, 0) as bigint) password_creds,
 				CAST(COALESCE(creds.no_password + creds.password_included, 0) as bigint) total_creds
 			FROM
-				(				
+				(
 					/* Orgs we're reporting on */
 					SELECT
 						organizations.organizations_uid
@@ -87,7 +87,7 @@ RETURN QUERY
 					GROUP BY
 						vw_breachcomp_credsbydate.organizations_uid
 				) creds
-				ON reported_orgs.organizations_uid = creds.organizations_uid	
+				ON reported_orgs.organizations_uid = creds.organizations_uid
 		) cred_metrics
 		INNER JOIN
 		(
@@ -95,7 +95,7 @@ RETURN QUERY
 				reported_orgs.organizations_uid,
 				COALESCE(breaches.num_breaches, 0) num_breaches
 			FROM
-				(				
+				(
 					/* Orgs we're reporting on */
 					SELECT
 						organizations.organizations_uid
@@ -146,7 +146,7 @@ RETURN QUERY
 				reported_orgs.organizations_uid,
 				COALESCE(alerts.num_dw_alerts, 0) AS num_dw_alerts
 			FROM
-				(				
+				(
 					/* Orgs we're reporting on */
 					SELECT
 						organizations.organizations_uid
@@ -176,7 +176,7 @@ RETURN QUERY
 				reported_orgs.organizations_uid,
 				COALESCE(mentions.num_dw_mentions, 0) AS num_dw_mentions
 			FROM
-				(				
+				(
 					/* Orgs we're reporting on */
 					SELECT
 						organizations.organizations_uid
@@ -207,7 +207,7 @@ RETURN QUERY
 				reported_orgs.organizations_uid,
 				COALESCE(threats.num_dw_threats, 0) AS num_dw_threats
 			FROM
-				(				
+				(
 					/* Orgs we're reporting on */
 					SELECT
 						organizations.organizations_uid
@@ -238,7 +238,7 @@ RETURN QUERY
 				reported_orgs.organizations_uid,
 				COALESCE(invites.num_dw_invites, 0) AS num_dw_invites
 			FROM
-				(				
+				(
 					/* Orgs we're reporting on */
 					SELECT
 						organizations.organizations_uid
@@ -259,7 +259,7 @@ RETURN QUERY
 					GROUP BY
 						vw_darkweb_inviteonlymarkets.organizations_uid
 				) invites
-				ON reported_orgs.organizations_uid = invites.organizations_uid	
+				ON reported_orgs.organizations_uid = invites.organizations_uid
 		) dw_invite_metrics
 		ON
 		dw_alert_metrics.organizations_uid = dw_invite_metrics.organizations_uid;
@@ -277,7 +277,7 @@ CREATE FUNCTION public.get_domain_metrics(start_date date, end_date date) RETURN
     AS $$
 BEGIN
 RETURN QUERY
-	SELECT 
+	SELECT
 		domain_sus_metrics.organizations_uid,
 		domain_sus_metrics.num_sus_domain,
 		domain_alert_metrics.num_alert_domain
@@ -287,7 +287,7 @@ RETURN QUERY
 				reported_orgs.organizations_uid,
 				COALESCE(domain_sus.num_sus_domain, 0) num_sus_domain
 			FROM
-				(				
+				(
 					/* Orgs we're reporting on */
 					SELECT
 						organizations.organizations_uid
@@ -310,7 +310,7 @@ RETURN QUERY
 					GROUP BY
 						domain_permutations.organizations_uid
 				) domain_sus
-				ON reported_orgs.organizations_uid = domain_sus.organizations_uid	
+				ON reported_orgs.organizations_uid = domain_sus.organizations_uid
 		) domain_sus_metrics
 		INNER JOIN
 		(
@@ -318,7 +318,7 @@ RETURN QUERY
 				reported_orgs.organizations_uid,
 				COALESCE(domain_alerts.num_alert_domain, 0) num_alert_domain
 			FROM
-				(				
+				(
 					/* Orgs we're reporting on */
 					SELECT
 						organizations.organizations_uid
@@ -368,7 +368,7 @@ RETURN QUERY
 				reported_orgs.organizations_uid,
 				COALESCE(verif_vulns.num_verif_vulns, 0) AS num_verif_vulns
 			FROM
-				(				
+				(
 					/* Orgs we're reporting on */
 					SELECT
 						organizations.organizations_uid
@@ -496,7 +496,7 @@ ALTER FUNCTION public.get_vuln_metrics(start_date date, end_date date) OWNER TO 
 CREATE FUNCTION public.insert_cidr(arg_net cidr, arg_org_uid uuid, arg_data_src text) RETURNS uuid
     LANGUAGE plpgsql
     AS $$
-declare 
+declare
 	parent_uid uuid := null;
 	comp_cidr_uid uuid := null;
 	comp_net cidr;
@@ -508,14 +508,14 @@ declare
 	new_cidr_uid uuid := null;
 	in_cidrs record;
 	cidrs_in record;
-begin	
+begin
 		select o.parent_org_uid into parent_uid from organizations o where o.organizations_uid = arg_org_uid;
 		select ds.data_source_uid into ds_uid from data_source ds where ds.name = arg_data_src;
 		-- Check if any cidrs equal the provided cidr
 		select ct.cidr_uid, o.organizations_uid , ct.network, o.parent_org_uid, o."cyhy_db_name"  as parent_id from cidrs ct
-		join organizations o on ct.organizations_uid = o.organizations_uid 
+		join organizations o on ct.organizations_uid = o.organizations_uid
 		where ct.network = arg_net into comp_cidr_uid, comp_uid, comp_net, comp_parent_uid, comp_cyhy_id;
-	
+
 		if (comp_net is not null) then
 			--if the other cidr's org is our cidr's parent org
 			if (comp_uid = parent_uid) then
@@ -535,21 +535,21 @@ begin
 			save_to_db :=false;
 			--if the orgs are not related
 			else
-				insert into cidrs (network, organizations_uid, insert_alert, data_source_uid) 
-				values (arg_net, arg_org_uid, 'Cidr duplicate between unrelated org. This cidr is also found in the following org. org_cyhy_id:' || comp_cyhy_id || ' org_uid: ' || comp_uid , ds_uid) 
+				insert into cidrs (network, organizations_uid, insert_alert, data_source_uid)
+				values (arg_net, arg_org_uid, 'Cidr duplicate between unrelated org. This cidr is also found in the following org. org_cyhy_id:' || comp_cyhy_id || ' org_uid: ' || comp_uid , ds_uid)
 				returning cidr_uid into new_cidr_uid;
 				save_to_db := false;
 			end if;
 		end if;
-	
+
 		-- Check if the cidr is contained in an existing cidr block
 		if exists(select ct.network from cidrs ct where arg_net << ct.network) then
-		
-			for in_cidrs in select o.organizations_uid , tct.network, o.parent_org_uid  from cidrs tct 
-			join organizations o on o.organizations_uid = tct.organizations_uid where arg_net << ct.network loop 
+
+			for in_cidrs in select o.organizations_uid , tct.network, o.parent_org_uid  from cidrs tct
+			join organizations o on o.organizations_uid = tct.organizations_uid where arg_net << ct.network loop
 				-- Our cidr is found in an existing cidr for the same org
-				--do nothing 
-				if (in_cidrs.organizations_uid = arg_org_uid) then 
+				--do nothing
+				if (in_cidrs.organizations_uid = arg_org_uid) then
 					raise notice 'This cidr is containeed in another cidr for the same organization';
 					save_to_db := false;
 				-- Our cidr is found in an existing cidr related to our parent org
@@ -558,12 +558,12 @@ begin
 					if (cidr_uid is null) then
 						insert into cidrs (network, organizations_uid , data_source_uid) values (arg_net, arg_org_uid, ds_uid)
 						on conflict (organizations_uid, network )
-						do nothing 
+						do nothing
 						returning cidr_uid into new_cidr_uid;
 						save_to_db := false;
 					end if;
 					--UPDATE IPS THAT BELONG TO THIS CIDR TO POINT HERE *******************************************
-					update ips 
+					update ips
 					set origin_cidr = new_cidr_uid
 					where ip << arg_net
 					and origin_cidr = in_cidrs.network;
@@ -574,57 +574,57 @@ begin
 				--Our cidr is found in an existing cidr unrelated to our org
 				-- insert with an insert warning
 				else
-					insert into cidrs (network, organizations_uid, insert_alert, data_source_uid) 
-					values (arg_net, arg_org_uid, 'This cidr range is contained in another cidr owned by the following unrelated org. org_uid:' || in_cidrs.organizations_uid , ds_uid) 
+					insert into cidrs (network, organizations_uid, insert_alert, data_source_uid)
+					values (arg_net, arg_org_uid, 'This cidr range is contained in another cidr owned by the following unrelated org. org_uid:' || in_cidrs.organizations_uid , ds_uid)
 					on conflict (organizations_uid, network)
 					DO UPDATE SET insert_alert = test_cidr_table.insert_alert || ", " || in_cidrs.organizations_uid
 					returning cidr_uid into new_cidr_uid;
 					save_to_db := false;
 				end if;
-				
+
 			end loop;
 		end if;
-		
+
 		-- Check if any cidrs are contained within it
-		if exists(select ct.network from cidrs ct where ct.network << arg_net ) then 
-			for cidrs_in in select cidr_uid, o.organizations_uid , tct.network, o.parent_org_uid  from cidrs tct 
-			join organizations o on o.organizations_uid = tct.organizations_uid where ct.network << arg_net  loop 
+		if exists(select ct.network from cidrs ct where ct.network << arg_net ) then
+			for cidrs_in in select cidr_uid, o.organizations_uid , tct.network, o.parent_org_uid  from cidrs tct
+			join organizations o on o.organizations_uid = tct.organizations_uid where ct.network << arg_net  loop
 				-- an existing cidr is found in our cidr for the same org
 				-- update existing cidr to current cidr
-				if (cidrs_in.organizations_uid = arg_org_uid) then 
+				if (cidrs_in.organizations_uid = arg_org_uid) then
 					if (new_cidr_uid is null) then
 						insert into cidrs (network, organizations_uid , data_source_uid) values (arg_net, arg_org_uid, ds_uid)
 						on conflict (organizations_uid, network )
-						do nothing 
+						do nothing
 						returning cidr_uid into new_cidr_uid;
 						save_to_db := false;
 					end if;
 					--update all ips to point to this new cidr block
-					update ips 
+					update ips
 					set origin_cidr = new_cidr_uid
 					where ip << arg_net
 					and origin_cidr = cidrs_in.network;
 					--delete the old cidr
-					DELETE FROM cidrs 
+					DELETE FROM cidrs
 					WHERE network = cidrs_in.network
 					and organizations_uid = arg_org_uid;
-				-- an existing cidr related to our parent org is found in our cidr 
+				-- an existing cidr related to our parent org is found in our cidr
 				-- update existing cidr to our org and cidr
 				elseif (in_cidrs.organizations_uid = parent_uid) then
 					if (new_cidr_uid is null) then
 						insert into cidrs (network, organizations_uid , data_source_uid) values (arg_net, arg_org_uid, ds_uid)
 						on conflict (organizations_uid, network )
-						do nothing 
+						do nothing
 						returning cidr_uid into new_cidr_uid;
 						save_to_db := false;
 					end if;
 					--update all ips to point to this new cidr block
-					update ips 
+					update ips
 					set origin_cidr = new_cidr_uid
 					where ip << arg_net
 					and origin_cidr = cidrs_in.network;
 					--delete the old cidr
-					DELETE FROM cidrs 
+					DELETE FROM cidrs
 					WHERE network = cidrs_in.network
 					and organizations_uid = arg_org_uid;
 				-- an existing cidr is found in our cidr related to our child org
@@ -633,35 +633,35 @@ begin
 					if (new_cidr_uid is null) then
 						insert into cidrs (network, organizations_uid , data_source_uid) values (arg_net, arg_org_uid, ds_uid)
 						on conflict (organizations_uid, network )
-						do nothing 
+						do nothing
 						returning cidr_uid into new_cidr_uid;
 						save_to_db := false;
 					end if;
-					
-					update ips 
+
+					update ips
 					set origin_cidr = cidrs_in.cidr_uid
 					where ip << cidrs_in.network
 					and origin_cidr = arg_net;
-				--an existing cidr unrelated to our org is found in our cidr 
+				--an existing cidr unrelated to our org is found in our cidr
 				-- insert with an insert warning
 				else
-					insert into cidrs (network, organizations_uid, insert_alert, data_source_uid) 
-					values (arg_net, arg_org_uid, 'another cidr owned by the following unrelated org is contained in this cidr range  . org_uid:' || cidrs_in.organizations_uid , ds_uid) 
+					insert into cidrs (network, organizations_uid, insert_alert, data_source_uid)
+					values (arg_net, arg_org_uid, 'another cidr owned by the following unrelated org is contained in this cidr range  . org_uid:' || cidrs_in.organizations_uid , ds_uid)
 					on conflict (organizations_uid, network)
 					DO UPDATE SET insert_alert = test_cidr_table.insert_alert || ", " || cidrs_in.organizations_uid
 					returning cidr_uid into new_cidr_uid;
 					save_to_db := false;
 				end if;
-				
+
 			end loop;
-		
+
 			save_to_db := false;
 		end if;
-		
+
 		if (save_to_db = true) then
 			insert into cidrs (network, organizations_uid , data_source_uid) values (arg_net, arg_org_uid, ds_uid) returning cidr_uid into new_cidr_uid;
 		end if;
-		
+
  	return new_cidr_uid;
 end;
 $$;
@@ -676,12 +676,12 @@ ALTER FUNCTION public.insert_cidr(arg_net cidr, arg_org_uid uuid, arg_data_src t
 CREATE FUNCTION public.insert_sub_domain(sub_d text, org_uid uuid, data_src text, root_d text DEFAULT NULL::text, root_d_uid uuid DEFAULT NULL::uuid) RETURNS uuid
     LANGUAGE plpgsql
     AS $$
-declare 
+declare
 	sub_id uuid;
 	ds_uid uuid := null;
 begin
-		select sub_domain_uid into sub_id from sub_domains sd 
-		join root_domains rd on rd.root_domain_uid = sd.root_domain_uid 
+		select sub_domain_uid into sub_id from sub_domains sd
+		join root_domains rd on rd.root_domain_uid = sd.root_domain_uid
 		where sd.sub_domain = sub_d
 		and rd.organizations_uid = org_uid;
 		if (sub_id is null) then
@@ -690,7 +690,7 @@ begin
 				begin
 					select rd.root_domain_uid into root_d_uid from root_domains rd where rd.root_domain = root_d and rd.organizations_uid = org_uid;
 					raise notice 'uid found: %', root_d_uid;
-				end; 
+				end;
 			else
 					raise notice 'uid provided: %', root_d_uid;
 			end if;
@@ -726,21 +726,21 @@ ALTER FUNCTION public.insert_sub_domain(sub_d text, org_uid uuid, data_src text,
 CREATE FUNCTION public.link_ips_and_subs(arg_ip_hash text, arg_ip inet, arg_org_uid uuid, arg_sub_domain text, arg_data_src text, arg_root_uid uuid DEFAULT NULL::uuid, arg_root text DEFAULT NULL::text) RETURNS uuid
     LANGUAGE plpgsql
     AS $$
-declare 
+declare
 	sub_id uuid;
 	ds_uid uuid := null;
 	i_s_uid uuid := null;
 begin
 		--select ds.data_source_uid into ds_uid from data_source ds where ds.name = arg_data_src;
-		
-		insert into ips(ip_hash, ip) 
-       	values (arg_ip_hash, arg_ip) 
-           on conflict (ip) do nothing; 
-          
-        --insert into sub_domains (sub_domain, root_domain_uid, data_source_uid)  
+
+		insert into ips(ip_hash, ip)
+       	values (arg_ip_hash, arg_ip)
+           on conflict (ip) do nothing;
+
+        --insert into sub_domains (sub_domain, root_domain_uid, data_source_uid)
       	--values (arg_sub_domain, arg_root_uid, ds_uid)
         --on conflict (sub_domain, root_domain_uid) do nothing
-        --returning sub_domain_uid into sub_id; 
+        --returning sub_domain_uid into sub_id;
        if (arg_root is null) then
        	select insert_sub_domain(sub_d=> arg_sub_domain, org_uid => arg_org_uid, data_src => arg_data_src,root_d_uid => arg_root_uid ) into sub_id;
        else
@@ -748,9 +748,9 @@ begin
        end if;
        	insert into ips_subs (ip_hash, sub_domain_uid)
        		values(arg_ip_hash, sub_id)
-       		on conflict(ip_hash, sub_domain_uid) do nothing 
+       		on conflict(ip_hash, sub_domain_uid) do nothing
        		returning ips_subs_uid into i_s_uid;-- insert both fk ids into the product_order table
-      	
+
        	return i_s_uid;
 end;
 $$;
@@ -809,7 +809,7 @@ RETURN QUERY
 			FROM
 				get_vuln_metrics(start_date, end_date)
 		) vuln_metrics
-		ON 
+		ON
 		cred_metrics.organizations_uid = vuln_metrics.organizations_uid
 		INNER JOIN
 		(
@@ -871,7 +871,7 @@ RETURN QUERY
 						UNNEST(vss.potential_vulns) as unverif_cve
 					FROM
 						public.vw_shodanvulns_suspected vss
-					WHERE 
+					WHERE
 						vss."type" != 'Insecure Protocol'
 						AND
 						vss.timestamp BETWEEN start_date AND end_date
@@ -911,7 +911,7 @@ RETURN QUERY
 		) current_cves
 		LEFT JOIN
 		public.cve_info
-		ON 
+		ON
 		current_cves.cve_name = cve_info.cve_name
 	WHERE
 		cve_info.cve_name IS NULL;
@@ -1011,13 +1011,13 @@ RETURN QUERY
 						/* Filter out CVEs that don't have CVSS 2.0 nor 3.0 scores */
 						NOT (cve_info.cvss_2_0 IS NULL AND cve_info.cvss_3_0 IS NULL)
 					ORDER BY
-						reported_orgs.cyhy_db_name		
+						reported_orgs.cyhy_db_name
 				) verif_cves
 			GROUP BY
 				verif_cves.organizations_uid,
 				verif_cves.cyhy_db_name
 		) verif
-		ON 
+		ON
 		reported_orgs.organizations_uid = verif.organizations_uid
 		LEFT JOIN
 		(
@@ -1058,7 +1058,7 @@ RETURN QUERY
 								UNNEST(vss.potential_vulns) as unverif_cve
 							FROM
 								public.vw_shodanvulns_suspected vss
-							WHERE 
+							WHERE
 								vss."type" != 'Insecure Protocol'
 								AND
 								vss.timestamp BETWEEN start_date AND end_date
@@ -1103,7 +1103,7 @@ RETURN QUERY
 		reported_orgs.cyhy_db_name,
 		domain_alerts.date as mod_date
 	FROM
-		(				
+		(
 			/* Orgs we're reporting on */
 			SELECT
 				organizations.organizations_uid,
@@ -1146,7 +1146,7 @@ RETURN QUERY
 		reported_orgs.cyhy_db_name,
 		alerts.date AS mod_date
 	FROM
-		(				
+		(
 			/* Orgs we're reporting on */
 			SELECT
 				organizations.organizations_uid,
@@ -1274,9 +1274,9 @@ BEGIN
    SELECT cb.breach_name, cb.description, cb.exposed_cred_count, cb.breach_date,
    			cb.added_date , cb.modified_date, cb.data_classes, cb.password_included ,
    			cb.is_verified , ds.name-- I added parentheses
-   FROM  credential_breaches cb 
+   FROM  credential_breaches cb
    join data_source ds on ds.data_source_uid = cb.data_source_uid
-   where lower(cb.breach_name) = lower(b_name);                    -- potential ambiguity 
+   where lower(cb.breach_name) = lower(b_name);                    -- potential ambiguity
 END
 $$;
 
@@ -1297,7 +1297,7 @@ BEGIN
    join organizations o on o.organizations_uid = c.organizations_uid
    join data_source d on d.data_source_uid = c.data_source_uid
     where lower(c.breach_name) = lower(b_name)
-    and o.cyhy_db_name = org_id;                    -- potential ambiguity 
+    and o.cyhy_db_name = org_id;                    -- potential ambiguity
 END
 $$;
 
@@ -4259,8 +4259,36 @@ REVOKE ALL ON SCHEMA public FROM PUBLIC;
 GRANT ALL ON SCHEMA public TO crossfeed;
 GRANT ALL ON SCHEMA public TO PUBLIC;
 
+--
+-- Name: was_customers public; Type: ACL; Schema: -; Owner: postgres
+-- TODO: Make customer_id a foreign from was tracker once that information is available
+CREATE TABLE public.was_findings (
+    finding_uid UUID PRIMARY KEY,
+    finding_type varchar,
+    webapp_id int,
+    was_org_id text,
+    owasp_category varchar,
+    severity varchar,
+    times_detected int,
+    base_score float8,
+    temporal_score float8,
+    fstatus varchar,
+    last_detected date,
+    first_detected date);
+--
+-- Name: was_customers public; Type: ACL; Schema: -; Owner: postgres
+-- TODO: Make customer_id a foreign from was tracker once that information is available
+CREATE TABLE public.was_summary (
+    customer_id uuid,
+    was_org_id text UNIQUE,
+    webapp_count int,
+    active_vuln_count int,
+    webapp_with_vulns_count int,
+    last_updated date
+);
+
+
 
 --
 -- PostgreSQL database dump complete
 --
-

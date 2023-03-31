@@ -10,7 +10,7 @@ from botocore.exceptions import ClientError
 from importlib_resources import files
 
 BACKUP_SCRIPT = files("pe_reports").joinpath("data/pg_backup.sh")
-BUCKET_NAME = "cisa-crossfeed-pe-staging-db-backups"
+BUCKET_NAME = "cisa-crossfeed-staging-pe-db-backups"
 DATE = datetime.datetime.now().strftime("%Y-%m-%d")
 LOGGER = logging.getLogger(__name__)
 

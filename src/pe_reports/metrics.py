@@ -74,6 +74,7 @@ class Credentials:
         view_df = view_df[["breach_name", "description"]]
 
         view_df = view_df.drop_duplicates()
+        view_df.sort_values("breach_name", inplace=True)
         return view_df[["breach_name", "description"]]
 
     def breach_details(self):
@@ -140,7 +141,6 @@ class Domains_Masqs:
                     "name_server",
                 ]
             ]
-            domain_sum = domain_sum[:6]
             domain_sum.loc[domain_sum["ipv6"] == "", "ipv6"] = "NA"
             domain_sum = domain_sum.rename(
                 columns={
@@ -151,8 +151,6 @@ class Domains_Masqs:
                     "name_server": "Name Server",
                 }
             )
-            domain_sum["Mail Server"] = domain_sum["Mail Server"].str[:15]
-            domain_sum["Name Server"] = domain_sum["Name Server"].str[:15]
         else:
             domain_sum = pd.DataFrame(
                 columns=[
@@ -176,8 +174,6 @@ class Domains_Masqs:
         dom_alerts_df = dom_alerts_df.rename(
             columns={"message": "Alert", "date": "Date"}
         )
-        dom_alerts_df["Alert"] = dom_alerts_df["Alert"].str[:70]
-        dom_alerts_df = dom_alerts_df[:4].reset_index(drop=True)
         return dom_alerts_df
 
     def alerts_sum(self):
@@ -452,8 +448,12 @@ class Cyber_Six:
         self.top_cves = top_cves
 
     def dark_web_count(self):
-        """Get total number of dark web mentions."""
+        """Get total number of dark web alerts."""
         return len(self.alerts.index)
+
+    def dark_web_mentions_count(self):
+        """Get total number of dark web mentions."""
+        return len(self.dark_web_mentions)
 
     def dark_web_date(self):
         """Get dark web mentions by date."""
@@ -545,10 +545,10 @@ class Cyber_Six:
             columns=["organizations_uid", "date"],
             errors="ignore",
         )
-        soc_med_most_act = soc_med_most_act[:4]
+        soc_med_most_act = soc_med_most_act[:10]
         # Translate title field to english
         soc_med_most_act = translate(soc_med_most_act, ["Title"])
-        soc_med_most_act["Title"] = soc_med_most_act["Title"].str[:50]
+        soc_med_most_act["Title"] = soc_med_most_act["Title"].str[:200]
         soc_med_most_act = soc_med_most_act.replace(r"^\s*$", "Untitled", regex=True)
         return soc_med_most_act
 
@@ -564,10 +564,10 @@ class Cyber_Six:
             columns=["organizations_uid", "date"],
             errors="ignore",
         )
-        dark_web_most_act = dark_web_most_act[:5]
         # Translate title field to english
+        dark_web_most_act = dark_web_most_act[:10]
         dark_web_most_act = translate(dark_web_most_act, ["Title"])
-        dark_web_most_act["Title"] = dark_web_most_act["Title"].str[:80]
+        dark_web_most_act["Title"] = dark_web_most_act["Title"].str[:200]
         dark_web_most_act = dark_web_most_act.replace(r"^\s*$", "Untitled", regex=True)
         return dark_web_most_act
 
@@ -587,7 +587,7 @@ class Cyber_Six:
             asset_alerts = asset_alerts[
                 ~asset_alerts["Site"].isin(self.soc_med_platforms)
             ]
-        asset_alerts["Title"] = asset_alerts["Title"].str[:75]
+        asset_alerts["Title"] = asset_alerts["Title"].str[:200]
         return asset_alerts
 
     def alerts_exec(self):
@@ -604,7 +604,7 @@ class Cyber_Six:
         )
         if not self.soc_med_included:
             alerts_exec = alerts_exec[~alerts_exec["Site"].isin(self.soc_med_platforms)]
-        alerts_exec["Title"] = alerts_exec["Title"].str[:100]
+        alerts_exec["Title"] = alerts_exec["Title"].str[:200]
         return alerts_exec
 
     def dark_web_bad_actors(self):
@@ -625,6 +625,8 @@ class Cyber_Six:
         dark_web_bad_actors = dark_web_bad_actors.sort_values(
             by=["Grade"], ascending=False
         )
+        dark_web_bad_actors = dark_web_bad_actors[:10]
+        dark_web_bad_actors = translate(dark_web_bad_actors, ["Creator"])
         return dark_web_bad_actors
 
     def alerts_threats(self):
@@ -646,10 +648,10 @@ class Cyber_Six:
         alerts_threats = (
             alerts_threats.groupby(["Site", "Threats"])["Threats"]
             .count()
-            .nlargest(5)
+            .nlargest(10)
             .reset_index(name="Events")
         )
-        alerts_threats["Threats"] = alerts_threats["Threats"].str[:50]
+        alerts_threats["Threats"] = alerts_threats["Threats"].str[:200]
         return alerts_threats
 
     def dark_web_sites(self):
@@ -671,7 +673,7 @@ class Cyber_Six:
         dark_web_sites = (
             dark_web_sites.groupby(["Site"])["Site"]
             .count()
-            .nlargest(8)
+            .nlargest(10)
             .reset_index(name="count")
         )
         return dark_web_sites
@@ -691,7 +693,7 @@ class Cyber_Six:
         markets = (
             markets.groupby(["Site"])["Site"]
             .count()
-            .nlargest(4)
+            .nlargest(10)
             .reset_index(name="Alerts")
         )
         return markets
@@ -699,7 +701,7 @@ class Cyber_Six:
     def top_cve_table(self):
         """Get top CVEs."""
         top_cves = self.top_cves
-        top_cves["summary_short"] = top_cves["summary"].str[:100]
+        top_cves["summary_short"] = top_cves["summary"].str[:500]
         top_cve_table = top_cves[["cve_id", "summary_short"]]
         top_cve_table = top_cve_table.rename(
             columns={"cve_id": "CVE", "summary_short": "Description"}

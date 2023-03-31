@@ -25,31 +25,33 @@ import boto3
 from botocore.exceptions import ClientError
 import docopt
 import fitz
-import pandas as pd
 from schema import And, Schema, SchemaError, Use
-from xhtml2pdf import pisa
 
 # cisagov Libraries
 import pe_reports
 
 from ._version import __version__
+from .asm_generator import create_summary
 from .data.db_query import connect, get_orgs
 from .helpers.generate_score import get_pe_scores
 from .pages import init
+from .reportlab_generator import report_gen
 from .scorecard_generator import create_scorecard
-from .asm_generator import create_summary
 
 LOGGER = logging.getLogger(__name__)
 ACCESSOR_AWS_PROFILE = os.getenv("ACCESSOR_PROFILE")
 
 
-def upload_file_to_s3(file_name, datestring, bucket):
+def upload_file_to_s3(file_name, datestring, bucket, excel_org):
     """Upload a file to an S3 bucket."""
     session = boto3.Session(profile_name=ACCESSOR_AWS_PROFILE)
     s3_client = session.client("s3")
 
     # If S3 object_name was not specified, use file_name
     object_name = f"{datestring}/{os.path.basename(file_name)}"
+
+    if excel_org is not None:
+        object_name = f"{datestring}/{excel_org}-raw-data/{os.path.basename(file_name)}"
 
     try:
         response = s3_client.upload_file(file_name, bucket, object_name)
@@ -66,10 +68,10 @@ def embed(
     org_code,
     datestring,
     file,
-    cred_xlsx,
-    da_xlsx,
-    vuln_xlsx,
-    mi_xlsx,
+    cred_json,
+    da_json,
+    vuln_json,
+    mi_json,
 ):
     """Embeds raw data into PDF and encrypts file."""
     doc = fitz.open(file)
@@ -78,28 +80,28 @@ def embed(
     output = f"{output_directory}/{org_code}/Posture_and_Exposure_Report-{org_code}-{datestring}.pdf"
 
     # Open CSV data as binary
-    cc = open(cred_xlsx, "rb").read()
-    da = open(da_xlsx, "rb").read()
-    ma = open(vuln_xlsx, "rb").read()
-    mi = open(mi_xlsx, "rb").read()
+    cc = open(cred_json, "rb").read()
+    da = open(da_json, "rb").read()
+    ma = open(vuln_json, "rb").read()
+    mi = open(mi_json, "rb").read()
 
     # Insert link to CSV data in summary page of PDF.
     # Use coordinates to position them on the bottom.
-    p1 = fitz.Point(71, 632)
-    p2 = fitz.Point(71, 660)
-    p3 = fitz.Point(71, 688)
-    p5 = fitz.Point(71, 716)
+    p1 = fitz.Point(78, 607)
+    p2 = fitz.Point(78, 635)
+    p3 = fitz.Point(78, 663)
+    p5 = fitz.Point(78, 691)
 
     # Embed and add push-pin graphic
     page.add_file_annot(
-        p1, cc, "compromised_credentials.xlsx", desc="Open xlsx", icon="Paperclip"
+        p1, cc, "compromised_credentials.json", desc="Open JSON", icon="Paperclip"
     )
     page.add_file_annot(
-        p2, da, "domain_alerts.xlsx", desc="Open xlsx", icon="Paperclip"
+        p2, da, "domain_alerts.json", desc="Open JSON", icon="Paperclip"
     )
-    page.add_file_annot(p3, ma, "vuln_alerts.xlsx", desc="Open xlsx", icon="Paperclip")
+    page.add_file_annot(p3, ma, "vuln_alerts.json", desc="Open JSON", icon="Paperclip")
     page.add_file_annot(
-        p5, mi, "mention_incidents.xlsx", desc="Open xlsx", icon="Paperclip"
+        p5, mi, "mention_incidents.json", desc="Open JSON", icon="Paperclip"
     )
 
     # Save doc and set garbage=4 to reduce PDF size using all 4 methods:
@@ -119,23 +121,6 @@ def embed(
     return filesize, tooLarge, output
 
 
-def convert_html_to_pdf(source_html, output_filename):
-    """Convert HTML to PDF."""
-    # Open output file for writing (truncated binary)
-    result_file = open(output_filename, "w+b")
-
-    # Convert HTML to PDF
-    pisa_status = pisa.CreatePDF(
-        source_html, dest=result_file  # the HTML to convert
-    )  # file handle to receive result
-
-    # Close output file
-    result_file.close()  # close output file
-
-    # Return False on success and True on errors
-    return pisa_status.err
-
-
 def generate_reports(datestring, output_directory, soc_med_included=False):
     """Process steps for generating report data."""
     # Get PE orgs from PE db
@@ -149,20 +134,18 @@ def generate_reports(datestring, output_directory, soc_med_included=False):
     # Iterate over organizations
     if pe_orgs:
         LOGGER.info("PE orgs count: %d", len(pe_orgs))
-
         # Generate PE scores for all stakeholders.
         LOGGER.info("Calculating P&E Scores")
         pe_scores_df = get_pe_scores(datestring, 12)
-        # pe_scores_df = pd.DataFrame()
 
-        pe_orgs.reverse()
+        # pe_orgs.reverse()
         for org in pe_orgs:
             # Assign organization values
             org_uid = org[0]
             org_name = org[1]
             org_code = org[2]
 
-            # if org_code not in ["DHS", "NASA", "USAID"]:
+            # if org_code not in ["DOE"]:
             #     continue
 
             LOGGER.info("Running on %s", org_code)
@@ -185,13 +168,17 @@ def generate_reports(datestring, output_directory, soc_med_included=False):
 
             # Insert Charts and Metrics into PDF
             (
+                chevron_dict,
                 scorecard_dict,
                 summary_dict,
-                source_html,
+                cred_json,
+                da_json,
+                vuln_json,
+                mi_json,
                 cred_xlsx,
                 da_xlsx,
                 vuln_xlsx,
-                mi_xlsx,
+                mi_xlsx
             ) = init(
                 datestring,
                 org_name,
@@ -207,13 +194,15 @@ def generate_reports(datestring, output_directory, soc_med_included=False):
             LOGGER.info("Creating ASM Summary")
             summary_filename = f"{output_directory}/Posture-and-Exposure-ASM-Summary_{org_code}_{scorecard_dict['end_date'].strftime('%Y-%m-%d')}.pdf"
             final_summary_output = f"{output_directory}/{org_code}/Posture-and-Exposure-ASM-Summary_{org_code}_{scorecard_dict['end_date'].strftime('%Y-%m-%d')}.pdf"
-            summary_xlsx_filename = f"{output_directory}/{org_code}/ASM_Summary.xlsx"
-            create_summary(
+            summary_json_filename = f"{output_directory}/{org_code}/ASM_Summary.json"
+            summary_excel_filename = f"{output_directory}/{org_code}/ASM_Summary.xlsx"
+            asm_xlsx = create_summary(
                 org_uid,
                 final_summary_output,
                 summary_dict,
                 summary_filename,
-                summary_xlsx_filename,
+                summary_json_filename,
+                summary_excel_filename
             )
             LOGGER.info("Done")
 
@@ -225,7 +214,9 @@ def generate_reports(datestring, output_directory, soc_med_included=False):
 
             # Convert to HTML to PDF
             output_filename = f"{output_directory}/Posture_and_Exposure_Report-{org_code}-{datestring}.pdf"
-            convert_html_to_pdf(source_html, output_filename)
+            # convert_html_to_pdf(source_html, output_filename)#TODO possibly generate report here
+            chevron_dict["filename"] = output_filename
+            report_gen(chevron_dict, soc_med_included)
 
             # Grab the PDF
             pdf = f"{output_directory}/Posture_and_Exposure_Report-{org_code}-{datestring}.pdf"
@@ -236,10 +227,10 @@ def generate_reports(datestring, output_directory, soc_med_included=False):
                 org_code,
                 datestring,
                 pdf,
-                cred_xlsx,
-                da_xlsx,
-                vuln_xlsx,
-                mi_xlsx,
+                cred_json,
+                da_json,
+                vuln_json,
+                mi_json,
             )
 
             # Log a message if the report is too large.  Our current mailer
@@ -249,19 +240,26 @@ def generate_reports(datestring, output_directory, soc_med_included=False):
                     "%s is too large. File size: %s Limit: 20MB", org_code, filesize
                 )
 
+            bucket_name = "cisa-crossfeed-staging-reports"
+
+            # Upload excel files
+            upload_file_to_s3(cred_xlsx, datestring, bucket_name, org_code)
+            upload_file_to_s3(da_xlsx, datestring, bucket_name, org_code)
+            upload_file_to_s3(vuln_xlsx, datestring, bucket_name, org_code)
+            upload_file_to_s3(mi_xlsx, datestring, bucket_name, org_code)
+            upload_file_to_s3(asm_xlsx, datestring, bucket_name, org_code)
+
             # Upload report
-            upload_file_to_s3(output, datestring, "cisa-crossfeed-pe-reports")
+            upload_file_to_s3(output, datestring, bucket_name, None)
 
             # Upload scorecard
-            upload_file_to_s3(
-                final_summary_output, datestring, "cisa-crossfeed-pe-reports"
-            )
+            upload_file_to_s3(final_summary_output, datestring, bucket_name, None)
 
             # Upload ASM Summary
-            upload_file_to_s3(
-                scorecard_filename, datestring, "cisa-crossfeed-pe-reports"
-            )
+            upload_file_to_s3(scorecard_filename, datestring, bucket_name, None)
             generated_reports += 1
+
+
     else:
         LOGGER.error(
             "Connection to pe database failed and/or there are 0 organizations stored."
@@ -315,7 +313,8 @@ def main():
 
     try:
         soc_med = validated_args["--soc_med_included"]
-    except:
+    except Exception as e:
+        LOGGER.info(f"Social media should not included: {e}")
         soc_med = False
     # Generate reports
     generate_reports(

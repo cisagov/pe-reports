@@ -332,3 +332,114 @@ def getDataSource(source):
     source = cur.fetchone()
     cur.close()
     return source
+
+
+def insertWASIds(listIds):
+    """Insert WAS IDs into database."""
+    conn = connect("")
+    sql = """INSERT INTO was_summary (was_org_id)
+            VALUES ('{}')
+            ON CONFLICT (was_org_id) DO NOTHING;"""
+    cur = conn.cursor()
+    for id in listIds:
+        cur.execute(sql.format(id))
+    conn.commit()
+    close(conn)
+    print("Success adding WAS IDs to database.")
+
+
+def insertCountData(data):
+    """Insert web application count an vulnerability count for each org into database."""
+    conn = connect("")
+    sql = """INSERT INTO was_customers(was_org_id,webapp_count,active_vuln_count,webapp_with_vulns_count,last_updated)
+            VALUES ('{}','{}','{}','{}','{}')
+            ON CONFLICT (was_org_id) DO UPDATE SET
+            webapp_count = excluded.webapp_count,
+            active_vuln_count = excluded.active_vuln_count,
+            webapp_with_vulns_count = excluded.webapp_with_vulns_count,
+            last_updated = excluded.last_updated;"""
+    cur = conn.cursor()
+    try:
+        cur.execute(
+            sql.format(
+                data["was_org_id"],
+                data["webapp_count"],
+                data["active_vuln_count"],
+                data["webapp_with_vulns_count"],
+                data["last_updated"],
+            )
+        )
+    except KeyError:
+        print("KeyError: Data not found.")
+        close(conn)
+        return
+
+    conn.commit()
+    close(conn)
+    print("Success adding WAS data to database.")
+
+
+def insertFindingData(findingList):
+    """Insert finding data into database."""
+    # TODO: Dont use was_ord_id to reference orgs, use customer_id once was data become available
+    conn = connect("")
+    sql = """INSERT INTO was_findings (finding_uid, finding_type, webapp_id, was_org_id, owasp_category, severity, times_detected, base_score, temporal_score, fstatus, last_detected, first_detected)
+            VALUES ('{}','{}','{}','{}','{}','{}','{}','{}','{}','{}','{}','{}')
+            ON CONFLICT (finding_uid) DO UPDATE SET
+            fstatus = excluded.fstatus,
+            times_detected = excluded.times_detected,
+            last_detected = excluded.last_detected;"""
+    cur = conn.cursor()
+    for finding in findingList:
+        try:
+            cur.execute(
+                sql.format(
+                    finding["finding_uid"],
+                    finding["finding_type"],
+                    finding["webapp_id"],
+                    finding["was_org_id"],
+                    finding["owasp_category"],
+                    finding["severity"],
+                    finding["times_detected"],
+                    finding["base_score"],
+                    finding["temporal_score"],
+                    finding["fstatus"],
+                    finding["last_detected"],
+                    finding["first_detected"],
+                )
+            )
+        except KeyError:
+            print("KeyError")
+            print(finding)
+    conn.commit()
+    close(conn)
+    print("Success adding finding data to database.")
+
+
+def queryVulnWebAppCount(org_id):
+    """Query the amount of webapps with vulnerabilities."""
+    # TODO: Dont use was_ord_id to reference orgs, use customer_id once was data become available
+    conn = connect("")
+    sql = """   SELECT webapp_id FROM findings
+                WHERE org_id = '{}'
+                AND
+                (
+                    fstatus = 'ACTIVE'
+                    OR fstatus = 'NEW'
+                    OR fstatus = 'REOPENED'
+                );
+        """
+    df = pd.read_sql_query(sql.format(org_id), conn)
+    webIdsList = df["webapp_id"].values.tolist()
+    close(conn)
+    return len(set(webIdsList))
+
+
+def queryWASOrgList():
+    """Query the list of WAS orgs."""
+    # TODO: Dont use was_ord_id to reference orgs, use customer_id once was data become available
+    conn = connect("")
+    sql = """SELECT was_org_id FROM was_summary"""
+    df = pd.read_sql_query(sql, conn)
+    orgList = df["was_org_id"].values.tolist()
+    return orgList

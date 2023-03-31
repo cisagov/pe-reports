@@ -74,7 +74,7 @@ for the following services:</p>
 
 <p>In the attached document you will find a Summary Report with the findings 
 based on what we identified above. On page 4 of the report, you will 
-find links to the raw data as it was discovered by us. For the protection of 
+find links to the JSON raw data as it was discovered by us. For the protection of 
 your organization, we have encrypted the document with the password that was 
 shared when the agreement was signed for Cyber Hygiene Services. <strong>For 
 the best results, we recommend using Adobe Acrobat.</strong></p>
