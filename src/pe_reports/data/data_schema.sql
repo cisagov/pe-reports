@@ -680,10 +680,10 @@ $$;
 ALTER FUNCTION public.insert_cidr(arg_net inet, arg_org_uid uuid, arg_data_src text, arg_first_seen date, arg_last_seen date) OWNER TO pe;
 
 --
--- Name: insert_sub_domain(date, text, uuid, text, text, uuid); Type: FUNCTION; Schema: public; Owner: pe
+-- Name: insert_sub_domain(boolean, date, text, uuid, text, text, uuid); Type: FUNCTION; Schema: public; Owner: pe
 --
 
-CREATE FUNCTION public.insert_sub_domain(arg_date date, sub_d text, org_uid uuid, data_src text, root_d text DEFAULT NULL::text, root_d_uid uuid DEFAULT NULL::uuid) RETURNS uuid
+CREATE FUNCTION public.insert_sub_domain(arg_identified boolean, arg_date date, sub_d text, org_uid uuid, data_src text, root_d text DEFAULT NULL::text, root_d_uid uuid DEFAULT NULL::uuid) RETURNS uuid
     LANGUAGE plpgsql
     AS $$
 declare 
@@ -701,7 +701,9 @@ begin
 			-- If the root_domain_uid is not provided, look it up
 			if (root_d_uid is null and root_d is not null) then
 				begin
-					select rd.root_domain_uid into root_d_uid from root_domains rd where rd.root_domain = root_d and rd.organizations_uid = org_uid;
+					select rd.root_domain_uid into root_d_uid 
+					from root_domains rd 
+					where rd.root_domain = root_d and rd.organizations_uid = org_uid;
 					raise notice 'uid found: %', root_d_uid;
 				end; 
 			else
@@ -723,10 +725,10 @@ begin
 			end if;
 		
 			-- Create sub_domain and return uid
-			insert into sub_domains (sub_domain, root_domain_uid, data_source_uid, first_seen, last_seen) 
-			values (sub_d, root_d_uid, ds_uid, arg_date, arg_date) 
+			insert into sub_domains (sub_domain, root_domain_uid, data_source_uid, first_seen, last_seen, identified) 
+			values (sub_d, root_d_uid, ds_uid, arg_date, arg_date, arg_identified) 
 			on conflict (sub_domain, root_domain_uid) 
-			do update set last_seen = excluded.last_seen 
+			do update set last_seen = excluded.last_seen, identified = EXCLUDED.identified
 			returning sub_domain_uid into sub_id;
 			raise notice 'uid out of if: %', root_d_uid;
 	 	end if;
@@ -735,7 +737,7 @@ end;
 $$;
 
 
-ALTER FUNCTION public.insert_sub_domain(arg_date date, sub_d text, org_uid uuid, data_src text, root_d text, root_d_uid uuid) OWNER TO pe;
+ALTER FUNCTION public.insert_sub_domain(arg_identified boolean, arg_date date, sub_d text, org_uid uuid, data_src text, root_d text, root_d_uid uuid) OWNER TO pe;
 
 --
 -- Name: link_ips_and_subs(date, text, inet, uuid, text, text, uuid, text); Type: FUNCTION; Schema: public; Owner: pe
@@ -770,11 +772,11 @@ begin
 	   -- Get sub domain uid (add it if it doesn't exist)
 	   -- If root is null, don't pass root domain to insert subs
 	   if (arg_root is null) then
-	   		select insert_sub_domain(arg_date=> arg_date, sub_d=> arg_sub_domain, org_uid => arg_org_uid, data_src => arg_data_src,root_d_uid => arg_root_uid )
+	   		select insert_sub_domain(arg_identified => true, arg_date=> arg_date, sub_d=> arg_sub_domain, org_uid => arg_org_uid, data_src => arg_data_src,root_d_uid => arg_root_uid)
 	   		into sub_id;
 	   -- Else, pass root domain to insert subs
 	   else
-	   		select insert_sub_domain(arg_date=> arg_date, sub_d=> arg_sub_domain, org_uid => arg_org_uid, data_src => arg_data_src, root_d => arg_root)
+	   		select insert_sub_domain(arg_identified => true, arg_date=> arg_date, sub_d=> arg_sub_domain, org_uid => arg_org_uid, data_src => arg_data_src, root_d => arg_root)
 	   		into sub_id;
 	   end if;
 	  
@@ -2358,7 +2360,16 @@ CREATE TABLE public.organizations (
     parent_org_uid uuid,
     premium_report boolean,
     agency_type text,
-    demo boolean DEFAULT false
+    demo boolean DEFAULT false,
+    scorecard boolean DEFAULT false,
+    fceb boolean DEFAULT false,
+    receives_cyhy_report boolean DEFAULT false,
+    receives_bod_report boolean DEFAULT false,
+    receives_cybex_report boolean DEFAULT false,
+    run_scans boolean DEFAULT false,
+    is_parent boolean DEFAULT false,
+    ignore_roll_up boolean DEFAULT false,
+    retired boolean DEFAULT false
 );
 
 
@@ -2700,7 +2711,8 @@ CREATE TABLE public.sub_domains (
     status boolean DEFAULT false,
     first_seen date,
     last_seen date,
-    current boolean
+    current boolean,
+    identified boolean DEFAULT false
 );
 
 
@@ -3025,13 +3037,15 @@ ALTER TABLE public.vw_darkweb_topcves OWNER TO pe;
 --
 
 CREATE VIEW public.vw_iscore_orgs_ip_counts AS
- SELECT rss.organizations_uid,
-    orgs.cyhy_db_name,
-    rss.ip_count,
-    rss.end_date
-   FROM (public.report_summary_stats rss
-     JOIN public.organizations orgs ON ((rss.organizations_uid = orgs.organizations_uid)))
-  WHERE (orgs.report_on = true);
+ SELECT fceb.organizations_uid,
+    fceb.cyhy_db_name,
+    COALESCE(rss.ip_count, '-1'::integer) AS ip_count,
+    COALESCE(rss.end_date, '0001-01-01'::date) AS end_date
+   FROM (( SELECT organizations.organizations_uid,
+            organizations.cyhy_db_name
+           FROM public.organizations
+          WHERE ((organizations.fceb = true) AND (organizations.retired = false))) fceb
+     LEFT JOIN public.report_summary_stats rss ON ((fceb.organizations_uid = rss.organizations_uid)));
 
 
 ALTER TABLE public.vw_iscore_orgs_ip_counts OWNER TO pe;
@@ -3048,17 +3062,17 @@ COMMENT ON VIEW public.vw_iscore_orgs_ip_counts IS 'Retrieve list of all stakeho
 --
 
 CREATE VIEW public.vw_iscore_pe_breach AS
- SELECT reported_orgs.organizations_uid,
+ SELECT fceb.organizations_uid,
     COALESCE(breach_data.date, '0001-01-01'::date) AS date,
     COALESCE(breach_data.breach_count, 0) AS breach_count
    FROM (( SELECT organizations.organizations_uid
            FROM public.organizations
-          WHERE (organizations.report_on = true)) reported_orgs
+          WHERE ((organizations.fceb = true) AND (organizations.retired = false))) fceb
      LEFT JOIN ( SELECT DISTINCT vw_breachcomp.organizations_uid,
             vw_breachcomp.breach_name,
             date(vw_breachcomp.modified_date) AS date,
             1 AS breach_count
-           FROM public.vw_breachcomp) breach_data ON ((reported_orgs.organizations_uid = breach_data.organizations_uid)));
+           FROM public.vw_breachcomp) breach_data ON ((fceb.organizations_uid = breach_data.organizations_uid)));
 
 
 ALTER TABLE public.vw_iscore_pe_breach OWNER TO pe;
@@ -3075,18 +3089,18 @@ COMMENT ON VIEW public.vw_iscore_pe_breach IS 'Retrieve all relevant PE breach d
 --
 
 CREATE VIEW public.vw_iscore_pe_cred AS
- SELECT reported_orgs.organizations_uid,
+ SELECT fceb.organizations_uid,
     COALESCE(cred_data.date, '0001-01-01'::date) AS date,
     COALESCE(cred_data.password_creds, (0)::bigint) AS password_creds,
     COALESCE(cred_data.total_creds, (0)::bigint) AS total_creds
    FROM (( SELECT organizations.organizations_uid
            FROM public.organizations
-          WHERE (organizations.report_on = true)) reported_orgs
+          WHERE ((organizations.fceb = true) AND (organizations.retired = false))) fceb
      LEFT JOIN ( SELECT vw_breachcomp_credsbydate.organizations_uid,
             vw_breachcomp_credsbydate.password_included AS password_creds,
             (vw_breachcomp_credsbydate.no_password + vw_breachcomp_credsbydate.password_included) AS total_creds,
             vw_breachcomp_credsbydate.mod_date AS date
-           FROM public.vw_breachcomp_credsbydate) cred_data ON ((reported_orgs.organizations_uid = cred_data.organizations_uid)));
+           FROM public.vw_breachcomp_credsbydate) cred_data ON ((fceb.organizations_uid = cred_data.organizations_uid)));
 
 
 ALTER TABLE public.vw_iscore_pe_cred OWNER TO pe;
@@ -3103,54 +3117,58 @@ COMMENT ON VIEW public.vw_iscore_pe_cred IS 'Retrieve all relevant PE credential
 --
 
 CREATE VIEW public.vw_iscore_pe_darkweb AS
- SELECT reported_orgs.organizations_uid,
-    'MENTION'::text AS alert_type,
-    COALESCE(vw_darkweb_mentionsbydate.date, '0001-01-01'::date) AS date,
-    COALESCE(vw_darkweb_mentionsbydate."Count", (0)::bigint) AS "Count"
-   FROM (( SELECT organizations.organizations_uid,
-            organizations.cyhy_db_name
-           FROM public.organizations
-          WHERE (organizations.report_on = true)) reported_orgs
-     LEFT JOIN public.vw_darkweb_mentionsbydate ON ((reported_orgs.organizations_uid = vw_darkweb_mentionsbydate.organizations_uid)))
-UNION ALL
- SELECT reported_orgs.organizations_uid,
-    'POTENTIAL_THREAT'::text AS alert_type,
-    COALESCE(threats.date, '0001-01-01'::date) AS date,
-    COALESCE(threats."Count", 0) AS "Count"
-   FROM (( SELECT organizations.organizations_uid,
-            organizations.cyhy_db_name
-           FROM public.organizations
-          WHERE (organizations.report_on = true)) reported_orgs
-     LEFT JOIN ( SELECT vw_darkweb_potentialthreats.organizations_uid,
-            vw_darkweb_potentialthreats.date,
-            1 AS "Count"
-           FROM public.vw_darkweb_potentialthreats) threats ON ((reported_orgs.organizations_uid = threats.organizations_uid)))
-UNION ALL
- SELECT reported_orgs.organizations_uid,
-    'INVITE_ONLY'::text AS alert_type,
-    COALESCE(invites.date, '0001-01-01'::date) AS date,
-    COALESCE(invites."Count", 0) AS "Count"
-   FROM (( SELECT organizations.organizations_uid,
-            organizations.cyhy_db_name
-           FROM public.organizations
-          WHERE (organizations.report_on = true)) reported_orgs
-     LEFT JOIN ( SELECT vw_darkweb_inviteonlymarkets.organizations_uid,
-            vw_darkweb_inviteonlymarkets.date,
-            1 AS "Count"
-           FROM public.vw_darkweb_inviteonlymarkets) invites ON ((reported_orgs.organizations_uid = invites.organizations_uid)))
-UNION ALL
- SELECT reported_orgs.organizations_uid,
-    'ASSET'::text AS alert_type,
-    COALESCE(assets.date, '0001-01-01'::date) AS date,
-    COALESCE(assets."Count", 0) AS "Count"
-   FROM (( SELECT organizations.organizations_uid,
-            organizations.cyhy_db_name
-           FROM public.organizations
-          WHERE (organizations.report_on = true)) reported_orgs
-     LEFT JOIN ( SELECT vw_darkweb_assetalerts.organizations_uid,
-            vw_darkweb_assetalerts.date,
-            1 AS "Count"
-           FROM public.vw_darkweb_assetalerts) assets ON ((reported_orgs.organizations_uid = assets.organizations_uid)));
+ SELECT dw_data.organizations_uid,
+    dw_data.alert_type,
+    dw_data.date,
+    dw_data."Count"
+   FROM ( SELECT fceb.organizations_uid,
+            'MENTION'::text AS alert_type,
+            COALESCE(vw_darkweb_mentionsbydate.date, '0001-01-01'::date) AS date,
+            COALESCE(vw_darkweb_mentionsbydate."Count", (0)::bigint) AS "Count"
+           FROM (( SELECT organizations.organizations_uid,
+                    organizations.cyhy_db_name
+                   FROM public.organizations
+                  WHERE ((organizations.fceb = true) AND (organizations.retired = false))) fceb
+             LEFT JOIN public.vw_darkweb_mentionsbydate ON ((fceb.organizations_uid = vw_darkweb_mentionsbydate.organizations_uid)))
+        UNION ALL
+         SELECT fceb.organizations_uid,
+            'POTENTIAL_THREAT'::text AS alert_type,
+            COALESCE(threats.date, '0001-01-01'::date) AS date,
+            COALESCE(threats."Count", 0) AS "Count"
+           FROM (( SELECT organizations.organizations_uid,
+                    organizations.cyhy_db_name
+                   FROM public.organizations
+                  WHERE ((organizations.fceb = true) AND (organizations.retired = false))) fceb
+             LEFT JOIN ( SELECT vw_darkweb_potentialthreats.organizations_uid,
+                    vw_darkweb_potentialthreats.date,
+                    1 AS "Count"
+                   FROM public.vw_darkweb_potentialthreats) threats ON ((fceb.organizations_uid = threats.organizations_uid)))
+        UNION ALL
+         SELECT fceb.organizations_uid,
+            'INVITE_ONLY'::text AS alert_type,
+            COALESCE(invites.date, '0001-01-01'::date) AS date,
+            COALESCE(invites."Count", 0) AS "Count"
+           FROM (( SELECT organizations.organizations_uid,
+                    organizations.cyhy_db_name
+                   FROM public.organizations
+                  WHERE ((organizations.fceb = true) AND (organizations.retired = false))) fceb
+             LEFT JOIN ( SELECT vw_darkweb_inviteonlymarkets.organizations_uid,
+                    vw_darkweb_inviteonlymarkets.date,
+                    1 AS "Count"
+                   FROM public.vw_darkweb_inviteonlymarkets) invites ON ((fceb.organizations_uid = invites.organizations_uid)))
+        UNION ALL
+         SELECT fceb.organizations_uid,
+            'ASSET'::text AS alert_type,
+            COALESCE(assets.date, '0001-01-01'::date) AS date,
+            COALESCE(assets."Count", 0) AS "Count"
+           FROM (( SELECT organizations.organizations_uid,
+                    organizations.cyhy_db_name
+                   FROM public.organizations
+                  WHERE ((organizations.fceb = true) AND (organizations.retired = false))) fceb
+             LEFT JOIN ( SELECT vw_darkweb_assetalerts.organizations_uid,
+                    vw_darkweb_assetalerts.date,
+                    1 AS "Count"
+                   FROM public.vw_darkweb_assetalerts) assets ON ((fceb.organizations_uid = assets.organizations_uid)))) dw_data;
 
 
 ALTER TABLE public.vw_iscore_pe_darkweb OWNER TO pe;
@@ -3197,25 +3215,35 @@ ALTER TABLE public.vw_shodanvulns_suspected OWNER TO pe;
 --
 
 CREATE VIEW public.vw_iscore_pe_protocol AS
- SELECT vw_shodanvulns_suspected.organizations_uid,
-    vw_shodanvulns_suspected.port,
-    vw_shodanvulns_suspected.ip,
-    vw_shodanvulns_suspected.protocol,
-    'Unencrypted'::text AS protocol_type,
-    (vw_shodanvulns_suspected."timestamp")::date AS date
-   FROM public.vw_shodanvulns_suspected
-  WHERE (vw_shodanvulns_suspected.type = 'Insecure Protocol'::text)
-UNION
- SELECT vw_shodanvulns_suspected.organizations_uid,
-    vw_shodanvulns_suspected.port,
-    vw_shodanvulns_suspected.ip,
-    vw_shodanvulns_suspected.protocol,
-    'Encrypted'::text AS protocol_type,
-    (vw_shodanvulns_suspected."timestamp")::date AS date
-   FROM public.vw_shodanvulns_suspected
-  WHERE (NOT (vw_shodanvulns_suspected.protocol IN ( SELECT DISTINCT vw_shodanvulns_suspected_1.protocol
-           FROM public.vw_shodanvulns_suspected vw_shodanvulns_suspected_1
-          WHERE (vw_shodanvulns_suspected_1.type = 'Insecure Protocol'::text))));
+ SELECT fceb.organizations_uid,
+    protocol_data.port,
+    protocol_data.ip,
+    protocol_data.protocol,
+    protocol_data.protocol_type,
+    protocol_data.date
+   FROM (( SELECT organizations.organizations_uid,
+            organizations.cyhy_db_name
+           FROM public.organizations
+          WHERE ((organizations.fceb = true) AND (organizations.retired = false))) fceb
+     JOIN ( SELECT vw_shodanvulns_suspected.organizations_uid,
+            vw_shodanvulns_suspected.port,
+            vw_shodanvulns_suspected.ip,
+            vw_shodanvulns_suspected.protocol,
+            'Unencrypted'::text AS protocol_type,
+            (vw_shodanvulns_suspected."timestamp")::date AS date
+           FROM public.vw_shodanvulns_suspected
+          WHERE (vw_shodanvulns_suspected.type = 'Insecure Protocol'::text)
+        UNION
+         SELECT vw_shodanvulns_suspected.organizations_uid,
+            vw_shodanvulns_suspected.port,
+            vw_shodanvulns_suspected.ip,
+            vw_shodanvulns_suspected.protocol,
+            'Encrypted'::text AS protocol_type,
+            (vw_shodanvulns_suspected."timestamp")::date AS date
+           FROM public.vw_shodanvulns_suspected
+          WHERE (NOT (vw_shodanvulns_suspected.protocol IN ( SELECT DISTINCT vw_shodanvulns_suspected_1.protocol
+                   FROM public.vw_shodanvulns_suspected vw_shodanvulns_suspected_1
+                  WHERE (vw_shodanvulns_suspected_1.type = 'Insecure Protocol'::text))))) protocol_data ON ((fceb.organizations_uid = protocol_data.organizations_uid)));
 
 
 ALTER TABLE public.vw_iscore_pe_protocol OWNER TO pe;
@@ -3275,28 +3303,28 @@ CREATE VIEW public.vw_iscore_pe_vuln AS
     vuln_data.date,
     vuln_data.cve_name,
     COALESCE(cve_info.cvss_3_0, cve_info.cvss_2_0) AS cvss_score
-   FROM (( SELECT reported_orgs.organizations_uid,
+   FROM (( SELECT fceb.organizations_uid,
             unverif_vulns.date,
             unverif_vulns.unverif_cve AS cve_name
            FROM (( SELECT organizations.organizations_uid
                    FROM public.organizations
-                  WHERE (organizations.report_on = true)) reported_orgs
+                  WHERE ((organizations.fceb = true) AND (organizations.retired = false))) fceb
              LEFT JOIN ( SELECT DISTINCT vw_shodanvulns_suspected.organizations_uid,
                     date(vw_shodanvulns_suspected."timestamp") AS date,
                     unnest(vw_shodanvulns_suspected.potential_vulns) AS unverif_cve
                    FROM public.vw_shodanvulns_suspected
-                  WHERE (vw_shodanvulns_suspected.type <> 'Insecure Protocol'::text)) unverif_vulns ON ((reported_orgs.organizations_uid = unverif_vulns.organizations_uid)))
+                  WHERE (vw_shodanvulns_suspected.type <> 'Insecure Protocol'::text)) unverif_vulns ON ((fceb.organizations_uid = unverif_vulns.organizations_uid)))
         UNION
-         SELECT reported_orgs.organizations_uid,
+         SELECT fceb.organizations_uid,
             (verif_vulns.date)::date AS date,
             verif_vulns.verif_cve AS cve_name
            FROM (( SELECT organizations.organizations_uid
                    FROM public.organizations
-                  WHERE (organizations.report_on = true)) reported_orgs
+                  WHERE ((organizations.fceb = true) AND (organizations.retired = false))) fceb
              LEFT JOIN ( SELECT DISTINCT vw_shodanvulns_verified.organizations_uid,
                     vw_shodanvulns_verified."timestamp" AS date,
                     vw_shodanvulns_verified.cve AS verif_cve
-                   FROM public.vw_shodanvulns_verified) verif_vulns ON ((reported_orgs.organizations_uid = verif_vulns.organizations_uid)))) vuln_data
+                   FROM public.vw_shodanvulns_verified) verif_vulns ON ((fceb.organizations_uid = verif_vulns.organizations_uid)))) vuln_data
      JOIN public.cve_info ON ((vuln_data.cve_name = cve_info.cve_name)));
 
 
