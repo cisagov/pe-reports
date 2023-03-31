@@ -2,6 +2,8 @@
 -- PostgreSQL database
 --
 
+-- Current P&E Database schema as of March 31st, 2023
+
 --
 -- Name: pgcrypto; Type: EXTENSION; Schema: -; Owner: -
 --
