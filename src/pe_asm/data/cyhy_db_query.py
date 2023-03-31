@@ -365,7 +365,7 @@ def insert_sub_domains(conn, df):
     except (Exception, psycopg2.DatabaseError) as err:
         # Show error and close connection if failed
         LOGGER.error("There was a problem with your database query %s", err)
-        cursor.close()
+        # cursor.close()
 
 
 def query_ips(org_uid, conn):
