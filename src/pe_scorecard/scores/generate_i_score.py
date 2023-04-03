@@ -3,6 +3,7 @@
 import sys
 import os
 import datetime
+import time
 
 # Third-Party Libraries
 import numpy as np
@@ -28,6 +29,12 @@ from pe_scorecard.data.db_query import (
     query_kev_list,
     # PE stakeholders
     query_pe_stakeholder_list,
+    # Stakeholder lists by sector
+    query_xs_stakeholder_list,
+    query_s_stakeholder_list,
+    query_m_stakeholder_list,
+    query_l_stakeholder_list,
+    query_xl_stakeholder_list,
 )
 
 # Suppressing divide by 0/NaN runtime warning
@@ -92,6 +99,18 @@ def import_ident_data(stakeholder_list, prev_start, prev_end, curr_start, curr_e
     was_data_vuln_prev = query_iscore_was_data_vuln(prev_start, prev_end)
     print("\tDone!")
 
+    # TEMPORARY TESTING:
+    # vs_data_vuln = pd.read_csv("feb2023_vs_vuln.csv")
+    # pe_data_vuln = pd.read_csv("feb2023_pe_vuln.csv")
+    # pe_data_cred = pd.read_csv("feb2023_pe_cred.csv")
+    # pe_data_breach = pd.read_csv("feb2023_pe_breach.csv")
+    # pe_data_dw = pd.read_csv("feb2023_pe_darkweb.csv")
+    # pe_data_proto = pd.read_csv("feb2023_pe_protocol.csv")
+    # was_data_vuln = pd.read_csv("feb2023_was_vuln.csv")
+    # vs_data_vuln_prev = pd.read_csv("feb2023_vs_vuln_prev.csv")
+    # pe_data_vuln_prev = pd.read_csv("feb2023_pe_vuln_prev.csv")
+    # was_data_vuln_prev = pd.read_csv("feb2023_was_vuln_prev.csv")
+
     # --------------- Import Other Necessary Info: ---------------
     # ----- Retrieve KEV list: -----
     # List of all CVE-IDs that are considered KEVs
@@ -105,7 +124,9 @@ def import_ident_data(stakeholder_list, prev_start, prev_end, curr_start, curr_e
     # ----- VS Vuln. Data -----
     # Set KEV flags
     vs_data_vuln["is_kev"] = 0
-    vs_data_vuln["is_kev"] = np.where(vs_data_vuln["cve_name"].isin(kev_list), 1, 0)
+    vs_data_vuln["is_kev"] = np.where(
+        vs_data_vuln["cve_name"].isin(kev_list["kev"].values), 1, 0
+    )
     # Set flags for low/med/high/crit KEVs
     [
         vs_data_vuln["low_kev"],
@@ -193,7 +214,6 @@ def import_ident_data(stakeholder_list, prev_start, prev_end, curr_start, curr_e
     )
     # Handle NaNs in skewnesses
     vs_data_vuln["vs_skewness_cvss"].fillna(0, inplace=True)
-    print(vs_data_vuln)
     # Aggregate total VS vulns of previous month
     vs_data_vuln.insert(2, "vs_net_chng_vulns", 0)
     vs_data_vuln_prev = vs_data_vuln_prev.groupby(
@@ -230,7 +250,9 @@ def import_ident_data(stakeholder_list, prev_start, prev_end, curr_start, curr_e
     # ----- PE Vuln. Data -----
     # Set KEV flags
     pe_data_vuln["is_kev"] = 0
-    pe_data_vuln["is_kev"] = np.where(pe_data_vuln["cve_name"].isin(kev_list), 1, 0)
+    pe_data_vuln["is_kev"] = np.where(
+        pe_data_vuln["cve_name"].isin(kev_list["kev"].values), 1, 0
+    )
     # Set flags for low/med/high/crit KEVs
     [
         pe_data_vuln["low_kev"],
@@ -350,23 +372,42 @@ def import_ident_data(stakeholder_list, prev_start, prev_end, curr_start, curr_e
     )
 
     # ----- PE Dark Web Data -----
-    pe_data_dw = (
-        (
-            pe_data_dw.groupby(["organizations_uid", "alert_type"])["Count"]
-            .sum()
-            .unstack()
-        )
-        .fillna(0)
-        .reset_index()
-        .rename(
-            columns={
-                "MENTION": "num_dw_mention",
-                "POTENTIAL_THREAT": "num_dw_threat",
-                "ASSET": "num_dw_asset",
-                "INVITE_ONLY": "num_dw_invite",
-            }
-        )
+    pe_dw_mention_counts = (
+        pe_data_dw.loc[pe_data_dw["alert_type"] == "MENTION"]
+        .groupby(["organizations_uid"], as_index=False)
+        .agg(num_dw_mention=("Count", "sum"))
     )
+    pe_dw_threat_counts = (
+        pe_data_dw.loc[pe_data_dw["alert_type"] == "POTENTIAL_THREAT"]
+        .groupby(["organizations_uid"], as_index=False)
+        .agg(num_dw_threat=("Count", "sum"))
+    )
+    pe_dw_asset_counts = (
+        pe_data_dw.loc[pe_data_dw["alert_type"] == "ASSET"]
+        .groupby(["organizations_uid"], as_index=False)
+        .agg(num_dw_asset=("Count", "sum"))
+    )
+    pe_dw_invite_counts = (
+        pe_data_dw.loc[pe_data_dw["alert_type"] == "INVITE-ONLY"]
+        .groupby(["organizations_uid"], as_index=False)
+        .agg(num_dw_invite=("Count", "sum"))
+    )
+    pe_data_dw = pd.merge(
+        pd.merge(
+            pd.merge(
+                pe_dw_mention_counts,
+                pe_dw_threat_counts,
+                on="organizations_uid",
+                how="outer",
+            ),
+            pe_dw_asset_counts,
+            on="organizations_uid",
+            how="outer",
+        ),
+        pe_dw_invite_counts,
+        on="organizations_uid",
+        how="outer",
+    ).fillna(0)
     pe_data_dw = pe_data_dw[
         [
             "organizations_uid",
@@ -376,7 +417,6 @@ def import_ident_data(stakeholder_list, prev_start, prev_end, curr_start, curr_e
             "num_dw_invite",
         ]
     ]
-    pe_data_dw.columns.name = None
 
     # ----- PE Protocol Data -----
     pe_data_proto = pe_data_proto.drop(columns=["date"]).drop_duplicates().reset_index()
@@ -451,7 +491,9 @@ def import_ident_data(stakeholder_list, prev_start, prev_end, curr_start, curr_e
     # ----- WAS Vuln Data -----
     # Set KEV flags
     was_data_vuln["is_kev"] = 0
-    was_data_vuln["is_kev"] = np.where(was_data_vuln["cve_name"].isin(kev_list), 1, 0)
+    was_data_vuln["is_kev"] = np.where(
+        was_data_vuln["cve_name"].isin(kev_list["kev"].values), 1, 0
+    )
     # Set flags for low/med/high/crit KEVs
     [
         was_data_vuln["low_kev"],
@@ -1026,11 +1068,45 @@ def gen_ident_scores(stakeholder_list, curr_date):
     return ident_data_df
 
 
-# Demo:
-# List of stakeholders to generate I-Score for
-stakeholder_list = query_pe_stakeholder_list()
+# Demo/Test:
 # Current report period date (end of month)
 curr_date = datetime.datetime(2022, 11, 30)
+
+# Start Timer
+start_time = time.time()
+
+# Lists of stakeholders to generate I-Score for
+pe_stakeholder_list = query_pe_stakeholder_list()
+xs_stakeholder_list = query_xs_stakeholder_list(curr_date)
+s_stakeholder_list = query_s_stakeholder_list(curr_date)
+m_stakeholder_list = query_m_stakeholder_list(curr_date)
+l_stakeholder_list = query_l_stakeholder_list(curr_date)
+xl_stakeholder_list = query_xl_stakeholder_list(curr_date)
+
+# TEMPORARY TESTING
+# xs_stakeholder_list = pd.read_csv("xs_fceb_orgs.csv")
+# s_stakeholder_list = pd.read_csv("s_fceb_orgs.csv")
+# m_stakeholder_list = pd.read_csv("m_fceb_orgs.csv")
+# l_stakeholder_list = pd.read_csv("l_fceb_orgs.csv")
+# xl_stakeholder_list = pd.read_csv("xl_fceb_orgs.csv")
+
+stakeholder_lists_time = time.time() - start_time
+
 # Generate I-Scores
-i_scores = gen_ident_scores(stakeholder_list, curr_date).to_string()
-print(i_scores)
+xs_i_scores = gen_ident_scores(xs_stakeholder_list, curr_date).to_string()
+s_i_scores = gen_ident_scores(s_stakeholder_list, curr_date).to_string()
+m_i_scores = gen_ident_scores(m_stakeholder_list, curr_date).to_string()
+l_i_scores = gen_ident_scores(l_stakeholder_list, curr_date).to_string()
+xl_i_scores = gen_ident_scores(xl_stakeholder_list, curr_date).to_string()
+
+i_scores_time = time.time() - start_time
+
+
+print(xs_i_scores)
+print(s_i_scores)
+print(m_i_scores)
+print(l_i_scores)
+print(xl_i_scores)
+
+print("All stakeholder lists retrieved: %s seconds" % stakeholder_lists_time)
+print("All group's i-scores calculated: %s seconds" % i_scores_time)
