@@ -266,68 +266,68 @@ def query_pe_stakeholder_list():
 
 
 # ----- XS Stakeholder List -----
-def query_xs_stakeholder_list(curr_date):
+def query_xs_stakeholder_list():
     """Query list of all stakeholders that fall in the XS group/sector."""
     # Open connection
     conn = connect()
     # Make query
-    sql = """SELECT organizations_uid, cyhy_db_name FROM vw_iscore_orgs_ip_counts WHERE end_date = %(curr_date)s AND ip_count BETWEEN 0 AND 100;"""
-    xs_stakeholder_list = pd.read_sql(sql, conn, params={"curr_date": curr_date})
+    sql = """SELECT organizations_uid, cyhy_db_name FROM vw_iscore_orgs_ip_counts WHERE ip_count BETWEEN 0 AND 100;"""
+    xs_stakeholder_list = pd.read_sql(sql, conn)
     # Close connection
     conn.close()
     return xs_stakeholder_list
 
 
 # ----- S Stakeholder List -----
-def query_s_stakeholder_list(curr_date):
+def query_s_stakeholder_list():
     """Query list of all stakeholders that fall in the S group/sector."""
     # Open connection
     conn = connect()
     # Make query
-    sql = """SELECT organizations_uid, cyhy_db_name FROM vw_iscore_orgs_ip_counts WHERE end_date = %(curr_date)s AND ip_count BETWEEN 101 AND 1000;"""
-    s_stakeholder_list = pd.read_sql(sql, conn, params={"curr_date": curr_date})
+    sql = """SELECT organizations_uid, cyhy_db_name FROM vw_iscore_orgs_ip_counts WHERE ip_count BETWEEN 101 AND 1000;"""
+    s_stakeholder_list = pd.read_sql(sql, conn)
     # Close connection
     conn.close()
     return s_stakeholder_list
 
 
 # ----- M Stakeholder List -----
-def query_m_stakeholder_list(curr_date):
+def query_m_stakeholder_list():
     """Query list of all stakeholders that fall in the M group/sector."""
     # Open connection
     conn = connect()
     # Make query
-    sql = """SELECT organizations_uid, cyhy_db_name FROM vw_iscore_orgs_ip_counts WHERE (end_date = %(curr_date)s AND ip_count BETWEEN 1001 AND 10000)
+    sql = """SELECT organizations_uid, cyhy_db_name FROM vw_iscore_orgs_ip_counts WHERE (ip_count BETWEEN 1001 AND 10000)
     OR ip_count = -1;"""
     # Any stakeholderes not reported on get put in this
     # sector by default
-    m_stakeholder_list = pd.read_sql(sql, conn, params={"curr_date": curr_date})
+    m_stakeholder_list = pd.read_sql(sql, conn)
     # Close connection
     conn.close()
     return m_stakeholder_list
 
 
 # ----- L Stakeholder List -----
-def query_l_stakeholder_list(curr_date):
+def query_l_stakeholder_list():
     """Query list of all stakeholders that fall in the L group/sector."""
     # Open connection
     conn = connect()
     # Make query
-    sql = """SELECT organizations_uid, cyhy_db_name FROM vw_iscore_orgs_ip_counts WHERE end_date = %(curr_date)s AND ip_count BETWEEN 10001 AND 100000;"""
-    l_stakeholder_list = pd.read_sql(sql, conn, params={"curr_date": curr_date})
+    sql = """SELECT organizations_uid, cyhy_db_name FROM vw_iscore_orgs_ip_counts WHERE ip_count BETWEEN 10001 AND 100000;"""
+    l_stakeholder_list = pd.read_sql(sql, conn)
     # Close connection
     conn.close()
     return l_stakeholder_list
 
 
 # ----- XL Stakeholder List -----
-def query_xl_stakeholder_list(curr_date):
+def query_xl_stakeholder_list():
     """Query list of all stakeholders that fall in the XL group/sector."""
     # Open connection
     conn = connect()
     # Make query
-    sql = """SELECT organizations_uid, cyhy_db_name FROM vw_iscore_orgs_ip_counts WHERE end_date = %(curr_date)s AND ip_count > 100000;"""
-    xl_stakeholder_list = pd.read_sql(sql, conn, params={"curr_date": curr_date})
+    sql = """SELECT organizations_uid, cyhy_db_name FROM vw_iscore_orgs_ip_counts WHERE ip_count > 100000;"""
+    xl_stakeholder_list = pd.read_sql(sql, conn)
     # Close connection
     conn.close()
     return xl_stakeholder_list

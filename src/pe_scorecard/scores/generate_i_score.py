@@ -1077,11 +1077,11 @@ start_time = time.time()
 
 # Lists of stakeholders to generate I-Score for
 pe_stakeholder_list = query_pe_stakeholder_list()
-xs_stakeholder_list = query_xs_stakeholder_list(curr_date)
-s_stakeholder_list = query_s_stakeholder_list(curr_date)
-m_stakeholder_list = query_m_stakeholder_list(curr_date)
-l_stakeholder_list = query_l_stakeholder_list(curr_date)
-xl_stakeholder_list = query_xl_stakeholder_list(curr_date)
+xs_stakeholder_list = query_xs_stakeholder_list()
+s_stakeholder_list = query_s_stakeholder_list()
+m_stakeholder_list = query_m_stakeholder_list()
+l_stakeholder_list = query_l_stakeholder_list()
+xl_stakeholder_list = query_xl_stakeholder_list()
 
 # TEMPORARY TESTING
 # xs_stakeholder_list = pd.read_csv("xs_fceb_orgs.csv")
