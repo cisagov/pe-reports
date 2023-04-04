@@ -65,6 +65,88 @@ def get_orgs():
             close(conn)
 
 
+# ----- IP list -------
+def query_ips_counts():
+    """Query database for ips found from cidrs and discovered by other means."""
+    conn = connect()
+
+    sql = """SELECT * from vw_orgs_total_ips"""
+    total_ips_df = pd.read_sql(sql, conn)
+
+    sql = """
+        select o.organizations_uid,o.cyhy_db_name, coalesce(cnts.count, 0)
+        from organizations o
+        left join
+        (SELECT o.organizations_uid, o.cyhy_db_name, count(i.ip) as count
+        FROM ips i
+        join ips_subs ip_s on ip_s.ip_hash = i.ip_hash
+        join sub_domains sd on sd.sub_domain_uid = ip_s.sub_domain_uid
+        join root_domains rd on rd.root_domain_uid = sd.root_domain_uid
+        right join organizations o on rd.organizations_uid = o.organizations_uid
+        WHERE i.origin_cidr is null
+        GROUP BY o.organizations_uid, o.cyhy_db_name) as cnts
+        on o.organizations_uid = cnts.organizations_uid
+        where o.report_on =True
+    """
+    discovered_ips_df = pd.read_sql(sql, conn)
+
+    conn.close()
+    return (total_ips_df, discovered_ips_df)
+
+
+def get_domain_counts():
+    """Query domain counts."""
+    conn = connect()
+    try:
+        cur = conn.cursor()
+        sql = """
+            select o.organizations_uid, o.cyhy_db_name,
+            coalesce(cnts.identified, 0) as identified,
+            coalesce(cnts.unidentified, 0) as unidentified
+            from organizations o
+            left join
+            (select rd.organizations_uid, sum(case sd.identified  when True then 1 else 0 end) identified, sum(case sd.identified when False then 1 else 0 end) unidentified
+            from root_domains rd
+            join sub_domains sd on sd.root_domain_uid = rd.root_domain_uid
+            group by rd.organizations_uid) cnts
+            on o.organizations_uid = cnts.organizations_uid
+            where o.report_on or o.run_scans
+        """
+        cur.execute(sql)
+        domain_counts = cur.fetchall()
+        keys = [desc[0] for desc in cur.description]
+        domain_counts = [dict(zip(keys, values)) for values in domain_counts]
+        cur.close()
+        return domain_counts
+    except (Exception, psycopg2.DatabaseError) as error:
+        logging.error("There was a problem with your database query %s", error)
+    finally:
+        if conn is not None:
+            close(conn)
+
+
+def get_webapp_counts():
+    """Query webapp counts."""
+    try:
+        conn = connect()
+        cur = conn.cursor()
+        # Need to add filters
+        sql = """
+            SELECT * from was_summary
+        """
+        cur.execute(sql)
+        webapp_counts = cur.fetchall()
+        keys = [desc[0] for desc in cur.description]
+        webapp_counts = [dict(zip(keys, values)) for values in webapp_counts]
+        cur.close()
+        return webapp_counts
+    except (Exception, psycopg2.DatabaseError) as error:
+        logging.error("There was a problem with your database query %s", error)
+    finally:
+        if conn is not None:
+            close(conn)
+
+
 def query_https_scan(month, agency):
     """Query https scan results for a given agency and month."""
     conn = connect()
@@ -323,34 +405,6 @@ def query_kev_list():
     # Close connection
     conn.close()
     return kev_list
-
-
-# ----- IP list -------
-def query_ips_counts():
-    """Query database for ips found from cidrs and discovered by other means."""
-    conn = connect()
-
-    sql = """SELECT * from vw_orgs_total_ips"""
-    total_ips_df = pd.read_sql(sql, conn)
-
-    sql = """
-        select o.organizations_uid,o.cyhy_db_name, coalesce(cnts.count, 0) from organizations o
-        left join
-        (SELECT o.organizations_uid, o.cyhy_db_name, count(i.ip) as count
-        FROM ips i
-        join ips_subs ip_s on ip_s.ip_hash = i.ip_hash
-        join sub_domains sd on sd.sub_domain_uid = ip_s.sub_domain_uid
-        join root_domains rd on rd.root_domain_uid = sd.root_domain_uid
-        right join organizations o on rd.organizations_uid = o.organizations_uid
-        WHERE i.origin_cidr is null
-        GROUP BY o.organizations_uid, o.cyhy_db_name) as cnts
-        on o.organizations_uid = cnts.organizations_uid
-        where o.report_on =True
-    """
-    discovered_ips_df = pd.read_sql(sql, conn)
-
-    conn.close()
-    return (total_ips_df, discovered_ips_df)
 
 
 def query_was_summary(last_updated):
