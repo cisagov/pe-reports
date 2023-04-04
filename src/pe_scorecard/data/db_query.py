@@ -457,16 +457,22 @@ def query_cyhy_vuln_scans(start_date, end_date):
 
 def query_cyhy_port_scans(start_date, end_date):
     """Query port info identified by vulnerability scanning."""
-    conn = connect()
-    sql = """select o.organizations_uid, o.cyhy_db_name, cps.ip, cps.port, cps.service_name, cps.state
-        from organizations o
-        left join cyhy_port_scans cps on
-        o.organizations_uid = cps.organizations_uid
-        where o.report_on  = true and cps.cyhy_time  >= %(end_date)s and cps.cyhy_time < %(end_date)s """
+    try:
+        conn = connect()
+        sql = """select o.organizations_uid, o.cyhy_db_name, cps.ip, cps.port, cps.service_name, cps.state
+            from organizations o
+            left join cyhy_port_scans cps on
+            o.organizations_uid = cps.organizations_uid
+            where o.report_on  = true and cps.cyhy_time  >= %(end_date)s and cps.cyhy_time < %(end_date)s """
 
-    port_data = pd.read_sql(
-        sql, conn, params={"start_date": start_date, "end_date": end_date}
-    )
+        port_data = pd.read_sql(
+            sql, conn, params={"start_date": start_date, "end_date": end_date}
+        )
 
-    conn.close()
-    return port_data
+        conn.close()
+        return port_data
+    except (Exception, psycopg2.DatabaseError) as error:
+        LOGGER.error("There was a problem with your database query %s", error)
+    finally:
+        if conn is not None:
+            close(conn)
