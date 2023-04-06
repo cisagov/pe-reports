@@ -49,32 +49,25 @@ def close(conn):
 def get_orgs():
     """Query organizations table."""
     conn = connect()
-    try:
-        cur = conn.cursor()
-        sql = """SELECT * FROM organizations where report_on or demo or run_scans"""
-        cur.execute(sql)
-        pe_orgs = cur.fetchall()
-        keys = [desc[0] for desc in cur.description]
-        pe_orgs = [dict(zip(keys, values)) for values in pe_orgs]
-        cur.close()
-        return pe_orgs
-    except (Exception, psycopg2.DatabaseError) as error:
-        logging.error("There was a problem with your database query %s", error)
-    finally:
-        if conn is not None:
-            close(conn)
+    sql = """SELECT * FROM organizations where report_on or run_scans"""
+    pe_orgs = pd.read_sql(sql, conn)
+    conn.close()
+    return pe_orgs
 
 
 # ----- IP list -------
-def query_ips_counts():
+def query_ips_counts(org_uid_list):
     """Query database for ips found from cidrs and discovered by other means."""
     conn = connect()
 
-    sql = """SELECT * from vw_orgs_total_ips"""
-    total_ips_df = pd.read_sql(sql, conn)
+    sql = """
+        SELECT * from vw_orgs_total_ips
+        where organizations_uid in %(org_list)s
+    """
+    total_ips_df = pd.read_sql(sql, conn, params={"org_list": tuple(org_uid_list)})
 
     sql = """
-        select o.organizations_uid,o.cyhy_db_name, coalesce(cnts.count, 0)
+        select o.organizations_uid,o.cyhy_db_name, coalesce(cnts.count, 0) as identified_ip_count
         from organizations o
         left join
         (SELECT o.organizations_uid, o.cyhy_db_name, count(i.ip) as count
@@ -86,15 +79,15 @@ def query_ips_counts():
         WHERE i.origin_cidr is null
         GROUP BY o.organizations_uid, o.cyhy_db_name) as cnts
         on o.organizations_uid = cnts.organizations_uid
-        where o.report_on =True
+        where o.organizations_uid in %(org_list)s;
     """
-    discovered_ips_df = pd.read_sql(sql, conn)
+    discovered_ips_df = pd.read_sql(sql, conn, params={"org_list": tuple(org_uid_list)})
 
     conn.close()
     return (total_ips_df, discovered_ips_df)
 
 
-def get_domain_counts():
+def query_domain_counts(org_uid_list):
     """Query domain counts."""
     conn = connect()
     try:
@@ -110,9 +103,9 @@ def get_domain_counts():
             join sub_domains sd on sd.root_domain_uid = rd.root_domain_uid
             group by rd.organizations_uid) cnts
             on o.organizations_uid = cnts.organizations_uid
-            where o.report_on or o.run_scans
+            where o.organizations_uid in %(org_list)s;
         """
-        cur.execute(sql)
+        cur.execute(sql, {"org_list": tuple(org_uid_list)})
         domain_counts = cur.fetchall()
         keys = [desc[0] for desc in cur.description]
         domain_counts = [dict(zip(keys, values)) for values in domain_counts]
@@ -125,16 +118,34 @@ def get_domain_counts():
             close(conn)
 
 
-def get_webapp_counts():
+def query_webapp_counts(date_period, org_uid_list):
     """Query webapp counts."""
     try:
         conn = connect()
         cur = conn.cursor()
         # Need to add filters
         sql = """
-            SELECT * from was_summary
+                select o.organizations_uid, o.cyhy_db_name, cnts.date_scanned,
+                coalesce(cnts.vuln_cnt, 0) as vuln_cnt,
+                coalesce(cnts.vuln_webapp_cnt,0) as vuln_webapp_cnt,
+                coalesce(cnts.web_app_cnt, 0) as web_app_cnt,
+                coalesce(cnts.high_rem_time, Null) high_rem_time,
+                coalesce(cnts.crit_rem_time, null) crit_rem_time
+                from organizations o
+                left join
+                (SELECT o.organizations_uid, wh.*
+                from was_history wh
+                    join was_map wm
+                    on wh.was_org_id = wm.was_org_id
+                    join organizations o
+                    on o.organizations_uid = wm.pe_org_id
+                    where wh.date_scanned = %(report_date)s
+                    ) cnts
+                on o.organizations_uid = cnts.organizations_uid
+                where o.organizations_uid  IN %(org_uid_list)s;
+
         """
-        cur.execute(sql)
+        cur.execute(sql, {"report_date": date_period, "org_uid_list": org_uid_list})
         webapp_counts = cur.fetchall()
         keys = [desc[0] for desc in cur.description]
         webapp_counts = [dict(zip(keys, values)) for values in webapp_counts]
@@ -145,6 +156,13 @@ def get_webapp_counts():
     finally:
         if conn is not None:
             close(conn)
+
+
+def query_certs_counts():
+    """Query certificate counts."""
+    identified_certs = None
+    monitored_certs = None
+    return (identified_certs, monitored_certs)
 
 
 def query_https_scan(month, agency):

@@ -28,6 +28,7 @@ from schema import And, Schema, SchemaError, Use
 import pe_scorecard
 
 from ._version import __version__
+from .data.db_query import get_orgs
 
 LOGGER = logging.getLogger(__name__)
 ACCESSOR_AWS_PROFILE = os.getenv("ACCESSOR_PROFILE")
@@ -35,6 +36,30 @@ ACCESSOR_AWS_PROFILE = os.getenv("ACCESSOR_PROFILE")
 
 def generate_scorecards(month, year, output_directory):
     """Generate scorecards for approved orgs."""
+    scorecard_orgs = get_orgs()
+
+    # generated_scorecards = 0
+
+    if scorecard_orgs:
+        LOGGER.info("Orgs count: %d", len(scorecard_orgs))
+
+        # If we need to generate all scores first, do so here:
+
+        for index, org in scorecard_orgs.iterrows():
+            if org["report_on"]:
+                if org["is_parent"]:
+                    # Gather list of children orgs
+                    children_df = scorecard_orgs[
+                        scorecard_orgs["parent_org_uid"] == org["organizations_uid"]
+                    ]
+                    org_uid_list = children_df["organizations_uid"].values.tolist()
+                    org_uid_list.append(org["organizations_uid"])
+                    cyhy_id_list = children_df["cyhy_db_name"].values.tolist()
+                    cyhy_id_list.append(org["cyhy_db_name"])
+
+                else:
+                    org_uid_list = [org["organizations_uid"]]
+                    cyhy_id_list = [org["cyhy_db_name"]]
 
 
 def main():
@@ -74,7 +99,7 @@ def main():
         level=log_level.upper(),
     )
 
-    LOGGER.info("Loading Posture & Exposure Report, Version : %s", __version__)
+    LOGGER.info("Loading Scorecard Report, Version : %s", __version__)
 
     # Create output directory
     if not os.path.exists(validated_args["OUTPUT_DIRECTORY"]):
