@@ -120,6 +120,7 @@ def query_domain_counts(org_uid_list):
 
 def query_webapp_counts(date_period, org_uid_list):
     """Query webapp counts."""
+    # TODO update query to pull critical and high vulns
     try:
         conn = connect()
         cur = conn.cursor()
@@ -145,7 +146,9 @@ def query_webapp_counts(date_period, org_uid_list):
                 where o.organizations_uid  IN %(org_uid_list)s;
 
         """
-        cur.execute(sql, {"report_date": date_period, "org_uid_list": org_uid_list})
+        cur.execute(
+            sql, {"report_date": date_period, "org_uid_list": tuple(org_uid_list)}
+        )
         webapp_counts = cur.fetchall()
         keys = [desc[0] for desc in cur.description]
         webapp_counts = [dict(zip(keys, values)) for values in webapp_counts]
@@ -165,15 +168,15 @@ def query_certs_counts():
     return (identified_certs, monitored_certs)
 
 
-def query_https_scan(month, agency):
+def query_https_scan(month, org_id_list):
     """Query https scan results for a given agency and month."""
     conn = connect()
     try:
         # Not sure if this should be a date filter or just latest = True
-        sql = """SELECT * FROM cyhy_https_scan where latest is True"""
+        sql = """SELECT * FROM cyhy_https_scan where latest is True and organizations_uid IN %(org_id_list)s"""
         cur = conn.cursor()
 
-        cur.execute(sql)
+        cur.execute(sql, {"org_id_list": org_id_list})
         https_results = cur.fetchall()
         keys = [desc[0] for desc in cur.description]
         https_results = [dict(zip(keys, values)) for values in https_results]
@@ -193,7 +196,7 @@ def query_sslyze_scan(month, agency):
     conn = connect()
     try:
         # Need to verify where statement: other options scan_date, first_seen, last_seen
-        sql = """SELECT * FROM cyhy_sslyze where latest is True and scanned_port in [25, 587, 465]"""
+        sql = """SELECT * FROM cyhy_sslyze where latest is True and scanned_port in [25, 587, 465, 443]"""
         cur = conn.cursor()
 
         cur.execute(sql)
@@ -210,7 +213,7 @@ def query_sslyze_scan(month, agency):
             close(conn)
 
 
-def query_trusty_mail(month, agency_uid):
+def query_trusty_mail(month, org_id_list):
     """Query trusty mail scan results for a given agency and month."""
     # all_domains_cursor = self.__db.trustymail.find(
     #         {"latest": True, "agency.name": agency}, no_cursor_timeout=True
@@ -218,10 +221,10 @@ def query_trusty_mail(month, agency_uid):
     conn = connect()
     try:
         # Need to verify where statement: other options scan_date, first_seen, last_seen
-        sql = """SELECT * FROM cyhy_trustymail where latest is True and organizations_uid = %(org_uid)s"""
+        sql = """SELECT * FROM cyhy_trustymail where latest is True and organizations_uid in %(org_uid)s"""
         cur = conn.cursor()
 
-        cur.execute(sql, params={"org_uid": agency_uid})
+        cur.execute(sql, params={"org_uid": tuple(org_id_list)})
         https_results = cur.fetchall()
         keys = [desc[0] for desc in cur.description]
         https_results = [dict(zip(keys, values)) for values in https_results]
@@ -454,6 +457,7 @@ def query_cyhy_snapshots(start_date, end_date):
     return snapshots
 
 
+# **
 def query_sofware_scans(start_date, end_date, org_id_list=[]):
     """Query the PE database for vuln data identified by the VS team scans."""
     conn = connect()
@@ -493,6 +497,7 @@ def query_sofware_scans(start_date, end_date, org_id_list=[]):
     return software_count
 
 
+# **
 def query_cyhy_port_scans(start_date, end_date, org_uid_list=[]):
     """Query port info identified by vulnerability scanning."""
     try:
@@ -535,6 +540,7 @@ def query_cyhy_port_scans(start_date, end_date, org_uid_list=[]):
             close(conn)
 
 
+# **
 def query_vuln_tickets(org_id_list=[]):
     """Query current open vulns counts based on tickets."""
     conn = connect()
@@ -562,7 +568,9 @@ def query_vuln_tickets(org_id_list=[]):
             where o.organizations_uid  IN %(org_id_list)s;
         """
 
-        vs_vuln_counts = pd.read_sql(sql, conn, params={"org_id_list": org_id_list})
+        vs_vuln_counts = pd.read_sql(
+            sql, conn, params={"org_id_list": tuple(org_id_list)}
+        )
 
     else:
         sql = """
@@ -577,7 +585,7 @@ def query_vuln_tickets(org_id_list=[]):
                 (select
                     ct.organizations_uid,
                     sum(case  when ct.cvss_base_score >= 7 and ct.cvss_base_score <9  then 1 else 0 end)as  high,
-                    sum(case  when ct.cvss_base_score >= 9 and ct.cvss_base_score <=10  then 1 else 0 end)as  critical,
+                    sum(case  when ct.cvss_base_score >= 9 then 1 else 0 end)as  critical,
                     sum(case  when ct.cve in (select kev from cyhy_kevs) then 1 else 0 end)as  kev
                 from cyhy_tickets ct
                 join
@@ -593,3 +601,61 @@ def query_vuln_tickets(org_id_list=[]):
     conn.close()
 
     return vs_vuln_counts
+
+
+# **
+def query_vuln_remediation(start_date, end_date, org_id_list):
+    """Query vulnerability time to remediate."""
+    conn = connect()
+    try:
+        sql = """select o.cyhy_db_name, o.fceb, o.report_on, ct.cvss_base_score, ct.cve, ct.time_opened, ct.time_closed
+        from organizations o
+        left join cyhy_tickets ct on
+        o.organizations_uid = ct.organizations_uid
+        where ct.false_positive = 'False' and ct.time_closed >= %(start_date)s and ct.time_closed < %(end_date)s
+        and o.organizations_uid IN %(org_id_list)s"""
+        tickets_df = pd.read_sql(
+            sql,
+            conn,
+            params={
+                "start_date": start_date,
+                "end_date": end_date,
+                "org_id_list": tuple(org_id_list),
+            },
+        )
+        return tickets_df
+
+    except (Exception, psycopg2.DatabaseError) as error:
+        LOGGER.error("There was a problem with your database query %s", error)
+    finally:
+        if conn is not None:
+            close(conn)
+
+
+def query_open_vulns(start_date, end_date, org_id_list):
+    """Query open vulnerabilities time since first seen."""
+    conn = connect()
+    try:
+        sql = """
+        select o.cyhy_db_name, o.fceb, ct.cvss_base_score, ct.cve, ct.time_opened
+        from cyhy_tickets ct
+        left join organizations o on
+        o.organizations_uid = ct.organizations_uid
+        where ct.false_positive = 'False' and ct.time_closed = 'None' and (ct.cve != null or (ct.cvss_base_score != 'Nan' and ct.cvss_base_score >= 7.0))
+        and and o.organizations_uid IN %(org_id_list)s"""
+        tickets_df = pd.read_sql(
+            sql,
+            conn,
+            params={
+                "start_date": start_date,
+                "end_date": end_date,
+                "org_id_list": tuple(org_id_list),
+            },
+        )
+        return tickets_df
+
+    except (Exception, psycopg2.DatabaseError) as error:
+        LOGGER.error("There was a problem with your database query %s", error)
+    finally:
+        if conn is not None:
+            close(conn)
