@@ -42,13 +42,16 @@ LOGGER = logging.getLogger(__name__)
 ACCESSOR_AWS_PROFILE = os.getenv("ACCESSOR_PROFILE")
 
 
-def upload_file_to_s3(file_name, datestring, bucket):
+def upload_file_to_s3(file_name, datestring, bucket, excel_org):
     """Upload a file to an S3 bucket."""
     session = boto3.Session(profile_name=ACCESSOR_AWS_PROFILE)
     s3_client = session.client("s3")
 
     # If S3 object_name was not specified, use file_name
     object_name = f"{datestring}/{os.path.basename(file_name)}"
+
+    if excel_org is not None:
+        object_name = f"{datestring}/{excel_org}-raw-data/{os.path.basename(file_name)}"
 
     try:
         response = s3_client.upload_file(file_name, bucket, object_name)
@@ -172,6 +175,10 @@ def generate_reports(datestring, output_directory, soc_med_included=False):
                 da_json,
                 vuln_json,
                 mi_json,
+                cred_xlsx,
+                da_xlsx,
+                vuln_xlsx,
+                mi_xlsx
             ) = init(
                 datestring,
                 org_name,
@@ -188,12 +195,14 @@ def generate_reports(datestring, output_directory, soc_med_included=False):
             summary_filename = f"{output_directory}/Posture-and-Exposure-ASM-Summary_{org_code}_{scorecard_dict['end_date'].strftime('%Y-%m-%d')}.pdf"
             final_summary_output = f"{output_directory}/{org_code}/Posture-and-Exposure-ASM-Summary_{org_code}_{scorecard_dict['end_date'].strftime('%Y-%m-%d')}.pdf"
             summary_json_filename = f"{output_directory}/{org_code}/ASM_Summary.json"
-            create_summary(
+            summary_excel_filename = f"{output_directory}/{org_code}/ASM_Summary.xlsx"
+            asm_xlsx = create_summary(
                 org_uid,
                 final_summary_output,
                 summary_dict,
                 summary_filename,
                 summary_json_filename,
+                summary_excel_filename
             )
             LOGGER.info("Done")
 
@@ -232,15 +241,25 @@ def generate_reports(datestring, output_directory, soc_med_included=False):
                 )
 
             bucket_name = "cisa-crossfeed-staging-reports"
+
+            # Upload excel files
+            upload_file_to_s3(cred_xlsx, datestring, bucket_name, org_code)
+            upload_file_to_s3(da_xlsx, datestring, bucket_name, org_code)
+            upload_file_to_s3(vuln_xlsx, datestring, bucket_name, org_code)
+            upload_file_to_s3(mi_xlsx, datestring, bucket_name, org_code)
+            upload_file_to_s3(asm_xlsx, datestring, bucket_name, org_code)
+
             # Upload report
-            upload_file_to_s3(output, datestring, bucket_name)
+            upload_file_to_s3(output, datestring, bucket_name, None)
 
             # Upload scorecard
-            upload_file_to_s3(final_summary_output, datestring, bucket_name)
+            upload_file_to_s3(final_summary_output, datestring, bucket_name, None)
 
             # Upload ASM Summary
-            upload_file_to_s3(scorecard_filename, datestring, bucket_name)
+            upload_file_to_s3(scorecard_filename, datestring, bucket_name, None)
             generated_reports += 1
+
+
     else:
         LOGGER.error(
             "Connection to pe database failed and/or there are 0 organizations stored."

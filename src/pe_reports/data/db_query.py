@@ -65,6 +65,7 @@ def connect_to_staging():
             port=theport,
         )
         return conn
+        LOGGER.info("Success connecting to the staging db.")
     except OperationalError as err:
         show_psycopg2_exception(err)
         conn = None
@@ -207,11 +208,17 @@ def get_org_assets_count(uid):
     return assets_dict
 
 
-def get_orgs_df():
+def get_orgs_df(staging=False):
     """Query organizations table for new orgs."""
-    conn = connect()
+    if staging:
+        conn = connect_to_staging()
+    else:
+        conn = connect()
     try:
-        sql = """SELECT * FROM organizations"""
+        sql = """
+        SELECT * FROM organizations 
+        WHERE report_on is True
+        """
         pe_orgs_df = pd.read_sql(sql, conn)
         return pe_orgs_df
     except (Exception, psycopg2.DatabaseError) as error:
@@ -304,7 +311,8 @@ def query_cyhy_assets(cyhy_db_id, conn):
     sql = """
     SELECT *
     FROM cyhy_db_assets ca
-    where ca.org_id = %(org_id)s;
+    where ca.org_id = %(org_id)s
+    and currently_in_cyhy;
     """
 
     df = pd.read_sql_query(sql, conn, params={"org_id": cyhy_db_id})
@@ -462,18 +470,6 @@ def query_extra_ips(org_uid):
     conn.close()
 
     return extra_ips
-
-
-def query_cidrs():
-    """Query all cidrs ordered by length."""
-    conn = connect()
-    sql = """SELECT tc.cidr_uid, tc.network, tc.organizations_uid, tc.insert_alert
-            FROM cidrs tc
-            ORDER BY masklen(tc.network)
-            """
-    df = pd.read_sql(sql, conn)
-    conn.close()
-    return df
 
 
 def query_cidrs_by_org(org_uid):
@@ -827,25 +823,6 @@ def query_subs(org_uid):
     df = pd.read_sql(sql, conn, params={"org_uid": org_uid})
     conn.close()
     return df
-
-
-def execute_ips(conn, dataframe):
-    """Insert the ips into the ips table in the database and link them to the associated cidr."""
-    for i, row in dataframe.iterrows():
-        try:
-            cur = conn.cursor()
-            sql = """
-            INSERT INTO ips(ip_hash, ip, origin_cidr) VALUES (%s, %s, %s)
-            ON CONFLICT (ip)
-                    DO
-                    UPDATE SET origin_cidr = UUID(EXCLUDED.origin_cidr); """
-            cur.execute(sql, (row["ip_hash"], row["ip"], row["origin_cidr"]))
-            conn.commit()
-        except (Exception, psycopg2.DatabaseError) as err:
-            show_psycopg2_exception(err)
-            cur.close()
-            continue
-    print("IPs inserted using execute_values() successfully..")
 
 
 def execute_scorecard(summary_dict):

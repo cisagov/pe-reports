@@ -49,7 +49,7 @@ def get_orgs():
     conn = connect()
     try:
         cur = conn.cursor()
-        sql = """SELECT * FROM organizations where report_on or demo"""
+        sql = """SELECT * FROM organizations where report_on or demo or run_scans"""
         cur.execute(sql)
         pe_orgs = cur.fetchall()
         keys = ("org_uid", "org_name", "cyhy_db_name")
@@ -71,7 +71,8 @@ def get_ips(org_uid):
     JOIN organizations o on o.organizations_uid = ct.organizations_uid
     where o.organizations_uid = %(org_uid)s
     and i.origin_cidr is not null
-    and i.shodan_results is True;"""
+    and i.shodan_results is True
+    and i.current is True;"""
     df1 = pd.read_sql(sql1, conn, params={"org_uid": org_uid})
     ips1 = list(df1["ip"].values)
 
@@ -82,7 +83,8 @@ def get_ips(org_uid):
     join root_domains rd on rd.root_domain_uid = sd.root_domain_uid
     JOIN organizations o on o.organizations_uid = rd.organizations_uid
     where o.organizations_uid = %(org_uid)s
-    and i.shodan_results is True;"""
+    and i.shodan_results is True
+    and sd.current is True;"""
     df2 = pd.read_sql(sql2, conn, params={"org_uid": org_uid})
     ips2 = list(df2["ip"].values)
 

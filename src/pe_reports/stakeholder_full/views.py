@@ -31,15 +31,15 @@ from pe_reports.helpers.enumerate_subs_from_root import (
     enumerate_and_save_subs,
     query_roots,
 )
-from pe_reports.helpers.fill_cidrs_from_cyhy_assets import fill_cidrs
-from pe_reports.helpers.fill_ips_from_cidrs import fill_ips_from_cidrs
-from pe_reports.helpers.link_subs_and_ips_from_ips import connect_subs_from_ips
-from pe_reports.helpers.link_subs_and_ips_from_subs import connect_ips_from_subs
-from pe_reports.helpers.shodan_dedupe import dedupe
+from pe_asm.helpers.fill_cidrs_from_cyhy_assets import fill_cidrs
+from pe_asm.helpers.fill_ips_from_cidrs import fill_ips_from_cidrs
+from pe_asm.helpers.link_subs_and_ips_from_ips import connect_subs_from_ips
+from pe_asm.helpers.link_subs_and_ips_from_subs import connect_ips_from_subs
+from pe_asm.helpers.shodan_dedupe import dedupe
 from pe_reports.stakeholder_full.forms import InfoFormExternal
 
 # If you are getting errors saying that a "en_core_web_lg" is loaded. Run the command " python -m spacy download en_core_web_trf" but might have to chagne the name fo the spacy model
-nlp = spacy.load("en_core_web_lg")
+# nlp = spacy.load("en_core_web_lg")
 
 LOGGER = logging.getLogger(__name__)
 

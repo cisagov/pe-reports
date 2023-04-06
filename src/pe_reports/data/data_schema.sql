@@ -3,7 +3,7 @@
 --
 
 -- Dumped from database version 11.16
--- Dumped by pg_dump version 12.12 (Ubuntu 12.12-0ubuntu0.20.04.1)
+-- Dumped by pg_dump version 12.14 (Ubuntu 12.14-0ubuntu0.20.04.1)
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -490,202 +490,215 @@ END; $$;
 ALTER FUNCTION public.get_vuln_metrics(start_date date, end_date date) OWNER TO pe;
 
 --
--- Name: insert_cidr(cidr, uuid, text); Type: FUNCTION; Schema: public; Owner: pe
+-- Name: insert_cidr(inet, uuid, text, date, date); Type: FUNCTION; Schema: public; Owner: pe
 --
 
-CREATE FUNCTION public.insert_cidr(arg_net cidr, arg_org_uid uuid, arg_data_src text) RETURNS uuid
+CREATE FUNCTION public.insert_cidr(arg_net inet, arg_org_uid uuid, arg_data_src text, arg_first_seen date, arg_last_seen date) RETURNS uuid
     LANGUAGE plpgsql
     AS $$
 declare 
-	parent_uid uuid := null;
-	comp_cidr_uid uuid := null;
-	comp_net cidr;
-	comp_uid uuid := null;
-	comp_parent_uid uuid := null;
-	comp_cyhy_id text := null;
-	save_to_db boolean := true;
-	ds_uid uuid := null;
-	new_cidr_uid uuid := null;
-	in_cidrs record;
-	cidrs_in record;
-begin	
-		select o.parent_org_uid into parent_uid from organizations o where o.organizations_uid = arg_org_uid;
-		select ds.data_source_uid into ds_uid from data_source ds where ds.name = arg_data_src;
-		-- Check if any cidrs equal the provided cidr
-		select ct.cidr_uid, o.organizations_uid , ct.network, o.parent_org_uid, o."cyhy_db_name"  as parent_id from cidrs ct
-		join organizations o on ct.organizations_uid = o.organizations_uid 
-		where ct.network = arg_net into comp_cidr_uid, comp_uid, comp_net, comp_parent_uid, comp_cyhy_id;
-	
-		if (comp_net is not null) then
-			--if the other cidr's org is our cidr's parent org
-			if (comp_uid = parent_uid) then
-				-- point to cidr to the new child org
-				update cidrs set organizations_uid = arg_org_uid where organizations_uid = comp_uid and network = arg_net;
-				new_cidr_uid := comp_cidr_uid;
-				save_to_db := false;
-			--if our cidr's org is the parent to the other cidr's org
-			elseif (arg_org_uid = comp_parent_uid) then
-				-- do nothing
-				raise notice 'This cidr already exists in a child organization';
-				save_to_db := false;
-				--return comp_cidr_uid;
-			-- if there is a duplicate for the same org
-			elseif (arg_org_uid = comp_uid) then
-			new_cidr_uid := comp_cidr_uid;
-			save_to_db :=false;
-			--if the orgs are not related
-			else
-				insert into cidrs (network, organizations_uid, insert_alert, data_source_uid) 
-				values (arg_net, arg_org_uid, 'Cidr duplicate between unrelated org. This cidr is also found in the following org. org_cyhy_id:' || comp_cyhy_id || ' org_uid: ' || comp_uid , ds_uid) 
-				returning cidr_uid into new_cidr_uid;
-				save_to_db := false;
-			end if;
-		end if;
-	
-		-- Check if the cidr is contained in an existing cidr block
-		if exists(select ct.network from cidrs ct where arg_net << ct.network) then
-		
-			for in_cidrs in select o.organizations_uid , tct.network, o.parent_org_uid  from cidrs tct 
-			join organizations o on o.organizations_uid = tct.organizations_uid where arg_net << ct.network loop 
-				-- Our cidr is found in an existing cidr for the same org
-				--do nothing 
-				if (in_cidrs.organizations_uid = arg_org_uid) then 
-					raise notice 'This cidr is containeed in another cidr for the same organization';
-					save_to_db := false;
-				-- Our cidr is found in an existing cidr related to our parent org
-				-- add cidr
-				elseif (in_cidrs.organizations_uid = parent_uid) then
-					if (cidr_uid is null) then
-						insert into cidrs (network, organizations_uid , data_source_uid) values (arg_net, arg_org_uid, ds_uid)
-						on conflict (organizations_uid, network )
-						do nothing 
-						returning cidr_uid into new_cidr_uid;
-						save_to_db := false;
-					end if;
-					--UPDATE IPS THAT BELONG TO THIS CIDR TO POINT HERE *******************************************
-					update ips 
-					set origin_cidr = new_cidr_uid
-					where ip << arg_net
-					and origin_cidr = in_cidrs.network;
-				-- Our cidr is found in an existing cidr related to our child org
-				-- don't add cidr
-				elseif (arg_org_uid = in_cidrs.parent_org_uid) then
-					save_to_db := false;
-				--Our cidr is found in an existing cidr unrelated to our org
-				-- insert with an insert warning
-				else
-					insert into cidrs (network, organizations_uid, insert_alert, data_source_uid) 
-					values (arg_net, arg_org_uid, 'This cidr range is contained in another cidr owned by the following unrelated org. org_uid:' || in_cidrs.organizations_uid , ds_uid) 
-					on conflict (organizations_uid, network)
-					DO UPDATE SET insert_alert = test_cidr_table.insert_alert || ", " || in_cidrs.organizations_uid
-					returning cidr_uid into new_cidr_uid;
-					save_to_db := false;
-				end if;
-				
-			end loop;
-		end if;
-		
-		-- Check if any cidrs are contained within it
-		if exists(select ct.network from cidrs ct where ct.network << arg_net ) then 
-			for cidrs_in in select cidr_uid, o.organizations_uid , tct.network, o.parent_org_uid  from cidrs tct 
-			join organizations o on o.organizations_uid = tct.organizations_uid where ct.network << arg_net  loop 
-				-- an existing cidr is found in our cidr for the same org
-				-- update existing cidr to current cidr
-				if (cidrs_in.organizations_uid = arg_org_uid) then 
-					if (new_cidr_uid is null) then
-						insert into cidrs (network, organizations_uid , data_source_uid) values (arg_net, arg_org_uid, ds_uid)
-						on conflict (organizations_uid, network )
-						do nothing 
-						returning cidr_uid into new_cidr_uid;
-						save_to_db := false;
-					end if;
-					--update all ips to point to this new cidr block
-					update ips 
-					set origin_cidr = new_cidr_uid
-					where ip << arg_net
-					and origin_cidr = cidrs_in.network;
-					--delete the old cidr
-					DELETE FROM cidrs 
-					WHERE network = cidrs_in.network
-					and organizations_uid = arg_org_uid;
-				-- an existing cidr related to our parent org is found in our cidr 
-				-- update existing cidr to our org and cidr
-				elseif (in_cidrs.organizations_uid = parent_uid) then
-					if (new_cidr_uid is null) then
-						insert into cidrs (network, organizations_uid , data_source_uid) values (arg_net, arg_org_uid, ds_uid)
-						on conflict (organizations_uid, network )
-						do nothing 
-						returning cidr_uid into new_cidr_uid;
-						save_to_db := false;
-					end if;
-					--update all ips to point to this new cidr block
-					update ips 
-					set origin_cidr = new_cidr_uid
-					where ip << arg_net
-					and origin_cidr = cidrs_in.network;
-					--delete the old cidr
-					DELETE FROM cidrs 
-					WHERE network = cidrs_in.network
-					and organizations_uid = arg_org_uid;
-				-- an existing cidr is found in our cidr related to our child org
-				-- add new cidr to our org
-				elseif (arg_org_uid = in_cidrs.parent_org_uid) then
-					if (new_cidr_uid is null) then
-						insert into cidrs (network, organizations_uid , data_source_uid) values (arg_net, arg_org_uid, ds_uid)
-						on conflict (organizations_uid, network )
-						do nothing 
-						returning cidr_uid into new_cidr_uid;
-						save_to_db := false;
-					end if;
-					
-					update ips 
-					set origin_cidr = cidrs_in.cidr_uid
-					where ip << cidrs_in.network
-					and origin_cidr = arg_net;
-				--an existing cidr unrelated to our org is found in our cidr 
-				-- insert with an insert warning
-				else
-					insert into cidrs (network, organizations_uid, insert_alert, data_source_uid) 
-					values (arg_net, arg_org_uid, 'another cidr owned by the following unrelated org is contained in this cidr range  . org_uid:' || cidrs_in.organizations_uid , ds_uid) 
-					on conflict (organizations_uid, network)
-					DO UPDATE SET insert_alert = test_cidr_table.insert_alert || ", " || cidrs_in.organizations_uid
-					returning cidr_uid into new_cidr_uid;
-					save_to_db := false;
-				end if;
-				
-			end loop;
-		
-			save_to_db := false;
-		end if;
-		
-		if (save_to_db = true) then
-			insert into cidrs (network, organizations_uid , data_source_uid) values (arg_net, arg_org_uid, ds_uid) returning cidr_uid into new_cidr_uid;
-		end if;
-		
- 	return new_cidr_uid;
+    parent_uid uuid := null;
+    comp_cidr_uid uuid := null;
+    comp_net cidr;
+    comp_uid uuid := null;
+    comp_parent_uid uuid := null;
+    comp_cyhy_id text := null;
+    save_to_db boolean := true;
+    ds_uid uuid := null;
+    new_cidr_uid uuid := null;
+    in_cidrs record;
+    cidrs_in record;
+begin   
+        select o.parent_org_uid into parent_uid from organizations o where o.organizations_uid = arg_org_uid;
+        select ds.data_source_uid into ds_uid from data_source ds where ds.name = arg_data_src;
+        -- Check if any cidrs equal the provided cidr
+        select ct.cidr_uid, o.organizations_uid , ct.network, o.parent_org_uid, o."cyhy_db_name"  as parent_id from cidrs ct
+        join organizations o on ct.organizations_uid = o.organizations_uid 
+        where ct.network = arg_net into comp_cidr_uid, comp_uid, comp_net, comp_parent_uid, comp_cyhy_id;
+        if (comp_net is not null) then
+            --if the already saved cidr's org is the given cidr's parent org
+            if (comp_uid = parent_uid) then
+                -- point given cidr to the new child org
+                update cidrs set organizations_uid = arg_org_uid, last_seen = arg_last_seen
+                where organizations_uid = comp_uid and network = arg_net;
+                new_cidr_uid := comp_cidr_uid;
+                save_to_db := false;
+            --if the given cidr is the parent to the already saved cidr.
+            --(the cidr exists in the db and has already been assigned to a 
+            --child org. We know this is true if the provided cidr's org_uid is equal
+            --to the already existing cidr's parent_org_uid) 
+            elseif (arg_org_uid = comp_parent_uid) then
+            	-- update last_seen
+            	update cidrs set last_seen = arg_last_seen
+            	where network = arg_net;
+                raise notice 'This cidr already exists in a child organization';
+                save_to_db := false;
+                --return comp_cidr_uid;
+            -- if the cidr already exists and the same org
+            elseif (arg_org_uid = comp_uid) then
+            update cidrs set last_seen = arg_last_seen
+            where organizations_uid = comp_uid and network = arg_net;
+            new_cidr_uid := comp_cidr_uid;
+            save_to_db :=false;
+            --if the orgs are not related
+            else
+                insert into cidrs (network, organizations_uid, insert_alert, data_source_uid, first_seen, last_seen) 
+                values (arg_net, arg_org_uid, 'Cidr duplicate between unrelated org. This cidr is also found in the following org. org_cyhy_id:' || comp_cyhy_id || ' org_uid: ' || comp_uid , ds_uid, arg_first_seen, arg_last_seen)
+                on conflict (organizations_uid, network )
+                do update set last_seen = excluded.last_seen
+                returning cidr_uid into new_cidr_uid;
+                save_to_db := false;
+            end if;
+        end if;
+        -- Check if the cidr is contained in an existing cidr block
+        if exists(select ct.network from cidrs ct where arg_net << ct.network) then
+            for in_cidrs in select o.organizations_uid , tct.network, o.parent_org_uid, tct.cidr_uid from cidrs tct 
+            join organizations o on o.organizations_uid = tct.organizations_uid where arg_net << tct.network loop 
+                -- Our cidr is found in an existing cidr for the same org
+                --do nothing 
+                if (in_cidrs.organizations_uid = arg_org_uid) then 
+                    raise notice 'This cidr is containeed in another cidr for the same organization';
+                    save_to_db := false;
+                -- Our cidr is found in an existing cidr related to our parent org
+                -- add cidr
+                elseif (in_cidrs.organizations_uid = parent_uid) then
+                    if (new_cidr_uid is null) then
+                        insert into cidrs (network, organizations_uid , data_source_uid, first_seen, last_seen) 
+                        values (arg_net, arg_org_uid, ds_uid, arg_first_seen, arg_last_seen)
+                        on conflict (organizations_uid, network )
+                        do update set last_seen = excluded.last_seen
+                        returning cidr_uid into new_cidr_uid;
+                        save_to_db := false;
+                    end if;
+                    --UPDATE IPS THAT BELONG TO THIS CIDR TO POINT HERE *******************************************
+                    update ips 
+                    set origin_cidr = new_cidr_uid
+                    where ip << arg_net
+                    and origin_cidr = in_cidrs.cidr_uid;
+                -- Our cidr is found in an existing cidr related to our child org
+                -- don't add cidr
+                elseif (arg_org_uid = in_cidrs.parent_org_uid) then
+                    save_to_db := false;
+                --Our cidr is found in an existing cidr unrelated to our org
+                -- insert with an insert warning
+                else
+                    insert into cidrs (network, organizations_uid, insert_alert, data_source_uid, first_seen, last_seen) 
+                    values (arg_net, arg_org_uid, 'This cidr range is contained in another cidr owned by the following unrelated org. org_uid:' || in_cidrs.organizations_uid , ds_uid, arg_first_seen, arg_last_seen) 
+                    on conflict (organizations_uid, network)
+                    DO UPDATE SET insert_alert = cidrs.insert_alert || ', ' || in_cidrs.organizations_uid,
+                    last_seen = excluded.last_seen
+                    returning cidr_uid into new_cidr_uid;
+                    save_to_db := false;
+                end if;
+            end loop;
+        end if;
+        -- Check if any cidrs are contained within it
+        if exists(select ct.network from cidrs ct where ct.network << arg_net ) then 
+            for cidrs_in in select cidr_uid, o.organizations_uid , tct.network, o.parent_org_uid, tct.cidr_uid from cidrs tct 
+            join organizations o on o.organizations_uid = tct.organizations_uid where tct.network << arg_net  loop 
+                -- an existing cidr is found in our cidr for the same org
+                -- update existing cidr to current cidr
+                if (cidrs_in.organizations_uid = arg_org_uid) then 
+                    if (new_cidr_uid is null) then
+                        insert into cidrs (network, organizations_uid , data_source_uid, first_seen, last_seen) 
+                        values (arg_net, arg_org_uid, ds_uid, arg_first_seen, arg_last_seen)
+                        on conflict (organizations_uid, network )
+                        do update set last_seen = excluded.last_seen
+                        returning cidr_uid into new_cidr_uid;
+                        save_to_db := false;
+                    end if;
+                    --update all ips to point to this new cidr block
+                    update ips 
+                    set origin_cidr = new_cidr_uid
+                    where ip << arg_net
+                    and origin_cidr = cidrs_in.cidr_uid;
+                    --delete the old cidr
+                    DELETE FROM cidrs 
+                    WHERE network = cidrs_in.network
+                    and organizations_uid = arg_org_uid;
+                -- an existing cidr related to our parent org is found in our cidr 
+                -- update existing cidr to our org and cidr
+                elseif (cidrs_in.organizations_uid = parent_uid) then
+                    if (new_cidr_uid is null) then
+                        insert into cidrs (network, organizations_uid , data_source_uid, first_seen, last_seen) 
+                        values (arg_net, arg_org_uid, ds_uid, arg_first_seen, arg_last_seen)
+                        on conflict (organizations_uid, network )
+                        do update set last_seen = excluded.last_seen 
+                        returning cidr_uid into new_cidr_uid;
+                        save_to_db := false;
+                    end if;
+                    --update all ips to point to this new cidr block
+                    update ips 
+                    set origin_cidr = new_cidr_uid
+                    where ip << arg_net
+                    and origin_cidr = cidrs_in.cidr_uid;
+                    --delete the old cidr
+                    DELETE FROM cidrs 
+                    WHERE network = cidrs_in.network
+                    and organizations_uid = arg_org_uid;
+                -- an existing cidr is found in our cidr related to our child org
+                -- add new cidr to our org
+                elseif (arg_org_uid = cidrs_in.parent_org_uid) then
+                    if (new_cidr_uid is null) then
+                        insert into cidrs (network, organizations_uid , data_source_uid, first_seen, last_seen) 
+                        values (arg_net, arg_org_uid, ds_uid, arg_first_seen, arg_last_seen)
+                        on conflict (organizations_uid, network )
+                        do update set last_seen = excluded.last_seen
+                        returning cidr_uid into new_cidr_uid;
+                        save_to_db := false;
+                    end if;
+                    update ips 
+                    set origin_cidr = cidrs_in.cidr_uid
+                    where ip << cidrs_in.network
+                    and origin_cidr = arg_net;
+                --an existing cidr unrelated to our org is found in our cidr 
+                -- insert with an insert warning
+                else
+                    insert into cidrs (network, organizations_uid, insert_alert, data_source_uid, first_seen, last_seen) 
+                    values (arg_net, arg_org_uid, 'another cidr owned by the following unrelated org is contained in this cidr range  . org_uid:' || cidrs_in.organizations_uid , ds_uid, arg_first_seen, arg_last_seen) 
+                    on conflict (organizations_uid, network)
+                    DO UPDATE SET insert_alert = cidrs.insert_alert || ', ' || cidrs_in.organizations_uid, 
+                    last_seen = excluded.last_seen
+                    returning cidr_uid into new_cidr_uid;
+                    save_to_db := false;
+                end if;
+            end loop;
+            save_to_db := false;
+        end if;
+        if (save_to_db = true) then
+            insert into cidrs (network, organizations_uid , data_source_uid, first_seen, last_seen) 
+            values (arg_net, arg_org_uid, ds_uid, arg_first_seen, arg_last_seen) 
+            on conflict (organizations_uid, network )
+            do update set last_seen = excluded.last_seen
+            returning cidr_uid into new_cidr_uid;
+        end if;
+    return new_cidr_uid;
 end;
 $$;
 
 
-ALTER FUNCTION public.insert_cidr(arg_net cidr, arg_org_uid uuid, arg_data_src text) OWNER TO pe;
+ALTER FUNCTION public.insert_cidr(arg_net inet, arg_org_uid uuid, arg_data_src text, arg_first_seen date, arg_last_seen date) OWNER TO pe;
 
 --
--- Name: insert_sub_domain(text, uuid, text, text, uuid); Type: FUNCTION; Schema: public; Owner: pe
+-- Name: insert_sub_domain(date, text, uuid, text, text, uuid); Type: FUNCTION; Schema: public; Owner: pe
 --
 
-CREATE FUNCTION public.insert_sub_domain(sub_d text, org_uid uuid, data_src text, root_d text DEFAULT NULL::text, root_d_uid uuid DEFAULT NULL::uuid) RETURNS uuid
+CREATE FUNCTION public.insert_sub_domain(arg_date date, sub_d text, org_uid uuid, data_src text, root_d text DEFAULT NULL::text, root_d_uid uuid DEFAULT NULL::uuid) RETURNS uuid
     LANGUAGE plpgsql
     AS $$
 declare 
 	sub_id uuid;
 	ds_uid uuid := null;
 begin
+		-- Try to fetch the domain
 		select sub_domain_uid into sub_id from sub_domains sd 
 		join root_domains rd on rd.root_domain_uid = sd.root_domain_uid 
 		where sd.sub_domain = sub_d
 		and rd.organizations_uid = org_uid;
+		
+		-- If the domain does not exist in the databse
 		if (sub_id is null) then
-			-- If the root_domain_uid is not provided look it up using the provided root_domain
+			-- If the root_domain_uid is not provided, look it up
 			if (root_d_uid is null and root_d is not null) then
 				begin
 					select rd.root_domain_uid into root_d_uid from root_domains rd where rd.root_domain = root_d and rd.organizations_uid = org_uid;
@@ -694,69 +707,92 @@ begin
 			else
 					raise notice 'uid provided: %', root_d_uid;
 			end if;
-			--query the data_source_uid based on the provided data source name
+		
+			-- Query the data_source_uid based on the provided data source name
 			select ds.data_source_uid into ds_uid from data_source ds where ds.name = data_src;
+		
 			-- If the root_domain_uid is still null create a new root domain and return the root_domain_uid
 			if (root_d_uid is null) then
 				begin
-					insert into root_domains (organizations_uid, root_domain, data_source_uid, enumerate_subs) values (org_uid, root_d, ds_uid, false) on conflict (organizations_uid, root_domain) do nothing;
+					insert into root_domains (organizations_uid, root_domain, data_source_uid, enumerate_subs) 
+					values (org_uid, root_d, ds_uid, false) 
+					on conflict (organizations_uid, root_domain) do nothing;
+					-- Get newly created root domain's uid
 					select rd.root_domain_uid into root_d_uid from root_domains rd where rd.root_domain = root_d;
 				end;
 			end if;
-			-- query to see if the sub_domain already exists in the database
-			select sub_domain_uid into sub_id from sub_domains where sub_domain = sub_d and root_domain_uid = root_d_uid;
-			-- if the sub_domain is not already in the database then create it and return the sub_uid
-			if (sub_id is null) then
-				--add subdomain here
-				insert into sub_domains (sub_domain, root_domain_uid, data_source_uid) values (sub_d, root_d_uid, ds_uid) on conflict (sub_domain, root_domain_uid) do nothing returning sub_domain_uid into sub_id;
-				raise notice 'uid out of if: %', root_d_uid;
-	 		end if;
+		
+			-- Create sub_domain and return uid
+			insert into sub_domains (sub_domain, root_domain_uid, data_source_uid, first_seen, last_seen) 
+			values (sub_d, root_d_uid, ds_uid, arg_date, arg_date) 
+			on conflict (sub_domain, root_domain_uid) 
+			do update set last_seen = excluded.last_seen 
+			returning sub_domain_uid into sub_id;
+			raise notice 'uid out of if: %', root_d_uid;
 	 	end if;
  	return sub_id;
 end;
 $$;
 
 
-ALTER FUNCTION public.insert_sub_domain(sub_d text, org_uid uuid, data_src text, root_d text, root_d_uid uuid) OWNER TO pe;
+ALTER FUNCTION public.insert_sub_domain(arg_date date, sub_d text, org_uid uuid, data_src text, root_d text, root_d_uid uuid) OWNER TO pe;
 
 --
--- Name: link_ips_and_subs(text, inet, uuid, text, text, uuid, text); Type: FUNCTION; Schema: public; Owner: pe
+-- Name: link_ips_and_subs(date, text, inet, uuid, text, text, uuid, text); Type: FUNCTION; Schema: public; Owner: pe
 --
 
-CREATE FUNCTION public.link_ips_and_subs(arg_ip_hash text, arg_ip inet, arg_org_uid uuid, arg_sub_domain text, arg_data_src text, arg_root_uid uuid DEFAULT NULL::uuid, arg_root text DEFAULT NULL::text) RETURNS uuid
+CREATE FUNCTION public.link_ips_and_subs(arg_date date, arg_ip_hash text, arg_ip inet, arg_org_uid uuid, arg_sub_domain text, arg_data_src text, arg_root_uid uuid DEFAULT NULL::uuid, arg_root text DEFAULT NULL::text) RETURNS uuid
     LANGUAGE plpgsql
     AS $$
 declare 
 	sub_id uuid;
+	ip_hash_return text;
 	ds_uid uuid := null;
 	i_s_uid uuid := null;
 begin
-		--select ds.data_source_uid into ds_uid from data_source ds where ds.name = arg_data_src;
+	
+		-- Try to fetch the ip
+		select ip_hash into ip_hash_return from ips i 
+		where i.ip_hash = arg_ip_hash;
 		
-		insert into ips(ip_hash, ip) 
-       	values (arg_ip_hash, arg_ip) 
-           on conflict (ip) do nothing; 
-          
-        --insert into sub_domains (sub_domain, root_domain_uid, data_source_uid)  
-      	--values (arg_sub_domain, arg_root_uid, ds_uid)
-        --on conflict (sub_domain, root_domain_uid) do nothing
-        --returning sub_domain_uid into sub_id; 
-       if (arg_root is null) then
-       	select insert_sub_domain(sub_d=> arg_sub_domain, org_uid => arg_org_uid, data_src => arg_data_src,root_d_uid => arg_root_uid ) into sub_id;
-       else
-       	select insert_sub_domain(sub_d=> arg_sub_domain, org_uid => arg_org_uid, data_src => arg_data_src, root_d => arg_root) into sub_id;
-       end if;
-       	insert into ips_subs (ip_hash, sub_domain_uid)
-       		values(arg_ip_hash, sub_id)
-       		on conflict(ip_hash, sub_domain_uid) do nothing 
-       		returning ips_subs_uid into i_s_uid;-- insert both fk ids into the product_order table
-      	
-       	return i_s_uid;
+		-- If IP not already in the database, add it
+		if (ip_hash_return is null) then
+			insert into ips (ip_hash, ip, first_seen, last_seen)
+			values (arg_ip_hash, arg_ip, arg_date, arg_date)
+			on conflict (ip)
+			do update set 
+				last_seen = excluded.last_seen;
+			raise notice 'ip added to database with no cidr: %', arg_ip_hash ;
+		end if;
+			
+	
+	
+	   -- Get sub domain uid (add it if it doesn't exist)
+	   -- If root is null, don't pass root domain to insert subs
+	   if (arg_root is null) then
+	   		select insert_sub_domain(arg_date=> arg_date, sub_d=> arg_sub_domain, org_uid => arg_org_uid, data_src => arg_data_src,root_d_uid => arg_root_uid )
+	   		into sub_id;
+	   -- Else, pass root domain to insert subs
+	   else
+	   		select insert_sub_domain(arg_date=> arg_date, sub_d=> arg_sub_domain, org_uid => arg_org_uid, data_src => arg_data_src, root_d => arg_root)
+	   		into sub_id;
+	   end if;
+	  
+	   
+	  -- Insert into ip_subs table
+	  insert into ips_subs (ip_hash, sub_domain_uid, first_seen, last_seen)
+	  values (arg_ip_hash, sub_id, arg_date, arg_date)
+	  on conflict(ip_hash, sub_domain_uid) 
+	  do update set
+	  		last_seen = EXCLUDED.last_seen
+	  returning ips_subs_uid into i_s_uid; -- insert both fk ids into the product_order table
+	
+	return i_s_uid;
 end;
 $$;
 
 
-ALTER FUNCTION public.link_ips_and_subs(arg_ip_hash text, arg_ip inet, arg_org_uid uuid, arg_sub_domain text, arg_data_src text, arg_root_uid uuid, arg_root text) OWNER TO pe;
+ALTER FUNCTION public.link_ips_and_subs(arg_date date, arg_ip_hash text, arg_ip inet, arg_org_uid uuid, arg_sub_domain text, arg_data_src text, arg_root_uid uuid, arg_root text) OWNER TO pe;
 
 --
 -- Name: pes_base_metrics(date, date); Type: FUNCTION; Schema: public; Owner: pe
@@ -1575,7 +1611,10 @@ CREATE TABLE public.cidrs (
     network cidr NOT NULL,
     organizations_uid uuid,
     data_source_uid uuid,
-    insert_alert text
+    insert_alert text,
+    first_seen date,
+    last_seen date,
+    current boolean
 );
 
 
@@ -1693,6 +1732,185 @@ CREATE TABLE public.cyhy_db_assets (
 
 
 ALTER TABLE public.cyhy_db_assets OWNER TO pe;
+
+--
+-- Name: cyhy_https_scan; Type: TABLE; Schema: public; Owner: pe
+--
+
+CREATE TABLE public.cyhy_https_scan (
+    cyhy_https_scan_uid uuid DEFAULT public.uuid_generate_v1() NOT NULL,
+    organizations_uid uuid NOT NULL,
+    cyhy_id text,
+    cyhy_latest boolean,
+    domain_supports_https boolean,
+    domain_enforces_https boolean,
+    domain_uses_strong_hsts boolean,
+    live boolean,
+    scan_date timestamp without time zone,
+    hsts_base_domain_preloaded boolean,
+    domain text,
+    base_domain text,
+    is_base_domain boolean,
+    first_seen date,
+    last_seen date,
+    https_full_connection boolean,
+    https_client_auth_required boolean
+);
+
+
+ALTER TABLE public.cyhy_https_scan OWNER TO pe;
+
+--
+-- Name: cyhy_kevs; Type: TABLE; Schema: public; Owner: pe
+--
+
+CREATE TABLE public.cyhy_kevs (
+    cyhy_kevs_uid uuid DEFAULT public.uuid_generate_v1() NOT NULL,
+    kev text,
+    first_seen date,
+    last_seen date
+);
+
+
+ALTER TABLE public.cyhy_kevs OWNER TO pe;
+
+--
+-- Name: cyhy_port_scans; Type: TABLE; Schema: public; Owner: pe
+--
+
+CREATE TABLE public.cyhy_port_scans (
+    cyhy_port_scans_uid uuid DEFAULT public.uuid_generate_v1() NOT NULL,
+    organizations_uid uuid NOT NULL,
+    cyhy_id text,
+    cyhy_time timestamp without time zone,
+    service_name text,
+    port text,
+    product text,
+    cpe text,
+    first_seen date,
+    last_seen date,
+    ip text,
+    state text,
+    agency_type text
+);
+
+
+ALTER TABLE public.cyhy_port_scans OWNER TO pe;
+
+--
+-- Name: cyhy_snapshots; Type: TABLE; Schema: public; Owner: pe
+--
+
+CREATE TABLE public.cyhy_snapshots (
+    cyhy_snapshots_uid uuid DEFAULT public.uuid_generate_v1() NOT NULL,
+    organizations_uid uuid NOT NULL,
+    cyhy_id text,
+    cyhy_last_change timestamp without time zone,
+    host_count integer,
+    vulnerable_host_count integer,
+    first_seen date,
+    last_seen date
+);
+
+
+ALTER TABLE public.cyhy_snapshots OWNER TO pe;
+
+--
+-- Name: cyhy_sslyze; Type: TABLE; Schema: public; Owner: pe
+--
+
+CREATE TABLE public.cyhy_sslyze (
+    cyhy_sslyze_uid uuid DEFAULT public.uuid_generate_v1() NOT NULL,
+    organizations_uid uuid NOT NULL,
+    cyhy_id text,
+    cyhy_latest boolean,
+    scanned_port text,
+    domain text,
+    base_domain text,
+    is_base_domain boolean,
+    scanned_hostname text,
+    sslv2 boolean,
+    scan_date timestamp without time zone,
+    sslv3 boolean,
+    any_3des boolean,
+    any_rc4 boolean,
+    first_seen date,
+    last_seen date,
+    is_symantec_cert boolean
+);
+
+
+ALTER TABLE public.cyhy_sslyze OWNER TO pe;
+
+--
+-- Name: cyhy_tickets; Type: TABLE; Schema: public; Owner: pe
+--
+
+CREATE TABLE public.cyhy_tickets (
+    cyhy_tickets_uid uuid DEFAULT public.uuid_generate_v1() NOT NULL,
+    organizations_uid uuid NOT NULL,
+    cyhy_id text,
+    false_positive boolean,
+    time_opened text,
+    time_closed text,
+    cvss_base_score double precision,
+    cve text,
+    first_seen date,
+    last_seen date
+);
+
+
+ALTER TABLE public.cyhy_tickets OWNER TO pe;
+
+--
+-- Name: cyhy_trustymail; Type: TABLE; Schema: public; Owner: pe
+--
+
+CREATE TABLE public.cyhy_trustymail (
+    cyhy_trustymail_uid uuid DEFAULT public.uuid_generate_v1() NOT NULL,
+    organizations_uid uuid NOT NULL,
+    cyhy_id text,
+    cyhy_latest boolean,
+    base_domain text,
+    is_base_domain boolean,
+    domain text,
+    dmarc_record boolean,
+    valid_spf boolean,
+    scan_date timestamp without time zone,
+    live boolean,
+    spf_record boolean,
+    valid_dmarc boolean,
+    valid_dmarc_base_domain boolean,
+    dmarc_policy text,
+    dmarc_policy_percentage text,
+    aggregate_report_uris text,
+    domain_supports_smtp boolean,
+    first_seen date,
+    last_seen date,
+    dmarc_subdomain_policy text
+);
+
+
+ALTER TABLE public.cyhy_trustymail OWNER TO pe;
+
+--
+-- Name: cyhy_vuln_scans; Type: TABLE; Schema: public; Owner: pe
+--
+
+CREATE TABLE public.cyhy_vuln_scans (
+    cyhy_vuln_scans_uid uuid DEFAULT public.uuid_generate_v1() NOT NULL,
+    organizations_uid uuid NOT NULL,
+    cyhy_id text,
+    cyhy_time timestamp without time zone,
+    plugin_name text,
+    cvss_base_score double precision,
+    cve text,
+    first_seen date,
+    last_seen date
+);
+
+
+ALTER TABLE public.cyhy_vuln_scans OWNER TO pe;
 
 --
 -- Name: dataAPI_apiuser; Type: TABLE; Schema: public; Owner: pe
@@ -2013,7 +2231,10 @@ CREATE TABLE public.ips (
     shodan_results boolean,
     live boolean,
     date_last_live timestamp without time zone,
-    last_reverse_lookup timestamp without time zone
+    last_reverse_lookup timestamp without time zone,
+    first_seen date,
+    last_seen date,
+    current boolean
 );
 
 
@@ -2026,7 +2247,10 @@ ALTER TABLE public.ips OWNER TO pe;
 CREATE TABLE public.ips_subs (
     ips_subs_uid uuid DEFAULT public.uuid_generate_v1() NOT NULL,
     ip_hash text NOT NULL,
-    sub_domain_uid uuid NOT NULL
+    sub_domain_uid uuid NOT NULL,
+    first_seen date,
+    last_seen date,
+    current boolean
 );
 
 
@@ -2064,6 +2288,35 @@ CREATE TABLE public.mentions (
 
 
 ALTER TABLE public.mentions OWNER TO pe;
+
+--
+-- Name: old_shodan_insecure_protocols_unverified_vulns; Type: TABLE; Schema: public; Owner: pe
+--
+
+CREATE TABLE public.old_shodan_insecure_protocols_unverified_vulns (
+    insecure_product_uid uuid DEFAULT public.uuid_generate_v1() NOT NULL,
+    organizations_uid uuid NOT NULL,
+    organization text,
+    ip text,
+    port integer,
+    protocol text,
+    type text,
+    name text,
+    potential_vulns text[],
+    mitigation text,
+    "timestamp" timestamp without time zone,
+    product text,
+    server text,
+    tags text[],
+    domains text[],
+    hostnames text[],
+    isn text,
+    asn integer,
+    data_source_uid uuid NOT NULL
+);
+
+
+ALTER TABLE public.old_shodan_insecure_protocols_unverified_vulns OWNER TO pe;
 
 --
 -- Name: org_id_map; Type: TABLE; Schema: public; Owner: pe
@@ -2391,35 +2644,6 @@ CREATE TABLE public.shodan_assets (
 ALTER TABLE public.shodan_assets OWNER TO pe;
 
 --
--- Name: shodan_insecure_protocols_unverified_vulns; Type: TABLE; Schema: public; Owner: pe
---
-
-CREATE TABLE public.shodan_insecure_protocols_unverified_vulns (
-    insecure_product_uid uuid DEFAULT public.uuid_generate_v1() NOT NULL,
-    organizations_uid uuid NOT NULL,
-    organization text,
-    ip text,
-    port integer,
-    protocol text,
-    type text,
-    name text,
-    potential_vulns text[],
-    mitigation text,
-    "timestamp" timestamp without time zone,
-    product text,
-    server text,
-    tags text[],
-    domains text[],
-    hostnames text[],
-    isn text,
-    asn integer,
-    data_source_uid uuid NOT NULL
-);
-
-
-ALTER TABLE public.shodan_insecure_protocols_unverified_vulns OWNER TO pe;
-
---
 -- Name: shodan_vulns; Type: TABLE; Schema: public; Owner: pe
 --
 
@@ -2473,7 +2697,10 @@ CREATE TABLE public.sub_domains (
     root_domain_uid uuid NOT NULL,
     data_source_uid uuid NOT NULL,
     dns_record_uid uuid,
-    status boolean DEFAULT false
+    status boolean DEFAULT false,
+    first_seen date,
+    last_seen date,
+    current boolean
 );
 
 
@@ -2598,6 +2825,21 @@ CREATE VIEW public.vw_breachcomp_credsbydate AS
 
 
 ALTER TABLE public.vw_breachcomp_credsbydate OWNER TO pe;
+
+--
+-- Name: vw_cidrs; Type: VIEW; Schema: public; Owner: pe
+--
+
+CREATE VIEW public.vw_cidrs AS
+ SELECT cidrs.cidr_uid,
+    cidrs.network,
+    cidrs.organizations_uid,
+    cidrs.data_source_uid,
+    cidrs.insert_alert
+   FROM public.cidrs;
+
+
+ALTER TABLE public.vw_cidrs OWNER TO pe;
 
 --
 -- Name: vw_darkweb_assetalerts; Type: VIEW; Schema: public; Owner: pe
@@ -2779,6 +3021,361 @@ CREATE VIEW public.vw_darkweb_topcves AS
 ALTER TABLE public.vw_darkweb_topcves OWNER TO pe;
 
 --
+-- Name: vw_iscore_orgs_ip_counts; Type: VIEW; Schema: public; Owner: pe
+--
+
+CREATE VIEW public.vw_iscore_orgs_ip_counts AS
+ SELECT rss.organizations_uid,
+    orgs.cyhy_db_name,
+    rss.ip_count,
+    rss.end_date
+   FROM (public.report_summary_stats rss
+     JOIN public.organizations orgs ON ((rss.organizations_uid = orgs.organizations_uid)))
+  WHERE (orgs.report_on = true);
+
+
+ALTER TABLE public.vw_iscore_orgs_ip_counts OWNER TO pe;
+
+--
+-- Name: VIEW vw_iscore_orgs_ip_counts; Type: COMMENT; Schema: public; Owner: pe
+--
+
+COMMENT ON VIEW public.vw_iscore_orgs_ip_counts IS 'Retrieve list of all stakeholders PE reports on and the  total numbrt of IPs associated with each one.';
+
+
+--
+-- Name: vw_iscore_pe_breach; Type: VIEW; Schema: public; Owner: pe
+--
+
+CREATE VIEW public.vw_iscore_pe_breach AS
+ SELECT reported_orgs.organizations_uid,
+    COALESCE(breach_data.date, '0001-01-01'::date) AS date,
+    COALESCE(breach_data.breach_count, 0) AS breach_count
+   FROM (( SELECT organizations.organizations_uid
+           FROM public.organizations
+          WHERE (organizations.report_on = true)) reported_orgs
+     LEFT JOIN ( SELECT DISTINCT vw_breachcomp.organizations_uid,
+            vw_breachcomp.breach_name,
+            date(vw_breachcomp.modified_date) AS date,
+            1 AS breach_count
+           FROM public.vw_breachcomp) breach_data ON ((reported_orgs.organizations_uid = breach_data.organizations_uid)));
+
+
+ALTER TABLE public.vw_iscore_pe_breach OWNER TO pe;
+
+--
+-- Name: VIEW vw_iscore_pe_breach; Type: COMMENT; Schema: public; Owner: pe
+--
+
+COMMENT ON VIEW public.vw_iscore_pe_breach IS 'Retrieve all relevant PE breach data needed for the calculation of the I-Score';
+
+
+--
+-- Name: vw_iscore_pe_cred; Type: VIEW; Schema: public; Owner: pe
+--
+
+CREATE VIEW public.vw_iscore_pe_cred AS
+ SELECT reported_orgs.organizations_uid,
+    COALESCE(cred_data.date, '0001-01-01'::date) AS date,
+    COALESCE(cred_data.password_creds, (0)::bigint) AS password_creds,
+    COALESCE(cred_data.total_creds, (0)::bigint) AS total_creds
+   FROM (( SELECT organizations.organizations_uid
+           FROM public.organizations
+          WHERE (organizations.report_on = true)) reported_orgs
+     LEFT JOIN ( SELECT vw_breachcomp_credsbydate.organizations_uid,
+            vw_breachcomp_credsbydate.password_included AS password_creds,
+            (vw_breachcomp_credsbydate.no_password + vw_breachcomp_credsbydate.password_included) AS total_creds,
+            vw_breachcomp_credsbydate.mod_date AS date
+           FROM public.vw_breachcomp_credsbydate) cred_data ON ((reported_orgs.organizations_uid = cred_data.organizations_uid)));
+
+
+ALTER TABLE public.vw_iscore_pe_cred OWNER TO pe;
+
+--
+-- Name: VIEW vw_iscore_pe_cred; Type: COMMENT; Schema: public; Owner: pe
+--
+
+COMMENT ON VIEW public.vw_iscore_pe_cred IS 'Retrieve all relevant PE credential data needed for the calculation of the I-Score';
+
+
+--
+-- Name: vw_iscore_pe_darkweb; Type: VIEW; Schema: public; Owner: pe
+--
+
+CREATE VIEW public.vw_iscore_pe_darkweb AS
+ SELECT reported_orgs.organizations_uid,
+    'MENTION'::text AS alert_type,
+    COALESCE(vw_darkweb_mentionsbydate.date, '0001-01-01'::date) AS date,
+    COALESCE(vw_darkweb_mentionsbydate."Count", (0)::bigint) AS "Count"
+   FROM (( SELECT organizations.organizations_uid,
+            organizations.cyhy_db_name
+           FROM public.organizations
+          WHERE (organizations.report_on = true)) reported_orgs
+     LEFT JOIN public.vw_darkweb_mentionsbydate ON ((reported_orgs.organizations_uid = vw_darkweb_mentionsbydate.organizations_uid)))
+UNION ALL
+ SELECT reported_orgs.organizations_uid,
+    'POTENTIAL_THREAT'::text AS alert_type,
+    COALESCE(threats.date, '0001-01-01'::date) AS date,
+    COALESCE(threats."Count", 0) AS "Count"
+   FROM (( SELECT organizations.organizations_uid,
+            organizations.cyhy_db_name
+           FROM public.organizations
+          WHERE (organizations.report_on = true)) reported_orgs
+     LEFT JOIN ( SELECT vw_darkweb_potentialthreats.organizations_uid,
+            vw_darkweb_potentialthreats.date,
+            1 AS "Count"
+           FROM public.vw_darkweb_potentialthreats) threats ON ((reported_orgs.organizations_uid = threats.organizations_uid)))
+UNION ALL
+ SELECT reported_orgs.organizations_uid,
+    'INVITE_ONLY'::text AS alert_type,
+    COALESCE(invites.date, '0001-01-01'::date) AS date,
+    COALESCE(invites."Count", 0) AS "Count"
+   FROM (( SELECT organizations.organizations_uid,
+            organizations.cyhy_db_name
+           FROM public.organizations
+          WHERE (organizations.report_on = true)) reported_orgs
+     LEFT JOIN ( SELECT vw_darkweb_inviteonlymarkets.organizations_uid,
+            vw_darkweb_inviteonlymarkets.date,
+            1 AS "Count"
+           FROM public.vw_darkweb_inviteonlymarkets) invites ON ((reported_orgs.organizations_uid = invites.organizations_uid)))
+UNION ALL
+ SELECT reported_orgs.organizations_uid,
+    'ASSET'::text AS alert_type,
+    COALESCE(assets.date, '0001-01-01'::date) AS date,
+    COALESCE(assets."Count", 0) AS "Count"
+   FROM (( SELECT organizations.organizations_uid,
+            organizations.cyhy_db_name
+           FROM public.organizations
+          WHERE (organizations.report_on = true)) reported_orgs
+     LEFT JOIN ( SELECT vw_darkweb_assetalerts.organizations_uid,
+            vw_darkweb_assetalerts.date,
+            1 AS "Count"
+           FROM public.vw_darkweb_assetalerts) assets ON ((reported_orgs.organizations_uid = assets.organizations_uid)));
+
+
+ALTER TABLE public.vw_iscore_pe_darkweb OWNER TO pe;
+
+--
+-- Name: VIEW vw_iscore_pe_darkweb; Type: COMMENT; Schema: public; Owner: pe
+--
+
+COMMENT ON VIEW public.vw_iscore_pe_darkweb IS 'Retrieve all relevant PE dark web data needed for the calculation of the I-Score';
+
+
+--
+-- Name: vw_shodanvulns_suspected; Type: VIEW; Schema: public; Owner: pe
+--
+
+CREATE VIEW public.vw_shodanvulns_suspected AS
+ SELECT svv.organizations_uid,
+    svv.organization,
+    svv.ip,
+    svv.port,
+    svv.protocol,
+    svv.type,
+    svv.name,
+    svv.potential_vulns,
+    svv.mitigation,
+    svv."timestamp",
+    svv.product,
+    svv.server,
+    svv.tags,
+    svv.domains,
+    svv.hostnames,
+    svv.isn,
+    svv.asn,
+    ds.name AS data_source
+   FROM (public.shodan_vulns svv
+     JOIN public.data_source ds ON ((ds.data_source_uid = svv.data_source_uid)))
+  WHERE (svv.is_verified = false);
+
+
+ALTER TABLE public.vw_shodanvulns_suspected OWNER TO pe;
+
+--
+-- Name: vw_iscore_pe_protocol; Type: VIEW; Schema: public; Owner: pe
+--
+
+CREATE VIEW public.vw_iscore_pe_protocol AS
+ SELECT vw_shodanvulns_suspected.organizations_uid,
+    vw_shodanvulns_suspected.port,
+    vw_shodanvulns_suspected.ip,
+    vw_shodanvulns_suspected.protocol,
+    'Unencrypted'::text AS protocol_type,
+    (vw_shodanvulns_suspected."timestamp")::date AS date
+   FROM public.vw_shodanvulns_suspected
+  WHERE (vw_shodanvulns_suspected.type = 'Insecure Protocol'::text)
+UNION
+ SELECT vw_shodanvulns_suspected.organizations_uid,
+    vw_shodanvulns_suspected.port,
+    vw_shodanvulns_suspected.ip,
+    vw_shodanvulns_suspected.protocol,
+    'Encrypted'::text AS protocol_type,
+    (vw_shodanvulns_suspected."timestamp")::date AS date
+   FROM public.vw_shodanvulns_suspected
+  WHERE (NOT (vw_shodanvulns_suspected.protocol IN ( SELECT DISTINCT vw_shodanvulns_suspected_1.protocol
+           FROM public.vw_shodanvulns_suspected vw_shodanvulns_suspected_1
+          WHERE (vw_shodanvulns_suspected_1.type = 'Insecure Protocol'::text))));
+
+
+ALTER TABLE public.vw_iscore_pe_protocol OWNER TO pe;
+
+--
+-- Name: VIEW vw_iscore_pe_protocol; Type: COMMENT; Schema: public; Owner: pe
+--
+
+COMMENT ON VIEW public.vw_iscore_pe_protocol IS 'Retrieve all relevant PE protocol data for the calculation of the I-Score';
+
+
+--
+-- Name: vw_shodanvulns_verified; Type: VIEW; Schema: public; Owner: pe
+--
+
+CREATE VIEW public.vw_shodanvulns_verified AS
+ SELECT svv.organizations_uid,
+    svv.organization,
+    svv.ip,
+    svv.port,
+    svv.protocol,
+    svv."timestamp",
+    svv.cve,
+    svv.severity,
+    svv.cvss,
+    svv.summary,
+    svv.product,
+    svv.attack_vector,
+    svv.av_description,
+    svv.attack_complexity,
+    svv.ac_description,
+    svv.confidentiality_impact,
+    svv.ci_description,
+    svv.integrity_impact,
+    svv.ii_description,
+    svv.availability_impact,
+    svv.ai_description,
+    svv.tags,
+    svv.domains,
+    svv.hostnames,
+    svv.isn,
+    svv.asn,
+    ds.name AS data_source
+   FROM (public.shodan_vulns svv
+     JOIN public.data_source ds ON ((ds.data_source_uid = svv.data_source_uid)))
+  WHERE (svv.is_verified = true);
+
+
+ALTER TABLE public.vw_shodanvulns_verified OWNER TO pe;
+
+--
+-- Name: vw_iscore_pe_vuln; Type: VIEW; Schema: public; Owner: pe
+--
+
+CREATE VIEW public.vw_iscore_pe_vuln AS
+ SELECT vuln_data.organizations_uid,
+    vuln_data.date,
+    vuln_data.cve_name,
+    COALESCE(cve_info.cvss_3_0, cve_info.cvss_2_0) AS cvss_score
+   FROM (( SELECT reported_orgs.organizations_uid,
+            unverif_vulns.date,
+            unverif_vulns.unverif_cve AS cve_name
+           FROM (( SELECT organizations.organizations_uid
+                   FROM public.organizations
+                  WHERE (organizations.report_on = true)) reported_orgs
+             LEFT JOIN ( SELECT DISTINCT vw_shodanvulns_suspected.organizations_uid,
+                    date(vw_shodanvulns_suspected."timestamp") AS date,
+                    unnest(vw_shodanvulns_suspected.potential_vulns) AS unverif_cve
+                   FROM public.vw_shodanvulns_suspected
+                  WHERE (vw_shodanvulns_suspected.type <> 'Insecure Protocol'::text)) unverif_vulns ON ((reported_orgs.organizations_uid = unverif_vulns.organizations_uid)))
+        UNION
+         SELECT reported_orgs.organizations_uid,
+            (verif_vulns.date)::date AS date,
+            verif_vulns.verif_cve AS cve_name
+           FROM (( SELECT organizations.organizations_uid
+                   FROM public.organizations
+                  WHERE (organizations.report_on = true)) reported_orgs
+             LEFT JOIN ( SELECT DISTINCT vw_shodanvulns_verified.organizations_uid,
+                    vw_shodanvulns_verified."timestamp" AS date,
+                    vw_shodanvulns_verified.cve AS verif_cve
+                   FROM public.vw_shodanvulns_verified) verif_vulns ON ((reported_orgs.organizations_uid = verif_vulns.organizations_uid)))) vuln_data
+     JOIN public.cve_info ON ((vuln_data.cve_name = cve_info.cve_name)));
+
+
+ALTER TABLE public.vw_iscore_pe_vuln OWNER TO pe;
+
+--
+-- Name: VIEW vw_iscore_pe_vuln; Type: COMMENT; Schema: public; Owner: pe
+--
+
+COMMENT ON VIEW public.vw_iscore_pe_vuln IS 'Retrieve all relevant PE vulnerability data needed for the calculation of the I-Score';
+
+
+--
+-- Name: vw_iscore_vs_vuln; Type: VIEW; Schema: public; Owner: pe
+--
+
+CREATE VIEW public.vw_iscore_vs_vuln AS
+ SELECT cyhy_vuln_scans.organizations_uid,
+    cyhy_vuln_scans.last_seen AS date,
+    cyhy_vuln_scans.cve AS cve_name,
+    cyhy_vuln_scans.cvss_base_score AS cvss_score
+   FROM public.cyhy_vuln_scans;
+
+
+ALTER TABLE public.vw_iscore_vs_vuln OWNER TO pe;
+
+--
+-- Name: VIEW vw_iscore_vs_vuln; Type: COMMENT; Schema: public; Owner: pe
+--
+
+COMMENT ON VIEW public.vw_iscore_vs_vuln IS 'Retrieve all VS vulnerability data needed for the calculation of the I-Score';
+
+
+--
+-- Name: was_findings; Type: TABLE; Schema: public; Owner: pe
+--
+
+CREATE TABLE public.was_findings (
+    finding_uid uuid NOT NULL,
+    finding_type character varying,
+    webapp_id integer,
+    was_org_id text,
+    owasp_category character varying,
+    severity character varying,
+    times_detected integer,
+    base_score double precision,
+    temporal_score double precision,
+    fstatus character varying,
+    last_detected date,
+    first_detected date
+);
+
+
+ALTER TABLE public.was_findings OWNER TO pe;
+
+--
+-- Name: vw_iscore_was_vuln; Type: VIEW; Schema: public; Owner: pe
+--
+
+CREATE VIEW public.vw_iscore_was_vuln AS
+ SELECT was_findings.was_org_id AS org_id,
+    was_findings.last_detected AS date,
+    ''::text AS cve_name,
+    was_findings.base_score AS cvss_score,
+    was_findings.owasp_category
+   FROM public.was_findings
+  WHERE (((was_findings.finding_type)::text = 'VULNERABILITY'::text) AND ((was_findings.fstatus)::text = ANY (ARRAY[('NEW'::character varying)::text, ('ACTIVE'::character varying)::text, ('REOPENED'::character varying)::text])));
+
+
+ALTER TABLE public.vw_iscore_was_vuln OWNER TO pe;
+
+--
+-- Name: VIEW vw_iscore_was_vuln; Type: COMMENT; Schema: public; Owner: pe
+--
+
+COMMENT ON VIEW public.vw_iscore_was_vuln IS 'Retrieve all relevant WAS vulnerability data needed for the calculation of the I-Score';
+
+
+--
 -- Name: vw_orgs_total_cidrs; Type: VIEW; Schema: public; Owner: pe
 --
 
@@ -2853,7 +3450,7 @@ CREATE VIEW public.vw_orgs_total_foreign_ips AS
      LEFT JOIN ( SELECT sa.organizations_uid,
             count(
                 CASE
-                    WHEN ((sa.country_code <> 'US'::text) OR (sa.country_code IS NOT NULL)) THEN 1
+                    WHEN ((sa.country_code <> 'US'::text) AND (sa.country_code IS NOT NULL)) THEN 1
                     ELSE NULL::integer
                 END) AS num_foreign_ips
            FROM public.shodan_assets sa
@@ -2923,7 +3520,7 @@ CREATE VIEW public.vw_orgs_total_ports AS
          SELECT DISTINCT unverif_vulns.organizations_uid,
             unverif_vulns.ip,
             unverif_vulns.port
-           FROM public.shodan_insecure_protocols_unverified_vulns unverif_vulns) all_ports ON ((reported_orgs.organizations_uid = all_ports.organizations_uid)))
+           FROM public.old_shodan_insecure_protocols_unverified_vulns unverif_vulns) all_ports ON ((reported_orgs.organizations_uid = all_ports.organizations_uid)))
   GROUP BY reported_orgs.organizations_uid, reported_orgs.cyhy_db_name
   ORDER BY COALESCE(count(all_ports.port), (0)::bigint);
 
@@ -3040,73 +3637,51 @@ COMMENT ON VIEW public.vw_orgs_contact_info IS 'Gets the contact info for all PE
 
 
 --
--- Name: vw_shodanvulns_suspected; Type: VIEW; Schema: public; Owner: pe
+-- Name: was_summary; Type: TABLE; Schema: public; Owner: pe
 --
 
-CREATE VIEW public.vw_shodanvulns_suspected AS
- SELECT svv.organizations_uid,
-    svv.organization,
-    svv.ip,
-    svv.port,
-    svv.protocol,
-    svv.type,
-    svv.name,
-    svv.potential_vulns,
-    svv.mitigation,
-    svv."timestamp",
-    svv.product,
-    svv.server,
-    svv.tags,
-    svv.domains,
-    svv.hostnames,
-    svv.isn,
-    svv.asn,
-    ds.name AS data_source
-   FROM (public.shodan_vulns svv
-     JOIN public.data_source ds ON ((ds.data_source_uid = svv.data_source_uid)))
-  WHERE (svv.is_verified = false);
+CREATE TABLE public.was_summary (
+    customer_id uuid,
+    was_org_id text,
+    webapp_count integer,
+    active_vuln_count integer,
+    webapp_with_vulns_count integer,
+    last_updated date
+);
 
 
-ALTER TABLE public.vw_shodanvulns_suspected OWNER TO pe;
+ALTER TABLE public.was_summary OWNER TO pe;
 
 --
--- Name: vw_shodanvulns_verified; Type: VIEW; Schema: public; Owner: pe
+-- Name: was_tracker_customerdata; Type: TABLE; Schema: public; Owner: pe
 --
 
-CREATE VIEW public.vw_shodanvulns_verified AS
- SELECT svv.organizations_uid,
-    svv.organization,
-    svv.ip,
-    svv.port,
-    svv.protocol,
-    svv."timestamp",
-    svv.cve,
-    svv.severity,
-    svv.cvss,
-    svv.summary,
-    svv.product,
-    svv.attack_vector,
-    svv.av_description,
-    svv.attack_complexity,
-    svv.ac_description,
-    svv.confidentiality_impact,
-    svv.ci_description,
-    svv.integrity_impact,
-    svv.ii_description,
-    svv.availability_impact,
-    svv.ai_description,
-    svv.tags,
-    svv.domains,
-    svv.hostnames,
-    svv.isn,
-    svv.asn,
-    ds.name AS data_source
-   FROM (public.shodan_vulns svv
-     JOIN public.data_source ds ON ((ds.data_source_uid = svv.data_source_uid)))
-  WHERE (svv.is_verified = true);
+CREATE TABLE public.was_tracker_customerdata (
+    customer_id uuid DEFAULT public.uuid_generate_v1() NOT NULL,
+    tag text NOT NULL,
+    customer_name text NOT NULL,
+    testing_sector text NOT NULL,
+    ci_type text NOT NULL,
+    jira_ticket text,
+    ticket text NOT NULL,
+    next_scheduled text NOT NULL,
+    last_scanned text NOT NULL,
+    frequency text NOT NULL,
+    comments_notes text NOT NULL,
+    was_report_poc text NOT NULL,
+    was_report_email text NOT NULL,
+    onboarding_date text NOT NULL,
+    no_of_web_apps integer NOT NULL,
+    no_web_apps_last_updated text,
+    elections text,
+    fceb text,
+    special_report text,
+    report_password text,
+    child_tags text
+);
 
 
-ALTER TABLE public.vw_shodanvulns_verified OWNER TO pe;
+ALTER TABLE public.was_tracker_customerdata OWNER TO pe;
 
 --
 -- Name: web_assets; Type: TABLE; Schema: public; Owner: pe
@@ -3362,6 +3937,70 @@ ALTER TABLE ONLY public.cyhy_db_assets
 
 
 --
+-- Name: cyhy_https_scan cyhy_https_scan_uid_pkey; Type: CONSTRAINT; Schema: public; Owner: pe
+--
+
+ALTER TABLE ONLY public.cyhy_https_scan
+    ADD CONSTRAINT cyhy_https_scan_uid_pkey PRIMARY KEY (cyhy_https_scan_uid);
+
+
+--
+-- Name: cyhy_kevs cyhy_kevd_uid_pkey; Type: CONSTRAINT; Schema: public; Owner: pe
+--
+
+ALTER TABLE ONLY public.cyhy_kevs
+    ADD CONSTRAINT cyhy_kevd_uid_pkey PRIMARY KEY (cyhy_kevs_uid);
+
+
+--
+-- Name: cyhy_port_scans cyhy_port_scans_uid_pkey; Type: CONSTRAINT; Schema: public; Owner: pe
+--
+
+ALTER TABLE ONLY public.cyhy_port_scans
+    ADD CONSTRAINT cyhy_port_scans_uid_pkey PRIMARY KEY (cyhy_port_scans_uid);
+
+
+--
+-- Name: cyhy_snapshots cyhy_snapshots_uid_pkey; Type: CONSTRAINT; Schema: public; Owner: pe
+--
+
+ALTER TABLE ONLY public.cyhy_snapshots
+    ADD CONSTRAINT cyhy_snapshots_uid_pkey PRIMARY KEY (cyhy_snapshots_uid);
+
+
+--
+-- Name: cyhy_sslyze cyhy_sslyze_uid_pkey; Type: CONSTRAINT; Schema: public; Owner: pe
+--
+
+ALTER TABLE ONLY public.cyhy_sslyze
+    ADD CONSTRAINT cyhy_sslyze_uid_pkey PRIMARY KEY (cyhy_sslyze_uid);
+
+
+--
+-- Name: cyhy_tickets cyhy_ticket_uid_pkey; Type: CONSTRAINT; Schema: public; Owner: pe
+--
+
+ALTER TABLE ONLY public.cyhy_tickets
+    ADD CONSTRAINT cyhy_ticket_uid_pkey PRIMARY KEY (cyhy_tickets_uid);
+
+
+--
+-- Name: cyhy_trustymail cyhy_trustymail_uid_pkey; Type: CONSTRAINT; Schema: public; Owner: pe
+--
+
+ALTER TABLE ONLY public.cyhy_trustymail
+    ADD CONSTRAINT cyhy_trustymail_uid_pkey PRIMARY KEY (cyhy_trustymail_uid);
+
+
+--
+-- Name: cyhy_vuln_scans cyhy_vuln_scans_uid_pkey; Type: CONSTRAINT; Schema: public; Owner: pe
+--
+
+ALTER TABLE ONLY public.cyhy_vuln_scans
+    ADD CONSTRAINT cyhy_vuln_scans_uid_pkey PRIMARY KEY (cyhy_vuln_scans_uid);
+
+
+--
 -- Name: dataAPI_apiuser dataAPI_apiuser_pkey; Type: CONSTRAINT; Schema: public; Owner: pe
 --
 
@@ -3610,18 +4249,18 @@ ALTER TABLE ONLY public.shodan_assets
 
 
 --
--- Name: shodan_insecure_protocols_unverified_vulns shodan_insecure_protocols_unv_organizations_uid_ip_port_pro_key; Type: CONSTRAINT; Schema: public; Owner: pe
+-- Name: old_shodan_insecure_protocols_unverified_vulns shodan_insecure_protocols_unv_organizations_uid_ip_port_pro_key; Type: CONSTRAINT; Schema: public; Owner: pe
 --
 
-ALTER TABLE ONLY public.shodan_insecure_protocols_unverified_vulns
+ALTER TABLE ONLY public.old_shodan_insecure_protocols_unverified_vulns
     ADD CONSTRAINT shodan_insecure_protocols_unv_organizations_uid_ip_port_pro_key UNIQUE (organizations_uid, ip, port, protocol, "timestamp");
 
 
 --
--- Name: shodan_insecure_protocols_unverified_vulns shodan_insecure_protocols_unverified_vulns_pkey; Type: CONSTRAINT; Schema: public; Owner: pe
+-- Name: old_shodan_insecure_protocols_unverified_vulns shodan_insecure_protocols_unverified_vulns_pkey; Type: CONSTRAINT; Schema: public; Owner: pe
 --
 
-ALTER TABLE ONLY public.shodan_insecure_protocols_unverified_vulns
+ALTER TABLE ONLY public.old_shodan_insecure_protocols_unverified_vulns
     ADD CONSTRAINT shodan_insecure_protocols_unverified_vulns_pkey PRIMARY KEY (insecure_product_uid);
 
 
@@ -3690,6 +4329,54 @@ ALTER TABLE ONLY public.organizations
 
 
 --
+-- Name: cyhy_https_scan unique_cyhy_https_scan; Type: CONSTRAINT; Schema: public; Owner: pe
+--
+
+ALTER TABLE ONLY public.cyhy_https_scan
+    ADD CONSTRAINT unique_cyhy_https_scan UNIQUE (cyhy_id);
+
+
+--
+-- Name: cyhy_kevs unique_cyhy_kevs; Type: CONSTRAINT; Schema: public; Owner: pe
+--
+
+ALTER TABLE ONLY public.cyhy_kevs
+    ADD CONSTRAINT unique_cyhy_kevs UNIQUE (kev);
+
+
+--
+-- Name: cyhy_port_scans unique_cyhy_port_scans; Type: CONSTRAINT; Schema: public; Owner: pe
+--
+
+ALTER TABLE ONLY public.cyhy_port_scans
+    ADD CONSTRAINT unique_cyhy_port_scans UNIQUE (cyhy_id);
+
+
+--
+-- Name: cyhy_snapshots unique_cyhy_snapshot; Type: CONSTRAINT; Schema: public; Owner: pe
+--
+
+ALTER TABLE ONLY public.cyhy_snapshots
+    ADD CONSTRAINT unique_cyhy_snapshot UNIQUE (cyhy_id);
+
+
+--
+-- Name: cyhy_tickets unique_cyhy_ticket; Type: CONSTRAINT; Schema: public; Owner: pe
+--
+
+ALTER TABLE ONLY public.cyhy_tickets
+    ADD CONSTRAINT unique_cyhy_ticket UNIQUE (cyhy_id);
+
+
+--
+-- Name: cyhy_vuln_scans unique_cyhy_vuln_scans; Type: CONSTRAINT; Schema: public; Owner: pe
+--
+
+ALTER TABLE ONLY public.cyhy_vuln_scans
+    ADD CONSTRAINT unique_cyhy_vuln_scans UNIQUE (cyhy_id);
+
+
+--
 -- Name: dotgov_domains unique_domain; Type: CONSTRAINT; Schema: public; Owner: pe
 --
 
@@ -3735,6 +4422,46 @@ ALTER TABLE ONLY public.report_summary_stats
 
 ALTER TABLE ONLY public.unique_software
     ADD CONSTRAINT unique_software_pkey PRIMARY KEY (_id);
+
+
+--
+-- Name: cyhy_sslyze unique_sslyze; Type: CONSTRAINT; Schema: public; Owner: pe
+--
+
+ALTER TABLE ONLY public.cyhy_sslyze
+    ADD CONSTRAINT unique_sslyze UNIQUE (cyhy_id);
+
+
+--
+-- Name: cyhy_trustymail unique_trustymail; Type: CONSTRAINT; Schema: public; Owner: pe
+--
+
+ALTER TABLE ONLY public.cyhy_trustymail
+    ADD CONSTRAINT unique_trustymail UNIQUE (cyhy_id);
+
+
+--
+-- Name: was_findings was_findings_pkey; Type: CONSTRAINT; Schema: public; Owner: pe
+--
+
+ALTER TABLE ONLY public.was_findings
+    ADD CONSTRAINT was_findings_pkey PRIMARY KEY (finding_uid);
+
+
+--
+-- Name: was_summary was_summary_was_org_id_key; Type: CONSTRAINT; Schema: public; Owner: pe
+--
+
+ALTER TABLE ONLY public.was_summary
+    ADD CONSTRAINT was_summary_was_org_id_key UNIQUE (was_org_id);
+
+
+--
+-- Name: was_tracker_customerdata was_tracker_customerdata_pk; Type: CONSTRAINT; Schema: public; Owner: pe
+--
+
+ALTER TABLE ONLY public.was_tracker_customerdata
+    ADD CONSTRAINT was_tracker_customerdata_pk PRIMARY KEY (customer_id);
 
 
 --
@@ -3971,6 +4698,62 @@ ALTER TABLE ONLY public.credential_exposures
 
 
 --
+-- Name: cyhy_https_scan cyhy_https_scan_organizations_uid_fkey; Type: FK CONSTRAINT; Schema: public; Owner: pe
+--
+
+ALTER TABLE ONLY public.cyhy_https_scan
+    ADD CONSTRAINT cyhy_https_scan_organizations_uid_fkey FOREIGN KEY (organizations_uid) REFERENCES public.organizations(organizations_uid);
+
+
+--
+-- Name: cyhy_port_scans cyhy_port_scans_organizations_uid_fkey; Type: FK CONSTRAINT; Schema: public; Owner: pe
+--
+
+ALTER TABLE ONLY public.cyhy_port_scans
+    ADD CONSTRAINT cyhy_port_scans_organizations_uid_fkey FOREIGN KEY (organizations_uid) REFERENCES public.organizations(organizations_uid);
+
+
+--
+-- Name: cyhy_snapshots cyhy_snapshot_organizations_uid_fkey; Type: FK CONSTRAINT; Schema: public; Owner: pe
+--
+
+ALTER TABLE ONLY public.cyhy_snapshots
+    ADD CONSTRAINT cyhy_snapshot_organizations_uid_fkey FOREIGN KEY (organizations_uid) REFERENCES public.organizations(organizations_uid);
+
+
+--
+-- Name: cyhy_sslyze cyhy_sslyze_organizations_uid_fkey; Type: FK CONSTRAINT; Schema: public; Owner: pe
+--
+
+ALTER TABLE ONLY public.cyhy_sslyze
+    ADD CONSTRAINT cyhy_sslyze_organizations_uid_fkey FOREIGN KEY (organizations_uid) REFERENCES public.organizations(organizations_uid);
+
+
+--
+-- Name: cyhy_tickets cyhy_ticket_organizations_uid_fkey; Type: FK CONSTRAINT; Schema: public; Owner: pe
+--
+
+ALTER TABLE ONLY public.cyhy_tickets
+    ADD CONSTRAINT cyhy_ticket_organizations_uid_fkey FOREIGN KEY (organizations_uid) REFERENCES public.organizations(organizations_uid);
+
+
+--
+-- Name: cyhy_trustymail cyhy_trustymail_organizations_uid_fkey; Type: FK CONSTRAINT; Schema: public; Owner: pe
+--
+
+ALTER TABLE ONLY public.cyhy_trustymail
+    ADD CONSTRAINT cyhy_trustymail_organizations_uid_fkey FOREIGN KEY (organizations_uid) REFERENCES public.organizations(organizations_uid);
+
+
+--
+-- Name: cyhy_vuln_scans cyhy_vulns_scans_organizations_uid_fkey; Type: FK CONSTRAINT; Schema: public; Owner: pe
+--
+
+ALTER TABLE ONLY public.cyhy_vuln_scans
+    ADD CONSTRAINT cyhy_vulns_scans_organizations_uid_fkey FOREIGN KEY (organizations_uid) REFERENCES public.organizations(organizations_uid);
+
+
+--
 -- Name: dataAPI_apiuser dataAPI_apiuser_user_id_9b9cb3a6_fk_auth_user_id; Type: FK CONSTRAINT; Schema: public; Owner: pe
 --
 
@@ -4163,18 +4946,18 @@ ALTER TABLE ONLY public.shodan_assets
 
 
 --
--- Name: shodan_insecure_protocols_unverified_vulns shodan_insecure_protocols_unverified_vul_organizations_uid_fkey; Type: FK CONSTRAINT; Schema: public; Owner: pe
+-- Name: old_shodan_insecure_protocols_unverified_vulns shodan_insecure_protocols_unverified_vul_organizations_uid_fkey; Type: FK CONSTRAINT; Schema: public; Owner: pe
 --
 
-ALTER TABLE ONLY public.shodan_insecure_protocols_unverified_vulns
+ALTER TABLE ONLY public.old_shodan_insecure_protocols_unverified_vulns
     ADD CONSTRAINT shodan_insecure_protocols_unverified_vul_organizations_uid_fkey FOREIGN KEY (organizations_uid) REFERENCES public.organizations(organizations_uid) NOT VALID;
 
 
 --
--- Name: shodan_insecure_protocols_unverified_vulns shodan_insecure_protocols_unverified_vulns_data_source_uid_fkey; Type: FK CONSTRAINT; Schema: public; Owner: pe
+-- Name: old_shodan_insecure_protocols_unverified_vulns shodan_insecure_protocols_unverified_vulns_data_source_uid_fkey; Type: FK CONSTRAINT; Schema: public; Owner: pe
 --
 
-ALTER TABLE ONLY public.shodan_insecure_protocols_unverified_vulns
+ALTER TABLE ONLY public.old_shodan_insecure_protocols_unverified_vulns
     ADD CONSTRAINT shodan_insecure_protocols_unverified_vulns_data_source_uid_fkey FOREIGN KEY (data_source_uid) REFERENCES public.data_source(data_source_uid) NOT VALID;
 
 
