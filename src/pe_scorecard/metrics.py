@@ -1,11 +1,15 @@
 """Calculations for scorecard metrics."""
+# Standard Python Libraries
+import datetime
+
 # Third-Party Libraries
 from bs4 import BeautifulSoup
 import pandas as pd
 import requests
 
-from .data.db_query import (  # query_subs_https_scan,; query_iscore_vs_data_vuln,; query_iscore_pe_data_vuln,; query_iscore_pe_data_cred,; query_iscore_pe_data_breach,; query_iscore_pe_data_darkweb,; query_iscore_pe_data_protocol,; query_iscore_was_data_vuln,; query_pe_stakeholder_list,; query_kev_list,; query_was_summary,; query_cyhy_snapshots,; query_cyhy_vuln_scans,; query_cyhy_port_scans,
+from .data.db_query import (  # query_subs_https_scan,; query_iscore_vs_data_vuln,; query_iscore_pe_data_vuln,; query_iscore_pe_data_cred,; query_iscore_pe_data_breach,; query_iscore_pe_data_darkweb,; query_iscore_pe_data_protocol,; query_iscore_was_data_vuln,; query_pe_stakeholder_list,; query_kev_list,; query_was_summary,; query_cyhy_snapshots,; query_cyhy_vuln_scans,;
     query_certs_counts,
+    query_cyhy_port_scans,
     query_domain_counts,
     query_https_scan,
     query_ips_counts,
@@ -20,9 +24,12 @@ BOD1801_DMARC_RUA_URI = "mailto:reports@dmarc.cyber.dhs.gov"
 class Scorecard:
     """Class to generate scorecard metrics."""
 
-    def __init__(self, date, filename, org_uid_list, cyhy_id_list):
+    def __init__(self, month, year, filename, org_uid_list, cyhy_id_list):
         """Initialize scorecard class."""
-        self.date = date
+        start_date = datetime.date(year, month, 1)
+        end_date = (start_date + datetime.timedelta(days=32)).replace(day=1)
+        self.start_date = start_date
+        self.end_date = end_date
         self.filename = filename
         self.org_uid_list = (org_uid_list,)
         self.cyhy_id_list = cyhy_id_list
@@ -32,8 +39,9 @@ class Scorecard:
         )
         self.domain_counts = query_domain_counts(org_uid_list)
         # TODO possibly need to format a date string based on the new column
-        self.webapp_counts = query_webapp_counts(date)
+        self.webapp_counts = query_webapp_counts(start_date)
         self.cert_counts = query_certs_counts()
+        self.ports_data = query_cyhy_port_scans(start_date, end_date, org_uid_list)
 
 
 def ocsp_exclusions():

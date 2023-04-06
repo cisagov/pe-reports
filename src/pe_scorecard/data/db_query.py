@@ -473,19 +473,38 @@ def query_cyhy_vuln_scans(start_date, end_date):
     return cyhy_vulns
 
 
-def query_cyhy_port_scans(start_date, end_date):
+def query_cyhy_port_scans(start_date, end_date, org_uid_list=[]):
     """Query port info identified by vulnerability scanning."""
     try:
         conn = connect()
-        sql = """select o.organizations_uid, o.cyhy_db_name, cps.ip, cps.port, cps.service_name, cps.state
-            from organizations o
-            left join cyhy_port_scans cps on
-            o.organizations_uid = cps.organizations_uid
-            where o.report_on  = true and cps.cyhy_time  >= %(end_date)s and cps.cyhy_time < %(end_date)s """
+        if org_uid_list:
+            sql = """select o.organizations_uid, o.cyhy_db_name, cps.ip, cps.port, cps.service_name, cps.state
+                from organizations o
+                left join cyhy_port_scans cps on
+                o.organizations_uid = cps.organizations_uid
+                where cps.cyhy_time  >= %(end_date)s and cps.cyhy_time < %(end_date)s
+                and o.organizations_uid in %(org_list)s """
 
-        port_data = pd.read_sql(
-            sql, conn, params={"start_date": start_date, "end_date": end_date}
-        )
+            port_data = pd.read_sql(
+                sql,
+                conn,
+                params={
+                    "start_date": start_date,
+                    "end_date": end_date,
+                    "org_list": tuple(org_uid_list),
+                },
+            )
+        else:
+            sql = """select o.organizations_uid, o.cyhy_db_name, cps.ip, cps.port, cps.service_name, cps.state
+                from organizations o
+                left join cyhy_port_scans cps on
+                o.organizations_uid = cps.organizations_uid
+                where o.report_on = True and cps.cyhy_time  >= %(end_date)s and cps.cyhy_time < %(end_date)s
+                """
+
+            port_data = pd.read_sql(
+                sql, conn, params={"start_date": start_date, "end_date": end_date}
+            )
 
         conn.close()
         return port_data
