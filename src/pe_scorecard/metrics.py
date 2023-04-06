@@ -13,6 +13,7 @@ from .data.db_query import (  # query_subs_https_scan,; query_iscore_vs_data_vul
     query_domain_counts,
     query_https_scan,
     query_ips_counts,
+    query_sofware_scans,
     query_sslyze_scan,
     query_trusty_mail,
     query_webapp_counts,
@@ -42,6 +43,7 @@ class Scorecard:
         self.webapp_counts = query_webapp_counts(start_date)
         self.cert_counts = query_certs_counts()
         self.ports_data = query_cyhy_port_scans(start_date, end_date, org_uid_list)
+        self.software_counts = query_sofware_scans(start_date, end_date, org_uid_list)
 
 
 def ocsp_exclusions():

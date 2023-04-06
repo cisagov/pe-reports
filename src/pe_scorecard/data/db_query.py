@@ -454,20 +454,40 @@ def query_cyhy_snapshots(start_date, end_date):
     return snapshots
 
 
-def query_cyhy_vuln_scans(start_date, end_date):
+def query_sofware_scans(start_date, end_date, org_id_list=[]):
     """Query the PE database for vuln data identified by the VS team scans."""
     conn = connect()
-    sql = """select o.organizations_uid, o.cyhy_db_name, count(cvs.plugin_name),
-    from organizations o
-    left join cyhy_vuln_scans cvs on
-    o.organizations_uid = cvs.organizations_uid
-    where o.report_on  = true and cvs.plugin_name = 'Unsupported Web Server Detection' and
-    cvs.cyhy_time  >= %(start_date)s and cvs.cyhy_time < %(end_date)s
-    group by o.organizations_uid, o.cyhy_db_name """
+    if org_id_list:
+        sql = """select o.organizations_uid, o.cyhy_db_name, count(cvs.plugin_name),
+        from organizations o
+        left join cyhy_vuln_scans cvs on
+        o.organizations_uid = cvs.organizations_uid
+        where o.organizations_uid in %(org_list)s
+        and cvs.plugin_name = 'Unsupported Web Server Detection' and
+        cvs.cyhy_time  >= %(start_date)s and cvs.cyhy_time < %(end_date)s
+        group by o.organizations_uid, o.cyhy_db_name """
 
-    cyhy_vulns = pd.read_sql(
-        sql, conn, params={"start_date": start_date, "end_date": end_date}
-    )
+        cyhy_vulns = pd.read_sql(
+            sql,
+            conn,
+            params={
+                "org_list": tuple(org_id_list),
+                "start_date": start_date,
+                "end_date": end_date,
+            },
+        )
+    else:
+        sql = """select o.organizations_uid, o.cyhy_db_name, count(cvs.plugin_name),
+        from organizations o
+        left join cyhy_vuln_scans cvs on
+        o.organizations_uid = cvs.organizations_uid
+        where o.report_on  = true and cvs.plugin_name = 'Unsupported Web Server Detection' and
+        cvs.cyhy_time  >= %(start_date)s and cvs.cyhy_time < %(end_date)s
+        group by o.organizations_uid, o.cyhy_db_name """
+
+        cyhy_vulns = pd.read_sql(
+            sql, conn, params={"start_date": start_date, "end_date": end_date}
+        )
     conn.close()
 
     return cyhy_vulns
