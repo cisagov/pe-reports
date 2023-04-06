@@ -9,9 +9,14 @@ import sys
 # Third-Party Libraries
 import pandas as pd
 import psycopg2
-from psycopg2 import OperationalError
+
+# cisagov Libraries
+from pe_reports.data.cyhy_db_query import pe_db_staging_connect as connect
 
 from .config import config, staging_config
+
+# from psycopg2 import OperationalError
+
 
 # Setup logging to central file
 LOGGER = logging.getLogger(__name__)
@@ -28,16 +33,16 @@ def show_psycopg2_exception(err):
     )
 
 
-def connect():
-    """Connect to PostgreSQL database."""
-    conn = None
-    try:
-        conn = psycopg2.connect(**CONN_PARAMS_DIC)
-    except OperationalError as err:
-        print(err)
-        show_psycopg2_exception(err)
-        conn = None
-    return conn
+# def connect():
+#     """Connect to PostgreSQL database."""
+#     conn = None
+#     try:
+#         conn = psycopg2.connect(**CONN_PARAMS_DIC)
+#     except OperationalError as err:
+#         print(err)
+#         show_psycopg2_exception(err)
+#         conn = None
+#     return conn
 
 
 def close(conn):
@@ -176,7 +181,7 @@ def query_https_scan(month, org_id_list):
         sql = """SELECT * FROM cyhy_https_scan where latest is True and organizations_uid IN %(org_id_list)s"""
         cur = conn.cursor()
 
-        cur.execute(sql, {"org_id_list": org_id_list})
+        cur.execute(sql, {"org_id_list": tuple(org_id_list)})
         https_results = cur.fetchall()
         keys = [desc[0] for desc in cur.description]
         https_results = [dict(zip(keys, values)) for values in https_results]
@@ -190,16 +195,19 @@ def query_https_scan(month, org_id_list):
             close(conn)
 
 
-def query_sslyze_scan(month, agency):
+def query_sslyze_scan(org_id_list):
     """Query sslyze scan results for a given agency and month."""
     # "domain", "scanned_port", "scanned_hostname", "sslv2", "sslv3", "any_3des", "any_rc4", "is_symantec_cert
     conn = connect()
     try:
         # Need to verify where statement: other options scan_date, first_seen, last_seen
-        sql = """SELECT * FROM cyhy_sslyze where latest is True and scanned_port in [25, 587, 465, 443]"""
+        sql = """
+                SELECT * FROM cyhy_sslyze where latest is True and scanned_port in (25, 587, 465, 443)
+                and organizations_uid in %(org_id_list)s
+            """
         cur = conn.cursor()
 
-        cur.execute(sql)
+        cur.execute(sql, {"org_id_list": tuple(org_id_list)})
         https_results = cur.fetchall()
         keys = [desc[0] for desc in cur.description]
         https_results = [dict(zip(keys, values)) for values in https_results]
@@ -213,7 +221,7 @@ def query_sslyze_scan(month, agency):
             close(conn)
 
 
-def query_trusty_mail(month, org_id_list):
+def query_trusty_mail(org_id_list):
     """Query trusty mail scan results for a given agency and month."""
     # all_domains_cursor = self.__db.trustymail.find(
     #         {"latest": True, "agency.name": agency}, no_cursor_timeout=True
