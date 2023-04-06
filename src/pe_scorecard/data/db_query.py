@@ -467,7 +467,7 @@ def query_sofware_scans(start_date, end_date, org_id_list=[]):
         cvs.cyhy_time  >= %(start_date)s and cvs.cyhy_time < %(end_date)s
         group by o.organizations_uid, o.cyhy_db_name """
 
-        cyhy_vulns = pd.read_sql(
+        software_count = pd.read_sql(
             sql,
             conn,
             params={
@@ -485,12 +485,12 @@ def query_sofware_scans(start_date, end_date, org_id_list=[]):
         cvs.cyhy_time  >= %(start_date)s and cvs.cyhy_time < %(end_date)s
         group by o.organizations_uid, o.cyhy_db_name """
 
-        cyhy_vulns = pd.read_sql(
+        software_count = pd.read_sql(
             sql, conn, params={"start_date": start_date, "end_date": end_date}
         )
     conn.close()
 
-    return cyhy_vulns
+    return software_count
 
 
 def query_cyhy_port_scans(start_date, end_date, org_uid_list=[]):
@@ -533,3 +533,63 @@ def query_cyhy_port_scans(start_date, end_date, org_uid_list=[]):
     finally:
         if conn is not None:
             close(conn)
+
+
+def query_vuln_tickets(org_id_list=[]):
+    """Query current open vulns counts based on tickets."""
+    conn = connect()
+    if org_id_list:
+        sql = """
+            select
+                o.organizations_uid,
+                o.cyhy_db_name,
+                coalesce (cnts.high, 0) as high,
+                coalesce (cnts.critical, 0) as critical,
+                coalesce (cnts.kev, 0) as kev
+            from organizations o
+            left join
+                (select
+                    ct.organizations_uid,
+                    sum(case  when ct.cvss_base_score >= 7 and ct.cvss_base_score <9  then 1 else 0 end)as  high,
+                    sum(case  when ct.cvss_base_score >= 9 and ct.cvss_base_score <=10  then 1 else 0 end)as  critical,
+                    sum(case  when ct.cve in (select kev from cyhy_kevs) then 1 else 0 end)as  kev
+                from cyhy_tickets ct
+                join
+                    organizations o on o.organizations_uid = ct.organizations_uid
+                where ct.time_closed = 'None' and false_positive = False
+                group by ct.organizations_uid) cnts
+            on  o.organizations_uid =cnts.organizations_uid
+            where o.organizations_uid  IN %(org_id_list)s;
+        """
+
+        vs_vuln_counts = pd.read_sql(sql, conn, params={"org_id_list": org_id_list})
+
+    else:
+        sql = """
+            select
+                o.organizations_uid,
+                o.cyhy_db_name,
+                coalesce (cnts.high, 0) as high,
+                coalesce (cnts.critical, 0) as critical,
+                coalesce (cnts.kev, 0) as kev
+            from organizations o
+            left join
+                (select
+                    ct.organizations_uid,
+                    sum(case  when ct.cvss_base_score >= 7 and ct.cvss_base_score <9  then 1 else 0 end)as  high,
+                    sum(case  when ct.cvss_base_score >= 9 and ct.cvss_base_score <=10  then 1 else 0 end)as  critical,
+                    sum(case  when ct.cve in (select kev from cyhy_kevs) then 1 else 0 end)as  kev
+                from cyhy_tickets ct
+                join
+                    organizations o on o.organizations_uid = ct.organizations_uid
+                where ct.time_closed = 'None' and false_positive = False
+                group by ct.organizations_uid) cnts
+            on  o.organizations_uid =cnts.organizations_uid
+            where o.report_on = True;
+        """
+
+        vs_vuln_counts = pd.read_sql(sql, conn)
+
+    conn.close()
+
+    return vs_vuln_counts
