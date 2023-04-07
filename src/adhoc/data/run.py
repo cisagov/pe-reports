@@ -438,7 +438,7 @@ def getPreviousFindingsHistorical(org_id,monthsAgo):
     cur = conn.cursor()
     sql = """   SELECT * FROM was_findings 
                 WHERE was_org_id = '{}'
-                AND first_detected <= date_trunc('month', now() - interval '{} month');
+                AND first_detected <= date_trunc('month', now() - interval '{} month')
                 AND last_detected >= date_trunc('month', now() - interval '{} month');
                 """
     cur.execute(sql.format(org_id,monthsAgo-1,monthsAgo), conn)
@@ -447,7 +447,25 @@ def getPreviousFindingsHistorical(org_id,monthsAgo):
     close(conn)
     return ret
 
-def queryVulnCount(org_id):
+def queryVulnCountSeverity(org_id,severity):
+    """Query the amount of webapps with vulnerabilities."""
+    # TODO: Dont use was_ord_id to reference orgs, use customer_id once was data become available
+    conn = connect("")
+    sql = """   SELECT webapp_id FROM was_findings
+                WHERE was_org_id = '{}'
+                AND severity = '{}'
+                AND
+                (
+                    fstatus = 'ACTIVE'
+                    OR fstatus = 'NEW'
+                    OR fstatus = 'REOPENED'
+                );
+        """
+    df = pd.read_sql_query(sql.format(org_id,severity), conn)
+    webIdsList = df["webapp_id"].values.tolist()
+    close(conn)
+    return len(webIdsList)
+def queryVulnCountAll(org_id):
     """Query the amount of webapps with vulnerabilities."""
     # TODO: Dont use was_ord_id to reference orgs, use customer_id once was data become available
     conn = connect("")
@@ -464,7 +482,6 @@ def queryVulnCount(org_id):
     webIdsList = df["webapp_id"].values.tolist()
     close(conn)
     return len(webIdsList)
-
 def getPEuuid(org_id):
     """Query the org uuid given a certain cyhy db name"""
     conn = connect("")
@@ -479,8 +496,8 @@ def insertWASVulnData(data):
     """Insert WAS vulnerability data into database."""
     conn = connect("")
     cur = conn.cursor()
-    sql = """   INSERT INTO was_history (was_org_ID,date_scanned,vuln_cnt,vuln_webapp_cnt,web_app_cnt,high_rem_time,crit_rem_time)
-                VALUES ('{}','{}','{}','{}','{}','{}','{}') """
+    sql = """   INSERT INTO was_history (was_org_ID,date_scanned,vuln_cnt,vuln_webapp_cnt,web_app_cnt,high_rem_time,crit_rem_time,report_period,high_vuln_cnt,crit_vuln_cnt)
+                VALUES ('{}','{}',{},{},{}, (CASE WHEN {} = 0 THEN NULL ELSE {} END), (CASE WHEN {} = 0 THEN NULL ELSE {} END),'{}',{},{}) """
     cur.execute(
         sql.format(
             data['was_org_id'],
@@ -489,7 +506,12 @@ def insertWASVulnData(data):
             data['vuln_webapp_cnt'],
             data['web_app_cnt'],
             data['high_rem_time'],
-            data['crit_rem_time']
+            data['high_rem_time'],
+            data['crit_rem_time'],
+            data['crit_rem_time'],
+            data['report_period'],
+            data['high_vuln_cnt'],
+            data['crit_vuln_cnt']
             )
         )
     conn.commit()

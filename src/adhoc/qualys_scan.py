@@ -7,6 +7,7 @@ from retry import retry
 import logging
 import pandas as pd
 from requests.auth import HTTPBasicAuth
+import re
 
 now = datetime.now().strftime("%Y-%m-%d")
 
@@ -17,7 +18,7 @@ url = "https://qualysapi.qg3.apps.qualys.com/"
 username = ""
 password = ""
 
-from data.run import insertWASIds,getPreviousFindingsHistorical, insertFindingData,queryVulnWebAppCount,queryWASOrgList,getPEuuid,getPreviousFindings,queryVulnCount,insertWASVulnData
+from data.run import insertWASIds,getPreviousFindingsHistorical, insertFindingData,queryVulnWebAppCount,queryWASOrgList,getPEuuid,getPreviousFindings,queryVulnCountAll,queryVulnCountSeverity,insertWASVulnData
 
 exampleData = [{
     'finding_uid':'803ecd02-71ee-456f-b8d0-3ee5f4022fb7',
@@ -267,11 +268,17 @@ def fillFindings():
         if findingList != []:
             insertFindingData(findingList)
 
-def fillData():
+def fillData(report_period):
     """fill was_history table for current month."""
+    pattern = r'\d{2}-\d{2}-\d{4}'
+    if re.match(pattern,report_period):
+        rpd = datetime.strptime(report_period,'%m-%d-%Y')
+    else:
+        LOGGER.error('Invalid Date Format')
+        return
     query = queryWASOrgList()
     for was_org_id in query:
-        recentFindings = getPreviousFindingsHistoryical(was_org_id,1) #gets the uid to all the findings that were fixed in the last month
+        recentFindings = getPreviousFindingsHistorical(was_org_id,1) #gets the uid to all the findings that were fixed in the last month
         highRemTimeList = []
         critRemTimeList = []
         for finding in recentFindings:
@@ -297,11 +304,15 @@ def fillData():
         was_data = {
             'was_org_id' : was_org_id,
             'date_scanned' : now,
-            'vuln_cnt':queryVulnCount(was_org_id),
+            'vuln_cnt':queryVulnCountAll(was_org_id),
             'vuln_webapp_cnt': queryVulnWebAppCount(was_org_id),
             'web_app_cnt': getWebAppCount(was_org_id),
             'high_rem_time' : highRemTime,
-            'crit_rem_time' : critRemTime
+            'crit_rem_time' : critRemTime,
+            'report_period': rpd,
+            'high_vuln_cnt':queryVulnCountSeverity(was_org_id,4),
+            'crit_vuln_cnt':queryVulnCountSeverity(was_org_id,5),
+
         }
         insertWASVulnData(was_data)
     
