@@ -182,6 +182,8 @@ def get_cyhy_assets(staging=False):
         if parent_report_on:
             update_scan_status(pe_db_conn, child_name)
 
+        # TODO: If FCEB set fceb_child to true so that all BOD/scorecard calculations also consider these
+
     # Scrape dot gov domains and insert into P&E database
     LOGGER.info("Lookup and insert dot_gov domains.")
     dotgov_df = dotgov_domains()
