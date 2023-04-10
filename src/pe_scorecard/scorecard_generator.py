@@ -29,6 +29,7 @@ import pe_scorecard
 
 from ._version import __version__
 from .data.db_query import get_orgs
+from .metrics import Scorecard
 
 LOGGER = logging.getLogger(__name__)
 ACCESSOR_AWS_PROFILE = os.getenv("ACCESSOR_PROFILE")
@@ -40,13 +41,15 @@ def generate_scorecards(month, year, output_directory):
 
     # generated_scorecards = 0
 
-    if scorecard_orgs:
+    if not scorecard_orgs.empty:
         LOGGER.info("Orgs count: %d", len(scorecard_orgs))
 
         # If we need to generate all scores first, do so here:
 
         for index, org in scorecard_orgs.iterrows():
-            if org["report_on"]:
+            if org["fceb"]:
+                if org["cyhy_db_name"] not in ["DHS"]:
+                    continue
                 if org["is_parent"]:
                     # Gather list of children orgs
                     children_df = scorecard_orgs[
@@ -60,6 +63,11 @@ def generate_scorecards(month, year, output_directory):
                 else:
                     org_uid_list = [org["organizations_uid"]]
                     cyhy_id_list = [org["cyhy_db_name"]]
+
+                scorecard = Scorecard(month, year, org, org_uid_list, cyhy_id_list)
+                scorecard.calculate_profiling_metrics()
+                # scorecard.calculate_ips_counts()
+                # print(scorecard.scorecard_dict)
 
 
 def main():

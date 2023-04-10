@@ -173,7 +173,7 @@ def query_certs_counts():
     return (identified_certs, monitored_certs)
 
 
-def query_https_scan(month, org_id_list):
+def query_https_scan(org_id_list):
     """Query https scan results for a given agency and month."""
     conn = connect()
     try:
@@ -470,7 +470,7 @@ def query_sofware_scans(start_date, end_date, org_id_list=[]):
     """Query the PE database for vuln data identified by the VS team scans."""
     conn = connect()
     if org_id_list:
-        sql = """select o.organizations_uid, o.cyhy_db_name, count(cvs.plugin_name),
+        sql = """select o.organizations_uid, o.cyhy_db_name, count(cvs.plugin_name)
         from organizations o
         left join cyhy_vuln_scans cvs on
         o.organizations_uid = cvs.organizations_uid
