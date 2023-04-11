@@ -22,7 +22,8 @@ LOGGER = logging.getLogger(__name__)
 
 def calculate_time_to_remediate(start_date, end_date):
     """Calculate the time to remediate for all orgs."""
-    orgs_df = get_orgs()
+    conn = connect()
+    orgs_df = get_orgs(conn)
     tickets_df = get_tickets(start_date, end_date)
     kevs_df = get_kevs()
 

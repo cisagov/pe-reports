@@ -2,6 +2,7 @@
 # Standard Python Libraries
 import calendar
 import datetime
+import json
 import logging
 
 # Third-Party Libraries
@@ -10,6 +11,7 @@ import pandas as pd
 import requests
 
 from .data.db_query import (  # query_subs_https_scan,; query_iscore_vs_data_vuln,; query_iscore_pe_data_vuln,; query_iscore_pe_data_cred,; query_iscore_pe_data_breach,; query_iscore_pe_data_darkweb,; query_iscore_pe_data_protocol,; query_iscore_was_data_vuln,; query_pe_stakeholder_list,; query_kev_list,; query_was_summary,; query_cyhy_snapshots,; query_cyhy_vuln_scans,;
+    get_scorecard_metrics_past,
     query_certs_counts,
     query_cyhy_port_scans,
     query_domain_counts,
@@ -22,7 +24,6 @@ from .data.db_query import (  # query_subs_https_scan,; query_iscore_vs_data_vul
     query_trusty_mail,
     query_vuln_tickets,
     query_webapp_counts,
-    get_scorecard_metrics_past,
 )
 
 BOD1801_DMARC_RUA_URI = "mailto:reports@dmarc.cyber.dhs.gov"
@@ -102,10 +103,10 @@ class Scorecard:
         #     start_time = start_time.split(".")[0]
         # start_time = datetime.strptime(start_time, "%Y-%m-%d %H:%M:%S")
         start_time = start_time.timestamp()
-        start_time = datetime.fromtimestamp(start_time, datetime.timezone.utc)
+        start_time = datetime.datetime.fromtimestamp(start_time, datetime.timezone.utc)
         start_time = start_time.replace(tzinfo=None)
         end_time = end_time.timestamp()
-        end_time = datetime.fromtimestamp(end_time, datetime.timezone.utc)
+        end_time = datetime.datetime.fromtimestamp(end_time, datetime.timezone.utc)
         end_time = end_time.replace(tzinfo=None)
         age = round((float((end_time - start_time).total_seconds()) / 60 / 60 / 24), 2)
         return age
@@ -237,7 +238,7 @@ class Scorecard:
         overdue_highs = 0
         for index2, ticket in open_tickets_df.iterrows():
             time_opened = ticket["time_opened"]
-            now = datetime.now()
+            now = datetime.datetime.now()
             age = self.get_age(time_opened, now)
             if ticket["cve"] in kevs_df["kev"].values:
                 total_kevs = total_kevs + 1
@@ -286,6 +287,7 @@ class Scorecard:
         self.calculate_profiling_metrics()
         self.calculate_identification_metrics()
         self.calculate_tracking_metrics()
+        print(self.scorecard_dict)
 
     @staticmethod
     def ocsp_exclusions():
@@ -332,7 +334,7 @@ class Scorecard:
         base_domain_plus_smtp_subdomain_count = 0
 
         sslyze_data_all_domains = dict()
-        for host in query_sslyze_scan(agency, [25, 587, 465]):
+        for host in query_sslyze_scan(agency, ["25", "587", "465"]):
             current_host_dict = {
                 "scanned_hostname": host["scanned_hostname"],
                 "scanned_port": host["scanned_port"],
@@ -349,7 +351,9 @@ class Scorecard:
                 sslyze_data_all_domains[host["domain"]].append(current_host_dict)
 
         for domain in query_trusty_mail(agency):
-            # domain  = add_weak_crypto_data_to_domain(domain, sslyze_data_all_domains)
+            domain = self.add_weak_crypto_data_to_domain(
+                domain, sslyze_data_all_domains
+            )
 
             if domain["live"]:
                 if domain["is_base_domain"] or (
@@ -401,7 +405,11 @@ class Scorecard:
 
                 domain["valid_dmarc_bod1801_rua_uri"] = False
                 if domain["valid_dmarc2"]:
-                    for uri_dict in domain["aggregate_report_uris"]:
+                    for uri_dict in json.loads(
+                        domain["aggregate_report_uris"]
+                        .replace("'", '"')
+                        .replace("None", "null")
+                    ):
                         if uri_dict["uri"].lower() == BOD1801_DMARC_RUA_URI.lower():
                             domain["valid_dmarc_bod1801_rua_uri"] = True
                             break
@@ -430,7 +438,7 @@ class Scorecard:
 
         all_domains = query_https_scan(agency)
         sslyze_data_all_domains = dict()
-        for host in query_sslyze_scan(agency, [443]):
+        for host in query_sslyze_scan(agency, ["443"]):
             current_host_dict = {
                 "scanned_hostname": host["scanned_hostname"],
                 "scanned_port": host["scanned_port"],

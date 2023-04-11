@@ -54,7 +54,6 @@ def generate_scorecards(month, year, output_directory):
         )
         was_fceb_ttr = query_was_fceb_ttr(start_date)
         print(was_fceb_ttr)
-        quit()
 
         for index, org in scorecard_orgs.iterrows():
             if org["fceb"]:

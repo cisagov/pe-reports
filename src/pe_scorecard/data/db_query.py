@@ -201,7 +201,7 @@ def query_https_scan(org_id_list):
     conn = connect()
     try:
         # Not sure if this should be a date filter or just latest = True
-        sql = """SELECT * FROM cyhy_https_scan where latest is True and organizations_uid IN %(org_id_list)s"""
+        sql = """SELECT * FROM cyhy_https_scan where cyhy_latest is True and organizations_uid IN %(org_id_list)s"""
         cur = conn.cursor()
 
         cur.execute(sql, {"org_id_list": tuple(org_id_list)})
@@ -218,19 +218,21 @@ def query_https_scan(org_id_list):
             close(conn)
 
 
-def query_sslyze_scan(org_id_list):
+def query_sslyze_scan(org_id_list, port_list):
     """Query sslyze scan results for a given agency and month."""
     # "domain", "scanned_port", "scanned_hostname", "sslv2", "sslv3", "any_3des", "any_rc4", "is_symantec_cert
     conn = connect()
     try:
         # Need to verify where statement: other options scan_date, first_seen, last_seen
         sql = """
-                SELECT * FROM cyhy_sslyze where latest is True and scanned_port in (25, 587, 465, 443)
+                SELECT * FROM cyhy_sslyze where cyhy_latest is True and scanned_port in %(port_list)s
                 and organizations_uid in %(org_id_list)s
             """
         cur = conn.cursor()
 
-        cur.execute(sql, {"org_id_list": tuple(org_id_list)})
+        cur.execute(
+            sql, {"port_list": tuple(port_list), "org_id_list": tuple(org_id_list)}
+        )
         https_results = cur.fetchall()
         keys = [desc[0] for desc in cur.description]
         https_results = [dict(zip(keys, values)) for values in https_results]
@@ -252,10 +254,10 @@ def query_trusty_mail(org_id_list):
     conn = connect()
     try:
         # Need to verify where statement: other options scan_date, first_seen, last_seen
-        sql = """SELECT * FROM cyhy_trustymail where latest is True and organizations_uid in %(org_uid)s"""
+        sql = """SELECT * FROM cyhy_trustymail where cyhy_latest is True and organizations_uid in %(org_uid)s"""
         cur = conn.cursor()
 
-        cur.execute(sql, params={"org_uid": tuple(org_id_list)})
+        cur.execute(sql, {"org_uid": tuple(org_id_list)})
         https_results = cur.fetchall()
         keys = [desc[0] for desc in cur.description]
         https_results = [dict(zip(keys, values)) for values in https_results]
@@ -593,7 +595,7 @@ def query_vuln_tickets(org_id_list=[]):
                 from cyhy_tickets ct
                 join
                     organizations o on o.organizations_uid = ct.organizations_uid
-                where ct.time_closed = 'None' and false_positive = False
+                where ct.time_closed is Null and false_positive = False
                 group by ct.organizations_uid) cnts
             on  o.organizations_uid =cnts.organizations_uid
             where o.organizations_uid  IN %(org_id_list)s;
@@ -621,7 +623,7 @@ def query_vuln_tickets(org_id_list=[]):
                 from cyhy_tickets ct
                 join
                     organizations o on o.organizations_uid = ct.organizations_uid
-                where ct.time_closed = 'None' and false_positive = False
+                where ct.time_closed is Null and false_positive = False
                 group by ct.organizations_uid) cnts
             on  o.organizations_uid =cnts.organizations_uid
             where o.report_on = True;
@@ -672,8 +674,8 @@ def query_open_vulns(org_id_list):
         from cyhy_tickets ct
         left join organizations o on
         o.organizations_uid = ct.organizations_uid
-        where ct.false_positive = 'False' and ct.time_closed = 'None' and (ct.cve != null or (ct.cvss_base_score != 'Nan' and ct.cvss_base_score >= 7.0))
-        and and o.organizations_uid IN %(org_id_list)s"""
+        where ct.false_positive = 'False' and ct.time_closed is Null and (ct.cve != null or (ct.cvss_base_score != 'Nan' and ct.cvss_base_score >= 7.0))
+        and o.organizations_uid IN %(org_id_list)s"""
         tickets_df = pd.read_sql(
             sql,
             conn,
@@ -697,9 +699,9 @@ def execute_scorecard_summary_data(summary_dict):
         cur = conn.cursor()
         sql = """
         INSERT INTO scorecard_summary_stats(
-            organizations_uid, 
-            start_date, 
-            end_date, 
+            organizations_uid,
+            start_date,
+            end_date,
             score,
             discovery_score,
             profiling_score,
@@ -752,7 +754,7 @@ def execute_scorecard_summary_data(summary_dict):
             %s,%s,%s,%s,%s,%s,%s,%s,%s,%s,
             %s,%s,%s,%s,%s,%s,%s,%s,%s,%s,
             %s,%s,%s,%s,%s,%s,%s,%s,%s,%s,
-            %s,%s,%s,%s,%s,%s,%s,%s,%s,%s, 
+            %s,%s,%s,%s,%s,%s,%s,%s,%s,%s,
             %s,%s,%s,%s,%s,%s,%s,%s,%s,%s
         )
         ON CONFLICT(organizations_uid, start_date)
@@ -871,7 +873,7 @@ def execute_scorecard_summary_data(summary_dict):
 def get_scorecard_metrics_past(org_uid, date):
     """Get the past Scorecard summary data for an organization."""
     conn = connect()
-    sql = """select * from scorecard_summary_stats sss 
+    sql = """select * from scorecard_summary_stats sss
                 where organizations_uid = %(org_id)s
                 and end_date = %(date)s;"""
     df = pd.read_sql(sql, conn, params={"org_id": org_uid, "date": date})
