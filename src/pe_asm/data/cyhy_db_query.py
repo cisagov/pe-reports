@@ -241,7 +241,7 @@ def query_pe_report_on_orgs(conn):
     sql = """
     SELECT organizations_uid, cyhy_db_name, name, agency_type
     FROM organizations o
-    WHERE report_on or run_scans
+    WHERE report_on or run_scans or fceb or fceb_child
     """
     df = pd.read_sql(sql, conn)
     return df
