@@ -92,6 +92,18 @@ def generate_scorecards(month, year, output_directory):
                 # scorecard.calculate_ips_counts()
                 # print(scorecard.scorecard_dict)
 
+                # TODO: Get the current metric dictionary
+
+                # TODO: Insert into the summary table
+                # execute_scorecard_summary_data(data_dict)
+
+                # TODO: Get past data
+                # get_last_month_metrics
+
+                # TODO: Append current and past dictionary
+
+                # TODO: Call the report generator passing the dictionary
+
 
 def main():
     """Generate PDF reports."""

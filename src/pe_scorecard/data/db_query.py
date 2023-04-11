@@ -9,6 +9,7 @@ import sys
 # Third-Party Libraries
 import pandas as pd
 import psycopg2
+from psycopg2.extensions import AsIs
 
 # cisagov Libraries
 from pe_reports.data.cyhy_db_query import pe_db_staging_connect as connect
@@ -687,3 +688,204 @@ def query_open_vulns(org_id_list):
     finally:
         if conn is not None:
             close(conn)
+
+
+def execute_scorecard_summary_data(summary_dict):
+    """Save summary statistics for an organization to the database."""
+    try:
+        conn = connect()
+        cur = conn.cursor()
+        sql = """
+        INSERT INTO scorecard_summary_stats(
+            organizations_uid, 
+            start_date, 
+            end_date, 
+            score,
+            discovery_score,
+            profiling_score,
+            identification_score,
+            tracking_score,
+            ips_identified,
+            ips_monitored,
+            ips_monitored_pct,
+            domains_identified,
+            domains_monitored,
+            domains_monitored_pct,
+            web_apps_identified,
+            web_apps_monitored,
+            web_apps_monitored_pct,
+            certs_identified,
+            certs_monitored,
+            certs_monitored_pct,
+            total_ports,
+            risky_ports,
+            protocols,
+            insecure_protocols,
+            total_services,
+            unsupported_software,
+            ext_host_kev,
+            ext_host_vuln_critical,
+            ext_host_vuln_high,
+            web_apps_kev,
+            web_apps_vuln_critical,
+            web_apps_vuln_high,
+            total_kev,
+            total_vuln_critical,
+            total_vuln_high,
+            org_avg_days_remediate_kev,
+            org_avg_days_remediate_critical,
+            org_avg_days_remediate_high,
+            sect_avg_days_remediate_kev,
+            sect_avg_days_remediate_critical,
+            sect_avg_days_remediate_high,
+            bod_22_01,
+            bod_19_02_critical,
+            bod_19_02_high,
+            org_web_avg_days_remediate_critical,
+            org_web_avg_days_remediate_high,
+            sect_web_avg_days_remediate_critical,
+            sect_web_avg_days_remediate_high,
+            email_compliance_pct,
+            https_compliance_pct,
+        )
+        VALUES(
+            %s,%s,%s,%s,%s,%s,%s,%s,%s,%s,
+            %s,%s,%s,%s,%s,%s,%s,%s,%s,%s,
+            %s,%s,%s,%s,%s,%s,%s,%s,%s,%s,
+            %s,%s,%s,%s,%s,%s,%s,%s,%s,%s, 
+            %s,%s,%s,%s,%s,%s,%s,%s,%s,%s
+        )
+        ON CONFLICT(organizations_uid, start_date)
+        DO
+        UPDATE SET
+            score = EXCLUDED.score,
+            discovery_score = EXCLUDED.discovery_score,
+            profiling_score = EXCLUDED.profiling_score,
+            identification_score = EXCLUDED.identification_score,
+            tracking_score = EXCLUDED.tracking_score,
+            ips_identified = EXCLUDED.ips_identified,
+            ips_monitored = EXCLUDED.ips_monitored,
+            ips_monitored_pct = EXCLUDED.ips_monitored_pct,
+            domains_identified = EXCLUDED.domains_identified,
+            domains_monitored = EXCLUDED.domains_monitored,
+            domains_monitored_pct = EXCLUDED.domains_monitored_pct,
+            web_apps_identified = EXCLUDED.web_apps_identified,
+            web_apps_monitored = EXCLUDED.web_apps_monitored,
+            web_apps_monitored_pct = EXCLUDED.web_apps_monitored_pct,
+            certs_identified = EXCLUDED.certs_identified,
+            certs_monitored = EXCLUDED.certs_monitored,
+            certs_monitored_pct = EXCLUDED.certs_monitored_pct,
+            total_ports = EXCLUDED.total_ports,
+            risky_ports = EXCLUDED.risky_ports,
+            protocols = EXCLUDED.protocols,
+            insecure_protocols = EXCLUDED.insecure_protocols,
+            total_services = EXCLUDED.total_services,
+            unsupported_software = EXCLUDED.unsupported_software,
+            ext_host_kev = EXCLUDED.ext_host_kev,
+            ext_host_vuln_critical = EXCLUDED.ext_host_vuln_critical,
+            ext_host_vuln_high = EXCLUDED.ext_host_vuln_high,
+            web_apps_kev = EXCLUDED.web_apps_kev,
+            web_apps_vuln_critical = EXCLUDED.web_apps_vuln_critical,
+            web_apps_vuln_high = EXCLUDED.web_apps_vuln_high,
+            total_kev = EXCLUDED.total_kev,
+            total_vuln_critical = EXCLUDED.total_vuln_critical,
+            total_vuln_high = EXCLUDED.total_vuln_high,
+            org_avg_days_remediate_kev = EXCLUDED.org_avg_days_remediate_kev,
+            org_avg_days_remediate_critical = EXCLUDED.org_avg_days_remediate_critical,
+            org_avg_days_remediate_high = EXCLUDED.org_avg_days_remediate_high,
+            sect_avg_days_remediate_kev = EXCLUDED.sect_avg_days_remediate_kev,
+            sect_avg_days_remediate_critical = EXCLUDED.sect_avg_days_remediate_critical,
+            sect_avg_days_remediate_high = EXCLUDED.sect_avg_days_remediate_high,
+            bod_22_01 = EXCLUDED.bod_22_01,
+            bod_19_02_critical = EXCLUDED.bod_19_02_critical,
+            bod_19_02_high = EXCLUDED.bod_19_02_high,
+            org_web_avg_days_remediate_critical = EXCLUDED.org_web_avg_days_remediate_critical,
+            org_web_avg_days_remediate_high = EXCLUDED.org_web_avg_days_remediate_high,
+            sect_web_avg_days_remediate_critical = EXCLUDED.sect_web_avg_days_remediate_critical,
+            sect_web_avg_days_remediate_high = EXCLUDED.sect_web_avg_days_remediate_high,
+            email_compliance_pct = EXCLUDED.email_compliance_pct,
+            https_compliance_pct = EXCLUDED.https_compliance_pct;
+        """
+        cur.execute(
+            sql,
+            (
+                summary_dict["organizations_uid"],
+                summary_dict["start_date"],
+                summary_dict["end_date"],
+                AsIs(summary_dict["overall_score"]),
+                AsIs(summary_dict["discovery_score"]),
+                AsIs(summary_dict["profiling_score"]),
+                AsIs(summary_dict["identification_score"]),
+                AsIs(summary_dict["tracking_score"]),
+                AsIs(summary_dict["ips_identified"]),
+                AsIs(summary_dict["ips_monitored"]),
+                AsIs(summary_dict["ips_monitored_pct"]),
+                AsIs(summary_dict["domains_identified"]),
+                AsIs(summary_dict["domains_monitored"]),
+                AsIs(summary_dict["domains_monitored_pct"]),
+                AsIs(summary_dict["webapps_identified"]),
+                AsIs(summary_dict["webapps_monitored"]),
+                AsIs(summary_dict["web_apps_monitored_pct"]),
+                AsIs(summary_dict["certs_identified"]),
+                AsIs(summary_dict["certs_monitored"]),
+                AsIs(summary_dict["certs_monitored_pct"]),
+                AsIs(summary_dict["ports_total_count"]),
+                AsIs(summary_dict["ports_risky_count"]),
+                AsIs(summary_dict["protocol_total_count"]),
+                AsIs(summary_dict["protocol_insecure_count"]),
+                AsIs(summary_dict["services_total_count"]),
+                AsIs(summary_dict["software_unsupported_count"]),
+                AsIs(summary_dict["external_host_kev"]),
+                AsIs(summary_dict["external_host_critical"]),
+                AsIs(summary_dict["external_host_high"]),
+                AsIs(summary_dict["webapp_kev"]),
+                AsIs(summary_dict["webapp_critical"]),
+                AsIs(summary_dict["webapp_high"]),
+                AsIs(summary_dict["total_kev"]),
+                AsIs(summary_dict["total_critical"]),
+                AsIs(summary_dict["total_high"]),
+                AsIs(summary_dict["vuln_org_kev_ttr"]),
+                AsIs(summary_dict["vuln_org_critical_ttr"]),
+                AsIs(summary_dict["vuln_org_high_ttr"]),
+                AsIs(summary_dict["vuln_sector_kev_ttr"]),
+                AsIs(summary_dict["vuln_sector_critical_ttr"]),
+                AsIs(summary_dict["vuln_sector_high_ttr"]),
+                summary_dict["vuln_bod_22-01"],
+                summary_dict["vuln_critical_bod_19-02"],
+                summary_dict["vuln_high_bod_19-02"],
+                AsIs(summary_dict["webapp_org_critical_ttr"]),
+                AsIs(summary_dict["webapp_org_high_ttr"]),
+                AsIs(summary_dict["webapp_sector_crtical_ttr"]),
+                AsIs(summary_dict["webapp_sector_high_ttr"]),
+                AsIs(summary_dict["email_compliance_pct"]),
+                AsIs(summary_dict["https_compliance_pct"]),
+            ),
+        )
+        conn.commit()
+        conn.close()
+    except (Exception, psycopg2.DatabaseError) as err:
+        show_psycopg2_exception(err)
+        cur.close()
+
+
+def get_scorecard_metrics_past(org_uid, date):
+    """Get the past Scorecard summary data for an organization."""
+    conn = connect()
+    sql = """select * from scorecard_summary_stats sss 
+                where organizations_uid = %(org_id)s
+                and end_date = %(date)s;"""
+    df = pd.read_sql(sql, conn, params={"org_id": org_uid, "date": date})
+    conn.close()
+    return df
+
+
+def determine_grade_dir(current_value, past_value):
+    """Determine the trending arrow for letter grades."""
+    grades = ["F", "D-", "D", "D+", "C-", "C", "C+", "B-", "B", "B+", "A-", "A", "A+"]
+
+    if grades.index(current_value) < grades.index(past_value):
+        return -1
+    elif grades.index(current_value) > grades.index(past_value):
+        return 1
+    else:
+        return 0

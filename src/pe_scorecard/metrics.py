@@ -2,6 +2,7 @@
 # Standard Python Libraries
 import calendar
 import datetime
+import logging
 
 # Third-Party Libraries
 from bs4 import BeautifulSoup
@@ -21,9 +22,12 @@ from .data.db_query import (  # query_subs_https_scan,; query_iscore_vs_data_vul
     query_trusty_mail,
     query_vuln_tickets,
     query_webapp_counts,
+    get_scorecard_metrics_past,
 )
 
 BOD1801_DMARC_RUA_URI = "mailto:reports@dmarc.cyber.dhs.gov"
+# Setup logging to central
+LOGGER = logging.getLogger(__name__)
 
 
 class Scorecard:
@@ -163,7 +167,6 @@ class Scorecard:
         total_services = []
 
         for index2, portscan in ports_df.iterrows():
-
             if [portscan["ip"], portscan["port"]] not in total_ports:
                 total_ports.append([portscan["ip"], portscan["port"]])
                 if (
@@ -349,7 +352,6 @@ class Scorecard:
             # domain  = add_weak_crypto_data_to_domain(domain, sslyze_data_all_domains)
 
             if domain["live"]:
-
                 if domain["is_base_domain"] or (
                     not domain["is_base_domain"] and domain["domain_supports_smtp"]
                 ):
@@ -479,3 +481,67 @@ class Scorecard:
         )
 
         return bod_1801_percentage
+
+
+def get_last_month_metrics(start_date, org_uid, current_data_dict):
+    """Get the Scorecard metrics from the last month."""
+    scorecard_dict_past = get_scorecard_metrics_past(
+        org_uid, start_date - datetime.timedelta(days=1)
+    )
+    LOGGER.info("Past report date: %s", start_date - datetime.timedelta(days=1))
+
+    if scorecard_dict_past.empty:
+        LOGGER.error("No Scorecard summary data for the last report period.")
+        ips_trend_pct = current_data_dict["ips_monitored_pct"]
+        domains_trend_pct = current_data_dict["domains_monitored_pct"]
+        webapps_trend_pct = current_data_dict["web_apps_monitored_pct"]
+        certs_trend_pct = current_data_dict["certs_monitored_pct"]
+        ports_total_trend = current_data_dict["ports_total_count"]
+        ports_risky_trend = current_data_dict["ports_risky_count"]
+        protocol_total_trend = current_data_dict["protocol_total_count"]
+        protocol_insecure_trend = current_data_dict["protocol_insecure_count"]
+        services_total_trend = current_data_dict["services_total_count"]
+        software_unsupported_trend = current_data_dict["software_unsupported_count"]
+        email_compliance_last_period = current_data_dict["email_compliance_pct"]
+        https_compliance_last_period = current_data_dict["https_compliance_pct"]
+        discovery_trend = current_data_dict["discovery_score"]
+        profiling_trend = current_data_dict["profiling_score"]
+        identification_trend = current_data_dict["identification_score"]
+        tracking_trend = current_data_dict["tracking_score"]
+    else:
+        ips_trend_pct = scorecard_dict_past["ips_monitored_pct"]
+        domains_trend_pct = scorecard_dict_past["domains_monitored_pct"]
+        webapps_trend_pct = scorecard_dict_past["web_apps_monitored_pct"]
+        certs_trend_pct = scorecard_dict_past["certs_monitored_pct"]
+        ports_total_trend = scorecard_dict_past["total_ports"]
+        ports_risky_trend = scorecard_dict_past["risky_ports"]
+        protocol_total_trend = scorecard_dict_past["protocols"]
+        protocol_insecure_trend = scorecard_dict_past["insecure_protocols"]
+        services_total_trend = scorecard_dict_past["total_services"]
+        software_unsupported_trend = scorecard_dict_past["unsupported_software"]
+        email_compliance_last_period = scorecard_dict_past["email_compliance_pct"]
+        https_compliance_last_period = scorecard_dict_past["https_compliance_pct"]
+        discovery_trend = scorecard_dict_past["discovery_score"]
+        profiling_trend = scorecard_dict_past["profiling_score"]
+        identification_trend = scorecard_dict_past["identification_score"]
+        tracking_trend = scorecard_dict_past["tracking_score"]
+
+    past_scorecard_metrics_dict = {
+        "ips_trend_pct": ips_trend_pct,
+        "domains_trend_pct": domains_trend_pct,
+        "webapps_trend_pct": webapps_trend_pct,
+        "certs_trend_pct": certs_trend_pct,
+        "ports_total_trend": ports_total_trend,
+        "ports_risky_trend": ports_risky_trend,
+        "protocol_total_trend": protocol_total_trend,
+        "protocol_insecure_trend": protocol_insecure_trend,
+        "services_total_trend": services_total_trend,
+        "software_unsupported_trend": software_unsupported_trend,
+        "email_compliance_last_period": email_compliance_last_period,
+        "https_compliance_last_period": https_compliance_last_period,
+        "discovery_trend": discovery_trend,
+        "profiling_trend": profiling_trend,
+        "identification_trend": identification_trend,
+        "tracking_trend": tracking_trend,
+    }
+    return past_scorecard_metrics_dict
