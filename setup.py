@@ -105,7 +105,6 @@ setup(
         "celery",
         "circlify",
         "click",
-        "demoji",
         "docopt",
         "dnstwist",
         "dshield",

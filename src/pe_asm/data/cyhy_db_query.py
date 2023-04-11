@@ -517,7 +517,7 @@ def identify_ip_changes(conn):
         """
         UPDATE ips
         set current = True
-        where last_seen > (CURRENT_DATE - INTERVAL '3 days')
+        where last_seen > (CURRENT_DATE - INTERVAL '7 days')
         """
     )
     conn.commit()
@@ -528,7 +528,7 @@ def identify_ip_changes(conn):
         """
         UPDATE ips
         set current = False
-        where last_seen < (CURRENT_DATE - INTERVAL '3 days')
+        where last_seen < (CURRENT_DATE - INTERVAL '7 days')
         """
     )
     conn.commit()
@@ -542,7 +542,7 @@ def identify_sub_changes(conn):
         """
         UPDATE sub_domains
         set current = True
-        where last_seen > (CURRENT_DATE - INTERVAL '3 days')
+        where last_seen > (CURRENT_DATE - INTERVAL '7 days')
         """
     )
     conn.commit()
@@ -553,7 +553,7 @@ def identify_sub_changes(conn):
         """
         UPDATE sub_domains
         set current = False
-        where last_seen < (CURRENT_DATE - INTERVAL '3 days')
+        where last_seen < (CURRENT_DATE - INTERVAL '7 days')
         """
     )
     conn.commit()
@@ -567,7 +567,7 @@ def identify_ip_sub_changes(conn):
         """
         UPDATE ips_subs
         set current = True
-        where last_seen > (CURRENT_DATE - INTERVAL '3 days')
+        where last_seen > (CURRENT_DATE - INTERVAL '7 days')
         """
     )
     conn.commit()
@@ -578,7 +578,7 @@ def identify_ip_sub_changes(conn):
         """
         UPDATE ips_subs
         set current = False
-        where last_seen < (CURRENT_DATE - INTERVAL '3 days')
+        where last_seen < (CURRENT_DATE - INTERVAL '7 days')
         """
     )
     conn.commit()
@@ -604,3 +604,21 @@ def insert_cyhy_scorecard_data(conn, df, table_name, on_conflict):
         # Show error and close connection if failed
         LOGGER.error("There was a problem with your database query %s", err)
         cursor.close()
+
+
+def identified_sub_domains(conn):
+    """Set sub-domains to identified."""
+
+    # If the sub's root-domain has enumerate=False, then "identified" is True
+    cursor = conn.cursor()
+    LOGGER.info("Marking identified sub-domains.")
+    cursor.execute(
+        """
+        UPDATE sub_domains sd
+        set identified = true
+        from root_domains rd
+        where rd.root_domain_uid = sd.root_domain_uid and rd.enumerate_subs = false;
+        """
+    )
+    conn.commit()
+    cursor.close()

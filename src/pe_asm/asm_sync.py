@@ -48,6 +48,7 @@ from .data.cyhy_db_query import (
     identify_ip_changes,
     identify_sub_changes,
     identify_ip_sub_changes,
+    identified_sub_domains,
 )
 
 
@@ -103,6 +104,13 @@ def run_asm_sync(staging, method):
         conn.close()
         LOGGER.info("Finished")
 
+        # Update Identified sub-domains
+        if staging:
+            conn = pe_db_staging_connect()
+        else:
+            conn = pe_db_connect()
+        identified_sub_domains(conn)
+
         # Run shodan dedupe
         LOGGER.info("Running Shodan dedupe.")
         dedupe(staging)
@@ -111,10 +119,10 @@ def run_asm_sync(staging, method):
     elif method == "scorecard":
 
         LOGGER.info("STARTING")
-        get_cyhy_port_scans(staging)
+        # get_cyhy_port_scans(staging)
         # get_cyhy_snapshots(staging)
         # get_cyhy_tickets(staging)
-        # get_cyhy_vuln_scans(staging)
+        get_cyhy_vuln_scans(staging)
         # get_cyhy_kevs(staging)
         # get_cyhy_https_scan(staging)
         # get_cyhy_trustymail(staging)
