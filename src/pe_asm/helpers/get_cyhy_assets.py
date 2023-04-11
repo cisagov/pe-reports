@@ -23,6 +23,7 @@ from pe_asm.data.cyhy_db_query import (  # get_pe_org_map,
     query_pe_orgs,
     update_child_parent_orgs,
     update_scan_status,
+    update_fceb_child_status,
 )
 
 LOGGER = logging.getLogger(__name__)
@@ -179,8 +180,14 @@ def get_cyhy_assets(staging=False):
         parent_report_on = pe_orgs.loc[
             pe_orgs["cyhy_db_name"] == parent_name, "report_on"
         ].item()
+
+        parent_fceb = pe_orgs.loc[pe_orgs["cyhy_db_name"] == parent_name, "fceb"].item()
         if parent_report_on:
             update_scan_status(pe_db_conn, child_name)
+
+        # Set fceb_child
+        if parent_fceb:
+            update_fceb_child_status(pe_db_conn, child_name)
 
     # Scrape dot gov domains and insert into P&E database
     LOGGER.info("Lookup and insert dot_gov domains.")

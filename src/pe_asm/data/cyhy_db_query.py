@@ -241,7 +241,7 @@ def query_pe_report_on_orgs(conn):
     sql = """
     SELECT organizations_uid, cyhy_db_name, name, agency_type
     FROM organizations o
-    WHERE report_on or run_scans
+    WHERE report_on or run_scans or fceb or fceb_child
     """
     df = pd.read_sql(sql, conn)
     return df
@@ -270,6 +270,23 @@ def update_scan_status(conn, child_name):
         """
         UPDATE organizations
         set run_scans = True
+        where cyhy_db_name = '{}'
+        """.format(
+            child_name
+        ),
+    )
+
+    conn.commit()
+    cursor.close()
+
+
+def update_fceb_child_status(conn, child_name):
+    """Update child parent relationships between organizations."""
+    cursor = conn.cursor()
+    cursor.execute(
+        """
+        UPDATE organizations
+        set fceb_child = True
         where cyhy_db_name = '{}'
         """.format(
             child_name
@@ -500,7 +517,7 @@ def identify_ip_changes(conn):
         """
         UPDATE ips
         set current = True
-        where last_seen > (CURRENT_DATE - INTERVAL '3 days')
+        where last_seen > (CURRENT_DATE - INTERVAL '7 days')
         """
     )
     conn.commit()
@@ -511,7 +528,7 @@ def identify_ip_changes(conn):
         """
         UPDATE ips
         set current = False
-        where last_seen < (CURRENT_DATE - INTERVAL '3 days')
+        where last_seen < (CURRENT_DATE - INTERVAL '7 days')
         """
     )
     conn.commit()
@@ -525,7 +542,7 @@ def identify_sub_changes(conn):
         """
         UPDATE sub_domains
         set current = True
-        where last_seen > (CURRENT_DATE - INTERVAL '3 days')
+        where last_seen > (CURRENT_DATE - INTERVAL '7 days')
         """
     )
     conn.commit()
@@ -536,7 +553,7 @@ def identify_sub_changes(conn):
         """
         UPDATE sub_domains
         set current = False
-        where last_seen < (CURRENT_DATE - INTERVAL '3 days')
+        where last_seen < (CURRENT_DATE - INTERVAL '7 days')
         """
     )
     conn.commit()
@@ -550,7 +567,7 @@ def identify_ip_sub_changes(conn):
         """
         UPDATE ips_subs
         set current = True
-        where last_seen > (CURRENT_DATE - INTERVAL '3 days')
+        where last_seen > (CURRENT_DATE - INTERVAL '7 days')
         """
     )
     conn.commit()
@@ -561,7 +578,7 @@ def identify_ip_sub_changes(conn):
         """
         UPDATE ips_subs
         set current = False
-        where last_seen < (CURRENT_DATE - INTERVAL '3 days')
+        where last_seen < (CURRENT_DATE - INTERVAL '7 days')
         """
     )
     conn.commit()
@@ -587,3 +604,21 @@ def insert_cyhy_scorecard_data(conn, df, table_name, on_conflict):
         # Show error and close connection if failed
         LOGGER.error("There was a problem with your database query %s", err)
         cursor.close()
+
+
+def identified_sub_domains(conn):
+    """Set sub-domains to identified."""
+
+    # If the sub's root-domain has enumerate=False, then "identified" is True
+    cursor = conn.cursor()
+    LOGGER.info("Marking identified sub-domains.")
+    cursor.execute(
+        """
+        UPDATE sub_domains sd
+        set identified = true
+        from root_domains rd
+        where rd.root_domain_uid = sd.root_domain_uid and rd.enumerate_subs = false;
+        """
+    )
+    conn.commit()
+    cursor.close()
