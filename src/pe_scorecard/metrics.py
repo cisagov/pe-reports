@@ -121,6 +121,12 @@ class Scorecard:
 
         self.scorecard_dict["ips_monitored"] = total_ips
         self.scorecard_dict["ips_identified"] = total_ips - total_identified_ips
+        if self.scorecard_dict["ips_identified"]:
+            self.scorecard_dict["ips_monitored_pct"] = total_ips / (
+                total_ips - total_identified_ips
+            )
+        else:
+            self.scorecard_dict["ips_monitored_pct"] = None
 
         self.scorecard_dict["domains_monitored"] = (
             self.domain_counts["identified"].sum()
@@ -130,11 +136,25 @@ class Scorecard:
             "unidentified"
         ].sum()
 
+        if self.scorecard_dict["domains_identified"]:
+            self.scorecard_dict["domains_monitored_pct"] = (
+                self.scorecard_dict["domains_monitored"]
+                / self.scorecard_dict["domains_identified"]
+            )
+        else:
+            self.scorecard_dict["domains_monitored_pct"] = None
         # TODO add webapps
         webapp_df = self.webapp_counts
         self.scorecard_dict["webapps_identified"] = webapp_df["web_app_cnt"].sum()
         self.scorecard_dict["webapps_monitored"] = webapp_df["web_app_cnt"].sum()
 
+        if self.scorecard_dict["webapps_identified"]:
+            self.scorecard_dict["web_apps_monitored_pct"] = (
+                self.scorecard_dict["webapps_monitored"]
+                / self.scorecard_dict["webapps_identified"]
+            )
+        else:
+            self.scorecard_dict["web_apps_monitored_pct"] = None
         # TODO add certs
         self.scorecard_dict["certs_identified"] = (
             self.cert_counts[0] if self.cert_counts[0] else 0
@@ -142,6 +162,14 @@ class Scorecard:
         self.scorecard_dict["certs_monitored"] = (
             self.cert_counts[1] if self.cert_counts[1] else 0
         )
+
+        if self.scorecard_dict["certs_identified"]:
+            self.scorecard_dict["certs_monitored_pct"] = (
+                self.scorecard_dict["certs_monitored"]
+                / self.scorecard_dict["certs_identified"]
+            )
+        else:
+            self.scorecard_dict["certs_monitored_pct"] = None
 
     def calculate_profiling_metrics(self):
         """Summarize profiling findings into key metrics."""
@@ -194,7 +222,7 @@ class Scorecard:
         self.scorecard_dict["ports_risky_count"] = len(insecure_ports)
         self.scorecard_dict["protocol_total_count"] = len(total_protocols)
         self.scorecard_dict["protocol_insecure_count"] = len(insecure_protocols)
-        self.scorecard_dict["total_services"] = len(total_services)
+        self.scorecard_dict["services_total_count"] = len(total_services)
 
         software_df = self.software_counts
         self.scorecard_dict["software_unsupported_count"] = software_df["count"].sum()
@@ -286,6 +314,7 @@ class Scorecard:
         self.calculate_profiling_metrics()
         self.calculate_identification_metrics()
         self.calculate_tracking_metrics()
+        self.get_last_month_metrics()
         print(self.scorecard_dict)
 
     @staticmethod
@@ -489,66 +518,70 @@ class Scorecard:
 
         return bod_1801_percentage
 
+    def get_last_month_metrics(self):
+        """Get the Scorecard metrics from the last month."""
+        scorecard_dict_past = get_scorecard_metrics_past(
+            self.org_data["organizations_uid"],
+            self.start_date - datetime.timedelta(days=1),
+        )
+        LOGGER.info(
+            "Past report date: %s", self.start_date - datetime.timedelta(days=1)
+        )
 
-def get_last_month_metrics(start_date, org_uid, current_data_dict):
-    """Get the Scorecard metrics from the last month."""
-    scorecard_dict_past = get_scorecard_metrics_past(
-        org_uid, start_date - datetime.timedelta(days=1)
-    )
-    LOGGER.info("Past report date: %s", start_date - datetime.timedelta(days=1))
+        if scorecard_dict_past.empty:
+            LOGGER.error("No Scorecard summary data for the last report period.")
+            ips_trend_pct = self.scorecard_dict["ips_monitored_pct"]
+            domains_trend_pct = self.scorecard_dict["domains_monitored_pct"]
+            webapps_trend_pct = self.scorecard_dict["web_apps_monitored_pct"]
+            certs_trend_pct = self.scorecard_dict["certs_monitored_pct"]
+            ports_total_trend = self.scorecard_dict["ports_total_count"]
+            ports_risky_trend = self.scorecard_dict["ports_risky_count"]
+            protocol_total_trend = self.scorecard_dict["protocol_total_count"]
+            protocol_insecure_trend = self.scorecard_dict["protocol_insecure_count"]
+            services_total_trend = self.scorecard_dict["services_total_count"]
+            software_unsupported_trend = self.scorecard_dict[
+                "software_unsupported_count"
+            ]
+            email_compliance_last_period = self.scorecard_dict["email_compliance_pct"]
+            https_compliance_last_period = self.scorecard_dict["https_compliance_pct"]
+            discovery_trend = self.scorecard_dict.get("discovery_score", None)
+            profiling_trend = self.scorecard_dict.get("profiling_score", None)
+            identification_trend = self.scorecard_dict.get("identification_score", None)
+            tracking_trend = self.scorecard_dict.get("tracking_score", None)
+        else:
+            ips_trend_pct = scorecard_dict_past["ips_monitored_pct"]
+            domains_trend_pct = scorecard_dict_past["domains_monitored_pct"]
+            webapps_trend_pct = scorecard_dict_past["web_apps_monitored_pct"]
+            certs_trend_pct = scorecard_dict_past["certs_monitored_pct"]
+            ports_total_trend = scorecard_dict_past["total_ports"]
+            ports_risky_trend = scorecard_dict_past["risky_ports"]
+            protocol_total_trend = scorecard_dict_past["protocols"]
+            protocol_insecure_trend = scorecard_dict_past["insecure_protocols"]
+            services_total_trend = scorecard_dict_past["total_services"]
+            software_unsupported_trend = scorecard_dict_past["unsupported_software"]
+            email_compliance_last_period = scorecard_dict_past["email_compliance_pct"]
+            https_compliance_last_period = scorecard_dict_past["https_compliance_pct"]
+            discovery_trend = scorecard_dict_past["discovery_score"]
+            profiling_trend = scorecard_dict_past["profiling_score"]
+            identification_trend = scorecard_dict_past["identification_score"]
+            tracking_trend = scorecard_dict_past["tracking_score"]
 
-    if scorecard_dict_past.empty:
-        LOGGER.error("No Scorecard summary data for the last report period.")
-        ips_trend_pct = current_data_dict["ips_monitored_pct"]
-        domains_trend_pct = current_data_dict["domains_monitored_pct"]
-        webapps_trend_pct = current_data_dict["web_apps_monitored_pct"]
-        certs_trend_pct = current_data_dict["certs_monitored_pct"]
-        ports_total_trend = current_data_dict["ports_total_count"]
-        ports_risky_trend = current_data_dict["ports_risky_count"]
-        protocol_total_trend = current_data_dict["protocol_total_count"]
-        protocol_insecure_trend = current_data_dict["protocol_insecure_count"]
-        services_total_trend = current_data_dict["services_total_count"]
-        software_unsupported_trend = current_data_dict["software_unsupported_count"]
-        email_compliance_last_period = current_data_dict["email_compliance_pct"]
-        https_compliance_last_period = current_data_dict["https_compliance_pct"]
-        discovery_trend = current_data_dict["discovery_score"]
-        profiling_trend = current_data_dict["profiling_score"]
-        identification_trend = current_data_dict["identification_score"]
-        tracking_trend = current_data_dict["tracking_score"]
-    else:
-        ips_trend_pct = scorecard_dict_past["ips_monitored_pct"]
-        domains_trend_pct = scorecard_dict_past["domains_monitored_pct"]
-        webapps_trend_pct = scorecard_dict_past["web_apps_monitored_pct"]
-        certs_trend_pct = scorecard_dict_past["certs_monitored_pct"]
-        ports_total_trend = scorecard_dict_past["total_ports"]
-        ports_risky_trend = scorecard_dict_past["risky_ports"]
-        protocol_total_trend = scorecard_dict_past["protocols"]
-        protocol_insecure_trend = scorecard_dict_past["insecure_protocols"]
-        services_total_trend = scorecard_dict_past["total_services"]
-        software_unsupported_trend = scorecard_dict_past["unsupported_software"]
-        email_compliance_last_period = scorecard_dict_past["email_compliance_pct"]
-        https_compliance_last_period = scorecard_dict_past["https_compliance_pct"]
-        discovery_trend = scorecard_dict_past["discovery_score"]
-        profiling_trend = scorecard_dict_past["profiling_score"]
-        identification_trend = scorecard_dict_past["identification_score"]
-        tracking_trend = scorecard_dict_past["tracking_score"]
-
-    past_scorecard_metrics_dict = {
-        "ips_trend_pct": ips_trend_pct,
-        "domains_trend_pct": domains_trend_pct,
-        "webapps_trend_pct": webapps_trend_pct,
-        "certs_trend_pct": certs_trend_pct,
-        "ports_total_trend": ports_total_trend,
-        "ports_risky_trend": ports_risky_trend,
-        "protocol_total_trend": protocol_total_trend,
-        "protocol_insecure_trend": protocol_insecure_trend,
-        "services_total_trend": services_total_trend,
-        "software_unsupported_trend": software_unsupported_trend,
-        "email_compliance_last_period": email_compliance_last_period,
-        "https_compliance_last_period": https_compliance_last_period,
-        "discovery_trend": discovery_trend,
-        "profiling_trend": profiling_trend,
-        "identification_trend": identification_trend,
-        "tracking_trend": tracking_trend,
-    }
-    return past_scorecard_metrics_dict
+        past_scorecard_metrics_dict = {
+            "ips_trend_pct": ips_trend_pct,
+            "domains_trend_pct": domains_trend_pct,
+            "webapps_trend_pct": webapps_trend_pct,
+            "certs_trend_pct": certs_trend_pct,
+            "ports_total_trend": ports_total_trend,
+            "ports_risky_trend": ports_risky_trend,
+            "protocol_total_trend": protocol_total_trend,
+            "protocol_insecure_trend": protocol_insecure_trend,
+            "services_total_trend": services_total_trend,
+            "software_unsupported_trend": software_unsupported_trend,
+            "email_compliance_last_period": email_compliance_last_period,
+            "https_compliance_last_period": https_compliance_last_period,
+            "discovery_trend": discovery_trend,
+            "profiling_trend": profiling_trend,
+            "identification_trend": identification_trend,
+            "tracking_trend": tracking_trend,
+        }
+        self.scorecard_dict.update(past_scorecard_metrics_dict)
