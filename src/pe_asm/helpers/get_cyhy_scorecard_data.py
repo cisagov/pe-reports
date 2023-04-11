@@ -101,7 +101,6 @@ def get_cyhy_port_scans(staging=False):
         if (port_scans_count % 100000 == 0) or (
             port_scans_count == (port_scans_total - skip_count)
         ):
-
             # Insert port_scans data into the P&E database
             LOGGER.info("Inserting port_scans data")
             port_scans_df = pd.DataFrame(small_list)
@@ -199,7 +198,6 @@ def get_cyhy_snapshots(staging=False):
         if (snapshots_count % 10000 == 0) or (
             snapshots_count == (snapshots_total - skip_count)
         ):
-
             # Insert snapshot data into the P&E database
             LOGGER.info("Inserting snapshot data")
             snapshot_df = pd.DataFrame(small_list)
@@ -275,8 +273,8 @@ def get_cyhy_tickets(staging=False):
             "organizations_uid": pe_org_uid,
             "cyhy_id": str(ticket["_id"]),
             "false_positive": ticket["false_positive"],
-            "time_opened": str(ticket["time_opened"]),
-            "time_closed": str(ticket["time_closed"]),
+            "time_opened": ticket["time_opened"],
+            "time_closed": ticket["time_closed"],
             "cvss_base_score": ticket["details"].get("cvss_base_score"),
             "cve": ticket["details"].get("cve"),
             "first_seen": DATE,
@@ -430,7 +428,6 @@ def get_cyhy_kevs(staging=False):
     kev_total = collection.count_documents(query)
     LOGGER.info("%d total documents", kev_total)
     for kev in kev_data:
-
         # Create kev object
         kev_dict = {
             "kev": kev["_id"],
