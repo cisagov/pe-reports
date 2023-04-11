@@ -280,6 +280,23 @@ def update_scan_status(conn, child_name):
     cursor.close()
 
 
+def update_fceb_child_status(conn, child_name):
+    """Update child parent relationships between organizations."""
+    cursor = conn.cursor()
+    cursor.execute(
+        """
+        UPDATE organizations
+        set fceb_child = True
+        where cyhy_db_name = '{}'
+        """.format(
+            child_name
+        ),
+    )
+
+    conn.commit()
+    cursor.close()
+
+
 def insert_dot_gov_domains(conn, dotgov_df, table):
     """Insert dot gov domains."""
     conflict = """
