@@ -209,7 +209,6 @@ class Scorecard:
         self.scorecard_dict["webapp_kev"] = "N/A"
         self.scorecard_dict["webapp_critical"] = was_counts["crit_vuln_cnt"].sum()
         self.scorecard_dict["webapp_high"] = was_counts["high_vuln_cnt"].sum()
-        print(self.scorecard_dict)
 
     def calculate_tracking_metrics(self):
         """Summarize tracking findings into key metrics."""
@@ -434,7 +433,7 @@ class Scorecard:
         """Calculate BOD 18-01 compliance percentage for https."""
         bod_1801_count = 0
         all_eligible_domains_count = 0
-        ocsp_exclusion_list = self.ocsp_exclusions()  # TODO pull list from github
+        ocsp_exclusion_list = self.ocsp_exclusions()
 
         all_domains = query_https_scan(agency)
         sslyze_data_all_domains = dict()
