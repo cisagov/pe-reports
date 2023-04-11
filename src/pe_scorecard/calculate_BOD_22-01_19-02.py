@@ -23,7 +23,7 @@ from pe_reports.data.db_query import close  # connect,
 LOGGER = logging.getLogger(__name__)
 
 
-def main():
+def calculate_2201_1902_bod_compliance():
     """Run calculations to identify BOD compliance."""
     orgs_df = get_orgs()
     open_tickets_df = get_open_tickets()
@@ -89,9 +89,9 @@ def get_percent_compliance(total, overdue):
 
 def get_age(start_time, end_time):
     """Identify age of open vulnerability."""
-    if "." in start_time:
-        start_time = start_time.split(".")[0]
-    start_time = datetime.strptime(start_time, "%Y-%m-%d %H:%M:%S")
+    # if "." in start_time:
+    #     start_time = start_time.split(".")[0]
+    # start_time = datetime.strptime(start_time, "%Y-%m-%d %H:%M:%S")
     start_time = start_time.timestamp()
     start_time = datetime.fromtimestamp(start_time, timezone.utc)
     start_time = start_time.replace(tzinfo=None)
@@ -126,7 +126,7 @@ def get_open_tickets():
         from cyhy_tickets ct
         left join organizations o on
         o.organizations_uid = ct.organizations_uid
-        where ct.false_positive = 'False' and ct.time_closed = 'None' and o.fceb = 'True' and (ct.cve != null or (ct.cvss_base_score != 'Nan' and ct.cvss_base_score >= 7.0))"""
+        where ct.false_positive = False and ct.time_closed is Null and o.fceb = True and (ct.cve != null or (ct.cvss_base_score != 'Nan' and ct.cvss_base_score >= 7.0))"""
         open_tickets_df = pd.read_sql(sql, conn)
         return open_tickets_df
     except (Exception, psycopg2.DatabaseError) as error:
@@ -148,7 +148,3 @@ def get_kevs():
     finally:
         if conn is not None:
             close(conn)
-
-
-if __name__ == "__main__":
-    main()

@@ -55,6 +55,8 @@ def get_orgs():
     """Query organizations table."""
     conn = connect()
     sql = """SELECT * FROM organizations where report_on or run_scans"""
+    # TODO change to the below sql statement
+    # sql = """SELECT * FROM organizations where fceb or fceb_child"""
     pe_orgs = pd.read_sql(sql, conn)
     conn.close()
     return pe_orgs
@@ -95,75 +97,95 @@ def query_ips_counts(org_uid_list):
 def query_domain_counts(org_uid_list):
     """Query domain counts."""
     conn = connect()
-    try:
-        cur = conn.cursor()
-        sql = """
-            select o.organizations_uid, o.cyhy_db_name,
-            coalesce(cnts.identified, 0) as identified,
-            coalesce(cnts.unidentified, 0) as unidentified
-            from organizations o
-            left join
-            (select rd.organizations_uid, sum(case sd.identified  when True then 1 else 0 end) identified, sum(case sd.identified when False then 1 else 0 end) unidentified
-            from root_domains rd
-            join sub_domains sd on sd.root_domain_uid = rd.root_domain_uid
-            group by rd.organizations_uid) cnts
-            on o.organizations_uid = cnts.organizations_uid
-            where o.organizations_uid in %(org_list)s;
-        """
-        cur.execute(sql, {"org_list": tuple(org_uid_list)})
-        domain_counts = cur.fetchall()
-        keys = [desc[0] for desc in cur.description]
-        domain_counts = [dict(zip(keys, values)) for values in domain_counts]
-        cur.close()
-        return domain_counts
-    except (Exception, psycopg2.DatabaseError) as error:
-        logging.error("There was a problem with your database query %s", error)
-    finally:
-        if conn is not None:
-            close(conn)
+
+    # cur = conn.cursor()
+    sql = """
+        select o.organizations_uid, o.cyhy_db_name,
+        coalesce(cnts.identified, 0) as identified,
+        coalesce(cnts.unidentified, 0) as unidentified
+        from organizations o
+        left join
+        (select rd.organizations_uid, sum(case sd.identified  when True then 1 else 0 end) identified, sum(case sd.identified when False then 1 else 0 end) unidentified
+        from root_domains rd
+        join sub_domains sd on sd.root_domain_uid = rd.root_domain_uid
+        group by rd.organizations_uid) cnts
+        on o.organizations_uid = cnts.organizations_uid
+        where o.organizations_uid in %(org_list)s;
+    """
+    domain_counts = pd.read_sql(sql, conn, params={"org_list": tuple(org_uid_list)})
+    # cur.execute(sql, {"org_list": tuple(org_uid_list)})
+    # domain_counts = cur.fetchall()
+    # keys = [desc[0] for desc in cur.description]
+    # domain_counts = [dict(zip(keys, values)) for values in domain_counts]
+    close(conn)
+    return domain_counts
+
+
+def query_was_fceb_ttr(date_period):
+    """Calculate Summary results for all of FCEB."""
+    conn = connect()
+
+    sql = """
+    SELECT avg(wh.crit_rem_time) as fceb_critical, avg(wh.high_rem_time) as fceb_high
+    from was_history wh
+    join was_map wm
+    on wh.was_org_id = wm.was_org_id
+    join organizations o
+    on o.organizations_uid = wm.pe_org_id
+    where wh.report_period = %(start_date)s
+    and o.fceb
+    """
+    # or fceb_child
+    cur = conn.cursor()
+
+    cur.execute(sql, {"start_date": date_period})
+    fceb_counts = cur.fetchone()
+    cur.close()
+    # fceb_counts = pd.read_sql(sql, conn, params = {"start_date": date_period})
+
+    close(conn)
+
+    fceb_dict = {"critical": fceb_counts[0], "high": fceb_counts[1]}
+    return fceb_dict
 
 
 def query_webapp_counts(date_period, org_uid_list):
     """Query webapp counts."""
     # TODO update query to pull critical and high vulns
-    try:
-        conn = connect()
-        cur = conn.cursor()
-        # Need to add filters
-        sql = """
-                select o.organizations_uid, o.cyhy_db_name, cnts.date_scanned,
-                coalesce(cnts.vuln_cnt, 0) as vuln_cnt,
-                coalesce(cnts.vuln_webapp_cnt,0) as vuln_webapp_cnt,
-                coalesce(cnts.web_app_cnt, 0) as web_app_cnt,
-                coalesce(cnts.high_rem_time, Null) high_rem_time,
-                coalesce(cnts.crit_rem_time, null) crit_rem_time
-                from organizations o
-                left join
-                (SELECT o.organizations_uid, wh.*
-                from was_history wh
-                    join was_map wm
-                    on wh.was_org_id = wm.was_org_id
-                    join organizations o
-                    on o.organizations_uid = wm.pe_org_id
-                    where wh.date_scanned = %(report_date)s
-                    ) cnts
-                on o.organizations_uid = cnts.organizations_uid
-                where o.organizations_uid  IN %(org_uid_list)s;
+    conn = connect()
 
-        """
-        cur.execute(
-            sql, {"report_date": date_period, "org_uid_list": tuple(org_uid_list)}
-        )
-        webapp_counts = cur.fetchall()
-        keys = [desc[0] for desc in cur.description]
-        webapp_counts = [dict(zip(keys, values)) for values in webapp_counts]
-        cur.close()
-        return webapp_counts
-    except (Exception, psycopg2.DatabaseError) as error:
-        logging.error("There was a problem with your database query %s", error)
-    finally:
-        if conn is not None:
-            close(conn)
+    sql = """
+            select o.organizations_uid, o.cyhy_db_name, cnts.date_scanned,
+            coalesce(cnts.vuln_cnt, 0) as vuln_cnt,
+            coalesce(cnts.vuln_webapp_cnt,0) as vuln_webapp_cnt,
+            coalesce(cnts.web_app_cnt, 0) as web_app_cnt,
+            coalesce(cnts.high_rem_time, Null) high_rem_time,
+            coalesce(cnts.crit_rem_time, null) crit_rem_time,
+            coalesce(cnts.crit_vuln_cnt, 0) crit_vuln_cnt,
+            coalesce(cnts.high_vuln_cnt, 0) high_vuln_cnt
+            from organizations o
+            left join
+            (SELECT o.organizations_uid, wh.*
+            from was_history wh
+                join was_map wm
+                on wh.was_org_id = wm.was_org_id
+                join organizations o
+                on o.organizations_uid = wm.pe_org_id
+                where wh.report_period = %(start_date)s
+                ) cnts
+            on o.organizations_uid = cnts.organizations_uid
+            where o.organizations_uid  IN %(org_uid_list)s;
+
+    """
+    webapp_counts = pd.read_sql(
+        sql,
+        conn,
+        params={"start_date": date_period, "org_uid_list": tuple(org_uid_list)},
+    )
+
+    close(conn)
+
+    return webapp_counts
 
 
 def query_certs_counts():
@@ -640,7 +662,7 @@ def query_vuln_remediation(start_date, end_date, org_id_list):
             close(conn)
 
 
-def query_open_vulns(start_date, end_date, org_id_list):
+def query_open_vulns(org_id_list):
     """Query open vulnerabilities time since first seen."""
     conn = connect()
     try:
@@ -655,8 +677,6 @@ def query_open_vulns(start_date, end_date, org_id_list):
             sql,
             conn,
             params={
-                "start_date": start_date,
-                "end_date": end_date,
                 "org_id_list": tuple(org_id_list),
             },
         )

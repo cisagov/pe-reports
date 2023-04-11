@@ -1050,9 +1050,9 @@ def create_scorecard(data_dict, file_name, include_trending=True, include_scores
         ],
         [
             "TOTALS",
-            data_dict["total_kev"],
-            data_dict["total_critical"],
-            data_dict["total_high"],
+            data_dict["external_host_kev"],
+            data_dict["external_host_critical"] + data_dict["webapp_critical"],
+            data_dict["external_host_high"] + data_dict["webapp_high"],
         ],
     ]
     vulns_table = format_table(

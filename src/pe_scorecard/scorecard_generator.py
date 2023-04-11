@@ -15,6 +15,7 @@ Options:
 """
 
 # Standard Python Libraries
+import datetime
 import logging
 import os
 import sys
@@ -28,7 +29,8 @@ from schema import And, Schema, SchemaError, Use
 import pe_scorecard
 
 from ._version import __version__
-from .data.db_query import get_orgs
+from .average_time_to_remediate import calculate_time_to_remediate
+from .data.db_query import get_orgs, query_was_fceb_ttr
 from .metrics import Scorecard
 
 LOGGER = logging.getLogger(__name__)
@@ -43,8 +45,16 @@ def generate_scorecards(month, year, output_directory):
 
     if not scorecard_orgs.empty:
         LOGGER.info("Orgs count: %d", len(scorecard_orgs))
+        start_date = datetime.date(int(year), int(month), 1)
+        end_date = (start_date + datetime.timedelta(days=32)).replace(day=1)
 
         # If we need to generate all scores first, do so here:
+        (avg_time_to_remediate_df, vs_fceb_results) = calculate_time_to_remediate(
+            start_date, end_date
+        )
+        was_fceb_ttr = query_was_fceb_ttr(start_date)
+        print(was_fceb_ttr)
+        quit()
 
         for index, org in scorecard_orgs.iterrows():
             if org["fceb"]:
@@ -64,8 +74,21 @@ def generate_scorecards(month, year, output_directory):
                     org_uid_list = [org["organizations_uid"]]
                     cyhy_id_list = [org["cyhy_db_name"]]
 
-                scorecard = Scorecard(month, year, org, org_uid_list, cyhy_id_list)
-                scorecard.calculate_profiling_metrics()
+                vs_time_to_remediate = avg_time_to_remediate_df[
+                    avg_time_to_remediate_df["cyhy_db_name"].isin(cyhy_id_list)
+                ]
+
+                scorecard = Scorecard(
+                    month,
+                    year,
+                    org,
+                    org_uid_list,
+                    cyhy_id_list,
+                    vs_time_to_remediate,
+                    vs_fceb_results,
+                    was_fceb_ttr,
+                )
+                scorecard.fill_scorecard_dict()
                 # scorecard.calculate_ips_counts()
                 # print(scorecard.scorecard_dict)
 

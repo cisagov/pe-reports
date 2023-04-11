@@ -14,11 +14,11 @@ from .data.db_query import (  # query_subs_https_scan,; query_iscore_vs_data_vul
     query_domain_counts,
     query_https_scan,
     query_ips_counts,
+    query_kev_list,
     query_open_vulns,
     query_sofware_scans,
     query_sslyze_scan,
     query_trusty_mail,
-    query_vuln_remediation,
     query_vuln_tickets,
     query_webapp_counts,
 )
@@ -29,7 +29,17 @@ BOD1801_DMARC_RUA_URI = "mailto:reports@dmarc.cyber.dhs.gov"
 class Scorecard:
     """Class to generate scorecard metrics."""
 
-    def __init__(self, month, year, org_data, org_uid_list, cyhy_id_list):
+    def __init__(
+        self,
+        month,
+        year,
+        org_data,
+        org_uid_list,
+        cyhy_id_list,
+        vs_time_to_remediate,
+        vs_fceb_results,
+        was_fceb_ttr,
+    ):
         """Initialize scorecard class."""
         self.org_data = org_data
         self.scorecard_dict = {
@@ -39,7 +49,7 @@ class Scorecard:
             "date": calendar.month_name[int(month)] + " " + year,
             "last_data_sent_date": "NEED TO CALCULATE",
         }
-        print(self.scorecard_dict)
+
         start_date = datetime.date(int(year), int(month), 1)
         end_date = (start_date + datetime.timedelta(days=32)).replace(day=1)
         self.start_date = start_date
@@ -54,19 +64,47 @@ class Scorecard:
         # # TODO possibly need to format a date string based on the new column
         self.webapp_counts = query_webapp_counts(start_date, org_uid_list)
         self.cert_counts = query_certs_counts()
+
         self.ports_data = query_cyhy_port_scans(start_date, end_date, org_uid_list)
         self.software_counts = query_sofware_scans(start_date, end_date, org_uid_list)
-        print(self.software_counts)
+
         self.vs_vuln_counts = query_vuln_tickets(org_uid_list)
-        self.vs_remediation = query_vuln_remediation(start_date, end_date, org_uid_list)
-        self.vs_open_vulns = query_open_vulns(start_date, end_date, org_uid_list)
-        # TODO adjust queries parameters
-        self.sslyze_data = query_sslyze_scan(org_uid_list)
-        self.https_data = query_https_scan(
-            month,
-            org_uid_list,
-        )
-        self.trusty_mail_data = query_trusty_mail(org_uid_list)
+        # self.vs_remediation = query_vuln_remediation(start_date, end_date, org_uid_list)
+        self.vs_remediation = vs_time_to_remediate
+        self.vs_fceb_results = vs_fceb_results
+
+        self.vs_open_vulns = query_open_vulns(org_uid_list)
+        self.kev_list = query_kev_list()
+
+        self.was_fceb_ttr = was_fceb_ttr
+        # # TODO adjust queries parameters
+        # self.sslyze_data = query_sslyze_scan(org_uid_list)
+        # self.https_data = query_https_scan(org_uid_list,
+        # )
+        # self.trusty_mail_data = query_trusty_mail(org_uid_list)
+
+    @staticmethod
+    def get_percent_compliance(total, overdue):
+        """Calculate percentage of compliance."""
+        if total == 0:
+            return 100.0
+        else:
+            return round(((total - overdue) / total) * 100, 2)
+
+    @staticmethod
+    def get_age(start_time, end_time):
+        """Identify age of open vulnerability."""
+        # if "." in start_time:
+        #     start_time = start_time.split(".")[0]
+        # start_time = datetime.strptime(start_time, "%Y-%m-%d %H:%M:%S")
+        start_time = start_time.timestamp()
+        start_time = datetime.fromtimestamp(start_time, datetime.timezone.utc)
+        start_time = start_time.replace(tzinfo=None)
+        end_time = end_time.timestamp()
+        end_time = datetime.fromtimestamp(end_time, datetime.timezone.utc)
+        end_time = end_time.replace(tzinfo=None)
+        age = round((float((end_time - start_time).total_seconds()) / 60 / 60 / 24), 2)
+        return age
 
     def calculate_discovery_metrics_counts(self):
         """Summarize discovery findings into key metrics."""
@@ -88,8 +126,17 @@ class Scorecard:
         ].sum()
 
         # TODO add webapps
+        webapp_df = self.webapp_counts
+        self.scorecard_dict["webapps_identified"] = webapp_df["web_app_cnt"].sum()
+        self.scorecard_dict["webapps_monitored"] = webapp_df["web_app_cnt"].sum()
 
         # TODO add certs
+        self.scorecard_dict["certs_identified"] = (
+            self.cert_counts[0] if self.cert_counts[0] else 0
+        )
+        self.scorecard_dict["certs_monitored"] = (
+            self.cert_counts[1] if self.cert_counts[1] else 0
+        )
 
     def calculate_profiling_metrics(self):
         """Summarize profiling findings into key metrics."""
@@ -146,200 +193,289 @@ class Scorecard:
         self.scorecard_dict["total_services"] = len(total_services)
 
         software_df = self.software_counts
-        print(software_df["count"].sum())
         self.scorecard_dict["software_unsupported_count"] = software_df["count"].sum()
+
+    def calculate_identification_metrics(self):
+        """Summarize identification findings into key metrics."""
+        vuln_counts = self.vs_vuln_counts
+        self.scorecard_dict["external_host_kev"] = vuln_counts["kev"].sum()
+        self.scorecard_dict["external_host_critical"] = vuln_counts["critical"].sum()
+        self.scorecard_dict["external_host_high"] = vuln_counts["high"].sum()
+        was_counts = self.webapp_counts
+        self.scorecard_dict["webapp_kev"] = "N/A"
+        self.scorecard_dict["webapp_critical"] = was_counts["crit_vuln_cnt"].sum()
+        self.scorecard_dict["webapp_high"] = was_counts["high_vuln_cnt"].sum()
+        print(self.scorecard_dict)
+
+    def calculate_tracking_metrics(self):
+        """Summarize tracking findings into key metrics."""
+        vs_remediation_df = self.vs_remediation
+        self.scorecard_dict["vuln_org_kev_ttr"] = vs_remediation_df["ATTR KEVs"].mean()
+        self.scorecard_dict["vuln_org_critical_ttr"] = vs_remediation_df[
+            "ATTR Crits"
+        ].mean()
+        self.scorecard_dict["vuln_org_high_ttr"] = vs_remediation_df[
+            "ATTR Highs"
+        ].mean()
+
+        vs_fceb_df = self.vs_fceb_results
+        self.scorecard_dict["vuln_sector_kev_ttr"] = vs_fceb_df["ATTR KEVs"]
+        self.scorecard_dict["vuln_sector_critical_ttr"] = vs_fceb_df["ATTR Crits"]
+        self.scorecard_dict["vuln_sector_high_ttr"] = vs_fceb_df["ATTR Highs"]
+
+        # Calculate bod compliance percentage
+        open_tickets_df = self.vs_open_vulns
+        kevs_df = self.kev_list
+        total_kevs = 0
+        overdue_kevs = 0
+        total_crits = 0
+        overdue_crits = 0
+        total_highs = 0
+        overdue_highs = 0
+        for index2, ticket in open_tickets_df.iterrows():
+            time_opened = ticket["time_opened"]
+            now = datetime.now()
+            age = self.get_age(time_opened, now)
+            if ticket["cve"] in kevs_df["kev"].values:
+                total_kevs = total_kevs + 1
+                if age > 14.0:
+                    overdue_kevs += 1
+            if ticket["cvss_base_score"] >= 9.0:
+                total_crits = total_crits + 1
+                if age > 15.0:
+                    overdue_crits += 1
+            if ticket["cvss_base_score"] >= 7.0 and ticket["cvss_base_score"] < 9.0:
+                total_highs = total_highs + 1
+                if age > 30.0:
+                    overdue_highs += 1
+        self.scorecard_dict["vuln_bod_22-01"] = self.get_percent_compliance(
+            total_kevs, overdue_kevs
+        )
+        self.scorecard_dict["vuln_critical_bod_19-02"] = self.get_percent_compliance(
+            total_crits, overdue_crits
+        )
+        self.scorecard_dict["vuln_high_bod_19-02"] = self.get_percent_compliance(
+            total_highs, overdue_highs
+        )
+
+        webapp_df = self.webapp_counts
+        was_fceb_ttr = self.was_fceb_ttr
+
+        self.scorecard_dict["webapp_org_critical_ttr"] = webapp_df[
+            "crit_rem_time"
+        ].mean()
+        self.scorecard_dict["webapp_org_high_ttr"] = webapp_df["high_rem_time"].mean()
+
+        self.scorecard_dict["webapp_sector_crtical_ttr"] = was_fceb_ttr["critical"]
+        self.scorecard_dict["webapp_sector_high_ttr"] = was_fceb_ttr["high"]
+
+        self.scorecard_dict[
+            "email_compliance_pct"
+        ] = self.calculate_bod18_compliance_email(self.org_uid_list)
+        self.scorecard_dict[
+            "https_compliance_pct"
+        ] = self.calculate_bod18_compliance_https(self.org_uid_list)
 
     def fill_scorecard_dict(self):
         """Fill dictionary with scorecard metrics."""
+        print("Filling scorecard")
         self.calculate_discovery_metrics_counts()
+        self.calculate_profiling_metrics()
+        self.calculate_identification_metrics()
+        self.calculate_tracking_metrics()
 
+    @staticmethod
+    def ocsp_exclusions():
+        """Prepare a list of OCSP sites to exclude."""
+        URL = "https://github.com/cisagov/dotgov-data/blob/main/dotgov-websites/ocsp-crl.csv"
+        r = requests.get(URL)
+        soup = BeautifulSoup(r.content, features="lxml")
 
-def ocsp_exclusions():
-    """Prepare a list of OCSP sites to exclude."""
-    URL = (
-        "https://github.com/cisagov/dotgov-data/blob/main/dotgov-websites/ocsp-crl.csv"
-    )
-    r = requests.get(URL)
-    soup = BeautifulSoup(r.content, features="lxml")
+        table = soup.find_all("table")
+        df = pd.read_html(str(table))[0]
 
-    table = soup.find_all("table")
-    df = pd.read_html(str(table))[0]
+        df = df.drop(columns=[0])
+        ocsp_crl = df[1].values.tolist()
 
-    df = df.drop(columns=[0])
-    ocsp_crl = df[1].values.tolist()
+        return ocsp_crl
 
-    return ocsp_crl
+    @staticmethod
+    def add_weak_crypto_data_to_domain(domain_doc, sslyze_data_all_domains):
+        """Calculate weak crypto data for a given domain."""
+        # Look for weak crypto data in sslyze_data_all_domains and
+        # add hosts with weak crypto to
+        # domain_doc['hosts_with_weak_crypto']
+        domain_doc["domain_has_weak_crypto"] = False
+        domain_doc["hosts_with_weak_crypto"] = []
+        domain_doc["domain_has_symantec_cert"] = False
 
+        if sslyze_data_all_domains.get(domain_doc["domain"]):
+            for host in sslyze_data_all_domains[domain_doc["domain"]]:
+                if (
+                    host["sslv2"]
+                    or host["sslv3"]
+                    or host["any_3des"]
+                    or host["any_rc4"]
+                ):
+                    domain_doc["domain_has_weak_crypto"] = True
+                    domain_doc["hosts_with_weak_crypto"].append(host)
+                if host["is_symantec_cert"]:
+                    domain_doc["domain_has_symantec_cert"] = True
+        return domain_doc
 
-def add_weak_crypto_data_to_domain(domain_doc, sslyze_data_all_domains):
-    """Calculate weak crypto data for a given domain."""
-    # Look for weak crypto data in sslyze_data_all_domains and
-    # add hosts with weak crypto to
-    # domain_doc['hosts_with_weak_crypto']
-    domain_doc["domain_has_weak_crypto"] = False
-    domain_doc["hosts_with_weak_crypto"] = []
-    domain_doc["domain_has_symantec_cert"] = False
+    def calculate_bod18_compliance_email(self, agency):
+        """Calculate BOD 18-01 trusty mail compliance."""
+        bod_1801_compliant_count = 0
+        base_domain_plus_smtp_subdomain_count = 0
 
-    if sslyze_data_all_domains.get(domain_doc["domain"]):
-        for host in sslyze_data_all_domains[domain_doc["domain"]]:
-            if host["sslv2"] or host["sslv3"] or host["any_3des"] or host["any_rc4"]:
-                domain_doc["domain_has_weak_crypto"] = True
-                domain_doc["hosts_with_weak_crypto"].append(host)
-            if host["is_symantec_cert"]:
-                domain_doc["domain_has_symantec_cert"] = True
-    return domain_doc
+        sslyze_data_all_domains = dict()
+        for host in query_sslyze_scan(agency, [25, 587, 465]):
+            current_host_dict = {
+                "scanned_hostname": host["scanned_hostname"],
+                "scanned_port": host["scanned_port"],
+                "sslv2": host["sslv2"],
+                "sslv3": host["sslv3"],
+                "any_3des": host["any_3des"],
+                "any_rc4": host["any_rc4"],
+                "is_symantec_cert": host["is_symantec_cert"],
+            }
 
+            if not sslyze_data_all_domains.get(host["domain"]):
+                sslyze_data_all_domains[host["domain"]] = [current_host_dict]
+            else:
+                sslyze_data_all_domains[host["domain"]].append(current_host_dict)
 
-def calculate_bod18_compliance_https(month, agency):
-    """Calculate BOD 18-01 compliance percentage for https."""
-    bod_1801_count = 0
-    all_eligible_domains_count = 0
-    ocsp_exclusion_list = ocsp_exclusions()  # TODO pull list from github
+        for domain in query_trusty_mail(agency):
+            # domain  = add_weak_crypto_data_to_domain(domain, sslyze_data_all_domains)
 
-    all_domains = query_https_scan(month, agency)
-    sslyze_data_all_domains = dict()
-    for host in query_sslyze_scan(month, agency):
-        current_host_dict = {
-            "scanned_hostname": host["scanned_hostname"],
-            "scanned_port": host["scanned_port"],
-            "sslv2": host["sslv2"],
-            "sslv3": host["sslv3"],
-            "any_3des": host["any_3des"],
-            "any_rc4": host["any_rc4"],
-            "is_symantec_cert": host["is_symantec_cert"],
-        }
+            if domain["live"]:
 
-        if not sslyze_data_all_domains.get(host["domain"]):
-            sslyze_data_all_domains[host["domain"]] = [current_host_dict]
-        else:
-            sslyze_data_all_domains[host["domain"]].append(current_host_dict)
+                if domain["is_base_domain"] or (
+                    not domain["is_base_domain"] and domain["domain_supports_smtp"]
+                ):
+                    base_domain_plus_smtp_subdomain_count += 1
 
-    for domain in all_domains:
-        domain = add_weak_crypto_data_to_domain(domain, sslyze_data_all_domains)
-        domain["ocsp_domain"] = domain["domain"] in ocsp_exclusion_list
+                domain["valid_dmarc2"] = (
+                    domain["valid_dmarc"] or domain["valid_dmarc_base_domain"]
+                )
+                domain["valid_dmarc_subdomain_policy_reject"] = False
+                # According to RFC7489, "'sp' will be ignored for DMARC
+                # records published on subdomains of Organizational
+                # Domains due to the effect of the DMARC policy discovery
+                # mechanism."  Therefore we have chosen not to penalize
+                # for sp!=reject when considering subdomains.
+                #
+                # See here for more details:
+                # https://tools.ietf.org/html/rfc7489#section-6.3
+                if domain["valid_dmarc2"] and (
+                    not domain["is_base_domain"]
+                    or domain["dmarc_subdomain_policy"] == "reject"
+                ):
+                    domain["valid_dmarc_subdomain_policy_reject"] = True
 
-        if domain["live"]:
-            if not domain["ocsp_domain"]:
-                all_eligible_domains_count += 1
+                domain["valid_dmarc_policy_reject"] = False
+                if domain["valid_dmarc2"] and domain["dmarc_policy"] == "reject":
+                    domain["valid_dmarc_policy_reject"] = True
 
-        # BOD 18-01 compliant?
-        if (
-            (
-                domain["domain_supports_https"]
-                and domain["domain_enforces_https"]
-                and domain["domain_uses_strong_hsts"]
+                domain["valid_dmarc_policy_pct"] = False
+                if domain["valid_dmarc2"] and domain["dmarc_policy_percentage"] == 100:
+                    domain["valid_dmarc_policy_pct"] = True
+
+                domain["valid_dmarc_policy_of_reject"] = False
+                if (
+                    domain["valid_dmarc_policy_reject"]
+                    and domain["valid_dmarc_subdomain_policy_reject"]
+                    and domain["valid_dmarc_policy_pct"]
+                ):
+                    domain["valid_dmarc_policy_of_reject"] = True
+
+                if domain["is_base_domain"]:
+                    domain["spf_covered"] = domain["valid_spf"]
+                else:
+                    domain["spf_covered"] = domain["valid_spf"] or (
+                        domain["spf_record"] is False
+                        and domain["valid_dmarc_policy_of_reject"]
+                    )
+
+                domain["valid_dmarc_bod1801_rua_uri"] = False
+                if domain["valid_dmarc2"]:
+                    for uri_dict in domain["aggregate_report_uris"]:
+                        if uri_dict["uri"].lower() == BOD1801_DMARC_RUA_URI.lower():
+                            domain["valid_dmarc_bod1801_rua_uri"] = True
+                            break
+
+                if (
+                    domain["spf_covered"]
+                    and not domain["domain_has_weak_crypto"]
+                    and domain["valid_dmarc_policy_reject"]
+                    and domain["valid_dmarc_subdomain_policy_reject"]
+                    and domain["valid_dmarc_policy_pct"]
+                    and domain["valid_dmarc_bod1801_rua_uri"]
+                ):
+                    bod_1801_compliant_count += 1
+
+        bod_1801_compliant_percentage = round(
+            bod_1801_compliant_count / base_domain_plus_smtp_subdomain_count * 100.0,
+            1,
+        )
+        return bod_1801_compliant_percentage
+
+    def calculate_bod18_compliance_https(self, agency):
+        """Calculate BOD 18-01 compliance percentage for https."""
+        bod_1801_count = 0
+        all_eligible_domains_count = 0
+        ocsp_exclusion_list = self.ocsp_exclusions()  # TODO pull list from github
+
+        all_domains = query_https_scan(agency)
+        sslyze_data_all_domains = dict()
+        for host in query_sslyze_scan(agency, [443]):
+            current_host_dict = {
+                "scanned_hostname": host["scanned_hostname"],
+                "scanned_port": host["scanned_port"],
+                "sslv2": host["sslv2"],
+                "sslv3": host["sslv3"],
+                "any_3des": host["any_3des"],
+                "any_rc4": host["any_rc4"],
+                "is_symantec_cert": host["is_symantec_cert"],
+            }
+
+            if not sslyze_data_all_domains.get(host["domain"]):
+                sslyze_data_all_domains[host["domain"]] = [current_host_dict]
+            else:
+                sslyze_data_all_domains[host["domain"]].append(current_host_dict)
+
+        for domain in all_domains:
+            domain = self.add_weak_crypto_data_to_domain(
+                domain, sslyze_data_all_domains
             )
-            or (
-                domain["live"]
-                and (
-                    domain["hsts_base_domain_preloaded"]
-                    or (
-                        not domain["https_full_connection"]
-                        and domain["https_client_auth_required"]
+            domain["ocsp_domain"] = domain["domain"] in ocsp_exclusion_list
+
+            if domain["live"]:
+                if not domain["ocsp_domain"]:
+                    all_eligible_domains_count += 1
+
+            # BOD 18-01 compliant?
+            if (
+                (
+                    domain["domain_supports_https"]
+                    and domain["domain_enforces_https"]
+                    and domain["domain_uses_strong_hsts"]
+                )
+                or (
+                    domain["live"]
+                    and (
+                        domain["hsts_base_domain_preloaded"]
+                        or (
+                            not domain["https_full_connection"]
+                            and domain["https_client_auth_required"]
+                        )
                     )
                 )
-            )
-        ) and not domain["domain_has_weak_crypto"]:
-            if not domain["ocsp_domain"]:
-                bod_1801_count += 1
-    bod_1801_percentage = round(bod_1801_count / all_eligible_domains_count * 100.0, 1)
+            ) and not domain["domain_has_weak_crypto"]:
+                if not domain["ocsp_domain"]:
+                    bod_1801_count += 1
+        bod_1801_percentage = round(
+            bod_1801_count / all_eligible_domains_count * 100.0, 1
+        )
 
-    return bod_1801_percentage
-
-
-def calculate_bod18_compliance_email(month, agency):
-    """Calculate BOD 18-01 trusty mail compliance."""
-    bod_1801_compliant_count = 0
-    base_domain_plus_smtp_subdomain_count = 0
-
-    sslyze_data_all_domains = dict()
-    for host in query_sslyze_scan(month, agency):
-        current_host_dict = {
-            "scanned_hostname": host["scanned_hostname"],
-            "scanned_port": host["scanned_port"],
-            "sslv2": host["sslv2"],
-            "sslv3": host["sslv3"],
-            "any_3des": host["any_3des"],
-            "any_rc4": host["any_rc4"],
-            "is_symantec_cert": host["is_symantec_cert"],
-        }
-
-        if not sslyze_data_all_domains.get(host["domain"]):
-            sslyze_data_all_domains[host["domain"]] = [current_host_dict]
-        else:
-            sslyze_data_all_domains[host["domain"]].append(current_host_dict)
-
-    for domain in query_trusty_mail(month, agency):
-        # domain  = add_weak_crypto_data_to_domain(domain, sslyze_data_all_domains)
-
-        if domain["live"]:
-
-            if domain["is_base_domain"] or (
-                not domain["is_base_domain"] and domain["domain_supports_smtp"]
-            ):
-                base_domain_plus_smtp_subdomain_count += 1
-
-            domain["valid_dmarc2"] = (
-                domain["valid_dmarc"] or domain["valid_dmarc_base_domain"]
-            )
-            domain["valid_dmarc_subdomain_policy_reject"] = False
-            # According to RFC7489, "'sp' will be ignored for DMARC
-            # records published on subdomains of Organizational
-            # Domains due to the effect of the DMARC policy discovery
-            # mechanism."  Therefore we have chosen not to penalize
-            # for sp!=reject when considering subdomains.
-            #
-            # See here for more details:
-            # https://tools.ietf.org/html/rfc7489#section-6.3
-            if domain["valid_dmarc2"] and (
-                not domain["is_base_domain"]
-                or domain["dmarc_subdomain_policy"] == "reject"
-            ):
-                domain["valid_dmarc_subdomain_policy_reject"] = True
-
-            domain["valid_dmarc_policy_reject"] = False
-            if domain["valid_dmarc2"] and domain["dmarc_policy"] == "reject":
-                domain["valid_dmarc_policy_reject"] = True
-
-            domain["valid_dmarc_policy_pct"] = False
-            if domain["valid_dmarc2"] and domain["dmarc_policy_percentage"] == 100:
-                domain["valid_dmarc_policy_pct"] = True
-
-            domain["valid_dmarc_policy_of_reject"] = False
-            if (
-                domain["valid_dmarc_policy_reject"]
-                and domain["valid_dmarc_subdomain_policy_reject"]
-                and domain["valid_dmarc_policy_pct"]
-            ):
-                domain["valid_dmarc_policy_of_reject"] = True
-
-            if domain["is_base_domain"]:
-                domain["spf_covered"] = domain["valid_spf"]
-            else:
-                domain["spf_covered"] = domain["valid_spf"] or (
-                    domain["spf_record"] is False
-                    and domain["valid_dmarc_policy_of_reject"]
-                )
-
-            domain["valid_dmarc_bod1801_rua_uri"] = False
-            if domain["valid_dmarc2"]:
-                for uri_dict in domain["aggregate_report_uris"]:
-                    if uri_dict["uri"].lower() == BOD1801_DMARC_RUA_URI.lower():
-                        domain["valid_dmarc_bod1801_rua_uri"] = True
-                        break
-
-            if (
-                domain["spf_covered"]
-                and not domain["domain_has_weak_crypto"]
-                and domain["valid_dmarc_policy_reject"]
-                and domain["valid_dmarc_subdomain_policy_reject"]
-                and domain["valid_dmarc_policy_pct"]
-                and domain["valid_dmarc_bod1801_rua_uri"]
-            ):
-                bod_1801_compliant_count += 1
-
-    bod_1801_compliant_percentage = round(
-        bod_1801_compliant_count / base_domain_plus_smtp_subdomain_count * 100.0,
-        1,
-    )
-    return bod_1801_compliant_percentage
+        return bod_1801_percentage
