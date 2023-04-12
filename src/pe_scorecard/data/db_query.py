@@ -40,7 +40,7 @@ def show_psycopg2_exception(err):
 #     try:
 #         conn = psycopg2.connect(**CONN_PARAMS_DIC)
 #     except OperationalError as err:
-#         print(err)
+#
 #         show_psycopg2_exception(err)
 #         conn = None
 #     return conn
@@ -55,9 +55,9 @@ def close(conn):
 def get_orgs():
     """Query organizations table."""
     conn = connect()
-    sql = """SELECT * FROM organizations where report_on or run_scans"""
-    # TODO change to the below sql statement
-    # sql = """SELECT * FROM organizations where fceb or fceb_child"""
+    sql = (
+        """SELECT * FROM organizations where (fceb or fceb_child) and retired = False"""
+    )
     pe_orgs = pd.read_sql(sql, conn)
     conn.close()
     return pe_orgs
@@ -134,9 +134,9 @@ def query_was_fceb_ttr(date_period):
     join organizations o
     on o.organizations_uid = wm.pe_org_id
     where wh.report_period = %(start_date)s
-    and o.fceb
+    and (o.fceb or o.fceb_child) and o.retired = False;
     """
-    # or fceb_child
+    #
     cur = conn.cursor()
 
     cur.execute(sql, {"start_date": date_period})
@@ -147,6 +147,11 @@ def query_was_fceb_ttr(date_period):
     close(conn)
 
     fceb_dict = {"critical": fceb_counts[0], "high": fceb_counts[1]}
+    if not fceb_dict["critical"]:
+        fceb_dict["critical"] = "N/A"
+
+    if not fceb_dict["high"]:
+        fceb_dict["high"] = "N/A"
     return fceb_dict
 
 
@@ -441,7 +446,7 @@ def query_pe_stakeholder_list():
     # Open connection
     conn = connect()
     # Make query
-    sql = """SELECT organizations_uid, cyhy_db_name, is_parent, parent_org_uid FROM organizations WHERE report_on = True;"""
+    sql = """SELECT organizations_uid, cyhy_db_name, is_parent, parent_org_uid FROM organizations WHERE report_on = True or runs_scans = True;"""
     pe_stakeholder_list = pd.read_sql(sql, conn)
     # Close connection
     conn.close()
@@ -481,7 +486,7 @@ def query_cyhy_snapshots(start_date, end_date):
         from organizations o
         left join cyhy_snapshots cs on
         o.organizations_uid = cs.organizations_uid
-        where o.report_on  = true and cs.cyhy_last_change  >= %(start_date)s and cs.cyhy_last_change < %(end_date)s"""
+        where (o.fceb = true or o.fceb_child = true) and o.retired = False and cs.cyhy_last_change  >= %(start_date)s and cs.cyhy_last_change < %(end_date)s"""
 
     snapshots = pd.read_sql(
         sql, conn, params={"start_date": start_date, "end_date": end_date}
@@ -518,8 +523,9 @@ def query_sofware_scans(start_date, end_date, org_id_list=[]):
         from organizations o
         left join cyhy_vuln_scans cvs on
         o.organizations_uid = cvs.organizations_uid
-        where o.report_on  = true and cvs.plugin_name = 'Unsupported Web Server Detection' and
-        cvs.cyhy_time  >= %(start_date)s and cvs.cyhy_time < %(end_date)s
+        where (o.fceb = true or o.fceb_child = True) and o.retired = False
+        and cvs.plugin_name = 'Unsupported Web Server Detection'
+        and cvs.cyhy_time  >= %(start_date)s and cvs.cyhy_time < %(end_date)s
         group by o.organizations_uid, o.cyhy_db_name """
 
         software_count = pd.read_sql(
@@ -557,7 +563,7 @@ def query_cyhy_port_scans(start_date, end_date, org_uid_list=[]):
                 from organizations o
                 left join cyhy_port_scans cps on
                 o.organizations_uid = cps.organizations_uid
-                where o.report_on = True and cps.cyhy_time  >= %(end_date)s and cps.cyhy_time < %(end_date)s
+                where (o.fceb = True or o.fceb_child = True) and o.retired = False and cps.cyhy_time  >= %(end_date)s and cps.cyhy_time < %(end_date)s
                 """
 
             port_data = pd.read_sql(
@@ -626,7 +632,7 @@ def query_vuln_tickets(org_id_list=[]):
                 where ct.time_closed is Null and false_positive = False
                 group by ct.organizations_uid) cnts
             on  o.organizations_uid =cnts.organizations_uid
-            where o.report_on = True;
+            where (o.fceb = True or o.fceb_child = True) and retired = False;
         """
 
         vs_vuln_counts = pd.read_sql(sql, conn)
@@ -881,13 +887,47 @@ def get_scorecard_metrics_past(org_uid, date):
     return df
 
 
-def determine_grade_dir(current_value, past_value):
-    """Determine the trending arrow for letter grades."""
-    grades = ["F", "D-", "D", "D+", "C-", "C", "C+", "B-", "B", "B+", "A-", "A", "A+"]
+def find_last_scan_date():
+    """Find the most recent time we pulled data from cyhy."""
+    conn = connect()
 
-    if grades.index(current_value) < grades.index(past_value):
-        return -1
-    elif grades.index(current_value) > grades.index(past_value):
-        return 1
-    else:
-        return 0
+    sql = """
+    select max(last_seen) from cyhy_sslyze cs
+    """
+    cur = conn.cursor()
+
+    cur.execute(sql)
+    last_scanned = cur.fetchone()
+    cur.close()
+
+    close(conn)
+    return last_scanned
+
+
+def find_last_data_updated(id_list):
+    """Find the last time a stakeholder updated their data in cyhy."""
+    conn = connect()
+
+    sql = """
+        select greatest(
+            (
+                select max(first_seen) as first_seen
+                from cyhy_db_assets cda
+                where cda.org_id in %(id_list)s
+            ),
+            (
+                select max(last_seen) as last_seen
+                from cyhy_db_assets cda
+                where last_seen <> (select max(last_seen) from cyhy_db_assets cda )
+                and cda.org_id in %(id_list)s
+            )
+        );
+    """
+    cur = conn.cursor()
+
+    cur.execute(sql, {"id_list": tuple(id_list)})
+    last_updated = cur.fetchone()
+    cur.close()
+
+    close(conn)
+    return last_updated

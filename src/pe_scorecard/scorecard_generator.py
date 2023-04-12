@@ -53,16 +53,16 @@ def generate_scorecards(month, year, output_directory):
             start_date, end_date
         )
         was_fceb_ttr = query_was_fceb_ttr(start_date)
-        print(was_fceb_ttr)
 
         for index, org in scorecard_orgs.iterrows():
             if org["fceb"]:
-                if org["cyhy_db_name"] not in ["DHS"]:
+                if org["cyhy_db_name"] not in ["DOE"]:
                     continue
                 if org["is_parent"]:
                     # Gather list of children orgs
                     children_df = scorecard_orgs[
-                        scorecard_orgs["parent_org_uid"] == org["organizations_uid"]
+                        (scorecard_orgs["parent_org_uid"] == org["organizations_uid"])
+                        & (scorecard_orgs["retired"] == False)
                     ]
                     org_uid_list = children_df["organizations_uid"].values.tolist()
                     org_uid_list.append(org["organizations_uid"])
@@ -88,8 +88,8 @@ def generate_scorecards(month, year, output_directory):
                     was_fceb_ttr,
                 )
                 scorecard.fill_scorecard_dict()
+                scorecard.generate_scorecard(output_directory)
                 # scorecard.calculate_ips_counts()
-                # print(scorecard.scorecard_dict)
 
                 # TODO: Get the current metric dictionary
 

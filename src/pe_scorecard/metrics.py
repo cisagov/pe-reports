@@ -11,6 +11,8 @@ import pandas as pd
 import requests
 
 from .data.db_query import (  # query_subs_https_scan,; query_iscore_vs_data_vuln,; query_iscore_pe_data_vuln,; query_iscore_pe_data_cred,; query_iscore_pe_data_breach,; query_iscore_pe_data_darkweb,; query_iscore_pe_data_protocol,; query_iscore_was_data_vuln,; query_pe_stakeholder_list,; query_kev_list,; query_was_summary,; query_cyhy_snapshots,; query_cyhy_vuln_scans,;
+    find_last_data_updated,
+    find_last_scan_date,
     get_scorecard_metrics_past,
     query_certs_counts,
     query_cyhy_port_scans,
@@ -25,6 +27,7 @@ from .data.db_query import (  # query_subs_https_scan,; query_iscore_vs_data_vul
     query_vuln_tickets,
     query_webapp_counts,
 )
+from .unified_scorecard_generator import create_scorecard
 
 BOD1801_DMARC_RUA_URI = "mailto:reports@dmarc.cyber.dhs.gov"
 # Setup logging to central
@@ -52,8 +55,17 @@ class Scorecard:
             "agency_id": org_data["cyhy_db_name"],
             "sector_name": "FCEB" if org_data["fceb"] is True else "Sector",
             "date": calendar.month_name[int(month)] + " " + year,
-            "last_data_sent_date": "NEED TO CALCULATE",
+            "data_pulled_date": find_last_scan_date()[0].strftime("%b %d, %Y"),
         }
+
+        last_updated = find_last_data_updated(cyhy_id_list)[0]
+
+        if not last_updated:
+            last_updated = org_data["cyhy_period_start"].strftime("%b %d, %Y")
+        else:
+            last_updated = last_updated.strftime("%b %d, %Y")
+
+        self.scorecard_dict["last_data_sent_date"] = last_updated
 
         start_date = datetime.date(int(year), int(month), 1)
         end_date = (start_date + datetime.timedelta(days=32)).replace(day=1)
@@ -292,10 +304,16 @@ class Scorecard:
         webapp_df = self.webapp_counts
         was_fceb_ttr = self.was_fceb_ttr
 
-        self.scorecard_dict["webapp_org_critical_ttr"] = webapp_df[
-            "crit_rem_time"
-        ].mean()
-        self.scorecard_dict["webapp_org_high_ttr"] = webapp_df["high_rem_time"].mean()
+        was_critical_attr = webapp_df["crit_rem_time"].mean()
+        if not was_critical_attr:
+            self.scorecard_dict["webapp_org_critical_ttr"] = was_critical_attr
+        else:
+            self.scorecard_dict["webapp_org_critical_ttr"] = "N/A"
+        was_high_attr = webapp_df["high_rem_time"].mean()
+        if not was_high_attr:
+            self.scorecard_dict["webapp_org_high_ttr"] = was_high_attr
+        else:
+            self.scorecard_dict["webapp_org_high_ttr"] = "N/A"
 
         self.scorecard_dict["webapp_sector_crtical_ttr"] = was_fceb_ttr["critical"]
         self.scorecard_dict["webapp_sector_high_ttr"] = was_fceb_ttr["high"]
@@ -309,7 +327,7 @@ class Scorecard:
 
     def fill_scorecard_dict(self):
         """Fill dictionary with scorecard metrics."""
-        print("Filling scorecard")
+        print("Filling scorecard dictionary")
         self.calculate_discovery_metrics_counts()
         self.calculate_profiling_metrics()
         self.calculate_identification_metrics()
@@ -544,10 +562,10 @@ class Scorecard:
             ]
             email_compliance_last_period = self.scorecard_dict["email_compliance_pct"]
             https_compliance_last_period = self.scorecard_dict["https_compliance_pct"]
-            discovery_trend = self.scorecard_dict.get("discovery_score", None)
-            profiling_trend = self.scorecard_dict.get("profiling_score", None)
-            identification_trend = self.scorecard_dict.get("identification_score", None)
-            tracking_trend = self.scorecard_dict.get("tracking_score", None)
+            discovery_trend = self.scorecard_dict.get("discovery_score", 0)
+            profiling_trend = self.scorecard_dict.get("profiling_score", 0)
+            identification_trend = self.scorecard_dict.get("identification_score", 0)
+            tracking_trend = self.scorecard_dict.get("tracking_score", 0)
         else:
             ips_trend_pct = scorecard_dict_past["ips_monitored_pct"]
             domains_trend_pct = scorecard_dict_past["domains_monitored_pct"]
@@ -585,3 +603,18 @@ class Scorecard:
             "tracking_trend": tracking_trend,
         }
         self.scorecard_dict.update(past_scorecard_metrics_dict)
+
+    def generate_scorecard(self, output_directory):
+        """Generate a scorecard with the prefilled data_dictionary."""
+        scorecard_dict = self.scorecard_dict
+
+        file_name = (
+            output_directory
+            + "/scorecard_"
+            + scorecard_dict["agency_id"]
+            + "_"
+            + self.start_date.strftime("%b-%Y")
+            + ".pdf"
+        )
+
+        create_scorecard(scorecard_dict, file_name, True, False)

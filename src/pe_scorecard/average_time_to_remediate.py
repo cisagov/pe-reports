@@ -103,7 +103,7 @@ def get_tickets(start_date, end_date):
         from cyhy_tickets ct
         left join organizations o on
         o.organizations_uid = ct.organizations_uid
-        where ct.false_positive = 'False' and ct.time_closed >= %(start_date)s and ct.time_closed < %(end_date)s and o.fceb = 'True'"""
+        where ct.false_positive = 'False' and ct.time_closed >= %(start_date)s and ct.time_closed < %(end_date)s and (o.fceb = True or o.fceb_child = True)"""
         tickets_df = pd.read_sql(
             sql, conn, params={"start_date": start_date, "end_date": end_date}
         )
