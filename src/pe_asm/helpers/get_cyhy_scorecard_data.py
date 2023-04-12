@@ -101,7 +101,6 @@ def get_cyhy_port_scans(staging=False):
         if (port_scans_count % 100000 == 0) or (
             port_scans_count == (port_scans_total - skip_count)
         ):
-
             # Insert port_scans data into the P&E database
             LOGGER.info("Inserting port_scans data")
             port_scans_df = pd.DataFrame(small_list)
@@ -199,7 +198,6 @@ def get_cyhy_snapshots(staging=False):
         if (snapshots_count % 10000 == 0) or (
             snapshots_count == (snapshots_total - skip_count)
         ):
-
             # Insert snapshot data into the P&E database
             LOGGER.info("Inserting snapshot data")
             snapshot_df = pd.DataFrame(small_list)
@@ -241,12 +239,11 @@ def get_cyhy_tickets(staging=False):
     cyhy_db = mongo_connect()
     LOGGER.info("Connection successful")
     collection = cyhy_db["tickets"]
-    query = {}
+    query = {"owner": "DOE"}
     tickets_data = collection.find(query, no_cursor_timeout=True)
 
     # Loop through cyhy tickets collection
-    tickets_list = []
-    small_list = []
+    ticket_list = []
     tickets_count = 0
     skip_count = 0
     tickets_total = collection.count_documents(query)
@@ -275,22 +272,22 @@ def get_cyhy_tickets(staging=False):
             "organizations_uid": pe_org_uid,
             "cyhy_id": str(ticket["_id"]),
             "false_positive": ticket["false_positive"],
-            "time_opened": str(ticket["time_opened"]),
-            "time_closed": str(ticket["time_closed"]),
+            "time_opened": ticket["time_opened"],
+            "time_closed": ticket["time_closed"],
             "cvss_base_score": ticket["details"].get("cvss_base_score"),
             "cve": ticket["details"].get("cve"),
             "first_seen": DATE,
             "last_seen": DATE,
+            "source": ticket.get("source"),
         }
         tickets_count += 1
-        tickets_list.append(ticket_dict)
-        small_list.append(ticket_dict)
+        ticket_list.append(ticket_dict)
         if (tickets_count % 100000 == 0) or (
             tickets_count == (tickets_total - skip_count)
         ):
             # Insert vulns_scans data into the P&E database
             LOGGER.info("Inserting ticket data")
-            tickets_df = pd.DataFrame(small_list)
+            tickets_df = pd.DataFrame(ticket_list)
             table_name = "cyhy_tickets"
             on_conflict = """
                         ON CONFLICT (cyhy_id)
@@ -301,10 +298,11 @@ def get_cyhy_tickets(staging=False):
                             time_opened = EXCLUDED.time_opened,
                             time_closed = EXCLUDED.time_closed,
                             cvss_base_score = EXCLUDED.cvss_base_score,
+                            source = EXCLUDED.source,
                             cve = EXCLUDED.cve;
                         """
             insert_cyhy_scorecard_data(pe_db_conn, tickets_df, table_name, on_conflict)
-            small_list = []
+            ticket_list = []
             LOGGER.info("%d/%d complete", tickets_count, tickets_total - skip_count)
 
     pe_db_conn.close()
@@ -372,6 +370,7 @@ def get_cyhy_vuln_scans(staging=False):
             "cve": vuln_scan.get("cve"),
             "first_seen": DATE,
             "last_seen": DATE,
+            "ip": vuln_scan.get("ip"),
         }
         vuln_scans_count += 1
         vuln_scans_list.append(vuln_scans_dict)
@@ -396,6 +395,7 @@ def get_cyhy_vuln_scans(staging=False):
                             cyhy_time = EXCLUDED.cyhy_time,
                             plugin_name = EXCLUDED.plugin_name,
                             cvss_base_score = EXCLUDED.cvss_base_score,
+                            ip = EXCLUDED.ip,
                             cve = EXCLUDED.cve;
                         """
             insert_cyhy_scorecard_data(
@@ -430,7 +430,6 @@ def get_cyhy_kevs(staging=False):
     kev_total = collection.count_documents(query)
     LOGGER.info("%d total documents", kev_total)
     for kev in kev_data:
-
         # Create kev object
         kev_dict = {
             "kev": kev["_id"],
