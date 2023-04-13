@@ -186,9 +186,9 @@ def insert_cyhy_agencies(conn, cyhy_agency_df):
             sql = """
             INSERT INTO organizations(name, cyhy_db_name, agency_type, retired,
             receives_cyhy_report, receives_bod_report, receives_cybex_report,
-            is_parent, fceb, password) VALUES (%s, %s, %s, %s,
+            is_parent, fceb, cyhy_period_start, password) VALUES (%s, %s, %s, %s,
              %s, %s, %s,
-             %s, %s, PGP_SYM_ENCRYPT(%s, %s))
+             %s, %s, %s, PGP_SYM_ENCRYPT(%s, %s))
             ON CONFLICT (cyhy_db_name)
             DO UPDATE SET
                 name = EXCLUDED.name,
@@ -199,7 +199,8 @@ def insert_cyhy_agencies(conn, cyhy_agency_df):
                 receives_bod_report= EXCLUDED.receives_bod_report,
                 receives_cybex_report = EXCLUDED.receives_cybex_report,
                 is_parent = EXCLUDED.is_parent,
-                fceb = EXCLUDED.fceb
+                fceb = EXCLUDED.fceb,
+                cyhy_period_start = EXCLUDED.cyhy_period_start
             """
             cur.execute(
                 sql,
@@ -213,6 +214,7 @@ def insert_cyhy_agencies(conn, cyhy_agency_df):
                     row["receives_cybex_report"],
                     row["is_parent"],
                     row["fceb"],
+                    row["cyhy_period_start"],
                     row["password"],
                     password,
                 ),
@@ -229,7 +231,7 @@ def insert_cyhy_agencies(conn, cyhy_agency_df):
 def query_pe_orgs(conn):
     """Query P&E organizations."""
     sql = """
-    SELECT organizations_uid, cyhy_db_name, name, agency_type, report_on
+    SELECT organizations_uid, cyhy_db_name, name, agency_type, report_on, fceb
     FROM organizations o
     """
     df = pd.read_sql(sql, conn)
@@ -622,3 +624,13 @@ def identified_sub_domains(conn):
     )
     conn.commit()
     cursor.close()
+
+
+def get_fceb_orgs(conn):
+    """Query fceb orgs."""
+    sql = """select * from organizations o 
+            where o.fceb or o.fceb_child;
+            """
+    df = pd.read_sql(sql, conn)
+    fceb_list = list(df["cyhy_db_name"])
+    return fceb_list
