@@ -7,10 +7,11 @@ import logging
 
 # Third-Party Libraries
 from bs4 import BeautifulSoup
+import numpy as np
 import pandas as pd
 import requests
 
-from .data.db_query import (  # query_subs_https_scan,; query_iscore_vs_data_vuln,; query_iscore_pe_data_vuln,; query_iscore_pe_data_cred,; query_iscore_pe_data_breach,; query_iscore_pe_data_darkweb,; query_iscore_pe_data_protocol,; query_iscore_was_data_vuln,; query_pe_stakeholder_list,; query_kev_list,; query_was_summary,; query_cyhy_snapshots,; query_cyhy_vuln_scans,;
+from .data.db_query import (
     find_last_data_updated,
     find_last_scan_date,
     get_scorecard_metrics_past,
@@ -21,7 +22,7 @@ from .data.db_query import (  # query_subs_https_scan,; query_iscore_vs_data_vul
     query_ips_counts,
     query_kev_list,
     query_open_vulns,
-    query_sofware_scans,
+    query_software_scans,
     query_sslyze_scan,
     query_trusty_mail,
     query_vuln_tickets,
@@ -83,7 +84,7 @@ class Scorecard:
         self.cert_counts = query_certs_counts()
 
         self.ports_data = query_cyhy_port_scans(start_date, end_date, org_uid_list)
-        self.software_counts = query_sofware_scans(start_date, end_date, org_uid_list)
+        self.software_counts = query_software_scans(start_date, end_date, org_uid_list)
 
         self.vs_vuln_counts = query_vuln_tickets(org_uid_list)
         # self.vs_remediation = query_vuln_remediation(start_date, end_date, org_uid_list)
@@ -186,7 +187,7 @@ class Scorecard:
     def calculate_profiling_metrics(self):
         """Summarize profiling findings into key metrics."""
         ports_df = self.ports_data
-
+        print(ports_df)
         insecure_protocols_list = [
             "rdp",
             "telnet",
@@ -253,18 +254,42 @@ class Scorecard:
     def calculate_tracking_metrics(self):
         """Summarize tracking findings into key metrics."""
         vs_remediation_df = self.vs_remediation
-        self.scorecard_dict["vuln_org_kev_ttr"] = vs_remediation_df["ATTR KEVs"].mean()
-        self.scorecard_dict["vuln_org_critical_ttr"] = vs_remediation_df[
-            "ATTR Crits"
-        ].mean()
-        self.scorecard_dict["vuln_org_high_ttr"] = vs_remediation_df[
-            "ATTR Highs"
-        ].mean()
+        vs_remediation_df = vs_remediation_df.replace({np.NaN: None})
+        print(vs_remediation_df)
+        vuln_kev_attr = vs_remediation_df["ATTR KEVs"].mean()
+        if vuln_kev_attr is np.nan:
+            self.scorecard_dict["vuln_org_kev_ttr"] = "N/A"
+        else:
+            self.scorecard_dict["vuln_org_kev_ttr"] = round(vuln_kev_attr, 2)
+
+        vuln_critical_attr = vs_remediation_df["ATTR Crits"].mean()
+        if vuln_critical_attr is np.nan:
+            self.scorecard_dict["vuln_org_critical_ttr"] = "N/A"
+        else:
+            self.scorecard_dict["vuln_org_critical_ttr"] = round(vuln_critical_attr, 2)
+
+        vuln_high_attr = vs_remediation_df["ATTR Highs"].mean()
+        if vuln_high_attr is np.nan:
+            self.scorecard_dict["vuln_org_high_ttr"] = "N/A"
+        else:
+            self.scorecard_dict["vuln_org_high_ttr"] = round(vuln_high_attr, 2)
 
         vs_fceb_df = self.vs_fceb_results
-        self.scorecard_dict["vuln_sector_kev_ttr"] = vs_fceb_df["ATTR KEVs"]
-        self.scorecard_dict["vuln_sector_critical_ttr"] = vs_fceb_df["ATTR Crits"]
-        self.scorecard_dict["vuln_sector_high_ttr"] = vs_fceb_df["ATTR Highs"]
+        self.scorecard_dict["vuln_sector_kev_ttr"] = (
+            "N/A"
+            if vs_fceb_df["ATTR KEVs"] is np.nan
+            else round(vs_fceb_df["ATTR KEVs"], 2)
+        )
+        self.scorecard_dict["vuln_sector_critical_ttr"] = (
+            "N/A"
+            if vs_fceb_df["ATTR Crits"] is np.nan
+            else round(vs_fceb_df["ATTR Crits"], 2)
+        )
+        self.scorecard_dict["vuln_sector_high_ttr"] = (
+            "N/A"
+            if vs_fceb_df["ATTR Highs"] is np.nan
+            else round(vs_fceb_df["ATTR Highs"], 2)
+        )
 
         # Calculate bod compliance percentage
         open_tickets_df = self.vs_open_vulns

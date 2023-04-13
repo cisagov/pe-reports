@@ -54,6 +54,7 @@ def close(conn):
 
 def get_orgs():
     """Query organizations table."""
+    print("running get_orgs")
     conn = connect()
     sql = (
         """SELECT * FROM organizations where (fceb or fceb_child) and retired = False"""
@@ -67,7 +68,7 @@ def get_orgs():
 def query_ips_counts(org_uid_list):
     """Query database for ips found from cidrs and discovered by other means."""
     conn = connect()
-
+    print("running query_ips_counts")
     sql = """
         SELECT * from vw_orgs_total_ips
         where organizations_uid in %(org_list)s
@@ -98,7 +99,7 @@ def query_ips_counts(org_uid_list):
 def query_domain_counts(org_uid_list):
     """Query domain counts."""
     conn = connect()
-
+    print("running query_domain_counts")
     # cur = conn.cursor()
     sql = """
         select o.organizations_uid, o.cyhy_db_name,
@@ -125,7 +126,7 @@ def query_domain_counts(org_uid_list):
 def query_was_fceb_ttr(date_period):
     """Calculate Summary results for all of FCEB."""
     conn = connect()
-
+    print("running query_was_fceb_ttr")
     sql = """
     SELECT avg(wh.crit_rem_time) as fceb_critical, avg(wh.high_rem_time) as fceb_high
     from was_history wh
@@ -159,7 +160,7 @@ def query_webapp_counts(date_period, org_uid_list):
     """Query webapp counts."""
     # TODO update query to pull critical and high vulns
     conn = connect()
-
+    print("running query_webapp_counts")
     sql = """
             select o.organizations_uid, o.cyhy_db_name, cnts.date_scanned,
             coalesce(cnts.vuln_cnt, 0) as vuln_cnt,
@@ -204,6 +205,7 @@ def query_certs_counts():
 def query_https_scan(org_id_list):
     """Query https scan results for a given agency and month."""
     conn = connect()
+    print("running query_https_scan")
     try:
         # Not sure if this should be a date filter or just latest = True
         sql = """SELECT * FROM cyhy_https_scan where cyhy_latest is True and organizations_uid IN %(org_id_list)s"""
@@ -227,6 +229,7 @@ def query_sslyze_scan(org_id_list, port_list):
     """Query sslyze scan results for a given agency and month."""
     # "domain", "scanned_port", "scanned_hostname", "sslv2", "sslv3", "any_3des", "any_rc4", "is_symantec_cert
     conn = connect()
+    print("running query_sslyze_scan")
     try:
         # Need to verify where statement: other options scan_date, first_seen, last_seen
         sql = """
@@ -257,6 +260,7 @@ def query_trusty_mail(org_id_list):
     #         {"latest": True, "agency.name": agency}, no_cursor_timeout=True
     #     )
     conn = connect()
+    print("running query_trusty_mail")
     try:
         # Need to verify where statement: other options scan_date, first_seen, last_seen
         sql = """SELECT * FROM cyhy_trustymail where cyhy_latest is True and organizations_uid in %(org_uid)s"""
@@ -456,6 +460,7 @@ def query_pe_stakeholder_list():
 # ----- KEV List -----
 def query_kev_list():
     """Query list of all CVE names that are considered KEVs."""
+    print("running query_kev_list2")
     # Open connection
     conn = connect()
     # Make query
@@ -464,19 +469,6 @@ def query_kev_list():
     # Close connection
     conn.close()
     return kev_list
-
-
-def query_was_summary(last_updated):
-    """Query PE database for WAS summary data."""
-    conn = connect()
-
-    sql = """SELECT was_org_id, webapp_count, webapp_with_vulns_count, last_updated
-        from was_summary ws
-        where last_updated = %(last_updated)s"""
-
-    was_summary_data = pd.read_sql(sql, conn, params={"last_updated": last_updated})
-    conn.close
-    return was_summary_data
 
 
 def query_cyhy_snapshots(start_date, end_date):
@@ -496,9 +488,10 @@ def query_cyhy_snapshots(start_date, end_date):
 
 
 # **
-def query_sofware_scans(start_date, end_date, org_id_list=[]):
+def query_software_scans(start_date, end_date, org_id_list=[]):
     """Query the PE database for vuln data identified by the VS team scans."""
     conn = connect()
+    print("running query_software_scans")
     if org_id_list:
         sql = """select o.organizations_uid, o.cyhy_db_name, count(cvs.plugin_name)
         from organizations o
@@ -541,12 +534,13 @@ def query_cyhy_port_scans(start_date, end_date, org_uid_list=[]):
     """Query port info identified by vulnerability scanning."""
     try:
         conn = connect()
+        print("running query_cyhy_port_scans")
         if org_uid_list:
             sql = """select o.organizations_uid, o.cyhy_db_name, cps.ip, cps.port, cps.service_name, cps.state
                 from organizations o
                 left join cyhy_port_scans cps on
                 o.organizations_uid = cps.organizations_uid
-                where cps.cyhy_time  >= %(end_date)s and cps.cyhy_time < %(end_date)s
+                where cps.cyhy_time  >= %(start_date)s and cps.cyhy_time < %(end_date)s
                 and o.organizations_uid in %(org_list)s """
 
             port_data = pd.read_sql(
@@ -583,6 +577,7 @@ def query_cyhy_port_scans(start_date, end_date, org_uid_list=[]):
 def query_vuln_tickets(org_id_list=[]):
     """Query current open vulns counts based on tickets."""
     conn = connect()
+    print("running query_vuln_tickets")
     if org_id_list:
         sql = """
             select
@@ -646,6 +641,7 @@ def query_vuln_tickets(org_id_list=[]):
 def query_vuln_remediation(start_date, end_date, org_id_list):
     """Query vulnerability time to remediate."""
     conn = connect()
+    print("running query_vuln_remediation")
     try:
         sql = """select o.cyhy_db_name, o.fceb, o.report_on, ct.cvss_base_score, ct.cve, ct.time_opened, ct.time_closed
         from organizations o
@@ -674,6 +670,7 @@ def query_vuln_remediation(start_date, end_date, org_id_list):
 def query_open_vulns(org_id_list):
     """Query open vulnerabilities time since first seen."""
     conn = connect()
+    print("running query_open_vulns")
     try:
         sql = """
         select o.cyhy_db_name, o.fceb, ct.cvss_base_score, ct.cve, ct.time_opened
