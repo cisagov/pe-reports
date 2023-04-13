@@ -94,7 +94,7 @@ setup(
             "data/dnsmonitor/*",
             "data/pe_db/*",
         ],
-        "pe_asm": ["data/*"],
+        "pe_asm": ["data/*", "helpers/*", "port_scans/*"],
         "pe_scorecard": ["data/*", "fonts/*", "scorecard_assets/*"],
     },
     py_modules=[splitext(basename(path))[0] for path in glob("src/*.py")],

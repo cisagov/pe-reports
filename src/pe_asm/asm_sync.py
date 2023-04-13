@@ -40,8 +40,8 @@ from .helpers.get_cyhy_scorecard_data import (
     get_cyhy_https_scan,
     get_cyhy_trustymail,
     get_cyhy_sslyze,
-    get_cyhy_port_scans,
 )
+from .port_scans.run_port_scans import get_cyhy_port_scans
 
 # from .helpers.query_cyhy_port_scans import get_cyhy_port_scans
 from .data.cyhy_db_query import (
