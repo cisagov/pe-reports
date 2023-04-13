@@ -198,12 +198,11 @@ def create_scorecard(data_dict, file_name, include_trending=True, include_scores
         leading=20,
     )
     agency_frame = Frame(0.25 * inch, 657, 8 * inch, 0.6 * inch, showBoundary=False)
+    name = data_dict["agency_name"]
+    if len(name) > 48:
+        name = data_dict["agency_id"]
     agency_frame.addFromList(
-        [
-            Paragraph(
-                data_dict["agency_name"] + " - " + data_dict["date"], style=agency_style
-            )
-        ],
+        [Paragraph(name + " - " + data_dict["date"], style=agency_style)],
         can,
     )
     can.setLineWidth(1.5)

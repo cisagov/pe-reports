@@ -98,6 +98,7 @@ def get_age(start_time, end_time):
 def get_tickets(start_date, end_date):
     """Query cyhy tickets between two dates."""
     conn = connect()
+    print("running get_tickets")
     try:
         sql = """select o.cyhy_db_name, o.fceb, o.report_on, ct.cvss_base_score, ct.cve, ct.time_opened, ct.time_closed
         from cyhy_tickets ct
@@ -118,6 +119,7 @@ def get_tickets(start_date, end_date):
 def get_kevs():
     """Query all the kevs from the database."""
     conn = connect()
+    print("running get_kevs")
     try:
         sql = """select kev from cyhy_kevs"""
         kevs_df = pd.read_sql(sql, conn)

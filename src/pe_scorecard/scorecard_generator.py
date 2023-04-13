@@ -56,7 +56,7 @@ def generate_scorecards(month, year, output_directory):
 
         for index, org in scorecard_orgs.iterrows():
             if org["fceb"]:
-                if org["cyhy_db_name"] not in ["DOE"]:
+                if org["cyhy_db_name"] not in ["NARA"]:
                     continue
                 if org["is_parent"]:
                     # Gather list of children orgs
