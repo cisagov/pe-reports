@@ -30,7 +30,7 @@ import pe_scorecard
 
 from ._version import __version__
 from .average_time_to_remediate import calculate_time_to_remediate
-from .data.db_query import get_orgs, query_was_fceb_ttr
+from .data.db_query import get_orgs, query_was_fceb_ttr, execute_scorecard_summary_data
 from .metrics import Scorecard
 
 LOGGER = logging.getLogger(__name__)
@@ -91,17 +91,8 @@ def generate_scorecards(month, year, output_directory):
                 scorecard.generate_scorecard(output_directory)
                 # scorecard.calculate_ips_counts()
 
-                # TODO: Get the current metric dictionary
-
-                # TODO: Insert into the summary table
-                # execute_scorecard_summary_data(data_dict)
-
-                # TODO: Get past data
-                # get_last_month_metrics
-
-                # TODO: Append current and past dictionary
-
-                # TODO: Call the report generator passing the dictionary
+                # Insert dictionary into the summary table
+                execute_scorecard_summary_data(scorecard.scorecard_dict)
 
 
 def main():
