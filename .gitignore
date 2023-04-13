@@ -35,3 +35,5 @@ src/adhoc/data/database.ini
 src/pe_reports/assets/*.png
 src/pe_reports/pe_reports_django_project/.env
 pe-reports/src/pe_reports/scorecard_assets/*.png
+src/pe_asm/port_scans/src/pkg
+src/pe_asm/port_scans/config.json
