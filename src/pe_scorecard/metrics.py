@@ -402,11 +402,6 @@ class Scorecard:
             )
 
             if domain["live"]:
-                if domain["is_base_domain"] or (
-                    not domain["is_base_domain"] and domain["domain_supports_smtp"]
-                ):
-                    base_domain_plus_smtp_subdomain_count += 1
-
                 domain["valid_dmarc2"] = (
                     domain["valid_dmarc"] or domain["valid_dmarc_base_domain"]
                 )
@@ -430,7 +425,11 @@ class Scorecard:
                     domain["valid_dmarc_policy_reject"] = True
 
                 domain["valid_dmarc_policy_pct"] = False
-                if domain["valid_dmarc2"] and domain["dmarc_policy_percentage"] == 100:
+
+                if (
+                    domain["valid_dmarc2"]
+                    and domain["dmarc_policy_percentage"] == "100"
+                ):
                     domain["valid_dmarc_policy_pct"] = True
 
                 domain["valid_dmarc_policy_of_reject"] = False
@@ -460,15 +459,23 @@ class Scorecard:
                             domain["valid_dmarc_bod1801_rua_uri"] = True
                             break
 
-                if (
-                    domain["spf_covered"]
-                    and not domain["domain_has_weak_crypto"]
-                    and domain["valid_dmarc_policy_reject"]
-                    and domain["valid_dmarc_subdomain_policy_reject"]
-                    and domain["valid_dmarc_policy_pct"]
-                    and domain["valid_dmarc_bod1801_rua_uri"]
+                if domain["is_base_domain"] or (
+                    not domain["is_base_domain"] and domain["domain_supports_smtp"]
                 ):
-                    bod_1801_compliant_count += 1
+                    base_domain_plus_smtp_subdomain_count += 1
+                    if (
+                        domain["domain_supports_smtp"]
+                        and domain["domain_supports_starttls"]
+                    ) or not domain["domain_supports_smtp"]:
+                        if (
+                            domain["spf_covered"]
+                            and not domain["domain_has_weak_crypto"]
+                            and domain["valid_dmarc_policy_reject"]
+                            and domain["valid_dmarc_subdomain_policy_reject"]
+                            and domain["valid_dmarc_policy_pct"]
+                            and domain["valid_dmarc_bod1801_rua_uri"]
+                        ):
+                            bod_1801_compliant_count += 1
 
         bod_1801_compliant_percentage = round(
             bod_1801_compliant_count / base_domain_plus_smtp_subdomain_count * 100.0,
