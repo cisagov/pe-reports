@@ -44,8 +44,6 @@ def get_cyhy_port_scans(staging=False):
     fceb_orgs_list = get_fceb_orgs(pe_db_conn)
     total_fceb = len(fceb_orgs_list)
     fceb_orgs_list = [
-        "TREAS",
-        "DOE",
         "USDA",
         "TREAS_AUC",
         "HUDOIG",
