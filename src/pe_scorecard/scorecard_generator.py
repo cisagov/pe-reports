@@ -29,8 +29,14 @@ from schema import And, Schema, SchemaError, Use
 import pe_scorecard
 
 from ._version import __version__
-from .average_time_to_remediate import calculate_time_to_remediate
-from .data.db_query import get_orgs, query_was_fceb_ttr, execute_scorecard_summary_data
+
+# from .average_time_to_remediate import calculate_time_to_remediate
+from .data.db_query import (
+    execute_scorecard_summary_data,
+    get_orgs,
+    query_fceb_ttr,
+    query_was_fceb_ttr,
+)
 from .metrics import Scorecard
 
 LOGGER = logging.getLogger(__name__)
@@ -46,17 +52,21 @@ def generate_scorecards(month, year, output_directory):
     if not scorecard_orgs.empty:
         LOGGER.info("Orgs count: %d", len(scorecard_orgs))
         start_date = datetime.date(int(year), int(month), 1)
-        end_date = (start_date + datetime.timedelta(days=32)).replace(day=1)
+        # end_date = (start_date + datetime.timedelta(days=32)).replace(day=1)
 
         # If we need to generate all scores first, do so here:
-        (avg_time_to_remediate_df, vs_fceb_results) = calculate_time_to_remediate(
-            start_date, end_date
+        # (avg_time_to_remediate_df, vs_fceb_results) = calculate_time_to_remediate(
+        #     start_date, end_date
+        # )
+        (avg_time_to_remediate_df, vs_fceb_results) = query_fceb_ttr(
+            int(month), int(year)
         )
+
         was_fceb_ttr = query_was_fceb_ttr(start_date)
 
         for index, org in scorecard_orgs.iterrows():
             if org["fceb"]:
-                if org["cyhy_db_name"] not in ["NARA"]:
+                if org["cyhy_db_name"] not in ["DHS"]:
                     continue
                 if org["is_parent"]:
                     # Gather list of children orgs
@@ -76,6 +86,21 @@ def generate_scorecards(month, year, output_directory):
                 vs_time_to_remediate = avg_time_to_remediate_df[
                     avg_time_to_remediate_df["cyhy_db_name"].isin(cyhy_id_list)
                 ]
+
+                total_kevs = vs_time_to_remediate["kev_count"].sum()
+                vs_time_to_remediate["weighted_kev"] = (
+                    vs_time_to_remediate["kev_count"] / total_kevs
+                ) * vs_time_to_remediate["kev_ttr"]
+
+                total_critical = vs_time_to_remediate["critical_count"].sum()
+                vs_time_to_remediate["weighted_critical"] = (
+                    vs_time_to_remediate["critical_count"] / total_critical
+                ) * vs_time_to_remediate["critical_ttr"]
+
+                total_high = vs_time_to_remediate["high_count"].sum()
+                vs_time_to_remediate["weighted_high"] = (
+                    vs_time_to_remediate["high_count"] / total_high
+                ) * vs_time_to_remediate["high_ttr"]
 
                 scorecard = Scorecard(
                     month,

@@ -860,7 +860,7 @@ def execute_scorecard_summary_data(summary_dict):
                 summary_dict["vuln_high_bod_19-02"],
                 AsIs(summary_dict["webapp_org_critical_ttr"]),
                 AsIs(summary_dict["webapp_org_high_ttr"]),
-                AsIs(summary_dict["webapp_sector_crtical_ttr"]),
+                AsIs(summary_dict["webapp_sector_critical_ttr"]),
                 AsIs(summary_dict["webapp_sector_high_ttr"]),
                 AsIs(summary_dict["email_compliance_pct"]),
                 AsIs(summary_dict["https_compliance_pct"]),
@@ -928,3 +928,36 @@ def find_last_data_updated(id_list):
 
     close(conn)
     return last_updated
+
+
+def query_fceb_ttr(month, year):
+    """Return FCEB time to remediate data for vulns closed in a given month and year."""
+    conn = connect()
+    sql = """
+    select organizations_uid, cyhy_db_name,
+    EXTRACT(epoch FROM kev_ttr) / 86400 as kev_ttr, kev_count,
+    EXTRACT(epoch FROM critical_ttr) / 86400 as critical_ttr, critical_count,
+    EXTRACT(epoch FROM high_ttr) / 86400 as high_ttr, high_count
+    from vw_fceb_time_to_remediate
+    where month_seen = %(month_seen)s and year_seen = %(year_seen)s
+    """
+    df = pd.read_sql(sql, conn, params={"month_seen": month, "year_seen": year})
+    conn.close()
+    df_unedited = df.copy()
+    total_kevs = df["kev_count"].sum()
+    df["weighted_kev"] = (df["kev_count"] / total_kevs) * df["kev_ttr"]
+
+    total_critical = df["critical_count"].sum()
+    df["weighted_critical"] = (df["critical_count"] / total_critical) * df[
+        "critical_ttr"
+    ]
+
+    total_high = df["high_count"].sum()
+    df["weighted_high"] = (df["high_count"] / total_high) * df["high_ttr"]
+    fceb_dict = {
+        "name": "FCEB",
+        "ATTR KEVs": df["weighted_kev"].sum(),
+        "ATTR Crits": df["weighted_critical"].sum(),
+        "ATTR Highs": df["weighted_high"].sum(),
+    }
+    return (df_unedited, fceb_dict)

@@ -201,35 +201,36 @@ class Scorecard:
             "kerberos",
         ]
         services_list = ["http", "https", "http-proxy"]
+        # ports_df.groupby(['ip', 'port']).ngroups
+        total_ports = set()  # *
+        insecure_ports = set()  # *
+        total_protocols = set()
+        insecure_protocols = set()
+        total_services = set()
 
-        total_ports = []
-        insecure_ports = []
-        total_protocols = []
-        insecure_protocols = []
-        total_services = []
-
+        ports_df
         for index2, portscan in ports_df.iterrows():
-            if [portscan["ip"], portscan["port"]] not in total_ports:
-                total_ports.append([portscan["ip"], portscan["port"]])
+            if (portscan["ip"], portscan["port"]) not in total_ports:
+                total_ports.add((portscan["ip"], portscan["port"]))
+                # Currently this won't allow multiple risky services on the same port
                 if (
                     portscan["service_name"] in insecure_protocols_list
                     and portscan["state"] == "open"
                 ):
-                    insecure_ports.append([portscan["ip"], portscan["port"]])
-            if [portscan["service_name"], portscan["port"]] not in total_ports:
-                total_protocols.append([portscan["service_name"], portscan["port"]])
+                    insecure_ports.add((portscan["ip"], portscan["port"]))
+
+            if (portscan["service_name"], portscan["port"]) not in total_protocols:
+                total_protocols.add((portscan["service_name"], portscan["port"]))
                 if (
                     portscan["service_name"] in insecure_protocols_list
                     and portscan["state"] == "open"
                 ):
-                    insecure_protocols.append(
-                        [portscan["service_name"], portscan["port"]]
-                    )
-            if [
+                    insecure_protocols.add((portscan["service_name"], portscan["port"]))
+            if (
                 portscan["service_name"],
                 portscan["port"],
-            ] not in total_services and portscan["service_name"] in services_list:
-                total_services.append([portscan["service_name"], portscan["port"]])
+            ) not in total_services and portscan["service_name"] in services_list:
+                total_services.add((portscan["service_name"], portscan["port"]))
 
         self.scorecard_dict["ports_total_count"] = len(total_ports)
         self.scorecard_dict["ports_risky_count"] = len(insecure_ports)
@@ -256,20 +257,20 @@ class Scorecard:
         vs_remediation_df = self.vs_remediation
         vs_remediation_df = vs_remediation_df.replace({np.NaN: None})
         print(vs_remediation_df)
-        vuln_kev_attr = vs_remediation_df["ATTR KEVs"].mean()
-        if vuln_kev_attr is np.nan:
+        vuln_kev_attr = vs_remediation_df["weighted_kev"].sum()
+        if vs_remediation_df["kev_count"].sum() == 0:
             self.scorecard_dict["vuln_org_kev_ttr"] = "N/A"
         else:
             self.scorecard_dict["vuln_org_kev_ttr"] = round(vuln_kev_attr, 2)
 
-        vuln_critical_attr = vs_remediation_df["ATTR Crits"].mean()
-        if vuln_critical_attr is np.nan:
+        vuln_critical_attr = vs_remediation_df["weighted_critical"].sum()
+        if vs_remediation_df["critical_count"].sum() == 0:
             self.scorecard_dict["vuln_org_critical_ttr"] = "N/A"
         else:
             self.scorecard_dict["vuln_org_critical_ttr"] = round(vuln_critical_attr, 2)
 
-        vuln_high_attr = vs_remediation_df["ATTR Highs"].mean()
-        if vuln_high_attr is np.nan:
+        vuln_high_attr = vs_remediation_df["weighted_high"].mean()
+        if vs_remediation_df["high_count"].sum() == 0:
             self.scorecard_dict["vuln_org_high_ttr"] = "N/A"
         else:
             self.scorecard_dict["vuln_org_high_ttr"] = round(vuln_high_attr, 2)
@@ -340,7 +341,7 @@ class Scorecard:
         else:
             self.scorecard_dict["webapp_org_high_ttr"] = "N/A"
 
-        self.scorecard_dict["webapp_sector_crtical_ttr"] = was_fceb_ttr["critical"]
+        self.scorecard_dict["webapp_sector_critical_ttr"] = was_fceb_ttr["critical"]
         self.scorecard_dict["webapp_sector_high_ttr"] = was_fceb_ttr["high"]
 
         self.scorecard_dict[

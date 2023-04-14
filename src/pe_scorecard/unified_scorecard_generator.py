@@ -1218,7 +1218,7 @@ def create_scorecard(data_dict, file_name, include_trending=True, include_scores
         [
             "Critical",
             data_dict["webapp_org_critical_ttr"],
-            data_dict["webapp_sector_crtical_ttr"],
+            data_dict["webapp_sector_critical_ttr"],
         ],
         ["High", data_dict["webapp_org_high_ttr"], data_dict["webapp_sector_high_ttr"]],
     ]
