@@ -8,14 +8,9 @@ import psycopg2
 
 # cisagov Libraries
 # from .config import config, staging_config
-from pe_reports.data.cyhy_db_query import pe_db_staging_connect as connect
-from pe_reports.data.cyhy_db_query import query_pe_orgs as get_orgs
-
-# from pe_reports.data.db_query import (
-#     connect,
-#     close,
-#     get_orgs
-# )
+# from pe_reports.data.cyhy_db_query import pe_db_staging_connect as connect
+# from pe_reports.data.cyhy_db_query import query_pe_orgs as get_orgs
+from pe_reports.data.db_query import connect, get_orgs
 
 LOGGER = logging.getLogger(__name__)
 

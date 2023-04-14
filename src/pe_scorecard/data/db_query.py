@@ -9,14 +9,12 @@ import sys
 # Third-Party Libraries
 import pandas as pd
 import psycopg2
+from psycopg2 import OperationalError
 from psycopg2.extensions import AsIs
-
-# cisagov Libraries
-from pe_reports.data.cyhy_db_query import pe_db_staging_connect as connect
 
 from .config import config, staging_config
 
-# from psycopg2 import OperationalError
+# from pe_reports.data.cyhy_db_query import pe_db_staging_connect as connect
 
 
 # Setup logging to central file
@@ -34,16 +32,16 @@ def show_psycopg2_exception(err):
     )
 
 
-# def connect():
-#     """Connect to PostgreSQL database."""
-#     conn = None
-#     try:
-#         conn = psycopg2.connect(**CONN_PARAMS_DIC)
-#     except OperationalError as err:
-#
-#         show_psycopg2_exception(err)
-#         conn = None
-#     return conn
+def connect():
+    """Connect to PostgreSQL database."""
+    conn = None
+    try:
+        conn = psycopg2.connect(**CONN_PARAMS_DIC)
+    except OperationalError as err:
+
+        show_psycopg2_exception(err)
+        conn = None
+    return conn
 
 
 def close(conn):
