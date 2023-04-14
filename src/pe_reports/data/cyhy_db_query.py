@@ -15,7 +15,7 @@ from pymongo import MongoClient
 from sshtunnel import SSHTunnelForwarder
 
 from .checkAccessor import checkCyhyRunning, checkVMrunning
-from .config import db_config, db_password_key
+from .cyhy_config import db_config, db_password_key
 
 LOGGER = logging.getLogger(__name__)
 
@@ -186,9 +186,9 @@ def insert_cyhy_agencies(conn, cyhy_agency_df):
             sql = """
             INSERT INTO organizations(name, cyhy_db_name, agency_type, retired,
             receives_cyhy_report, receives_bod_report, receives_cybex_report,
-            is_parent, fceb, cyhy_period_start, password) VALUES (%s, %s, %s, %s,
+            is_parent, fceb, password) VALUES (%s, %s, %s, %s,
              %s, %s, %s,
-             %s, %s, %s, PGP_SYM_ENCRYPT(%s, %s))
+             %s, %s, PGP_SYM_ENCRYPT(%s, %s))
             ON CONFLICT (cyhy_db_name)
             DO UPDATE SET
                 name = EXCLUDED.name,
@@ -199,8 +199,7 @@ def insert_cyhy_agencies(conn, cyhy_agency_df):
                 receives_bod_report= EXCLUDED.receives_bod_report,
                 receives_cybex_report = EXCLUDED.receives_cybex_report,
                 is_parent = EXCLUDED.is_parent,
-                fceb = EXCLUDED.fceb,
-                cyhy_period_start = EXCLUDED.cyhy_period_start
+                fceb = EXCLUDED.fceb
             """
             cur.execute(
                 sql,
@@ -214,7 +213,6 @@ def insert_cyhy_agencies(conn, cyhy_agency_df):
                     row["receives_cybex_report"],
                     row["is_parent"],
                     row["fceb"],
-                    row["cyhy_period_start"],
                     row["password"],
                     password,
                 ),
@@ -231,7 +229,7 @@ def insert_cyhy_agencies(conn, cyhy_agency_df):
 def query_pe_orgs(conn):
     """Query P&E organizations."""
     sql = """
-    SELECT organizations_uid, cyhy_db_name, name, agency_type, report_on, fceb
+    SELECT organizations_uid, cyhy_db_name, name, agency_type, report_on
     FROM organizations o
     """
     df = pd.read_sql(sql, conn)
@@ -243,7 +241,7 @@ def query_pe_report_on_orgs(conn):
     sql = """
     SELECT organizations_uid, cyhy_db_name, name, agency_type
     FROM organizations o
-    WHERE report_on or run_scans or fceb or fceb_child
+    WHERE report_on or run_scans
     """
     df = pd.read_sql(sql, conn)
     return df
@@ -272,23 +270,6 @@ def update_scan_status(conn, child_name):
         """
         UPDATE organizations
         set run_scans = True
-        where cyhy_db_name = '{}'
-        """.format(
-            child_name
-        ),
-    )
-
-    conn.commit()
-    cursor.close()
-
-
-def update_fceb_child_status(conn, child_name):
-    """Update child parent relationships between organizations."""
-    cursor = conn.cursor()
-    cursor.execute(
-        """
-        UPDATE organizations
-        set fceb_child = True
         where cyhy_db_name = '{}'
         """.format(
             child_name
@@ -624,13 +605,3 @@ def identified_sub_domains(conn):
     )
     conn.commit()
     cursor.close()
-
-
-def get_fceb_orgs(conn):
-    """Query fceb orgs."""
-    sql = """select * from organizations o 
-            where o.fceb or o.fceb_child;
-            """
-    df = pd.read_sql(sql, conn)
-    fceb_list = list(df["cyhy_db_name"])
-    return fceb_list

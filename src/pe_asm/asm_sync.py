@@ -41,7 +41,9 @@ from .helpers.get_cyhy_scorecard_data import (
     get_cyhy_trustymail,
     get_cyhy_sslyze,
 )
-from .helpers.query_cyhy_port_scans import get_cyhy_port_scans
+from .port_scans.run_port_scans import get_cyhy_port_scans
+
+# from .helpers.query_cyhy_port_scans import get_cyhy_port_scans
 from .data.cyhy_db_query import (
     pe_db_connect,
     pe_db_staging_connect,
@@ -117,12 +119,11 @@ def run_asm_sync(staging, method):
         LOGGER.info("Finished.")
 
     elif method == "scorecard":
-
         LOGGER.info("STARTING")
-        # get_cyhy_port_scans(staging)
+        get_cyhy_port_scans(staging)
         # get_cyhy_snapshots(staging)
         # get_cyhy_tickets(staging)
-        get_cyhy_vuln_scans(staging)
+        # get_cyhy_vuln_scans(staging)
         # get_cyhy_kevs(staging)
         # get_cyhy_https_scan(staging)
         # get_cyhy_trustymail(staging)

@@ -94,7 +94,8 @@ setup(
             "data/dnsmonitor/*",
             "data/pe_db/*",
         ],
-        "pe_asm": ["data/*"],
+        "pe_asm": ["data/*", "helpers/*", "port_scans/*"],
+        "pe_scorecard": ["data/*", "fonts/*", "scorecard_assets/*"],
     },
     py_modules=[splitext(basename(path))[0] for path in glob("src/*.py")],
     include_package_data=True,
@@ -169,6 +170,7 @@ setup(
             "pe-reports = pe_reports.report_generator:main",
             "pe-source = pe_source.pe_scripts:main",
             "pe-asm-sync = pe_asm.asm_sync:main",
+            "pe-scorecard = pe_scorecard.scorecard_generator:main",
         ]
     },
 )
