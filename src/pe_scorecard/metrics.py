@@ -75,6 +75,17 @@ class Scorecard:
         self.org_uid_list = org_uid_list
         self.cyhy_id_list = cyhy_id_list
 
+        self.scorecard_dict["start_date"] = start_date
+        self.scorecard_dict["end_date"] = end_date
+        self.scorecard_dict["organizations_uid"] = org_data["organizations_uid"]
+        
+        # TODO: Actually calculate these. This is just a placeholder
+        self.scorecard_dict["overall_score"] = None
+        self.scorecard_dict["discovery_score"] = None
+        self.scorecard_dict["profiling_score"] = None
+        self.scorecard_dict["identification_score"] = None
+        self.scorecard_dict["tracking_score"] = None
+
         (self.total_ips_counts, self.discovered_ips_counts) = query_ips_counts(
             org_uid_list
         )
@@ -503,6 +514,10 @@ class Scorecard:
                         ):
                             bod_1801_compliant_count += 1
 
+        if base_domain_plus_smtp_subdomain_count == 0:
+            LOGGER.error(agency)
+            LOGGER.error("Divide by zero in bod 18 email compliance")
+            return 0
         bod_1801_compliant_percentage = round(
             bod_1801_compliant_count / base_domain_plus_smtp_subdomain_count * 100.0,
             1,
@@ -563,6 +578,10 @@ class Scorecard:
             ) and not domain["domain_has_weak_crypto"]:
                 if not domain["ocsp_domain"]:
                     bod_1801_count += 1
+        if all_eligible_domains_count == 0:
+            LOGGER.error(agency)
+            LOGGER.error("Divide by zero in bod 18 https compliance")
+            return 0
         bod_1801_percentage = round(
             bod_1801_count / all_eligible_domains_count * 100.0, 1
         )

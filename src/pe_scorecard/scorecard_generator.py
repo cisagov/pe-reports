@@ -63,61 +63,68 @@ def generate_scorecards(month, year, output_directory):
         )
 
         was_fceb_ttr = query_was_fceb_ttr(start_date)
-
+        failed = []
         for index, org in scorecard_orgs.iterrows():
-            if org["fceb"]:
-                if org["cyhy_db_name"] not in ["DHS"]:
-                    continue
-                if org["is_parent"]:
-                    # Gather list of children orgs
-                    children_df = scorecard_orgs[
-                        (scorecard_orgs["parent_org_uid"] == org["organizations_uid"])
-                        & (scorecard_orgs["retired"] == False)
+            try:
+                
+                if org["fceb"]:
+                    if org["cyhy_db_name"] in ["TREAS", "DOE"]:
+                        continue
+
+                    LOGGER.info("RUNNING SCORECARD ON %s", org["cyhy_db_name"])
+                    if org["is_parent"]:
+                        # Gather list of children orgs
+                        children_df = scorecard_orgs[
+                            (scorecard_orgs["parent_org_uid"] == org["organizations_uid"])
+                            & (scorecard_orgs["retired"] == False)
+                        ]
+                        org_uid_list = children_df["organizations_uid"].values.tolist()
+                        org_uid_list.append(org["organizations_uid"])
+                        cyhy_id_list = children_df["cyhy_db_name"].values.tolist()
+                        cyhy_id_list.append(org["cyhy_db_name"])
+
+                    else:
+                        org_uid_list = [org["organizations_uid"]]
+                        cyhy_id_list = [org["cyhy_db_name"]]
+
+                    vs_time_to_remediate = avg_time_to_remediate_df[
+                        avg_time_to_remediate_df["cyhy_db_name"].isin(cyhy_id_list)
                     ]
-                    org_uid_list = children_df["organizations_uid"].values.tolist()
-                    org_uid_list.append(org["organizations_uid"])
-                    cyhy_id_list = children_df["cyhy_db_name"].values.tolist()
-                    cyhy_id_list.append(org["cyhy_db_name"])
 
-                else:
-                    org_uid_list = [org["organizations_uid"]]
-                    cyhy_id_list = [org["cyhy_db_name"]]
+                    total_kevs = vs_time_to_remediate["kev_count"].sum()
+                    vs_time_to_remediate["weighted_kev"] = (
+                        vs_time_to_remediate["kev_count"] / total_kevs
+                    ) * vs_time_to_remediate["kev_ttr"]
 
-                vs_time_to_remediate = avg_time_to_remediate_df[
-                    avg_time_to_remediate_df["cyhy_db_name"].isin(cyhy_id_list)
-                ]
+                    total_critical = vs_time_to_remediate["critical_count"].sum()
+                    vs_time_to_remediate["weighted_critical"] = (
+                        vs_time_to_remediate["critical_count"] / total_critical
+                    ) * vs_time_to_remediate["critical_ttr"]
 
-                total_kevs = vs_time_to_remediate["kev_count"].sum()
-                vs_time_to_remediate["weighted_kev"] = (
-                    vs_time_to_remediate["kev_count"] / total_kevs
-                ) * vs_time_to_remediate["kev_ttr"]
+                    total_high = vs_time_to_remediate["high_count"].sum()
+                    vs_time_to_remediate["weighted_high"] = (
+                        vs_time_to_remediate["high_count"] / total_high
+                    ) * vs_time_to_remediate["high_ttr"]
 
-                total_critical = vs_time_to_remediate["critical_count"].sum()
-                vs_time_to_remediate["weighted_critical"] = (
-                    vs_time_to_remediate["critical_count"] / total_critical
-                ) * vs_time_to_remediate["critical_ttr"]
+                    scorecard = Scorecard(
+                        month,
+                        year,
+                        org,
+                        org_uid_list,
+                        cyhy_id_list,
+                        vs_time_to_remediate,
+                        vs_fceb_results,
+                        was_fceb_ttr,
+                    )
+                    scorecard.fill_scorecard_dict()
+                    scorecard.generate_scorecard(output_directory)
+                    # scorecard.calculate_ips_counts()
 
-                total_high = vs_time_to_remediate["high_count"].sum()
-                vs_time_to_remediate["weighted_high"] = (
-                    vs_time_to_remediate["high_count"] / total_high
-                ) * vs_time_to_remediate["high_ttr"]
-
-                scorecard = Scorecard(
-                    month,
-                    year,
-                    org,
-                    org_uid_list,
-                    cyhy_id_list,
-                    vs_time_to_remediate,
-                    vs_fceb_results,
-                    was_fceb_ttr,
-                )
-                scorecard.fill_scorecard_dict()
-                scorecard.generate_scorecard(output_directory)
-                # scorecard.calculate_ips_counts()
-
-                # Insert dictionary into the summary table
-                execute_scorecard_summary_data(scorecard.scorecard_dict)
+                    # Insert dictionary into the summary table
+                    execute_scorecard_summary_data(scorecard.scorecard_dict)
+            except:
+                LOGGER.error("Scorecard failed for %s", org["cyhy_db_name"])
+                failed += org["cyhy_db_name"]
 
 
 def main():
