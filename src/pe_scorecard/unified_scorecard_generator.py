@@ -389,7 +389,7 @@ def create_scorecard(data_dict, file_name, include_trending=True, include_scores
         ip_mon_per_frame.addFromList(
             [
                 Paragraph(
-                    "{:.2%}".format(
+                    "{:.0%}".format(
                         data_dict["ips_monitored"] / data_dict["ips_identified"]
                     )
                     + " Monitored",
@@ -478,7 +478,7 @@ def create_scorecard(data_dict, file_name, include_trending=True, include_scores
         domain_mon_per_frame.addFromList(
             [
                 Paragraph(
-                    "{:.2%}".format(
+                    "{:.0%}".format(
                         data_dict["domains_monitored"] / data_dict["domains_identified"]
                     )
                     + " Monitored",
@@ -569,7 +569,7 @@ def create_scorecard(data_dict, file_name, include_trending=True, include_scores
         webapp_mon_per_frame.addFromList(
             [
                 Paragraph(
-                    "{:.2%}".format(
+                    "{:.0%}".format(
                         data_dict["webapps_monitored"] / data_dict["webapps_identified"]
                     )
                     + " Monitored",
@@ -660,7 +660,7 @@ def create_scorecard(data_dict, file_name, include_trending=True, include_scores
         certs_mon_per_frame.addFromList(
             [
                 Paragraph(
-                    "{:.2%}".format(
+                    "{:.0%}".format(
                         data_dict["certs_monitored"] / data_dict["certs_identified"]
                     )
                     + " Monitored",
