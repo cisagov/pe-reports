@@ -105,7 +105,7 @@ class Scorecard:
     def get_percent_compliance(total, overdue):
         """Calculate percentage of compliance."""
         if total == 0:
-            return 100.0
+            return 100
         else:
             return round(((total - overdue) / total) * 100, 2)
 
@@ -210,26 +210,22 @@ class Scorecard:
 
         ports_df
         for index2, portscan in ports_df.iterrows():
-            if (portscan["ip"], portscan["port"]) not in total_ports:
-                total_ports.add((portscan["ip"], portscan["port"]))
-                # Currently this won't allow multiple risky services on the same port
-                if (
-                    portscan["service_name"] in insecure_protocols_list
-                    and portscan["state"] == "open"
-                ):
-                    insecure_ports.add((portscan["ip"], portscan["port"]))
-
-            if (portscan["service_name"], portscan["port"]) not in total_protocols:
-                total_protocols.add((portscan["service_name"], portscan["port"]))
-                if (
-                    portscan["service_name"] in insecure_protocols_list
-                    and portscan["state"] == "open"
-                ):
-                    insecure_protocols.add((portscan["service_name"], portscan["port"]))
+            total_ports.add((portscan["ip"], portscan["port"]))
+            # Currently this won't allow multiple risky services on the same port
             if (
-                portscan["service_name"],
-                portscan["port"],
-            ) not in total_services and portscan["service_name"] in services_list:
+                portscan["service_name"] in insecure_protocols_list
+                and portscan["state"] == "open"
+            ):
+                insecure_ports.add((portscan["ip"], portscan["port"]))
+
+            total_protocols.add((portscan["service_name"], portscan["port"]))
+            if (
+                portscan["service_name"] in insecure_protocols_list
+                and portscan["state"] == "open"
+            ):
+                insecure_protocols.add((portscan["service_name"], portscan["port"]))
+
+            if portscan["service_name"] in services_list:
                 total_services.add((portscan["service_name"], portscan["port"]))
 
         self.scorecard_dict["ports_total_count"] = len(total_ports)
@@ -261,35 +257,35 @@ class Scorecard:
         if vs_remediation_df["kev_count"].sum() == 0:
             self.scorecard_dict["vuln_org_kev_ttr"] = "N/A"
         else:
-            self.scorecard_dict["vuln_org_kev_ttr"] = round(vuln_kev_attr, 2)
+            self.scorecard_dict["vuln_org_kev_ttr"] = round(vuln_kev_attr)
 
         vuln_critical_attr = vs_remediation_df["weighted_critical"].sum()
         if vs_remediation_df["critical_count"].sum() == 0:
             self.scorecard_dict["vuln_org_critical_ttr"] = "N/A"
         else:
-            self.scorecard_dict["vuln_org_critical_ttr"] = round(vuln_critical_attr, 2)
+            self.scorecard_dict["vuln_org_critical_ttr"] = round(vuln_critical_attr)
 
         vuln_high_attr = vs_remediation_df["weighted_high"].mean()
         if vs_remediation_df["high_count"].sum() == 0:
             self.scorecard_dict["vuln_org_high_ttr"] = "N/A"
         else:
-            self.scorecard_dict["vuln_org_high_ttr"] = round(vuln_high_attr, 2)
+            self.scorecard_dict["vuln_org_high_ttr"] = round(vuln_high_attr)
 
         vs_fceb_df = self.vs_fceb_results
         self.scorecard_dict["vuln_sector_kev_ttr"] = (
             "N/A"
             if vs_fceb_df["ATTR KEVs"] is np.nan
-            else round(vs_fceb_df["ATTR KEVs"], 2)
+            else round(vs_fceb_df["ATTR KEVs"])
         )
         self.scorecard_dict["vuln_sector_critical_ttr"] = (
             "N/A"
             if vs_fceb_df["ATTR Crits"] is np.nan
-            else round(vs_fceb_df["ATTR Crits"], 2)
+            else round(vs_fceb_df["ATTR Crits"])
         )
         self.scorecard_dict["vuln_sector_high_ttr"] = (
             "N/A"
             if vs_fceb_df["ATTR Highs"] is np.nan
-            else round(vs_fceb_df["ATTR Highs"], 2)
+            else round(vs_fceb_df["ATTR Highs"])
         )
 
         # Calculate bod compliance percentage
@@ -317,14 +313,15 @@ class Scorecard:
                 total_highs = total_highs + 1
                 if age > 30.0:
                     overdue_highs += 1
-        self.scorecard_dict["vuln_bod_22-01"] = self.get_percent_compliance(
-            total_kevs, overdue_kevs
+        bod_22_01 = self.get_percent_compliance(total_kevs, overdue_kevs)
+        self.scorecard_dict["vuln_bod_22-01"] = True if bod_22_01 == 100 else False
+        crit_19_02 = self.get_percent_compliance(total_crits, overdue_crits)
+        self.scorecard_dict["vuln_critical_bod_19-02"] = (
+            True if crit_19_02 == 100 else False
         )
-        self.scorecard_dict["vuln_critical_bod_19-02"] = self.get_percent_compliance(
-            total_crits, overdue_crits
-        )
-        self.scorecard_dict["vuln_high_bod_19-02"] = self.get_percent_compliance(
-            total_highs, overdue_highs
+        high_19_02 = self.get_percent_compliance(total_highs, overdue_highs)
+        self.scorecard_dict["vuln_high_bod_19-02"] = (
+            True if high_19_02 == 100 else False
         )
 
         webapp_df = self.webapp_counts
