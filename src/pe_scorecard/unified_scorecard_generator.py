@@ -563,7 +563,7 @@ def create_scorecard(data_dict, file_name, include_trending=True, include_scores
     )
     if data_dict["webapps_identified"] == 0:
         webapp_mon_per_frame.addFromList(
-            [Paragraph("", style=databox_style_center)], can
+            [Paragraph("Not Tracked", style=databox_style_center)], can
         )
     else:
         webapp_mon_per_frame.addFromList(
@@ -654,7 +654,7 @@ def create_scorecard(data_dict, file_name, include_trending=True, include_scores
     )
     if data_dict["certs_identified"] == 0:
         certs_mon_per_frame.addFromList(
-            [Paragraph("", style=databox_style_center)], can
+            [Paragraph("Not Tracked", style=databox_style_center)], can
         )
     else:
         certs_mon_per_frame.addFromList(
