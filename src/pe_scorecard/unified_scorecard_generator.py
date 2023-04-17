@@ -470,9 +470,13 @@ def create_scorecard(data_dict, file_name, include_trending=True, include_scores
     domain_mon_per_frame = Frame(
         col2_x_value, row1_y_value, box_width, 0.48 * inch, showBoundary=False
     )
-    if data_dict["domains_identified"] == 0:
+    if data_dict["domains_identified"] == 0 and data_dict["domains_monitored"] == 0:
         domain_mon_per_frame.addFromList(
-            [Paragraph("", style=databox_style_center)], can
+            [Paragraph("100%", style=databox_style_center)], can
+        )
+    elif data_dict["domains_identified"] == 0:
+        domain_mon_per_frame.addFromList(
+            [Paragraph("100%", style=databox_style_center)], can
         )
     else:
         domain_mon_per_frame.addFromList(
