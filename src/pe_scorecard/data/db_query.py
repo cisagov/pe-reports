@@ -1012,4 +1012,5 @@ def query_profiling_views(start_date, org_uid_list):
     )
     profiling_dict["services"] = services_df["services"].sum()
 
+    conn.close()
     return profiling_dict
