@@ -31,7 +31,11 @@ from pe_reports.data.db_query import (
 )
 
 from pe_asm.helpers.enumerate_subs_from_root import (
-    enumerate_and_save_subs,
+    enumerate_roots,
+    insert_sub_domains,
+)
+from pe_asm.data.cyhy_db_query import (
+    pe_db_connect,
     query_roots,
 )
 
@@ -80,6 +84,7 @@ def add_stakeholders(orgs_df):
     """Add each stakeholder to P&E infrastructure."""
     count = 0
     for org_index, org_row in orgs_df.iterrows():
+        conn = pe_db_connect()
         try:
             logging.info("Beginning to add %s", org_row["org_code"])
 
@@ -98,7 +103,12 @@ def add_stakeholders(orgs_df):
             # Enumerate and save subdomains
             roots = query_roots(new_org_df["organizations_uid"].iloc[0])
             for root_index, root in roots.iterrows():
-                enumerate_and_save_subs(root["root_domain_uid"], root["root_domain"])
+                subs = enumerate_roots(root["root_domain_uid"], root["root_domain"])
+                # Create DataFrame
+                subs_df = pd.DataFrame(subs)
+
+                # Insert into P&E database
+                insert_sub_domains(conn, subs_df)
             logging.info("Subdomains have been successfully added to the database.")
 
             # Fill the cidrs from cyhy assets
@@ -152,6 +162,7 @@ def add_stakeholders(orgs_df):
             logging.info(e)
             logging.error("%s failed.", org_row["org_code"])
             logging.error(traceback.format_exc())
+        conn.close()
     logging.info("Finished %s orgs.", count)
     return count
 

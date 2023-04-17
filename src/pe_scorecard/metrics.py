@@ -78,7 +78,7 @@ class Scorecard:
         self.scorecard_dict["start_date"] = start_date
         self.scorecard_dict["end_date"] = end_date
         self.scorecard_dict["organizations_uid"] = org_data["organizations_uid"]
-        
+
         # TODO: Actually calculate these. This is just a placeholder
         self.scorecard_dict["overall_score"] = None
         self.scorecard_dict["discovery_score"] = None
@@ -514,7 +514,7 @@ class Scorecard:
         if base_domain_plus_smtp_subdomain_count == 0:
             LOGGER.error(agency)
             LOGGER.error("Divide by zero in bod 18 email compliance")
-            return 0
+            return None
         bod_1801_compliant_percentage = round(
             bod_1801_compliant_count / base_domain_plus_smtp_subdomain_count * 100.0,
             1,
@@ -578,7 +578,7 @@ class Scorecard:
         if all_eligible_domains_count == 0:
             LOGGER.error(agency)
             LOGGER.error("Divide by zero in bod 18 https compliance")
-            return 0
+            return None
         bod_1801_percentage = round(
             bod_1801_count / all_eligible_domains_count * 100.0, 1
         )

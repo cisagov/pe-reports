@@ -1238,12 +1238,22 @@ def create_scorecard(data_dict, file_name, include_trending=True, include_scores
         col1_x_value, y_value + 2 * inch, box_width, 0.42 * inch, showBoundary=False
     )
     bod18_header_frame.addFromList([Paragraph("BOD 18-01", style=header_style)], can)
+    if data_dict["email_compliance_pct"] != None:
+        email_compliance = str(data_dict["email_compliance_pct"]) + "%"
+    else:
+        email_compliance = 'N/A'
+
+    if data_dict["https_compliance_pct"] != None:
+        https_compliance = str(data_dict["https_compliance_pct"]) + "%"
+    else:
+        https_compliance = 'N/A'
+
     if include_trending:
         bod18_data = [
             ["", "Percent", ""],
             [
                 "Email Compliance",
-                str(data_dict["email_compliance_pct"]) + "%",
+                email_compliance,
                 Image(
                     determine_arrow(
                         data_dict["email_compliance_pct"],
@@ -1257,7 +1267,7 @@ def create_scorecard(data_dict, file_name, include_trending=True, include_scores
             ],
             [
                 "https Compliance",
-                str(data_dict["https_compliance_pct"]) + "%",
+                https_compliance,
                 Image(
                     determine_arrow(
                         data_dict["https_compliance_pct"],
@@ -1278,8 +1288,8 @@ def create_scorecard(data_dict, file_name, include_trending=True, include_scores
                 "",
                 "Percent",
             ],
-            ["Email Compliance", str(data_dict["email_compliance_pct"]) + "%"],
-            ["https Compliance", str(data_dict["https_compliance_pct"]) + "%"],
+            ["Email Compliance", email_compliance],
+            ["https Compliance", https_compliance],
         ]
         col_widths = [2.5 * inch, 1.35 * inch]
         bod18_table = format_table(bod18_data, col_widths)
