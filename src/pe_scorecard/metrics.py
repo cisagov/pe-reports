@@ -16,12 +16,12 @@ from .data.db_query import (
     find_last_scan_date,
     get_scorecard_metrics_past,
     query_certs_counts,
-    query_cyhy_port_scans,
     query_domain_counts,
     query_https_scan,
     query_ips_counts,
     query_kev_list,
     query_open_vulns,
+    query_profiling_views,
     query_software_scans,
     query_sslyze_scan,
     query_trusty_mail,
@@ -94,7 +94,8 @@ class Scorecard:
         self.webapp_counts = query_webapp_counts(start_date, org_uid_list)
         self.cert_counts = query_certs_counts()
 
-        self.ports_data = query_cyhy_port_scans(start_date, end_date, org_uid_list)
+        # self.ports_data = query_cyhy_port_scans(start_date, end_date, org_uid_list)
+        self.profiling_dict = query_profiling_views(start_date, org_uid_list)
         self.software_counts = query_software_scans(start_date, end_date, org_uid_list)
 
         self.vs_vuln_counts = query_vuln_tickets(org_uid_list)
@@ -197,53 +198,60 @@ class Scorecard:
 
     def calculate_profiling_metrics(self):
         """Summarize profiling findings into key metrics."""
-        ports_df = self.ports_data
-        print(ports_df)
-        insecure_protocols_list = [
-            "rdp",
-            "telnet",
-            "ftp",
-            "rpc",
-            "smb",
-            "sql",
-            "ldap",
-            "irc",
-            "netbios",
-            "kerberos",
+        profiling_dict = self.profiling_dict
+        # print(ports_df)
+        # insecure_protocols_list = [
+        #         "rdp",
+        #         "telnet",
+        #         "ftp",
+        #         "rpc",
+        #         "smb",
+        #         "sql",
+        #         "ldap",
+        #         "irc",
+        #         "netbios",
+        #         "kerberos",
+        # ]
+        # services_list = ["http", "https", "http-proxy"]
+        # # ports_df.groupby(['ip', 'port']).ngroups
+        # total_ports = set()  # *
+        # insecure_ports = set()  # *
+        # total_protocols = set()
+        # insecure_protocols = set()
+        # total_services = set()
+
+        # ports_df
+        # for index2, portscan in ports_df.iterrows():
+        #     total_ports.add((portscan["ip"], portscan["port"]))
+        #     # Currently this won't allow multiple risky services on the same port
+        #     if (
+        #         portscan["service_name"] in insecure_protocols_list
+        #         and portscan["state"] == "open"
+        #     ):
+        #         insecure_ports.add((portscan["ip"], portscan["port"]))
+
+        #     total_protocols.add((portscan["service_name"], portscan["port"]))
+        #     if (
+        #         portscan["service_name"] in insecure_protocols_list
+        #         and portscan["state"] == "open"
+        #     ):
+        #         insecure_protocols.add((portscan["service_name"], portscan["port"]))
+
+        #     if portscan["service_name"] in services_list:
+        #         total_services.add((portscan["service_name"], portscan["port"]))
+
+        # self.scorecard_dict["ports_total_count"] = len(total_ports)
+        # self.scorecard_dict["ports_risky_count"] = len(insecure_ports)
+        # self.scorecard_dict["protocol_total_count"] = len(total_protocols)
+        # self.scorecard_dict["protocol_insecure_count"] = len(insecure_protocols)
+        # self.scorecard_dict["services_total_count"] = len(total_services)
+        self.scorecard_dict["ports_total_count"] = profiling_dict["ports_count"]
+        self.scorecard_dict["ports_risky_count"] = profiling_dict["risky_ports_count"]
+        self.scorecard_dict["protocol_total_count"] = profiling_dict["protocols_count"]
+        self.scorecard_dict["protocol_insecure_count"] = profiling_dict[
+            "risky_protocols_count"
         ]
-        services_list = ["http", "https", "http-proxy"]
-        # ports_df.groupby(['ip', 'port']).ngroups
-        total_ports = set()  # *
-        insecure_ports = set()  # *
-        total_protocols = set()
-        insecure_protocols = set()
-        total_services = set()
-
-        ports_df
-        for index2, portscan in ports_df.iterrows():
-            total_ports.add((portscan["ip"], portscan["port"]))
-            # Currently this won't allow multiple risky services on the same port
-            if (
-                portscan["service_name"] in insecure_protocols_list
-                and portscan["state"] == "open"
-            ):
-                insecure_ports.add((portscan["ip"], portscan["port"]))
-
-            total_protocols.add((portscan["service_name"], portscan["port"]))
-            if (
-                portscan["service_name"] in insecure_protocols_list
-                and portscan["state"] == "open"
-            ):
-                insecure_protocols.add((portscan["service_name"], portscan["port"]))
-
-            if portscan["service_name"] in services_list:
-                total_services.add((portscan["service_name"], portscan["port"]))
-
-        self.scorecard_dict["ports_total_count"] = len(total_ports)
-        self.scorecard_dict["ports_risky_count"] = len(insecure_ports)
-        self.scorecard_dict["protocol_total_count"] = len(total_protocols)
-        self.scorecard_dict["protocol_insecure_count"] = len(insecure_protocols)
-        self.scorecard_dict["services_total_count"] = len(total_services)
+        self.scorecard_dict["services_total_count"] = profiling_dict["services"]
 
         software_df = self.software_counts
         self.scorecard_dict["software_unsupported_count"] = software_df["count"].sum()

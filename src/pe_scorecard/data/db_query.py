@@ -959,3 +959,58 @@ def query_fceb_ttr(month, year):
         "ATTR Highs": df["weighted_high"].sum(),
     }
     return (df_unedited, fceb_dict)
+
+
+def query_profiling_views(start_date, org_uid_list):
+    """Query profiling datas from relevant views."""
+    profiling_dict = {}
+    conn = connect()
+    ports_sql = """
+        SELECT *
+        FROM vw_cyhy_port_counts
+        where report_period = %(start_date)s and organizations_uid in %(uid_list)s
+    """
+
+    ports_df = pd.read_sql(
+        ports_sql, conn, params={"start_date": start_date, "uid_list": org_uid_list}
+    )
+    profiling_dict["ports_count"] = ports_df["ports"].sum()
+    profiling_dict["risky_ports_count"] = ports_df["risky_ports"].sum()
+
+    protocols_sql = """
+        SELECT *
+        FROM vw_cyhy_protocol_counts
+        where report_period = %(start_date)s and organizations_uid in %(uid_list)s
+    """
+
+    protocols_df = pd.read_sql(
+        protocols_sql, conn, params={"start_date": start_date, "uid_list": org_uid_list}
+    )
+    profiling_dict["protocols_count"] = protocols_df["protocols"].sum()
+
+    risky_protcols_sql = """
+        SELECT *
+        FROM vw_cyhy_risky_protocol_counts
+        where report_period = %(start_date)s and organizations_uid in %(uid_list)s
+    """
+    risky_protocols_df = pd.read_sql(
+        risky_protcols_sql,
+        conn,
+        params={"start_date": start_date, "uid_list": org_uid_list},
+    )
+    profiling_dict["risky_protocols_count"] = risky_protocols_df[
+        "risky_protocols"
+    ].sum()
+
+    services_sql = """
+        SELECT *
+        FROM vw_cyhy_services_counts
+        where report_period = %(start_date)s and organizations_uid in %(uid_list)s
+    """
+    services_df = pd.read_sql(
+        services_sql, conn, params={"start_date": start_date, "uid_list": org_uid_list}
+    )
+    profiling_dict["services"] = services_df["services"].sum()
+
+    conn.close()
+    return profiling_dict
