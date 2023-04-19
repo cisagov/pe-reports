@@ -262,6 +262,27 @@ class CyhyDbAssets(models.Model):
         unique_together = (('org_id', 'network'),)
 
 
+class CyhyPortScans(models.Model):
+    cyhy_port_scans_uid = models.UUIDField(primary_key=True)
+    organizations_uid = models.ForeignKey('Organizations', models.DO_NOTHING, db_column='organizations_uid')
+    cyhy_id = models.TextField(unique=True, blank=True, null=True)
+    cyhy_time = models.DateTimeField(blank=True, null=True)
+    service_name = models.TextField(blank=True, null=True)
+    port = models.TextField(blank=True, null=True)
+    product = models.TextField(blank=True, null=True)
+    cpe = models.TextField(blank=True, null=True)
+    first_seen = models.DateField(blank=True, null=True)
+    last_seen = models.DateField(blank=True, null=True)
+    ip = models.TextField(blank=True, null=True)
+    state = models.TextField(blank=True, null=True)
+    agency_type = models.TextField(blank=True, null=True)
+
+    class Meta:
+        managed = False
+        db_table = 'cyhy_port_scans'
+
+
+
 class DataapiApiuser(models.Model):
     id = models.BigAutoField(primary_key=True)
     apikey = models.CharField(db_column='apiKey', max_length=200, blank=True, null=True)  # Field name made lowercase.

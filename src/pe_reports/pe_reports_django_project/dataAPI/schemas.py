@@ -51,9 +51,9 @@ class Organization(OrganizationBase):
 class SubDomainBase(BaseModel):
     sub_domain_uid: UUID
     sub_domain: str
-    root_domain_uid: Any
-    data_source_uid: Any
-    dns_record_uid: Any
+    root_domain_uid: Optional[Any]
+    data_source_uid: Optional[Any]
+    dns_record_uid: Optional[Any] = None
     status: bool = False
 
 
@@ -150,6 +150,26 @@ class WASDataBase(BaseModel):
         validate_assignment = True
 
 
+class CyhyPortScans(BaseModel):
+    cyhy_port_scans_uid: UUID
+    organizations_uid: Any
+    cyhy_id: str
+    cyhy_time: str
+    service_name: str
+    port: str
+    product: str
+    cpe: str
+    first_seen: str
+    last_seen: str
+    ip: str
+    state: str
+    agency_type: str
+
+    class Config:
+        orm_mode: True
+        validate_assignment = True
+
+
 class CyhyDbAssets(BaseModel):
     # field_id: str
     org_id: str
@@ -174,7 +194,7 @@ class CyhyDbAssetsInput(BaseModel):
 
 class Cidrs(BaseModel):
     cidr_uid: UUID
-    network: str
+    network: Any
     organizations_uid: Any
     data_source_uid: Any
     insert_alert: Optional[str] = None

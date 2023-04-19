@@ -40,6 +40,18 @@ class CredsFormExternal(forms.Form):
             visible.field.widget.attrs['class'] = 'form-control'
 
 
+class ScoreCardGenFormExternal(forms.Form):
+    """Create web form to take user input on scorecard to be generated."""
+
+    org_id = forms.CharField(label='Organization Cyhy ID:', max_length=100)
+    # breech_name = forms.CharField(label='Breech Name:', max_length=100)
+
+    def __init__(self, *args, **kwargs):
+        super(ScoreCardGenFormExternal, self).__init__(*args, **kwargs)
+        for visible in self.visible_fields():
+            visible.field.widget.attrs['class'] = 'form-control'
+
+
 
 
 

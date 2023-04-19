@@ -52,6 +52,7 @@ from home.models import VwCidrs
 from home.models import VwOrgsAttacksurface
 from home.models import VwBreachcompBreachdetails
 from home.models import WasTrackerCustomerdata
+from home.models import CyhyPortScans
 
 
 from .models import apiUser
@@ -200,7 +201,7 @@ def process_item(item):
 
 
 @api_router.post("/orgs", dependencies=[Depends(get_api_key)],
-                 # response_model=List[schemas.Organization],
+                 response_model=List[schemas.Organization],
                  tags=["List of all Organizations"])
 def read_orgs(tokens: dict = Depends(get_api_key)):
     """API endpoint to get all organizations."""
@@ -224,10 +225,10 @@ def read_orgs(tokens: dict = Depends(get_api_key)):
 
 
 
-@api_router.post("/subdomains", dependencies=[Depends(get_api_key)],
-                 response_model=List[schemas.SubDomainBase],
+@api_router.post("/subdomains/{root_domain_uid}", dependencies=[Depends(get_api_key)],
+                 # response_model=List[schemas.SubDomainBase],
                  tags=["List of all Subdomains"])
-def read_sub_domain(root_domain_uid: str,tokens: dict = Depends(get_api_key), ):
+def read_sub_domain(root_domain_uid: str, tokens: dict = Depends(get_api_key)):
     """API endpoint to get all organizations."""
     # count = SubDomains.objects.all().count()
     # print(f'The count is {count}')
@@ -238,13 +239,14 @@ def read_sub_domain(root_domain_uid: str,tokens: dict = Depends(get_api_key), ):
     #     for record in records:
     #         finalList.append(record)
     # subs = list(SubDomains.objects.all()[:999])
-    subs = list(SubDomains.objects.select_related().filter(root_domain_uid=root_domain_uid))
+    subs = list(SubDomains.objects.filter(root_domain_uid=root_domain_uid))
 
     # orgs_df = pd.DataFrame(orgs)
 
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
         try:
+            print('Got to subdomains try')
             userapiTokenverify(theapiKey=tokens)
             return subs
         except:
@@ -256,7 +258,7 @@ def read_sub_domain(root_domain_uid: str,tokens: dict = Depends(get_api_key), ):
 
 @api_router.post("/breachcomp",
                  dependencies=[Depends(get_api_key)],
-                 response_model=List[schemas.VwBreachcomp],
+                 # response_model=List[schemas.VwBreachcomp],
                  tags=["List all breaches"])
 def read_breachcomp(tokens: dict = Depends(get_api_key)):
     """API endpoint to get all breaches."""
@@ -271,7 +273,8 @@ def read_breachcomp(tokens: dict = Depends(get_api_key)):
         except:
             LOGGER.info('API key expired please try again')
 
-    return {'message': "No api key was submitted"}
+    else:
+        return {'message': "No api key was submitted"}
 
 @api_router.post("/breachcomp_credsbydate", dependencies=[Depends(get_api_key)],
                 response_model=List[schemas.VwBreachcompCredsbydate], tags=["List all breaches by date"])
@@ -329,27 +332,22 @@ def read_cyhy_db_asset(data: schemas.CyhyDbAssetsInput, tokens: dict = Depends(g
 
 
 @api_router.post("/cidrs", dependencies=[Depends(get_api_key)],
-                 response_model=List[schemas.Cidrs],
+                 # response_model=List[schemas.Cidrs],
                  tags=["List of all CIDRS"])
 def read_cidrs(tokens: dict = Depends(get_api_key)):
     """API endpoint to get all CIDRS."""
-    orgs = list(VwCidrs.objects.all())
+    cidrs = list(VwCidrs.objects.all())
 
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
 
         try:
             userapiTokenverify(theapiKey=tokens)
-            return orgs
+            return cidrs
         except:
             LOGGER.info('API key expired please try again')
     else:
         return {'message': "No api key was submitted"}
-
-
-
-
-
 
 
 @api_router.post("/breachdetails", dependencies=[Depends(get_api_key)],
@@ -578,3 +576,54 @@ def was_info_update(tag: str, customer: schemas.WASDataBase,
     else:
         return {'message': "No api key was submitted"}
 
+
+@api_router.post("/cyhy_port_scan", dependencies=[Depends(get_api_key)],
+                 # response_model=Dict[schemas.WASDataBase],
+                 tags=["Create new cyhy port scan data"])
+def cyhy_port_scan_info_create(ports_scan_data: schemas.CyhyPortScans, tokens: dict = Depends(get_api_key)):
+    """API endpoint to create a record in database."""
+
+    cyhy_ports = CyhyPortScans(**ports_scan_data.dict())
+
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            cyhy_ports.save()
+            return {'saved_customer': cyhy_ports}
+        except:
+            LOGGER.info('API key expired please try again')
+    else:
+        return {'message': "No api key was submitted"}
+
+
+@api_router.put("/was_info_update/{cyhy_id}", dependencies=[Depends(get_api_key)],
+                # response_model=Dict[schemas.WASDataBase],
+                tags=["Update cyhy_port_scan data"])
+@transaction.atomic
+def cyhy_ports_scan_info_update(cyhy_id: str, org_scans: schemas.CyhyPortScans,
+                    tokens: dict = Depends(get_api_key)):
+    """API endpoint to update a record in database."""
+
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            scan_data = CyhyPortScans.objects.get(cyhy_id=cyhy_id)
+            updated_data = {}
+            for field, value in org_scans.dict(exclude_unset=True).items():
+                print(f'the field is {field} and the value is {value}')
+                if hasattr(scan_data, field) and getattr(scan_data, field) != value:
+                    setattr(scan_data, field, value)
+                    updated_data[field] = value
+            scan_data.save()
+            return {"message": "Record updated successfully.",
+                    "updated_data": updated_data}
+
+
+        except ObjectDoesNotExist:
+            LOGGER.info('API key expired please try again')
+    else:
+        return {'message': "No api key was submitted"}
