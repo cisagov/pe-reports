@@ -672,3 +672,5 @@ class Scorecard:
         )
 
         create_scorecard(scorecard_dict, file_name, True, False)
+
+        return file_name

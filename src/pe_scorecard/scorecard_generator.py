@@ -1,7 +1,7 @@
 """A tool for creating CISA unified scorecard.
 
 Usage:
-  pe-scorecard REPORT_MONTH REPORT_YEAR OUTPUT_DIRECTORY [--log-level=LEVEL]
+  pe-scorecard REPORT_MONTH REPORT_YEAR OUTPUT_DIRECTORY [--log-level=LEVEL] [--orgs=ORG_LIST] [--email]
 
 Options:
   -h --help                         Show this message.
@@ -12,6 +12,12 @@ Options:
   -l --log-level=LEVEL              If specified, then the log level will be set to
                                     the specified value.  Valid values are "debug", "info",
                                     "warning", "error", and "critical". [default: info]
+  -o --orgs=ORG_LIST                A comma-separated list of orgs to collect data for.
+                                    If not specified, data will be collected for all
+                                    orgs in the pe database. Orgs in the list must match the
+                                    IDs in the cyhy-db. E.g. DHS,DHS_ICE,DOC
+                                    [default: all]
+  -m --email                        If included, email report [default: False]
 """
 
 # Standard Python Libraries
@@ -20,6 +26,7 @@ import logging
 import os
 import sys
 from typing import Any, Dict
+import traceback
 
 # Third-Party Libraries
 import docopt
@@ -38,14 +45,23 @@ from .data.db_query import (
     query_was_fceb_ttr,
 )
 from .metrics import Scorecard
+from .helpers.email_scorecard import email_scorecard_report
 
 LOGGER = logging.getLogger(__name__)
 ACCESSOR_AWS_PROFILE = os.getenv("ACCESSOR_PROFILE")
 
 
-def generate_scorecards(month, year, output_directory):
+def generate_scorecards(month, year, output_directory, orgs_list = "all", email=False):
     """Generate scorecards for approved orgs."""
+
+    # Get scorecard orgs
     scorecard_orgs = get_orgs()
+
+    # If not "all", separate orgs string into a list of orgs
+    if orgs_list == "all":
+        orgs_list = list(scorecard_orgs["cyhy_db_name"])
+    else:
+        orgs_list = orgs_list.split(",")
 
     # generated_scorecards = 0
 
@@ -54,6 +70,7 @@ def generate_scorecards(month, year, output_directory):
         start_date = datetime.date(int(year), int(month), 1)
         # end_date = (start_date + datetime.timedelta(days=32)).replace(day=1)
 
+        # TODO:
         # If we need to generate all scores first, do so here:
         # (avg_time_to_remediate_df, vs_fceb_results) = calculate_time_to_remediate(
         #     start_date, end_date
@@ -63,13 +80,12 @@ def generate_scorecards(month, year, output_directory):
         )
 
         was_fceb_ttr = query_was_fceb_ttr(start_date)
+
         failed = []
         for index, org in scorecard_orgs.iterrows():
             try:
                 
-                if org["fceb"]:
-                    if org["cyhy_db_name"] in ["TREAS", "DOE"]:
-                        continue
+                if org["fceb"] and org["cyhy_db_name"] in orgs_list:
 
                     LOGGER.info("RUNNING SCORECARD ON %s", org["cyhy_db_name"])
                     if org["is_parent"]:
@@ -117,14 +133,23 @@ def generate_scorecards(month, year, output_directory):
                         was_fceb_ttr,
                     )
                     scorecard.fill_scorecard_dict()
-                    scorecard.generate_scorecard(output_directory)
+                    filename = scorecard.generate_scorecard(output_directory)
                     # scorecard.calculate_ips_counts()
 
                     # Insert dictionary into the summary table
                     execute_scorecard_summary_data(scorecard.scorecard_dict)
+
+
+                    # If email, email the report out to customer
+                    if email:
+                        # TODO: Encrypt the report
+                        email_scorecard_report(org["cyhy_db_name"], filename,month, year)
+
             except:
                 LOGGER.error("Scorecard failed for %s", org["cyhy_db_name"])
+                print(traceback.format_exc(), flush=True)
                 failed += org["cyhy_db_name"]
+            
 
 
 def main():
@@ -175,6 +200,9 @@ def main():
         validated_args["REPORT_MONTH"],
         validated_args["REPORT_YEAR"],
         validated_args["OUTPUT_DIRECTORY"],
+        validated_args["--orgs"],
+        validated_args["--email"],
+
     )
 
     # Stop logging and clean up

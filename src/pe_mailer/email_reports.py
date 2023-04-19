@@ -41,7 +41,7 @@ import yaml
 
 # cisagov Libraries
 import pe_reports
-from pe_reports.data.db_query import connect_to_staging, get_orgs, get_orgs_contacts
+from pe_reports.data.db_query import connect, get_orgs, get_orgs_contacts
 
 from ._version import __version__
 from .pe_message import PEMessage
@@ -49,6 +49,7 @@ from .stats_message import StatsMessage
 
 LOGGER = logging.getLogger(__name__)
 MAILER_AWS_PROFILE = "cool-dns-sessendemail-cyber.dhs.gov"
+MAILER_ARN = os.environ.get("MAILER_ARN")
 
 
 def get_all_descendants(db, parent):
@@ -220,7 +221,7 @@ def send_pe_reports(ses_client, pe_report_dir, to):
 
     try:
         print(agencies)
-        staging_conn = connect_to_staging()
+        staging_conn = connect()
         pe_orgs = get_orgs(staging_conn)
     except TypeError:
         return 4
@@ -234,7 +235,7 @@ def send_pe_reports(ses_client, pe_report_dir, to):
         LOGGER.critical("No report data is found in %s", pe_report_dir)
         sys.exit(1)
 
-    staging_conn = connect_to_staging()
+    staging_conn = connect()
     org_contacts = get_orgs_contacts(staging_conn)
 
     agencies_emailed_pe_reports = 0
@@ -338,8 +339,21 @@ def send_reports(pe_report_dir, summary_to, test_emails):
         LOGGER.critical("Directory to send reports does not exist")
         return 1
 
-    session = boto3.Session(profile_name=MAILER_AWS_PROFILE)
-    ses_client = session.client("ses", region_name="us-east-1")
+    # Assume role to use mailer
+    sts_client = boto3.client('sts')
+    assumed_role_object=sts_client.assume_role(
+        RoleArn=MAILER_ARN,
+        RoleSessionName="AssumeRoleSession1"
+    )
+    credentials=assumed_role_object['Credentials']
+
+    ses_client = boto3.client("ses", 
+        region_name="us-east-1",
+        aws_access_key_id=credentials['AccessKeyId'],
+        aws_secret_access_key=credentials['SecretAccessKey'],
+        aws_session_token=credentials['SessionToken']
+    )
+    
 
     # Email the summary statistics, if necessary
     if test_emails is not None:

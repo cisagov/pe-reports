@@ -161,3 +161,143 @@ is not to be released to the public or other personnel who do not have a valid
             cc_addrs,
             bcc_addrs,
         )
+
+class ScorecardMessage(ReportMessage):
+    """An email message with the Posture and Exposure Report attachment.
+
+    Static attributes
+    -----------------
+    Subject : str
+        The mustache template to use when constructing the message
+        subject.
+
+    TextBody : str
+        The mustache template to use when constructing the plain text
+        message body.
+
+    HtmlBody : str
+        The mustache template to use when constructing the HTML
+        message body.
+
+    """
+
+    Subject = (
+        "CyHy Scorecard Report - {{cyhy_id}} - {{report_date}} (TLP:AMBER)"
+    )
+
+    TextBody = """Greetings,
+                This is a test of the text body.
+
+                """
+
+    HtmlBody = """<html>
+<head></head>
+<body style="font-family: 'Times New Roman'">
+<p style="color:#FFC000">TLP:AMBER</p>
+
+<p>Good afternoon,</p>
+
+<p>This is the html.</p>
+
+<p>As a customer of P&E you are receiving our regularly scheduled report 
+which contains a summary of the activity we have been tracking on your behalf 
+for the following services:</p>
+
+<ul>
+<li>Domain Masquerading and Monitoring</li>
+<li>Credentials Leaked/Exposed</li>
+<li>Insecure Devices & Suspected Vulnerabilities</li>
+<li>Dark Web Monitoring</li>
+<li>Hidden Assets and Risky Services</li>
+</ul>
+
+<p>In the attached document you will find a Summary Report with the findings 
+based on what we identified above. On page 4 of the report, you will 
+find links to the JSON raw data as it was discovered by us. For the protection of 
+your organization, we have encrypted the document with the password that was 
+shared when the agreement was signed for Cyber Hygiene Services. <strong>For 
+the best results, we recommend using Adobe Acrobat.</strong></p>
+
+<p>Finally, it is important to note that these findings have not been verified; 
+everything is gathered via passive analysis of publicly available sources.  As 
+such there may be false positive findings, however these findings should be 
+treated as information that your organization is leaking out to the internet 
+for adversaries to notice.</p>
+
+<p style="display:inline;">Thank you,<br></p>
+<p style="display:inline;font-size:12pt;"><strong>The Posture and Exposure (P&E) Team</strong><br></p>
+<p style="display:inline;">Cybersecurity and Infrastructure Security Agency (CISA)<br>Email: 
+<a href="mailto:vulnerability@cisa.dhs.gov">vulnerability@cisa.dhs.gov</a></p>
+
+<p>WARNING: This document is FOR OFFICIAL USE ONLY (FOUO). It contains information 
+that may be exempt from public release under the Freedom of Information Act 
+(5 U.S.G. 552). It is to be controlled, stored, handled, transmitted, distributed, 
+and disposed of in accordance with CISA policy relating to FOUO information and 
+is not to be released to the public or other personnel who do not have a valid 
+'need-to-know' without prior approval of an authorized CISA official.</p>
+</body>
+</html>
+"""
+
+    def __init__(
+        self,
+        pdf_filename,
+        month,
+        year,
+        id,
+        to_addrs,
+        from_addr=Message.DefaultFrom,
+        cc_addrs=Message.DefaultCc,
+        bcc_addrs=Message.DefaultBcc,
+    ):
+        """Construct an instance.
+
+        Parameters
+        ----------
+        pdf_filename : str
+            The filename of the PDF file that is the Posture and
+            Exposure report corresponding to this message.
+
+        report_date : str
+            The date corresponding to the Posture and Exposure
+            report attachment. We have been using dates of the
+            form December 12, 2017.
+
+        to_addrs : array of str
+            An array of string objects, each of which is an email
+            address to which this message should be sent.
+
+        from_addr : str
+            The email address from which this message is to be sent.
+
+        cc_addrs : array of str
+            An array of string objects, each of which is a CC email
+            address to which this message should be sent.
+
+        bcc_addrs : array of str
+            An array of string objects, each of which is a BCC email
+            address to which this message should be sent.
+
+        """
+        # This is the data mustache will use to render the templates
+        mustache_data = {"report_date": f"{month} {year}", "cyhy_id": id}
+
+
+        # Render the templates
+        subject = chevron.render(ScorecardMessage.Subject, mustache_data)
+        text_body = chevron.render(ScorecardMessage.TextBody, mustache_data)
+        html_body = chevron.render(ScorecardMessage.HtmlBody, mustache_data)
+
+        pdf_asm_filename = None
+        ReportMessage.__init__(
+            self,
+            to_addrs,
+            subject,
+            text_body,
+            html_body,
+            pdf_filename,
+            pdf_asm_filename,
+            from_addr,
+            cc_addrs,
+            bcc_addrs,
+        )

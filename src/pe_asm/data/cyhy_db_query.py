@@ -530,7 +530,7 @@ def identify_ip_changes(conn):
         """
         UPDATE ips
         set current = False
-        where last_seen < (CURRENT_DATE - INTERVAL '7 days')
+        where last_seen < (CURRENT_DATE - INTERVAL '7 days') or last_seen isnull;
         """
     )
     conn.commit()
@@ -555,7 +555,7 @@ def identify_sub_changes(conn):
         """
         UPDATE sub_domains
         set current = False
-        where last_seen < (CURRENT_DATE - INTERVAL '7 days')
+        where last_seen < (CURRENT_DATE - INTERVAL '7 days') or last_seen isnull;
         """
     )
     conn.commit()
@@ -580,7 +580,7 @@ def identify_ip_sub_changes(conn):
         """
         UPDATE ips_subs
         set current = False
-        where last_seen < (CURRENT_DATE - INTERVAL '7 days')
+        where last_seen < (CURRENT_DATE - INTERVAL '7 days') or last_seen isnull;
         """
     )
     conn.commit()

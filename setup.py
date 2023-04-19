@@ -95,7 +95,7 @@ setup(
             "data/pe_db/*",
         ],
         "pe_asm": ["data/*", "helpers/*", "port_scans/*"],
-        "pe_scorecard": ["data/*", "fonts/*", "scorecard_assets/*"],
+        "pe_scorecard": ["data/*", "helpers/*", "fonts/*", "scorecard_assets/*"],
     },
     py_modules=[splitext(basename(path))[0] for path in glob("src/*.py")],
     include_package_data=True,

@@ -91,9 +91,9 @@ def query_ips_counts(org_uid_list):
     # discovered_ips_df = pd.read_sql(sql, conn, params={"org_list": tuple(org_uid_list)})
 
     sql = """
-    #     SELECT * from vw_fceb_total_ips
-    #     where organizations_uid in %(org_list)s
-    # """
+         SELECT * from vw_fceb_total_ips
+         where organizations_uid in %(org_list)s
+    """
     ips_df = pd.read_sql(sql, conn, params={"org_list": tuple(org_uid_list)})
     conn.close()
     return ips_df
@@ -849,18 +849,9 @@ def execute_scorecard_summary_data(summary_dict):
                 AsIs(summary_dict["webapp_kev"]),
                 AsIs(summary_dict["webapp_critical"]),
                 AsIs(summary_dict["webapp_high"]),
-                AsIs(
-                    int(summary_dict["webapp_kev"])
-                    + int(summary_dict["external_host_kev"])
-                ),
-                AsIs(
-                    int(summary_dict["webapp_critical"])
-                    + int(summary_dict["external_host_critical"])
-                ),
-                AsIs(
-                    int(summary_dict["external_host_high"])
-                    + int(summary_dict["webapp_high"])
-                ),
+                AsIs(int(summary_dict["webapp_kev"] or None) + int(summary_dict["external_host_kev"] or None)),
+                AsIs(int(summary_dict["webapp_critical"] or None) + int(summary_dict["external_host_critical"] or None)),
+                AsIs(int(summary_dict["external_host_high"] or None) + int(summary_dict["webapp_high"] or None)),
                 AsIs(summary_dict["vuln_org_kev_ttr"]),
                 AsIs(summary_dict["vuln_org_critical_ttr"]),
                 AsIs(summary_dict["vuln_org_high_ttr"]),
@@ -977,6 +968,7 @@ def query_fceb_ttr(month, year):
 
 def query_profiling_views(start_date, org_uid_list):
     """Query profiling datas from relevant views."""
+    org_uid_list = tuple(org_uid_list)
     profiling_dict = {}
     conn = connect()
     ports_sql = """
