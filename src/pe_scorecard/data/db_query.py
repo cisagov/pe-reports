@@ -104,17 +104,21 @@ def query_domain_counts(org_uid_list):
     conn = connect()
     print("running query_domain_counts")
     # cur = conn.cursor()
+    # sql = """
+    #     select o.organizations_uid, o.cyhy_db_name,
+    #     coalesce(cnts.identified, 0) as identified,
+    #     coalesce(cnts.unidentified, 0) as unidentified
+    #     from organizations o
+    #     left join
+    #     (select rd.organizations_uid, sum(case sd.identified  when True then 1 else 0 end) identified, sum(case sd.identified when False then 1 else 0 end) unidentified
+    #     from root_domains rd
+    #     join sub_domains sd on sd.root_domain_uid = rd.root_domain_uid
+    #     group by rd.organizations_uid) cnts
+    #     on o.organizations_uid = cnts.organizations_uid
+    #     where o.organizations_uid in %(org_list)s;
+    # """
     sql = """
-        select o.organizations_uid, o.cyhy_db_name,
-        coalesce(cnts.identified, 0) as identified,
-        coalesce(cnts.unidentified, 0) as unidentified
-        from organizations o
-        left join
-        (select rd.organizations_uid, sum(case sd.identified  when True then 1 else 0 end) identified, sum(case sd.identified when False then 1 else 0 end) unidentified
-        from root_domains rd
-        join sub_domains sd on sd.root_domain_uid = rd.root_domain_uid
-        group by rd.organizations_uid) cnts
-        on o.organizations_uid = cnts.organizations_uid
+        select o.* from vw_domain_counts o
         where o.organizations_uid in %(org_list)s;
     """
     domain_counts = pd.read_sql(sql, conn, params={"org_list": tuple(org_uid_list)})
