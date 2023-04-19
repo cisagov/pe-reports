@@ -179,6 +179,8 @@ def report_gen(request):
     if score_card_form.is_valid():
 
         org_id = score_card_form.cleaned_data['org_id']
+        month = score_card_form.cleaned_data['month']
+        year = score_card_form.cleaned_data['year']
         all_orgs = get_orgs_df()
         print(get_orgs_df())
         # Pandas does not support "cond is True" syntax for dataframe filters,
@@ -211,6 +213,6 @@ def report_gen(request):
                   {'form_external': form_external,
                    'bulletin_form': bulletin_form,
                    'creds_form': creds_form,
-                     'score_card_form': score_card_form
+                    'score_card_form': score_card_form
                    }
     )

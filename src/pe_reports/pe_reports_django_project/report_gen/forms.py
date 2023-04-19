@@ -44,6 +44,8 @@ class ScoreCardGenFormExternal(forms.Form):
     """Create web form to take user input on scorecard to be generated."""
 
     org_id = forms.CharField(label='Organization Cyhy ID:', max_length=100)
+    month = forms.CharField(label='Month Run MM:', max_length=100)
+    year = forms.CharField(label='Year Run, year format is YYYY:', max_length=100)
     # breech_name = forms.CharField(label='Breech Name:', max_length=100)
 
     def __init__(self, *args, **kwargs):
