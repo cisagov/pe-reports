@@ -49,7 +49,7 @@ def get_orgs():
     conn = connect()
     try:
         cur = conn.cursor()
-        sql = """SELECT * FROM organizations where report_on or demo"""
+        sql = """SELECT * FROM organizations where report_on or demo or run_scans"""
         cur.execute(sql)
         pe_orgs = cur.fetchall()
         keys = ("org_uid", "org_name", "cyhy_db_name")
@@ -71,7 +71,8 @@ def get_ips(org_uid):
     JOIN organizations o on o.organizations_uid = ct.organizations_uid
     where o.organizations_uid = %(org_uid)s
     and i.origin_cidr is not null
-    and i.shodan_results is True;"""
+    and i.shodan_results is True
+    and i.current;"""
     df1 = pd.read_sql(sql1, conn, params={"org_uid": org_uid})
     ips1 = list(df1["ip"].values)
 
@@ -82,7 +83,123 @@ def get_ips(org_uid):
     join root_domains rd on rd.root_domain_uid = sd.root_domain_uid
     JOIN organizations o on o.organizations_uid = rd.organizations_uid
     where o.organizations_uid = %(org_uid)s
-    and i.shodan_results is True;"""
+    and i.shodan_results is True
+    and sd.current;"""
+    df2 = pd.read_sql(sql2, conn, params={"org_uid": org_uid})
+    ips2 = list(df2["ip"].values)
+
+    in_first = set(ips1)
+    in_second = set(ips2)
+
+    in_second_but_not_in_first = in_second - in_first
+
+    ips = ips1 + list(in_second_but_not_in_first)
+    conn.close()
+
+    return ips
+
+def get_ips_dhs(org_uid):
+    """Get IP data. Pull in IPs for DHS_UNKNOWN, DHS_OIG, and DHS_HQ also."""
+    conn = connect()
+    sql1 = """SELECT i.ip_hash, i.ip, ct.network FROM ips i
+    JOIN cidrs ct on ct.cidr_uid = i.origin_cidr
+    JOIN organizations o on o.organizations_uid = ct.organizations_uid
+    where (o.organizations_uid = %(org_uid)s 
+            or o.organizations_uid = '8034f26c-f247-11ec-bbc2-02c6a3fe975b'
+            or o.organizations_uid = '8010f344-f247-11ec-bbbe-02c6a3fe975b'
+            or o.organizations_uid = '72e290d8-f247-11ec-ba5a-02c6a3fe975b')
+    and i.origin_cidr is not null
+    and i.shodan_results is True
+    and i.current;"""
+    df1 = pd.read_sql(sql1, conn, params={"org_uid": org_uid})
+    ips1 = list(df1["ip"].values)
+
+    sql2 = """select i.ip_hash, i.ip
+    from ips i
+    join ips_subs is2 ON i.ip_hash = is2.ip_hash
+    join sub_domains sd on sd.sub_domain_uid = is2.sub_domain_uid
+    join root_domains rd on rd.root_domain_uid = sd.root_domain_uid
+    JOIN organizations o on o.organizations_uid = rd.organizations_uid
+    where (o.organizations_uid = %(org_uid)s 
+            or o.organizations_uid = '8034f26c-f247-11ec-bbc2-02c6a3fe975b'
+            or o.organizations_uid = '8010f344-f247-11ec-bbbe-02c6a3fe975b'
+            or o.organizations_uid = '72e290d8-f247-11ec-ba5a-02c6a3fe975b')
+    and i.shodan_results is True
+    and sd.current;"""
+    df2 = pd.read_sql(sql2, conn, params={"org_uid": org_uid})
+    ips2 = list(df2["ip"].values)
+
+    in_first = set(ips1)
+    in_second = set(ips2)
+
+    in_second_but_not_in_first = in_second - in_first
+
+    ips = ips1 + list(in_second_but_not_in_first)
+    conn.close()
+
+    return ips
+
+def get_ips_nasa(org_uid):
+    """Get IP data. Pull in IPs for NASA_HQ too."""
+    conn = connect()
+    sql1 = """SELECT i.ip_hash, i.ip, ct.network FROM ips i
+    JOIN cidrs ct on ct.cidr_uid = i.origin_cidr
+    JOIN organizations o on o.organizations_uid = ct.organizations_uid
+    where (o.organizations_uid = %(org_uid)s 
+            or o.organizations_uid = '78aa7d3c-f247-11ec-baf6-02c6a3fe975b') 
+    and i.origin_cidr is not null
+    and i.shodan_results is True
+    and i.current;"""
+    df1 = pd.read_sql(sql1, conn, params={"org_uid": org_uid})
+    ips1 = list(df1["ip"].values)
+
+    sql2 = """select i.ip_hash, i.ip
+    from ips i
+    join ips_subs is2 ON i.ip_hash = is2.ip_hash
+    join sub_domains sd on sd.sub_domain_uid = is2.sub_domain_uid
+    join root_domains rd on rd.root_domain_uid = sd.root_domain_uid
+    JOIN organizations o on o.organizations_uid = rd.organizations_uid
+    where (o.organizations_uid = %(org_uid)s 
+            or o.organizations_uid = '78aa7d3c-f247-11ec-baf6-02c6a3fe975b') 
+    and i.shodan_results is True
+    and sd.current;"""
+    df2 = pd.read_sql(sql2, conn, params={"org_uid": org_uid})
+    ips2 = list(df2["ip"].values)
+
+    in_first = set(ips1)
+    in_second = set(ips2)
+
+    in_second_but_not_in_first = in_second - in_first
+
+    ips = ips1 + list(in_second_but_not_in_first)
+    conn.close()
+
+    return ips
+
+def get_ips_hhs(org_uid):
+    """Get IP data. Pull in IPs for HHS_UNKNOWN too"""
+    conn = connect()
+    sql1 = """SELECT i.ip_hash, i.ip, ct.network FROM ips i
+    JOIN cidrs ct on ct.cidr_uid = i.origin_cidr
+    JOIN organizations o on o.organizations_uid = ct.organizations_uid
+    where (o.organizations_uid = %(org_uid)s 
+            or o.organizations_uid = '8a7d30a4-f247-11ec-bce0-02c6a3fe975b')
+    and i.origin_cidr is not null
+    and i.shodan_results is True
+    and i.current;"""
+    df1 = pd.read_sql(sql1, conn, params={"org_uid": org_uid})
+    ips1 = list(df1["ip"].values)
+
+    sql2 = """select i.ip_hash, i.ip
+    from ips i
+    join ips_subs is2 ON i.ip_hash = is2.ip_hash
+    join sub_domains sd on sd.sub_domain_uid = is2.sub_domain_uid
+    join root_domains rd on rd.root_domain_uid = sd.root_domain_uid
+    JOIN organizations o on o.organizations_uid = rd.organizations_uid
+    where (o.organizations_uid = %(org_uid)s 
+            or o.organizations_uid = '8a7d30a4-f247-11ec-bce0-02c6a3fe975b')
+    and i.shodan_results is True
+    and sd.current;"""
     df2 = pd.read_sql(sql2, conn, params={"org_uid": org_uid})
     ips2 = list(df2["ip"].values)
 

@@ -30,23 +30,25 @@ from pe_reports.data.db_query import (
     set_org_to_report_on,
 )
 
-from pe_reports.helpers.enumerate_subs_from_root import (
-    enumerate_and_save_subs,
+from pe_asm.helpers.enumerate_subs_from_root import (
+    enumerate_roots,
+    insert_sub_domains,
+)
+from pe_asm.data.cyhy_db_query import (
+    pe_db_connect,
     query_roots,
 )
 
-from pe_reports.helpers.fill_cidrs_from_cyhy_assets import fill_cidrs
-from pe_reports.helpers.fill_ips_from_cidrs import fill_ips_from_cidrs
-from pe_reports.helpers.link_subs_and_ips_from_ips import connect_subs_from_ips
-from pe_reports.helpers.link_subs_and_ips_from_subs import connect_ips_from_subs
-from pe_reports.helpers.shodan_dedupe import dedupe
+from pe_asm.helpers.fill_cidrs_from_cyhy_assets import fill_cidrs
+from pe_asm.helpers.fill_ips_from_cidrs import fill_ips_from_cidrs
+from pe_asm.helpers.link_subs_and_ips_from_ips import connect_subs_from_ips
+from pe_asm.helpers.link_subs_and_ips_from_subs import connect_ips_from_subs
+from pe_asm.helpers.shodan_dedupe import dedupe
 from pe_source.data.sixgill.api import setNewCSGOrg
 
 LOGGER = logging.getLogger(__name__)
 
-nlp = spacy.load("en_core_web_lg")
-
-
+# nlp = spacy.load("en_core_web_lg")
 
 
 def theExecs(URL):
@@ -70,8 +72,7 @@ def theExecs(URL):
     final_exec_list = []
     regex_pattern = re.compile(r"[@_'’!#\-$%^&*()<>?/\|}{~:]")
     for hy in exec_list:
-        if ("PERSON" in hy) and (hy[1] not in final_exec_list) and (
-                len(hy[1]) < 50):
+        if ("PERSON" in hy) and (hy[1] not in final_exec_list) and (len(hy[1]) < 50):
             if not regex_pattern.search(hy[1]) and len(hy[1].split()) > 1:
                 person = hy[1].split("  ")
                 if len(person) <= 1:
@@ -83,8 +84,9 @@ def add_stakeholders(orgs_df):
     """Add each stakeholder to P&E infrastructure."""
     count = 0
     for org_index, org_row in orgs_df.iterrows():
+        conn = pe_db_connect()
         try:
-            logging.info("Beginning to add %s", org_row['org_code'])
+            logging.info("Beginning to add %s", org_row["org_code"])
 
             premium = org_row["premium"]
             # Set new org to report on
@@ -101,10 +103,13 @@ def add_stakeholders(orgs_df):
             # Enumerate and save subdomains
             roots = query_roots(new_org_df["organizations_uid"].iloc[0])
             for root_index, root in roots.iterrows():
-                enumerate_and_save_subs(root["root_domain_uid"],
-                                        root["root_domain"])
-            logging.info(
-                "Subdomains have been successfully added to the database.")
+                subs = enumerate_roots(root["root_domain_uid"], root["root_domain"])
+                # Create DataFrame
+                subs_df = pd.DataFrame(subs)
+
+                # Insert into P&E database
+                insert_sub_domains(conn, subs_df)
+            logging.info("Subdomains have been successfully added to the database.")
 
             # Fill the cidrs from cyhy assets
             logging.info("Filling all cidrs:")
@@ -127,8 +132,7 @@ def add_stakeholders(orgs_df):
                 logging.info(allExecutives)
 
                 # Insert org and all assets into Cybersixgill
-                allValidIP = get_cidrs_and_ips(
-                    new_org_df["organizations_uid"].iloc[0])
+                allValidIP = get_cidrs_and_ips(new_org_df["organizations_uid"].iloc[0])
                 aliases = org_row["aliases"].split(",")
                 logging.info("Addind these assets to Cybersixgill:")
                 logging.info(org_row["org_code"])
@@ -152,36 +156,36 @@ def add_stakeholders(orgs_df):
             logging.info("Running Shodan dedupe:")
             dedupe(new_org_df)
 
-            logging.info("Completely done with %s", org_row['org_code'])
+            logging.info("Completely done with %s", org_row["org_code"])
             count += 1
         except Exception as e:
             logging.info(e)
-            logging.error("%s failed.", org_row['org_code'])
+            logging.error("%s failed.", org_row["org_code"])
             logging.error(traceback.format_exc())
+        conn.close()
     logging.info("Finished %s orgs.", count)
     return count
 
 
 class CustomCSVView(TemplateView):
     """CBV route to bulk upload page"""
+
     template_name = "bulk_upload/upload.html"
     form_class = CSVUploadForm
 
 
-class CustomCSVForm(LoginRequiredMixin,FormView):
+class CustomCSVForm(LoginRequiredMixin, FormView):
     """CBV form bulk upload csv file with file extension and header validation"""
-    form_class = CSVUploadForm
-    template_name = 'bulk_upload/upload.html'
 
-    success_url = reverse_lazy('bulkupload')
+    form_class = CSVUploadForm
+    template_name = "bulk_upload/upload.html"
+
+    success_url = reverse_lazy("bulkupload")
 
     def form_valid(self, form):
         """Validate form data"""
 
         csv_file = form.cleaned_data["file"]
-
-
-
 
         f = TextIOWrapper(csv_file.file)
 
@@ -189,7 +193,6 @@ class CustomCSVForm(LoginRequiredMixin,FormView):
         dict_reader = csv.DictReader(f)
         dict_reader1 = dict_reader.fieldnames
         dict_reader2 = set(dict_reader1)
-
 
         required_columns = [
             "tag",
@@ -211,11 +214,11 @@ class CustomCSVForm(LoginRequiredMixin,FormView):
             "fceb",
             "special_report",
             "report_password",
-            "child_tags"
-            ]
+            "child_tags",
+        ]
 
         # Check needed columns exist
-        req_col = ''
+        req_col = ""
 
         incorrect_col = []
         testtheList = [i for i in required_columns if i in dict_reader2]
@@ -223,9 +226,7 @@ class CustomCSVForm(LoginRequiredMixin,FormView):
 
         if len(testtheList) == len(dict_reader2):
 
-            messages.success(self.request,
-                             "The file was uploaded successfully.")
-
+            messages.success(self.request, "The file was uploaded successfully.")
 
             self.process_item(dict_reader)
 
@@ -237,11 +238,12 @@ class CustomCSVForm(LoginRequiredMixin,FormView):
                 else:
                     incorrect_col.append(col)
 
-            messages.warning(self.request,
-                           "A required column is missing"
-                           " from the uploaded CSV: %s " % incorrect_col)
+            messages.warning(
+                self.request,
+                "A required column is missing"
+                " from the uploaded CSV: %s " % incorrect_col,
+            )
             return super().form_invalid(form)
-
 
     def process_item(self, dict):
         """Delete all data and replace with the data from the file that is getting uploaded."""
@@ -252,32 +254,29 @@ class CustomCSVForm(LoginRequiredMixin,FormView):
 
         for row in dict:
             wasCustomer = WasTrackerCustomerdata(
-
-                tag=row['tag'],
-                customer_name=row['customer_name'],
-                testing_sector=row['testing_sector'],
-                ci_type=row['ci_type'],
-                jira_ticket=row['jira_ticket'],
-                ticket=row['ticket'],
-                next_scheduled=row['next_scheduled'],
-                last_scanned=row['last_scanned'],
-                frequency=row['frequency'],
-                comments_notes=row['comments_notes'],
-                was_report_poc=row['was_report_poc'],
-                was_report_email=row['was_report_email'],
-                onboarding_date=row['onboarding_date'],
-                no_of_web_apps=row['no_of_web_apps'],
-                no_web_apps_last_updated=row['no_web_apps_last_updated'],
-                elections=row['elections'],
-                fceb=row['fceb'],
-                special_report=row['special_report'],
-                report_password=row['report_password'],
-                child_tags=row['child_tags']
-
+                tag=row["tag"],
+                customer_name=row["customer_name"],
+                testing_sector=row["testing_sector"],
+                ci_type=row["ci_type"],
+                jira_ticket=row["jira_ticket"],
+                ticket=row["ticket"],
+                next_scheduled=row["next_scheduled"],
+                last_scanned=row["last_scanned"],
+                frequency=row["frequency"],
+                comments_notes=row["comments_notes"],
+                was_report_poc=row["was_report_poc"],
+                was_report_email=row["was_report_email"],
+                onboarding_date=row["onboarding_date"],
+                no_of_web_apps=row["no_of_web_apps"],
+                no_web_apps_last_updated=row["no_web_apps_last_updated"],
+                elections=row["elections"],
+                fceb=row["fceb"],
+                special_report=row["special_report"],
+                report_password=row["report_password"],
+                child_tags=row["child_tags"],
             )
             try:
                 wasCustomer.save()
 
             except DataError as e:
-                LOGGER.error('There is an issue with the data type %s', e)
-
+                LOGGER.error("There is an issue with the data type %s", e)

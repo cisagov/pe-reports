@@ -41,14 +41,16 @@ import yaml
 
 # cisagov Libraries
 import pe_reports
-from pe_reports.data.db_query import connect_to_staging, get_orgs, get_orgs_contacts
+from pe_reports.data.db_query import connect, get_orgs, get_orgs_contacts
 
 from ._version import __version__
 from .pe_message import PEMessage
 from .stats_message import StatsMessage
 
 LOGGER = logging.getLogger(__name__)
-MAILER_AWS_PROFILE = ""
+MAILER_AWS_PROFILE = "cool-dns-sessendemail-cyber.dhs.gov"
+MAILER_ARN = os.environ.get("MAILER_ARN")
+
 
 def get_all_descendants(db, parent):
     """Return all (non-retired) descendants of the parent.
@@ -219,7 +221,7 @@ def send_pe_reports(ses_client, pe_report_dir, to):
 
     try:
         print(agencies)
-        staging_conn = connect_to_staging()
+        staging_conn = connect()
         pe_orgs = get_orgs(staging_conn)
     except TypeError:
         return 4
@@ -233,7 +235,7 @@ def send_pe_reports(ses_client, pe_report_dir, to):
         LOGGER.critical("No report data is found in %s", pe_report_dir)
         sys.exit(1)
 
-    staging_conn = connect_to_staging()
+    staging_conn = connect()
     org_contacts = get_orgs_contacts(staging_conn)
 
     agencies_emailed_pe_reports = 0
@@ -241,20 +243,20 @@ def send_pe_reports(ses_client, pe_report_dir, to):
     if pe_report_dir:
         for org in pe_orgs:
             id = org[2]
-            if id == 'GSEC':
+            if id == "GSEC":
                 continue
             if to is not None:
                 to_emails = to
             else:
-                contact_dict = {"DISTRO":"", "TECHNICAL":[]}
+                contact_dict = {"DISTRO": "", "TECHNICAL": []}
                 for contact in org_contacts:
                     email = contact[0]
                     type = contact[1]
                     contact_org_id = contact[2]
                     if contact_org_id == id:
-                        if type == 'DISTRO':
-                            contact_dict["DISTRO"]= [email]
-                        elif type == 'TECHNICAL':
+                        if type == "DISTRO":
+                            contact_dict["DISTRO"] = [email]
+                        elif type == "TECHNICAL":
                             contact_dict["TECHNICAL"].append(email)
                         else:
                             continue
@@ -262,7 +264,7 @@ def send_pe_reports(ses_client, pe_report_dir, to):
                     to_emails = contact_dict["TECHNICAL"]
                 else:
                     to_emails = contact_dict["DISTRO"]
-            
+
             # to_emails should contain at least one email
             if not to_emails:
                 continue
@@ -291,7 +293,6 @@ def send_pe_reports(ses_client, pe_report_dir, to):
                         LOGGER.error("Extra PDF file or named incorrectly.")
                         continue
 
-
                 # Extract the report date from the report filename
                 match = re.search(
                     r"-(?P<date>\d{4}-[01]\d-[0-3]\d)",
@@ -302,7 +303,9 @@ def send_pe_reports(ses_client, pe_report_dir, to):
                 ).strftime("%B %d, %Y")
 
                 # Construct the Posture and Exposure message to send
-                message = PEMessage(pe_report_filename, pe_asm_filename, report_date, id, to_emails)
+                message = PEMessage(
+                    pe_report_filename, pe_asm_filename, report_date, id, to_emails
+                )
 
                 print(to_emails)
                 print(pe_report_filename)
@@ -336,8 +339,21 @@ def send_reports(pe_report_dir, summary_to, test_emails):
         LOGGER.critical("Directory to send reports does not exist")
         return 1
 
-    session = boto3.Session(profile_name=MAILER_AWS_PROFILE)
-    ses_client = session.client("ses", region_name="us-east-1")
+    # Assume role to use mailer
+    sts_client = boto3.client('sts')
+    assumed_role_object=sts_client.assume_role(
+        RoleArn=MAILER_ARN,
+        RoleSessionName="AssumeRoleSession1"
+    )
+    credentials=assumed_role_object['Credentials']
+
+    ses_client = boto3.client("ses", 
+        region_name="us-east-1",
+        aws_access_key_id=credentials['AccessKeyId'],
+        aws_secret_access_key=credentials['SecretAccessKey'],
+        aws_session_token=credentials['SessionToken']
+    )
+    
 
     # Email the summary statistics, if necessary
     if test_emails is not None:
@@ -409,7 +425,7 @@ def main():
         # Issue 19: https://github.com/cisagov/pe-reports/issues/19
         validated_args["--pe-report-dir"],
         validated_args["--summary-to"],
-        validated_args["--test-emails"]
+        validated_args["--test-emails"],
     )
 
     # Stop logging and clean up

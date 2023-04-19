@@ -314,8 +314,10 @@ def dark_web(
     chevron_dict.update(dark_web_dict)
 
     # Create dark web Excel file
+    mentions_df = Cyber6.dark_web_mentions
+    mentions_df["content"] = mentions_df["content"].str[:2000]
     mi_json = f"{output_directory}/{org_code}/mention_incidents.json"
-    mentions_dict = Cyber6.dark_web_mentions.to_dict(orient="records")
+    mentions_dict = mentions_df.to_dict(orient="records")
     alerts_dict = Cyber6.alerts.to_dict(orient="records")
     cve_dict = Cyber6.top_cves.to_dict(orient="records")
     final_dict = {
@@ -329,7 +331,7 @@ def dark_web(
     # Create dark web Excel file
     mi_xlsx = f"{output_directory}/{org_code}/mention_incidents.xlsx"
     miWriter = pd.ExcelWriter(mi_xlsx, engine="xlsxwriter")
-    Cyber6.dark_web_mentions.to_excel(
+    mentions_df.to_excel(
         miWriter, sheet_name="Dark Web Mentions", index=False
     )
     Cyber6.alerts.to_excel(miWriter, sheet_name="Dark Web Alerts", index=False)

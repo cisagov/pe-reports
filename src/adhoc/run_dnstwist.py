@@ -86,7 +86,7 @@ def addSubdomain(conn, domain, pe_org_uid, org_name, thread):
     root_domain = ".".join(root_domain)
     cur = conn.cursor()
     cur.callproc(
-        "insert_sub_domain", (domain, pe_org_uid, "findomain", root_domain, None)
+        "insert_sub_domain", ("true",date, domain, pe_org_uid, "findomain", root_domain, None)
     )
     LOGGER.info(f"{thread}: Success adding domain, {domain}, to subdomains table.")
 

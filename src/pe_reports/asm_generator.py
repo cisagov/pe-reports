@@ -18,6 +18,8 @@ from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfgen import canvas
 from reportlab.platypus import Frame, Paragraph
 from reportlab.lib.enums import TA_CENTER
+from reportlab.lib.units import inch
+
 
 # cisagov Libraries
 from pe_reports.data.db_query import (
@@ -181,9 +183,14 @@ def add_attachment(org_uid, final_output, pdf_file, asm_json, asm_xlsx):
 
     # Open CSV data as binary
     sheet = open(asm_json, "rb").read()
+    excel_sheet = open(asm_xlsx, "rb").read()
     p1 = fitz.Point(455, 635)
+    p2 = fitz.Point(495, 635)
     page.add_file_annot(
         p1, sheet, "ASM_Summary.json", desc="Open JSON", icon="Paperclip"
+    )
+    page.add_file_annot(
+        p2, excel_sheet, "ASM_Summary.xlsx", desc="Open Excel", icon="Graph"
     )
     doc.save(
         final_output,
@@ -223,6 +230,13 @@ def create_summary(org_uid, final_output, data_dict, file_name, json_filename, e
 
     stat_style = ParagraphStyle(
         "date_style", fontName="Frank_Goth_Book", fontSize=12, alignment=0
+    )
+
+    json_excel = ParagraphStyle(
+        name="json_excel",
+        fontName="Franklin_Gothic_Medium_Regular",
+        fontSize=10,
+        alignment=1,
     )
 
     # Add all the data points to the correct frame
@@ -289,6 +303,14 @@ def create_summary(org_uid, final_output, data_dict, file_name, json_filename, e
         stat_style,
         can,
     )
+    json_title_frame = Frame(
+            6 * inch, 100, 1.5 * inch, 0.5 * inch, id=None, showBoundary=0
+        )
+    json_title = Paragraph(
+        "JSON&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;EXCEL",
+        style=json_excel,
+    )
+    json_title_frame.addFromList([json_title], can)
     can.save()
 
     # Move to the beginning of the StringIO buffer
