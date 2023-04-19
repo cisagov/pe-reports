@@ -67,31 +67,36 @@ def query_ips_counts(org_uid_list):
     """Query database for ips found from cidrs and discovered by other means."""
     conn = connect()
     print("running query_ips_counts")
-    sql = """
-        SELECT * from vw_orgs_total_ips
-        where organizations_uid in %(org_list)s
-    """
-    total_ips_df = pd.read_sql(sql, conn, params={"org_list": tuple(org_uid_list)})
+    # sql = """
+    #     SELECT * from vw_orgs_total_ips
+    #     where organizations_uid in %(org_list)s
+    # """
+    # total_ips_df = pd.read_sql(sql, conn, params={"org_list": tuple(org_uid_list)})
+
+    # sql = """
+    #     select o.organizations_uid,o.cyhy_db_name, coalesce(cnts.count, 0) as identified_ip_count
+    #     from organizations o
+    #     left join
+    #     (SELECT o.organizations_uid, o.cyhy_db_name, count(i.ip) as count
+    #     FROM ips i
+    #     join ips_subs ip_s on ip_s.ip_hash = i.ip_hash
+    #     join sub_domains sd on sd.sub_domain_uid = ip_s.sub_domain_uid
+    #     join root_domains rd on rd.root_domain_uid = sd.root_domain_uid
+    #     right join organizations o on rd.organizations_uid = o.organizations_uid
+    #     WHERE i.origin_cidr is null
+    #     GROUP BY o.organizations_uid, o.cyhy_db_name) as cnts
+    #     on o.organizations_uid = cnts.organizations_uid
+    #     where o.organizations_uid in %(org_list)s;
+    # """
+    # discovered_ips_df = pd.read_sql(sql, conn, params={"org_list": tuple(org_uid_list)})
 
     sql = """
-        select o.organizations_uid,o.cyhy_db_name, coalesce(cnts.count, 0) as identified_ip_count
-        from organizations o
-        left join
-        (SELECT o.organizations_uid, o.cyhy_db_name, count(i.ip) as count
-        FROM ips i
-        join ips_subs ip_s on ip_s.ip_hash = i.ip_hash
-        join sub_domains sd on sd.sub_domain_uid = ip_s.sub_domain_uid
-        join root_domains rd on rd.root_domain_uid = sd.root_domain_uid
-        right join organizations o on rd.organizations_uid = o.organizations_uid
-        WHERE i.origin_cidr is null
-        GROUP BY o.organizations_uid, o.cyhy_db_name) as cnts
-        on o.organizations_uid = cnts.organizations_uid
-        where o.organizations_uid in %(org_list)s;
-    """
-    discovered_ips_df = pd.read_sql(sql, conn, params={"org_list": tuple(org_uid_list)})
-
+    #     SELECT * from vw_fceb_total_ips
+    #     where organizations_uid in %(org_list)s
+    # """
+    ips_df = pd.read_sql(sql, conn, params={"org_list": tuple(org_uid_list)})
     conn.close()
-    return (total_ips_df, discovered_ips_df)
+    return ips_df
 
 
 def query_domain_counts(org_uid_list):
@@ -844,9 +849,18 @@ def execute_scorecard_summary_data(summary_dict):
                 AsIs(summary_dict["webapp_kev"]),
                 AsIs(summary_dict["webapp_critical"]),
                 AsIs(summary_dict["webapp_high"]),
-                AsIs(int(summary_dict["webapp_kev"]) + int(summary_dict["external_host_kev"])),
-                AsIs(int(summary_dict["webapp_critical"]) + int(summary_dict["external_host_critical"])),
-                AsIs(int(summary_dict["external_host_high"]) + int(summary_dict["webapp_high"])),
+                AsIs(
+                    int(summary_dict["webapp_kev"])
+                    + int(summary_dict["external_host_kev"])
+                ),
+                AsIs(
+                    int(summary_dict["webapp_critical"])
+                    + int(summary_dict["external_host_critical"])
+                ),
+                AsIs(
+                    int(summary_dict["external_host_high"])
+                    + int(summary_dict["webapp_high"])
+                ),
                 AsIs(summary_dict["vuln_org_kev_ttr"]),
                 AsIs(summary_dict["vuln_org_critical_ttr"]),
                 AsIs(summary_dict["vuln_org_high_ttr"]),

@@ -86,9 +86,7 @@ class Scorecard:
         self.scorecard_dict["identification_score"] = None
         self.scorecard_dict["tracking_score"] = None
 
-        (self.total_ips_counts, self.discovered_ips_counts) = query_ips_counts(
-            org_uid_list
-        )
+        self.ip_counts = query_ips_counts(org_uid_list)
         self.domain_counts = query_domain_counts(org_uid_list)
         # # TODO possibly need to format a date string based on the new column
         self.webapp_counts = query_webapp_counts(start_date, org_uid_list)
@@ -138,14 +136,13 @@ class Scorecard:
 
     def calculate_discovery_metrics_counts(self):
         """Summarize discovery findings into key metrics."""
-        total_ips_df = self.total_ips_counts
-        total_ips = total_ips_df["num_ips"].sum()
+        total_ips_df = self.ip_counts
+        total_ips = total_ips_df["total_ips"].sum()
 
-        discovered_ips_df = self.discovered_ips_counts
-        total_identified_ips = discovered_ips_df["identified_ip_count"].sum()
+        total_identified_ips = total_ips_df["cidr_reported"].sum()
 
         self.scorecard_dict["ips_monitored"] = total_ips
-        self.scorecard_dict["ips_identified"] = total_ips - total_identified_ips
+        self.scorecard_dict["ips_identified"] = total_identified_ips
         if self.scorecard_dict["ips_identified"]:
             self.scorecard_dict["ips_monitored_pct"] = total_ips / (
                 total_ips - total_identified_ips
