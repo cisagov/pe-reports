@@ -1,0 +1,10 @@
+# Set the Kibana server's HTTP host.
+http.host: "0.0.0.0"                              # Listen on all network interfaces (0.0.0.0).
+
+# Configure the Elasticsearch monitoring settings for X-Pack.
+xpack.monitoring.elasticsearch.hosts: [ "https://0.0.0.0:9200" ] # Specify the Elasticsearch host(s) for monitoring data.
+
+# Configure the SSL truststore settings for X-Pack monitoring.
+xpack.monitoring.elasticsearch.ssl.truststore.path: /etc/ssl/certs/java/cacerts      # Set the path to the truststore.
+xpack.monitoring.elasticsearch.ssl.truststore.password: pass123                      # Set the truststore password. Replace "changeit" with your custom password if you set one.
+

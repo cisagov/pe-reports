@@ -1,0 +1,21 @@
+# Configure Metricbeat modules.
+metricbeat.config.modules:
+  path: ${path.config}/modules.d/*.yml  # Specify the path for the module configuration files.
+  reload.enabled: false                 # Disable automatic reloading of module configuration files.
+
+# Define Metricbeat modules to be used.
+metricbeat.modules:
+- module: logstash                  # Use the Logstash module.
+  metricsets:
+    - node                          # Collect Logstash node metrics.
+    - node_stats                    # Collect Logstash node statistics.
+  period: 10s                       # Set the period for fetching metrics to 10 seconds.
+  hosts: ["logstash:9600"]          # Specify the Logstash host and port.
+
+# Configure the output destination for the collected metrics.
+output.elasticsearch:
+  hosts: ["es01:9200"]
+
+# Configure the Kibana settings for index pattern setup and dashboard loading.
+setup.kibana:
+  host: "kibana:5601"
