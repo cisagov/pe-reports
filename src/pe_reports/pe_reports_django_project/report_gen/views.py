@@ -7,6 +7,7 @@ import datetime
 from django.shortcuts import render, redirect
 from django.http import HttpResponseNotFound
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required
 from .forms import InfoFormExternal, BulletinFormExternal, CredsFormExternal
 #
 # # cisagov Libraries
@@ -19,6 +20,7 @@ from .forms import (
     BulletinFormExternal,
     CredsFormExternal,
     InfoFormExternal,
+    ScoreCardGenFormExternal,
 )
 from pe_reports.report_generator import generate_reports
 
@@ -36,17 +38,14 @@ LOGGER = logging.getLogger(__name__)
 conn = None
 cursor = None
 
-# Create your views here.
 
-
+@login_required
 def report_gen(request):
-    """Route to get to report generator page."""
     try:
         return render(request=request,
                       template_name="report_gen/report_gen.html")
     except:
         return HttpResponseNotFound('Nothing found')
-
 
 
 def validate_filename(filename):
@@ -151,6 +150,7 @@ def report_gen(request):
         breach_name = creds_form.cleaned_data['breach_name']
         org_id = creds_form.cleaned_data['org_id']
         all_orgs = get_orgs_df()
+        print(get_orgs_df())
         # Pandas does not support "cond is True" syntax for dataframe filters,
         # so we must disable flake8 E712 here
         all_orgs = all_orgs[all_orgs["report_on"] == True]  # noqa: E712
@@ -175,10 +175,44 @@ def report_gen(request):
                 filename=org_id + "_" + breach_name.replace(" ", "") + "_Bulletin.pdf",
             )
 
+    score_card_form = ScoreCardGenFormExternal(request.POST)
+    if score_card_form.is_valid():
+
+        org_id = score_card_form.cleaned_data['org_id']
+        month = score_card_form.cleaned_data['month']
+        year = score_card_form.cleaned_data['year']
+        all_orgs = get_orgs_df()
+        print(get_orgs_df())
+        # Pandas does not support "cond is True" syntax for dataframe filters,
+        # so we must disable flake8 E712 here
+        all_orgs = all_orgs[all_orgs["report_on"] == True]  # noqa: E712
+
+        if org_id != "":
+            org_id = org_id.upper()
+            all_orgs = all_orgs[all_orgs["cyhy_db_name"].str.upper() == org_id]
+
+        if len(all_orgs) < 1:
+            messages.warning(request,
+                             "The provided org_id does not exist in the database, try another."
+                             )
+            return redirect("/report_gen/")
+
+        for org_index, org in all_orgs.iterrows():
+            LOGGER.info("Running on %s", org["name"])
+            generate_creds_bulletin(
+                breach_name,
+                org_id,
+                "user_text",
+                output_directory="/var/www/cred_bulletins",
+                filename=org_id + "_" + breach_name.replace(" ",
+                                                            "") + "_Bulletin.pdf",
+            )
+
     return render(request,
         "report_gen/report_gen.html",
                   {'form_external': form_external,
                    'bulletin_form': bulletin_form,
-                   'creds_form': creds_form
+                   'creds_form': creds_form,
+                    'score_card_form': score_card_form
                    }
     )
