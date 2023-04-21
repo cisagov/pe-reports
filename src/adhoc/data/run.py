@@ -496,8 +496,8 @@ def insertWASVulnData(data):
     """Insert WAS vulnerability data into database."""
     conn = connect("")
     cur = conn.cursor()
-    sql = """   INSERT INTO was_history (was_org_ID,date_scanned,vuln_cnt,vuln_webapp_cnt,web_app_cnt,high_rem_time,crit_rem_time,report_period,high_vuln_cnt,crit_vuln_cnt)
-                VALUES ('{}','{}',{},{},{}, (CASE WHEN {} = 0 THEN NULL ELSE {} END), (CASE WHEN {} = 0 THEN NULL ELSE {} END),'{}',{},{}) """
+    sql = """   INSERT INTO was_history (was_org_ID,date_scanned,vuln_cnt,vuln_webapp_cnt,web_app_cnt,high_rem_time,crit_rem_time,report_period,high_vuln_cnt,crit_vuln_cnt,crit_rem_cnt,high_rem_cnt)
+                VALUES ('{}','{}',{},{},{}, (CASE WHEN {} = 0 THEN NULL ELSE {} END), (CASE WHEN {} = 0 THEN NULL ELSE {} END),'{}',{},{},{},{}) """
     cur.execute(
         sql.format(
             data['was_org_id'],
@@ -511,7 +511,9 @@ def insertWASVulnData(data):
             data['crit_rem_time'],
             data['report_period'],
             data['high_vuln_cnt'],
-            data['crit_vuln_cnt']
+            data['crit_vuln_cnt'],
+            data['high_rem_cnt'],
+            data['crit_rem_cnt']
             )
         )
     conn.commit()

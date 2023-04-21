@@ -312,7 +312,8 @@ def fillData(report_period):
             'report_period': rpd,
             'high_vuln_cnt':queryVulnCountSeverity(was_org_id,4),
             'crit_vuln_cnt':queryVulnCountSeverity(was_org_id,5),
-
+            'high_rem_cnt':len(highRemTimeList),
+            'crit_rem_cnt':len(critRemTimeList)
         }
         insertWASVulnData(was_data)
     
