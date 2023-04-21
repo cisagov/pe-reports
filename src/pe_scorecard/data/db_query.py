@@ -845,7 +845,10 @@ def execute_scorecard_summary_data(summary_dict):
                 AsIs(summary_dict["webapp_critical"]),
                 AsIs(summary_dict["webapp_high"]),
                 AsIs(summary_dict["webapp_kev"] + summary_dict["external_host_kev"]),
-                AsIs(summary_dict["webapp_critical"] + summary_dict["external_host_critical"]),
+                AsIs(
+                    summary_dict["webapp_critical"]
+                    + summary_dict["external_host_critical"]
+                ),
                 AsIs(summary_dict["external_host_high"] + summary_dict["webapp_high"]),
                 AsIs(summary_dict["vuln_org_kev_ttr"]),
                 AsIs(summary_dict["vuln_org_critical_ttr"]),
@@ -959,3 +962,19 @@ def query_fceb_ttr(month, year):
         "ATTR Highs": df["weighted_high"].sum(),
     }
     return (df_unedited, fceb_dict)
+
+
+# v ---------- D-Score SQL Queries ---------- v
+def query_dscore_vs_data(start_date, end_date):
+    """Query all VS data needed for D-Score calculation."""
+    # Open connection
+    conn = connect()
+    # Make query
+    sql = """SELECT * FROM vw_iscore_vs_vuln;"""
+    dscore_vs_data = pd.read_sql(sql, conn)
+    # Close connection
+    conn.close()
+    return dscore_vs_data
+
+
+# ^ ---------- D-Score SQL Queries ---------- ^
