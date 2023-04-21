@@ -23,6 +23,7 @@ from .forms import (
     ScoreCardGenFormExternal,
 )
 from pe_reports.report_generator import generate_reports
+from pe_scorecard.scorecard_generator import generate_scorecards
 
 
 # from .models import Usersapi, Organizations
@@ -174,6 +175,7 @@ def report_gen(request):
                 output_directory="/var/www/cred_bulletins",
                 filename=org_id + "_" + breach_name.replace(" ", "") + "_Bulletin.pdf",
             )
+        LOGGER.info("Completed Scorecard run.")
 
     score_card_form = ScoreCardGenFormExternal(request.POST)
     if score_card_form.is_valid():
@@ -197,16 +199,14 @@ def report_gen(request):
                              )
             return redirect("/report_gen/")
 
+        # Create output directory
+        output_directory = f"/var/www/scorecards_{month}_{year}"
+        if not os.path.exists(output_directory):
+            os.mkdir(output_directory)
         for org_index, org in all_orgs.iterrows():
             LOGGER.info("Running on %s", org["name"])
-            generate_creds_bulletin(
-                breach_name,
-                org_id,
-                "user_text",
-                output_directory="/var/www/cred_bulletins",
-                filename=org_id + "_" + breach_name.replace(" ",
-                                                            "") + "_Bulletin.pdf",
-            )
+            generate_scorecards(month, year, output_directory, org_id, email=True)
+    
 
     return render(request,
         "report_gen/report_gen.html",

@@ -67,6 +67,7 @@ def query_ips_counts(org_uid_list):
     """Query database for ips found from cidrs and discovered by other means."""
     conn = connect()
     print("running query_ips_counts")
+    LOGGER.info("running query_ips_counts")
     # sql = """
     #     SELECT * from vw_orgs_total_ips
     #     where organizations_uid in %(org_list)s
@@ -91,11 +92,12 @@ def query_ips_counts(org_uid_list):
     # discovered_ips_df = pd.read_sql(sql, conn, params={"org_list": tuple(org_uid_list)})
 
     sql = """
-         SELECT * from vw_fceb_total_ips
+         SELECT * from mat_vw_fceb_total_ips
          where organizations_uid in %(org_list)s
     """
     ips_df = pd.read_sql(sql, conn, params={"org_list": tuple(org_uid_list)})
     conn.close()
+    LOGGER.info("DONE query_ips_counts")
     return ips_df
 
 
@@ -701,6 +703,23 @@ def query_open_vulns(org_id_list):
 def execute_scorecard_summary_data(summary_dict):
     """Save summary statistics for an organization to the database."""
     try:
+        if summary_dict["webapp_kev"] in ['N/A', None]:
+            summary_dict["webapp_kev"] = 0
+
+        if summary_dict["external_host_kev"] in ['N/A', None]:
+            summary_dict["external_host_kev"] = 0
+
+        if summary_dict["webapp_critical"] in ['N/A', None]:
+            summary_dict["webapp_critical"] = 0
+
+        if summary_dict["external_host_critical"] in ['N/A', None]:
+            summary_dict["external_host_critical"] = 0
+
+        if summary_dict["external_host_high"] in ['N/A', None]:
+            summary_dict["external_host_high"] = 0
+
+        if summary_dict["webapp_high"] in ['N/A', None]:
+            summary_dict["webapp_high"] = 0
         conn = connect()
         cur = conn.cursor()
         sql = """
@@ -813,10 +832,10 @@ def execute_scorecard_summary_data(summary_dict):
             sect_web_avg_days_remediate_high = EXCLUDED.sect_web_avg_days_remediate_high,
             email_compliance_pct = EXCLUDED.email_compliance_pct,
             https_compliance_pct = EXCLUDED.https_compliance_pct;
-        """
+        """ 
         cur.execute(
             sql,
-            (
+            {
                 summary_dict["organizations_uid"],
                 summary_dict["start_date"],
                 summary_dict["end_date"],
@@ -849,9 +868,9 @@ def execute_scorecard_summary_data(summary_dict):
                 AsIs(summary_dict["webapp_kev"]),
                 AsIs(summary_dict["webapp_critical"]),
                 AsIs(summary_dict["webapp_high"]),
-                AsIs(int(summary_dict["webapp_kev"] or None) + int(summary_dict["external_host_kev"] or None)),
-                AsIs(int(summary_dict["webapp_critical"] or None) + int(summary_dict["external_host_critical"] or None)),
-                AsIs(int(summary_dict["external_host_high"] or None) + int(summary_dict["webapp_high"] or None)),
+                AsIs(summary_dict["webapp_kev"] + summary_dict["external_host_kev"]),
+                AsIs(summary_dict["webapp_critical"] + summary_dict["external_host_critical"]),
+                AsIs(summary_dict["external_host_high"] + summary_dict["webapp_high"]),
                 AsIs(summary_dict["vuln_org_kev_ttr"]),
                 AsIs(summary_dict["vuln_org_critical_ttr"]),
                 AsIs(summary_dict["vuln_org_high_ttr"]),
@@ -867,7 +886,7 @@ def execute_scorecard_summary_data(summary_dict):
                 AsIs(summary_dict["webapp_sector_high_ttr"]),
                 AsIs(summary_dict["email_compliance_pct"]),
                 AsIs(summary_dict["https_compliance_pct"]),
-            ),
+            },
         )
         conn.commit()
         conn.close()

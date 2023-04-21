@@ -599,7 +599,11 @@ def was_info_create(customer: schemas.WASDataBase, tokens: dict = Depends(get_ap
 
     if not tokens:
         return {"message": "No api key was submitted"}
+
+    print("got to the endpoint")
+    print(customer)
     was_customer = WasTrackerCustomerdata(**customer.dict())
+    print(was_customer)
 
     LOGGER.info(f"The api key submitted {tokens}")
     try:
@@ -608,6 +612,7 @@ def was_info_create(customer: schemas.WASDataBase, tokens: dict = Depends(get_ap
         return {"saved_customer": was_customer}
     except:
         LOGGER.info("API key expired please try again")
+        return {"message": "Failed to upload"}
 
 
 @api_router.put(

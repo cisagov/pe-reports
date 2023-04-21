@@ -37,6 +37,8 @@ def determine_arrow(value, last_value, color=False, up_is_good=False):
     """Determine the arrow color and direction based on current and previous values."""
     if not last_value:
         last_value = 0
+    if not value:
+        value = 0
     value_diff = value - last_value
     if color:
         if value_diff > 0:
