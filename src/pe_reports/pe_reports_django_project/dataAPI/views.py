@@ -11,6 +11,7 @@ import asyncio
 from io import TextIOWrapper
 import csv
 import pandas as pd
+import codecs
 
 # Third party imports
 from fastapi import (
@@ -32,6 +33,7 @@ from fastapi.security.api_key import APIKeyQuery, APIKeyCookie, APIKeyHeader, AP
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.contrib.auth.models import User
 from django.db import transaction
+from django.db import DataError
 from django.contrib import messages
 from uuid import UUID
 
@@ -186,10 +188,56 @@ async def get_api_key(
         )
 
 
-def process_item(item):
-    #     # TODO: Replace with the code for what you wish to do with the row of data in the CSV.
-    LOGGER.info("The item is %s" % item)
-    print("The item is %s" % item)
+def upload_was_data(dict):
+    """Delete all data and replace with the data from the file that is getting uploaded."""
+    print("Got to upload was data")
+    if WasTrackerCustomerdata.objects.exists():
+        LOGGER.info("There was data that was deleted from the WAS table.")
+        WasTrackerCustomerdata.objects.all().delete()
+
+    for row in dict:
+        # Fix boolean columns
+        if row["elections"] == "1.0":
+            row["elections"] = True
+        elif row["elections"] == "":
+            row["elections"] = False
+        if row["fceb"] == "1.0":
+            row["fceb"] = True
+        elif row["fceb"] == "":
+            row["fceb"] = False
+        if row["special_report"] == "1.0":
+            row["special_report"] = True
+        elif row["special_report"] == "":
+            row["special_report"] = False
+
+        wasCustomer = WasTrackerCustomerdata(
+            tag=row["tag"],
+            customer_name=row["customer_name"],
+            testing_sector=row["testing_sector"],
+            ci_type=row["ci_type"],
+            jira_ticket=row["jira_ticket"],
+            ticket=row["ticket"],
+            next_scheduled=row["next_scheduled"],
+            last_scanned=row["last_scanned"],
+            frequency=row["frequency"],
+            comments_notes=row["comments_notes"],
+            was_report_poc=row["was_report_poc"],
+            was_report_email=row["was_report_email"],
+            onboarding_date=row["onboarding_date"],
+            no_of_web_apps=row["no_of_web_apps"],
+            no_web_apps_last_updated=row["no_web_apps_last_updated"],
+            elections=row["elections"],
+            fceb=row["fceb"],
+            special_report=row["special_report"],
+            report_password=row["report_password"],
+            child_tags=row["child_tags"],
+        )
+        try:
+            wasCustomer.save()
+            print(f"saved {row}")
+
+        except DataError as e:
+            LOGGER.error("There is an issue with the data type %s", e)
 
 
 # def api_key_auth(api_key: str = Depends(oauth2_scheme)):
@@ -434,37 +482,43 @@ def create_user(data: schemas.UserAuth):
 @api_router.post(
     "/was_upload", dependencies=[Depends(get_api_key)], tags=["Upload WAS csv file"]
 )
-def upload(file: UploadFile = File(...)):
+def upload(tokens: dict = Depends(get_api_key), file: UploadFile = File(...)):
     """Upload csv file from WAS"""
 
     if not tokens:
         return {"message": "No api key was submitted"}
-    f = TextIOWrapper(file.file)
 
-    dict_reader = csv.DictReader(f)
-    dict_reader = dict_reader.fieldnames
-    dict_reader = set(dict_reader)
+    if not file.filename.endswith("csv"):
+        raise HTTPException(400, detail="Invalid document type")
+    
+    # f = TextIOWrapper(file.file)
+
+    dict_reader = csv.DictReader(codecs.iterdecode(file.file, 'utf-8'))
+    col_names = dict_reader.fieldnames
+    col_names = set(col_names)
+    data_dict = list(dict_reader)
 
     required_columns = [
-        "org",
-        "org_code",
-        "root_domain",
-        "exec_url",
-        "aliases",
-        "premium",
-        "demo",
+        "tag",
+        "customer_name",
+        "testing_sector",	
+        "ci_type",
+        "ticket",
+        "next_scheduled",
+        "last_scanned",
+        "frequency",
+        "comments_notes",
+        "was_report_poc",
+        "was_report_email",
+        "onboarding_date",
+        "no_of_web_apps",
     ]
-    # Check needed columns exist
-    incorrect_col = []
-    testtheList = [i for i in required_columns if i in dict_reader]
 
     try:
-        if not file.filename.endswith("csv"):
-            raise HTTPException(400, detail="Invalid document type")
-
-        if len(testtheList) == len(dict_reader):
-            for row, item in enumerate(dict_reader, start=1):
-                process_item(item)
+        # Check that all the required column names are present
+        if all(item in col_names for item in required_columns):
+            print("column names are all correct")
+            upload_was_data(data_dict)
             return {"message": "Successfully uploaded %s" % file.filename}
         else:
             for col in required_columns:
@@ -517,6 +571,9 @@ def was_info(tokens: dict = Depends(get_api_key)):
 def was_info_delete(tag: str, tokens: dict = Depends(get_api_key)):
     """API endpoint to delete a record in database."""
 
+    if not tokens:
+        return {"message": "No api key was submitted"}
+
     was_data = WasTrackerCustomerdata.objects.get(tag=tag)
 
     LOGGER.info(f"The api key submitted {tokens}")
@@ -540,6 +597,8 @@ def was_info_delete(tag: str, tokens: dict = Depends(get_api_key)):
 def was_info_create(customer: schemas.WASDataBase, tokens: dict = Depends(get_api_key)):
     """API endpoint to create a record in database."""
 
+    if not tokens:
+        return {"message": "No api key was submitted"}
     was_customer = WasTrackerCustomerdata(**customer.dict())
 
     LOGGER.info(f"The api key submitted {tokens}")
@@ -562,7 +621,8 @@ def was_info_update(
     tag: str, customer: schemas.WASDataBase, tokens: dict = Depends(get_api_key)
 ):
     """API endpoint to create a record in database."""
-
+    if not tokens:
+        return {"message": "No api key was submitted"}
     LOGGER.info(f"The api key submitted {tokens}")
     try:
         userapiTokenverify(theapiKey=tokens)
