@@ -208,6 +208,39 @@ def report_gen(request):
             generate_scorecards(month, year, output_directory, org_id, email=True)
     
 
+    score_card_form = ScoreCardGenFormExternal(request.POST)
+    if score_card_form.is_valid():
+
+        org_id = score_card_form.cleaned_data['org_id']
+        month = score_card_form.cleaned_data['month']
+        year = score_card_form.cleaned_data['year']
+        all_orgs = get_orgs_df()
+        print(get_orgs_df())
+        # Pandas does not support "cond is True" syntax for dataframe filters,
+        # so we must disable flake8 E712 here
+        all_orgs = all_orgs[all_orgs["report_on"] == True]  # noqa: E712
+
+        if org_id != "":
+            org_id = org_id.upper()
+            all_orgs = all_orgs[all_orgs["cyhy_db_name"].str.upper() == org_id]
+
+        if len(all_orgs) < 1:
+            messages.warning(request,
+                             "The provided org_id does not exist in the database, try another."
+                             )
+            return redirect("/report_gen/")
+
+        for org_index, org in all_orgs.iterrows():
+            LOGGER.info("Running on %s", org["name"])
+            generate_creds_bulletin(
+                breach_name,
+                org_id,
+                "user_text",
+                output_directory="/var/www/cred_bulletins",
+                filename=org_id + "_" + breach_name.replace(" ",
+                                                            "") + "_Bulletin.pdf",
+            )
+
     return render(request,
         "report_gen/report_gen.html",
                   {'form_external': form_external,
