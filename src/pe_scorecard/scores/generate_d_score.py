@@ -279,29 +279,28 @@ def gen_discov_scores(stakeholder_list, curr_date):
 
     # Combine metrics into subsection totals
     # VS Subsections:
-    discov_data_df["vs_cert_subsection"] = discov_data_df["percent_monitor_cert"] * 1.00
+    discov_data_df["vs_monitor_subsection"] = (
+        discov_data_df["percent_monitor_cert"] * 1.00
+    )
     discov_data_df["vs_mail_subsection"] = discov_data_df["percent_secure_mail"] * 1.00
     # PE Subsections:
-    discov_data_df["pe_ip_subsection"] = discov_data_df["percent_monitor_ip"] * 1.00
-    discov_data_df["pe_domain_subsection"] = (
-        discov_data_df["percent_monitor_domain"] * 1.00
-    )
+    discov_data_df["pe_monitor_subsection"] = (
+        discov_data_df["percent_monitor_ip"] * 0.5
+    ) + (discov_data_df["percent_monitor_domain"] * 0.5)
     # WAS Subsections:
-    discov_data_df["was_webapp_subsection"] = (
-        discov_data_df["percent_monitor_webapp"] * 0.25
+    discov_data_df["was_monitor_subsection"] = (
+        discov_data_df["percent_monitor_webapp"] * 1.00
     )
 
     # Combine subsections into team sections
     # VS Section:
-    discov_data_df["vs_section"] = (discov_data_df["vs_cert_subsection"] * 0.6) + (
+    discov_data_df["vs_section"] = (discov_data_df["vs_monitor_subsection"] * 0.6) + (
         discov_data_df["vs_mail_subsection"] * 0.4
     )
     # PE Section:
-    discov_data_df["pe_section"] = (discov_data_df["pe_ip_subsection"] * 0.5) + (
-        discov_data_df["pe_domain_subsection"] * 0.5
-    )
+    discov_data_df["pe_section"] = discov_data_df["pe_monitor_subsection"] * 1.00
     # WAS Section:
-    discov_data_df["was_section"] = discov_data_df["was_webapp_subsection"] * 1.0
+    discov_data_df["was_section"] = discov_data_df["was_monitor_subsection"] * 1.0
 
     # Combine team sections into single value
     discov_data_df["discov_score"] = (
