@@ -18,6 +18,7 @@ Options:
                                     IDs in the cyhy-db. E.g. DHS,DHS_ICE,DOC
                                     [default: all]
   -m --email                        If included, email report [default: False]
+  -x --cancel_refresh                If included, don't refresh materialized views [default: False]
 """
 
 # Standard Python Libraries
@@ -25,8 +26,8 @@ import datetime
 import logging
 import os
 import sys
-from typing import Any, Dict
 import traceback
+from typing import Any, Dict
 
 # Third-Party Libraries
 import docopt
@@ -43,17 +44,19 @@ from .data.db_query import (
     get_orgs,
     query_fceb_ttr,
     query_was_fceb_ttr,
+    refresh_views,
 )
-from .metrics import Scorecard
 from .helpers.email_scorecard import email_scorecard_report
+from .metrics import Scorecard
 
 LOGGER = logging.getLogger(__name__)
 ACCESSOR_AWS_PROFILE = os.getenv("ACCESSOR_PROFILE")
 
 
-def generate_scorecards(month, year, output_directory, orgs_list = "all", email=False):
+def generate_scorecards(
+    month, year, output_directory, orgs_list="all", email=False, cancel_refresh=False
+):
     """Generate scorecards for approved orgs."""
-
     # Get scorecard orgs
     scorecard_orgs = get_orgs()
 
@@ -75,6 +78,10 @@ def generate_scorecards(month, year, output_directory, orgs_list = "all", email=
         # (avg_time_to_remediate_df, vs_fceb_results) = calculate_time_to_remediate(
         #     start_date, end_date
         # )
+        if not cancel_refresh:
+            LOGGER.info("Refreshing Views")
+            refresh_views()
+
         (avg_time_to_remediate_df, vs_fceb_results) = query_fceb_ttr(
             int(month), int(year)
         )
@@ -84,14 +91,17 @@ def generate_scorecards(month, year, output_directory, orgs_list = "all", email=
         failed = []
         for index, org in scorecard_orgs.iterrows():
             try:
-                
+
                 if org["fceb"] and org["cyhy_db_name"] in orgs_list:
 
                     LOGGER.info("RUNNING SCORECARD ON %s", org["cyhy_db_name"])
                     if org["is_parent"]:
                         # Gather list of children orgs
                         children_df = scorecard_orgs[
-                            (scorecard_orgs["parent_org_uid"] == org["organizations_uid"])
+                            (
+                                scorecard_orgs["parent_org_uid"]
+                                == org["organizations_uid"]
+                            )
                             & (scorecard_orgs["retired"] == False)
                         ]
                         org_uid_list = children_df["organizations_uid"].values.tolist()
@@ -139,17 +149,17 @@ def generate_scorecards(month, year, output_directory, orgs_list = "all", email=
                     # Insert dictionary into the summary table
                     execute_scorecard_summary_data(scorecard.scorecard_dict)
 
-
                     # If email, email the report out to customer
                     if email:
                         # TODO: Encrypt the report
-                        email_scorecard_report(org["cyhy_db_name"], filename,month, year)
+                        email_scorecard_report(
+                            org["cyhy_db_name"], filename, month, year
+                        )
 
-            except:
-                LOGGER.error("Scorecard failed for %s", org["cyhy_db_name"])
+            except Exception as e:
+                LOGGER.error("Scorecard failed for %s: %s", org["cyhy_db_name"], e)
                 print(traceback.format_exc(), flush=True)
                 failed += org["cyhy_db_name"]
-            
 
 
 def main():
@@ -202,7 +212,7 @@ def main():
         validated_args["OUTPUT_DIRECTORY"],
         validated_args["--orgs"],
         validated_args["--email"],
-
+        validated_args["cancel_refresh"],
     )
 
     # Stop logging and clean up

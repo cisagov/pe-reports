@@ -62,6 +62,61 @@ def get_orgs():
     return pe_orgs
 
 
+def refresh_views():
+    """Refresh materialized views."""
+    try:
+        conn = connect()
+        sql = """
+            REFRESH MATERIALIZED VIEW
+            public.mat_vw_fceb_total_ips
+            WITH DATA
+        """
+        cur = conn.cursor()
+        cur.execute(sql)
+        conn.commit()
+
+        sql = """
+            REFRESH MATERIALIZED VIEW
+            public.mat_vw_cyhy_port_counts
+            WITH DATA
+        """
+        cur = conn.cursor()
+        cur.execute(sql)
+        conn.commit()
+
+        sql = """
+            REFRESH MATERIALIZED VIEW
+            public.mat_vw_cyhy_protocol_counts
+            WITH DATA
+        """
+        cur = conn.cursor()
+        cur.execute(sql)
+        conn.commit()
+
+        sql = """
+            REFRESH MATERIALIZED VIEW
+            public.mat_vw_cyhy_risky_protocol_counts
+            WITH DATA
+        """
+        cur = conn.cursor()
+        cur.execute(sql)
+        conn.commit()
+
+        sql = """
+            REFRESH MATERIALIZED VIEW
+            public.mat_vw_cyhy_services_counts
+            WITH DATA
+        """
+        cur = conn.cursor()
+        cur.execute(sql)
+        conn.commit()
+
+        conn.close()
+    except (Exception, psycopg2.DatabaseError) as err:
+        show_psycopg2_exception(err)
+        cur.close()
+
+
 # ----- IP list -------
 def query_ips_counts(org_uid_list):
     """Query database for ips found from cidrs and discovered by other means."""
@@ -707,22 +762,22 @@ def query_open_vulns(org_id_list):
 def execute_scorecard_summary_data(summary_dict):
     """Save summary statistics for an organization to the database."""
     try:
-        if summary_dict["webapp_kev"] in ['N/A', None]:
+        if summary_dict["webapp_kev"] in ["N/A", None]:
             summary_dict["webapp_kev"] = 0
 
-        if summary_dict["external_host_kev"] in ['N/A', None]:
+        if summary_dict["external_host_kev"] in ["N/A", None]:
             summary_dict["external_host_kev"] = 0
 
-        if summary_dict["webapp_critical"] in ['N/A', None]:
+        if summary_dict["webapp_critical"] in ["N/A", None]:
             summary_dict["webapp_critical"] = 0
 
-        if summary_dict["external_host_critical"] in ['N/A', None]:
+        if summary_dict["external_host_critical"] in ["N/A", None]:
             summary_dict["external_host_critical"] = 0
 
-        if summary_dict["external_host_high"] in ['N/A', None]:
+        if summary_dict["external_host_high"] in ["N/A", None]:
             summary_dict["external_host_high"] = 0
 
-        if summary_dict["webapp_high"] in ['N/A', None]:
+        if summary_dict["webapp_high"] in ["N/A", None]:
             summary_dict["webapp_high"] = 0
         conn = connect()
         cur = conn.cursor()
@@ -836,7 +891,7 @@ def execute_scorecard_summary_data(summary_dict):
             sect_web_avg_days_remediate_high = EXCLUDED.sect_web_avg_days_remediate_high,
             email_compliance_pct = EXCLUDED.email_compliance_pct,
             https_compliance_pct = EXCLUDED.https_compliance_pct;
-        """ 
+        """
         cur.execute(
             sql,
             {
@@ -873,7 +928,10 @@ def execute_scorecard_summary_data(summary_dict):
                 AsIs(summary_dict["webapp_critical"]),
                 AsIs(summary_dict["webapp_high"]),
                 AsIs(summary_dict["webapp_kev"] + summary_dict["external_host_kev"]),
-                AsIs(summary_dict["webapp_critical"] + summary_dict["external_host_critical"]),
+                AsIs(
+                    summary_dict["webapp_critical"]
+                    + summary_dict["external_host_critical"]
+                ),
                 AsIs(summary_dict["external_host_high"] + summary_dict["webapp_high"]),
                 AsIs(summary_dict["vuln_org_kev_ttr"]),
                 AsIs(summary_dict["vuln_org_critical_ttr"]),
@@ -996,7 +1054,7 @@ def query_profiling_views(start_date, org_uid_list):
     conn = connect()
     ports_sql = """
         SELECT *
-        FROM vw_cyhy_port_counts
+        FROM mat_vw_cyhy_port_counts
         where report_period = %(start_date)s and organizations_uid in %(uid_list)s
     """
 
@@ -1008,7 +1066,7 @@ def query_profiling_views(start_date, org_uid_list):
 
     protocols_sql = """
         SELECT *
-        FROM vw_cyhy_protocol_counts
+        FROM mat_vw_cyhy_protocol_counts
         where report_period = %(start_date)s and organizations_uid in %(uid_list)s
     """
 
@@ -1019,7 +1077,7 @@ def query_profiling_views(start_date, org_uid_list):
 
     risky_protcols_sql = """
         SELECT *
-        FROM vw_cyhy_risky_protocol_counts
+        FROM mat_vw_cyhy_risky_protocol_counts
         where report_period = %(start_date)s and organizations_uid in %(uid_list)s
     """
     risky_protocols_df = pd.read_sql(
@@ -1033,7 +1091,7 @@ def query_profiling_views(start_date, org_uid_list):
 
     services_sql = """
         SELECT *
-        FROM vw_cyhy_services_counts
+        FROM mat_vw_cyhy_services_counts
         where report_period = %(start_date)s and organizations_uid in %(uid_list)s
     """
     services_df = pd.read_sql(
