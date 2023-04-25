@@ -1,7 +1,7 @@
 """A tool for creating CISA unified scorecard.
 
 Usage:
-  pe-scorecard REPORT_MONTH REPORT_YEAR OUTPUT_DIRECTORY [--log-level=LEVEL] [--orgs=ORG_LIST] [--email] [--cancel-refresh]
+  pe-scorecard REPORT_MONTH REPORT_YEAR OUTPUT_DIRECTORY [--log-level=LEVEL] [--orgs=ORG_LIST] [--email] [--cancel-refresh] [--exclude_bods]
 
 Options:
   -h --help                         Show this message.
@@ -19,6 +19,7 @@ Options:
                                     [default: all]
   -m --email                        If included, email report [default: False]
   -x --cancel-refresh               If included, don't refresh materialized views [default: False]
+  -b --exclude_bods                 If included, bod data will be excluded [default: False]
 """
 
 # Standard Python Libraries
@@ -54,7 +55,13 @@ ACCESSOR_AWS_PROFILE = os.getenv("ACCESSOR_PROFILE")
 
 
 def generate_scorecards(
-    month, year, output_directory, orgs_list="all", email=False, cancel_refresh=False
+    month,
+    year,
+    output_directory,
+    orgs_list="all",
+    email=False,
+    cancel_refresh=False,
+    exclude_bods=False,
 ):
     """Generate scorecards for approved orgs."""
     # Get scorecard orgs
@@ -143,7 +150,9 @@ def generate_scorecards(
                         was_fceb_ttr,
                     )
                     scorecard.fill_scorecard_dict()
-                    filename = scorecard.generate_scorecard(output_directory)
+                    filename = scorecard.generate_scorecard(
+                        output_directory, exclude_bods=exclude_bods
+                    )
                     # scorecard.calculate_ips_counts()
 
                     # Insert dictionary into the summary table
@@ -213,6 +222,7 @@ def main():
         validated_args["--orgs"],
         validated_args["--email"],
         validated_args["--cancel-refresh"],
+        validated_args["--exclude_bods "],
     )
 
     # Stop logging and clean up

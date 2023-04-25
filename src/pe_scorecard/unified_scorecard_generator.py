@@ -107,10 +107,10 @@ def format_table(data, column_widths, half_page=False, trending=True):
     return table
 
 
-def create_scorecard(data_dict, file_name, include_trending=True, include_scores=True):
+def create_scorecard(
+    data_dict, file_name, include_trending=True, include_scores=True, exclude_bods=False
+):
     """Generate a unified scorecard based on a passed in data_dict."""
-    # show_Border = False
-
     # create a new PDF with Reportlab
     can = canvas.Canvas(file_name, pagesize=letter)
     # can.drawString(100,700, "First Time Using reportlab")
@@ -1139,69 +1139,60 @@ def create_scorecard(data_dict, file_name, include_trending=True, include_scores
         can,
     )
     vulns_data = [
-        ["", data_dict["agency_id"], data_dict["sector_name"], "BOD Compliance"],
-        [
-            "KEV",
-            data_dict["vuln_org_kev_ttr"],
-            data_dict["vuln_sector_kev_ttr"],
-            "22-01:         "
-            # + str(data_dict['vuln_bod_22-01'])
-        ],
+        ["", data_dict["agency_id"], data_dict["sector_name"]],
+        ["KEV", data_dict["vuln_org_kev_ttr"], data_dict["vuln_sector_kev_ttr"]],
         [
             "Critical",
             data_dict["vuln_org_critical_ttr"],
             data_dict["vuln_sector_critical_ttr"],
-            "19-02:         "
-            # str(data_dict['vuln_critical_bod_19-02'])
         ],
-        [
-            "High",
-            data_dict["vuln_org_high_ttr"],
-            data_dict["vuln_sector_high_ttr"],
-            # Table(data =[["19-02: ",Image(BASE_DIR + "/scorecard_assets/green_check.png" if data_dict['vuln_high_bod_19-02'] else BASE_DIR + "/scorecard_assets/red_x.png" ,25,25)]],style=TableStyle([("FONT", (0, 0), (-1, -1), "Franklin_Gothic_Book"),("FONTSIZE", (0, 0), (-1, -1), 16),("VALIGN", (0, 0), (-1, -1), "TOP"),]))
-            "19-02:         "
-            # + str(data_dict['vuln_high_bod_19-02'])
-        ],
+        ["High", data_dict["vuln_org_high_ttr"], data_dict["vuln_sector_high_ttr"]],
     ]
-    vulns_table = format_table(
-        vulns_data, [3.3 * inch, 1.3 * inch, 1.3 * inch, 1.8 * inch]
-    )
+    col_widths = [3.2 * inch, 2.1 * inch, 2.4 * inch]
+    if not exclude_bods:
+        vulns_data[0].append("BOD Compliance")
+        vulns_data[1].append("22-01:         ")
+        vulns_data[2].append("19-02:         ")
+        vulns_data[3].append("19-02:         ")
+        col_widths = [3.3 * inch, 1.3 * inch, 1.3 * inch, 1.8 * inch]
+
+    vulns_table = format_table(vulns_data, col_widths)
     vulns_table_frame = Frame(
         col1_x_value, y_value, PAGE_WIDTH - 0.6 * inch, 2 * inch, showBoundary=False
     )
     vulns_table_frame.addFromList([vulns_table], can)
-    can.drawImage(
-        BASE_DIR + "/scorecard_assets/green_check.png"
-        if data_dict["vuln_bod_22-01"]
-        else BASE_DIR + "/scorecard_assets/red_x.png",
-        7.4 * inch,
-        y_value + 81,
-        width=30,
-        height=25,
-        mask="auto",
-    )
-    can.drawImage(
-        BASE_DIR + "/scorecard_assets/green_check.png"
-        if data_dict["vuln_critical_bod_19-02"]
-        else BASE_DIR + "/scorecard_assets/red_x.png",
-        7.4 * inch,
-        y_value + 52,
-        width=30,
-        height=25,
-        mask="auto",
-    )
-    can.drawImage(
-        BASE_DIR + "/scorecard_assets/green_check.png"
-        if data_dict["vuln_high_bod_19-02"]
-        else BASE_DIR + "/scorecard_assets/red_x.png",
-        7.4 * inch,
-        y_value + 22,
-        width=30,
-        height=25,
-        mask="auto",
-    )
+    if not exclude_bods:
+        can.drawImage(
+            BASE_DIR + "/scorecard_assets/green_check.png"
+            if data_dict["vuln_bod_22-01"]
+            else BASE_DIR + "/scorecard_assets/red_x.png",
+            7.4 * inch,
+            y_value + 81,
+            width=30,
+            height=25,
+            mask="auto",
+        )
+        can.drawImage(
+            BASE_DIR + "/scorecard_assets/green_check.png"
+            if data_dict["vuln_critical_bod_19-02"]
+            else BASE_DIR + "/scorecard_assets/red_x.png",
+            7.4 * inch,
+            y_value + 52,
+            width=30,
+            height=25,
+            mask="auto",
+        )
+        can.drawImage(
+            BASE_DIR + "/scorecard_assets/green_check.png"
+            if data_dict["vuln_high_bod_19-02"]
+            else BASE_DIR + "/scorecard_assets/red_x.png",
+            7.4 * inch,
+            y_value + 22,
+            width=30,
+            height=25,
+            mask="auto",
+        )
 
-    # if data_dict['vuln_critical_bod_19-02'] else 25
     y_value = 2.5 * inch
 
     webapp_ttf_header_frame = Frame(
@@ -1239,71 +1230,73 @@ def create_scorecard(data_dict, file_name, include_trending=True, include_scores
     # 'https_compliance_pct':74.6,
     # 'https_compliance_last_period':80
     y_value = 0.7 * inch
+    if not exclude_bods:
+        bod18_header_frame = Frame(
+            col1_x_value, y_value + 2 * inch, box_width, 0.42 * inch, showBoundary=False
+        )
+        bod18_header_frame.addFromList(
+            [Paragraph("BOD 18-01", style=header_style)], can
+        )
+        if data_dict["email_compliance_pct"] is not None:
+            email_compliance = str(data_dict["email_compliance_pct"]) + "%"
+        else:
+            email_compliance = "N/A"
 
-    bod18_header_frame = Frame(
-        col1_x_value, y_value + 2 * inch, box_width, 0.42 * inch, showBoundary=False
-    )
-    bod18_header_frame.addFromList([Paragraph("BOD 18-01", style=header_style)], can)
-    if data_dict["email_compliance_pct"] != None:
-        email_compliance = str(data_dict["email_compliance_pct"]) + "%"
-    else:
-        email_compliance = 'N/A'
+        if data_dict["https_compliance_pct"] is not None:
+            https_compliance = str(data_dict["https_compliance_pct"]) + "%"
+        else:
+            https_compliance = "N/A"
 
-    if data_dict["https_compliance_pct"] != None:
-        https_compliance = str(data_dict["https_compliance_pct"]) + "%"
-    else:
-        https_compliance = 'N/A'
-
-    if include_trending:
-        bod18_data = [
-            ["", "Percent", ""],
-            [
-                "Email Compliance",
-                email_compliance,
-                Image(
-                    determine_arrow(
-                        data_dict["email_compliance_pct"],
-                        data_dict["email_compliance_last_period"],
-                        color=True,
-                        up_is_good=True,
+        if include_trending:
+            bod18_data = [
+                ["", "Percent", ""],
+                [
+                    "Email Compliance",
+                    email_compliance,
+                    Image(
+                        determine_arrow(
+                            data_dict["email_compliance_pct"],
+                            data_dict["email_compliance_last_period"],
+                            color=True,
+                            up_is_good=True,
+                        ),
+                        20,
+                        20,
                     ),
-                    20,
-                    20,
-                ),
-            ],
-            [
-                "https Compliance",
-                https_compliance,
-                Image(
-                    determine_arrow(
-                        data_dict["https_compliance_pct"],
-                        data_dict["https_compliance_last_period"],
-                        color=True,
-                        up_is_good=True,
+                ],
+                [
+                    "https Compliance",
+                    https_compliance,
+                    Image(
+                        determine_arrow(
+                            data_dict["https_compliance_pct"],
+                            data_dict["https_compliance_last_period"],
+                            color=True,
+                            up_is_good=True,
+                        ),
+                        20,
+                        20,
                     ),
-                    20,
-                    20,
-                ),
-            ],
-        ]
-        col_widths = [2.4 * inch, 1.05 * inch, 0.4 * inch]
-        bod18_table = format_table(bod18_data, col_widths)
-    else:
-        bod18_data = [
-            [
-                "",
-                "Percent",
-            ],
-            ["Email Compliance", email_compliance],
-            ["https Compliance", https_compliance],
-        ]
-        col_widths = [2.5 * inch, 1.35 * inch]
-        bod18_table = format_table(bod18_data, col_widths)
+                ],
+            ]
+            col_widths = [2.4 * inch, 1.05 * inch, 0.4 * inch]
+            bod18_table = format_table(bod18_data, col_widths)
+        else:
+            bod18_data = [
+                [
+                    "",
+                    "Percent",
+                ],
+                ["Email Compliance", email_compliance],
+                ["https Compliance", https_compliance],
+            ]
+            col_widths = [2.5 * inch, 1.35 * inch]
+            bod18_table = format_table(bod18_data, col_widths)
 
-    bod18_table_frame = Frame(
-        col1_x_value, y_value, box_width, 2 * inch, showBoundary=False
-    )
-    bod18_table_frame.addFromList([bod18_table], can)
+        bod18_table_frame = Frame(
+            col1_x_value, y_value, box_width, 2 * inch, showBoundary=False
+        )
+        bod18_table_frame.addFromList([bod18_table], can)
 
     fine_print_style = ParagraphStyle(
         "fine_print_style",

@@ -658,7 +658,7 @@ class Scorecard:
         }
         self.scorecard_dict.update(past_scorecard_metrics_dict)
 
-    def generate_scorecard(self, output_directory):
+    def generate_scorecard(self, output_directory, include_bods=True):
         """Generate a scorecard with the prefilled data_dictionary."""
         scorecard_dict = self.scorecard_dict
 
@@ -671,6 +671,6 @@ class Scorecard:
             + ".pdf"
         )
 
-        create_scorecard(scorecard_dict, file_name, True, False)
+        create_scorecard(scorecard_dict, file_name, True, False, include_bods)
 
         return file_name
