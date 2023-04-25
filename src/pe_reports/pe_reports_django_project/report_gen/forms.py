@@ -56,8 +56,10 @@ class ScoreCardGenFormExternal(forms.Form):
     org_id = forms.CharField(label="Organization Cyhy ID:", max_length=100)
     month = forms.CharField(label="Month Run MM:", max_length=100)
     year = forms.CharField(label="Year Run, year format is YYYY:", max_length=100)
-    cancel_refresh = forms.BooleanField(label="Cancel view refresh")
-    exclude_bods = forms.BooleanField(label="Exclude BODs data from scorecard")
+    cancel_refresh = forms.BooleanField(label="Cancel view refresh", required=False)
+    exclude_bods = forms.BooleanField(
+        label="Exclude BOD data from scorecard", required=False
+    )
 
     def __init__(self, *args, **kwargs):
         """Initialize scorecard gen form."""
