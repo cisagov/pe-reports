@@ -15,22 +15,23 @@ sys.path.append(os.path.join(os.path.dirname(__file__), "..", ".."))
 # cisagov Libraries
 from score_helper_functions import rescale, get_prev_startstop
 
-# from pe_scorecard.data.db_query import (
-#    # VS queries
-#    query_dscore_vs_data_cert,
-#    query_dscore_vs_data_mail,
-#    # PE queries
-#    query_dscore_pe_data_ip,
-#    query_dscore_pe_data_domain,
-#    # WAS queries
-#    query_dscore_was_data_webapp,
-#    # Stakeholder lists by sector
-#    query_xs_stakeholder_list,
-#    query_s_stakeholder_list,
-#    query_m_stakeholder_list,
-#    query_l_stakeholder_list,
-#    query_xl_stakeholder_list,
-# )
+from pe_scorecard.data.db_query import (
+    #    # VS queries
+    query_dscore_vs_data_cert,
+    query_dscore_vs_data_mail,
+    #    # PE queries
+    query_dscore_pe_data_ip,
+    query_dscore_pe_data_domain,
+    #    # WAS queries
+    query_dscore_was_data_webapp,
+    #    # Stakeholder lists by sector
+    query_fceb_parent_list,
+    query_xs_stakeholder_list,
+    query_s_stakeholder_list,
+    query_m_stakeholder_list,
+    query_l_stakeholder_list,
+    query_xl_stakeholder_list,
+)
 
 
 # ---------- Misc. Helper Functions ----------
@@ -38,12 +39,11 @@ from score_helper_functions import rescale, get_prev_startstop
 # score are stored in the "score_helper_functions.py" file
 
 # ---------- Data Import Function ----------
-def import_discov_data(stakeholder_list, curr_start, curr_end):
+def import_discov_data(curr_start, curr_end):
     """
     Retrieve all data required for calculating discovery score.
 
     Args:
-        stakeholder_list: list of organizations to generate D-Scores for
         curr_start: start date of current report period
         curr_end: end date of current report period
 
@@ -71,13 +71,20 @@ def import_discov_data(stakeholder_list, curr_start, curr_end):
     # pe_data_domain = query_dscore_pe_data_domain()
     print("\tDone!")
 
-    # --------------- Import Other Necessary Info: ---------------
+    # --------------- Import Other Data from Database: ---------------
+    # Retrieve any other necessary data from the database
+    # ----- Retrieve full FCEB list: -----
+    print("Retrieving FCEB parent stakeholder list for D-Score...")
+    # fceb_list = query_fceb_parent_list()
+    print("\tDone!")
+
     # TEMPORARY TESTING:
     vs_data_cert = pd.read_csv("dscore_vs_cert_2023-04-20.csv")
     vs_data_mail = pd.read_csv("dscore_vs_mail_2023-04-20.csv")
     pe_data_ip = pd.read_csv("dscore_pe_ip_2023-04-20.csv")
     pe_data_domain = pd.read_csv("dscore_pe_domain_2023-04-20.csv")
     was_data_webapp = pd.read_csv("dscore_was_webapp_2023-04-20.csv")
+    fceb_parent_list = pd.read_csv("Full_FCEB_List.csv")
 
     # --------------- Process VS Data: ---------------
     # Requires 2 Views:
@@ -156,7 +163,7 @@ def import_discov_data(stakeholder_list, curr_start, curr_end):
             pd.merge(
                 pd.merge(
                     pd.merge(
-                        stakeholder_list,
+                        fceb_parent_list,
                         vs_data_cert,
                         on="organizations_uid",
                         how="inner",
@@ -184,22 +191,24 @@ def import_discov_data(stakeholder_list, curr_start, curr_end):
 
 
 # ---------- Calculate D-Score Function ----------
-def gen_discov_scores(stakeholder_list, curr_date):
+def calc_discov_scores(discov_data, stakeholder_list):
     """
-    Calculate Discovery Scores for all orgs that are reported on.
+    Calculate Discovery Scores for the specified stakeholder list.
 
     Args:
-        stakeholder_list: list of organizations to generate D-Scores for
-        curr_date: current report period date (i.e. 2022-08-15)
+        discov_data: The full dataframe of D-Score data for all FCEB stakeholders
+        stakeholder_list: The specific list of orgs that you want to generate D-Scores for
     Returns:
-        Dataframe containing org_id, score, and letter grade
+        Dataframe containing D-Score and letter grade for each org in the specified stakeholder list
     """
-    # Calculate start/end dates of current and previous report periods
-    report_periods = get_prev_startstop(curr_date, 2)
-    [curr_start, curr_end] = [report_periods[0][0], report_periods[1][1]]
 
-    # Retrieve data necessary for Discovery Score
-    discov_data_df = import_discov_data(stakeholder_list, curr_start, curr_end)
+    # Cut down dataframe to only include data for the specified stakeholder list
+    discov_data_df = pd.merge(
+        stakeholder_list,
+        discov_data,
+        on=["organizations_uid", "cyhy_db_name"],
+        how="left",
+    )
 
     # Impute column means to use for filling in missing data later
     vs_mail_col_means = discov_data_df.iloc[:, 5:10].mean()
@@ -353,18 +362,86 @@ def gen_discov_scores(stakeholder_list, curr_date):
     return discov_data_df
 
 
-# Demo:
+def gen_discov_scores(curr_date):
+    """
+    Generate the Discovery Scores for each of the stakeholder sector groups.
+
+    Args:
+        curr_date: current report period date (i.e. 2022-08-15)
+    Returns:
+        List of dataframes containing the D-Scores/letter grades for each stakeholder sector group
+    """
+    # Calculate start/end dates of current and previous report periods
+    report_periods = get_prev_startstop(curr_date, 2)
+    [curr_start, curr_end] = [report_periods[0][0], report_periods[1][1]]
+
+    # Retrieve the necessary Discovery Score data for all FCEB orgs
+    discov_data_df = import_discov_data(curr_start, curr_end)
+
+    # Get Stakeholder Sector Lists:
+    # xs_fceb = query_xs_stakeholder_list()
+    # s_fceb = query_s_stakeholder_list()
+    # m_fceb = query_m_stakeholder_list()
+    # l_fceb = query_l_stakeholder_list()
+    # xl_fceb = query_xl_stakeholder_list()
+    # TEMPORARY
+    xs_fceb = pd.read_csv("xs_fceb_orgs.csv")
+    s_fceb = pd.read_csv("s_fceb_orgs.csv")
+    m_fceb = pd.read_csv("m_fceb_orgs.csv")
+    l_fceb = pd.read_csv("l_fceb_orgs.csv")
+    xl_fceb = pd.read_csv("xl_fceb_orgs.csv")
+    sector_lists = [
+        xs_fceb,
+        s_fceb,
+        m_fceb,
+        l_fceb,
+        xl_fceb,
+    ]
+
+    # Empty list to hold d-score dataframes for each sector group
+    dscore_dfs = []
+    sector_counter = 1
+
+    # For each sector group, calculate d-scores
+    for sector_list in sector_lists:
+        curr_dscores = calc_discov_scores(discov_data_df, sector_list)
+        dscore_dfs.append(curr_dscores)
+        print(
+            f"Calculated D-Scores for {sector_counter} / {len(sector_lists)} Sectors..."
+        )
+        sector_counter += 1
+
+    # Return list of finished d-score dataframes
+    return dscore_dfs
+
+
+# DEMO:
+# Total Runtime ~= 6min 30sec
+# - VS cert query ~= 1sec
+# - VS mail query ~= 25sec
+# - PE IP query ~= 6min <-- major slow down
+# - PE domain query ~= 1sec
+# - WAS webapp query ~= 1sec
+# - Actual calculation of scores ~=1sec
+
+# Testing Staging DB Connection
+# test = query_dscore_vs_data_cert()
+# print(test)
+# x = 5 / 0
+
 # Current report period date (end of month)
 curr_date = datetime.datetime(2022, 11, 30)
 
-# Full FCEB List
-full_fceb = pd.read_csv("Full_FCEB_List.csv")
-# FCEB Sector Lists
-xs_fceb = pd.read_csv("xs_fceb_orgs.csv")
-s_fceb = pd.read_csv("s_fceb_orgs.csv")
-m_fceb = pd.read_csv("m_fceb_orgs.csv")
-l_fceb = pd.read_csv("l_fceb_orgs.csv")
-xl_fceb = pd.read_csv("xl_fceb_orgs.csv")
+# Start Timer
+start_time = time.time()
 
-# Generate discovery scores
-print(gen_discov_scores(xl_fceb, curr_date))
+# Run D-Score Algorithm
+results = gen_discov_scores(curr_date)
+
+# Stop Timer
+d_scores_time = time.time() - start_time
+
+for result in results:
+    print(result)
+
+print("All group's d-scores calculated: %s seconds" % d_scores_time)

@@ -469,6 +469,77 @@ def query_kev_list():
     return kev_list
 
 
+# ----- XS Stakeholder List -----
+def query_xs_stakeholder_list():
+    """Query list of all stakeholders that fall in the XS group/sector."""
+    # Open connection
+    conn = connect()
+    # Make query
+    sql = """SELECT organizations_uid, cyhy_db_name FROM vw_iscore_orgs_ip_counts WHERE ip_count BETWEEN 0 AND 100;"""
+    xs_stakeholder_list = pd.read_sql(sql, conn)
+    # Close connection
+    conn.close()
+    return xs_stakeholder_list
+
+
+# ----- S Stakeholder List -----
+def query_s_stakeholder_list():
+    """Query list of all stakeholders that fall in the S group/sector."""
+    # Open connection
+    conn = connect()
+    # Make query
+    sql = """SELECT organizations_uid, cyhy_db_name FROM vw_iscore_orgs_ip_counts WHERE ip_count BETWEEN 101 AND 1000;"""
+    s_stakeholder_list = pd.read_sql(sql, conn)
+    # Close connection
+    conn.close()
+    return s_stakeholder_list
+
+
+# ----- M Stakeholder List -----
+def query_m_stakeholder_list():
+    """Query list of all stakeholders that fall in the M group/sector."""
+    # Open connection
+    conn = connect()
+    # Make query
+    sql = """SELECT organizations_uid, cyhy_db_name FROM vw_iscore_orgs_ip_counts WHERE (ip_count BETWEEN 1001 AND 10000)
+    OR ip_count = -1;"""
+    # Any stakeholderes not reported on get put in this
+    # sector by default
+    m_stakeholder_list = pd.read_sql(sql, conn)
+    # Close connection
+    conn.close()
+    return m_stakeholder_list
+
+
+# ----- L Stakeholder List -----
+def query_l_stakeholder_list():
+    """Query list of all stakeholders that fall in the L group/sector."""
+    # Open connection
+    conn = connect()
+    # Make query
+    sql = """SELECT organizations_uid, cyhy_db_name FROM vw_iscore_orgs_ip_counts WHERE ip_count BETWEEN 10001 AND 100000;"""
+    l_stakeholder_list = pd.read_sql(sql, conn)
+    # Close connection
+    conn.close()
+    return l_stakeholder_list
+
+
+# ----- XL Stakeholder List -----
+def query_xl_stakeholder_list():
+    """Query list of all stakeholders that fall in the XL group/sector."""
+    # Open connection
+    conn = connect()
+    # Make query
+    sql = """SELECT organizations_uid, cyhy_db_name FROM vw_iscore_orgs_ip_counts WHERE ip_count > 100000;"""
+    xl_stakeholder_list = pd.read_sql(sql, conn)
+    # Close connection
+    conn.close()
+    return xl_stakeholder_list
+
+
+# ^ ---------- I-Score SQL Queries ---------- ^
+
+
 def query_cyhy_snapshots(start_date, end_date):
     """Query PE database for cyhy snapshots."""
     conn = connect()
@@ -965,16 +1036,82 @@ def query_fceb_ttr(month, year):
 
 
 # v ---------- D-Score SQL Queries ---------- v
-def query_dscore_vs_data(start_date, end_date):
-    """Query all VS data needed for D-Score calculation."""
+# ----- VS Cert -----
+def query_dscore_vs_data_cert():
+    """Query all VS certificate data needed for D-Score calculation."""
     # Open connection
     conn = connect()
     # Make query
-    sql = """SELECT * FROM vw_iscore_vs_vuln;"""
-    dscore_vs_data = pd.read_sql(sql, conn)
+    sql = """SELECT * FROM vw_dscore_vs_cert;"""
+    dscore_vs_data_cert = pd.read_sql(sql, conn)
     # Close connection
     conn.close()
-    return dscore_vs_data
+    return dscore_vs_data_cert
+
+
+# ----- VS Mail -----
+def query_dscore_vs_data_mail():
+    """Query all VS mail data needed for D-Score calculation."""
+    # Open connection
+    conn = connect()
+    # Make query
+    sql = """SELECT * FROM vw_dscore_vs_mail;"""
+    dscore_vs_data_mail = pd.read_sql(sql, conn)
+    # Close connection
+    conn.close()
+    return dscore_vs_data_mail
+
+
+# ----- PE IP -----
+def query_dscore_pe_data_ip():
+    """Query all PE IP data needed for D-Score calculation."""
+    # Open connection
+    conn = connect()
+    # Make query
+    sql = """SELECT * FROM vw_dscore_pe_ip;"""
+    dscore_pe_data_ip = pd.read_sql(sql, conn)
+    # Close connection
+    conn.close()
+    return dscore_pe_data_ip
+
+
+# ----- PE Domain -----
+def query_dscore_pe_data_domain():
+    """Query all PE domain data needed for D-Score calculation."""
+    # Open connection
+    conn = connect()
+    # Make query
+    sql = """SELECT * FROM vw_dscore_pe_domain;"""
+    dscore_pe_data_domain = pd.read_sql(sql, conn)
+    # Close connection
+    conn.close()
+    return dscore_pe_data_domain
+
+
+# ----- WAS Webapp -----
+def query_dscore_was_data_webapp():
+    """Query all WAS webapp data needed for D-Score calculation."""
+    # Open connection
+    conn = connect()
+    # Make query
+    sql = """SELECT * FROM vw_dscore_was_webapp;"""
+    dscore_was_data_webapp = pd.read_sql(sql, conn)
+    # Close connection
+    conn.close()
+    return dscore_was_data_webapp
+
+
+# ----- All FCEB Parents List -----
+def query_fceb_parent_list():
+    """Query list of all FCEB parent stakeholders (all FCEB excluding child orgs)."""
+    # Open connection
+    conn = connect()
+    # Make query
+    sql = """SELECT organizations_uid, cyhy_db_name FROM organizations WHERE fceb = true AND retired = false AND election = false;"""
+    fceb_parent_list = pd.read_sql(sql, conn)
+    # Close connection
+    conn.close()
+    return fceb_parent_list
 
 
 # ^ ---------- D-Score SQL Queries ---------- ^
