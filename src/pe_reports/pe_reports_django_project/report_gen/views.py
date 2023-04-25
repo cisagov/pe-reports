@@ -6,6 +6,7 @@ import os
 
 # Third-Party Libraries
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required
 
 # Third party packages
 from django.shortcuts import redirect, render
@@ -28,7 +29,6 @@ from .forms import (
     ScoreCardGenFormExternal,
 )
 
-# from django.contrib.auth.decorators import login_required
 # from django.http import HttpResponseNotFound
 
 
@@ -43,16 +43,6 @@ LOGGER = logging.getLogger(__name__)
 
 conn = None
 cursor = None
-
-
-# @login_required
-# def report_gen(request):
-#     """Render the page if possible."""
-#     try:
-#         return render(request=request, template_name="report_gen/report_gen.html")
-#     except Exception as e:
-#         LOGGER("Unable to render: %s", e)
-#         return HttpResponseNotFound("Nothing found")
 
 
 def validate_filename(filename):
@@ -103,6 +93,7 @@ def validate_date(date_string):
         return False
 
 
+@login_required
 def report_gen(request):
     """Process form information, instantiate form and render page template."""
     report_date = False
