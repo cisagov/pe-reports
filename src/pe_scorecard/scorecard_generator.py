@@ -1,7 +1,7 @@
 """A tool for creating CISA unified scorecard.
 
 Usage:
-  pe-scorecard REPORT_MONTH REPORT_YEAR OUTPUT_DIRECTORY [--log-level=LEVEL] [--orgs=ORG_LIST] [--email]
+  pe-scorecard REPORT_MONTH REPORT_YEAR OUTPUT_DIRECTORY [--log-level=LEVEL] [--orgs=ORG_LIST] [--email] [--cancel-refresh]
 
 Options:
   -h --help                         Show this message.
@@ -18,7 +18,7 @@ Options:
                                     IDs in the cyhy-db. E.g. DHS,DHS_ICE,DOC
                                     [default: all]
   -m --email                        If included, email report [default: False]
-  -x --cancel_refresh                If included, don't refresh materialized views [default: False]
+  -x --cancel-refresh               If included, don't refresh materialized views [default: False]
 """
 
 # Standard Python Libraries
@@ -212,7 +212,7 @@ def main():
         validated_args["OUTPUT_DIRECTORY"],
         validated_args["--orgs"],
         validated_args["--email"],
-        validated_args["cancel_refresh"],
+        validated_args["--cancel-refresh"],
     )
 
     # Stop logging and clean up
