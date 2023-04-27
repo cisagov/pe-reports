@@ -47,12 +47,11 @@ np.seterr(divide="ignore", invalid="ignore")
 
 
 # ---------- Data Import Function ----------
-def import_ident_data(stakeholder_list, prev_start, prev_end, curr_start, curr_end):
+def import_ident_data(prev_start, prev_end, curr_start, curr_end):
     """
     Retrieve all data required for calculating identification score.
 
     Args:
-        stakeholder_list: list of organizations to generate I-Scores for
         prev_start: start date of previous report period
         prev_end: end date of previous report period
         curr_start: start date of current report period
@@ -65,58 +64,67 @@ def import_ident_data(stakeholder_list, prev_start, prev_end, curr_start, curr_e
     # Retrieve all the data needed from the database
     # ----- Retrieve VS data: -----
     print("Retrieving VS vuln data for I-Score...")
-    vs_data_vuln = query_iscore_vs_data_vuln(curr_start, curr_end)
+    # vs_data_vuln = query_iscore_vs_data_vuln(curr_start, curr_end)
     print("\tDone!")
     # ----- Retrieve PE data: -----
     print("Retrieving PE vuln data for I-Score...")
-    pe_data_vuln = query_iscore_pe_data_vuln(curr_start, curr_end)
+    # pe_data_vuln = query_iscore_pe_data_vuln(curr_start, curr_end)
     print("\tDone!")
     print("Retrieving PE cred data for I-Score...")
-    pe_data_cred = query_iscore_pe_data_cred(curr_start, curr_end)
+    # pe_data_cred = query_iscore_pe_data_cred(curr_start, curr_end)
     print("\tDone!")
     print("Retrieving PE breach data for I-Score...")
-    pe_data_breach = query_iscore_pe_data_breach(curr_start, curr_end)
+    # pe_data_breach = query_iscore_pe_data_breach(curr_start, curr_end)
     print("\tDone!")
     print("Retrieving PE dark web data for I-Score...")
-    pe_data_dw = query_iscore_pe_data_darkweb(curr_start, curr_end)
+    # pe_data_dw = query_iscore_pe_data_darkweb(curr_start, curr_end)
     print("\tDone!")
     print("Retrieving PE protocol data for I-Score...")
-    pe_data_proto = query_iscore_pe_data_protocol(curr_start, curr_end)
+    # pe_data_proto = query_iscore_pe_data_protocol(curr_start, curr_end)
     print("\tDone!")
     # ----- Retrieve WAS data: -----
     print("Retrieving WAS vuln data for I-Score...")
-    was_data_vuln = query_iscore_was_data_vuln(curr_start, curr_end)
+    # was_data_vuln = query_iscore_was_data_vuln(curr_start, curr_end)
     print("\tDone!")
 
     # --------------- Import Historical Data: ---------------
     print("Retrieving previous VS vuln data for I-Score...")
-    vs_data_vuln_prev = query_iscore_vs_data_vuln(prev_start, prev_end)
+    # vs_data_vuln_prev = query_iscore_vs_data_vuln(prev_start, prev_end)
     print("\tDone!")
     print("Retrieving previous PE vuln data for I-Score...")
-    pe_data_vuln_prev = query_iscore_pe_data_vuln(prev_start, prev_end)
+    # pe_data_vuln_prev = query_iscore_pe_data_vuln(prev_start, prev_end)
     print("\tDone!")
     print("Retrieving previous WAS vuln data for I-Score...")
-    was_data_vuln_prev = query_iscore_was_data_vuln(prev_start, prev_end)
+    # was_data_vuln_prev = query_iscore_was_data_vuln(prev_start, prev_end)
     print("\tDone!")
 
-    # TEMPORARY TESTING:
-    # vs_data_vuln = pd.read_csv("feb2023_vs_vuln.csv")
-    # pe_data_vuln = pd.read_csv("feb2023_pe_vuln.csv")
-    # pe_data_cred = pd.read_csv("feb2023_pe_cred.csv")
-    # pe_data_breach = pd.read_csv("feb2023_pe_breach.csv")
-    # pe_data_dw = pd.read_csv("feb2023_pe_darkweb.csv")
-    # pe_data_proto = pd.read_csv("feb2023_pe_protocol.csv")
-    # was_data_vuln = pd.read_csv("feb2023_was_vuln.csv")
-    # vs_data_vuln_prev = pd.read_csv("feb2023_vs_vuln_prev.csv")
-    # pe_data_vuln_prev = pd.read_csv("feb2023_pe_vuln_prev.csv")
-    # was_data_vuln_prev = pd.read_csv("feb2023_was_vuln_prev.csv")
-
     # --------------- Import Other Necessary Info: ---------------
+    # ----- Retrieve full FCEB list: -----
+    print("Retrieving FCEB parent stakeholder list for I-Score...")
+    # fceb_list = query_fceb_parent_list()
+    print("\tDone!")
     # ----- Retrieve KEV list: -----
     # List of all CVE-IDs that are considered KEVs
     print("Retrieving KEV list...")
-    kev_list = query_kev_list()
+    # kev_list = query_kev_list()
     print("\tDone!")
+
+    # TEMPORARY CSV DATA:
+    # Current Data
+    vs_data_vuln = pd.read_csv("iscore_vs_vuln_2023-04-25.csv")
+    pe_data_vuln = pd.read_csv("iscore_pe_vuln_2023-04-25.csv")
+    pe_data_cred = pd.read_csv("iscore_pe_cred_2023-04-25.csv")
+    pe_data_breach = pd.read_csv("iscore_pe_breach_2023-04-25.csv")
+    pe_data_dw = pd.read_csv("iscore_pe_darkweb_2023-04-25.csv")
+    pe_data_proto = pd.read_csv("iscore_pe_protocol_2023-04-25.csv")
+    was_data_vuln = pd.read_csv("iscore_was_vuln_2023-04-25.csv")
+    # Prev Data
+    vs_data_vuln_prev = pd.read_csv("iscore_vs_vuln_prev_2023-04-25.csv")  # time_closed
+    pe_data_vuln_prev = pd.read_csv("iscore_pe_vuln_prev_2023-04-25.csv")  # <- date
+    was_data_vuln_prev = pd.read_csv("iscore_was_vuln_prev_2023-04-25.csv")  # <- date
+    # Misc. Data
+    fceb_parent_list = pd.read_csv("full_fceb_list_2023-04-25.csv")
+    kev_list = pd.read_csv("iscore_kevs_2023-04-25.csv")
 
     # --------------- Process VS Data: ---------------
     # Requires 1 view:
@@ -222,24 +230,21 @@ def import_ident_data(stakeholder_list, prev_start, prev_end, curr_start, curr_e
         vs_total_num_vulns_prev=("cvss_score", "count"),
     )
     vs_data_vuln = pd.merge(
-        vs_data_vuln, vs_data_vuln_prev, on="organizations_uid", how="left"
+        vs_data_vuln, vs_data_vuln_prev, on="organizations_uid", how="outer"
     )
     # If no data from previous report period, set net change to 0
     vs_data_vuln["vs_total_num_vulns_prev"].fillna(
         vs_data_vuln["vs_total_num_vulns"], inplace=True
     )
-    # Calculate net change in vulns
+    # Otherwise calculate net change in vulns
     vs_data_vuln["vs_net_chng_vulns"] = (
         vs_data_vuln["vs_total_num_vulns"] - vs_data_vuln["vs_total_num_vulns_prev"]
     )
     vs_data_vuln = vs_data_vuln.drop(columns=["vs_total_num_vulns_prev"]).reset_index()
     # Add cyhy_db_name column to vs vulns
-    vs_data_vuln = (
-        pd.merge(stakeholder_list, vs_data_vuln, on="organizations_uid", how="inner")
-        .rename(columns={"cyhy_db_name": "org_id"})
-        .drop(columns=["organizations_uid", "index"])
-    )
-    vs_data_df = vs_data_vuln
+    vs_data_df = pd.merge(
+        fceb_parent_list, vs_data_vuln, on="organizations_uid", how="left"
+    ).drop(columns=["index", "cyhy_db_name"])
 
     # --------------- Process PE Data: ---------------
     # Requires 5 Views:
@@ -348,13 +353,13 @@ def import_ident_data(stakeholder_list, prev_start, prev_end, curr_start, curr_e
         pe_total_num_vulns_prev=("cvss_score", "count"),
     )
     pe_data_vuln = pd.merge(
-        pe_data_vuln, pe_data_vuln_prev, on="organizations_uid", how="left"
+        pe_data_vuln, pe_data_vuln_prev, on="organizations_uid", how="outer"
     )
     # If no data from previous report period, set net change to 0
     pe_data_vuln["pe_total_num_vulns_prev"].fillna(
         pe_data_vuln["pe_total_num_vulns"], inplace=True
     )
-    # Calculate net change in vulns
+    # Otherwise, calculate net change in vulns
     pe_data_vuln["pe_net_chng_vulns"] = (
         pe_data_vuln["pe_total_num_vulns"] - pe_data_vuln["pe_total_num_vulns_prev"]
     )
@@ -407,7 +412,7 @@ def import_ident_data(stakeholder_list, prev_start, prev_end, curr_start, curr_e
         pe_dw_invite_counts,
         on="organizations_uid",
         how="outer",
-    ).fillna(0)
+    )
     pe_data_dw = pe_data_dw[
         [
             "organizations_uid",
@@ -462,7 +467,7 @@ def import_ident_data(stakeholder_list, prev_start, prev_end, curr_start, curr_e
             pd.merge(
                 pd.merge(
                     pd.merge(
-                        stakeholder_list,
+                        fceb_parent_list,
                         pe_data_vuln,
                         on="organizations_uid",
                         how="left",
@@ -482,8 +487,7 @@ def import_ident_data(stakeholder_list, prev_start, prev_end, curr_start, curr_e
         pe_data_proto,
         on="organizations_uid",
         how="left",
-    ).fillna(0)
-    pe_data_df.drop(columns="organizations_uid", inplace=True)
+    ).drop(columns=["cyhy_db_name", "index"])
 
     # --------------- Process WAS Data: ---------------
     # Requires 1 View:
@@ -527,7 +531,7 @@ def import_ident_data(stakeholder_list, prev_start, prev_end, curr_start, curr_e
         ),
     ]
     # Aggregate WAS vuln data
-    was_data_vuln = was_data_vuln.groupby(["org_id"], as_index=False).agg(
+    was_data_vuln = was_data_vuln.groupby(["organizations_uid"], as_index=False).agg(
         was_total_num_vulns=("cvss_score", "count"),
         was_num_low_cve=("cvss_score", (lambda x: (x < 4).sum())),
         was_num_med_cve=("cvss_score", (lambda x: ((x >= 4) & (x < 7)).sum())),
@@ -621,22 +625,31 @@ def import_ident_data(stakeholder_list, prev_start, prev_end, curr_start, curr_e
     was_data_vuln["was_skewness_cvss"].fillna(0, inplace=True)
     # Aggregate total WAS vulns of previous month
     was_data_vuln.insert(2, "was_net_chng_vulns", 0)
-    was_data_vuln_prev = was_data_vuln_prev.groupby(["org_id"], as_index=False).agg(
-        was_total_num_vulns_prev=("cvss_score", "count"),
+    # Select only most recent WAS vuln count for the prev report period
+    was_data_vuln_prev = (
+        (
+            was_data_vuln_prev.sort_values("date")
+            .groupby("organizations_uid", as_index=False)
+            .tail(1)
+        )
+        .reset_index(drop=True)
+        .drop(columns=["date"])
     )
-    was_data_vuln = pd.merge(was_data_vuln, was_data_vuln_prev, on="org_id", how="left")
+    was_data_vuln = pd.merge(
+        was_data_vuln, was_data_vuln_prev, on="organizations_uid", how="outer"
+    )
     # If no data from previous report period, set net change to 0
-    was_data_vuln["was_total_num_vulns_prev"].fillna(
+    was_data_vuln["was_total_vulns_prev"].fillna(
         was_data_vuln["was_total_num_vulns"], inplace=True
     )
-    # Calculate net change in vulns
+    # Otherwise, calculate net change in vulns
     was_data_vuln["was_net_chng_vulns"] = (
-        was_data_vuln["was_total_num_vulns"] - was_data_vuln["was_total_num_vulns_prev"]
+        was_data_vuln["was_total_num_vulns"] - was_data_vuln["was_total_vulns_prev"]
     )
-    was_data_vuln = was_data_vuln.drop(
-        columns=["was_total_num_vulns_prev"]
-    ).reset_index()
-    was_data_df = was_data_vuln
+    was_data_vuln = was_data_vuln.drop(columns=["was_total_vulns_prev"]).reset_index()
+    was_data_df = pd.merge(
+        fceb_parent_list, was_data_vuln, on="organizations_uid", how="left"
+    ).drop(columns=["cyhy_db_name", "index"])
 
     # --------------- Process PCA Data: ---------------
     # *** PCA data excluded for now
@@ -654,48 +667,33 @@ def import_ident_data(stakeholder_list, prev_start, prev_end, curr_start, curr_e
         },
         index=[0],
     )
-    pca_data_df = pd.merge(
-        stakeholder_list["cyhy_db_name"], pca_data_df, on="cyhy_db_name", how="left"
-    ).fillna(0)
+    pca_data_df = (
+        pd.merge(fceb_parent_list, pca_data_df, on="cyhy_db_name", how="left")
+        .fillna(0)
+        .drop(columns="cyhy_db_name")
+    )
 
     # --------------- Combine All Team Data into Single Dataframe: ---------------
-    # Adjust column names for joining
-    vs_data_df.rename(columns={"org_id": "cyhy_db_name"}, inplace=True)
-    was_data_df.rename(columns={"org_id": "cyhy_db_name"}, inplace=True)
-
-    # Exclude/Include certain organizations:
-    # Auxiliary feature for testing/adhoc purposes
-    specific_orgs = 0  # 0 disable, 1 enable
-    if specific_orgs == 1:
-        stakeholder_list.drop(
-            stakeholder_list.loc[
-                stakeholder_list["cyhy_db_name"].isin(
-                    ["DOE", "DOJ", "USDA", "EPA", "VA"]
-                )
-            ].index,
-            inplace=True,
-        )
-
     # Combining team dataframes
     ident_data_df = pd.merge(
         pd.merge(
             pd.merge(
                 pd.merge(
-                    stakeholder_list["cyhy_db_name"],
+                    fceb_parent_list,
                     vs_data_df,
-                    on="cyhy_db_name",
+                    on="organizations_uid",
                     how="left",
                 ),
                 pe_data_df,
-                on="cyhy_db_name",
+                on="organizations_uid",
                 how="left",
             ),
             was_data_df,
-            on="cyhy_db_name",
+            on="organizations_uid",
             how="left",
         ),
         pca_data_df,
-        on="cyhy_db_name",
+        on="organizations_uid",
         how="left",
     )
 
@@ -704,29 +702,23 @@ def import_ident_data(stakeholder_list, prev_start, prev_end, curr_start, curr_e
 
 
 # ---------- Calculate I-Score Function ----------
-def gen_ident_scores(stakeholder_list, curr_date):
+def calc_ident_scores(ident_data, stakeholder_list):
     """
-    Calculate Identification scores for all orgs that are reported on.
+    Calculate Identification Scores for the specified stakeholder list.
 
     Args:
-        stakeholder_list: list of organizations to generate I-Scores for
-        curr_date: current report period date (i.e. 2022-08-15)
+        ident_data: The full dataframe of I-Score data for all FCEB stakeholders
+        stakeholder_list: The specific list of FCEB orgs that you want to generate I-Scores for
     Returns:
-        Dataframe containing org_id, score, and letter grade
+        Dataframe containing I-Score/letter grade for each org in the specified stakeholder list
     """
-    # Calculate start/end dates of current and previous report periods
-    report_periods = get_prev_startstop(curr_date, 4)
-    [prev_start, prev_end, curr_start, curr_end] = [
-        report_periods[0][0],
-        report_periods[1][1],
-        report_periods[2][0],
-        report_periods[3][1],
-    ]
-
-    # Retrieve data necessary for Identification Score
-    ident_data_df = import_ident_data(
-        stakeholder_list, prev_start, prev_end, curr_start, curr_end
-    )
+    # Cut down dataframe to only include data for the specified stakeholder list
+    ident_data_df = pd.merge(
+        stakeholder_list,
+        ident_data,
+        on=["organizations_uid", "cyhy_db_name"],
+        how="left",
+    ).drop(columns="cyhy_db_name")
 
     # Impute column means to use for filling in missing data later
     col_means = ident_data_df.mean()
@@ -734,7 +726,6 @@ def gen_ident_scores(stakeholder_list, curr_date):
     # ---------- VS-Subscribed Data ----------
     # Index locations of VS vuln metrics
     vs_vuln_locs = [1] + list(range(3, 13))
-    # (+4 w/ subscription labels)
 
     # VS Net Change Vulns. Feature:
     # Check if std is positive, non-zero (i.e. not all the same number)
@@ -776,7 +767,6 @@ def gen_ident_scores(stakeholder_list, curr_date):
     pe_dw_locs = list(range(30, 34))
     # Index locations of PE protocol metrics
     pe_proto_locs = list(range(34, 36))
-    # (+4 w/ subscription labels)
 
     # PE Net Change Vulns. Feature:
     # Check if std is positive, non-zero (i.e. not all the same number)
@@ -868,7 +858,6 @@ def gen_ident_scores(stakeholder_list, curr_date):
     # ---------- WAS-Subscribed Data ----------
     # Index locations of WAS vuln metrics
     was_vuln_locs = [38] + list(range(40, 50))
-    # (+4 w/ subscription labels)
 
     # WAS Net Change Vulns. Feature:
     # Check if std is positive, non-zero (i.e. not all the same number)
@@ -914,7 +903,6 @@ def gen_ident_scores(stakeholder_list, curr_date):
     # Re-Scale metrics to be between [0, 45]
     for col_idx in range(1, 67):
         ident_data_df.iloc[:, col_idx] = rescale(ident_data_df.iloc[:, col_idx], 45, 0)
-    # (+4 w/ subscription labels)
 
     # If there are still NA's remaining in the data at this point,
     # then that means one of the cyhy teams has absolutely 0 subscribers
@@ -1061,11 +1049,85 @@ def gen_ident_scores(stakeholder_list, curr_date):
     letter_grades = ["F", "D", "D+", "C-", "C", "C+", "B-", "B", "B+", "A-", "A", "A+"]
     ident_data_df["letter_grade"] = np.select(letter_ranges, letter_grades)
 
-    # Isolate final WAS score data
-    ident_data_df = ident_data_df[["cyhy_db_name", "ident_score", "letter_grade"]]
+    # Isolate final I-Score data
+    ident_data_df = ident_data_df[["organizations_uid", "ident_score", "letter_grade"]]
+
+    # Reintroduce cyhy_db_name and sort
+    ident_data_df = pd.merge(
+        stakeholder_list, ident_data_df, on="organizations_uid", how="inner"
+    ).sort_values(by="ident_score", ascending=False, ignore_index=True)
 
     # Return finished identification score dataframe
     return ident_data_df
+
+
+def gen_ident_scores(curr_date):
+    """
+    Generate the Identification Scores for each of the stakeholder sector groups.
+
+    Args:
+        curr_date: current report period date (i.e. 2022-08-15)
+    Returns:
+        List of dataframes containing the I-Scores/letter grades for each stakeholder sector group
+    """
+    # Calculate start/end dates of current and previous report periods
+    report_periods = get_prev_startstop(curr_date, 4)
+    [prev_start, prev_end, curr_start, curr_end] = [
+        report_periods[0][0],
+        report_periods[1][1],
+        report_periods[2][0],
+        report_periods[3][1],
+    ]
+
+    # Retrieve the necessary Discovery Score data for all FCEB orgs
+    ident_data_df = import_ident_data(prev_start, prev_end, curr_start, curr_end)
+
+    # Get Stakeholder Sector Lists:
+    # xs_fceb = query_xs_stakeholder_list()
+    # s_fceb = query_s_stakeholder_list()
+    # m_fceb = query_m_stakeholder_list()
+    # l_fceb = query_l_stakeholder_list()
+    # xl_fceb = query_xl_stakeholder_list()
+    # TEMPORARY CSV DATA
+    xs_fceb = pd.read_csv("fceb_orgs_xs.csv")
+    s_fceb = pd.read_csv("fceb_orgs_s.csv")
+    m_fceb = pd.read_csv("fceb_orgs_m.csv")
+    l_fceb = pd.read_csv("fceb_orgs_l.csv")
+    xl_fceb = pd.read_csv("fceb_orgs_xl.csv")
+    sector_lists = [
+        xs_fceb,
+        s_fceb,
+        m_fceb,
+        l_fceb,
+        xl_fceb,
+    ]
+
+    # Optional functionality to exclude/include certain organizations:
+    # Auxiliary feature for testing/adhoc purposes
+    specific_orgs = 0  # 0 disabled, 1 enabled
+    if specific_orgs == 1:
+        xs_fceb.drop(
+            xs_fceb.loc[
+                xs_fceb["cyhy_db_name"].isin(["DOE", "DOJ", "USDA", "EPA", "VA"])
+            ].index,
+            inplace=True,
+        )
+
+    # Empty list to hold i-score dataframes for each sector group
+    iscore_dfs = []
+    sector_counter = 1
+
+    # For each sector group, calculate i-scores
+    for sector_list in sector_lists:
+        curr_iscores = calc_ident_scores(ident_data_df, sector_list)
+        iscore_dfs.append(curr_iscores)
+        print(
+            f"Calculated I-Scores for {sector_counter} / {len(sector_lists)} Sectors..."
+        )
+        sector_counter += 1
+
+    # Return list of finished i-score dataframes
+    return iscore_dfs
 
 
 # Demo/Test:
@@ -1075,38 +1137,13 @@ curr_date = datetime.datetime(2022, 11, 30)
 # Start Timer
 start_time = time.time()
 
-# Lists of stakeholders to generate I-Score for
-pe_stakeholder_list = query_pe_stakeholder_list()
-xs_stakeholder_list = query_xs_stakeholder_list()
-s_stakeholder_list = query_s_stakeholder_list()
-m_stakeholder_list = query_m_stakeholder_list()
-l_stakeholder_list = query_l_stakeholder_list()
-xl_stakeholder_list = query_xl_stakeholder_list()
-
-# TEMPORARY TESTING
-# xs_stakeholder_list = pd.read_csv("xs_fceb_orgs.csv")
-# s_stakeholder_list = pd.read_csv("s_fceb_orgs.csv")
-# m_stakeholder_list = pd.read_csv("m_fceb_orgs.csv")
-# l_stakeholder_list = pd.read_csv("l_fceb_orgs.csv")
-# xl_stakeholder_list = pd.read_csv("xl_fceb_orgs.csv")
-
-stakeholder_lists_time = time.time() - start_time
-
 # Generate I-Scores
-xs_i_scores = gen_ident_scores(xs_stakeholder_list, curr_date).to_string()
-s_i_scores = gen_ident_scores(s_stakeholder_list, curr_date).to_string()
-m_i_scores = gen_ident_scores(m_stakeholder_list, curr_date).to_string()
-l_i_scores = gen_ident_scores(l_stakeholder_list, curr_date).to_string()
-xl_i_scores = gen_ident_scores(xl_stakeholder_list, curr_date).to_string()
+results = gen_ident_scores(curr_date)
 
+# End Timer
 i_scores_time = time.time() - start_time
 
-
-print(xs_i_scores)
-print(s_i_scores)
-print(m_i_scores)
-print(l_i_scores)
-print(xl_i_scores)
-
-print("All stakeholder lists retrieved: %s seconds" % stakeholder_lists_time)
+# Print Results
+for result in results:
+    print(result)
 print("All group's i-scores calculated: %s seconds" % i_scores_time)

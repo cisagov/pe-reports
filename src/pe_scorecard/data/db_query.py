@@ -82,10 +82,8 @@ def query_iscore_vs_data_vuln(start_date, end_date):
     # Open connection
     conn = connect()
     # Make query
-    sql = """SELECT * FROM vw_iscore_vs_vuln WHERE date BETWEEN %(start_date)s AND %(end_date)s;"""
-    iscore_vs_vuln_data = pd.read_sql(
-        sql, conn, params={"start_date": start_date, "end_date": end_date}
-    )
+    sql = """SELECT * FROM vw_iscore_vs_vuln;"""
+    iscore_vs_vuln_data = pd.read_sql(sql, conn)
     # Close connection
     conn.close()
     # Check if dataframe comes back empty
@@ -98,7 +96,6 @@ def query_iscore_vs_data_vuln(start_date, end_date):
                 pd.DataFrame(
                     {
                         "organizations_uid": "test_org",
-                        "date": datetime.date(1, 1, 1),
                         "cve_name": "test_cve",
                         "cvss_score": 1.0,
                     },
@@ -271,7 +268,7 @@ def query_xs_stakeholder_list():
     # Open connection
     conn = connect()
     # Make query
-    sql = """SELECT organizations_uid, cyhy_db_name FROM vw_iscore_orgs_ip_counts WHERE ip_count BETWEEN 0 AND 100;"""
+    sql = """SELECT organizations_uid, cyhy_db_name FROM vw_iscore_orgs_ip_counts WHERE ip_count >= 0 AND ip_count <= 100;"""
     xs_stakeholder_list = pd.read_sql(sql, conn)
     # Close connection
     conn.close()
@@ -284,7 +281,7 @@ def query_s_stakeholder_list():
     # Open connection
     conn = connect()
     # Make query
-    sql = """SELECT organizations_uid, cyhy_db_name FROM vw_iscore_orgs_ip_counts WHERE ip_count BETWEEN 101 AND 1000;"""
+    sql = """SELECT organizations_uid, cyhy_db_name FROM vw_iscore_orgs_ip_counts WHERE ip_count > 100 AND ip_count <= 1000;"""
     s_stakeholder_list = pd.read_sql(sql, conn)
     # Close connection
     conn.close()
@@ -297,7 +294,7 @@ def query_m_stakeholder_list():
     # Open connection
     conn = connect()
     # Make query
-    sql = """SELECT organizations_uid, cyhy_db_name FROM vw_iscore_orgs_ip_counts WHERE (ip_count BETWEEN 1001 AND 10000)
+    sql = """SELECT organizations_uid, cyhy_db_name FROM vw_iscore_orgs_ip_counts WHERE (ip_count > 1000 AND ip_count <= 10000)
     OR ip_count = -1;"""
     # Any stakeholderes not reported on get put in this
     # sector by default
@@ -313,7 +310,7 @@ def query_l_stakeholder_list():
     # Open connection
     conn = connect()
     # Make query
-    sql = """SELECT organizations_uid, cyhy_db_name FROM vw_iscore_orgs_ip_counts WHERE ip_count BETWEEN 10001 AND 100000;"""
+    sql = """SELECT organizations_uid, cyhy_db_name FROM vw_iscore_orgs_ip_counts WHERE ip_count > 10000 AND ip_count <= 100000;"""
     l_stakeholder_list = pd.read_sql(sql, conn)
     # Close connection
     conn.close()
