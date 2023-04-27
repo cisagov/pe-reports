@@ -905,7 +905,7 @@ def execute_scorecard_summary_data(summary_dict):
             email_compliance_pct = EXCLUDED.email_compliance_pct,
             https_compliance_pct = EXCLUDED.https_compliance_pct;
         """
-        summary_dict = {k: None if v == 'N/A' else v for k, v in summary_dict.items() }
+        summary_dict = {k: None if v == "N/A" else v for k, v in summary_dict.items()}
         print(summary_dict)
         cur.execute(
             sql,
@@ -943,7 +943,10 @@ def execute_scorecard_summary_data(summary_dict):
                 AsIs(summary_dict["webapp_critical"]),
                 AsIs(summary_dict["webapp_high"]),
                 AsIs(summary_dict["webapp_kev"] + summary_dict["external_host_kev"]),
-                AsIs(summary_dict["webapp_critical"]+ summary_dict["external_host_critical"]),
+                AsIs(
+                    summary_dict["webapp_critical"]
+                    + summary_dict["external_host_critical"]
+                ),
                 AsIs(summary_dict["external_host_high"] + summary_dict["webapp_high"]),
                 AsIs(summary_dict["vuln_org_kev_ttr"]),
                 AsIs(summary_dict["vuln_org_critical_ttr"]),
