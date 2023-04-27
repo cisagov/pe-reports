@@ -71,7 +71,7 @@ def email_scorecard_report(org_id, scorecard_filename, month_num, year):
             stack_info=True,
         )
     
-    stats = "%d email sent.", agencies_emailed_scorecard
+    stats = f"{agencies_emailed_scorecard} email sent."
     LOGGER.info(stats)
 
 

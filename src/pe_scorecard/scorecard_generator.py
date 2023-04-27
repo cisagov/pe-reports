@@ -222,7 +222,7 @@ def main():
         validated_args["--orgs"],
         validated_args["--email"],
         validated_args["--cancel-refresh"],
-        validated_args["--exclude_bods "],
+        validated_args["--exclude_bods"],
     )
 
     # Stop logging and clean up

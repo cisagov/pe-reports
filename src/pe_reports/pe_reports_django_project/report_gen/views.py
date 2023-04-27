@@ -148,7 +148,7 @@ def report_gen(request):
         print(get_orgs_df())
         # Pandas does not support "cond is True" syntax for dataframe filters,
         # so we must disable flake8 E712 here
-        all_orgs = all_orgs[all_orgs["report_on"] == True]  # noqa: E712
+        # all_orgs = all_orgs[all_orgs["report_on"] == True]  # noqa: E712
 
         if org_id != "":
             org_id = org_id.upper()
@@ -181,10 +181,11 @@ def report_gen(request):
         exclude_bods = score_card_form.cleaned_data["exclude_bods"]
         cancel_refresh = score_card_form.cleaned_data["cancel_refresh"]
         all_orgs = get_orgs_df()
-        print(get_orgs_df())
+        # print(get_orgs_df())
+        LOGGER.info(all_orgs)
         # Pandas does not support "cond is True" syntax for dataframe filters,
         # so we must disable flake8 E712 here
-        all_orgs = all_orgs[all_orgs["report_on"] == True]  # noqa: E712
+        # all_orgs = all_orgs[all_orgs["report_on"] == True]  # noqa: E712
 
         if org_id != "":
             org_id = org_id.upper()

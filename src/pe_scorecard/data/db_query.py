@@ -65,6 +65,7 @@ def get_orgs():
 def refresh_views():
     """Refresh materialized views."""
     try:
+        LOGGER.info("Refreshing views.")
         conn = connect()
         sql = """
             REFRESH MATERIALIZED VIEW
@@ -84,6 +85,8 @@ def refresh_views():
         cur.execute(sql)
         conn.commit()
 
+        LOGGER.info("Finished refreshing port counts.")
+
         sql = """
             REFRESH MATERIALIZED VIEW
             public.mat_vw_cyhy_protocol_counts
@@ -93,6 +96,8 @@ def refresh_views():
         cur.execute(sql)
         conn.commit()
 
+        LOGGER.info("Finished refreshing protocol counts.")
+
         sql = """
             REFRESH MATERIALIZED VIEW
             public.mat_vw_cyhy_risky_protocol_counts
@@ -101,6 +106,8 @@ def refresh_views():
         cur = conn.cursor()
         cur.execute(sql)
         conn.commit()
+
+        LOGGER.info("Finished refreshing risky protocol counts.")
 
         sql = """
             REFRESH MATERIALIZED VIEW
@@ -112,6 +119,8 @@ def refresh_views():
         conn.commit()
 
         conn.close()
+
+        LOGGER.info("Finished refreshing services count.")
     except (Exception, psycopg2.DatabaseError) as err:
         show_psycopg2_exception(err)
         cur.close()
@@ -261,6 +270,7 @@ def query_webapp_counts(date_period, org_uid_list):
 
 def query_certs_counts():
     """Query certificate counts."""
+    LOGGER.info("Query cert counts")
     identified_certs = None
     monitored_certs = None
     return (identified_certs, monitored_certs)
@@ -555,7 +565,7 @@ def query_cyhy_snapshots(start_date, end_date):
 def query_software_scans(start_date, end_date, org_id_list=[]):
     """Query the PE database for vuln data identified by the VS team scans."""
     conn = connect()
-    print("running query_software_scans")
+    LOGGER.info("running query_software_scans")
     if org_id_list:
         sql = """select o.organizations_uid, o.cyhy_db_name, count(cvs.plugin_name)
         from organizations o
@@ -641,7 +651,7 @@ def query_cyhy_port_scans(start_date, end_date, org_uid_list=[]):
 def query_vuln_tickets(org_id_list=[]):
     """Query current open vulns counts based on tickets."""
     conn = connect()
-    print("running query_vuln_tickets")
+    LOGGER.info("running query_vuln_tickets")
     if org_id_list:
         sql = """
             select
@@ -832,7 +842,7 @@ def execute_scorecard_summary_data(summary_dict):
             sect_web_avg_days_remediate_critical,
             sect_web_avg_days_remediate_high,
             email_compliance_pct,
-            https_compliance_pct,
+            https_compliance_pct
         )
         VALUES(
             %s,%s,%s,%s,%s,%s,%s,%s,%s,%s,
@@ -892,9 +902,11 @@ def execute_scorecard_summary_data(summary_dict):
             email_compliance_pct = EXCLUDED.email_compliance_pct,
             https_compliance_pct = EXCLUDED.https_compliance_pct;
         """
+        summary_dict = {k: None if v == 'N/A' else v for k, v in summary_dict.items() }
+        print(summary_dict)
         cur.execute(
             sql,
-            {
+            (
                 summary_dict["organizations_uid"],
                 summary_dict["start_date"],
                 summary_dict["end_date"],
@@ -928,10 +940,7 @@ def execute_scorecard_summary_data(summary_dict):
                 AsIs(summary_dict["webapp_critical"]),
                 AsIs(summary_dict["webapp_high"]),
                 AsIs(summary_dict["webapp_kev"] + summary_dict["external_host_kev"]),
-                AsIs(
-                    summary_dict["webapp_critical"]
-                    + summary_dict["external_host_critical"]
-                ),
+                AsIs(summary_dict["webapp_critical"]+ summary_dict["external_host_critical"]),
                 AsIs(summary_dict["external_host_high"] + summary_dict["webapp_high"]),
                 AsIs(summary_dict["vuln_org_kev_ttr"]),
                 AsIs(summary_dict["vuln_org_critical_ttr"]),
@@ -948,7 +957,7 @@ def execute_scorecard_summary_data(summary_dict):
                 AsIs(summary_dict["webapp_sector_high_ttr"]),
                 AsIs(summary_dict["email_compliance_pct"]),
                 AsIs(summary_dict["https_compliance_pct"]),
-            },
+            ),
         )
         conn.commit()
         conn.close()
@@ -1049,6 +1058,7 @@ def query_fceb_ttr(month, year):
 
 def query_profiling_views(start_date, org_uid_list):
     """Query profiling datas from relevant views."""
+    LOGGER.info("Query profiling views")
     org_uid_list = tuple(org_uid_list)
     profiling_dict = {}
     conn = connect()

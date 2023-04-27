@@ -36,9 +36,11 @@ PAGE_WIDTH = defaultPageSize[0]
 def determine_arrow(value, last_value, color=False, up_is_good=False):
     """Determine the arrow color and direction based on current and previous values."""
     if not last_value:
-        last_value = 0
+        return BASE_DIR + "/scorecard_assets/no_change.png"
     if not value:
-        value = 0
+        return BASE_DIR + "/scorecard_assets/no_change.png"
+    print(value)
+    print(last_value)
     value_diff = value - last_value
     if color:
         if value_diff > 0:
@@ -404,7 +406,7 @@ def create_scorecard(
     if include_trending:
         if data_dict["ips_identified"] != 0:
             trend_image = determine_arrow(
-                data_dict["ips_monitored"] / data_dict["ips_identified"],
+                data_dict["ips_monitored_pct"],
                 data_dict["ips_trend_pct"],
             )
             can.drawImage(
@@ -474,11 +476,11 @@ def create_scorecard(
     )
     if data_dict["domains_identified"] == 0 and data_dict["domains_monitored"] == 0:
         domain_mon_per_frame.addFromList(
-            [Paragraph("100%", style=databox_style_center)], can
+            [Paragraph("100% Monitored", style=databox_style_center)], can
         )
     elif data_dict["domains_identified"] == 0:
         domain_mon_per_frame.addFromList(
-            [Paragraph("100%", style=databox_style_center)], can
+            [Paragraph("100% Monitored", style=databox_style_center)], can
         )
     else:
         domain_mon_per_frame.addFromList(

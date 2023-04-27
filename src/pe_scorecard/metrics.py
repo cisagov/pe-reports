@@ -517,8 +517,8 @@ class Scorecard:
                             bod_1801_compliant_count += 1
 
         if base_domain_plus_smtp_subdomain_count == 0:
-            LOGGER.error(agency)
-            LOGGER.error("Divide by zero in bod 18 email compliance")
+            LOGGER.info(agency)
+            LOGGER.info("Divide by zero in bod 18 email compliance")
             return None
         bod_1801_compliant_percentage = round(
             bod_1801_compliant_count / base_domain_plus_smtp_subdomain_count * 100.0,
@@ -581,8 +581,8 @@ class Scorecard:
                 if not domain["ocsp_domain"]:
                     bod_1801_count += 1
         if all_eligible_domains_count == 0:
-            LOGGER.error(agency)
-            LOGGER.error("Divide by zero in bod 18 https compliance")
+            LOGGER.info(agency)
+            LOGGER.info("Divide by zero in bod 18 https compliance")
             return None
         bod_1801_percentage = round(
             bod_1801_count / all_eligible_domains_count * 100.0, 1
@@ -658,7 +658,7 @@ class Scorecard:
         }
         self.scorecard_dict.update(past_scorecard_metrics_dict)
 
-    def generate_scorecard(self, output_directory, include_bods=True):
+    def generate_scorecard(self, output_directory, exclude_bods=False):
         """Generate a scorecard with the prefilled data_dictionary."""
         scorecard_dict = self.scorecard_dict
 
@@ -671,6 +671,6 @@ class Scorecard:
             + ".pdf"
         )
 
-        create_scorecard(scorecard_dict, file_name, True, False, include_bods)
+        create_scorecard(scorecard_dict, file_name, True, False, exclude_bods)
 
         return file_name
