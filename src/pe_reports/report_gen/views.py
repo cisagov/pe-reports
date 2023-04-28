@@ -158,6 +158,8 @@ def report_gen():
 
         LOGGER.info(breach_name)
 
+
+
     return render_template(
         "home_report_gen.html",
         formExternal=formExternal,
