@@ -2,19 +2,35 @@
 import logging
 import json
 import socket
+from datetime import datetime, timedelta
+import re
+import os
 
 # Third party packages
+from decouple import config
 from django.views.generic import TemplateView
 from django.views.generic.edit import FormView
+from django.views import View
 from django.shortcuts import render
-from django.http import HttpResponseNotFound, HttpResponseRedirect
+from django.http import HttpResponseNotFound, \
+    HttpResponseRedirect, \
+    HttpResponse, \
+    JsonResponse
 from django.core.exceptions import ObjectDoesNotExist
+from django.core import serializers
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.models import User
 from django.urls import reverse_lazy
 from django.contrib.auth import logout
+from django.contrib.auth.mixins import LoginRequiredMixin
+from docx import Document
+from docxtpl import DocxTemplate
+import io
 
-from .models import Organizations
+from pe_source.data.sixgill.api import setOrganizationUsers, \
+    setOrganizationDetails
+from .models import Organizations, WeeklyStatuses
 from .forms import GatherStakeholderForm, WeeklyStatusesForm
 import requests
 
@@ -24,6 +40,49 @@ LOGGER = logging.getLogger(__name__)
 
 
 # Create your views here.
+
+def getUserKey():
+    urlIDs = 'http://127.0.0.1:8000/apiv1/get_key'
+    payload = json.dumps({
+        "refresh_token": f'{config("USER_REFRESH_TOKEN")}'
+    })
+    headers = {
+        'Content-Tpye': 'application/json',
+
+    }
+
+    response = requests.post(urlIDs, headers=headers, data=payload).json()
+
+    return response
+#
+#
+theCurrentUserKey = getUserKey()
+# print(f'The current key is {theCurrentUserKey}')
+theSavedUserKey = config("API_KEY")
+# # print(f'The saved key is {theSavedUserKey}')
+#
+#
+def updateAPIKey(theSavedUserKey, theCurrentUserKey):
+    if theSavedUserKey == theCurrentUserKey:
+        print('The keys match and nothing happened. ')
+    else:
+        try:
+            script_directory = os.path.dirname(os.path.realpath(__name__))
+            print(script_directory)
+            env_file_path = os.path.join(script_directory, ".env")
+            with open(env_file_path, 'r') as f:
+                f.seek(0)
+                data = f.read()
+                dataReplaced = data.replace(theSavedUserKey, theCurrentUserKey)
+                print("Reading and replacing api key.")
+            with open(env_file_path, 'w') as f:
+                if theSavedUserKey in data:
+                    print("The apiKey has been updated.")
+                    f.write(dataReplaced)
+            return theCurrentUserKey
+        except:
+            print("Failed to open and write new file.")
+
 def getAgencies(org_name):
     """Get all agency names from P&E database."""
     # global conn, cursor
@@ -432,19 +491,242 @@ def stakeholder(request):
         return HttpResponseNotFound('Nothing found')
 
 
+def create_word_document(request):
+    """Create a word document."""
+
+    accomplishments_list = []
+    ongoing_tasks_list = []
+    upcoming_tasks_list = []
+    obstacles_list = []
+    non_standard_meeting_list = []
+    deliverables_list = []
+    pto_list = []
+
+    # Get the current week ending date
+    current_date = datetime.now()
+    days_to_week_end = (4 - current_date.weekday()) % 7
+    week_ending_date = current_date + timedelta(days=days_to_week_end)
+    reformatted_week_ending_date = week_ending_date.strftime("%m-%d-%Y")
+
+    # Create a Document object
+    doc = Document()
+
+    weeklyInfo = WeeklyStatuses.objects.filter(week_ending=week_ending_date)
+
+    # Serialize the queryset to JSON
+    serialized_data = serializers.serialize('json', weeklyInfo)
+
+    # Load the serialized data into a JSON object
+    json_data = json.loads(serialized_data)
+
+    # print(json_data)
+    # Iterate through the JSON object and set variables from the fields
+    for status in json_data:
+        accomplishments = status['fields']['key_accomplishments']
+        ongoing_tasks = status['fields']['ongoing_task']
+        upcoming_tasks = status['fields']['upcoming_task']
+        obstacles = status['fields']['obstacles']
+        non_standard_meeting = status['fields']['non_standard_meeting']
+        deliverables = status['fields']['deliverables']
+        pto = status['fields']['pto']
+        week_ending = status['fields']['week_ending']
+        the_current_user = status['fields']['user_status']
+        statusComplete = status['fields']['statusComplete']
+
+        # Append each status to their respective list
+        if accomplishments not in accomplishments_list:
+            split_data = re.split(r',\s+(?=ISSUE\s*-\s*\d+:)', accomplishments)
+
+            for item in split_data:
+                if item:
+                    accomplishments_list.append(item)
+
+        if ongoing_tasks not in ongoing_tasks_list:
+            split_data = re.split(r',\s+(?=ISSUE\s*-\s*\d+:)', ongoing_tasks)
+
+            for item in split_data:
+                if item:
+                    ongoing_tasks_list.append(ongoing_tasks)
+        if upcoming_tasks not in upcoming_tasks_list:
+            split_data = re.split(r',\s+(?=ISSUE\s*-\s*\d+:)', upcoming_tasks)
+
+            for item in split_data:
+                if item:
+                    upcoming_tasks_list.append(upcoming_tasks)
+        if obstacles not in obstacles_list:
+            split_data = re.split(r',\s+(?=ISSUE\s*-\s*\d+:)', obstacles)
+
+            for item in split_data:
+                if item:
+                    obstacles_list.append(obstacles)
+        if non_standard_meeting not in non_standard_meeting_list:
+            split_data = re.split(r',\s+(?=ISSUE\s*-\s*\d+:)',
+                                  non_standard_meeting)
+
+            for item in split_data:
+                if item:
+                    non_standard_meeting_list.append(non_standard_meeting)
+        if deliverables not in deliverables_list:
+            split_data = re.split(r',\s+(?=ISSUE\s*-\s*\d+:)', deliverables)
+
+            for item in split_data:
+                if item:
+                    deliverables_list.append(deliverables)
+        if pto not in pto_list:
+            split_data = re.split(r',\s+(?=ISSUE\s*-\s*\d+:)', pto)
+
+            for item in split_data:
+                if item:
+                    pto_list.append(pto)
+
+        # Load the template
+        template = DocxTemplate("/Users/duhnc/Desktop/allInfo/"
+                                "pe-reports-apiextended/src/pe_reports/"
+                                "pe_reports_django_project/home/"
+                                "PEWeeklyStatusReportTemplate.docx")
+
+        # Define the values to insert into the template, including a list of tasks
+        context = {
+            'user': the_current_user.capitalize(),
+            'week_ending': reformatted_week_ending_date,
+            "accomplishments_list": accomplishments_list,
+            "ongoing_tasks_list": ongoing_tasks_list,
+            "upcoming_task_list": upcoming_tasks_list,
+            "obstacles_list": obstacles_list,
+            "non_standard_meeting_list": non_standard_meeting_list,
+            "deliverables_list": deliverables_list,
+            "pto_list": pto_list
+        }
+
+        # Render the template with the context
+        template.render(context)
+
+        # Save the rendered document as a new Word file
+        template.save("/Users/duhnc/Desktop/allInfo/pe-reports-apiextended/"
+                      "src/pe_reports/pe_reports_django_project/home/"
+                      "statusReportArchive/"
+                      "weeklyStatus_%s.docx" % week_ending_date)
+
+    messages.success(request, "The weekly status report has been created.")
+    return HttpResponse("Word document created successfully.")
+
+
+def email_notification(request):
+    """Email notification to notify the user that the status has been submitted."""
+    # TODO - Add the email notification to nofity the user that
+    #  the status has been not been submitted
+
+
+class FetchWeeklyStatusesView(View):
+    """Fetch the weekly statuses from the API
+     and pass to Weekly Statuses template"""
+    updateAPIKey(theSavedUserKey, theCurrentUserKey)
+    def get(self, request, *args, **kwargs):
+
+        url = 'http://127.0.0.1:8000/apiv1/fetch_weekly_statuses'
+        headers = {
+            'Content-Type': 'application/json',
+            'access_token': f'{config("API_KEY")}'
+        }
+
+        try:
+
+            response = requests.post(url, headers=headers)
+            response.raise_for_status()  # Raise an exception if the response contains an HTTP error status
+            data = response.json()
+            return JsonResponse(data, safe=False)
+
+        except requests.exceptions.HTTPError as errh:
+            LOGGER.error(errh)
+        except requests.exceptions.ConnectionError as errc:
+            LOGGER.error(errc)
+        except requests.exceptions.Timeout as errt:
+            LOGGER.error(errt)
+        except requests.exceptions.RequestException as err:
+            LOGGER.error(err)
+        except json.decoder.JSONDecodeError as err:
+            LOGGER.error(err)
+
+        # Return an error JsonResponse if an exception occurs
+        return JsonResponse({"error": "Failed to fetch weekly statuses"},
+                            status=400)
+
+
 class StatusView(TemplateView):
     template_name = 'weeklyStatus.html'
     LOGGER.info('Got to Status')
 
 
-class StatusForm(FormView):
+class StatusForm(LoginRequiredMixin, FormView):
     form_class = WeeklyStatusesForm
     template_name = 'weeklyStatus.html'
 
     success_url = reverse_lazy('weekly_status')
 
+    def get_form_kwargs(self):
+        kwargs = super(StatusForm, self).get_form_kwargs()
+        kwargs['user'] = self.request.user
+        return kwargs
+
     def form_valid(self, form):
-        theorgCount = form.cleaned_data['pto_time'].upper()
-        LOGGER.info(f'The org count was {theorgCount}')
+        the_current_user = ''
+        statusComplete = 0
+        week_ending = 0
+        current_date = datetime.now()
+        days_to_week_end = (4 - current_date.weekday()) % 7
+        week_ending_date = current_date + timedelta(days=days_to_week_end)
+
+        weeklyInfo = WeeklyStatuses.objects. \
+            filter(week_ending=week_ending_date,
+                   user_status=self.request.user.first_name)
+
+        # Serialize the queryset to JSON
+        serialized_data = serializers.serialize('json', weeklyInfo)
+
+        # Load the serialized data into a JSON object
+        json_data = json.loads(serialized_data)
+
+        # Iterate through the JSON object and set variables from the fields
+        for status in json_data:
+            the_current_user = status['fields']['user_status']
+            statusComplete = status['fields']['statusComplete']
+            week_ending = status['fields']['week_ending']
+
+        if statusComplete == 1:
+            messages.warning(self.request,
+                             f"The weekly status for {the_current_user.title()}"
+                             f" for the weekending {week_ending} "
+                             f"has already been completed.")
+            return HttpResponseRedirect("/weekly_status/")
+
+        key_accomplishments = form.cleaned_data['key_accomplishments'].upper()
+
+        ongoing_task = form.cleaned_data['ongoing_task'].upper()
+
+        upcoming_task = form.cleaned_data['upcoming_task'].upper()
+
+        obstacles = form.cleaned_data['obstacles'].upper()
+
+        non_standard_meeting = form.cleaned_data['non_standard_meeting'].upper()
+
+        deliverables = form.cleaned_data['deliverables'].upper()
+
+        pto = form.cleaned_data['pto_time'].upper()
+
+        messages.success(self.request,
+                         f'The weekly status was saved successfully.')
+
+        weeklyStatus = WeeklyStatuses(
+            key_accomplishments=key_accomplishments,
+            user_status=self.request.user.first_name,
+            ongoing_task=ongoing_task,
+            upcoming_task=upcoming_task,
+            obstacles=obstacles,
+            non_standard_meeting=non_standard_meeting,
+            deliverables=deliverables,
+            pto=pto,
+        )
+
+        weeklyStatus.save()
 
         return super().form_valid(form)
