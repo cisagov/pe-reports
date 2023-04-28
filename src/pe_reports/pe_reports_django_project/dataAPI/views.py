@@ -23,7 +23,25 @@ from fastapi import \
     File,\
     UploadFile
 
+<<<<<<< HEAD
 from fastapi.responses import JSONResponse
+=======
+# Third party imports
+from fastapi import (
+    APIRouter,
+    FastAPI,
+    Body,
+    Depends,
+    HTTPException,
+    status,
+    Security,
+    File,
+    UploadFile,
+    Request
+)
+
+from fastapi.responses import ORJSONResponse
+>>>>>>> 1e341ab30eb5e2a37e662cd10c5fd9d58b034975
 from fastapi.encoders import jsonable_encoder
 from fastapi.security import OAuth2PasswordBearer
 from fastapi.security.api_key import \
@@ -533,6 +551,7 @@ def was_info(tokens: dict = Depends(get_api_key)):
         return {'message': "No api key was submitted"}
 
 
+<<<<<<< HEAD
 @api_router.delete("/was_info_delete/{tag}", dependencies=[Depends(get_api_key)],
                  tags=["Delete WAS data"])
 def was_info_delete(tag: str, tokens: dict = Depends(get_api_key)):
@@ -571,15 +590,70 @@ def was_info_create(customer: schemas.WASDataBase, tokens: dict = Depends(get_ap
             LOGGER.info('API key expired please try again')
     else:
         return {'message': "No api key was submitted"}
+=======
+@api_router.post(
+    "/was_info_create",
+    dependencies=[Depends(get_api_key)],
+    # response_model=Dict[schemas.WASDataBase],
+    tags=["Create new WAS data"],
+)
+def was_info_create(request: Request, tokens: dict = Depends(get_api_key)):
+    """API endpoint to create a record in database."""
+
+    if not tokens:
+        return {"message": "No api key was submitted"}
+
+    print("got to the endpoint")
+    
+
+    LOGGER.info(f"The api key submitted {tokens}")
+    try:
+        # Get data header
+        customer = json.loads(request.headers.get("x-data"))
+        was_customer = WasTrackerCustomerdata.objects.create(**customer)
+        userapiTokenverify(theapiKey=tokens)
+        was_customer.save()
+        return {"saved_customer": was_customer}
+    except:
+        LOGGER.info("API key expired please try again")
+        return {"message": "Failed to upload"}
+>>>>>>> 1e341ab30eb5e2a37e662cd10c5fd9d58b034975
 
 
 @api_router.put("/was_info_update/{tag}", dependencies=[Depends(get_api_key)],
                 # response_model=Dict[schemas.WASDataBase],
                 tags=["Update WAS data"])
 @transaction.atomic
+<<<<<<< HEAD
 def was_info_update(tag: str, customer: schemas.WASDataBase,
                     tokens: dict = Depends(get_api_key)):
     """API endpoint to create a record in database."""
+=======
+def was_info_update(
+    tag: str, request: Request, tokens: dict = Depends(get_api_key)
+):
+    """API endpoint to create a record in database."""
+    if not tokens:
+        return {"message": "No api key was submitted"}
+    LOGGER.info(f"The api key submitted {tokens}")
+    try:
+        # Get customer header
+        customer = json.loads(request.headers.get("x-data"))
+
+        # Verify token
+        userapiTokenverify(theapiKey=tokens)
+
+        # Get WAS record based on tag
+        was_data = WasTrackerCustomerdata.objects.get(tag=tag)
+        updated_data = {}
+        for field, value in customer.items():
+            print(f"the field is {field} and the value is {value}")
+            if hasattr(was_data, field) and getattr(was_data, field) != value:
+                setattr(was_data, field, value)
+                updated_data[field] = value
+        was_data.save()
+        return {"message": "Record updated successfully.", "updated_data": updated_data}
+>>>>>>> 1e341ab30eb5e2a37e662cd10c5fd9d58b034975
 
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
