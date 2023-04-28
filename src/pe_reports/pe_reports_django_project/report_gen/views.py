@@ -39,13 +39,13 @@ conn = None
 cursor = None
 
 
-@login_required
-def report_gen(request):
-    try:
-        return render(request=request,
-                      template_name="report_gen/report_gen.html")
-    except:
-        return HttpResponseNotFound('Nothing found')
+# @login_required
+# def report_gen(request):
+#     try:
+#         return render(request=request,
+#                       template_name="report_gen/report_gen.html")
+#     except:
+#         return HttpResponseNotFound('Nothing found')
 
 
 def validate_filename(filename):
