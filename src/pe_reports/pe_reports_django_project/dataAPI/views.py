@@ -1,4 +1,4 @@
-"""Create all api enpoints"""
+"""Create all api endpoints."""
 
 # Standard Python Libraries
 from typing import List, Any, Union, Dict
