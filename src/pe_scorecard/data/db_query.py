@@ -77,7 +77,7 @@ def query_trusty_mail(month, agency):
 
 # v ---------- I-Score SQL Queries ---------- v
 # ----- VS Vulns -----
-def query_iscore_vs_data_vuln(start_date, end_date):
+def query_iscore_vs_data_vuln():
     """Query all VS vuln data needed for I-Score calculation."""
     # Open connection
     conn = connect()
@@ -105,6 +105,40 @@ def query_iscore_vs_data_vuln(start_date, end_date):
             ignore_index=True,
         )
     return iscore_vs_vuln_data
+
+
+# ----- VS Vulns Previous -----
+def query_iscore_vs_data_vuln_prev(start_date, end_date):
+    """Query all VS prev vuln data needed for I-Score calculation."""
+    # Open connection
+    conn = connect()
+    # Make query
+    sql = """SELECT * FROM vw_iscore_vs_vuln_prev WHERE time_closed BETWEEN %(start_date)s AND %(end_date)s;"""
+    iscore_vs_vuln_prev_data = pd.read_sql(
+        sql, conn, params={"start_date": start_date, "end_date": end_date}
+    )
+    # Close connection
+    conn.close()
+    # Check if dataframe comes back empty
+    if iscore_vs_vuln_prev_data.empty:
+        # If empty, insert placeholder data row
+        # This data will not affect score calculations
+        iscore_vs_vuln_prev_data = pd.concat(
+            [
+                iscore_vs_vuln_prev_data,
+                pd.DataFrame(
+                    {
+                        "organizations_uid": "test_org",
+                        "cve_name": "test_cve",
+                        "cvss_score": 1.0,
+                        "time_closed": datetime.date(1, 1, 1),
+                    },
+                    index=[0],
+                ),
+            ],
+            ignore_index=True,
+        )
+    return iscore_vs_vuln_prev_data
 
 
 # ----- PE Vulns -----
@@ -139,6 +173,10 @@ def query_iscore_pe_data_vuln(start_date, end_date):
             ignore_index=True,
         )
     return iscore_pe_vuln_data
+
+
+# ----- PE Vulns Previous -----
+# Uses query_iscore_pe_data_vuln, but with prev report period dates
 
 
 # ----- PE Creds -----
@@ -177,7 +215,7 @@ def query_iscore_pe_data_darkweb(start_date, end_date):
     # Open connection
     conn = connect()
     # Make query
-    sql = """SELECT * FROM vw_iscore_pe_darkweb WHERE date BETWEEN %(start_date)s AND %(end_date)s;"""
+    sql = """SELECT * FROM vw_iscore_pe_darkweb WHERE date BETWEEN %(start_date)s AND %(end_date)s OR date = '0001-01-01';"""
     iscore_pe_darkweb_data = pd.read_sql(
         sql, conn, params={"start_date": start_date, "end_date": end_date}
     )
@@ -222,7 +260,7 @@ def query_iscore_was_data_vuln(start_date, end_date):
                 iscore_was_vuln_data,
                 pd.DataFrame(
                     {
-                        "org_id": "test_org",
+                        "organizations_uid": "test_org",
                         "date": datetime.date(1, 1, 1),
                         "cve_name": "test_cve",
                         "cvss_score": 1.0,
@@ -234,6 +272,39 @@ def query_iscore_was_data_vuln(start_date, end_date):
             ignore_index=True,
         )
     return iscore_was_vuln_data
+
+
+# ----- WAS Vulns Previous -----
+def query_iscore_was_data_vuln_prev(start_date, end_date):
+    """Query all WAS prev vuln data needed for I-Score calculation."""
+    # Open connection
+    conn = connect()
+    # Make query
+    sql = """SELECT * FROM vw_iscore_was_vuln_prev WHERE date BETWEEN %(start_date)s AND %(end_date)s;"""
+    iscore_was_vuln_prev_data = pd.read_sql(
+        sql, conn, params={"start_date": start_date, "end_date": end_date}
+    )
+    # Close connection
+    conn.close()
+    # Check if dataframe comes back empty
+    if iscore_was_vuln_prev_data.empty:
+        # If empty, insert placeholder data row
+        # This data will not affect score calculations
+        iscore_was_vuln_prev_data = pd.concat(
+            [
+                iscore_was_vuln_prev_data,
+                pd.DataFrame(
+                    {
+                        "organizations_uid": "test_org",
+                        "was_total_vulns_prev": 0,
+                        "date": datetime.date(1, 1, 1),
+                    },
+                    index=[0],
+                ),
+            ],
+            ignore_index=True,
+        )
+    return iscore_was_vuln_prev_data
 
 
 # ----- KEV List -----

@@ -127,8 +127,9 @@ def import_ident_data(prev_start, prev_end, curr_start, curr_end):
     kev_list = pd.read_csv("iscore_kevs_2023-04-25.csv")
 
     # --------------- Process VS Data: ---------------
-    # Requires 1 view:
+    # Requires 2 view:
     # - vuln data: vw_ident_vs_vuln
+    # - historical vuln data: vw_ident_vs_vuln_prev
     # ----- VS Vuln. Data -----
     # Set KEV flags
     vs_data_vuln["is_kev"] = 0
@@ -252,6 +253,7 @@ def import_ident_data(prev_start, prev_end, curr_start, curr_end):
     # - cred data: vw_ident_pe_cred, vw_ident_pe_breach
     # - dark web data: vw_ident_pe_dw
     # - protocol data: vw_ident_pe_proto
+    # ~ historical vuln data: also uses vw_ident_pe_vuln
     # ----- PE Vuln. Data -----
     # Set KEV flags
     pe_data_vuln["is_kev"] = 0
@@ -490,8 +492,9 @@ def import_ident_data(prev_start, prev_end, curr_start, curr_end):
     ).drop(columns=["cyhy_db_name", "index"])
 
     # --------------- Process WAS Data: ---------------
-    # Requires 1 View:
+    # Requires 2 Views:
     # - vuln data: vw_ident_was_vuln
+    # - historical vuln data: vw_ident_was_vuln_prev
     # ----- WAS Vuln Data -----
     # Set KEV flags
     was_data_vuln["is_kev"] = 0
