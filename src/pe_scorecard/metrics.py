@@ -26,7 +26,7 @@ from .data.db_query import (
     query_sslyze_scan,
     query_trusty_mail,
     query_vuln_tickets,
-    query_webapp_counts,
+    query_web_app_counts,
 )
 from .unified_scorecard_generator import create_scorecard
 
@@ -89,7 +89,7 @@ class Scorecard:
         self.ip_counts = query_ips_counts(org_uid_list)
         self.domain_counts = query_domain_counts(org_uid_list)
         # # TODO possibly need to format a date string based on the new column
-        self.webapp_counts = query_webapp_counts(start_date, org_uid_list)
+        self.web_app_counts = query_web_app_counts(start_date, org_uid_list)
         self.cert_counts = query_certs_counts()
 
         # self.ports_data = query_cyhy_port_scans(start_date, end_date, org_uid_list)
@@ -162,20 +162,20 @@ class Scorecard:
         if domains_self_reported == 0 and domains_identified == 0:
             self.scorecard_dict["domains_monitored"] = None
 
-        # TODO add webapps
-        webapp_df = self.webapp_counts
-        webapps_self_reported = webapp_df["web_app_cnt"].sum()
-        webapps_discovered = 0
+        # TODO add web_apps
+        web_app_df = self.web_app_counts
+        web_apps_self_reported = web_app_df["web_app_cnt"].sum()
+        web_apps_discovered = 0
 
-        self.scorecard_dict["webapps_self_reported"] = webapps_self_reported
-        self.scorecard_dict["webapps_discovered"] = webapps_discovered
+        self.scorecard_dict["web_apps_self_reported"] = web_apps_self_reported
+        self.scorecard_dict["web_apps_discovered"] = web_apps_discovered
 
-        self.scorecard_dict["webapps_monitored"] = (
-            webapps_self_reported + webapps_discovered
+        self.scorecard_dict["web_apps_monitored"] = (
+            web_apps_self_reported + web_apps_discovered
         )
 
-        if webapps_self_reported == 0 and webapps_discovered == 0:
-            self.scorecard_dict["webapps_monitored"] = None
+        if web_apps_self_reported == 0 and web_apps_discovered == 0:
+            self.scorecard_dict["web_apps_monitored"] = None
 
         # TODO add certs
         self_reported_certs = self.cert_counts[0] if self.cert_counts[0] else 0
@@ -254,10 +254,10 @@ class Scorecard:
         self.scorecard_dict["external_host_kev"] = vuln_counts["kev"].sum()
         self.scorecard_dict["external_host_critical"] = vuln_counts["critical"].sum()
         self.scorecard_dict["external_host_high"] = vuln_counts["high"].sum()
-        was_counts = self.webapp_counts
-        self.scorecard_dict["webapp_kev"] = "N/A"
-        self.scorecard_dict["webapp_critical"] = was_counts["crit_vuln_cnt"].sum()
-        self.scorecard_dict["webapp_high"] = was_counts["high_vuln_cnt"].sum()
+        was_counts = self.web_app_counts
+        self.scorecard_dict["web_app_kev"] = "N/A"
+        self.scorecard_dict["web_app_critical"] = was_counts["crit_vuln_cnt"].sum()
+        self.scorecard_dict["web_app_high"] = was_counts["high_vuln_cnt"].sum()
 
     def calculate_tracking_metrics(self):
         """Summarize tracking findings into key metrics."""
@@ -335,28 +335,28 @@ class Scorecard:
             True if high_19_02 == 100 else False
         )
 
-        webapp_df = self.webapp_counts
+        web_app_df = self.web_app_counts
         was_fceb_ttr = self.was_fceb_ttr
 
-        total_critical = webapp_df["crit_rem_cnt"].sum()
-        webapp_df["weighted_critical"] = (
-            webapp_df["crit_rem_cnt"] / total_critical
-        ) * webapp_df["crit_rem_time"]
+        total_critical = web_app_df["crit_rem_cnt"].sum()
+        web_app_df["weighted_critical"] = (
+            web_app_df["crit_rem_cnt"] / total_critical
+        ) * web_app_df["crit_rem_time"]
 
-        self.scorecard_dict["webapp_org_critical_ttr"] = (
-            webapp_df["weighted_critical"].sum() if total_critical > 0 else "N/A"
+        self.scorecard_dict["web_app_org_critical_ttr"] = (
+            web_app_df["weighted_critical"].sum() if total_critical > 0 else "N/A"
         )
 
-        total_high = webapp_df["high_rem_cnt"].sum()
-        webapp_df["weighted_high"] = (
-            webapp_df["high_rem_cnt"] / total_high
-        ) * webapp_df["high_rem_time"]
-        self.scorecard_dict["webapp_org_high_ttr"] = (
-            webapp_df["weighted_high"].sum() if total_high > 0 else "N/A"
+        total_high = web_app_df["high_rem_cnt"].sum()
+        web_app_df["weighted_high"] = (
+            web_app_df["high_rem_cnt"] / total_high
+        ) * web_app_df["high_rem_time"]
+        self.scorecard_dict["web_app_org_high_ttr"] = (
+            web_app_df["weighted_high"].sum() if total_high > 0 else "N/A"
         )
 
-        self.scorecard_dict["webapp_sector_critical_ttr"] = was_fceb_ttr["critical"]
-        self.scorecard_dict["webapp_sector_high_ttr"] = was_fceb_ttr["high"]
+        self.scorecard_dict["web_app_sector_critical_ttr"] = was_fceb_ttr["critical"]
+        self.scorecard_dict["web_app_sector_high_ttr"] = was_fceb_ttr["high"]
 
         self.scorecard_dict[
             "email_compliance_pct"
@@ -605,7 +605,7 @@ class Scorecard:
             LOGGER.error("No Scorecard summary data for the last report period.")
             ips_monitored_trend = self.scorecard_dict["ips_monitored"]
             domains_monitored_trend = self.scorecard_dict["domains_monitored"]
-            webapps_monitored_trend = self.scorecard_dict["web_apps_monitored"]
+            web_apps_monitored_trend = self.scorecard_dict["web_apps_monitored"]
             certs_monitored_trend = self.scorecard_dict["certs_monitored"]
             ports_total_trend = self.scorecard_dict["ports_total_count"]
             ports_risky_trend = self.scorecard_dict["ports_risky_count"]
@@ -624,7 +624,7 @@ class Scorecard:
         else:
             ips_monitored_trend = scorecard_dict_past["ips_monitored"]
             domains_monitored_trend = scorecard_dict_past["domains_monitored"]
-            webapps_monitored_trend = scorecard_dict_past["web_apps_monitored"]
+            web_apps_monitored_trend = scorecard_dict_past["web_apps_monitored"]
             certs_monitored_trend = scorecard_dict_past["certs_monitored"]
             ports_total_trend = scorecard_dict_past["total_ports"]
             ports_risky_trend = scorecard_dict_past["risky_ports"]
@@ -642,7 +642,7 @@ class Scorecard:
         past_scorecard_metrics_dict = {
             "ips_monitored_trend": ips_monitored_trend,
             "domains_monitored_trend": domains_monitored_trend,
-            "webapps_monitored_trend": webapps_monitored_trend,
+            "web_apps_monitored_trend": web_apps_monitored_trend,
             "certs_monitored_trend": certs_monitored_trend,
             "ports_total_trend": ports_total_trend,
             "ports_risky_trend": ports_risky_trend,

@@ -232,20 +232,22 @@ def query_was_fceb_ttr(date_period):
     return fceb_dict
 
 
-def query_webapp_counts(date_period, org_uid_list):
-    """Query webapp counts."""
+def query_web_app_counts(date_period, org_uid_list):
+    """Query web_app counts."""
     # TODO update query to pull critical and high vulns
     conn = connect()
-    print("running query_webapp_counts")
+    print("running query_web_app_counts")
     sql = """
             select o.organizations_uid, o.cyhy_db_name, cnts.date_scanned,
             coalesce(cnts.vuln_cnt, 0) as vuln_cnt,
-            coalesce(cnts.vuln_webapp_cnt,0) as vuln_webapp_cnt,
+            coalesce(cnts.vuln_webapp_cnt,0) as vuln_web_app_cnt,
             coalesce(cnts.web_app_cnt, 0) as web_app_cnt,
             coalesce(cnts.high_rem_time, Null) high_rem_time,
             coalesce(cnts.crit_rem_time, null) crit_rem_time,
             coalesce(cnts.crit_vuln_cnt, 0) crit_vuln_cnt,
-            coalesce(cnts.high_vuln_cnt, 0) high_vuln_cnt
+            coalesce(cnts.high_vuln_cnt, 0) high_vuln_cnt,
+            coalesce(cnts.crit_rem_cnt, 0) crit_rem_cnt,
+            coalesce(cnts.high_rem_cnt, 0) high_rem_cnt
             from organizations o
             left join
             (SELECT o.organizations_uid, wh.*
@@ -260,7 +262,7 @@ def query_webapp_counts(date_period, org_uid_list):
             where o.organizations_uid  IN %(org_uid_list)s;
 
     """
-    webapp_counts = pd.read_sql(
+    web_app_counts = pd.read_sql(
         sql,
         conn,
         params={"start_date": date_period, "org_uid_list": tuple(org_uid_list)},
@@ -268,7 +270,7 @@ def query_webapp_counts(date_period, org_uid_list):
 
     close(conn)
 
-    return webapp_counts
+    return web_app_counts
 
 
 def query_certs_counts():
@@ -775,14 +777,14 @@ def query_open_vulns(org_id_list):
 def execute_scorecard_summary_data(summary_dict):
     """Save summary statistics for an organization to the database."""
     try:
-        if summary_dict["webapp_kev"] in ["N/A", None]:
-            summary_dict["webapp_kev"] = 0
+        if summary_dict["web_app_kev"] in ["N/A", None]:
+            summary_dict["web_app_kev"] = 0
 
         if summary_dict["external_host_kev"] in ["N/A", None]:
             summary_dict["external_host_kev"] = 0
 
-        if summary_dict["webapp_critical"] in ["N/A", None]:
-            summary_dict["webapp_critical"] = 0
+        if summary_dict["web_app_critical"] in ["N/A", None]:
+            summary_dict["web_app_critical"] = 0
 
         if summary_dict["external_host_critical"] in ["N/A", None]:
             summary_dict["external_host_critical"] = 0
@@ -790,8 +792,8 @@ def execute_scorecard_summary_data(summary_dict):
         if summary_dict["external_host_high"] in ["N/A", None]:
             summary_dict["external_host_high"] = 0
 
-        if summary_dict["webapp_high"] in ["N/A", None]:
-            summary_dict["webapp_high"] = 0
+        if summary_dict["web_app_high"] in ["N/A", None]:
+            summary_dict["web_app_high"] = 0
         conn = connect()
         cur = conn.cursor()
         sql = """
@@ -924,9 +926,9 @@ def execute_scorecard_summary_data(summary_dict):
                 AsIs(summary_dict["domains_self_reported"]),
                 AsIs(summary_dict["domains_discovered"]),
                 AsIs(summary_dict["domains_monitored"]),
-                AsIs(summary_dict["webapps_self_reported"]),
+                AsIs(summary_dict["web_apps_self_reported"]),
                 AsIs(summary_dict["web_apps_discovered"]),
-                AsIs(summary_dict["webapps_monitored"]),
+                AsIs(summary_dict["web_apps_monitored"]),
                 AsIs(summary_dict["certs_self_reported"]),
                 AsIs(summary_dict["certs_discovered"]),
                 AsIs(summary_dict["certs_monitored"]),
@@ -939,15 +941,15 @@ def execute_scorecard_summary_data(summary_dict):
                 AsIs(summary_dict["external_host_kev"]),
                 AsIs(summary_dict["external_host_critical"]),
                 AsIs(summary_dict["external_host_high"]),
-                AsIs(summary_dict["webapp_kev"]),
-                AsIs(summary_dict["webapp_critical"]),
-                AsIs(summary_dict["webapp_high"]),
-                AsIs(summary_dict["webapp_kev"] + summary_dict["external_host_kev"]),
+                AsIs(summary_dict["web_app_kev"]),
+                AsIs(summary_dict["web_app_critical"]),
+                AsIs(summary_dict["web_app_high"]),
+                AsIs(summary_dict["web_app_kev"] + summary_dict["external_host_kev"]),
                 AsIs(
-                    summary_dict["webapp_critical"]
+                    summary_dict["web_app_critical"]
                     + summary_dict["external_host_critical"]
                 ),
-                AsIs(summary_dict["external_host_high"] + summary_dict["webapp_high"]),
+                AsIs(summary_dict["external_host_high"] + summary_dict["web_app_high"]),
                 AsIs(summary_dict["vuln_org_kev_ttr"]),
                 AsIs(summary_dict["vuln_org_critical_ttr"]),
                 AsIs(summary_dict["vuln_org_high_ttr"]),
@@ -957,10 +959,10 @@ def execute_scorecard_summary_data(summary_dict):
                 summary_dict["vuln_bod_22-01"],
                 summary_dict["vuln_critical_bod_19-02"],
                 summary_dict["vuln_high_bod_19-02"],
-                AsIs(summary_dict["webapp_org_critical_ttr"]),
-                AsIs(summary_dict["webapp_org_high_ttr"]),
-                AsIs(summary_dict["webapp_sector_critical_ttr"]),
-                AsIs(summary_dict["webapp_sector_high_ttr"]),
+                AsIs(summary_dict["web_app_org_critical_ttr"]),
+                AsIs(summary_dict["web_app_org_high_ttr"]),
+                AsIs(summary_dict["web_app_sector_critical_ttr"]),
+                AsIs(summary_dict["web_app_sector_high_ttr"]),
                 AsIs(summary_dict["email_compliance_pct"]),
                 AsIs(summary_dict["https_compliance_pct"]),
             ),

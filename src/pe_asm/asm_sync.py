@@ -62,46 +62,48 @@ def run_asm_sync(staging, method):
 
     if method == "asm":
         # Run function to fetch and store all CyHy assets in the P&E database
-        LOGGER.info("Collecting CyHy assets")
-        get_cyhy_assets(staging)
-        LOGGER.info("Finished.")
+        # LOGGER.info("Collecting CyHy assets")
+        # get_cyhy_assets(staging)
+        # LOGGER.info("Finished.")
 
-        # Fill the P&E CIDRs table from CyHy assets
-        LOGGER.info("Filling CIDRs.")
-        fill_cidrs("all_orgs", staging)
-        LOGGER.info("Finished.")
+        # # Fill the P&E CIDRs table from CyHy assets
+        # LOGGER.info("Filling CIDRs.")
+        # fill_cidrs("all_orgs", staging)
+        # LOGGER.info("Finished.")
 
-        # Enumerate CIDRs for IPs
-        LOGGER.info("Filling IPs from CIDRs.")
-        fill_ips_from_cidrs(staging)
-        LOGGER.info("Finished.")
+        # # Enumerate CIDRs for IPs
+        # LOGGER.info("Filling IPs from CIDRs.")
+        # fill_ips_from_cidrs(staging)
+        # LOGGER.info("Finished.")
 
-        # Fill root domains from dot gov table
-        # TODO
+        # # Fill root domains from dot gov table
+        # # TODO
 
-        # Enumerate sub domains from roots
-        LOGGER.info("Enumerating roots and saving sub-domains.")
-        get_subdomains(staging)
-        LOGGER.info("Finished.")
+        # # Enumerate sub domains from roots
+        # LOGGER.info("Enumerating roots and saving sub-domains.")
+        # get_subdomains(staging)
+        # LOGGER.info("Finished.")
 
-        # Connect subs from ips
-        LOGGER.info("Linking subs from ips.")
-        connect_subs_from_ips(staging)
-        LOGGER.info("Finished.")
+        # # Connect subs from ips
+        # LOGGER.info("Linking subs from ips.")
+        # connect_subs_from_ips(staging)
+        # LOGGER.info("Finished.")
 
-        # Connect ips from subs
-        LOGGER.info("Linking ips from subs.")
-        connect_ips_from_subs(staging)
-        LOGGER.info("Finished.")
+        # # Connect ips from subs
+        # LOGGER.info("Linking ips from subs.")
+        # connect_ips_from_subs(staging)
+        # LOGGER.info("Finished.")
 
         # Identify the current IPs, sub-domains, and connections
         if staging:
             conn = pe_db_staging_connect()
         else:
             conn = pe_db_connect()
-        LOGGER.info("Identify changes.")
+        LOGGER.info("Identify IP changes.")
         identify_ip_changes(conn)
+        LOGGER.info("Identify Sub changes.")
         identify_sub_changes(conn)
+        LOGGER.info("Identify IP SUB changes.")
         identify_ip_sub_changes(conn)
         conn.close()
         LOGGER.info("Finished")

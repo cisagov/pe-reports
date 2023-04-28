@@ -509,28 +509,28 @@ def create_scorecard(
         height=box_height,
         mask="auto",
     )
-    webapp_header_frame = Frame(
+    web_app_header_frame = Frame(
         col1_x_value,
         row2_y_value + 1.3 * inch,
         box_width,
         0.42 * inch,
         showBoundary=False,
     )
-    webapp_header_frame.addFromList(
+    web_app_header_frame.addFromList(
         [Paragraph("Web Applications", style=header_style)], can
     )
 
-    webapp_reported_frame = Frame(
+    web_app_reported_frame = Frame(
         col1_x_value + 2,
         row2_y_value + 0.54 * inch,
         box_width / 2,
         0.7 * inch,
         showBoundary=False,
     )
-    webapp_reported_frame.addFromList(
+    web_app_reported_frame.addFromList(
         [
             Paragraph(
-                f'{data_dict["webapps_self_reported"]:,}'
+                f'{data_dict["web_apps_self_reported"]:,}'
                 + "<br/><font size='14'> Self Reported</font>",
                 style=databox_style_left,
             )
@@ -538,17 +538,17 @@ def create_scorecard(
         can,
     )
 
-    webapp_discovered_frame = Frame(
+    web_app_discovered_frame = Frame(
         col1_x_value + box_width / 2 - 2,
         row2_y_value + 0.54 * inch,
         box_width / 2,
         0.7 * inch,
         showBoundary=False,
     )
-    webapp_discovered_frame.addFromList(
+    web_app_discovered_frame.addFromList(
         [
             Paragraph(
-                f'{data_dict["webapps_discovered"]:,}'
+                f'{data_dict["web_apps_discovered"]:,}'
                 + "<br/><font size='14'> Discovered</font>",
                 style=databox_style_right,
             )
@@ -556,18 +556,18 @@ def create_scorecard(
         can,
     )
 
-    webapp_monitored_frame = Frame(
+    web_app_monitored_frame = Frame(
         col1_x_value, row2_y_value, box_width, 0.48 * inch, showBoundary=False
     )
-    if not data_dict["webapps_monitored"]:
-        webapp_monitored_frame.addFromList(
+    if not data_dict["web_apps_monitored"]:
+        web_app_monitored_frame.addFromList(
             [Paragraph("Zero Monitored", style=databox_style_center)], can
         )
     else:
-        webapp_monitored_frame.addFromList(
+        web_app_monitored_frame.addFromList(
             [
                 Paragraph(
-                    f'{data_dict["webapps_monitored"]:,}' + " Monitored",
+                    f'{data_dict["web_apps_monitored"]:,}' + " Monitored",
                     style=databox_style_center,
                 )
             ],
@@ -576,8 +576,8 @@ def create_scorecard(
 
     if include_trending:
         trend_image = determine_arrow(
-            data_dict["webapps_monitored"],
-            data_dict["webapps_monitored_trend"],
+            data_dict["web_apps_monitored"],
+            data_dict["web_apps_monitored_trend"],
         )
         can.drawImage(
             trend_image,
@@ -1033,15 +1033,15 @@ def create_scorecard(
         ],
         [
             "Web Applications",
-            data_dict["webapp_kev"],
-            data_dict["webapp_critical"],
-            data_dict["webapp_high"],
+            data_dict["web_app_kev"],
+            data_dict["web_app_critical"],
+            data_dict["web_app_high"],
         ],
         [
             "TOTALS",
             data_dict["external_host_kev"],
-            data_dict["external_host_critical"] + data_dict["webapp_critical"],
-            data_dict["external_host_high"] + data_dict["webapp_high"],
+            data_dict["external_host_critical"] + data_dict["web_app_critical"],
+            data_dict["external_host_high"] + data_dict["web_app_high"],
         ],
     ]
     vulns_table = format_table(
@@ -1179,14 +1179,14 @@ def create_scorecard(
 
     y_value = 2.5 * inch
 
-    webapp_ttf_header_frame = Frame(
+    web_app_ttf_header_frame = Frame(
         col1_x_value,
         y_value + 2 * inch,
         PAGE_WIDTH - 0.6 * inch,
         0.42 * inch,
         showBoundary=False,
     )
-    webapp_ttf_header_frame.addFromList(
+    web_app_ttf_header_frame.addFromList(
         [
             Paragraph(
                 "Average Days to Remediate Web App Vulnerabilities", style=header_style
@@ -1194,20 +1194,20 @@ def create_scorecard(
         ],
         can,
     )
-    webapp_data = [
+    web_app_data = [
         ["", data_dict["agency_id"], data_dict["sector_name"]],
         [
             "Critical",
-            data_dict["webapp_org_critical_ttr"],
-            data_dict["webapp_sector_critical_ttr"],
+            data_dict["web_app_org_critical_ttr"],
+            data_dict["web_app_sector_critical_ttr"],
         ],
-        ["High", data_dict["webapp_org_high_ttr"], data_dict["webapp_sector_high_ttr"]],
+        ["High", data_dict["web_app_org_high_ttr"], data_dict["web_app_sector_high_ttr"]],
     ]
-    webapp_table = format_table(webapp_data, [3.2 * inch, 2.1 * inch, 2.4 * inch])
-    webapp_table_frame = Frame(
+    web_app_table = format_table(web_app_data, [3.2 * inch, 2.1 * inch, 2.4 * inch])
+    web_app_table_frame = Frame(
         col1_x_value, y_value, PAGE_WIDTH - 0.6 * inch, 2 * inch, showBoundary=False
     )
-    webapp_table_frame.addFromList([webapp_table], can)
+    web_app_table_frame.addFromList([web_app_table], can)
 
     # 'email_compliance_pct':99.3,
     # 'email_compliance_last_period':87,
@@ -1336,9 +1336,9 @@ def create_scorecard(
 #     'domains_identified': 3866,
 #     "domains_monitored":3865,
 #     'domains_trend_pct':.9997,
-#     'webapps_identified': 50,
-#     "webapps_monitored":50,
-#     "webapps_trend_pct":1,
+#     'web_apps_identified': 50,
+#     "web_apps_monitored":50,
+#     "web_apps_trend_pct":1,
 #     'certs_identified': 42,
 #     "certs_monitored": 42,
 #     "certs_trend_pct":0,
@@ -1357,9 +1357,9 @@ def create_scorecard(
 #     'external_host_kev':0, #live data
 #     'external_host_critical':1,#live data
 #     'external_host_high':1,#live data
-#     'webapp_kev':'N/A',
-#     'webapp_critical':4,
-#     'webapp_high':0,
+#     'web_app_kev':'N/A',
+#     'web_app_critical':4,
+#     'web_app_high':0,
 #     'total_kev':0, #live data
 #     'total_critical':5, # depends on WAS count
 #     'total_high':1, # depends on WAS count
@@ -1372,10 +1372,10 @@ def create_scorecard(
 #     'vuln_org_high_ttr':35, #live data
 #     'vuln_sector_high_ttr':64, #predicted
 #     'vuln_high_bod_19-02':False, #live data
-#     'webapp_org_critical_ttr':175, #estimated since DHS_HQ does't get WAS reports
-#     'webapp_sector_crtical_ttr':202,
-#     'webapp_org_high_ttr':153, #estimated since DHS_HQ does't get WAS reports
-#     'webapp_sector_high_ttr':199,
+#     'web_app_org_critical_ttr':175, #estimated since DHS_HQ does't get WAS reports
+#     'web_app_sector_crtical_ttr':202,
+#     'web_app_org_high_ttr':153, #estimated since DHS_HQ does't get WAS reports
+#     'web_app_sector_high_ttr':199,
 #     'email_compliance_pct':98.60, #live data
 #     'email_compliance_last_period':98, #made up
 #     'https_compliance_pct':81.80, #live data

@@ -167,7 +167,7 @@ def generate_scorecards(
 
             except Exception as e:
                 LOGGER.error("Scorecard failed for %s: %s", org["cyhy_db_name"], e)
-                print(traceback.format_exc(), flush=True)
+                LOGGER.error(traceback.format_exc())
                 failed += org["cyhy_db_name"]
 
 
