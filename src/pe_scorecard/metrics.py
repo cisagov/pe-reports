@@ -139,59 +139,54 @@ class Scorecard:
         total_ips_df = self.ip_counts
         total_ips = total_ips_df["total_ips"].sum()
 
-        total_identified_ips = total_ips_df["cidr_reported"].sum()
+        total_self_reported_ips = total_ips_df["cidr_reported"].sum()
+        discovered_ips = total_ips_df["ip_discovered"].sum()
 
+        self.scorecard_dict["ips_self_reported"] = total_self_reported_ips
+        self.scorecard_dict["ips_discovered"] = discovered_ips
         self.scorecard_dict["ips_monitored"] = total_ips
-        self.scorecard_dict["ips_identified"] = total_identified_ips
-        if self.scorecard_dict["ips_identified"]:
-            self.scorecard_dict["ips_monitored_pct"] = total_ips / (
-                total_ips - total_identified_ips
-            )
-        else:
-            self.scorecard_dict["ips_monitored_pct"] = None
+
+        if total_self_reported_ips == 0 and discovered_ips == 0:
+            self.scorecard_dict["ips_monitored"] = None
+
+        domains_identified = self.domain_counts["identified"].sum()
+        domains_self_reported = self.domain_counts["unidentified"].sum()
+
+        self.scorecard_dict["domains_self_reported"] = domains_self_reported
+        self.scorecard_dict["domains_discovered"] = domains_identified
 
         self.scorecard_dict["domains_monitored"] = (
-            self.domain_counts["identified"].sum()
-            + self.domain_counts["unidentified"].sum()
+            domains_self_reported + domains_identified
         )
-        self.scorecard_dict["domains_identified"] = self.domain_counts[
-            "unidentified"
-        ].sum()
 
-        if self.scorecard_dict["domains_identified"]:
-            self.scorecard_dict["domains_monitored_pct"] = (
-                self.scorecard_dict["domains_monitored"]
-                / self.scorecard_dict["domains_identified"]
-            )
-        else:
-            self.scorecard_dict["domains_monitored_pct"] = None
+        if domains_self_reported == 0 and domains_identified == 0:
+            self.scorecard_dict["domains_monitored"] = None
+
         # TODO add webapps
         webapp_df = self.webapp_counts
-        self.scorecard_dict["webapps_identified"] = webapp_df["web_app_cnt"].sum()
-        self.scorecard_dict["webapps_monitored"] = webapp_df["web_app_cnt"].sum()
+        webapps_self_reported = webapp_df["web_app_cnt"].sum()
+        webapps_discovered = 0
 
-        if self.scorecard_dict["webapps_identified"]:
-            self.scorecard_dict["web_apps_monitored_pct"] = (
-                self.scorecard_dict["webapps_monitored"]
-                / self.scorecard_dict["webapps_identified"]
-            )
-        else:
-            self.scorecard_dict["web_apps_monitored_pct"] = None
+        self.scorecard_dict["webapps_self_reported"] = webapps_self_reported
+        self.scorecard_dict["webapps_discovered"] = webapps_discovered
+
+        self.scorecard_dict["webapps_monitored"] = (
+            webapps_self_reported + webapps_discovered
+        )
+
+        if webapps_self_reported == 0 and webapps_discovered == 0:
+            self.scorecard_dict["webapps_monitored"] = None
+
         # TODO add certs
-        self.scorecard_dict["certs_identified"] = (
-            self.cert_counts[0] if self.cert_counts[0] else 0
-        )
-        self.scorecard_dict["certs_monitored"] = (
-            self.cert_counts[1] if self.cert_counts[1] else 0
-        )
+        self_reported_certs = self.cert_counts[0] if self.cert_counts[0] else 0
+        discovered_certs = self.cert_counts[1] if self.cert_counts[1] else 0
 
-        if self.scorecard_dict["certs_identified"]:
-            self.scorecard_dict["certs_monitored_pct"] = (
-                self.scorecard_dict["certs_monitored"]
-                / self.scorecard_dict["certs_identified"]
-            )
-        else:
-            self.scorecard_dict["certs_monitored_pct"] = None
+        self.scorecard_dict["certs_self_reported"] = self_reported_certs
+        self.scorecard_dict["certs_discovered"] = discovered_certs
+        self.scorecard_dict["certs_monitored"] = self_reported_certs + discovered_certs
+
+        if self_reported_certs == 0 and discovered_certs == 0:
+            self.scorecard_dict["certs_monitored"] = None
 
     def calculate_profiling_metrics(self):
         """Summarize profiling findings into key metrics."""
@@ -343,16 +338,22 @@ class Scorecard:
         webapp_df = self.webapp_counts
         was_fceb_ttr = self.was_fceb_ttr
 
-        was_critical_attr = webapp_df["crit_rem_time"].mean()
-        if not was_critical_attr:
-            self.scorecard_dict["webapp_org_critical_ttr"] = was_critical_attr
-        else:
-            self.scorecard_dict["webapp_org_critical_ttr"] = "N/A"
-        was_high_attr = webapp_df["high_rem_time"].mean()
-        if not was_high_attr:
-            self.scorecard_dict["webapp_org_high_ttr"] = was_high_attr
-        else:
-            self.scorecard_dict["webapp_org_high_ttr"] = "N/A"
+        total_critical = webapp_df["crit_rem_cnt"].sum()
+        webapp_df["weighted_critical"] = (
+            webapp_df["crit_rem_cnt"] / total_critical
+        ) * webapp_df["crit_rem_time"]
+
+        self.scorecard_dict["webapp_org_critical_ttr"] = (
+            webapp_df["weighted_critical"].sum() if total_critical > 0 else "N/A"
+        )
+
+        total_high = webapp_df["high_rem_cnt"].sum()
+        webapp_df["weighted_high"] = (
+            webapp_df["high_rem_cnt"] / total_high
+        ) * webapp_df["high_rem_time"]
+        self.scorecard_dict["webapp_org_high_ttr"] = (
+            webapp_df["weighted_high"].sum() if total_high > 0 else "N/A"
+        )
 
         self.scorecard_dict["webapp_sector_critical_ttr"] = was_fceb_ttr["critical"]
         self.scorecard_dict["webapp_sector_high_ttr"] = was_fceb_ttr["high"]
@@ -602,10 +603,10 @@ class Scorecard:
 
         if scorecard_dict_past.empty:
             LOGGER.error("No Scorecard summary data for the last report period.")
-            ips_trend_pct = self.scorecard_dict["ips_monitored_pct"]
-            domains_trend_pct = self.scorecard_dict["domains_monitored_pct"]
-            webapps_trend_pct = self.scorecard_dict["web_apps_monitored_pct"]
-            certs_trend_pct = self.scorecard_dict["certs_monitored_pct"]
+            ips_monitored_trend = self.scorecard_dict["ips_monitored"]
+            domains_monitored_trend = self.scorecard_dict["domains_monitored"]
+            webapps_monitored_trend = self.scorecard_dict["web_apps_monitored"]
+            certs_monitored_trend = self.scorecard_dict["certs_monitored"]
             ports_total_trend = self.scorecard_dict["ports_total_count"]
             ports_risky_trend = self.scorecard_dict["ports_risky_count"]
             protocol_total_trend = self.scorecard_dict["protocol_total_count"]
@@ -621,10 +622,10 @@ class Scorecard:
             identification_trend = self.scorecard_dict.get("identification_score", 0)
             tracking_trend = self.scorecard_dict.get("tracking_score", 0)
         else:
-            ips_trend_pct = scorecard_dict_past["ips_monitored_pct"]
-            domains_trend_pct = scorecard_dict_past["domains_monitored_pct"]
-            webapps_trend_pct = scorecard_dict_past["web_apps_monitored_pct"]
-            certs_trend_pct = scorecard_dict_past["certs_monitored_pct"]
+            ips_monitored_trend = scorecard_dict_past["ips_monitored"]
+            domains_monitored_trend = scorecard_dict_past["domains_monitored"]
+            webapps_monitored_trend = scorecard_dict_past["web_apps_monitored"]
+            certs_monitored_trend = scorecard_dict_past["certs_monitored"]
             ports_total_trend = scorecard_dict_past["total_ports"]
             ports_risky_trend = scorecard_dict_past["risky_ports"]
             protocol_total_trend = scorecard_dict_past["protocols"]
@@ -639,10 +640,10 @@ class Scorecard:
             tracking_trend = scorecard_dict_past["tracking_score"]
 
         past_scorecard_metrics_dict = {
-            "ips_trend_pct": ips_trend_pct,
-            "domains_trend_pct": domains_trend_pct,
-            "webapps_trend_pct": webapps_trend_pct,
-            "certs_trend_pct": certs_trend_pct,
+            "ips_monitored_trend": ips_monitored_trend,
+            "domains_monitored_trend": domains_monitored_trend,
+            "webapps_monitored_trend": webapps_monitored_trend,
+            "certs_monitored_trend": certs_monitored_trend,
             "ports_total_trend": ports_total_trend,
             "ports_risky_trend": ports_risky_trend,
             "protocol_total_trend": protocol_total_trend,

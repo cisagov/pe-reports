@@ -117,7 +117,7 @@ def create_scorecard(
     can = canvas.Canvas(file_name, pagesize=letter)
     # can.drawString(100,700, "First Time Using reportlab")
     can.setTitle(
-        "Federal Attack Surface Management Scorecard prepared for "
+        "External Attack Surface Evaluation prepared for "
         + data_dict["agency_id"]
         + " for "
         + data_dict["date"]
@@ -190,7 +190,7 @@ def create_scorecard(
         title_frame = Frame(0.3 * inch, 707, 380, 85)
 
     title_frame.addFromList(
-        [Paragraph("Federal Attack Surface Management Scorecard", style=title_style)],
+        [Paragraph("External Attack Surface Evaluation", style=title_style)],
         can,
     )
 
@@ -348,55 +348,54 @@ def create_scorecard(
     )
     ip_header_frame.addFromList([Paragraph("IP Addresses", style=header_style)], can)
 
-    ip_id_frame = Frame(
+    ip_reported_frame = Frame(
         col1_x_value + 2,
         row1_y_value + 0.54 * inch,
         box_width / 2,
         0.7 * inch,
         showBoundary=False,
     )
-    ip_id_frame.addFromList(
+    ip_reported_frame.addFromList(
         [
             Paragraph(
-                f'{data_dict["ips_identified"]:,}'
-                + "<br/><font size='14'> Identified</font>",
+                f'{data_dict["ips_self_reported"]:,}'
+                + "<br/><font size='14'> Self Reported</font>",
                 style=databox_style_left,
             )
         ],
         can,
     )
 
-    ip_mon_frame = Frame(
+    ip_discovered_frame = Frame(
         col1_x_value + box_width / 2 - 2,
         row1_y_value + 0.54 * inch,
         box_width / 2,
         0.7 * inch,
         showBoundary=False,
     )
-    ip_mon_frame.addFromList(
+    ip_discovered_frame.addFromList(
         [
             Paragraph(
-                f'{data_dict["ips_monitored"]:,}'
-                + "<br/><font size='14'> Monitored</font>",
+                f'{data_dict["ips_discovered"]:,}'
+                + "<br/><font size='14'> Discovered</font>",
                 style=databox_style_right,
             )
         ],
         can,
     )
 
-    ip_mon_per_frame = Frame(
+    ip_monitored_frame = Frame(
         col1_x_value, row1_y_value, box_width, 0.48 * inch, showBoundary=False
     )
-    if data_dict["ips_identified"] == 0:
-        ip_mon_per_frame.addFromList([Paragraph("", style=databox_style_center)], can)
+    if not data_dict["ips_monitored"]:
+        ip_monitored_frame.addFromList(
+            [Paragraph("Zero Monitored", style=databox_style_center)], can
+        )
     else:
-        ip_mon_per_frame.addFromList(
+        ip_monitored_frame.addFromList(
             [
                 Paragraph(
-                    "{:.0%}".format(
-                        data_dict["ips_monitored"] / data_dict["ips_identified"]
-                    )
-                    + " Monitored",
+                    f'{data_dict["ips_monitored"]:,}' + " Monitored",
                     style=databox_style_center,
                 )
             ],
@@ -404,19 +403,18 @@ def create_scorecard(
         )
 
     if include_trending:
-        if data_dict["ips_identified"] != 0:
-            trend_image = determine_arrow(
-                data_dict["ips_monitored_pct"],
-                data_dict["ips_trend_pct"],
-            )
-            can.drawImage(
-                trend_image,
-                col1_x_value + 0.5 * inch,
-                row1_y_value + 0.13 * inch,
-                width=22,
-                height=22,
-                mask="auto",
-            )
+        trend_image = determine_arrow(
+            data_dict["ips_monitored"],
+            data_dict["ips_monitored_trend"],
+        )
+        can.drawImage(
+            trend_image,
+            col1_x_value + 0.5 * inch,
+            row1_y_value + 0.13 * inch,
+            width=22,
+            height=22,
+            mask="auto",
+        )
     # **** Generate Domains Boxes ******
     can.drawImage(
         BASE_DIR + "/scorecard_assets/data_box.png",
@@ -435,61 +433,54 @@ def create_scorecard(
     )
     domains_header_frame.addFromList([Paragraph("Domains", style=header_style)], can)
 
-    domain_id_frame = Frame(
+    domain_reported_frame = Frame(
         col2_x_value + 2,
         row1_y_value + 0.54 * inch,
         box_width / 2,
         0.7 * inch,
         showBoundary=False,
     )
-    domain_id_frame.addFromList(
+    domain_reported_frame.addFromList(
         [
             Paragraph(
-                f'{data_dict["domains_identified"]:,}'
-                + "<br/><font size='14'> Identified</font>",
+                f'{data_dict["domains_self_reported"]:,}'
+                + "<br/><font size='14'> Self Reported</font>",
                 style=databox_style_left,
             )
         ],
         can,
     )
 
-    domain_mon_frame = Frame(
+    domain_discovered_frame = Frame(
         col2_x_value + box_width / 2 - 2,
         row1_y_value + 0.54 * inch,
         box_width / 2,
         0.7 * inch,
         showBoundary=False,
     )
-    domain_mon_frame.addFromList(
+    domain_discovered_frame.addFromList(
         [
             Paragraph(
-                f'{data_dict["domains_monitored"]:,}'
-                + "<br/><font size='14'> Monitored</font>",
+                f'{data_dict["domains_discovered"]:,}'
+                + "<br/><font size='14'> Discovered</font>",
                 style=databox_style_right,
             )
         ],
         can,
     )
 
-    domain_mon_per_frame = Frame(
+    domain_monitored_frame = Frame(
         col2_x_value, row1_y_value, box_width, 0.48 * inch, showBoundary=False
     )
-    if data_dict["domains_identified"] == 0 and data_dict["domains_monitored"] == 0:
-        domain_mon_per_frame.addFromList(
-            [Paragraph("100% Monitored", style=databox_style_center)], can
-        )
-    elif data_dict["domains_identified"] == 0:
-        domain_mon_per_frame.addFromList(
-            [Paragraph("100% Monitored", style=databox_style_center)], can
+    if not data_dict["domains_monitored"]:
+        domain_monitored_frame.addFromList(
+            [Paragraph("Zero Monitored", style=databox_style_center)], can
         )
     else:
-        domain_mon_per_frame.addFromList(
+        domain_monitored_frame.addFromList(
             [
                 Paragraph(
-                    "{:.0%}".format(
-                        data_dict["domains_monitored"] / data_dict["domains_identified"]
-                    )
-                    + " Monitored",
+                    f'{data_dict["domains_monitored"]:,}' + " Monitored",
                     style=databox_style_center,
                 )
             ],
@@ -497,19 +488,18 @@ def create_scorecard(
         )
 
     if include_trending:
-        if data_dict["domains_identified"] != 0:
-            trend_image = determine_arrow(
-                data_dict["domains_monitored"] / data_dict["domains_identified"],
-                data_dict["domains_trend_pct"],
-            )
-            can.drawImage(
-                trend_image,
-                col2_x_value + 0.5 * inch,
-                row1_y_value + 0.13 * inch,
-                width=22,
-                height=22,
-                mask="auto",
-            )
+        trend_image = determine_arrow(
+            data_dict["domains_monitored"],
+            data_dict["domains_monitored_trend"],
+        )
+        can.drawImage(
+            trend_image,
+            col2_x_value + 0.5 * inch,
+            row1_y_value + 0.13 * inch,
+            width=22,
+            height=22,
+            mask="auto",
+        )
     # **** Generate Web Apps Boxes ******
     can.drawImage(
         BASE_DIR + "/scorecard_assets/data_box.png",
@@ -530,57 +520,54 @@ def create_scorecard(
         [Paragraph("Web Applications", style=header_style)], can
     )
 
-    webapp_id_frame = Frame(
+    webapp_reported_frame = Frame(
         col1_x_value + 2,
         row2_y_value + 0.54 * inch,
         box_width / 2,
         0.7 * inch,
         showBoundary=False,
     )
-    webapp_id_frame.addFromList(
+    webapp_reported_frame.addFromList(
         [
             Paragraph(
-                f'{data_dict["webapps_identified"]:,}'
-                + "<br/><font size='14'> Identified</font>",
+                f'{data_dict["webapps_self_reported"]:,}'
+                + "<br/><font size='14'> Self Reported</font>",
                 style=databox_style_left,
             )
         ],
         can,
     )
 
-    webapp_mon_frame = Frame(
+    webapp_discovered_frame = Frame(
         col1_x_value + box_width / 2 - 2,
         row2_y_value + 0.54 * inch,
         box_width / 2,
         0.7 * inch,
         showBoundary=False,
     )
-    webapp_mon_frame.addFromList(
+    webapp_discovered_frame.addFromList(
         [
             Paragraph(
-                f'{data_dict["webapps_monitored"]:,}'
-                + "<br/><font size='14'> Monitored</font>",
+                f'{data_dict["webapps_discovered"]:,}'
+                + "<br/><font size='14'> Discovered</font>",
                 style=databox_style_right,
             )
         ],
         can,
     )
 
-    webapp_mon_per_frame = Frame(
+    webapp_monitored_frame = Frame(
         col1_x_value, row2_y_value, box_width, 0.48 * inch, showBoundary=False
     )
-    if data_dict["webapps_identified"] == 0:
-        webapp_mon_per_frame.addFromList(
-            [Paragraph("Not Tracked", style=databox_style_center)], can
+    if not data_dict["webapps_monitored"]:
+        webapp_monitored_frame.addFromList(
+            [Paragraph("Zero Monitored", style=databox_style_center)], can
         )
     else:
-        webapp_mon_per_frame.addFromList(
+        webapp_monitored_frame.addFromList(
             [
                 Paragraph(
-                    "{:.0%}".format(
-                        data_dict["webapps_monitored"] / data_dict["webapps_identified"]
-                    )
-                    + " Monitored",
+                    f'{data_dict["webapps_monitored"]:,}' + " Monitored",
                     style=databox_style_center,
                 )
             ],
@@ -588,19 +575,18 @@ def create_scorecard(
         )
 
     if include_trending:
-        if data_dict["webapps_identified"] != 0:
-            trend_image = determine_arrow(
-                data_dict["webapps_monitored"] / data_dict["webapps_identified"],
-                data_dict["webapps_trend_pct"],
-            )
-            can.drawImage(
-                trend_image,
-                col1_x_value + 0.5 * inch,
-                row2_y_value + 0.13 * inch,
-                width=22,
-                height=22,
-                mask="auto",
-            )
+        trend_image = determine_arrow(
+            data_dict["webapps_monitored"],
+            data_dict["webapps_monitored_trend"],
+        )
+        can.drawImage(
+            trend_image,
+            col1_x_value + 0.5 * inch,
+            row2_y_value + 0.13 * inch,
+            width=22,
+            height=22,
+            mask="auto",
+        )
     # **** Generate Certificates Boxes ******
     can.drawImage(
         BASE_DIR + "/scorecard_assets/data_box.png",
@@ -621,57 +607,54 @@ def create_scorecard(
         [Paragraph("Certificates (ED 19-01)", style=header_style)], can
     )
 
-    certs_id_frame = Frame(
+    certs_reported_frame = Frame(
         col2_x_value + 2,
         row2_y_value + 0.54 * inch,
         box_width / 2,
         0.7 * inch,
         showBoundary=False,
     )
-    certs_id_frame.addFromList(
+    certs_reported_frame.addFromList(
         [
             Paragraph(
-                f'{data_dict["certs_identified"]:,}'
-                + "<br/><font size='14'> Identified</font>",
+                f'{data_dict["certs_self_reported"]:,}'
+                + "<br/><font size='14'> Self Reported</font>",
                 style=databox_style_left,
             )
         ],
         can,
     )
 
-    certs_mon_frame = Frame(
+    certs_discovered_frame = Frame(
         col2_x_value + box_width / 2 - 2,
         row2_y_value + 0.54 * inch,
         box_width / 2,
         0.7 * inch,
         showBoundary=False,
     )
-    certs_mon_frame.addFromList(
+    certs_discovered_frame.addFromList(
         [
             Paragraph(
-                f'{data_dict["certs_monitored"]:,}'
-                + "<br/><font size='14'> Monitored</font>",
+                f'{data_dict["certs_discovered"]:,}'
+                + "<br/><font size='14'> Discovered</font>",
                 style=databox_style_right,
             )
         ],
         can,
     )
 
-    certs_mon_per_frame = Frame(
+    certs_monitored_frame = Frame(
         col2_x_value, row2_y_value, box_width, 0.48 * inch, showBoundary=False
     )
-    if data_dict["certs_identified"] == 0:
-        certs_mon_per_frame.addFromList(
-            [Paragraph("Not Tracked", style=databox_style_center)], can
+    if not data_dict["certs_monitored"]:
+        certs_monitored_frame.addFromList(
+            [Paragraph("Zero Monitored", style=databox_style_center)], can
         )
     else:
-        certs_mon_per_frame.addFromList(
+        certs_monitored_frame.addFromList(
             [
                 Paragraph(
-                    "{:.0%}".format(
-                        data_dict["certs_monitored"] / data_dict["certs_identified"]
-                    )
-                    + " Monitored",
+                    f'{data_dict["certs_monitored"]:,}' + " Monitored",
                     style=databox_style_center,
                 )
             ],
@@ -679,19 +662,18 @@ def create_scorecard(
         )
 
     if include_trending:
-        if data_dict["certs_identified"] != 0:
-            trend_image = determine_arrow(
-                data_dict["certs_monitored"] / data_dict["certs_identified"],
-                data_dict["certs_trend_pct"],
-            )
-            can.drawImage(
-                trend_image,
-                col2_x_value + 0.5 * inch,
-                row2_y_value + 0.13 * inch,
-                width=22,
-                height=22,
-                mask="auto",
-            )
+        trend_image = determine_arrow(
+            data_dict["certs_monitored"],
+            data_dict["certs_monitored_trend"],
+        )
+        can.drawImage(
+            trend_image,
+            col2_x_value + 0.5 * inch,
+            row2_y_value + 0.13 * inch,
+            width=22,
+            height=22,
+            mask="auto",
+        )
     # **** Generate Profiling Divider *****
     y_value = 4.3 * inch
     can.drawImage(
