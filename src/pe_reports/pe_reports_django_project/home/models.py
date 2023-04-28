@@ -808,6 +808,19 @@ class RootDomains(models.Model):
         db_table = 'root_domains'
         unique_together = (('root_domain', 'organizations_uid'),)
 
+class TeamMembers(models.Model):
+    team_member_uid = models.UUIDField(primary_key=True, default=uuid.uuid1())
+    team_member_fname = models.TextField()
+    team_member_lname = models.TextField()
+    team_member_email = models.TextField()
+    team_member_ghID = models.TextField(blank=False, null=False)
+    team_member_phone = models.TextField(blank=True, null=True)
+    team_member_role = models.TextField(blank=True, null=True)
+    team_member_notes = models.TextField(blank=True, null=True)
+
+    class Meta:
+        managed = True
+        db_table = 'team_members'
 
 class ShodanAssets(models.Model):
     shodan_asset_uid = models.UUIDField(primary_key=True, default=uuid.uuid1())
@@ -995,6 +1008,24 @@ class WebAssets(models.Model):
         managed = False
         db_table = 'web_assets'
         unique_together = (('asset', 'organizations_uid'),)
+
+class WeeklyStatuses(models.Model):
+    weekly_status_uid = models.UUIDField(primary_key=True, default=uuid.uuid1())
+    user_status = models.TextField(blank=True)
+    key_accomplishments = models.TextField(blank=True, null=True)
+    ongoing_task = models.TextField()
+    upcoming_task = models.TextField()
+    obstacles = models.TextField(blank=True, null=True)
+    non_standard_meeting = models.TextField(blank=True, null=True)
+    deliverables = models.TextField(blank=True, null=True)
+    pto = models.TextField(blank=True, null=True)
+    week_ending = models.DateField()
+    notes = models.TextField(blank=True, null=True)
+    statusComplete = models.IntegerField(blank=True, null=True)
+
+    class Meta:
+        managed = True
+        db_table = 'weekly_statuses'
 
 class VwBreachcompCredsbydate(models.Model):
     organizations_uid = models.UUIDField(primary_key=True)

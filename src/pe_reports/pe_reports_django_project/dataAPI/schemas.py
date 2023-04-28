@@ -149,6 +149,24 @@ class WASDataBase(BaseModel):
         orm_mode = True
         validate_assignment = True
 
+class WeeklyStatuses(BaseModel):
+
+    key_accomplishments: Optional[str] = None
+    ongoing_task: Optional[str] = None
+    upcoming_task: Optional[str] = None
+    obstacles: Optional[str] = None
+    non_standard_meeting: Optional[str] = None
+    deliverables: Optional[str] = None
+    pto: Optional[str] = None
+    week_ending: Optional[str] = None
+    notes: Optional[str] = None
+    statusComplete: Optional[str] = None
+
+    class Config:
+        orm_mode = True
+        validate_assignment = True
+
+
 
 class CyhyPortScans(BaseModel):
     cyhy_port_scans_uid: UUID

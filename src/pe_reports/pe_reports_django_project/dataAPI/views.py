@@ -31,8 +31,12 @@ from fastapi.security.api_key import \
     APIKeyCookie,\
     APIKeyHeader,\
     APIKey
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.contrib.auth.models import User
+from django.db.models import Q
 from django.db import transaction
 from django.contrib import messages
 from uuid import UUID
@@ -52,6 +56,7 @@ from home.models import VwCidrs
 from home.models import VwOrgsAttacksurface
 from home.models import VwBreachcompBreachdetails
 from home.models import WasTrackerCustomerdata
+from home.models import WeeklyStatuses
 from home.models import CyhyPortScans
 
 
@@ -79,6 +84,9 @@ COOKIE_DOMAIN = "localtest.me"
 #   to pass query to api call see issue#
 # api_key_query = APIKeyQuery(name=API_KEY_NAME, auto_error=False)
 api_key_header = APIKeyHeader(name=API_KEY_NAME, auto_error=False)
+
+
+limiter = Limiter(key_func=get_remote_address, default_limits=["5 per minute"])
 
 
 
@@ -220,7 +228,26 @@ def read_orgs(tokens: dict = Depends(get_api_key)):
         return {'message': "No api key was submitted"}
 
 
+@api_router.post("/fetch_weekly_statuses", dependencies=[Depends(get_api_key)],
+                 # response_model=List[schemas.WeeklyStatuses],
+                 tags=["List of all Weekly Statuses"])
+def read_weekly_statuses(tokens: dict = Depends(get_api_key)):
+    """API endpoint to get weekly statuses."""
 
+    current_date = datetime.now()
+    days_to_week_end = (4 - current_date.weekday()) % 7
+    week_ending_date = current_date + timedelta(days=days_to_week_end)
+    statuses = list(WeeklyStatuses.objects.filter(week_ending=week_ending_date))
+
+    if tokens:
+        # LOGGER.info(f"The api key submitted {tokens}")
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            return statuses
+        except:
+            LOGGER.info('API key expired please try again')
+    else:
+        return {'message': "No api key was submitted"}
 
 
 
