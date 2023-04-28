@@ -946,9 +946,9 @@ class WasTrackerCustomerdata(models.Model):
     onboarding_date = models.TextField()
     no_of_web_apps = models.IntegerField()
     no_web_apps_last_updated = models.TextField(blank=True, null=True)
-    elections = models.TextField(blank=True, null=True)
-    fceb = models.TextField()
-    special_report = models.TextField()
+    elections = models.BooleanField(blank=False, null=False)
+    fceb = models.BooleanField(blank=False, null=False)
+    special_report = models.BooleanField(blank=False, null=False)
     report_password = models.TextField()
     child_tags = models.TextField()
 

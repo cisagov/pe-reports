@@ -62,11 +62,76 @@ def get_orgs():
     return pe_orgs
 
 
+def refresh_views():
+    """Refresh materialized views."""
+    try:
+        LOGGER.info("Refreshing views.")
+        conn = connect()
+        sql = """
+            REFRESH MATERIALIZED VIEW
+            public.mat_vw_fceb_total_ips
+            WITH DATA
+        """
+        cur = conn.cursor()
+        cur.execute(sql)
+        conn.commit()
+
+        sql = """
+            REFRESH MATERIALIZED VIEW
+            public.mat_vw_cyhy_port_counts
+            WITH DATA
+        """
+        cur = conn.cursor()
+        cur.execute(sql)
+        conn.commit()
+
+        LOGGER.info("Finished refreshing port counts.")
+
+        sql = """
+            REFRESH MATERIALIZED VIEW
+            public.mat_vw_cyhy_protocol_counts
+            WITH DATA
+        """
+        cur = conn.cursor()
+        cur.execute(sql)
+        conn.commit()
+
+        LOGGER.info("Finished refreshing protocol counts.")
+
+        sql = """
+            REFRESH MATERIALIZED VIEW
+            public.mat_vw_cyhy_risky_protocol_counts
+            WITH DATA
+        """
+        cur = conn.cursor()
+        cur.execute(sql)
+        conn.commit()
+
+        LOGGER.info("Finished refreshing risky protocol counts.")
+
+        sql = """
+            REFRESH MATERIALIZED VIEW
+            public.mat_vw_cyhy_services_counts
+            WITH DATA
+        """
+        cur = conn.cursor()
+        cur.execute(sql)
+        conn.commit()
+
+        conn.close()
+
+        LOGGER.info("Finished refreshing services count.")
+    except (Exception, psycopg2.DatabaseError) as err:
+        show_psycopg2_exception(err)
+        cur.close()
+
+
 # ----- IP list -------
 def query_ips_counts(org_uid_list):
     """Query database for ips found from cidrs and discovered by other means."""
     conn = connect()
     print("running query_ips_counts")
+    LOGGER.info("running query_ips_counts")
     # sql = """
     #     SELECT * from vw_orgs_total_ips
     #     where organizations_uid in %(org_list)s
@@ -91,11 +156,12 @@ def query_ips_counts(org_uid_list):
     # discovered_ips_df = pd.read_sql(sql, conn, params={"org_list": tuple(org_uid_list)})
 
     sql = """
-         SELECT * from vw_fceb_total_ips
+         SELECT * from mat_vw_fceb_total_ips
          where organizations_uid in %(org_list)s
     """
     ips_df = pd.read_sql(sql, conn, params={"org_list": tuple(org_uid_list)})
     conn.close()
+    LOGGER.info("DONE query_ips_counts")
     return ips_df
 
 
@@ -134,32 +200,35 @@ def query_was_fceb_ttr(date_period):
     """Calculate Summary results for all of FCEB."""
     conn = connect()
     print("running query_was_fceb_ttr")
-    sql = """
-    SELECT avg(wh.crit_rem_time) as fceb_critical, avg(wh.high_rem_time) as fceb_high
-    from was_history wh
-    join was_map wm
-    on wh.was_org_id = wm.was_org_id
-    join organizations o
-    on o.organizations_uid = wm.pe_org_id
-    where wh.report_period = %(start_date)s
-    and (o.fceb or o.fceb_child) and o.retired = False;
+    sql = """ SELECT wh.crit_rem_time, wh.crit_rem_cnt, wh.high_rem_time, wh.high_rem_cnt
+        from was_history wh
+        join was_map wm on wh.was_org_id = wm.was_org_id
+        join organizations o on o.organizations_uid = wm.pe_org_id
+        where wh.report_period = %(start_date)s
+        and (o.fceb or o.fceb_child) and o.retired = False;
     """
-    #
-    cur = conn.cursor()
+    df = pd.read_sql(sql, conn, params={"start_date": date_period})
+    # Change critical vuln count to closed critical vuln count
+    total_critical = df["crit_rem_cnt"].sum()
+    df["weighted_critical"] = (df["crit_rem_cnt"] / total_critical) * df[
+        "crit_rem_time"
+    ]
+    critical = df["weighted_critical"].sum() if total_critical > 0 else "N/A"
 
-    cur.execute(sql, {"start_date": date_period})
-    fceb_counts = cur.fetchone()
-    cur.close()
-    # fceb_counts = pd.read_sql(sql, conn, params = {"start_date": date_period})
+    # Change high vuln count to closed high vuln count
+    total_high = df["high_rem_cnt"].sum()
+    print(total_high)
 
+    df["weighted_high"] = (df["high_rem_cnt"] / total_high) * df["high_rem_time"]
+    high = df["weighted_high"].sum() if total_high > 0 else "N/A"
     close(conn)
+    fceb_dict = {"critical": critical, "high": high}
+    print(fceb_dict)
+    # if not fceb_dict["critical"]:
+    # # fceb_dict["critical"] = "N/A"
 
-    fceb_dict = {"critical": fceb_counts[0], "high": fceb_counts[1]}
-    if not fceb_dict["critical"]:
-        fceb_dict["critical"] = "N/A"
-
-    if not fceb_dict["high"]:
-        fceb_dict["high"] = "N/A"
+    # # if not fceb_dict["high"]:
+    # # fceb_dict["high"] = "N/A"
     return fceb_dict
 
 
@@ -204,9 +273,10 @@ def query_webapp_counts(date_period, org_uid_list):
 
 def query_certs_counts():
     """Query certificate counts."""
-    identified_certs = None
-    monitored_certs = None
-    return (identified_certs, monitored_certs)
+    LOGGER.info("Query cert counts")
+    self_reported_certs = None
+    discovered_certs = None
+    return (self_reported_certs, discovered_certs)
 
 
 def query_https_scan(org_id_list):
@@ -498,7 +568,7 @@ def query_cyhy_snapshots(start_date, end_date):
 def query_software_scans(start_date, end_date, org_id_list=[]):
     """Query the PE database for vuln data identified by the VS team scans."""
     conn = connect()
-    print("running query_software_scans")
+    LOGGER.info("running query_software_scans")
     if org_id_list:
         sql = """select o.organizations_uid, o.cyhy_db_name, count(cvs.plugin_name)
         from organizations o
@@ -584,7 +654,7 @@ def query_cyhy_port_scans(start_date, end_date, org_uid_list=[]):
 def query_vuln_tickets(org_id_list=[]):
     """Query current open vulns counts based on tickets."""
     conn = connect()
-    print("running query_vuln_tickets")
+    LOGGER.info("running query_vuln_tickets")
     if org_id_list:
         sql = """
             select
@@ -705,6 +775,23 @@ def query_open_vulns(org_id_list):
 def execute_scorecard_summary_data(summary_dict):
     """Save summary statistics for an organization to the database."""
     try:
+        if summary_dict["webapp_kev"] in ["N/A", None]:
+            summary_dict["webapp_kev"] = 0
+
+        if summary_dict["external_host_kev"] in ["N/A", None]:
+            summary_dict["external_host_kev"] = 0
+
+        if summary_dict["webapp_critical"] in ["N/A", None]:
+            summary_dict["webapp_critical"] = 0
+
+        if summary_dict["external_host_critical"] in ["N/A", None]:
+            summary_dict["external_host_critical"] = 0
+
+        if summary_dict["external_host_high"] in ["N/A", None]:
+            summary_dict["external_host_high"] = 0
+
+        if summary_dict["webapp_high"] in ["N/A", None]:
+            summary_dict["webapp_high"] = 0
         conn = connect()
         cur = conn.cursor()
         sql = """
@@ -717,18 +804,18 @@ def execute_scorecard_summary_data(summary_dict):
             profiling_score,
             identification_score,
             tracking_score,
-            ips_identified,
+            ips_self_reported,
+            ips_discovered,
             ips_monitored,
-            ips_monitored_pct,
-            domains_identified,
+            domains_self_reported,
+            domains_discovered,
             domains_monitored,
-            domains_monitored_pct,
-            web_apps_identified,
+            web_apps_self_reported,
+            web_apps_discovered,
             web_apps_monitored,
-            web_apps_monitored_pct,
-            certs_identified,
+            certs_self_reported,
+            certs_discovered,
             certs_monitored,
-            certs_monitored_pct,
             total_ports,
             risky_ports,
             protocols,
@@ -758,7 +845,7 @@ def execute_scorecard_summary_data(summary_dict):
             sect_web_avg_days_remediate_critical,
             sect_web_avg_days_remediate_high,
             email_compliance_pct,
-            https_compliance_pct,
+            https_compliance_pct
         )
         VALUES(
             %s,%s,%s,%s,%s,%s,%s,%s,%s,%s,
@@ -775,18 +862,18 @@ def execute_scorecard_summary_data(summary_dict):
             profiling_score = EXCLUDED.profiling_score,
             identification_score = EXCLUDED.identification_score,
             tracking_score = EXCLUDED.tracking_score,
-            ips_identified = EXCLUDED.ips_identified,
+            ips_self_reported = EXCLUDED.ips_self_reported,
+            ips_discovered = EXCLUDED.ips_discovered,
             ips_monitored = EXCLUDED.ips_monitored,
-            ips_monitored_pct = EXCLUDED.ips_monitored_pct,
-            domains_identified = EXCLUDED.domains_identified,
+            domains_self_reported = EXCLUDED.domains_self_reported,
+            domains_discovered = EXCLUDED.domains_discovered,
             domains_monitored = EXCLUDED.domains_monitored,
-            domains_monitored_pct = EXCLUDED.domains_monitored_pct,
-            web_apps_identified = EXCLUDED.web_apps_identified,
+            web_apps_self_reported = EXCLUDED.web_apps_self_reported,
+            web_apps_discovered = EXCLUDED.web_apps_discovered,
             web_apps_monitored = EXCLUDED.web_apps_monitored,
-            web_apps_monitored_pct = EXCLUDED.web_apps_monitored_pct,
-            certs_identified = EXCLUDED.certs_identified,
+            certs_self_reported = EXCLUDED.certs_self_reported,
+            certs_discovered = EXCLUDED.certs_discovered,
             certs_monitored = EXCLUDED.certs_monitored,
-            certs_monitored_pct = EXCLUDED.certs_monitored_pct,
             total_ports = EXCLUDED.total_ports,
             risky_ports = EXCLUDED.risky_ports,
             protocols = EXCLUDED.protocols,
@@ -818,6 +905,8 @@ def execute_scorecard_summary_data(summary_dict):
             email_compliance_pct = EXCLUDED.email_compliance_pct,
             https_compliance_pct = EXCLUDED.https_compliance_pct;
         """
+        summary_dict = {k: None if v == "N/A" else v for k, v in summary_dict.items()}
+        print(summary_dict)
         cur.execute(
             sql,
             (
@@ -829,18 +918,18 @@ def execute_scorecard_summary_data(summary_dict):
                 AsIs(summary_dict["profiling_score"]),
                 AsIs(summary_dict["identification_score"]),
                 AsIs(summary_dict["tracking_score"]),
-                AsIs(summary_dict["ips_identified"]),
+                AsIs(summary_dict["ips_self_reported"]),
+                AsIs(summary_dict["ips_discovered"]),
                 AsIs(summary_dict["ips_monitored"]),
-                AsIs(summary_dict["ips_monitored_pct"]),
-                AsIs(summary_dict["domains_identified"]),
+                AsIs(summary_dict["domains_self_reported"]),
+                AsIs(summary_dict["domains_discovered"]),
                 AsIs(summary_dict["domains_monitored"]),
-                AsIs(summary_dict["domains_monitored_pct"]),
-                AsIs(summary_dict["webapps_identified"]),
+                AsIs(summary_dict["webapps_self_reported"]),
+                AsIs(summary_dict["web_apps_discovered"]),
                 AsIs(summary_dict["webapps_monitored"]),
-                AsIs(summary_dict["web_apps_monitored_pct"]),
-                AsIs(summary_dict["certs_identified"]),
+                AsIs(summary_dict["certs_self_reported"]),
+                AsIs(summary_dict["certs_discovered"]),
                 AsIs(summary_dict["certs_monitored"]),
-                AsIs(summary_dict["certs_monitored_pct"]),
                 AsIs(summary_dict["ports_total_count"]),
                 AsIs(summary_dict["ports_risky_count"]),
                 AsIs(summary_dict["protocol_total_count"]),
@@ -853,9 +942,12 @@ def execute_scorecard_summary_data(summary_dict):
                 AsIs(summary_dict["webapp_kev"]),
                 AsIs(summary_dict["webapp_critical"]),
                 AsIs(summary_dict["webapp_high"]),
-                AsIs(int(summary_dict["webapp_kev"] or None) + int(summary_dict["external_host_kev"] or None)),
-                AsIs(int(summary_dict["webapp_critical"] or None) + int(summary_dict["external_host_critical"] or None)),
-                AsIs(int(summary_dict["external_host_high"] or None) + int(summary_dict["webapp_high"] or None)),
+                AsIs(summary_dict["webapp_kev"] + summary_dict["external_host_kev"]),
+                AsIs(
+                    summary_dict["webapp_critical"]
+                    + summary_dict["external_host_critical"]
+                ),
+                AsIs(summary_dict["external_host_high"] + summary_dict["webapp_high"]),
                 AsIs(summary_dict["vuln_org_kev_ttr"]),
                 AsIs(summary_dict["vuln_org_critical_ttr"]),
                 AsIs(summary_dict["vuln_org_high_ttr"]),
@@ -972,12 +1064,13 @@ def query_fceb_ttr(month, year):
 
 def query_profiling_views(start_date, org_uid_list):
     """Query profiling datas from relevant views."""
+    LOGGER.info("Query profiling views")
     org_uid_list = tuple(org_uid_list)
     profiling_dict = {}
     conn = connect()
     ports_sql = """
         SELECT *
-        FROM vw_cyhy_port_counts
+        FROM mat_vw_cyhy_port_counts
         where report_period = %(start_date)s and organizations_uid in %(uid_list)s
     """
 
@@ -989,7 +1082,7 @@ def query_profiling_views(start_date, org_uid_list):
 
     protocols_sql = """
         SELECT *
-        FROM vw_cyhy_protocol_counts
+        FROM mat_vw_cyhy_protocol_counts
         where report_period = %(start_date)s and organizations_uid in %(uid_list)s
     """
 
@@ -1000,7 +1093,7 @@ def query_profiling_views(start_date, org_uid_list):
 
     risky_protcols_sql = """
         SELECT *
-        FROM vw_cyhy_risky_protocol_counts
+        FROM mat_vw_cyhy_risky_protocol_counts
         where report_period = %(start_date)s and organizations_uid in %(uid_list)s
     """
     risky_protocols_df = pd.read_sql(
@@ -1014,7 +1107,7 @@ def query_profiling_views(start_date, org_uid_list):
 
     services_sql = """
         SELECT *
-        FROM vw_cyhy_services_counts
+        FROM mat_vw_cyhy_services_counts
         where report_period = %(start_date)s and organizations_uid in %(uid_list)s
     """
     services_df = pd.read_sql(

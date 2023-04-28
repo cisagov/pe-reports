@@ -113,7 +113,7 @@ def run_ip_chunk(org_uid, ips_df, thread, conn):
     for ip_index, ip in ips_df.iterrows():
         # Set up logging for every 100 IPs
         count += 1
-        if count % 100 == 0:
+        if count % 10000 == 0:
             LOGGER.info(f"{thread}: Currently Running ips: {count}/{len(ips_df)}")
             LOGGER.info(
                 f"{thread}: {time.time() - last_100} seconds for the last 50 IPs"
@@ -129,7 +129,7 @@ def run_ip_chunk(org_uid, ips_df, thread, conn):
             LOGGER.error(e)
             time.sleep(1)
             continue
-    LOGGER.info(f"{thread} Ips took {time.time() - start_time} to link to subs")
+    # LOGGER.info(f"{thread} Ips took {time.time() - start_time} to link to subs")
 
 
 def connect_subs_from_ips(staging):
@@ -149,7 +149,7 @@ def connect_subs_from_ips(staging):
 
     # Loop through orgs
     org_count = 0
-    for org_index, org in orgs_df.iterrows():
+    for org_index, org in orgs_df.iloc[::-1].iterrows():
         # Connect to database
         if staging:
             conn = pe_db_staging_connect()

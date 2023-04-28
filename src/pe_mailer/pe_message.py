@@ -197,26 +197,14 @@ class ScorecardMessage(ReportMessage):
 
 <p>Good afternoon,</p>
 
-<p>This is the html.</p>
+<p>Posture and Exposure (P&E) offers stakeholders an opportunity 
+to view their organizational risk from the viewpoint of the adversary. 
+We utilize passive reconnaissance services, dark web analysis, and open-source 
+tools to identify spoofing in order to generate a risk profile report that is 
+delivered on a regular basis.</p>
 
-<p>As a customer of P&E you are receiving our regularly scheduled report 
-which contains a summary of the activity we have been tracking on your behalf 
-for the following services:</p>
-
-<ul>
-<li>Domain Masquerading and Monitoring</li>
-<li>Credentials Leaked/Exposed</li>
-<li>Insecure Devices & Suspected Vulnerabilities</li>
-<li>Dark Web Monitoring</li>
-<li>Hidden Assets and Risky Services</li>
-</ul>
-
-<p>In the attached document you will find a Summary Report with the findings 
-based on what we identified above. On page 4 of the report, you will 
-find links to the JSON raw data as it was discovered by us. For the protection of 
-your organization, we have encrypted the document with the password that was 
-shared when the agreement was signed for Cyber Hygiene Services. <strong>For 
-the best results, we recommend using Adobe Acrobat.</strong></p>
+<p>As a customer of P&E you are receiving our regularly scheduled Scorecard 
+which contains a summary of your attack surface.</p>
 
 <p>Finally, it is important to note that these findings have not been verified; 
 everything is gathered via passive analysis of publicly available sources.  As 
