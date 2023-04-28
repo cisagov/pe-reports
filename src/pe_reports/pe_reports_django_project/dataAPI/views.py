@@ -24,6 +24,7 @@ from fastapi import (
     Security,
     File,
     UploadFile,
+    Request
 )
 
 from fastapi.responses import ORJSONResponse
@@ -594,19 +595,20 @@ def was_info_delete(tag: str, tokens: dict = Depends(get_api_key)):
     # response_model=Dict[schemas.WASDataBase],
     tags=["Create new WAS data"],
 )
-def was_info_create(customer: schemas.WASDataBase, tokens: dict = Depends(get_api_key)):
+def was_info_create(request: Request, tokens: dict = Depends(get_api_key)):
     """API endpoint to create a record in database."""
 
     if not tokens:
         return {"message": "No api key was submitted"}
 
     print("got to the endpoint")
-    print(customer)
-    was_customer = WasTrackerCustomerdata(**customer.dict())
-    print(was_customer)
+    
 
     LOGGER.info(f"The api key submitted {tokens}")
     try:
+        # Get data header
+        customer = json.loads(request.headers.get("x-data"))
+        was_customer = WasTrackerCustomerdata.objects.create(**customer)
         userapiTokenverify(theapiKey=tokens)
         was_customer.save()
         return {"saved_customer": was_customer}
@@ -623,17 +625,23 @@ def was_info_create(customer: schemas.WASDataBase, tokens: dict = Depends(get_ap
 )
 @transaction.atomic
 def was_info_update(
-    tag: str, customer: schemas.WASDataBase, tokens: dict = Depends(get_api_key)
+    tag: str, request: Request, tokens: dict = Depends(get_api_key)
 ):
     """API endpoint to create a record in database."""
     if not tokens:
         return {"message": "No api key was submitted"}
     LOGGER.info(f"The api key submitted {tokens}")
     try:
+        # Get customer header
+        customer = json.loads(request.headers.get("x-data"))
+
+        # Verify token
         userapiTokenverify(theapiKey=tokens)
+
+        # Get WAS record based on tag
         was_data = WasTrackerCustomerdata.objects.get(tag=tag)
         updated_data = {}
-        for field, value in customer.dict(exclude_unset=True).items():
+        for field, value in customer.items():
             print(f"the field is {field} and the value is {value}")
             if hasattr(was_data, field) and getattr(was_data, field) != value:
                 setattr(was_data, field, value)
