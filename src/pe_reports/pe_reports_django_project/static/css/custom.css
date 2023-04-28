@@ -91,3 +91,18 @@ div#loading {
 homeBG {
   background-color: white;
 }
+
+.custom-table-dark {
+  background-color: #336699; /* Adjust this to the medium blue color you prefer */
+  color: #ffffff; /* Text color */
+}
+
+.custom-table-bordered {
+  border-color: #000000; /* Black border color */
+}
+
+.custom-table-bordered th,
+.custom-table-bordered td {
+  border: 1px solid #000000; /* Black border */
+}
+

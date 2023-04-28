@@ -262,6 +262,27 @@ class CyhyDbAssets(models.Model):
         unique_together = (('org_id', 'network'),)
 
 
+class CyhyPortScans(models.Model):
+    cyhy_port_scans_uid = models.UUIDField(primary_key=True)
+    organizations_uid = models.ForeignKey('Organizations', models.DO_NOTHING, db_column='organizations_uid')
+    cyhy_id = models.TextField(unique=True, blank=True, null=True)
+    cyhy_time = models.DateTimeField(blank=True, null=True)
+    service_name = models.TextField(blank=True, null=True)
+    port = models.TextField(blank=True, null=True)
+    product = models.TextField(blank=True, null=True)
+    cpe = models.TextField(blank=True, null=True)
+    first_seen = models.DateField(blank=True, null=True)
+    last_seen = models.DateField(blank=True, null=True)
+    ip = models.TextField(blank=True, null=True)
+    state = models.TextField(blank=True, null=True)
+    agency_type = models.TextField(blank=True, null=True)
+
+    class Meta:
+        managed = False
+        db_table = 'cyhy_port_scans'
+
+
+
 class DataapiApiuser(models.Model):
     id = models.BigAutoField(primary_key=True)
     apikey = models.CharField(db_column='apiKey', max_length=200, blank=True, null=True)  # Field name made lowercase.
@@ -787,6 +808,19 @@ class RootDomains(models.Model):
         db_table = 'root_domains'
         unique_together = (('root_domain', 'organizations_uid'),)
 
+class TeamMembers(models.Model):
+    team_member_uid = models.UUIDField(primary_key=True, default=uuid.uuid1())
+    team_member_fname = models.TextField()
+    team_member_lname = models.TextField()
+    team_member_email = models.TextField()
+    team_member_ghID = models.TextField(blank=False, null=False)
+    team_member_phone = models.TextField(blank=True, null=True)
+    team_member_role = models.TextField(blank=True, null=True)
+    team_member_notes = models.TextField(blank=True, null=True)
+
+    class Meta:
+        managed = True
+        db_table = 'team_members'
 
 class ShodanAssets(models.Model):
     shodan_asset_uid = models.UUIDField(primary_key=True, default=uuid.uuid1())
@@ -974,6 +1008,24 @@ class WebAssets(models.Model):
         managed = False
         db_table = 'web_assets'
         unique_together = (('asset', 'organizations_uid'),)
+
+class WeeklyStatuses(models.Model):
+    weekly_status_uid = models.UUIDField(primary_key=True, default=uuid.uuid1())
+    user_status = models.TextField(blank=True)
+    key_accomplishments = models.TextField(blank=True, null=True)
+    ongoing_task = models.TextField()
+    upcoming_task = models.TextField()
+    obstacles = models.TextField(blank=True, null=True)
+    non_standard_meeting = models.TextField(blank=True, null=True)
+    deliverables = models.TextField(blank=True, null=True)
+    pto = models.TextField(blank=True, null=True)
+    week_ending = models.DateField()
+    notes = models.TextField(blank=True, null=True)
+    statusComplete = models.IntegerField(blank=True, null=True)
+
+    class Meta:
+        managed = True
+        db_table = 'weekly_statuses'
 
 class VwBreachcompCredsbydate(models.Model):
     organizations_uid = models.UUIDField(primary_key=True)
