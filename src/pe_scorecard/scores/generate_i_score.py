@@ -2,8 +2,7 @@
 # Standard Python Libraries
 import sys
 import os
-import datetime
-import time
+import logging
 
 # Third-Party Libraries
 import numpy as np
@@ -27,8 +26,8 @@ from pe_scorecard.data.db_query import (
     query_iscore_was_data_vuln,
     # KEV list
     query_kev_list,
-    # PE stakeholders
-    query_pe_stakeholder_list,
+    # FCEB stakeholder list
+    query_fceb_parent_list,
     # Stakeholder lists by sector
     query_xs_stakeholder_list,
     query_s_stakeholder_list,
@@ -37,9 +36,9 @@ from pe_scorecard.data.db_query import (
     query_xl_stakeholder_list,
 )
 
-# Suppressing divide by 0/NaN runtime warning
-# This is expected and part of the I-Score calculation
-np.seterr(divide="ignore", invalid="ignore")
+# Setup logging to central file
+LOGGER = logging.getLogger(__name__)
+
 
 # ---------- Misc. Helper Functions ----------
 # Helper functions that assist in the calculation of this
@@ -47,6 +46,9 @@ np.seterr(divide="ignore", invalid="ignore")
 
 
 # ---------- Data Import Function ----------
+# Suppressing divide by 0 or NaN runtime warning
+# This is expected and part of the I-Score calculation
+@np.errstate(divide="ignore", invalid="ignore")
 def import_ident_data(prev_start, prev_end, curr_start, curr_end):
     """
     Retrieve all data required for calculating identification score.
@@ -63,68 +65,51 @@ def import_ident_data(prev_start, prev_end, curr_start, curr_end):
     # --------------- Import Team Data from Database: ---------------
     # Retrieve all the data needed from the database
     # ----- Retrieve VS data: -----
-    print("Retrieving VS vuln data for I-Score...")
-    # vs_data_vuln = query_iscore_vs_data_vuln(curr_start, curr_end)
-    print("\tDone!")
+    LOGGER.info("Retrieving VS vuln data for I-Score...")
+    vs_data_vuln = query_iscore_vs_data_vuln(curr_start, curr_end)
+    LOGGER.info("\tDone!")
     # ----- Retrieve PE data: -----
-    print("Retrieving PE vuln data for I-Score...")
-    # pe_data_vuln = query_iscore_pe_data_vuln(curr_start, curr_end)
-    print("\tDone!")
-    print("Retrieving PE cred data for I-Score...")
-    # pe_data_cred = query_iscore_pe_data_cred(curr_start, curr_end)
-    print("\tDone!")
-    print("Retrieving PE breach data for I-Score...")
-    # pe_data_breach = query_iscore_pe_data_breach(curr_start, curr_end)
-    print("\tDone!")
-    print("Retrieving PE dark web data for I-Score...")
-    # pe_data_dw = query_iscore_pe_data_darkweb(curr_start, curr_end)
-    print("\tDone!")
-    print("Retrieving PE protocol data for I-Score...")
-    # pe_data_proto = query_iscore_pe_data_protocol(curr_start, curr_end)
-    print("\tDone!")
+    LOGGER.info("Retrieving PE vuln data for I-Score...")
+    pe_data_vuln = query_iscore_pe_data_vuln(curr_start, curr_end)
+    LOGGER.info("\tDone!")
+    LOGGER.info("Retrieving PE cred data for I-Score...")
+    pe_data_cred = query_iscore_pe_data_cred(curr_start, curr_end)
+    LOGGER.info("\tDone!")
+    LOGGER.info("Retrieving PE breach data for I-Score...")
+    pe_data_breach = query_iscore_pe_data_breach(curr_start, curr_end)
+    LOGGER.info("\tDone!")
+    LOGGER.info("Retrieving PE dark web data for I-Score...")
+    pe_data_dw = query_iscore_pe_data_darkweb(curr_start, curr_end)
+    LOGGER.info("\tDone!")
+    LOGGER.info("Retrieving PE protocol data for I-Score...")
+    pe_data_proto = query_iscore_pe_data_protocol(curr_start, curr_end)
+    LOGGER.info("\tDone!")
     # ----- Retrieve WAS data: -----
-    print("Retrieving WAS vuln data for I-Score...")
-    # was_data_vuln = query_iscore_was_data_vuln(curr_start, curr_end)
-    print("\tDone!")
+    LOGGER.info("Retrieving WAS vuln data for I-Score...")
+    was_data_vuln = query_iscore_was_data_vuln(curr_start, curr_end)
+    LOGGER.info("\tDone!")
 
     # --------------- Import Historical Data: ---------------
-    print("Retrieving previous VS vuln data for I-Score...")
-    # vs_data_vuln_prev = query_iscore_vs_data_vuln(prev_start, prev_end)
-    print("\tDone!")
-    print("Retrieving previous PE vuln data for I-Score...")
-    # pe_data_vuln_prev = query_iscore_pe_data_vuln(prev_start, prev_end)
-    print("\tDone!")
-    print("Retrieving previous WAS vuln data for I-Score...")
-    # was_data_vuln_prev = query_iscore_was_data_vuln(prev_start, prev_end)
-    print("\tDone!")
+    LOGGER.info("Retrieving previous VS vuln data for I-Score...")
+    vs_data_vuln_prev = query_iscore_vs_data_vuln(prev_start, prev_end)
+    LOGGER.info("\tDone!")
+    LOGGER.info("Retrieving previous PE vuln data for I-Score...")
+    pe_data_vuln_prev = query_iscore_pe_data_vuln(prev_start, prev_end)
+    LOGGER.info("\tDone!")
+    LOGGER.info("Retrieving previous WAS vuln data for I-Score...")
+    was_data_vuln_prev = query_iscore_was_data_vuln(prev_start, prev_end)
+    LOGGER.info("\tDone!")
 
     # --------------- Import Other Necessary Info: ---------------
     # ----- Retrieve full FCEB list: -----
-    print("Retrieving FCEB parent stakeholder list for I-Score...")
-    # fceb_list = query_fceb_parent_list()
-    print("\tDone!")
+    LOGGER.info("Retrieving FCEB parent stakeholder list for I-Score...")
+    fceb_parent_list = query_fceb_parent_list()
+    LOGGER.info("\tDone!")
     # ----- Retrieve KEV list: -----
     # List of all CVE-IDs that are considered KEVs
-    print("Retrieving KEV list...")
-    # kev_list = query_kev_list()
-    print("\tDone!")
-
-    # TEMPORARY CSV DATA:
-    # Current Data
-    vs_data_vuln = pd.read_csv("iscore_vs_vuln_2023-04-25.csv")
-    pe_data_vuln = pd.read_csv("iscore_pe_vuln_2023-04-25.csv")
-    pe_data_cred = pd.read_csv("iscore_pe_cred_2023-04-25.csv")
-    pe_data_breach = pd.read_csv("iscore_pe_breach_2023-04-25.csv")
-    pe_data_dw = pd.read_csv("iscore_pe_darkweb_2023-04-25.csv")
-    pe_data_proto = pd.read_csv("iscore_pe_protocol_2023-04-25.csv")
-    was_data_vuln = pd.read_csv("iscore_was_vuln_2023-04-25.csv")
-    # Prev Data
-    vs_data_vuln_prev = pd.read_csv("iscore_vs_vuln_prev_2023-04-25.csv")  # time_closed
-    pe_data_vuln_prev = pd.read_csv("iscore_pe_vuln_prev_2023-04-25.csv")  # <- date
-    was_data_vuln_prev = pd.read_csv("iscore_was_vuln_prev_2023-04-25.csv")  # <- date
-    # Misc. Data
-    fceb_parent_list = pd.read_csv("full_fceb_list_2023-04-25.csv")
-    kev_list = pd.read_csv("iscore_kevs_2023-04-25.csv")
+    LOGGER.info("Retrieving KEV list...")
+    kev_list = query_kev_list()
+    LOGGER.info("\tDone!")
 
     # --------------- Process VS Data: ---------------
     # Requires 2 view:
@@ -426,42 +411,60 @@ def import_ident_data(prev_start, prev_end, curr_start, curr_end):
     ]
 
     # ----- PE Protocol Data -----
-    pe_data_proto = pe_data_proto.drop(columns=["date"]).drop_duplicates().reset_index()
-    proto_unencrypt = (
-        pe_data_proto.loc[pe_data_proto["protocol_type"] == "Unencrypted"]
-        .groupby("organizations_uid", as_index=False)
-        .agg(num_unencrypt_protocol=("protocol", "nunique"))
-    )
-    proto_affected_sockets = (
-        (
-            pe_data_proto.loc[
-                pe_data_proto["protocol_type"] == "Unencrypted",
-                ["organizations_uid", "port", "ip"],
-            ]
+    if pe_data_proto["organizations_uid"][0] == "test_org":
+        pe_data_proto = pd.DataFrame(
+            {
+                "organizations_uid": "test_org",
+                "num_unencrypt_protocol": 0,
+                "num_affected_sockets": 0,
+                "num_encrypt_protocol": 0,
+                "percent_protocol_encrypt": 0,
+            },
+            index=[0],
         )
-        .groupby("organizations_uid", as_index=False)
-        .agg(num_affected_sockets=("port", "count"))
-    )
-    proto_encrypt = (
-        pe_data_proto.loc[pe_data_proto["protocol_type"] == "Encrypted"]
-        .groupby("organizations_uid", as_index=False)
-        .agg(
-            num_encrypt_protocol=("protocol", "nunique"),
+    else:
+        pe_data_proto = (
+            pe_data_proto.drop(columns=["date"]).drop_duplicates().reset_index()
         )
-    )
-    pe_data_proto = pd.merge(
-        pd.merge(
-            proto_unencrypt, proto_affected_sockets, on="organizations_uid", how="outer"
-        ),
-        proto_encrypt,
-        on="organizations_uid",
-        how="outer",
-    ).fillna(0)
-    pe_data_proto["percent_protocol_unencrypt"] = pe_data_proto[
-        "num_unencrypt_protocol"
-    ] / (
-        pe_data_proto["num_unencrypt_protocol"] + pe_data_proto["num_encrypt_protocol"]
-    )
+        proto_unencrypt = (
+            pe_data_proto.loc[pe_data_proto["protocol_type"] == "Unencrypted"]
+            .groupby("organizations_uid", as_index=False)
+            .agg(num_unencrypt_protocol=("protocol", "nunique"))
+        )
+        proto_affected_sockets = (
+            (
+                pe_data_proto.loc[
+                    pe_data_proto["protocol_type"] == "Unencrypted",
+                    ["organizations_uid", "port", "ip"],
+                ]
+            )
+            .groupby("organizations_uid", as_index=False)
+            .agg(num_affected_sockets=("port", "count"))
+        )
+        proto_encrypt = (
+            pe_data_proto.loc[pe_data_proto["protocol_type"] == "Encrypted"]
+            .groupby("organizations_uid", as_index=False)
+            .agg(
+                num_encrypt_protocol=("protocol", "nunique"),
+            )
+        )
+        pe_data_proto = pd.merge(
+            pd.merge(
+                proto_unencrypt,
+                proto_affected_sockets,
+                on="organizations_uid",
+                how="outer",
+            ),
+            proto_encrypt,
+            on="organizations_uid",
+            how="outer",
+        ).fillna(0)
+        pe_data_proto["percent_protocol_unencrypt"] = pe_data_proto[
+            "num_unencrypt_protocol"
+        ] / (
+            pe_data_proto["num_unencrypt_protocol"]
+            + pe_data_proto["num_encrypt_protocol"]
+        )
 
     # Combine all PE data into single dataframe
     pe_data_df = pd.merge(
@@ -711,7 +714,7 @@ def calc_ident_scores(ident_data, stakeholder_list):
 
     Args:
         ident_data: The full dataframe of I-Score data for all FCEB stakeholders
-        stakeholder_list: The specific list of FCEB orgs that you want to generate I-Scores for
+        stakeholder_list: The specific subset of FCEB orgs that you want to generate I-Scores for
     Returns:
         Dataframe containing I-Score/letter grade for each org in the specified stakeholder list
     """
@@ -1069,7 +1072,7 @@ def gen_ident_scores(curr_date):
     Generate the Identification Scores for each of the stakeholder sector groups.
 
     Args:
-        curr_date: current report period date (i.e. 2022-08-15)
+        curr_date: current report period date (i.e. 20xx-xx-30 or 20xx-xx-31)
     Returns:
         List of dataframes containing the I-Scores/letter grades for each stakeholder sector group
     """
@@ -1086,17 +1089,11 @@ def gen_ident_scores(curr_date):
     ident_data_df = import_ident_data(prev_start, prev_end, curr_start, curr_end)
 
     # Get Stakeholder Sector Lists:
-    # xs_fceb = query_xs_stakeholder_list()
-    # s_fceb = query_s_stakeholder_list()
-    # m_fceb = query_m_stakeholder_list()
-    # l_fceb = query_l_stakeholder_list()
-    # xl_fceb = query_xl_stakeholder_list()
-    # TEMPORARY CSV DATA
-    xs_fceb = pd.read_csv("fceb_orgs_xs.csv")
-    s_fceb = pd.read_csv("fceb_orgs_s.csv")
-    m_fceb = pd.read_csv("fceb_orgs_m.csv")
-    l_fceb = pd.read_csv("fceb_orgs_l.csv")
-    xl_fceb = pd.read_csv("fceb_orgs_xl.csv")
+    xs_fceb = query_xs_stakeholder_list()
+    s_fceb = query_s_stakeholder_list()
+    m_fceb = query_m_stakeholder_list()
+    l_fceb = query_l_stakeholder_list()
+    xl_fceb = query_xl_stakeholder_list()
     sector_lists = [
         xs_fceb,
         s_fceb,
@@ -1124,7 +1121,7 @@ def gen_ident_scores(curr_date):
     for sector_list in sector_lists:
         curr_iscores = calc_ident_scores(ident_data_df, sector_list)
         iscore_dfs.append(curr_iscores)
-        print(
+        LOGGER.info(
             f"Calculated I-Scores for {sector_counter} / {len(sector_lists)} Sectors..."
         )
         sector_counter += 1
@@ -1133,20 +1130,13 @@ def gen_ident_scores(curr_date):
     return iscore_dfs
 
 
-# Demo/Test:
-# Current report period date (end of month)
-curr_date = datetime.datetime(2022, 11, 30)
+# Demo/Performance Notes:
 
-# Start Timer
-start_time = time.time()
+# Usage:
+# Just call the function -> gen_ident_score(curr_date)
+# This will return a list of dataframes,
+# where each dataframe contains the i-scores
+# for all the orgs in a group (xs/s/m/l/xl).
 
-# Generate I-Scores
-results = gen_ident_scores(curr_date)
-
-# End Timer
-i_scores_time = time.time() - start_time
-
-# Print Results
-for result in results:
-    print(result)
-print("All group's i-scores calculated: %s seconds" % i_scores_time)
+# Once you have the i-scores, plug that info
+# into the dictionary to display on the scorecard
