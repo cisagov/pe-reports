@@ -278,6 +278,72 @@ def query_trusty_mail(org_id_list):
             close(conn)
 
 
+# v ---------- D-Score SQL Queries ---------- v
+# ----- VS Cert -----
+def query_dscore_vs_data_cert():
+    """Query all VS certificate data needed for D-Score calculation."""
+    # Open connection
+    conn = connect()
+    # Make query
+    sql = """SELECT * FROM vw_dscore_vs_cert;"""
+    dscore_vs_data_cert = pd.read_sql(sql, conn)
+    # Close connection
+    conn.close()
+    return dscore_vs_data_cert
+
+
+# ----- VS Mail -----
+def query_dscore_vs_data_mail():
+    """Query all VS mail data needed for D-Score calculation."""
+    # Open connection
+    conn = connect()
+    # Make query
+    sql = """SELECT * FROM vw_dscore_vs_mail;"""
+    dscore_vs_data_mail = pd.read_sql(sql, conn)
+    # Close connection
+    conn.close()
+    return dscore_vs_data_mail
+
+
+# ----- PE IP -----
+def query_dscore_pe_data_ip():
+    """Query all PE IP data needed for D-Score calculation."""
+    # Open connection
+    conn = connect()
+    # Make query
+    sql = """SELECT * FROM vw_dscore_pe_ip;"""
+    dscore_pe_data_ip = pd.read_sql(sql, conn)
+    # Close connection
+    conn.close()
+    return dscore_pe_data_ip
+
+
+# ----- PE Domain -----
+def query_dscore_pe_data_domain():
+    """Query all PE domain data needed for D-Score calculation."""
+    # Open connection
+    conn = connect()
+    # Make query
+    sql = """SELECT * FROM vw_dscore_pe_domain;"""
+    dscore_pe_data_domain = pd.read_sql(sql, conn)
+    # Close connection
+    conn.close()
+    return dscore_pe_data_domain
+
+
+# ----- WAS Webapp -----
+def query_dscore_was_data_webapp():
+    """Query all WAS webapp data needed for D-Score calculation."""
+    # Open connection
+    conn = connect()
+    # Make query
+    sql = """SELECT * FROM vw_dscore_was_webapp;"""
+    dscore_was_data_webapp = pd.read_sql(sql, conn)
+    # Close connection
+    conn.close()
+    return dscore_was_data_webapp
+
+
 # v ---------- I-Score SQL Queries ---------- v
 # ----- VS Vulns -----
 def query_iscore_vs_data_vuln(start_date, end_date):
@@ -458,7 +524,6 @@ def query_pe_stakeholder_list():
 # ----- KEV List -----
 def query_kev_list():
     """Query list of all CVE names that are considered KEVs."""
-    print("running query_kev_list2")
     # Open connection
     conn = connect()
     # Make query
@@ -467,6 +532,20 @@ def query_kev_list():
     # Close connection
     conn.close()
     return kev_list
+
+
+# v ---------- Misc. Score SQL Queries ---------- v
+# ----- All FCEB Parents List -----
+def query_fceb_parent_list():
+    """Query list of all FCEB parent stakeholders (all FCEB excluding child orgs)."""
+    # Open connection
+    conn = connect()
+    # Make query
+    sql = """SELECT organizations_uid, cyhy_db_name FROM organizations WHERE fceb = true AND retired = false AND election = false;"""
+    fceb_parent_list = pd.read_sql(sql, conn)
+    # Close connection
+    conn.close()
+    return fceb_parent_list
 
 
 # ----- XS Stakeholder List -----
@@ -535,9 +614,6 @@ def query_xl_stakeholder_list():
     # Close connection
     conn.close()
     return xl_stakeholder_list
-
-
-# ^ ---------- I-Score SQL Queries ---------- ^
 
 
 def query_cyhy_snapshots(start_date, end_date):
@@ -1033,85 +1109,3 @@ def query_fceb_ttr(month, year):
         "ATTR Highs": df["weighted_high"].sum(),
     }
     return (df_unedited, fceb_dict)
-
-
-# v ---------- D-Score SQL Queries ---------- v
-# ----- VS Cert -----
-def query_dscore_vs_data_cert():
-    """Query all VS certificate data needed for D-Score calculation."""
-    # Open connection
-    conn = connect()
-    # Make query
-    sql = """SELECT * FROM vw_dscore_vs_cert;"""
-    dscore_vs_data_cert = pd.read_sql(sql, conn)
-    # Close connection
-    conn.close()
-    return dscore_vs_data_cert
-
-
-# ----- VS Mail -----
-def query_dscore_vs_data_mail():
-    """Query all VS mail data needed for D-Score calculation."""
-    # Open connection
-    conn = connect()
-    # Make query
-    sql = """SELECT * FROM vw_dscore_vs_mail;"""
-    dscore_vs_data_mail = pd.read_sql(sql, conn)
-    # Close connection
-    conn.close()
-    return dscore_vs_data_mail
-
-
-# ----- PE IP -----
-def query_dscore_pe_data_ip():
-    """Query all PE IP data needed for D-Score calculation."""
-    # Open connection
-    conn = connect()
-    # Make query
-    sql = """SELECT * FROM vw_dscore_pe_ip;"""
-    dscore_pe_data_ip = pd.read_sql(sql, conn)
-    # Close connection
-    conn.close()
-    return dscore_pe_data_ip
-
-
-# ----- PE Domain -----
-def query_dscore_pe_data_domain():
-    """Query all PE domain data needed for D-Score calculation."""
-    # Open connection
-    conn = connect()
-    # Make query
-    sql = """SELECT * FROM vw_dscore_pe_domain;"""
-    dscore_pe_data_domain = pd.read_sql(sql, conn)
-    # Close connection
-    conn.close()
-    return dscore_pe_data_domain
-
-
-# ----- WAS Webapp -----
-def query_dscore_was_data_webapp():
-    """Query all WAS webapp data needed for D-Score calculation."""
-    # Open connection
-    conn = connect()
-    # Make query
-    sql = """SELECT * FROM vw_dscore_was_webapp;"""
-    dscore_was_data_webapp = pd.read_sql(sql, conn)
-    # Close connection
-    conn.close()
-    return dscore_was_data_webapp
-
-
-# ----- All FCEB Parents List -----
-def query_fceb_parent_list():
-    """Query list of all FCEB parent stakeholders (all FCEB excluding child orgs)."""
-    # Open connection
-    conn = connect()
-    # Make query
-    sql = """SELECT organizations_uid, cyhy_db_name FROM organizations WHERE fceb = true AND retired = false AND election = false;"""
-    fceb_parent_list = pd.read_sql(sql, conn)
-    # Close connection
-    conn.close()
-    return fceb_parent_list
-
-
-# ^ ---------- D-Score SQL Queries ---------- ^

@@ -2,8 +2,7 @@
 # Standard Python Libraries
 import sys
 import os
-import datetime
-import time
+import logging
 
 # Third-Party Libraries
 import numpy as np
@@ -14,17 +13,16 @@ sys.path.append(os.path.join(os.path.dirname(__file__), "..", ".."))
 
 # cisagov Libraries
 from score_helper_functions import rescale, get_prev_startstop
-
 from pe_scorecard.data.db_query import (
-    #    # VS queries
+    # VS queries
     query_dscore_vs_data_cert,
     query_dscore_vs_data_mail,
-    #    # PE queries
+    # PE queries
     query_dscore_pe_data_ip,
     query_dscore_pe_data_domain,
-    #    # WAS queries
+    # WAS queries
     query_dscore_was_data_webapp,
-    #    # Stakeholder lists by sector
+    # Stakeholder lists by sector
     query_fceb_parent_list,
     query_xs_stakeholder_list,
     query_s_stakeholder_list,
@@ -33,10 +31,14 @@ from pe_scorecard.data.db_query import (
     query_xl_stakeholder_list,
 )
 
+# Setup logging to central file
+LOGGER = logging.getLogger(__name__)
+
 
 # ---------- Misc. Helper Functions ----------
 # Helper functions that assist in the calculation of this
 # score are stored in the "score_helper_functions.py" file
+
 
 # ---------- Data Import Function ----------
 def import_discov_data(curr_start, curr_end):
@@ -53,38 +55,30 @@ def import_discov_data(curr_start, curr_end):
     # --------------- Import Team Data from Database: ---------------
     # Retrieve all the data needed from the database
     # ----- Retrieve VS data: -----
-    print("Retrieving VS certificate data for D-Score...")
-    # vs_data_cert = query_dscore_vs_data_cert()
-    print("\tDone!")
-    print("Retrieving VS mail data for D-Score...")
-    # vs_data_mail = query_dscore_vs_data_mail()
-    print("\tDone!")
+    LOGGER.info("Retrieving VS certificate data for D-Score...")
+    vs_data_cert = query_dscore_vs_data_cert()
+    LOGGER.info("\tDone!")
+    LOGGER.info("Retrieving VS mail data for D-Score...")
+    vs_data_mail = query_dscore_vs_data_mail()
+    LOGGER.info("\tDone!")
     # ----- Retrieve PE data: -----
-    print("Retrieving PE IP data for D-Score...")
-    # pe_data_ip = query_dscore_pe_data_ip()
-    print("\tDone!")
-    print("Retrieving PE domain data for D-Score...")
-    # pe_data_domain = query_dscore_pe_data_domain()
-    print("\tDone!")
+    LOGGER.info("Retrieving PE IP data for D-Score...")
+    pe_data_ip = query_dscore_pe_data_ip()
+    LOGGER.info("\tDone!")
+    LOGGER.info("Retrieving PE domain data for D-Score...")
+    pe_data_domain = query_dscore_pe_data_domain()
+    LOGGER.info("\tDone!")
     # ----- Retrieve WAS data: -----
-    print("Retrieving WAS domain data for D-Score...")
-    # pe_data_domain = query_dscore_pe_data_domain()
-    print("\tDone!")
+    LOGGER.info("Retrieving WAS domain data for D-Score...")
+    was_data_webapp = query_dscore_was_data_webapp()
+    LOGGER.info("\tDone!")
 
     # --------------- Import Other Data from Database: ---------------
     # Retrieve any other necessary data from the database
     # ----- Retrieve full FCEB list: -----
-    print("Retrieving FCEB parent stakeholder list for D-Score...")
-    # fceb_list = query_fceb_parent_list()
-    print("\tDone!")
-
-    # TEMPORARY TESTING:
-    vs_data_cert = pd.read_csv("dscore_vs_cert_2023-04-20.csv")
-    vs_data_mail = pd.read_csv("dscore_vs_mail_2023-04-20.csv")
-    pe_data_ip = pd.read_csv("dscore_pe_ip_2023-04-20.csv")
-    pe_data_domain = pd.read_csv("dscore_pe_domain_2023-04-20.csv")
-    was_data_webapp = pd.read_csv("dscore_was_webapp_2023-04-20.csv")
-    fceb_parent_list = pd.read_csv("Full_FCEB_List.csv")
+    LOGGER.info("Retrieving FCEB parent stakeholder list for D-Score...")
+    fceb_parent_list = query_fceb_parent_list()
+    LOGGER.info("\tDone!")
 
     # --------------- Process VS Data: ---------------
     # Requires 2 Views:
@@ -197,7 +191,7 @@ def calc_discov_scores(discov_data, stakeholder_list):
 
     Args:
         discov_data: The full dataframe of D-Score data for all FCEB stakeholders
-        stakeholder_list: The specific list of orgs that you want to generate D-Scores for
+        stakeholder_list: The specific subset of FCEB orgs that you want to generate D-Scores for
     Returns:
         Dataframe containing D-Score and letter grade for each org in the specified stakeholder list
     """
@@ -212,7 +206,6 @@ def calc_discov_scores(discov_data, stakeholder_list):
 
     # Impute column means to use for filling in missing data later
     vs_mail_col_means = discov_data_df.iloc[:, 5:10].mean()
-    # pe_namserv_col_means = discov_data_df.iloc[:, #:#].mean()
 
     # ---------- VS-Subscribed Data ----------
     # Index locations of VS metrics
@@ -238,12 +231,13 @@ def calc_discov_scores(discov_data, stakeholder_list):
     # - Only 1 nameserver ISP
     # - Only 1 nameserver domain
     # - Only 1 nameserver geolocation
+    # Will be included in future revisions
 
     # ---------- WAS-Subscribed Data ----------
     # Index locations of WAS metrics
     was_webapp_locs = list(range(16, 19))
 
-    # Feature?:
+    # No WAS features yet, but maybe in future revisions
 
     # ---------- Impute Missing Data ----------
     # Use these column means calculated earlier to fill any missing data due to partial subscriptions
@@ -262,15 +256,6 @@ def calc_discov_scores(discov_data, stakeholder_list):
     # Filling PE nameserver data:
 
     # ---------- Aggregate Metrics ----------
-    # Notes:
-    # - VS cert percent monitor = want to minimize (higher/over 100 is actually bad)
-    # - VS mail data = want to maximize (more mail security  = good)
-    # - PE ip percent monitor = want to minimize (higher/over 100 is actually bad)
-    # - PE domain percent monitor = want to minimize (higher/over 100 is actually bad)
-    # - WAS webapp percent monitor = want to minimize (higher/over 100 is actually bad)
-    # indicies of core percent monitored metrics
-    # - 4, 12, 15, 18
-
     # Rescaling metrics 0-45 for final aggregation
     for col_idx in range(2, 19):
         discov_data_df.iloc[:, col_idx] = rescale(
@@ -367,7 +352,7 @@ def gen_discov_scores(curr_date):
     Generate the Discovery Scores for each of the stakeholder sector groups.
 
     Args:
-        curr_date: current report period date (i.e. 2022-08-15)
+        curr_date: current report period date (i.e. 20xx-xx-30 or 20xx-xx-31)
     Returns:
         List of dataframes containing the D-Scores/letter grades for each stakeholder sector group
     """
@@ -379,17 +364,11 @@ def gen_discov_scores(curr_date):
     discov_data_df = import_discov_data(curr_start, curr_end)
 
     # Get Stakeholder Sector Lists:
-    # xs_fceb = query_xs_stakeholder_list()
-    # s_fceb = query_s_stakeholder_list()
-    # m_fceb = query_m_stakeholder_list()
-    # l_fceb = query_l_stakeholder_list()
-    # xl_fceb = query_xl_stakeholder_list()
-    # TEMPORARY
-    xs_fceb = pd.read_csv("xs_fceb_orgs.csv")
-    s_fceb = pd.read_csv("s_fceb_orgs.csv")
-    m_fceb = pd.read_csv("m_fceb_orgs.csv")
-    l_fceb = pd.read_csv("l_fceb_orgs.csv")
-    xl_fceb = pd.read_csv("xl_fceb_orgs.csv")
+    xs_fceb = query_xs_stakeholder_list()
+    s_fceb = query_s_stakeholder_list()
+    m_fceb = query_m_stakeholder_list()
+    l_fceb = query_l_stakeholder_list()
+    xl_fceb = query_xl_stakeholder_list()
     sector_lists = [
         xs_fceb,
         s_fceb,
@@ -406,7 +385,7 @@ def gen_discov_scores(curr_date):
     for sector_list in sector_lists:
         curr_dscores = calc_discov_scores(discov_data_df, sector_list)
         dscore_dfs.append(curr_dscores)
-        print(
+        LOGGER.info(
             f"Calculated D-Scores for {sector_counter} / {len(sector_lists)} Sectors..."
         )
         sector_counter += 1
@@ -415,7 +394,14 @@ def gen_discov_scores(curr_date):
     return dscore_dfs
 
 
-# DEMO:
+# Demo/Performance Notes:
+
+# Usage:
+# Just call the function -> gen_discov_score(curr_date)
+# This will return a list of dataframes,
+# where each dataframe contains the d-scores
+# for all the orgs in a group (xs/s/m/l/xl).
+
 # Total Runtime ~= 6min 30sec
 # - VS cert query ~= 1sec
 # - VS mail query ~= 25sec
@@ -424,24 +410,5 @@ def gen_discov_scores(curr_date):
 # - WAS webapp query ~= 1sec
 # - Actual calculation of scores ~=1sec
 
-# Testing Staging DB Connection
-# test = query_dscore_vs_data_cert()
-# print(test)
-# x = 5 / 0
-
-# Current report period date (end of month)
-curr_date = datetime.datetime(2022, 11, 30)
-
-# Start Timer
-start_time = time.time()
-
-# Run D-Score Algorithm
-results = gen_discov_scores(curr_date)
-
-# Stop Timer
-d_scores_time = time.time() - start_time
-
-for result in results:
-    print(result)
-
-print("All group's d-scores calculated: %s seconds" % d_scores_time)
+# Once you have the d-scores, plug that info
+# into the dictionary to display on the scorecard
