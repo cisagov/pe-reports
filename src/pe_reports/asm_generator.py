@@ -107,6 +107,7 @@ def add_stat_frame(current_value, last_value, x, y, width, height, style, can):
 
 def add_attachment(org_uid, final_output, pdf_file, asm_json, asm_xlsx):
     """Create and add JSON attachment."""
+    LOGGER.info("Creating attachment")
     # Create ASM Excel file
     asmWriter = pd.ExcelWriter(asm_xlsx, engine="xlsxwriter")
 
@@ -117,10 +118,12 @@ def add_attachment(org_uid, final_output, pdf_file, asm_json, asm_xlsx):
     cidr_dict = cidr_df["network"].to_list()
 
     # Extra IPs
+    LOGGER.info("Getting extra IPs")
     ip_lst = query_extra_ips(org_uid)
     ips_df = pd.DataFrame(ip_lst, columns=["ip"])
     ips_df.to_excel(asmWriter, sheet_name="Extra IPs", index=False)
     ips_dict = ips_df["ip"].to_list()
+    LOGGER.info("Finished extra IPs")
 
     # Ports/protocols
     ports_protocols_df = query_ports_protocols(org_uid)
