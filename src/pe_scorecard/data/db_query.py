@@ -273,12 +273,25 @@ def query_web_app_counts(date_period, org_uid_list):
     return web_app_counts
 
 
-def query_certs_counts():
-    """Query certificate counts."""
-    LOGGER.info("Query cert counts")
-    self_reported_certs = None
-    discovered_certs = None
-    return (self_reported_certs, discovered_certs)
+def query_certs(start_date, end_date):
+    """Query certs counts for organizations."""
+    conn = connect()
+    try:
+        sql = """select cd.organizations_uid , count(cc.serial)
+        from cyhy_certs cc
+        left join cyhy_domains cd on
+        cd."domain" = cc.trimmed_subjects
+        where not_before >= %(start_date)s and not_after > %(end_date)s
+        group by cd.organizations_uid"""
+        certs_df = pd.read_sql(
+            sql, conn, params={"start_date": start_date, "end_date": end_date}
+        )
+        return certs_df
+    except (Exception, psycopg2.DatabaseError) as error:
+        LOGGER.error("There was a problem with your database query %s", error)
+    finally:
+        if conn is not None:
+            close(conn)
 
 
 def query_https_scan(org_id_list):
