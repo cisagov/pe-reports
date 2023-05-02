@@ -1422,10 +1422,3 @@ def query_profiling_views(start_date, org_uid_list):
 
     conn.close()
     return profiling_dict
-
-
-# FROM BRANCH FROM BRANCH START!!!
-# v ---------- I-Score SQL Queries ---------- v
-
-
-# ^ ---------- I-Score SQL Queries ---------- ^
