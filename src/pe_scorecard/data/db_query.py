@@ -324,7 +324,6 @@ def query_https_scan(org_id_list):
 
 
 def query_sslyze_scan(org_id_list, port_list):
-def query_sslyze_scan(org_id_list, port_list):
     """Query sslyze scan results for a given agency and month."""
     # "domain", "scanned_port", "scanned_hostname", "sslv2", "sslv3", "any_3des", "any_rc4", "is_symantec_cert
     conn = connect()
@@ -336,22 +335,7 @@ def query_sslyze_scan(org_id_list, port_list):
                 and organizations_uid in %(org_id_list)s
             """
         cur = conn.cursor()
-    conn = connect()
-    print("running query_sslyze_scan")
-    try:
-        # Need to verify where statement: other options scan_date, first_seen, last_seen
-        sql = """
-                SELECT * FROM cyhy_sslyze where cyhy_latest is True and scanned_port in %(port_list)s
-                and organizations_uid in %(org_id_list)s
-            """
-        cur = conn.cursor()
 
-        cur.execute(
-            sql, {"port_list": tuple(port_list), "org_id_list": tuple(org_id_list)}
-        )
-        https_results = cur.fetchall()
-        keys = [desc[0] for desc in cur.description]
-        https_results = [dict(zip(keys, values)) for values in https_results]
         cur.execute(
             sql, {"port_list": tuple(port_list), "org_id_list": tuple(org_id_list)}
         )
@@ -366,16 +350,8 @@ def query_sslyze_scan(org_id_list, port_list):
     finally:
         if conn is not None:
             close(conn)
-        cur.close()
-        return https_results
-    except (Exception, psycopg2.DatabaseError) as error:
-        logging.error("There was a problem with your database query %s", error)
-    finally:
-        if conn is not None:
-            close(conn)
 
 
-def query_trusty_mail(org_id_list):
 def query_trusty_mail(org_id_list):
     """Query trusty mail scan results for a given agency and month."""
     # all_domains_cursor = self.__db.trustymail.find(
