@@ -1,0 +1,50 @@
+# Use the official Logstash image as the base image
+FROM docker.elastic.co/logstash/logstash:8.6.0
+
+# Switch to root user
+USER root
+
+# Create the /etc/logstash/certs directory
+RUN mkdir -p /etc/logstash/certs
+
+# Switch back to the logstash user
+USER ${LOGSTASH_USER}
+
+# Set environment variables
+ENV LOGSTASH_USER=logstash
+ENV LOGSTASH_GROUP=logstash
+ENV LOGSTASH_UID=1000
+ENV LOGSTASH_GID=1000
+
+# Create a new user and group for Logstash
+RUN (getent group ${LOGSTASH_GROUP} || groupadd -g ${LOGSTASH_GID} ${LOGSTASH_GROUP}) && (id -u ${LOGSTASH_USER} &>/dev/null || useradd -u ${LOGSTASH_UID} -g ${LOGSTASH_GROUP} ${LOGSTASH_USER})
+
+RUN apt-get update && apt-get install -y telnet && apt-get install -y iputils-ping
+
+# Set working directory
+WORKDIR /usr/share/logstash
+
+# Copy certificates into the image
+COPY certs/ca/ /etc/logstash/certs/
+
+# Change ownership and permissions of the /etc/logstash/certs directory and its contents
+RUN chown -R ${LOGSTASH_USER}:${LOGSTASH_GROUP} /etc/logstash/certs && find /etc/logstash/certs -type f -exec chmod 600 {} \;
+
+# Copy Logstash configuration files (e.g., logstash.yml, pipelines.yml) into the image
+COPY logstash.conf /usr/share/logstash/config/
+
+# Copy Logstash configuration files (e.g., logstash.yml, pipelines.yml) into the image
+COPY logstash.yml /usr/share/logstash/config/
+
+# Set the appropriate permissions for the configuration files
+RUN chown -R ${LOGSTASH_USER}:${LOGSTASH_GROUP} /usr/share/logstash/config && \
+    chmod 600 /usr/share/logstash/config/*
+
+# Switch to the Logstash user
+USER ${LOGSTASH_USER}
+
+# Expose ports for Logstash
+EXPOSE 5044 9600
+
+# Start Logstash
+CMD ["logstash"]

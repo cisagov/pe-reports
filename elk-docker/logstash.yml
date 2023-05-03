@@ -2,9 +2,13 @@
 http.host: "0.0.0.0"                              # Listen on all network interfaces (0.0.0.0).
 
 # Configure the Elasticsearch monitoring settings for X-Pack.
-xpack.monitoring.elasticsearch.hosts: [ "https://0.0.0.0:9200" ] # Specify the Elasticsearch host(s) for monitoring data.
+xpack.monitoring.elasticsearch.hosts: [ "https://localhost:9200" ] # Specify the Elasticsearch host(s) for monitoring data.
+xpack.monitoring.enabled: true
 
+
+#logstash_ssl_certificate: "/etc/logstash/certs/ca.crt"
+#logstash_ssl_key: "/etc/logstash/certs/ca.key"
 # Configure the SSL truststore settings for X-Pack monitoring.
-xpack.monitoring.elasticsearch.ssl.truststore.path: /etc/ssl/certs/java/cacerts      # Set the path to the truststore.
-xpack.monitoring.elasticsearch.ssl.truststore.password: pass123                      # Set the truststore password. Replace "changeit" with your custom password if you set one.
+#xpack.monitoring.elasticsearch.ssl.truststore.path: /usr/lib/jvm/java-11-openjdk-amd64/lib/security/cacerts       # Set the path to the truststore.
+#xpack.monitoring.elasticsearch.ssl.truststore.password: changeit                      # Set the truststore password. Replace "changeit" with your custom password if you set one.
 

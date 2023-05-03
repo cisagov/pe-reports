@@ -17,4 +17,4 @@ docker exec -u 0 -it logstash bash -c "apt-get install -y openjdk-11-jdk-headles
 #docker exec -u 0 -it logstash bash -c 'read -p "Enter 2 and 106: " num1 num2 && apt-get install -y openjdk-11-jdk-headless "$num1" "$num2"'  #Need to test this command
 
 # Import the Elasticsearch certificate into the Java keystore in the 'logstash' container.
-docker exec -u 0 -it logstash bash -c "keytool -import -trustcacerts -alias es01_cert -file /usr/share/logstash/ssl/es01.crt -keystore $JAVA_HOME/usr/lib/jvm/java-11-openjdk-amd64/lib/security/cacerts -storepass pass123"
+docker exec -u 0 -it logstash bash -c "keytool -import -trustcacerts -alias es01_cert -file /usr/share/logstash/ssl/es01.crt -keystore $JAVA_HOME/usr/lib/jvm/java-11-openjdk-amd64/lib/security/cacerts -storepass changeit"

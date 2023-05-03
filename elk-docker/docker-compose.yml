@@ -7,7 +7,7 @@ services:
     volumes:
       - certs:/usr/share/elasticsearch/config/certs # Map the "certs" volume to the Elasticsearch certs directory
     user: "0" # Run the container as root (user ID 0)
-    command: >  # Define a multi-line command to run in the container
+    command: > # Define a multi-line command to run in the container
       bash -c '
         if [ x${ELASTIC_PASSWORD} == x ]; then
           echo "Set the ELASTIC_PASSWORD environment variable in the .env file";
@@ -45,49 +45,57 @@ services:
         until curl -s -X POST --cacert config/certs/ca/ca.crt -u elastic:${ELASTIC_PASSWORD} -H "Content-Type: application/json" https://es01:9200/_security/user/kibana_system/_password -d "{\"password\":\"${KIBANA_PASSWORD}\"}" | grep -q "^{}"; do sleep 10; done;
         echo "All done!";
       '            
-    healthcheck:  # Healthcheck configuration for the setup service
-      test: [ "CMD-SHELL", "[ -f config/certs/es01/es01.crt ]" ] # Check if the es01 certificate file exists
+    healthcheck:
+      # Healthcheck configuration for the setup service
+      test: [ "CMD-SHELL", "[ -f config/certs/es01/es01.crt ]" ]
       interval: 1s # Check every 1 second
       timeout: 5s # Timeout after 5 seconds
       retries: 120 # Retry up to 120 times before marking the service as unhealthy
-      
-  es01: # Elasticsearch service (Node 1)
+    networks:
+      - elk
+
+  es01:
+    # Elasticsearch service (Node 1)
     depends_on:
       setup:
-        condition: service_healthy  # Start only when the setup service is healthy (certificates and user passwords are created)
+        condition: service_healthy # Start only when the setup service is healthy (certificates and user passwords are created)
     image: docker.elastic.co/elasticsearch/elasticsearch:${STACK_VERSION} # Elasticsearch image to use
-    container_name: es01  # Name for the container
+    container_name: es01 # Name for the container
     volumes:
       - certs:/usr/share/elasticsearch/config/certs # Mount the certificates directory
       - esdata01:/usr/share/elasticsearch/data # Mount the data directory for Elasticsearch
     ports:
       - ${ES_PORT}:9200 # Expose Elasticsearch's HTTP API
-    environment:  # Environment variables for configuring Elasticsearch
-      - node.name=es01  # Set the node name
-      - cluster.name=${CLUSTER_NAME}  # Set the cluster name
+    environment:
+      # Environment variables for configuring Elasticsearch
+      - node.name=es01 # Set the node name
+      - cluster.name=${CLUSTER_NAME} # Set the cluster name
       - cluster.initial_master_nodes=es01 # Set the initial master node for the cluster
       - discovery.seed_hosts="" # Empty seed hosts (single-node cluster)
-      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}  # Set the password for the "elastic" user
-      - bootstrap.memory_lock=true  # Lock the process address space into RAM to prevent swapping
+      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD} # Set the password for the "elastic" user
+      - bootstrap.memory_lock=true # Lock the process address space into RAM to prevent swapping
       - xpack.security.enabled=true # Enable X-Pack security features
-      - xpack.security.http.ssl.enabled=true  # Enable SSL for the HTTP API
+      - xpack.security.http.ssl.enabled=true # Enable SSL for the HTTP API
       - xpack.security.http.ssl.key=certs/es01/es01.key # Set the SSL key file
       - xpack.security.http.ssl.certificate=certs/es01/es01.crt # Set the SSL certificate file
       - xpack.security.http.ssl.certificate_authorities=certs/ca/ca.crt # Set the SSL certificate authority
       - xpack.security.http.ssl.verification_mode=certificate # Set the SSL verification mode
       - xpack.security.transport.ssl.enabled=true # Enable SSL for the transport layer
-      - xpack.security.transport.ssl.key=certs/es01/es01.key  # Set the transport SSL key file
-      - xpack.security.transport.ssl.certificate=certs/es01/es01.crt  # Set the transport SSL certificate file
-      - xpack.security.transport.ssl.certificate_authorities=certs/ca/ca.crt  # Set the transport SSL certificate authority
-      - xpack.security.transport.ssl.verification_mode=certificate  # Set the transport SSL verification mode
-      - xpack.license.self_generated.type=${LICENSE}  # Set the type of self-generated license
-    mem_limit: ${MEM_LIMIT}  # Set the memory limit for the container
-    ulimits: # Set the ulimits for the container
-      memlock: # Memory lock ulimits
+      - xpack.security.transport.ssl.key=certs/es01/es01.key # Set the transport SSL key file
+      - xpack.security.transport.ssl.certificate=certs/es01/es01.crt # Set the transport SSL certificate file
+      - xpack.security.transport.ssl.certificate_authorities=certs/ca/ca.crt # Set the transport SSL certificate authority
+      - xpack.security.transport.ssl.verification_mode=certificate # Set the transport SSL verification mode
+      - xpack.license.self_generated.type=${LICENSE} # Set the type of self-generated license
+    mem_limit: ${MEM_LIMIT} # Set the memory limit for the container
+    ulimits:
+      # Set the ulimits for the container
+      memlock:
+        # Memory lock ulimits
         soft: -1
         hard: -1
     healthcheck:
-      test: # Test command for the healthcheck
+      test:
+        # Test command for the healthcheck
         [
           "CMD-SHELL",
           "curl -s --cacert config/certs/ca/ca.crt https://localhost:9200 | grep -q 'missing authentication credentials'"
@@ -95,20 +103,24 @@ services:
       interval: 10s # Interval between healthcheck attempts
       timeout: 10s # Timeout for each healthcheck attempt
       retries: 120 # Number of retries before the service is considered unhealthy
+    networks:
+      - elk
 
-  kibana: # Kibana service
+  kibana:
+    # Kibana service
     depends_on:
       es01:
         condition: service_healthy # Start only when the Elasticsearch service (es01) is healthy
     image: docker.elastic.co/kibana/kibana:${STACK_VERSION} # Kibana image to use
-    container_name: kibana  # Name for the container
+    container_name: kibana # Name for the container
     volumes:
       - certs:/usr/share/kibana/config/certs # Mount the certificates directory
       - kibanadata:/usr/share/kibana/data # Mount the data directory for Kibana
     ports:
       - ${KIBANA_PORT}:5601 # Expose Kibana's HTTP API
-    environment: # Environment variables for configuring Kibana
-      - SERVERNAME=kibana  # Set the server name
+    environment:
+      # Environment variables for configuring Kibana
+      - SERVERNAME=kibana # Set the server name
       - ELASTICSEARCH_HOSTS=https://es01:9200 # Set the Elasticsearch hosts
       - ELASTICSEARCH_USERNAME=kibana_system # Set the Elasticsearch username
       - ELASTICSEARCH_PASSWORD=${KIBANA_PASSWORD} # Set the Elasticsearch password
@@ -120,7 +132,8 @@ services:
       - ES_ENFORCE_BOOTSTRAP_CHECKS=false # Disable enforcement of bootstrap checks
       - XPACK_REPORTING_ENCRYPTIONKEY=${Crypto_Password} # Set the encryption key for reporting
     mem_limit: ${MEM_LIMIT} # Set the memory limit for the container
-    healthcheck: # Healthcheck for the Kibana servi
+    healthcheck:
+      # Healthcheck for the Kibana servi
       test:
         [
           "CMD-SHELL",
@@ -129,54 +142,76 @@ services:
       interval: 10s # Interval between healthcheck attempts
       timeout: 10s # Timeout for each healthcheck attempt
       retries: 120 # Number of retries before the service is considered unhealthy
+    networks:
+      - elk
 
-  logstash: # Logstash service
-    depends_on: # Define dependencies for the service
+  logstash:
+    # Logstash service
+    depends_on:
+      # Define dependencies for the service
       es01:
         condition: service_healthy # Start only when the Elasticsearch service (es01) is healthy
-    image: docker.elastic.co/logstash/logstash:${STACK_VERSION} # Logstash image to use
+    build:
+      context: . # Docker build context
+      dockerfile: Dockerfile.logstash # Path to the Logstash Dockerfile
     container_name: logstash # Name for the container
     volumes:
-      - ./logstash.conf:/usr/share/logstash/pipeline/logstash.conf # Mount the Logstash configuration file
+      #- ./logstash.conf:/usr/share/logstash/pipeline/logstash.conf # Mount the Logstash configuration file
       - ./logs:/usr/share/logstash/logs # Mount the logs directory for Logstash
-      - ./logstash.yml:/usr/share/logstash/config/logstash.yml # Mount the Logstash YAML configuration file
+      #- ./logstash.yml:/usr/share/logstash/config/logstash.yml # Mount the Logstash YAML configuration file
+      - certs:/usr/share/logstash/config/certs # Add this line
     environment:
-      - "LS_JAVA_OPTS=-Xmx256m -Xms256m" # Set the Java options for Logstash (memory settings)
+      - "LS_JAVA_OPTS=-Xmx512m -Xms512m" # Set the Java options for Logstash (memory settings)
     ports:
       - 4000:4000 # Expose Logstash's listening port
     mem_limit: ${MEM_LIMIT} # Set the memory limit for the container
+    networks:
+      - elk
 
-  metricbeat: # Metricbeat service
+  metricbeat:
+    # Metricbeat service
     image: docker.elastic.co/beats/metricbeat:${STACK_VERSION} # Metricbeat image to use
     container_name: metricbeat # Name for the container
     volumes:
       - ./metricbeat.yml:/usr/share/metricbeat/metricbeat.yml # Mount the Metricbeat configuration file
       - /var/run/docker.sock:/var/run/docker.sock # Mount the Docker socket for container metrics
-    depends_on: # Define dependencies for the service
+    depends_on:
+      # Define dependencies for the service
       - logstash
       - es01
     command: metricbeat -e -strict.perms=false # Start Metricbeat with error logging and disabled strict permission checks
+    networks:
+      - elk
 
-
-  nginx: # Nginx service
-    depends_on: # Define dependencies for the service
+  nginx:
+    # Nginx service
+    depends_on:
+      # Define dependencies for the service
       kibana:
         condition: service_healthy
     image: nginx:stable # Use the stable Nginx image
     container_name: nginx # Name for the container
-    ports: # Expose Nginx ports
+    ports:
+      # Expose Nginx ports
       - "80:80" # Map host port 80 to container port 80 (HTTP)
       - "443:443" # Map host port 443 to container port 443 (HTTPS)
-    volumes: # Define volumes for the service
+    volumes:
+      # Define volumes for the service
       - ./nginx.conf:/etc/nginx/nginx.conf:ro # Mount the Nginx configuration file as read-only
       - ./certs:/etc/nginx/certs:ro # Mount the SSL certificates directory as read-only
       - ./logs:/var/log/nginx # Mount the Nginx logs directory
+    networks:
+      - elk
 
-
-volumes:  # Define volumes used in the services
+volumes:
+  # Define volumes used in the services
   certs:
     driver: local
   esdata01:
     driver: local
   kibanadata:
     driver: local
+
+networks:
+  elk:
+    driver: bridge
