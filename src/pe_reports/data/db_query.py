@@ -1046,3 +1046,21 @@ def upsert_new_cves(new_cves):
     finally:
         if conn is not None:
             close(conn)
+
+def insertServiceIPs(serviceDict):
+    """Insert service IPs into the database."""
+    conn = connect()
+    
+    sql = """INSERT INTO service_ips (network,service_provider,first_addr,last_addr)
+            VALUES (%s,%s,%s,%s)"""
+    cur = conn.cursor()
+    try:
+        cur.execute(sql, (serviceDict["network"],serviceDict["service_provider"],serviceDict["first_addr"],serviceDict["last_addr"]))
+        conn.commit()
+    except (Exception, psycopg2.DatabaseError) as error:
+        LOGGER.error("There was a problem with your database query %s", error)
+        print("error")
+    finally:
+        cur.close()
+        if conn is not None:
+            close(conn)
