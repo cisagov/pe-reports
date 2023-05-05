@@ -2,10 +2,11 @@
 
 
 class Dog:
-    def __init__(self,x, y):
+    def __init__(self, x, y):
         self.x = x
         self.y = y
-        
+
+
 def main():
     pass
 
