@@ -382,7 +382,9 @@ def init(
     }
 
     # Get ASM values
+    LOGGER.info("Getting asset counts")
     asset_dict = get_org_assets_count(org_uid)
+    LOGGER.info("finished getting asset counts")
     asset_dict_past = get_org_assets_count_past(org_uid, start_date - timedelta(days=1))
     LOGGER.info("Past report date: %s", start_date - timedelta(days=1))
 

@@ -15,7 +15,7 @@ from .data.db_query import (
     find_last_data_updated,
     find_last_scan_date,
     get_scorecard_metrics_past,
-    query_certs_counts,
+    query_certs,
     query_domain_counts,
     query_https_scan,
     query_ips_counts,
@@ -90,7 +90,7 @@ class Scorecard:
         self.domain_counts = query_domain_counts(org_uid_list)
         # # TODO possibly need to format a date string based on the new column
         self.web_app_counts = query_web_app_counts(start_date, org_uid_list)
-        self.cert_counts = query_certs_counts()
+        self.cert_counts = query_certs(start_date, end_date)
 
         # self.ports_data = query_cyhy_port_scans(start_date, end_date, org_uid_list)
         self.profiling_dict = query_profiling_views(start_date, org_uid_list)
@@ -178,8 +178,16 @@ class Scorecard:
             self.scorecard_dict["web_apps_monitored"] = None
 
         # TODO add certs
-        self_reported_certs = self.cert_counts[0] if self.cert_counts[0] else 0
-        discovered_certs = self.cert_counts[1] if self.cert_counts[1] else 0
+        certs_df = self.cert_counts
+        certs_df_filtered = certs_df[
+            certs_df["organizations_uid"].isin(self.org_uid_list)
+        ]
+        certs_count = certs_df_filtered["count"].sum()
+        if certs_count:
+            self_reported_certs = certs_count
+        else:
+            self_reported_certs = 0
+        discovered_certs = 0
 
         self.scorecard_dict["certs_self_reported"] = self_reported_certs
         self.scorecard_dict["certs_discovered"] = discovered_certs

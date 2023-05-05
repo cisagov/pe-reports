@@ -3,16 +3,22 @@
 
 # Standard Python Libraries
 import datetime
+import datetime
 import logging
 import sys
 
 # Third-Party Libraries
 import pandas as pd
+import pandas as pd
 import psycopg2
 from psycopg2 import OperationalError
 from psycopg2.extensions import AsIs
+from psycopg2.extensions import AsIs
 
 from .config import config, staging_config
+
+# from pe_reports.data.cyhy_db_query import pe_db_staging_connect as connect
+
 
 # from pe_reports.data.cyhy_db_query import pe_db_staging_connect as connect
 
@@ -273,12 +279,25 @@ def query_web_app_counts(date_period, org_uid_list):
     return web_app_counts
 
 
-def query_certs_counts():
-    """Query certificate counts."""
-    LOGGER.info("Query cert counts")
-    self_reported_certs = None
-    discovered_certs = None
-    return (self_reported_certs, discovered_certs)
+def query_certs(start_date, end_date):
+    """Query certs counts for organizations."""
+    conn = connect()
+    try:
+        sql = """select cd.organizations_uid , count(cc.serial)
+        from cyhy_certs cc
+        left join cyhy_domains cd on
+        cd."domain" = cc.trimmed_subjects
+        where not_before >= %(start_date)s and not_after > %(end_date)s
+        group by cd.organizations_uid"""
+        certs_df = pd.read_sql(
+            sql, conn, params={"start_date": start_date, "end_date": end_date}
+        )
+        return certs_df
+    except (Exception, psycopg2.DatabaseError) as error:
+        LOGGER.error("There was a problem with your database query %s", error)
+    finally:
+        if conn is not None:
+            close(conn)
 
 
 def query_https_scan(org_id_list):
@@ -359,17 +378,81 @@ def query_trusty_mail(org_id_list):
             close(conn)
 
 
+# v ---------- D-Score SQL Queries ---------- v
+# ----- VS Cert -----
+def query_dscore_vs_data_cert():
+    """Query all VS certificate data needed for D-Score calculation."""
+    # Open connection
+    conn = connect()
+    # Make query
+    sql = """SELECT * FROM vw_dscore_vs_cert;"""
+    dscore_vs_data_cert = pd.read_sql(sql, conn)
+    # Close connection
+    conn.close()
+    return dscore_vs_data_cert
+
+
+# ----- VS Mail -----
+def query_dscore_vs_data_mail():
+    """Query all VS mail data needed for D-Score calculation."""
+    # Open connection
+    conn = connect()
+    # Make query
+    sql = """SELECT * FROM vw_dscore_vs_mail;"""
+    dscore_vs_data_mail = pd.read_sql(sql, conn)
+    # Close connection
+    conn.close()
+    return dscore_vs_data_mail
+
+
+# ----- PE IP -----
+def query_dscore_pe_data_ip():
+    """Query all PE IP data needed for D-Score calculation."""
+    # Open connection
+    conn = connect()
+    # Make query
+    sql = """SELECT * FROM vw_dscore_pe_ip;"""
+    dscore_pe_data_ip = pd.read_sql(sql, conn)
+    # Close connection
+    conn.close()
+    return dscore_pe_data_ip
+
+
+# ----- PE Domain -----
+def query_dscore_pe_data_domain():
+    """Query all PE domain data needed for D-Score calculation."""
+    # Open connection
+    conn = connect()
+    # Make query
+    sql = """SELECT * FROM vw_dscore_pe_domain;"""
+    dscore_pe_data_domain = pd.read_sql(sql, conn)
+    # Close connection
+    conn.close()
+    return dscore_pe_data_domain
+
+
+# ----- WAS Webapp -----
+def query_dscore_was_data_webapp():
+    """Query all WAS webapp data needed for D-Score calculation."""
+    # Open connection
+    conn = connect()
+    # Make query
+    sql = """SELECT * FROM vw_dscore_was_webapp;"""
+    dscore_was_data_webapp = pd.read_sql(sql, conn)
+    # Close connection
+    conn.close()
+    return dscore_was_data_webapp
+
+
 # v ---------- I-Score SQL Queries ---------- v
 # ----- VS Vulns -----
-def query_iscore_vs_data_vuln(start_date, end_date):
+def query_iscore_vs_data_vuln():
     """Query all VS vuln data needed for I-Score calculation."""
     # Open connection
     conn = connect()
     # Make query
-    sql = """SELECT * FROM vw_iscore_vs_vuln WHERE date BETWEEN %(start_date)s AND %(end_date)s;"""
-    iscore_vs_vuln_data = pd.read_sql(
-        sql, conn, params={"start_date": start_date, "end_date": end_date}
-    )
+    sql = """SELECT * FROM vw_iscore_vs_vuln;"""
+    iscore_vs_vuln_data = pd.read_sql(sql, conn)
     # Close connection
     conn.close()
     # Check if dataframe comes back empty
@@ -382,7 +465,6 @@ def query_iscore_vs_data_vuln(start_date, end_date):
                 pd.DataFrame(
                     {
                         "organizations_uid": "test_org",
-                        "date": datetime.date(1, 1, 1),
                         "cve_name": "test_cve",
                         "cvss_score": 1.0,
                     },
@@ -392,6 +474,40 @@ def query_iscore_vs_data_vuln(start_date, end_date):
             ignore_index=True,
         )
     return iscore_vs_vuln_data
+
+
+# ----- VS Vulns Previous -----
+def query_iscore_vs_data_vuln_prev(start_date, end_date):
+    """Query all VS prev vuln data needed for I-Score calculation."""
+    # Open connection
+    conn = connect()
+    # Make query
+    sql = """SELECT * FROM vw_iscore_vs_vuln_prev WHERE time_closed BETWEEN %(start_date)s AND %(end_date)s;"""
+    iscore_vs_vuln_prev_data = pd.read_sql(
+        sql, conn, params={"start_date": start_date, "end_date": end_date}
+    )
+    # Close connection
+    conn.close()
+    # Check if dataframe comes back empty
+    if iscore_vs_vuln_prev_data.empty:
+        # If empty, insert placeholder data row
+        # This data will not affect score calculations
+        iscore_vs_vuln_prev_data = pd.concat(
+            [
+                iscore_vs_vuln_prev_data,
+                pd.DataFrame(
+                    {
+                        "organizations_uid": "test_org",
+                        "cve_name": "test_cve",
+                        "cvss_score": 1.0,
+                        "time_closed": datetime.date(1, 1, 1),
+                    },
+                    index=[0],
+                ),
+            ],
+            ignore_index=True,
+        )
+    return iscore_vs_vuln_prev_data
 
 
 # ----- PE Vulns -----
@@ -428,6 +544,10 @@ def query_iscore_pe_data_vuln(start_date, end_date):
     return iscore_pe_vuln_data
 
 
+# ----- PE Vulns Previous -----
+# Uses query_iscore_pe_data_vuln, but with prev report period dates
+
+
 # ----- PE Creds -----
 def query_iscore_pe_data_cred(start_date, end_date):
     """Query all PE cred data needed for I-Score calculation."""
@@ -440,6 +560,25 @@ def query_iscore_pe_data_cred(start_date, end_date):
     )
     # Close connection
     conn.close()
+    # Check if dataframe comes back empty
+    if iscore_pe_cred_data.empty:
+        # If empty, insert placeholder data row
+        # This data will not affect score calculations
+        iscore_pe_cred_data = pd.concat(
+            [
+                iscore_pe_cred_data,
+                pd.DataFrame(
+                    {
+                        "organizations_uid": "test_org",
+                        "date": datetime.date(1, 1, 1),
+                        "password_creds": 0,
+                        "total_creds": 0,
+                    },
+                    index=[0],
+                ),
+            ],
+            ignore_index=True,
+        )
     return iscore_pe_cred_data
 
 
@@ -455,6 +594,24 @@ def query_iscore_pe_data_breach(start_date, end_date):
     )
     # Close connection
     conn.close()
+    # Check if dataframe comes back empty
+    if iscore_pe_breach_data.empty:
+        # If empty, insert placeholder data row
+        # This data will not affect score calculations
+        iscore_pe_breach_data = pd.concat(
+            [
+                iscore_pe_breach_data,
+                pd.DataFrame(
+                    {
+                        "organizations_uid": "test_org",
+                        "date": datetime.date(1, 1, 1),
+                        "breach_count": 0,
+                    },
+                    index=[0],
+                ),
+            ],
+            ignore_index=True,
+        )
     return iscore_pe_breach_data
 
 
@@ -464,12 +621,31 @@ def query_iscore_pe_data_darkweb(start_date, end_date):
     # Open connection
     conn = connect()
     # Make query
-    sql = """SELECT * FROM vw_iscore_pe_darkweb WHERE date BETWEEN %(start_date)s AND %(end_date)s;"""
+    sql = """SELECT * FROM vw_iscore_pe_darkweb WHERE date BETWEEN %(start_date)s AND %(end_date)s OR date = '0001-01-01';"""
     iscore_pe_darkweb_data = pd.read_sql(
         sql, conn, params={"start_date": start_date, "end_date": end_date}
     )
     # Close connection
     conn.close()
+    # Check if dataframe comes back empty
+    if iscore_pe_darkweb_data.empty:
+        # If empty, insert placeholder data row
+        # This data will not affect score calculations
+        iscore_pe_darkweb_data = pd.concat(
+            [
+                iscore_pe_darkweb_data,
+                pd.DataFrame(
+                    {
+                        "organizations_uid": "test_org",
+                        "alert_type": "TEST_TYPE",
+                        "date": datetime.date(1, 1, 1),
+                        "Count": 0,
+                    },
+                    index=[0],
+                ),
+            ],
+            ignore_index=True,
+        )
     return iscore_pe_darkweb_data
 
 
@@ -485,6 +661,27 @@ def query_iscore_pe_data_protocol(start_date, end_date):
     )
     # Close connection
     conn.close()
+    # Check if dataframe comes back empty
+    if iscore_pe_protocol_data.empty:
+        # If empty, insert placeholder data row
+        # This data will not affect score calculations
+        iscore_pe_protocol_data = pd.concat(
+            [
+                iscore_pe_protocol_data,
+                pd.DataFrame(
+                    {
+                        "organizations_uid": "test_org",
+                        "port": "test_port",
+                        "ip": "test_ip",
+                        "protocol": "test_protocol",
+                        "protocol_type": "test_type",
+                        "date": datetime.date(1, 1, 1),
+                    },
+                    index=[0],
+                ),
+            ],
+            ignore_index=True,
+        )
     return iscore_pe_protocol_data
 
 
@@ -509,7 +706,7 @@ def query_iscore_was_data_vuln(start_date, end_date):
                 iscore_was_vuln_data,
                 pd.DataFrame(
                     {
-                        "org_id": "test_org",
+                        "organizations_uid": "test_org",
                         "date": datetime.date(1, 1, 1),
                         "cve_name": "test_cve",
                         "cvss_score": 1.0,
@@ -523,6 +720,134 @@ def query_iscore_was_data_vuln(start_date, end_date):
     return iscore_was_vuln_data
 
 
+# ----- WAS Vulns Previous -----
+def query_iscore_was_data_vuln_prev(start_date, end_date):
+    """Query all WAS prev vuln data needed for I-Score calculation."""
+    # Open connection
+    conn = connect()
+    # Make query
+    sql = """SELECT * FROM vw_iscore_was_vuln_prev WHERE date BETWEEN %(start_date)s AND %(end_date)s;"""
+    iscore_was_vuln_prev_data = pd.read_sql(
+        sql, conn, params={"start_date": start_date, "end_date": end_date}
+    )
+    # Close connection
+    conn.close()
+    # Check if dataframe comes back empty
+    if iscore_was_vuln_prev_data.empty:
+        # If empty, insert placeholder data row
+        # This data will not affect score calculations
+        iscore_was_vuln_prev_data = pd.concat(
+            [
+                iscore_was_vuln_prev_data,
+                pd.DataFrame(
+                    {
+                        "organizations_uid": "test_org",
+                        "was_total_vulns_prev": 0,
+                        "date": datetime.date(1, 1, 1),
+                    },
+                    index=[0],
+                ),
+            ],
+            ignore_index=True,
+        )
+    return iscore_was_vuln_prev_data
+
+
+# ----- KEV List -----
+def query_kev_list():
+    """Query list of all CVE names that are considered KEVs."""
+    # Open connection
+    conn = connect()
+    # Make query
+    sql = """SELECT kev FROM cyhy_kevs;"""
+    kev_list = pd.read_sql(sql, conn)
+    # Close connection
+    conn.close()
+    return kev_list
+
+
+# v ---------- Misc. Score SQL Queries ---------- v
+# ----- All FCEB Parents List -----
+def query_fceb_parent_list():
+    """Query list of all FCEB parent stakeholders (all FCEB excluding child orgs)."""
+    # Open connection
+    conn = connect()
+    # Make query
+    sql = """SELECT organizations_uid, cyhy_db_name FROM organizations WHERE fceb = true AND retired = false AND election = false;"""
+    fceb_parent_list = pd.read_sql(sql, conn)
+    # Close connection
+    conn.close()
+    return fceb_parent_list
+
+
+# ----- XS Stakeholder List -----
+def query_xs_stakeholder_list():
+    """Query list of all stakeholders that fall in the XS group/sector."""
+    # Open connection
+    conn = connect()
+    # Make query
+    sql = """SELECT organizations_uid, cyhy_db_name FROM vw_iscore_orgs_ip_counts WHERE ip_count >= 0 AND ip_count <= 100;"""
+    xs_stakeholder_list = pd.read_sql(sql, conn)
+    # Close connection
+    conn.close()
+    return xs_stakeholder_list
+
+
+# ----- S Stakeholder List -----
+def query_s_stakeholder_list():
+    """Query list of all stakeholders that fall in the S group/sector."""
+    # Open connection
+    conn = connect()
+    # Make query
+    sql = """SELECT organizations_uid, cyhy_db_name FROM vw_iscore_orgs_ip_counts WHERE ip_count > 100 AND ip_count <= 1000;"""
+    s_stakeholder_list = pd.read_sql(sql, conn)
+    # Close connection
+    conn.close()
+    return s_stakeholder_list
+
+
+# ----- M Stakeholder List -----
+def query_m_stakeholder_list():
+    """Query list of all stakeholders that fall in the M group/sector."""
+    # Open connection
+    conn = connect()
+    # Make query
+    sql = """SELECT organizations_uid, cyhy_db_name FROM vw_iscore_orgs_ip_counts WHERE (ip_count > 1000 AND ip_count <= 10000)
+    OR ip_count = -1;"""
+    # Any stakeholderes not reported on get put in this
+    # sector by default
+    m_stakeholder_list = pd.read_sql(sql, conn)
+    # Close connection
+    conn.close()
+    return m_stakeholder_list
+
+
+# ----- L Stakeholder List -----
+def query_l_stakeholder_list():
+    """Query list of all stakeholders that fall in the L group/sector."""
+    # Open connection
+    conn = connect()
+    # Make query
+    sql = """SELECT organizations_uid, cyhy_db_name FROM vw_iscore_orgs_ip_counts WHERE ip_count > 10000 AND ip_count <= 100000;"""
+    l_stakeholder_list = pd.read_sql(sql, conn)
+    # Close connection
+    conn.close()
+    return l_stakeholder_list
+
+
+# ----- XL Stakeholder List -----
+def query_xl_stakeholder_list():
+    """Query list of all stakeholders that fall in the XL group/sector."""
+    # Open connection
+    conn = connect()
+    # Make query
+    sql = """SELECT organizations_uid, cyhy_db_name FROM vw_iscore_orgs_ip_counts WHERE ip_count > 100000;"""
+    xl_stakeholder_list = pd.read_sql(sql, conn)
+    # Close connection
+    conn.close()
+    return xl_stakeholder_list
+
+
 # ----- PE Stakeholder List -----
 def query_pe_stakeholder_list():
     """Query list of all stakeholders PE reports on."""
@@ -534,20 +859,6 @@ def query_pe_stakeholder_list():
     # Close connection
     conn.close()
     return pe_stakeholder_list
-
-
-# ----- KEV List -----
-def query_kev_list():
-    """Query list of all CVE names that are considered KEVs."""
-    print("running query_kev_list2")
-    # Open connection
-    conn = connect()
-    # Make query
-    sql = """SELECT kev FROM cyhy_kevs;"""
-    kev_list = pd.read_sql(sql, conn)
-    # Close connection
-    conn.close()
-    return kev_list
 
 
 def query_cyhy_snapshots(start_date, end_date):

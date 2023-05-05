@@ -33,7 +33,7 @@ import pe_reports
 
 from ._version import __version__
 from .asm_generator import create_summary
-from .data.db_query import connect, get_orgs
+from .data.db_query import connect, get_orgs, refresh_asset_counts_vw, set_from_cidr
 from .helpers.generate_score import get_pe_scores
 from .pages import init
 from .reportlab_generator import report_gen
@@ -156,8 +156,13 @@ def generate_reports(datestring, output_directory, soc_med_included=False):
         return 1
     generated_reports = 0
 
-    # Iterate over organizations
+    # Resfresh ASM counts view
+    # LOGGER.info("Refreshing ASM count view and IPs from cidrs")
+    # refresh_asset_counts_vw()
+    # set_from_cidr()
+    # LOGGER.info("Finished refreshing ASM count view and IPs from Cidrs")
 
+    # Iterate over organizations
 
     if pe_orgs:
         LOGGER.info("PE orgs count: %d", len(pe_orgs))
