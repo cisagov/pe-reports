@@ -1215,9 +1215,34 @@ CREATE VIEW public.new_vw_breach_complete AS
     FROM (public.credential_exposures creds
         JOIN public.credential_breaches b ON ((creds.credential_breaches_uid = b.credential_breaches_uid)));
 
+
+
 --
 -- Name: vw_cidrs; Type: VIEW; Schema: public; Owner: pe
 --
+
+CREATE VIEW vw_orgs_all_ips(organizations_uid, cyhy_db_name, ip_addresses) AS
+SELECT reported_orgs.organizations_uid,
+       reported_orgs.cyhy_db_name,
+       array_agg(all_ips.ip) AS ip_addresses
+FROM (SELECT organizations.organizations_uid,
+             organizations.cyhy_db_name
+      FROM organizations
+      WHERE organizations.report_on = true) reported_orgs
+LEFT JOIN (SELECT cidrs_table.organizations_uid,
+                  ips_table.ip
+           FROM ips ips_table
+           JOIN cidrs cidrs_table ON ips_table.origin_cidr = cidrs_table.cidr_uid
+           UNION
+           SELECT rd.organizations_uid,
+                  i.ip
+           FROM root_domains rd
+           JOIN sub_domains sd ON rd.root_domain_uid = sd.root_domain_uid
+           JOIN ips_subs si ON sd.sub_domain_uid = si.sub_domain_uid
+           JOIN ips i ON si.ip_hash = i.ip_hash) all_ips
+ON reported_orgs.organizations_uid = all_ips.organizations_uid
+GROUP BY reported_orgs.organizations_uid, reported_orgs.cyhy_db_name
+ORDER BY reported_orgs.organizations_uid, reported_orgs.cyhy_db_name;
 
 create view vw_cidrs
             (cidr_uid, network, organizations_uid, data_source_uid,

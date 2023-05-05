@@ -53,6 +53,7 @@ from home.models import Organizations
 from home.models import VwBreachcomp
 from home.models import VwBreachcompCredsbydate
 from home.models import VwCidrs
+from home.models import VwOrgsAllIps
 from home.models import VwOrgsAttacksurface
 from home.models import VwBreachcompBreachdetails
 from home.models import WasTrackerCustomerdata
@@ -239,15 +240,13 @@ def read_weekly_statuses(tokens: dict = Depends(get_api_key)):
     week_ending_date = current_date + timedelta(days=days_to_week_end)
     statuses = list(WeeklyStatuses.objects.filter(week_ending=week_ending_date))
 
-    if tokens:
-        # LOGGER.info(f"The api key submitted {tokens}")
-        try:
-            userapiTokenverify(theapiKey=tokens)
-            return statuses
-        except:
-            LOGGER.info('API key expired please try again')
-    else:
-        return {'message': "No api key was submitted"}
+    # LOGGER.info(f"The api key submitted {tokens}")
+    try:
+        userapiTokenverify(theapiKey=tokens)
+        return statuses
+    except:
+        LOGGER.info('API key expired please try again')
+
 
 
 
@@ -512,6 +511,32 @@ def upload(file: UploadFile = File(...)):
 
     finally:
         file.file.close()
+
+@api_router.post("/vs_info", dependencies=[Depends(get_api_key)],
+                 response_model=List[schemas.VwOrgsAllIps],
+                 tags=["List of all VS data"])
+def vs_info(cyhy_db_names: List[str], tokens: dict = Depends(get_api_key)):
+    """API endpoint to get all WAS data."""
+    print(cyhy_db_names)
+    vs_data = list(VwOrgsAllIps.objects.filter(cyhy_db_name__in=cyhy_db_names))
+
+
+
+
+    # orgs_df = pd.DataFrame(orgs)
+
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            if not vs_data:
+                raise HTTPException(status_code=404,
+                                    detail="No matching records found")
+            return vs_data
+
+        except:
+            LOGGER.info('API key expired please try again')
+    else:
+        return {'message': "No api key was submitted"}
 
 @api_router.post("/was_info", dependencies=[Depends(get_api_key)],
                  response_model=List[schemas.WASDataBase],

@@ -1,5 +1,6 @@
 from django import forms
 from django.contrib.auth.models import User
+from django.contrib import messages
 from .models import TeamMembers
 import requests
 from decouple import config
@@ -59,7 +60,7 @@ class WeeklyStatusesForm(forms.Form):
     pto_time = forms.CharField(label='Upcoming PTO',
                                widget=forms.Textarea(attrs={"rows": "2"}))
 
-    def __init__(self, *args, user=None, **kwargs):
+    def __init__(self, *args, user=None, request=None, **kwargs):
         super(WeeklyStatusesForm, self).__init__(*args, **kwargs)
         self.current_user = user
         for visible in self.visible_fields():
@@ -69,11 +70,20 @@ class WeeklyStatusesForm(forms.Form):
         if self.current_user and self.current_user.is_authenticated:
             theGHUsersname = TeamMembers.objects.\
                 filter(team_member_fname=self.current_user.first_name)
-            user_issues_dict = getGHUsers(self.url, theGHUsersname[0].team_member_ghID)
+            user_issues_dict = getGHUsers(self.url,
+                                          theGHUsersname[0].team_member_ghID)
+            if user_issues_dict:
+                pass
+
+            else:
+                messages.warning(request,
+                                 "The customer IP %s is not a valid IP, please try again.",
+                                 "danger", e)
+                return HttpResponseRedirect("/stakeholder/")
             user_issues = user_issues_dict.get(theGHUsersname[0].team_member_ghID,[])
             choices = [(issue, issue) for issue in user_issues]
             self.fields['theuserIssues'].choices = choices
-            # self.fields['theuserIssues'].label = f'Github Issues for {self.current_user.first_name}'
+
 
 
 

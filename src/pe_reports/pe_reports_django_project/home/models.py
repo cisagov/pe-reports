@@ -7,6 +7,7 @@
 #   * Remove `managed = False` lines if you wish to allow Django to create, modify, and delete the table
 # Feel free to rename the models, but don't rename db_table values or field names.
 from django.db import models
+from django.contrib.postgres.fields import ArrayField
 from django.conf import settings
 import uuid
 
@@ -1037,6 +1038,15 @@ class VwBreachcompCredsbydate(models.Model):
         managed = False  # Created from a view. Don't remove.
         db_table = 'vw_breachcomp_credsbydate'
 
+# class VwDarkwebMentionsbydate(models.Model):
+#     organizations_uid = models.UUIDField(primary_key=True)
+#     date = models.DateField(blank=True, null=True)
+#     count = models.BigIntegerField(db_column='Count', blank=True, null=True)  # Field name made lowercase.
+#
+#     class Meta:
+#         managed = False  # Created from a view. Don't remove.
+#         db_table = 'vw_darkweb_mentionsbydate'
+
 class VwDarkwebMentionsbydate(models.Model):
     organizations_uid = models.UUIDField(primary_key=True)
     date = models.DateField(blank=True, null=True)
@@ -1283,6 +1293,15 @@ class VwOrgsTotalIps(models.Model):
     class Meta:
         managed = False  # Created from a view. Don't remove.
         db_table = 'vw_orgs_total_ips'
+
+class VwOrgsAllIps(models.Model):
+    organizations_uid = models.UUIDField(primary_key=True)
+    cyhy_db_name = models.TextField(blank=True, null=True)
+    ip_addresses = ArrayField(models.CharField(max_length=255, blank=True, null=True), blank=True, null=True)
+
+    class Meta:
+        managed = False  # Created from a view. Don't remove.
+        db_table = 'vw_orgs_all_ips'
 
 
 class VwOrgsAttacksurface(models.Model):

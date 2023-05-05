@@ -34,6 +34,7 @@ from dataAPI.views import api_router
 
 
 def get_application() -> FastAPI:
+    """Get FastAPI application and mount to Django application"""
     app1 = FastAPI(title=settings.PROJECT_NAME,
                    debug=settings.DEBUG,
                    default_response_class=ORJSONResponse)

@@ -27,6 +27,7 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("stakeholder_lite/", include('stakeholder_lite.urls')),
     path("bulkupload/", include('bulkupload.urls')),
+    path('accounts/', include('django.contrib.auth.urls')),
 
 ]
 
