@@ -4,7 +4,7 @@ import uuid
 from pydantic import BaseModel, Field, EmailStr
 from pydantic.schema import Optional
 # from pydantic.types import UUID1, UUID
-from typing import Any, Optional
+from typing import Any, Optional, List
 from uuid import UUID, uuid4, uuid1
 from datetime import date, datetime
 
@@ -121,6 +121,15 @@ class VwOrgsAttacksurfaceInput(BaseModel):
 
     class Config:
         orm_mode = True
+
+class MatVwOrgsAllIps(BaseModel):
+    organizations_uid: Any
+    cyhy_db_name: str
+    ip_addresses: List[Optional[str]] = []
+
+    class Config:
+        orm_mode = True
+
 
 class WASDataBase(BaseModel):
     # customer_id: UUID
