@@ -122,7 +122,7 @@ class VwOrgsAttacksurfaceInput(BaseModel):
     class Config:
         orm_mode = True
 
-class VwOrgsAllIps(BaseModel):
+class MatVwOrgsAllIps(BaseModel):
     organizations_uid: Any
     cyhy_db_name: str
     ip_addresses: List[Optional[str]] = []
