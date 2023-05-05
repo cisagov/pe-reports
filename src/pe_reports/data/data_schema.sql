@@ -1221,10 +1221,11 @@ CREATE VIEW public.new_vw_breach_complete AS
 -- Name: vw_cidrs; Type: VIEW; Schema: public; Owner: pe
 --
 
-CREATE VIEW vw_orgs_all_ips(organizations_uid, cyhy_db_name, ip_addresses) AS
-SELECT reported_orgs.organizations_uid,
-       reported_orgs.cyhy_db_name,
-       array_agg(all_ips.ip) AS ip_addresses
+CREATE MATERIALIZED VIEW IF NOT EXISTS mat_vw_orgs_all_ips(organizations_uid, cyhy_db_name, ip_addresses)
+TABLESPACE pg_default
+AS SELECT reported_orgs.organizations_uid,
+          reported_orgs.cyhy_db_name,
+          array_agg(all_ips.ip) AS ip_addresses
 FROM (SELECT organizations.organizations_uid,
              organizations.cyhy_db_name
       FROM organizations
@@ -1242,17 +1243,11 @@ LEFT JOIN (SELECT cidrs_table.organizations_uid,
            JOIN ips i ON si.ip_hash = i.ip_hash) all_ips
 ON reported_orgs.organizations_uid = all_ips.organizations_uid
 GROUP BY reported_orgs.organizations_uid, reported_orgs.cyhy_db_name
-ORDER BY reported_orgs.organizations_uid, reported_orgs.cyhy_db_name;
+ORDER BY reported_orgs.organizations_uid, reported_orgs.cyhy_db_name
+WITH DATA;
 
-create view vw_cidrs
-            (cidr_uid, network, organizations_uid, data_source_uid,
-             insert_alert) as
-SELECT cidrs.cidr_uid,
-       cidrs.network,
-       cidrs.organizations_uid,
-       cidrs.data_source_uid,
-       cidrs.insert_alert
-FROM cidrs;
+-- To refresh the materialized view
+REFRESH MATERIALIZED VIEW mat_vw_orgs_all_ips;
 
 --
 -- Name: SCHEMA public; Type: ACL; Schema: -; Owner: postgres
