@@ -115,6 +115,7 @@ setup(
         "flask_migrate",
         "flask_wtf",
         "Flask-SQLAlchemy",
+        "flower",
         "googletrans",
         "idna == 2.05",
         "importlib_resources == 5.4.0",
