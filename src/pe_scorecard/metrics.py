@@ -603,7 +603,7 @@ class Scorecard:
         """Get the Scorecard metrics from the last month."""
         scorecard_dict_past = get_scorecard_metrics_past(
             self.org_data["organizations_uid"],
-            self.start_date - datetime.timedelta(days=1),
+            self.start_date,
         )
         LOGGER.info(
             "Past report date: %s", self.start_date - datetime.timedelta(days=1)
@@ -630,22 +630,22 @@ class Scorecard:
             identification_trend = self.scorecard_dict.get("identification_score", 0)
             tracking_trend = self.scorecard_dict.get("tracking_score", 0)
         else:
-            ips_monitored_trend = scorecard_dict_past["ips_monitored"]
-            domains_monitored_trend = scorecard_dict_past["domains_monitored"]
-            web_apps_monitored_trend = scorecard_dict_past["web_apps_monitored"]
-            certs_monitored_trend = scorecard_dict_past["certs_monitored"]
-            ports_total_trend = scorecard_dict_past["total_ports"]
-            ports_risky_trend = scorecard_dict_past["risky_ports"]
-            protocol_total_trend = scorecard_dict_past["protocols"]
-            protocol_insecure_trend = scorecard_dict_past["insecure_protocols"]
-            services_total_trend = scorecard_dict_past["total_services"]
-            software_unsupported_trend = scorecard_dict_past["unsupported_software"]
-            email_compliance_last_period = scorecard_dict_past["email_compliance_pct"]
-            https_compliance_last_period = scorecard_dict_past["https_compliance_pct"]
-            discovery_trend = scorecard_dict_past["discovery_score"]
-            profiling_trend = scorecard_dict_past["profiling_score"]
-            identification_trend = scorecard_dict_past["identification_score"]
-            tracking_trend = scorecard_dict_past["tracking_score"]
+            ips_monitored_trend = scorecard_dict_past["ips_monitored"][0]
+            domains_monitored_trend = scorecard_dict_past["domains_monitored"][0]
+            web_apps_monitored_trend = scorecard_dict_past["web_apps_monitored"][0]
+            certs_monitored_trend = scorecard_dict_past["certs_monitored"][0]
+            ports_total_trend = scorecard_dict_past["total_ports"][0]
+            ports_risky_trend = scorecard_dict_past["risky_ports"][0]
+            protocol_total_trend = scorecard_dict_past["protocols"][0]
+            protocol_insecure_trend = scorecard_dict_past["insecure_protocols"][0]
+            services_total_trend = scorecard_dict_past["total_services"][0]
+            software_unsupported_trend = scorecard_dict_past["unsupported_software"][0]
+            email_compliance_last_period = scorecard_dict_past["email_compliance_pct"][0]
+            https_compliance_last_period = scorecard_dict_past["https_compliance_pct"][0]
+            discovery_trend = scorecard_dict_past["discovery_score"][0]
+            profiling_trend = scorecard_dict_past["profiling_score"][0]
+            identification_trend = scorecard_dict_past["identification_score"][0]
+            tracking_trend = scorecard_dict_past["tracking_score"][0]
 
         past_scorecard_metrics_dict = {
             "ips_monitored_trend": ips_monitored_trend,
