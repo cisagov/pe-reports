@@ -1010,6 +1010,7 @@ class WebAssets(models.Model):
         db_table = 'web_assets'
         unique_together = (('asset', 'organizations_uid'),)
 
+
 class WeeklyStatuses(models.Model):
     weekly_status_uid = models.UUIDField(primary_key=True, default=uuid.uuid1())
     user_status = models.TextField(blank=True)
