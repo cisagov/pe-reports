@@ -102,7 +102,7 @@ setup(
         "dshield",
         "dnspython == 2.2.1",
         "importlib_resources == 5.4.0",
-        "pandas == 1.1.5",
+        "pandas == 1.5.1",
         "psycopg2-binary == 2.9.3",
         "schema == 0.7.5",
         "shodan == 1.27.0",
