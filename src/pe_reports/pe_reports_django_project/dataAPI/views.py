@@ -514,7 +514,7 @@ def upload(file: UploadFile = File(...)):
         file.file.close()
 
 @api_router.post("/vs_info", dependencies=[Depends(get_api_key)],
-                 response_model=List[schemas.MatVwOrgsAllIps],
+                 response_model=schemas.TaskResponse,
                  tags=["List of all VS data"])
 def vs_info(cyhy_db_names: List[str], tokens: dict = Depends(get_api_key)):
     """API endpoint to get all WAS data."""
@@ -531,7 +531,7 @@ def vs_info(cyhy_db_names: List[str], tokens: dict = Depends(get_api_key)):
         return {'message': "No api key was submitted"}
 
 @api_router.get("/vs_info/task/{task_id}", dependencies=[Depends(get_api_key)],
-                response_model=List[schemas.MatVwOrgsAllIps],
+                response_model=schemas.TaskResponse,
                 tags=["Check task status"])
 async def get_task_status(task_id: str, tokens: dict = Depends(get_api_key)):
     task = tasks.get_vs_info.AsyncResult(task_id)
