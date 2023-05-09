@@ -537,13 +537,13 @@ async def get_task_status(task_id: str, tokens: dict = Depends(get_api_key)):
     task = tasks.get_vs_info.AsyncResult(task_id)
 
     if task.state == "SUCCESS":
-        return {"status": "Completed", "result": task.result}
+        return {"task_id": task_id, "status": "Completed", "result": task.result}
     elif task.state == "PENDING":
-        return {"status": "Pending"}
+        return {"task_id": task_id, "status": "Pending"}
     elif task.state == "FAILURE":
-        return {"status": "Failed", "error": str(task.result)}
+        return {"task_id": task_id, "status": "Failed", "error": str(task.result)}
     else:
-        return {"status": task.state}
+        return {"task_id": task_id, "status": task.state}
 
 @api_router.post("/was_info", dependencies=[Depends(get_api_key)],
                  response_model=List[schemas.WASDataBase],
