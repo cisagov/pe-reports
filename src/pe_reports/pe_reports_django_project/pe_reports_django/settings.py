@@ -180,6 +180,10 @@ DATABASES = {
     }
 }
 
+#Celery settings
+CELERY_BROKER_URL = f"amqp://{config('RABBITMQ_USER')}:{config('RABBITMQ_PASS')}@localhost:5672/"
+CELERY_RESULT_BACKEND = f"rpc://{config('RABBITMQ_USER')}:{config('RABBITMQ_PASS')}@localhost:5672/"
+
 
 # Password validation
 # https://docs.djangoproject.com/en/4.1/ref/settings/#auth-password-validators
