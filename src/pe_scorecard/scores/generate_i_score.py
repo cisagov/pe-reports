@@ -16,6 +16,7 @@ from score_helper_functions import rescale, get_prev_startstop
 from pe_scorecard.data.db_query import (
     # VS queries
     query_iscore_vs_data_vuln,
+    query_iscore_vs_data_vuln_prev,
     # PE queries
     query_iscore_pe_data_vuln,
     query_iscore_pe_data_cred,
@@ -24,11 +25,10 @@ from pe_scorecard.data.db_query import (
     query_iscore_pe_data_protocol,
     # WAS queries
     query_iscore_was_data_vuln,
+    query_iscore_was_data_vuln_prev,
     # KEV list
     query_kev_list,
-    # FCEB stakeholder list
-    query_fceb_parent_list,
-    # Stakeholder lists by sector
+    # FCEB Stakeholder sectors by size
     query_xs_stakeholder_list,
     query_s_stakeholder_list,
     query_m_stakeholder_list,
@@ -49,7 +49,7 @@ LOGGER = logging.getLogger(__name__)
 # Suppressing divide by 0 or NaN runtime warning
 # This is expected and part of the I-Score calculation
 @np.errstate(divide="ignore", invalid="ignore")
-def import_ident_data(prev_start, prev_end, curr_start, curr_end):
+def import_ident_data(prev_start, prev_end, curr_start, curr_end, stakeholder_list):
     """
     Retrieve all data required for calculating identification score.
 
@@ -58,7 +58,7 @@ def import_ident_data(prev_start, prev_end, curr_start, curr_end):
         prev_end: end date of previous report period
         curr_start: start date of current report period
         curr_end: end date of current report period
-
+        stakeholder_list: dataframe containing the organizations_uid and cyhy_db_name of all the orgs to generate scores for
     Returns:
         A single dataframe containing all data necessary for Identification Score calculation.
     """
@@ -66,50 +66,56 @@ def import_ident_data(prev_start, prev_end, curr_start, curr_end):
     # Retrieve all the data needed from the database
     # ----- Retrieve VS data: -----
     LOGGER.info("Retrieving VS vuln data for I-Score...")
-    vs_data_vuln = query_iscore_vs_data_vuln(curr_start, curr_end)
+    vs_data_vuln = query_iscore_vs_data_vuln(stakeholder_list)
     LOGGER.info("\tDone!")
     # ----- Retrieve PE data: -----
     LOGGER.info("Retrieving PE vuln data for I-Score...")
-    pe_data_vuln = query_iscore_pe_data_vuln(curr_start, curr_end)
+    pe_data_vuln = query_iscore_pe_data_vuln(stakeholder_list, curr_start, curr_end)
     LOGGER.info("\tDone!")
     LOGGER.info("Retrieving PE cred data for I-Score...")
-    pe_data_cred = query_iscore_pe_data_cred(curr_start, curr_end)
+    pe_data_cred = query_iscore_pe_data_cred(stakeholder_list, curr_start, curr_end)
     LOGGER.info("\tDone!")
     LOGGER.info("Retrieving PE breach data for I-Score...")
-    pe_data_breach = query_iscore_pe_data_breach(curr_start, curr_end)
+    pe_data_breach = query_iscore_pe_data_breach(stakeholder_list, curr_start, curr_end)
     LOGGER.info("\tDone!")
     LOGGER.info("Retrieving PE dark web data for I-Score...")
-    pe_data_dw = query_iscore_pe_data_darkweb(curr_start, curr_end)
+    pe_data_dw = query_iscore_pe_data_darkweb(stakeholder_list, curr_start, curr_end)
     LOGGER.info("\tDone!")
     LOGGER.info("Retrieving PE protocol data for I-Score...")
-    pe_data_proto = query_iscore_pe_data_protocol(curr_start, curr_end)
+    pe_data_proto = query_iscore_pe_data_protocol(
+        stakeholder_list, curr_start, curr_end
+    )
     LOGGER.info("\tDone!")
     # ----- Retrieve WAS data: -----
     LOGGER.info("Retrieving WAS vuln data for I-Score...")
-    was_data_vuln = query_iscore_was_data_vuln(curr_start, curr_end)
+    was_data_vuln = query_iscore_was_data_vuln(stakeholder_list, curr_start, curr_end)
     LOGGER.info("\tDone!")
 
     # --------------- Import Historical Data: ---------------
     LOGGER.info("Retrieving previous VS vuln data for I-Score...")
-    vs_data_vuln_prev = query_iscore_vs_data_vuln(prev_start, prev_end)
+    vs_data_vuln_prev = query_iscore_vs_data_vuln_prev(
+        stakeholder_list, prev_start, prev_end
+    )
     LOGGER.info("\tDone!")
     LOGGER.info("Retrieving previous PE vuln data for I-Score...")
-    pe_data_vuln_prev = query_iscore_pe_data_vuln(prev_start, prev_end)
+    pe_data_vuln_prev = query_iscore_pe_data_vuln(
+        stakeholder_list, prev_start, prev_end
+    )
     LOGGER.info("\tDone!")
     LOGGER.info("Retrieving previous WAS vuln data for I-Score...")
-    was_data_vuln_prev = query_iscore_was_data_vuln(prev_start, prev_end)
+    was_data_vuln_prev = query_iscore_was_data_vuln_prev(
+        stakeholder_list, prev_start, prev_end
+    )
     LOGGER.info("\tDone!")
 
     # --------------- Import Other Necessary Info: ---------------
-    # ----- Retrieve full FCEB list: -----
-    LOGGER.info("Retrieving FCEB parent stakeholder list for I-Score...")
-    fceb_parent_list = query_fceb_parent_list()
-    LOGGER.info("\tDone!")
     # ----- Retrieve KEV list: -----
     # List of all CVE-IDs that are considered KEVs
     LOGGER.info("Retrieving KEV list...")
     kev_list = query_kev_list()
     LOGGER.info("\tDone!")
+    # ----- List of orgs for this sector: -----
+    org_list = stakeholder_list
 
     # --------------- Process VS Data: ---------------
     # Requires 2 view:
@@ -210,6 +216,7 @@ def import_ident_data(prev_start, prev_end, curr_start, curr_end):
     vs_data_vuln["vs_skewness_cvss"].fillna(0, inplace=True)
     # Aggregate total VS vulns of previous month
     vs_data_vuln.insert(2, "vs_net_chng_vulns", 0)
+
     vs_data_vuln_prev = vs_data_vuln_prev.groupby(
         ["organizations_uid"], as_index=False
     ).agg(
@@ -229,7 +236,7 @@ def import_ident_data(prev_start, prev_end, curr_start, curr_end):
     vs_data_vuln = vs_data_vuln.drop(columns=["vs_total_num_vulns_prev"]).reset_index()
     # Add cyhy_db_name column to vs vulns
     vs_data_df = pd.merge(
-        fceb_parent_list, vs_data_vuln, on="organizations_uid", how="left"
+        org_list, vs_data_vuln, on="organizations_uid", how="left"
     ).drop(columns=["index", "cyhy_db_name"])
 
     # --------------- Process PE Data: ---------------
@@ -472,7 +479,7 @@ def import_ident_data(prev_start, prev_end, curr_start, curr_end):
             pd.merge(
                 pd.merge(
                     pd.merge(
-                        fceb_parent_list,
+                        org_list,
                         pe_data_vuln,
                         on="organizations_uid",
                         how="left",
@@ -654,7 +661,7 @@ def import_ident_data(prev_start, prev_end, curr_start, curr_end):
     )
     was_data_vuln = was_data_vuln.drop(columns=["was_total_vulns_prev"]).reset_index()
     was_data_df = pd.merge(
-        fceb_parent_list, was_data_vuln, on="organizations_uid", how="left"
+        org_list, was_data_vuln, on="organizations_uid", how="left"
     ).drop(columns=["cyhy_db_name", "index"])
 
     # --------------- Process PCA Data: ---------------
@@ -674,7 +681,7 @@ def import_ident_data(prev_start, prev_end, curr_start, curr_end):
         index=[0],
     )
     pca_data_df = (
-        pd.merge(fceb_parent_list, pca_data_df, on="cyhy_db_name", how="left")
+        pd.merge(org_list, pca_data_df, on="cyhy_db_name", how="left")
         .fillna(0)
         .drop(columns="cyhy_db_name")
     )
@@ -685,7 +692,7 @@ def import_ident_data(prev_start, prev_end, curr_start, curr_end):
         pd.merge(
             pd.merge(
                 pd.merge(
-                    fceb_parent_list,
+                    org_list,
                     vs_data_df,
                     on="organizations_uid",
                     how="left",
@@ -713,25 +720,19 @@ def calc_ident_scores(ident_data, stakeholder_list):
     Calculate Identification Scores for the specified stakeholder list.
 
     Args:
-        ident_data: The full dataframe of I-Score data for all FCEB stakeholders
-        stakeholder_list: The specific subset of FCEB orgs that you want to generate I-Scores for
+        ident_data: The dataframe of I-Score data for this specific sector
+        stakeholder_list: The specific list orgs that you want to generate I-Scores for
     Returns:
         Dataframe containing I-Score/letter grade for each org in the specified stakeholder list
     """
-    # Cut down dataframe to only include data for the specified stakeholder list
-    ident_data_df = pd.merge(
-        stakeholder_list,
-        ident_data,
-        on=["organizations_uid", "cyhy_db_name"],
-        how="left",
-    ).drop(columns="cyhy_db_name")
+    ident_data_df = ident_data
 
     # Impute column means to use for filling in missing data later
     col_means = ident_data_df.mean()
 
     # ---------- VS-Subscribed Data ----------
     # Index locations of VS vuln metrics
-    vs_vuln_locs = [1] + list(range(3, 13))
+    vs_vuln_locs = [2] + list(range(4, 14))
 
     # VS Net Change Vulns. Feature:
     # Check if std is positive, non-zero (i.e. not all the same number)
@@ -768,11 +769,11 @@ def calc_ident_scores(ident_data, stakeholder_list):
 
     # ---------- PE-Subscribed Data ----------
     # Index locations of PE vuln metrics
-    pe_vuln_locs = [14] + list(range(16, 26))
+    pe_vuln_locs = [15] + list(range(17, 27))
     # Index locations of PE dark web metrics
-    pe_dw_locs = list(range(30, 34))
+    pe_dw_locs = list(range(31, 35))
     # Index locations of PE protocol metrics
-    pe_proto_locs = list(range(34, 36))
+    pe_proto_locs = list(range(35, 37))
 
     # PE Net Change Vulns. Feature:
     # Check if std is positive, non-zero (i.e. not all the same number)
@@ -863,7 +864,7 @@ def calc_ident_scores(ident_data, stakeholder_list):
 
     # ---------- WAS-Subscribed Data ----------
     # Index locations of WAS vuln metrics
-    was_vuln_locs = [38] + list(range(40, 50))
+    was_vuln_locs = [39] + list(range(41, 51))
 
     # WAS Net Change Vulns. Feature:
     # Check if std is positive, non-zero (i.e. not all the same number)
@@ -907,7 +908,7 @@ def calc_ident_scores(ident_data, stakeholder_list):
 
     # ---------- Aggregate Metrics ----------
     # Re-Scale metrics to be between [0, 45]
-    for col_idx in range(1, 67):
+    for col_idx in range(2, 68):
         ident_data_df.iloc[:, col_idx] = rescale(ident_data_df.iloc[:, col_idx], 45, 0)
 
     # If there are still NA's remaining in the data at this point,
@@ -1067,12 +1068,14 @@ def calc_ident_scores(ident_data, stakeholder_list):
     return ident_data_df
 
 
-def gen_ident_scores(curr_date):
+# ---------- Main I-Score Function -----------
+def gen_ident_scores(curr_date, stakeholder_list):
     """
     Generate the Identification Scores for each of the stakeholder sector groups.
 
     Args:
         curr_date: current report period date (i.e. 20xx-xx-30 or 20xx-xx-31)
+        stakeholder_list: dataframe containing the organizations_uid and cyhy_db_name of all the orgs to generate scores for
     Returns:
         List of dataframes containing the I-Scores/letter grades for each stakeholder sector group
     """
@@ -1085,58 +1088,30 @@ def gen_ident_scores(curr_date):
         report_periods[3][1],
     ]
 
-    # Retrieve the necessary Discovery Score data for all FCEB orgs
-    ident_data_df = import_ident_data(prev_start, prev_end, curr_start, curr_end)
+    # Query I-Score data for this sector
+    iscore_data = import_ident_data(
+        prev_start, prev_end, curr_start, curr_end, stakeholder_list
+    )
 
-    # Get Stakeholder Sector Lists:
-    xs_fceb = query_xs_stakeholder_list()
-    s_fceb = query_s_stakeholder_list()
-    m_fceb = query_m_stakeholder_list()
-    l_fceb = query_l_stakeholder_list()
-    xl_fceb = query_xl_stakeholder_list()
-    sector_lists = [
-        xs_fceb,
-        s_fceb,
-        m_fceb,
-        l_fceb,
-        xl_fceb,
-    ]
-
-    # Optional functionality to exclude/include certain organizations:
-    # Auxiliary feature for testing/adhoc purposes
-    specific_orgs = 0  # 0 disabled, 1 enabled
-    if specific_orgs == 1:
-        xs_fceb.drop(
-            xs_fceb.loc[
-                xs_fceb["cyhy_db_name"].isin(["DOE", "DOJ", "USDA", "EPA", "VA"])
-            ].index,
-            inplace=True,
-        )
-
-    # Empty list to hold i-score dataframes for each sector group
-    iscore_dfs = []
-    sector_counter = 1
-
-    # For each sector group, calculate i-scores
-    for sector_list in sector_lists:
-        curr_iscores = calc_ident_scores(ident_data_df, sector_list)
-        iscore_dfs.append(curr_iscores)
-        LOGGER.info(
-            f"Calculated I-Scores for {sector_counter} / {len(sector_lists)} Sectors..."
-        )
-        sector_counter += 1
+    # Calculate I-Scores for this sector
+    iscores = calc_ident_scores(iscore_data, stakeholder_list)
+    LOGGER.info(f"Finished calculating I-Scores for {curr_date}")
 
     # Return list of finished i-score dataframes
-    return iscore_dfs
+    return iscores
 
 
 # Demo/Performance Notes:
 
 # Usage:
-# Just call the function -> gen_ident_score(curr_date)
-# This will return a list of dataframes,
-# where each dataframe contains the i-scores
-# for all the orgs in a group (xs/s/m/l/xl).
+# To get I-Scores, call the function -> gen_discov_score(curr_date, stakeholder_list)
+# ex:
+#   curr_date = datetime.datetime(2023, 3, 31)
+#   xs_fceb = query_xs_stakeholder_list()
+#   iscores = gen_ident_score(curr_date, xs_fceb)
+#
+# This will return a dataframe containing the i-scores for the
+# specified list of stakeholders/report period.
 
 # Once you have the i-scores, plug that info
 # into the dictionary to display on the scorecard
