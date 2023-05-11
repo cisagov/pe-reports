@@ -1,4 +1,4 @@
-"""Create all api enpoints"""
+"""Create all api endpoints."""
 
 # Standard Python Libraries
 from typing import List, Any, Union, Dict
@@ -11,6 +11,8 @@ import asyncio
 from io import TextIOWrapper
 import csv
 import pandas as pd
+import codecs
+
 #Third party imports
 from fastapi import \
     APIRouter,\
@@ -21,7 +23,8 @@ from fastapi import \
     status,\
     Security,\
     File,\
-    UploadFile
+    UploadFile, \
+    Request
 
 from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder
@@ -53,13 +56,12 @@ from home.models import Organizations
 from home.models import VwBreachcomp
 from home.models import VwBreachcompCredsbydate
 from home.models import VwCidrs
-from home.models import MatVwOrgsAllIps
+from home.models import VwOrgsAllIps
 from home.models import VwOrgsAttacksurface
 from home.models import VwBreachcompBreachdetails
 from home.models import WasTrackerCustomerdata
 from home.models import WeeklyStatuses
 from home.models import CyhyPortScans
-from . import tasks
 
 
 from .models import apiUser
@@ -128,20 +130,17 @@ def userinfo(theuser):
             return u.id
 
 
-def userapiTokenUpdate(expiredaccessToken, user_refresh, theapiKey, user_id):
+async def userapiTokenUpdate(expiredaccessToken, user_refresh, theapiKey, user_id):
     """When api apiKey is expired a new key is created
-       and updated in the database."""
-    print(f'Got to update token {expiredaccessToken}')
-    theusername = ''
-    user_record = list(User.objects.filter(id=f'{user_id}'))
-
+    and updated in the database."""
+    theusername = ""
+    user_record = list(User.objects.filter(id=f"{user_id}"))
     # user_record = User.objects.get(id=user_id)
-
 
     for u in user_record:
         theusername = u.username
         theuserid = u.id
-    LOGGER.info(f'The username is {theusername} with a user of {theuserid}')
+    LOGGER.info(f"The username is {theusername} with a user of {theuserid}")
 
     updateapiuseraccessToken = apiUser.objects.get(apiKey=expiredaccessToken)
     # updateapiuserrefreshToken = apiUser.objects.get(refresh_token=expiredrefreshToken)
@@ -150,31 +149,36 @@ def userapiTokenUpdate(expiredaccessToken, user_refresh, theapiKey, user_id):
     # updateapiuserrefreshToken.refresh_token = f"{create_refresh_token(theusername)}"
     # LOGGER.info(updateapiuseraccessToken.apiKey)
 
-    updateapiuseraccessToken.save(update_fields=['apiKey'])
+    updateapiuseraccessToken.save(update_fields=["apiKey"])
     # updateapiuserrefreshToken.save(update_fields=['refresh_token'])
-    LOGGER.info(f'The user api key and refresh token have been updated from: {theapiKey} to: {updateapiuseraccessToken.apiKey}.')
+    LOGGER.info(
+        f"The user api key and refresh token have been updated from: {theapiKey} to: {updateapiuseraccessToken.apiKey}."
+    )
 
 
-def userapiTokenverify(theapiKey):
+async def userapiTokenverify(theapiKey):
     """Check to see if api key is expired."""
     tokenRecords = list(apiUser.objects.filter(apiKey=theapiKey))
-    user_key = ''
-    user_refresh = ''
-    user_id = ''
+    user_key = ""
+    user_refresh = ""
+    user_id = ""
 
     for u in tokenRecords:
         user_refresh = u.refresh_token
         user_key = u.apiKey
         user_id = u.id
-    LOGGER.info(f'The user key is {user_key}')
-    LOGGER.info(f'The user refresh key is {user_refresh}')
-    LOGGER.info(f'the token being verified at verify {theapiKey}')
+    # LOGGER.info(f'The user key is {user_key}')
+    # LOGGER.info(f'The user refresh key is {user_refresh}')
+    LOGGER.info(f"the token being verified at verify {theapiKey}")
 
     try:
-        jwt.decode(theapiKey, config('JWT_REFRESH_SECRET_KEY'),
-                   algorithms=ALGORITHM,
-                   options={"verify_signature": False})
-        LOGGER.info(f'The api key was alright {theapiKey}')
+        jwt.decode(
+            theapiKey,
+            config("JWT_REFRESH_SECRET_KEY"),
+            algorithms=ALGORITHM,
+            options={"verify_signature": False},
+        )
+        LOGGER.info(f"The api key was alright {theapiKey}")
 
     except exceptions.JWTError as e:
         LOGGER.warning('The access token has expired and will be updated')
@@ -197,10 +201,56 @@ async def get_api_key(
         )
 
 
-def process_item(item):
-    #     # TODO: Replace with the code for what you wish to do with the row of data in the CSV.
-    LOGGER.info("The item is %s" % item)
-    print("The item is %s" % item)
+def upload_was_data(dict):
+    """Delete all data and replace with the data from the file that is getting uploaded."""
+    print("Got to upload was data")
+    if WasTrackerCustomerdata.objects.exists():
+        LOGGER.info("There was data that was deleted from the WAS table.")
+        WasTrackerCustomerdata.objects.all().delete()
+
+    for row in dict:
+        # Fix boolean columns
+        if row["elections"] == "1.0":
+            row["elections"] = True
+        elif row["elections"] == "":
+            row["elections"] = False
+        if row["fceb"] == "1.0":
+            row["fceb"] = True
+        elif row["fceb"] == "":
+            row["fceb"] = False
+        if row["special_report"] == "1.0":
+            row["special_report"] = True
+        elif row["special_report"] == "":
+            row["special_report"] = False
+
+        wasCustomer = WasTrackerCustomerdata(
+            tag=row["tag"],
+            customer_name=row["customer_name"],
+            testing_sector=row["testing_sector"],
+            ci_type=row["ci_type"],
+            jira_ticket=row["jira_ticket"],
+            ticket=row["ticket"],
+            next_scheduled=row["next_scheduled"],
+            last_scanned=row["last_scanned"],
+            frequency=row["frequency"],
+            comments_notes=row["comments_notes"],
+            was_report_poc=row["was_report_poc"],
+            was_report_email=row["was_report_email"],
+            onboarding_date=row["onboarding_date"],
+            no_of_web_apps=row["no_of_web_apps"],
+            no_web_apps_last_updated=row["no_web_apps_last_updated"],
+            elections=row["elections"],
+            fceb=row["fceb"],
+            special_report=row["special_report"],
+            report_password=row["report_password"],
+            child_tags=row["child_tags"],
+        )
+        try:
+            wasCustomer.save()
+
+        except DataError as e:
+            LOGGER.error("There is an issue with the data type %s", e)
+
 
 # def api_key_auth(api_key: str = Depends(oauth2_scheme)):
 #     if api_key not in api_keys:
@@ -241,13 +291,15 @@ def read_weekly_statuses(tokens: dict = Depends(get_api_key)):
     week_ending_date = current_date + timedelta(days=days_to_week_end)
     statuses = list(WeeklyStatuses.objects.filter(week_ending=week_ending_date))
 
-    # LOGGER.info(f"The api key submitted {tokens}")
+#    if tokens:
+        # LOGGER.info(f"The api key submitted {tokens}")
     try:
-        userapiTokenverify(theapiKey=tokens)
+#        userapiTokenverify(theapiKey=tokens)
         return statuses
     except:
         LOGGER.info('API key expired please try again')
-
+ #   else:
+ #       return {'message': "No api key was submitted"}
 
 
 
@@ -454,43 +506,51 @@ def create_user(data: schemas.UserAuth):
     return theNewUser
 
 
-
 # @api_router.get("/items/")
 # async def read_items(token: str=Depends(oauth2_scheme)):
 #     return {"token": token}
 
 
-@api_router.post('/was_upload', dependencies=[Depends(get_api_key)],
-                 tags=["Upload WAS csv file"])
-def upload(file: UploadFile = File(...)):
+@api_router.post(
+    "/was_upload", dependencies=[Depends(get_api_key)], tags=["Upload WAS csv file"]
+)
+def upload(tokens: dict = Depends(get_api_key), file: UploadFile = File(...)):
     """Upload csv file from WAS"""
 
-    f = TextIOWrapper(file.file)
+    if not tokens:
+        return {"message": "No api key was submitted"}
 
-    dict_reader = csv.DictReader(f)
-    dict_reader = dict_reader.fieldnames
-    dict_reader = set(dict_reader)
+    if not file.filename.endswith("csv"):
+        raise HTTPException(400, detail="Invalid document type")
+    
+    # f = TextIOWrapper(file.file)
 
-    required_columns = ["org",
-                        "org_code",
-                        "root_domain",
-                        "exec_url",
-                        "aliases",
-                        "premium",
-                        "demo"]
-    # Check needed columns exist
-    incorrect_col = []
-    testtheList = [i for i in required_columns if i in dict_reader]
+    dict_reader = csv.DictReader(codecs.iterdecode(file.file, 'utf-8'))
+    col_names = dict_reader.fieldnames
+    col_names = set(col_names)
+    data_dict = list(dict_reader)
+
+    required_columns = [
+        "tag",
+        "customer_name",
+        "testing_sector",	
+        "ci_type",
+        "ticket",
+        "next_scheduled",
+        "last_scanned",
+        "frequency",
+        "comments_notes",
+        "was_report_poc",
+        "was_report_email",
+        "onboarding_date",
+        "no_of_web_apps",
+    ]
 
     try:
-        if not file.filename.endswith('csv'):
-
-            raise HTTPException(400, detail='Invalid document type')
-
-        if len(testtheList) == len(dict_reader):
-
-            for row, item in enumerate(dict_reader, start=1):
-                process_item(item)
+        # Check that all the required column names are present
+        if all(item in col_names for item in required_columns):
+            print("column names are all correct")
+            upload_was_data(data_dict)
             return {"message": "Successfully uploaded %s" % file.filename}
         else:
             for col in required_columns:
@@ -498,142 +558,158 @@ def upload(file: UploadFile = File(...)):
                     pass
                 else:
                     incorrect_col.append(col)
-            raise HTTPException(400, detail="There was a missing or"
-                                            " incorrect column in file,"
-                                            " to columns %s" % incorrect_col)
+            raise HTTPException(
+                400,
+                detail="There was a missing or"
+                " incorrect column in file,"
+                " to columns %s" % incorrect_col,
+            )
 
     except ValueError:
-        return {'message': 'There was an error uploading the file at %s.'
-                           % incorrect_col}
+        return {
+            "message": "There was an error uploading the file at %s." % incorrect_col
+        }
     except ValidationError as e:
-
-        return {'message': 'There was an error uploading the file type at %s.'
-                           % e}
+        return {"message": "There was an error uploading the file type at %s." % e}
 
     finally:
         file.file.close()
 
 @api_router.post("/vs_info", dependencies=[Depends(get_api_key)],
-                 response_model=schemas.TaskResponse,
+                #  response_model=List[schemas.VwOrgsAllIps],
                  tags=["List of all VS data"])
-def vs_info(cyhy_db_names: List[str], tokens: dict = Depends(get_api_key)):
+def vs_info(request: Request, tokens: dict = Depends(get_api_key)):
     """API endpoint to get all WAS data."""
-    print(cyhy_db_names)
-    vs_data = list(MatVwOrgsAllIps.objects.filter(cyhy_db_name__in=cyhy_db_names))
-
-    # orgs_df = pd.DataFrame(orgs)
-
+    
     LOGGER.info(f"The api key submitted {tokens}")
-    if tokens:
-        task = tasks.get_vs_info.delay(cyhy_db_names)
-        return {"task_id": task.id, "status": "Processing"}
-    else:
-        return {'message': "No api key was submitted"}
-
-@api_router.get("/vs_info/task/{task_id}", dependencies=[Depends(get_api_key)],
-                response_model=schemas.TaskResponse,
-                tags=["Check task status"])
-async def get_task_status(task_id: str, tokens: dict = Depends(get_api_key)):
-    task = tasks.get_vs_info.AsyncResult(task_id)
-
-    if task.state == "SUCCESS":
-        return {"task_id": task_id, "status": "Completed", "result": task.result}
-    elif task.state == "PENDING":
-        return {"task_id": task_id, "status": "Pending"}
-    elif task.state == "FAILURE":
-        return {"task_id": task_id, "status": "Failed", "error": str(task.result)}
-    else:
-        return {"task_id": task_id, "status": task.state}
-
-@api_router.post("/was_info", dependencies=[Depends(get_api_key)],
-                 response_model=List[schemas.WASDataBase],
-                 tags=["List of all WAS data"])
-def was_info(tokens: dict = Depends(get_api_key)):
-    """API endpoint to get all WAS data."""
-    was_data = list(WasTrackerCustomerdata.objects.all())
-
-    # orgs_df = pd.DataFrame(orgs)
-
-    LOGGER.info(f"The api key submitted {tokens}")
+    print(tokens)
     if tokens:
         try:
-            userapiTokenverify(theapiKey=tokens)
-            return was_data
-        except:
+            cyhy_db_names = json.loads(request.headers.get("x-org-list"))
+            print(cyhy_db_names)
+            vs_data = list(VwOrgsAllIps.objects.filter(cyhy_db_name__in=cyhy_db_names))
+            print(vs_data)
+            if not vs_data:
+                raise HTTPException(status_code=404,
+                                    detail="No matching records found")
+            return vs_data
+
+        except Exception as e:
             LOGGER.info('API key expired please try again')
+            print(e)
+
     else:
         return {'message': "No api key was submitted"}
 
 
-@api_router.delete("/was_info_delete/{tag}", dependencies=[Depends(get_api_key)],
-                 tags=["Delete WAS data"])
+@api_router.post(
+    "/was_info",
+    dependencies=[Depends(get_api_key)],
+    #  response_model=List[schemas.WASDataBase],
+    tags=["List of all WAS data"],
+)
+def was_info(tokens: dict = Depends(get_api_key)):
+    """API endpoint to get all WAS data."""
+
+    if not tokens:
+        return {"message": "No api key was submitted"}
+    try:
+        was_data = list(WasTrackerCustomerdata.objects.all())
+        userapiTokenverify(theapiKey=tokens)
+        return was_data
+    except:
+        LOGGER.info("API key expired please try again")
+
+
+@api_router.delete(
+    "/was_info_delete/{tag}",
+    dependencies=[Depends(get_api_key)],
+    tags=["Delete WAS data"],
+)
 def was_info_delete(tag: str, tokens: dict = Depends(get_api_key)):
     """API endpoint to delete a record in database."""
+
+    if not tokens:
+        return {"message": "No api key was submitted"}
 
     was_data = WasTrackerCustomerdata.objects.get(tag=tag)
 
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
-
         try:
             userapiTokenverify(theapiKey=tokens)
             was_data.delete()
-            return {'deleted_tag': tag}
+            return {"deleted_tag": tag}
         except:
-            LOGGER.info('API key expired please try again')
+            LOGGER.info("API key expired please try again")
     else:
-        return {'message': "No api key was submitted"}
+        return {"message": "No api key was submitted"}
 
-@api_router.post("/was_info_create", dependencies=[Depends(get_api_key)],
-                 # response_model=Dict[schemas.WASDataBase],
-                 tags=["Create new WAS data"])
-def was_info_create(customer: schemas.WASDataBase, tokens: dict = Depends(get_api_key)):
+
+@api_router.post(
+    "/was_info_create",
+    dependencies=[Depends(get_api_key)],
+    # response_model=Dict[schemas.WASDataBase],
+    tags=["Create new WAS data"],
+)
+def was_info_create(request: Request, tokens: dict = Depends(get_api_key)):
     """API endpoint to create a record in database."""
 
-    was_customer = WasTrackerCustomerdata(**customer.dict())
+    if not tokens:
+        return {"message": "No api key was submitted"}
+
+    print("got to the endpoint")
+    
 
     LOGGER.info(f"The api key submitted {tokens}")
-    if tokens:
+    try:
+        # Get data header
+        customer = json.loads(request.headers.get("x-data"))
+        was_customer = WasTrackerCustomerdata.objects.create(**customer)
+        userapiTokenverify(theapiKey=tokens)
+        was_customer.save()
+        return {"saved_customer": was_customer}
+    except:
+        LOGGER.info("API key expired please try again")
+        return {"message": "Failed to upload"}
 
-        try:
-            userapiTokenverify(theapiKey=tokens)
-            was_customer.save()
-            return {'saved_customer': was_customer}
-        except:
-            LOGGER.info('API key expired please try again')
-    else:
-        return {'message': "No api key was submitted"}
 
-
-@api_router.put("/was_info_update/{tag}", dependencies=[Depends(get_api_key)],
-                # response_model=Dict[schemas.WASDataBase],
-                tags=["Update WAS data"])
+@api_router.put(
+    "/was_info_update/{tag}",
+    dependencies=[Depends(get_api_key)],
+    # response_model=Dict[schemas.WASDataBase],
+    tags=["Update WAS data"],
+)
 @transaction.atomic
-def was_info_update(tag: str, customer: schemas.WASDataBase,
-                    tokens: dict = Depends(get_api_key)):
+def was_info_update(
+    tag: str, request: Request, tokens: dict = Depends(get_api_key)
+):
     """API endpoint to create a record in database."""
-
+    if not tokens:
+        return {"message": "No api key was submitted"}
     LOGGER.info(f"The api key submitted {tokens}")
-    if tokens:
+    try:
+        # Get customer header
+        customer = json.loads(request.headers.get("x-data"))
 
-        try:
-            userapiTokenverify(theapiKey=tokens)
-            was_data = WasTrackerCustomerdata.objects.get(tag=tag)
-            updated_data = {}
-            for field, value in customer.dict(exclude_unset=True).items():
-                print(f'the field is {field} and the value is {value}')
-                if hasattr(was_data, field) and getattr(was_data, field) != value:
-                    setattr(was_data, field, value)
-                    updated_data[field] = value
-            was_data.save()
-            return {"message": "Record updated successfully.",
-                    "updated_data": updated_data}
+        # Verify token
+        userapiTokenverify(theapiKey=tokens)
 
+        # Get WAS record based on tag
+        was_data = WasTrackerCustomerdata.objects.get(tag=tag)
+        updated_data = {}
+        for field, value in customer.items():
+            print(f"the field is {field} and the value is {value}")
+            if hasattr(was_data, field) and getattr(was_data, field) != value:
+                setattr(was_data, field, value)
+                updated_data[field] = value
+        was_data.save()
+        return {"message": "Record updated successfully.", "updated_data": updated_data}
 
-        except ObjectDoesNotExist:
-            LOGGER.info('API key expired please try again')
-    else:
-        return {'message': "No api key was submitted"}
+        was_data.save()
+        return {"updated_customer": was_data}
+    except ObjectDoesNotExist:
+        LOGGER.info("API key expired please try again")
 
 
 @api_router.post("/cyhy_port_scan", dependencies=[Depends(get_api_key)],

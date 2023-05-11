@@ -1010,7 +1010,6 @@ class WebAssets(models.Model):
         db_table = 'web_assets'
         unique_together = (('asset', 'organizations_uid'),)
 
-
 class WeeklyStatuses(models.Model):
     weekly_status_uid = models.UUIDField(primary_key=True, default=uuid.uuid1())
     user_status = models.TextField(blank=True)
@@ -1286,7 +1285,7 @@ class VwOrgsTotalIps(models.Model):
         managed = False  # Created from a view. Don't remove.
         db_table = 'vw_orgs_total_ips'
 
-class MatVwOrgsAllIps(models.Model):
+class VwOrgsAllIps(models.Model):
     organizations_uid = models.UUIDField(primary_key=True)
     cyhy_db_name = models.TextField(blank=True, null=True)
     ip_addresses = ArrayField(models.CharField(max_length=255, blank=True, null=True), blank=True, null=True)
