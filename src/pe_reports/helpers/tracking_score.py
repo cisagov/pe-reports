@@ -121,10 +121,9 @@ def get_tracking_score(report_period_year, report_period_month):
         metrics_aggregation = float(pe_section) + float(was_section) + float(vs_section)
         tracking_score = 100.0 - metrics_aggregation
         rescaled_tracking_score = round((tracking_score * .4) + 60.0, 2)
-        tracking_score_list.append([org['organizations_uid'], org['cyhy_db_name'], org['group'], rescaled_tracking_score, get_letter_grade(rescaled_tracking_score)])
-    df_tracking_score = pd.DataFrame(tracking_score_list, columns= ["organizations_uid", "cyhy_db_name", "group", "tracking_score", "letter_grade"])   
+        tracking_score_list.append([org['organizations_uid'], org['cyhy_db_name'], rescaled_tracking_score, get_letter_grade(rescaled_tracking_score)])
+    df_tracking_score = pd.DataFrame(tracking_score_list, columns= ["organizations_uid", "cyhy_db_name", "tracking_score", "letter_grade"])   
 
-    print(df_tracking_score.values)
     return df_tracking_score
 
 def get_stakeholders():

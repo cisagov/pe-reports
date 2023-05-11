@@ -54,9 +54,9 @@ def get_profiling_score(report_period_year, report_period_month):
         metrics_aggregation = float(vuln_ports) + float(vuln_protocols) + float(vuln_services) + float(total_software) + float(vuln_web_apps) + float(vuln_hosts)
         profiing_score = 100.0 - metrics_aggregation
         rescaled_profiing_score= round((profiing_score * .4) + 60.0, 2)
-        profiling_score_list.append([org['organizations_uid'], org['cyhy_db_name'], org['group'], rescaled_profiing_score, get_letter_grade(rescaled_profiing_score)])
-    df_profiling_score = pd.DataFrame(profiling_score_list, columns= ["organizations_uid", "cyhy_db_name", "group", "profiling_score", "letter_grade"])
-    print(df_profiling_score.values)
+        profiling_score_list.append([org['organizations_uid'], org['cyhy_db_name'], rescaled_profiing_score, get_letter_grade(rescaled_profiing_score)])
+    df_profiling_score = pd.DataFrame(profiling_score_list, columns= ["organizations_uid", "cyhy_db_name", "profiling_score", "letter_grade"])
+    
     return df_profiling_score
 
 def get_stakeholders():
