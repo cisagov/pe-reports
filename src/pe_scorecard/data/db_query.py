@@ -1123,32 +1123,6 @@ def query_kev_list():
 
 
 # v ---------- Misc. Score SQL Queries ---------- v
-# ----- All Parent Orgs -----
-def query_all_parent_list():
-    """Query list of all parent stakeholders in the database (all orgs excluding child orgs)."""
-    # Open connection
-    conn = connect()
-    # Make query
-    sql = """
-    SELECT
-        q1.organizations_uid,
-	    cyhy_db_name
-    FROM
-        (
-            SELECT DISTINCT
-                COALESCE(parent_org_uid, organizations_uid) as organizations_uid
-            FROM
-                organizations
-        ) q1
-        INNER JOIN
-        organizations
-        ON q1.organizations_uid = organizations.organizations_uid;"""
-    parent_list = pd.read_sql(sql, conn)
-    # Close connection
-    conn.close()
-    return parent_list
-
-
 # ----- All FCEB Parents List -----
 def query_fceb_parent_list():
     """Query list of all FCEB parent stakeholders (all FCEB excluding child orgs)."""
