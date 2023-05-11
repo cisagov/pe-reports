@@ -17,6 +17,28 @@ from pe_reports.data.db_query import (
     close
 )
 
+from pe_scorecard.data.db_query import (
+    connect,
+    close,
+    get_stakeholders,
+    get_was_stakeholders,
+    get_bod_18,
+    get_ports_protocols,
+    get_was_closed_vulns,
+    get_was_open_vulns,
+    get_vs_closed_vulns,
+    get_vs_open_vulns,
+    get_kevs,
+    get_pe_vulns
+)
+
+from pe_scorecard.scores.score_helper_functions import (
+    get_letter_grade,
+    get_next_month,
+    get_last_month,
+    average_list
+)
+
 LOGGER = logging.getLogger(__name__)
 
 def get_tracking_score(report_period_year, report_period_month):
@@ -51,26 +73,32 @@ def get_tracking_score(report_period_year, report_period_month):
         org_id = org['organizations_uid']
 
         df_bod_18_org = df_bod_18.loc[df_bod_18['organizations_uid'] == org_id]
+        # Multiplying by predetermined weights for base metrics (see tracking score documentation)
         bod_18_email = (100 - df_bod_18_org['email_bod_compliance']) * .125
         bod_18_web = (100 - df_bod_18_org['web_bod_compliance']) * .125
 
         vs_df_bod_19_22_org = df_bod_19_22.loc[df_bod_19_22['organizations_uid'] == org_id]
+        # Multiplying by predetermined weights for base metrics (see tracking score documentation)
         vs_bod_22_kevs = (100 - vs_df_bod_19_22_org['percent_compliance_kevs']) * .25
         vs_bod_19_crits = (100 - vs_df_bod_19_22_org['percent_compliance_crits']) * .2
         vs_bod_19_highs = (100 - vs_df_bod_19_22_org['percent_compliance_highs']) * .15
         vs_bod_19_meds = (100 - vs_df_bod_19_22_org['percent_compliance_meds']) * .1
         vs_bod_19_lows = (100 - vs_df_bod_19_22_org['percent_compliance_lows']) * .05
 
+        # Multiplying by predetermined weights for metric subsections (see tracking score documentation)
         vs_overdue_vuln_section = (float(bod_18_email) + float(bod_18_web) + float(vs_bod_22_kevs) + float(vs_bod_19_crits) + float(vs_bod_19_highs) + float(vs_bod_19_meds) + float(vs_bod_19_lows)) * .5
 
         df_vs_attr_org = df_vs_attr.loc[df_vs_attr['organizations_uid'] == org_id]
+        # Multiplying by predetermined weights for base metrics (see tracking score documentation)
         vs_attr_kevs = (100 - df_vs_attr_org['attr_kevs']) * .4
         vs_attr_crits = (100 - df_vs_attr_org['attr_crits']) * .35
         vs_attr_highs = (100 - df_vs_attr_org['attr_highs']) * .25
 
+        # Multiplying by predetermined weights for metric subsections (see tracking score documentation)
         vs_attr_section = (vs_attr_kevs + vs_attr_crits + vs_attr_highs) * .25
 
         df_vs_vulns_org = df_norm_vs_vulns.loc[df_norm_vs_vulns['organizations_uid'] == org_id]
+        # Multiplying by predetermined weights for base metrics (see tracking score documentation)
         vs_kevs = (100 - df_vs_vulns_org['norm_kevs']) * .2
         vs_crits = (100 - df_vs_vulns_org['norm_crits']) * .15
         vs_highs = (100 - df_vs_vulns_org['norm_highs']) * .1
@@ -78,46 +106,58 @@ def get_tracking_score(report_period_year, report_period_month):
         vs_lows = (100 - df_vs_vulns_org['norm_lows']) * .05
 
         df_vs_ports_org = df_norm_ports_prot.loc[df_norm_ports_prot['organizations_uid'] == org_id]
+        # Multiplying by predetermined weights for base metrics (see tracking score documentation)
         vs_ports = (100 - df_vs_ports_org['norm_ports']) * .14
         vs_protocols = (100 - df_vs_ports_org['norm_protocols']) * .14
         vs_services = (100 - df_vs_ports_org['norm_services']) * .14
 
+        # Multiplying by predetermined weights for metric subsections (see tracking score documentation)
         vs_historical_trend_section = (vs_kevs + vs_crits + vs_highs + vs_meds + vs_lows + vs_ports + vs_protocols + vs_services) * .25
         
         df_pe_vulns_org = df_norm_pe_vulns.loc[df_norm_pe_vulns['organizations_uid'] == org_id]
+        # Multiplying by predetermined weights for base metrics (see tracking score documentation)
         pe_kevs = (100 - df_pe_vulns_org['norm_kevs']) * .2
         pe_crits = (100 - df_pe_vulns_org['norm_crits']) * .15
         pe_highs = (100 - df_pe_vulns_org['norm_highs']) * .1
         pe_meds = (100 - df_pe_vulns_org['norm_meds']) * .08
         pe_lows = (100 - df_pe_vulns_org['norm_lows']) * .05
 
+        # Multiplying by predetermined weights for metric subsections (see tracking score documentation)
         pe_historical_trend_section = (pe_kevs + pe_crits + pe_highs + pe_meds + pe_lows)
 
         df_was_vulns_org = df_norm_was_vulns.loc[df_norm_was_vulns['organizations_uid'] == org_id]
+        # Multiplying by predetermined weights for base metrics (see tracking score documentation)
         was_crits = (100 - df_was_vulns_org['norm_crits']) * .4
         was_highs = (100 - df_was_vulns_org['norm_highs']) * .3
         was_meds = (100 - df_was_vulns_org['norm_meds']) * .2
         was_lows = (100 - df_was_vulns_org['norm_lows']) * .1
 
+        # Multiplying by predetermined weights for metric subsections (see tracking score documentation)
         was_historical_trend_section = (was_crits + was_highs + was_meds + was_lows) * .25
 
         df_was_bod_19_org = df_was_bod_19.loc[df_was_bod_19['organizations_uid'] == org_id]
+        # Multiplying by predetermined weights for base metrics (see tracking score documentation)
         was_bod_19_crits = (100 - df_was_bod_19_org['percent_compliance_crits']) * .4
         was_bod_19_highs = (100 - df_was_bod_19_org['percent_compliance_highs']) * .3
         was_bod_19_meds = (100 - df_was_bod_19_org['percent_compliance_meds']) * .2
         was_bod_19_lows = (100 - df_was_bod_19_org['percent_compliance_lows']) * .1
         
+        # Multiplying by predetermined weights for metric subsections (see tracking score documentation)
         was_overdue_vuln_section = (was_bod_19_crits + was_bod_19_highs + was_bod_19_meds + was_bod_19_lows) * .5
 
         df_was_attr_org = df_was_atr.loc[df_was_atr['organizations_uid'] == org_id]
+        # Multiplying by predetermined weights for base metrics (see tracking score documentation)
         was_attr_crits = (100 - df_was_attr_org['attr_compl_crits']) * .55
         was_attr_highs = (100 - df_was_attr_org['attr_compl_highs']) * .45
 
+        # Multiplying by predetermined weights for metric subsections (see tracking score documentation)
         was_attr_section = (was_attr_crits + was_attr_highs) * .25
-
+        
+        # Multiplying by predetermined weights for team sections (see tracking score documentation)
         vs_section = (vs_attr_section + vs_overdue_vuln_section + vs_historical_trend_section) * .5
         pe_section = pe_historical_trend_section * .2
         was_section = (was_attr_section + was_overdue_vuln_section + was_historical_trend_section) * .3
+
         metrics_aggregation = float(pe_section) + float(was_section) + float(vs_section)
         tracking_score = 100.0 - metrics_aggregation
         rescaled_tracking_score = round((tracking_score * .4) + 60.0, 2)
@@ -125,166 +165,6 @@ def get_tracking_score(report_period_year, report_period_month):
     df_tracking_score = pd.DataFrame(tracking_score_list, columns= ["organizations_uid", "cyhy_db_name", "tracking_score", "letter_grade"])   
 
     return df_tracking_score
-
-def get_stakeholders():
-    conn = connect()
-    try:
-        sql = """select mvfti.organizations_uid, mvfti.cyhy_db_name, mvfti.total_ips, o.fceb, o.report_on 
-        from mat_vw_fceb_total_ips mvfti 
-        inner join organizations o on 
-        o.organizations_uid = mvfti.organizations_uid 
-        where o.fceb = true"""
-        fceb_orgs_df = pd.read_sql(sql, conn)
-        return fceb_orgs_df
-    except (Exception, psycopg2.DatabaseError) as error:
-        LOGGER.error("There was a problem with your database query %s", error)
-    finally:
-        if conn is not None:
-            close(conn)
-
-def get_was_stakeholders():
-    conn = connect()
-    try:
-        sql = """select o.organizations_uid, o.cyhy_db_name, wm.was_org_id, o.fceb, o.fceb_child, o.parent_org_uid 
-        from organizations o
-        right join was_map wm on
-        o.organizations_uid = wm.pe_org_id 
-        where o.fceb = true or o.fceb_child  = true"""
-        fceb_orgs_df = pd.read_sql(sql, conn)
-        return fceb_orgs_df
-    except (Exception, psycopg2.DatabaseError) as error:
-        LOGGER.error("There was a problem with your database query %s", error)
-    finally:
-        if conn is not None:
-            close(conn)
-
-def get_bod_18():
-    conn = connect()
-    try:
-        sql = """SELECT o.organizations_uid, o.cyhy_db_name, o.fceb, o.fceb_child, sss.email_compliance_pct, sss.https_compliance_pct 
-		FROM scorecard_summary_stats sss
-        left join organizations o on 
-        sss.organizations_uid = o.organizations_uid
-        where sss.email_compliance_pct notnull and sss.https_compliance_pct  notnull"""
-        bod_18_df = pd.read_sql(sql, conn)
-        return bod_18_df
-    except (Exception, psycopg2.DatabaseError) as error:
-        LOGGER.error("There was a problem with your database query %s", error)
-    finally:
-        if conn is not None:
-            close(conn) 
-
-def get_ports_protocols(start_date, end_date):
-    conn = connect()
-    try:
-        sql = """select mvcpc.organizations_uid, mvcpc.cyhy_db_name, mvcpc.report_period, mvcpc.ports, mvcpc.risky_ports, mvcpc2.protocols, mvcrpc.risky_protocols, o.parent_org_uid  
-        from mat_vw_cyhy_port_counts mvcpc 
-        inner join mat_vw_cyhy_protocol_counts mvcpc2 on
-        mvcpc2.organizations_uid  = mvcpc.organizations_uid
-        inner join mat_vw_cyhy_risky_protocol_counts mvcrpc on
-        mvcrpc.organizations_uid  = mvcpc.organizations_uid
-        inner join organizations o on 
-        o.organizations_uid = mvcpc.organizations_uid 
-        where mvcpc.report_period between %(start_date)s AND %(end_date)s"""
-        df_port_scans = pd.read_sql(sql, conn, params={"start_date": start_date, "end_date": end_date})
-        return df_port_scans
-    except (Exception, psycopg2.DatabaseError) as error:
-        LOGGER.error("There was a problem with your database query %s", error)
-    finally:
-        if conn is not None:
-            close(conn) 
-
-def get_pe_vulns(start_date, end_date):
-    conn = connect()
-    try:
-        sql = """select o.cyhy_db_name, o.organizations_uid, o.parent_org_uid, vsv."timestamp", vsv.cve, vsv.cvss
-        from vw_shodanvulns_verified vsv 
-        left join organizations o on
-        o.organizations_uid = vsv.organizations_uid
-        where (o.fceb = true or o.fceb_child = true) and vsv."timestamp" BETWEEN %(start_date)s AND %(end_date)s"""
-        pe_vulns_df = pd.read_sql(sql, conn, params={"start_date": start_date, "end_date": end_date})
-        return pe_vulns_df
-    except (Exception, psycopg2.DatabaseError) as error:
-        LOGGER.error("There was a problem with your database query %s", error)
-    finally:
-        if conn is not None:
-            close(conn)  
-
-def get_kevs():
-    conn = connect()
-    try:
-        sql = """select kev from cyhy_kevs"""
-        kevs_df = pd.read_sql(sql, conn)
-        return kevs_df
-    except (Exception, psycopg2.DatabaseError) as error:
-        LOGGER.error("There was a problem with your database query %s", error)
-    finally:
-        if conn is not None:
-            close(conn) 
-
-def get_vs_open_vulns():
-    conn = connect()
-    try:
-        sql = """select o.cyhy_db_name, o.organizations_uid, o.parent_org_uid, ct.cve, ct.cvss_base_score, ct.time_opened 
-        from cyhy_tickets ct 
-        left join organizations o on 
-        ct.organizations_uid = o.organizations_uid
-        where ct.false_positive = 'false' and ct.cvss_base_score != 'NaN' and (o.fceb = true  or o.fceb_child = true) and ct.time_closed is null"""
-        vs_open_vulns_df = pd.read_sql(sql, conn)
-        return vs_open_vulns_df
-    except (Exception, psycopg2.DatabaseError) as error:
-        LOGGER.error("There was a problem with your database query %s", error)
-    finally:
-        if conn is not None:
-            close(conn)
-
-def get_vs_closed_vulns(start_date, end_date):
-    conn = connect()
-    try:
-        sql = """select o.cyhy_db_name, o.organizations_uid, o.parent_org_uid, ct.cve, ct.cvss_base_score, ct.time_opened, ct.time_closed
-        from cyhy_tickets ct 
-        left join organizations o on 
-        ct.organizations_uid = o.organizations_uid
-        where ct.false_positive = 'false' and ct.cvss_base_score != 'NaN' and (o.fceb = true  or o.fceb_child = true) and (ct.time_closed between %(start_date)s and %(end_date)s)"""
-        vs_open_vulns_df = pd.read_sql(sql, conn, params={"start_date": start_date, "end_date": end_date})
-        return vs_open_vulns_df
-    except (Exception, psycopg2.DatabaseError) as error:
-        LOGGER.error("There was a problem with your database query %s", error)
-    finally:
-        if conn is not None:
-            close(conn)
-
-def get_was_open_vulns(start_date, end_date):
-    conn = connect()
-    try:
-        sql = """select wf.was_org_id, wm.pe_org_id, wf.base_score, wf.fstatus, wf.last_detected, wf.first_detected 
-        from was_findings wf 
-        left join was_map wm on
-        wf.was_org_id = wm.was_org_id 
-        where (wf.last_detected between %(start_date)s and %(end_date)s) and wf.fstatus != 'FIXED' and wm.pe_org_id notnull"""
-        was_open_vulns_df = pd.read_sql(sql, conn, params={"start_date": start_date, "end_date": end_date})
-        return was_open_vulns_df
-    except (Exception, psycopg2.DatabaseError) as error:
-        LOGGER.error("There was a problem with your database query %s", error)
-    finally:
-        if conn is not None:
-            close(conn)
-
-def get_was_closed_vulns(start_date, end_date):
-    conn = connect()
-    try:
-        sql = """select wf.was_org_id, wm.pe_org_id ,wf.base_score, wf.fstatus, wf.last_detected, wf.first_detected 
-        from was_findings wf 
-        left join was_map wm on
-        wf.was_org_id = wm.was_org_id 
-        where (wf.last_detected between %(start_date)s and %(end_date)s) and wf.fstatus = 'FIXED' and wm.pe_org_id notnull"""
-        was_open_vulns_df = pd.read_sql(sql, conn, params={"start_date": start_date, "end_date": end_date})
-        return was_open_vulns_df
-    except (Exception, psycopg2.DatabaseError) as error:
-        LOGGER.error("There was a problem with your database query %s", error)
-    finally:
-        if conn is not None:
-            close(conn)
 
 def summarize_vs_attr(orgs_df, this_month, next_month):
     df_closed_vulns = get_vs_closed_vulns(this_month, next_month)
@@ -309,12 +189,6 @@ def summarize_vs_attr(orgs_df, this_month, next_month):
         average_time_to_remediate_list.append([org['organizations_uid'], org['group'], org['cyhy_db_name'], calculate_attr_compliance(average_kevs, "KEV"), calculate_attr_compliance(average_crits, "CRIT"), calculate_attr_compliance(average_highs, "HIGH")])
     df_attr = pd.DataFrame(average_time_to_remediate_list, columns= ["organizations_uid", "group", "cyhy_db_name", "attr_kevs", "attr_crits", "attr_highs"])
     return df_attr
-
-def average_list(list):
-    if len(list) == 0:
-        return 0
-    else:
-        return round(sum(list)/len(list), 2)
 
 def calculate_attr_compliance(vuln_attr, type):
     compliance_min = 0
@@ -809,53 +683,3 @@ def normalize_vulns(df_vulns, team):
         vulns_list.append([org['organizations_uid'], org['group'], norm_kevs, norm_crits, norm_highs, norm_meds, norm_lows])
     df_vulns = pd.DataFrame(vulns_list, columns= ["organizations_uid", "group", "norm_kevs", "norm_crits", "norm_highs", "norm_meds", "norm_lows"])   
     return df_vulns
-
-def get_letter_grade(score):
-    if score < 65.0:
-        return "F"
-    elif score >= 65.0 and score < 67.0:
-        return "D"
-    elif score >= 67.0 and score < 70.0:
-        return "D+"
-    elif score >= 70.0 and score < 73.0:
-        return "C-"
-    elif score >= 73.0 and score < 77.0:
-        return "C"
-    elif score >= 77.0 and score < 80.0:
-        return "C+"
-    elif score >= 80.0 and score < 83.0:
-        return "B-"
-    elif score >= 83.0 and score < 87.0:
-        return "B"
-    elif score >= 87.0 and score < 90.0:
-        return "B+"
-    elif score >= 90.0 and score < 93.0:
-        return "A-"
-    elif score >= 93.0 and score < 97.0:
-        return "A"
-    else:
-        return "A+"
-
-def get_next_month(report_period_year, report_period_month):
-    next_report_period_month = 0
-    next_report_period_year = 0
-    if report_period_month == 12:
-        next_report_period_month = 1
-        next_report_period_year = report_period_year + 1
-    else:
-        next_report_period_month = report_period_month + 1
-        next_report_period_year = report_period_year
-    next_report_period_date = datetime(next_report_period_year, next_report_period_month, 1)
-    return next_report_period_date
-
-def get_last_month(report_period_year, report_period_month):
-    last_report_period_month = 0
-    last_report_period_year = 0
-    if report_period_month == 1:
-        last_report_period_month = 12
-        last_report_period_year = report_period_year - 1
-    else:
-        last_report_period_month = report_period_month - 1
-        last_report_period_year = report_period_year
-    last_report_period_date = datetime(last_report_period_year, last_report_period_month, 1)
-    return last_report_period_date
