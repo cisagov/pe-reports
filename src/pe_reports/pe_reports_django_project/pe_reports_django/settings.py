@@ -29,12 +29,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/4.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = config['SECRET_KEY']
+SECRET_KEY = config('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['127.0.0.1']
+ALLOWED_HOSTS = ['*']
 
 MESSAGE_TAGS = {
         messages.DEBUG: 'alert-secondary',
@@ -179,6 +179,10 @@ DATABASES = {
         "PORT": config("port")
     }
 }
+
+#Celery settings
+CELERY_BROKER_URL = f"amqp://{config('RABBITMQ_USER')}:{config('RABBITMQ_PASS')}@localhost:5672/"
+CELERY_RESULT_BACKEND = f"rpc://{config('RABBITMQ_USER')}:{config('RABBITMQ_PASS')}@localhost:5672/"
 
 
 # Password validation

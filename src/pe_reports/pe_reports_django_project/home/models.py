@@ -8,6 +8,7 @@
 # Feel free to rename the models, but don't rename db_table values or field names.
 from django.db import models
 from django.conf import settings
+from django.contrib.postgres.fields import ArrayField
 import uuid
 
 
@@ -260,6 +261,27 @@ class CyhyDbAssets(models.Model):
         managed = False
         db_table = 'cyhy_db_assets'
         unique_together = (('org_id', 'network'),)
+
+
+class CyhyPortScans(models.Model):
+    cyhy_port_scans_uid = models.UUIDField(primary_key=True)
+    organizations_uid = models.ForeignKey('Organizations', models.DO_NOTHING, db_column='organizations_uid')
+    cyhy_id = models.TextField(unique=True, blank=True, null=True)
+    cyhy_time = models.DateTimeField(blank=True, null=True)
+    service_name = models.TextField(blank=True, null=True)
+    port = models.TextField(blank=True, null=True)
+    product = models.TextField(blank=True, null=True)
+    cpe = models.TextField(blank=True, null=True)
+    first_seen = models.DateField(blank=True, null=True)
+    last_seen = models.DateField(blank=True, null=True)
+    ip = models.TextField(blank=True, null=True)
+    state = models.TextField(blank=True, null=True)
+    agency_type = models.TextField(blank=True, null=True)
+
+    class Meta:
+        managed = False
+        db_table = 'cyhy_port_scans'
+
 
 
 class DataapiApiuser(models.Model):
@@ -787,6 +809,19 @@ class RootDomains(models.Model):
         db_table = 'root_domains'
         unique_together = (('root_domain', 'organizations_uid'),)
 
+class TeamMembers(models.Model):
+    team_member_uid = models.UUIDField(primary_key=True, default=uuid.uuid1())
+    team_member_fname = models.TextField()
+    team_member_lname = models.TextField()
+    team_member_email = models.TextField()
+    team_member_ghID = models.TextField(blank=False, null=False)
+    team_member_phone = models.TextField(blank=True, null=True)
+    team_member_role = models.TextField(blank=True, null=True)
+    team_member_notes = models.TextField(blank=True, null=True)
+
+    class Meta:
+        managed = True
+        db_table = 'team_members'
 
 class ShodanAssets(models.Model):
     shodan_asset_uid = models.UUIDField(primary_key=True, default=uuid.uuid1())
@@ -946,9 +981,9 @@ class WasTrackerCustomerdata(models.Model):
     onboarding_date = models.TextField()
     no_of_web_apps = models.IntegerField()
     no_web_apps_last_updated = models.TextField(blank=True, null=True)
-    elections = models.TextField(blank=True, null=True)
-    fceb = models.TextField()
-    special_report = models.TextField()
+    elections = models.BooleanField(blank=False, null=False)
+    fceb = models.BooleanField(blank=False, null=False)
+    special_report = models.BooleanField(blank=False, null=False)
     report_password = models.TextField()
     child_tags = models.TextField()
 
@@ -974,6 +1009,25 @@ class WebAssets(models.Model):
         managed = False
         db_table = 'web_assets'
         unique_together = (('asset', 'organizations_uid'),)
+
+
+class WeeklyStatuses(models.Model):
+    weekly_status_uid = models.UUIDField(primary_key=True, default=uuid.uuid1())
+    user_status = models.TextField(blank=True)
+    key_accomplishments = models.TextField(blank=True, null=True)
+    ongoing_task = models.TextField()
+    upcoming_task = models.TextField()
+    obstacles = models.TextField(blank=True, null=True)
+    non_standard_meeting = models.TextField(blank=True, null=True)
+    deliverables = models.TextField(blank=True, null=True)
+    pto = models.TextField(blank=True, null=True)
+    week_ending = models.DateField()
+    notes = models.TextField(blank=True, null=True)
+    statusComplete = models.IntegerField(blank=True, null=True)
+
+    class Meta:
+        managed = True
+        db_table = 'weekly_statuses'
 
 class VwBreachcompCredsbydate(models.Model):
     organizations_uid = models.UUIDField(primary_key=True)
@@ -1232,6 +1286,14 @@ class VwOrgsTotalIps(models.Model):
         managed = False  # Created from a view. Don't remove.
         db_table = 'vw_orgs_total_ips'
 
+class MatVwOrgsAllIps(models.Model):
+    organizations_uid = models.UUIDField(primary_key=True)
+    cyhy_db_name = models.TextField(blank=True, null=True)
+    ip_addresses = ArrayField(models.CharField(max_length=255, blank=True, null=True), blank=True, null=True)
+
+    class Meta:
+        managed = False  # Created from a view. Don't remove.
+        db_table = 'mat_vw_orgs_all_ips'
 
 class VwOrgsAttacksurface(models.Model):
     organizations_uid = models.UUIDField(primary_key=True)

@@ -43,3 +43,5 @@ class CredsFormExternal(FlaskForm):
     breach_name = StringField("Breach Name:")
 
     submit2 = SubmitField("Submit", render_kw={"onclick": "loading()"})
+
+

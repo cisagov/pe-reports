@@ -72,7 +72,7 @@ def enumerate_roots(root_domain, root_uid):
     return found_subs
 
 
-def get_subdomains(staging):
+def get_subdomains(staging=False):
     """Enumerate roots and save subdomains."""
     # Connect to database
     if staging:

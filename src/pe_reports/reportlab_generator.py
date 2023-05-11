@@ -68,6 +68,9 @@ PAGE_HEIGHT = defaultPageSize[1]
 PAGE_WIDTH = defaultPageSize[0]
 
 
+def sha_hash(s: str): 
+    return sha256(s.encode('utf-8')).hexdigest()
+
 # Extend Table of contents to create a List of Figures Class
 class ListOfFigures(TableOfContents):
     """Class extention to build a Table of Figures."""
@@ -130,6 +133,12 @@ class MyDocTemplate(BaseDocTemplate):
             if bn is not None:
                 E.append(bn)
             self.notify(notification, tuple(E))
+
+class ConditionalSpacer(Spacer):
+
+    def wrap(self, availWidth, availHeight):
+        height = min(self.height, availHeight-1e-8)
+        return (availWidth, height)
 
 
 def get_image(path, width=1 * inch):
@@ -340,6 +349,15 @@ def report_gen(data_dict, soc_med_included=False):
         )
         summary_frame_5.addFromList([summary_5], canvas)
 
+        json_title_frame = Frame(
+            3.85 * inch, 175, 1.5 * inch, 0.5 * inch, id=None, showBoundary=0
+        )
+        json_title = Paragraph(
+            "JSON&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;EXCEL",
+            style=json_excel,
+        )
+        json_title_frame.addFromList([json_title], canvas)
+
         canvas.setStrokeColor("#a7a7a6")
         canvas.setFillColor("#a7a7a6")
         canvas.drawInlineImage(
@@ -432,6 +450,16 @@ def report_gen(data_dict, soc_med_included=False):
         spaceAfter=20,
     )
 
+    double_indent = PS(
+        name="indented",
+        fontName="Franklin_Gothic_Book",
+        fontSize=12,
+        leading=14,
+        leftIndent=60,
+        spaceAfter=0,
+    )
+
+
     h1 = PS(
         fontName="Franklin_Gothic_Medium_Regular",
         name="Heading1",
@@ -474,6 +502,13 @@ def report_gen(data_dict, soc_med_included=False):
         spaceAfter=20,
     )
 
+    json_excel = PS(
+        name="json_excel",
+        fontName="Franklin_Gothic_Medium_Regular",
+        fontSize=10,
+        alignment=1,
+    )
+
     figure = PS(
         name="figure",
         fontName="Franklin_Gothic_Medium_Regular",
@@ -509,7 +544,7 @@ def report_gen(data_dict, soc_med_included=False):
 
     # *************************#
     # Create repeated elements
-    point12_spacer = Spacer(1, 12)
+    point12_spacer = ConditionalSpacer(1, 12)
     horizontal_line = HRFlowable(
         width="100%",
         thickness=1.5,
@@ -709,7 +744,7 @@ def report_gen(data_dict, soc_med_included=False):
     Story.append(
         Paragraph(
             "Exposed Credentials<br/><br/>Domain Masquerading and Monitoring<br/><br/>Vulnerabilities and Malware Associations<br/><br/>Dark Web Activity",
-            indented,
+            body,
         )
     )
 
@@ -824,7 +859,7 @@ def report_gen(data_dict, soc_med_included=False):
     # add link to appendix to breach names
     data_dict["breach_table"]["Breach Name"] = (
         '<link href="#'
-        + data_dict["breach_table"]["Breach Name"].str.replace(" ", "_")
+        + data_dict["breach_table"]["Breach Name"].apply(sha_hash)
         + '" color="#003e67">'
         + data_dict["breach_table"]["Breach Name"].astype(str)
         + "</link>"
@@ -1579,7 +1614,6 @@ def report_gen(data_dict, soc_med_included=False):
     if len(data_dict["breach_appendix"]) > 0:
         Story.append(Paragraph("Credential Breach Details: ", h2))
         Story.append(Spacer(1, 6))
-
         for row in data_dict["breach_appendix"].itertuples(index=False):
             # Add anchor points for breach links
             Story.append(
@@ -1589,7 +1623,7 @@ def report_gen(data_dict, soc_med_included=False):
             """.format(
                         breach_name=row[0],
                         description=row[1].replace(' rel="noopener"', ""),
-                        link_name=demoji.replace(str(row[0]), "").replace(" ", "_"),
+                        link_name=sha256(str(row[0]).encode("utf8")).hexdigest(),
                     ),
                     body,
                 )

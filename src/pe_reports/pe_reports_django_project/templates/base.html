@@ -147,4 +147,22 @@
 
 {% endblock content %}
 </body>
+{% block extra_js %}
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const userIssuesSelect = document.getElementById("theuserIssues");
+    const keyAccomplishmentsTextarea = document.getElementById("key_accomplishments");
+
+    userIssuesSelect.addEventListener("change", function() {
+        const selectedIssue = userIssuesSelect.value;
+        const currentText = keyAccomplishmentsTextarea.value;
+
+        // Append the selected issue to the current text, with a comma if there's already text.
+        const newText = currentText.length > 0 ? currentText + ", " + selectedIssue : selectedIssue;
+        keyAccomplishmentsTextarea.value = newText;
+    });
+});
+</script>
+{% endblock %}
+
 </html>

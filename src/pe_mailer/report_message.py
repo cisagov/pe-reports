@@ -63,4 +63,5 @@ class ReportMessage(Message):
         )
 
         self.attach_pdf(pdf_filename)
-        self.attach_pdf(pdf_asm_filename)
+        if pdf_asm_filename:
+            self.attach_pdf(pdf_asm_filename)

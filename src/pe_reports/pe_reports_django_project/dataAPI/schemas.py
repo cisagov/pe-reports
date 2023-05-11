@@ -4,7 +4,7 @@ import uuid
 from pydantic import BaseModel, Field, EmailStr
 from pydantic.schema import Optional
 # from pydantic.types import UUID1, UUID
-from typing import Any, Optional
+from typing import Any, Optional, List
 from uuid import UUID, uuid4, uuid1
 from datetime import date, datetime
 
@@ -51,9 +51,9 @@ class Organization(OrganizationBase):
 class SubDomainBase(BaseModel):
     sub_domain_uid: UUID
     sub_domain: str
-    root_domain_uid: Any
-    data_source_uid: Any
-    dns_record_uid: Any
+    root_domain_uid: Optional[Any]
+    data_source_uid: Optional[Any]
+    dns_record_uid: Optional[Any] = None
     status: bool = False
 
 
@@ -122,6 +122,21 @@ class VwOrgsAttacksurfaceInput(BaseModel):
     class Config:
         orm_mode = True
 
+class MatVwOrgsAllIps(BaseModel):
+    organizations_uid: Any
+    cyhy_db_name: str
+    ip_addresses: List[Optional[str]] = []
+
+    class Config:
+        orm_mode = True
+
+class TaskResponse(BaseModel):
+    task_id: str
+    status: str
+    result: List[MatVwOrgsAllIps] = None
+    error: str = None
+
+
 class WASDataBase(BaseModel):
     # customer_id: UUID
     tag: Optional[str] = 'test'
@@ -149,6 +164,44 @@ class WASDataBase(BaseModel):
         orm_mode = True
         validate_assignment = True
 
+class WeeklyStatuses(BaseModel):
+
+    key_accomplishments: Optional[str] = None
+    ongoing_task: Optional[str] = None
+    upcoming_task: Optional[str] = None
+    obstacles: Optional[str] = None
+    non_standard_meeting: Optional[str] = None
+    deliverables: Optional[str] = None
+    pto: Optional[str] = None
+    week_ending: Optional[str] = None
+    notes: Optional[str] = None
+    statusComplete: Optional[str] = None
+
+    class Config:
+        orm_mode = True
+        validate_assignment = True
+
+
+
+class CyhyPortScans(BaseModel):
+    cyhy_port_scans_uid: UUID
+    organizations_uid: Any
+    cyhy_id: str
+    cyhy_time: str
+    service_name: str
+    port: str
+    product: str
+    cpe: str
+    first_seen: str
+    last_seen: str
+    ip: str
+    state: str
+    agency_type: str
+
+    class Config:
+        orm_mode: True
+        validate_assignment = True
+
 
 class CyhyDbAssets(BaseModel):
     # field_id: str
@@ -174,8 +227,8 @@ class CyhyDbAssetsInput(BaseModel):
 
 class Cidrs(BaseModel):
     cidr_uid: UUID
-    network: str
-    # organizations_uid: Any
+    network: Any
+    organizations_uid: Any
     data_source_uid: Any
     insert_alert: Optional[str] = None
 

@@ -172,7 +172,7 @@ def get_org_assets_count(uid):
     conn = connect()
     cur = conn.cursor()
     sql = """select sur.cyhy_db_name, sur.num_root_domain, sur.num_sub_domain, sur.num_ips, sur.num_ports, sur.num_cidrs, sur.num_ports_protocols , sur.num_software, sur.num_foreign_ips
-            from vw_orgs_attacksurface sur
+            from mat_vw_orgs_attacksurface sur
             where sur.organizations_uid = %s"""
     cur.execute(sql, [uid])
     try:
@@ -444,13 +444,6 @@ def query_ips(org_uid):
 def query_extra_ips(org_uid):
     """Get IP data."""
     conn = connect()
-    sql1 = """SELECT i.ip_hash, i.ip, ct.network FROM ips i
-    JOIN cidrs ct on ct.cidr_uid = i.origin_cidr
-    JOIN organizations o on o.organizations_uid = ct.organizations_uid
-    where o.organizations_uid = %(org_uid)s
-    and i.origin_cidr is not null;"""
-    df1 = pd.read_sql(sql1, conn, params={"org_uid": org_uid})
-    ips1 = list(df1["ip"].values)
 
     sql2 = """select i.ip_hash, i.ip
     from ips i
@@ -458,18 +451,36 @@ def query_extra_ips(org_uid):
     join sub_domains sd on sd.sub_domain_uid = is2.sub_domain_uid
     join root_domains rd on rd.root_domain_uid = sd.root_domain_uid
     JOIN organizations o on o.organizations_uid = rd.organizations_uid
-    where o.organizations_uid = %(org_uid)s;"""
-    df2 = pd.read_sql(sql2, conn, params={"org_uid": org_uid})
-    ips2 = list(df2["ip"].values)
-
-    in_first = set(ips1)
-    in_second = set(ips2)
-
-    extra_ips = in_second - in_first
+    where o.organizations_uid = %(org_uid)s and i.origin_cidr is null;"""
+    df = pd.read_sql(sql2, conn, params={"org_uid": org_uid})
+    ips = list(set(list(df["ip"].values)))
 
     conn.close()
 
-    return extra_ips
+    return ips
+
+
+def set_from_cidr():
+    conn = connect()
+    sql = """
+        update ips
+        set from_cidr = True 
+        where origin_cidr is not null;
+    """
+    cur = conn.cursor()
+    cur.execute(sql)
+    conn.commit()
+
+def refresh_asset_counts_vw():
+    conn = connect()
+    sql = """
+        REFRESH MATERIALIZED VIEW
+        public.mat_vw_orgs_attacksurface
+        WITH DATA
+    """
+    cur = conn.cursor()
+    cur.execute(sql)
+    conn.commit()
 
 
 def query_cidrs_by_org(org_uid):

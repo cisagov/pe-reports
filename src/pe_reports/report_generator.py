@@ -26,13 +26,14 @@ from botocore.exceptions import ClientError
 import docopt
 import fitz
 from schema import And, Schema, SchemaError, Use
+import pandas as pd
 
 # cisagov Libraries
 import pe_reports
 
 from ._version import __version__
 from .asm_generator import create_summary
-from .data.db_query import connect, get_orgs
+from .data.db_query import connect, get_orgs, refresh_asset_counts_vw, set_from_cidr
 from .helpers.generate_score import get_pe_scores
 from .pages import init
 from .reportlab_generator import report_gen
@@ -72,6 +73,10 @@ def embed(
     da_json,
     vuln_json,
     mi_json,
+    cred_xlsx,
+    da_xlsx,
+    vuln_xlsx,
+    mi_xlsx
 ):
     """Embeds raw data into PDF and encrypts file."""
     doc = fitz.open(file)
@@ -85,12 +90,22 @@ def embed(
     ma = open(vuln_json, "rb").read()
     mi = open(mi_json, "rb").read()
 
+    # Open CSV data as binary
+    cc_xl = open(cred_xlsx, "rb").read()
+    da_xl = open(da_xlsx, "rb").read()
+    ma_xl = open(vuln_xlsx, "rb").read()
+    mi_xl = open(mi_xlsx, "rb").read()
+
     # Insert link to CSV data in summary page of PDF.
     # Use coordinates to position them on the bottom.
-    p1 = fitz.Point(78, 607)
-    p2 = fitz.Point(78, 635)
-    p3 = fitz.Point(78, 663)
-    p5 = fitz.Point(78, 691)
+    p1 = fitz.Point(300, 607)
+    p2 = fitz.Point(300, 635)
+    p3 = fitz.Point(300, 663)
+    p4 = fitz.Point(300, 691)
+    p5 = fitz.Point(340, 607)
+    p6 = fitz.Point(340, 635)
+    p7 = fitz.Point(340, 663)
+    p8 = fitz.Point(340, 691)
 
     # Embed and add push-pin graphic
     page.add_file_annot(
@@ -101,7 +116,17 @@ def embed(
     )
     page.add_file_annot(p3, ma, "vuln_alerts.json", desc="Open JSON", icon="Paperclip")
     page.add_file_annot(
-        p5, mi, "mention_incidents.json", desc="Open JSON", icon="Paperclip"
+        p4, mi, "mention_incidents.json", desc="Open JSON", icon="Paperclip"
+    )
+    page.add_file_annot(
+        p5, cc_xl, "compromised_credentials.xlsx", desc="Open Excel", icon="Graph"
+    )
+    page.add_file_annot(
+        p6, da_xl, "domain_alerts.xlsx", desc="Open Excel", icon="Graph"
+    )
+    page.add_file_annot(p7, ma_xl, "vuln_alerts.xlsx", desc="Open Excel", icon="Graph")
+    page.add_file_annot(
+        p8, mi_xl, "mention_incidents.xlsx", desc="Open Excel", icon="Graph"
     )
 
     # Save doc and set garbage=4 to reduce PDF size using all 4 methods:
@@ -131,13 +156,20 @@ def generate_reports(datestring, output_directory, soc_med_included=False):
         return 1
     generated_reports = 0
 
+    # Resfresh ASM counts view
+    # LOGGER.info("Refreshing ASM count view and IPs from cidrs")
+    # refresh_asset_counts_vw()
+    # set_from_cidr()
+    # LOGGER.info("Finished refreshing ASM count view and IPs from Cidrs")
+
     # Iterate over organizations
+
     if pe_orgs:
         LOGGER.info("PE orgs count: %d", len(pe_orgs))
         # Generate PE scores for all stakeholders.
         LOGGER.info("Calculating P&E Scores")
-        pe_scores_df = get_pe_scores(datestring, 12)
-
+        # pe_scores_df = get_pe_scores(datestring, 12)
+        go = 0
         # pe_orgs.reverse()
         for org in pe_orgs:
             # Assign organization values
@@ -145,8 +177,18 @@ def generate_reports(datestring, output_directory, soc_med_included=False):
             org_name = org[1]
             org_code = org[2]
 
-            # if org_code not in ["DOE"]:
+            # if org_code not in ["DOL","USDA"]:
             #     continue
+
+            # DOL, USDA
+
+
+            # if org_code == "HHS_FDA":
+            #     go = 1
+            #     continue
+            # if go != 1:
+            #     continue
+            #Rapidgator%20 DOI_BIA
 
             LOGGER.info("Running on %s", org_code)
 
@@ -154,7 +196,8 @@ def generate_reports(datestring, output_directory, soc_med_included=False):
             for dir_name in ("ppt", org_code):
                 if not os.path.exists(f"{output_directory}/{dir_name}"):
                     os.mkdir(f"{output_directory}/{dir_name}")
-
+            
+            pe_scores_df = pd.DataFrame()
             if not pe_scores_df.empty:
                 score = pe_scores_df.loc[
                     pe_scores_df["cyhy_db_name"] == org_code, "PE_score"
@@ -208,8 +251,8 @@ def generate_reports(datestring, output_directory, soc_med_included=False):
 
             # Create scorecard
             LOGGER.info("Creating scorecard")
-            scorecard_filename = f"{output_directory}/{org_code}/Posture-and-Exposure-Scorecard_{org_code}_{scorecard_dict['end_date'].strftime('%Y-%m-%d')}.pdf"
-            create_scorecard(scorecard_dict, scorecard_filename)
+            # scorecard_filename = f"{output_directory}/{org_code}/Posture-and-Exposure-Scorecard_{org_code}_{scorecard_dict['end_date'].strftime('%Y-%m-%d')}.pdf"
+            # create_scorecard(scorecard_dict, scorecard_filename)
             LOGGER.info("Done")
 
             # Convert to HTML to PDF
@@ -231,6 +274,10 @@ def generate_reports(datestring, output_directory, soc_med_included=False):
                 da_json,
                 vuln_json,
                 mi_json,
+                cred_xlsx,
+                da_xlsx,
+                vuln_xlsx,
+                mi_xlsx
             )
 
             # Log a message if the report is too large.  Our current mailer
@@ -256,7 +303,7 @@ def generate_reports(datestring, output_directory, soc_med_included=False):
             upload_file_to_s3(final_summary_output, datestring, bucket_name, None)
 
             # Upload ASM Summary
-            upload_file_to_s3(scorecard_filename, datestring, bucket_name, None)
+            # upload_file_to_s3(scorecard_filename, datestring, bucket_name, None)
             generated_reports += 1
 
 

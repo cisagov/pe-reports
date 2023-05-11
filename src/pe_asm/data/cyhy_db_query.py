@@ -186,9 +186,9 @@ def insert_cyhy_agencies(conn, cyhy_agency_df):
             sql = """
             INSERT INTO organizations(name, cyhy_db_name, agency_type, retired,
             receives_cyhy_report, receives_bod_report, receives_cybex_report,
-            is_parent, fceb, password) VALUES (%s, %s, %s, %s,
+            is_parent, fceb, cyhy_period_start, password) VALUES (%s, %s, %s, %s,
              %s, %s, %s,
-             %s, %s, PGP_SYM_ENCRYPT(%s, %s))
+             %s, %s, %s, PGP_SYM_ENCRYPT(%s, %s))
             ON CONFLICT (cyhy_db_name)
             DO UPDATE SET
                 name = EXCLUDED.name,
@@ -199,7 +199,8 @@ def insert_cyhy_agencies(conn, cyhy_agency_df):
                 receives_bod_report= EXCLUDED.receives_bod_report,
                 receives_cybex_report = EXCLUDED.receives_cybex_report,
                 is_parent = EXCLUDED.is_parent,
-                fceb = EXCLUDED.fceb
+                fceb = EXCLUDED.fceb,
+                cyhy_period_start = EXCLUDED.cyhy_period_start
             """
             cur.execute(
                 sql,
@@ -213,6 +214,7 @@ def insert_cyhy_agencies(conn, cyhy_agency_df):
                     row["receives_cybex_report"],
                     row["is_parent"],
                     row["fceb"],
+                    row["cyhy_period_start"],
                     row["password"],
                     password,
                 ),
@@ -229,7 +231,7 @@ def insert_cyhy_agencies(conn, cyhy_agency_df):
 def query_pe_orgs(conn):
     """Query P&E organizations."""
     sql = """
-    SELECT organizations_uid, cyhy_db_name, name, agency_type, report_on
+    SELECT organizations_uid, cyhy_db_name, name, agency_type, report_on, fceb
     FROM organizations o
     """
     df = pd.read_sql(sql, conn)
@@ -241,7 +243,7 @@ def query_pe_report_on_orgs(conn):
     sql = """
     SELECT organizations_uid, cyhy_db_name, name, agency_type
     FROM organizations o
-    WHERE report_on or run_scans
+    WHERE report_on or run_scans or fceb or fceb_child
     """
     df = pd.read_sql(sql, conn)
     return df
@@ -270,6 +272,23 @@ def update_scan_status(conn, child_name):
         """
         UPDATE organizations
         set run_scans = True
+        where cyhy_db_name = '{}'
+        """.format(
+            child_name
+        ),
+    )
+
+    conn.commit()
+    cursor.close()
+
+
+def update_fceb_child_status(conn, child_name):
+    """Update child parent relationships between organizations."""
+    cursor = conn.cursor()
+    cursor.execute(
+        """
+        UPDATE organizations
+        set fceb_child = True
         where cyhy_db_name = '{}'
         """.format(
             child_name
@@ -500,7 +519,7 @@ def identify_ip_changes(conn):
         """
         UPDATE ips
         set current = True
-        where last_seen > (CURRENT_DATE - INTERVAL '3 days')
+        where last_seen > (CURRENT_DATE - INTERVAL '15 days')
         """
     )
     conn.commit()
@@ -511,7 +530,7 @@ def identify_ip_changes(conn):
         """
         UPDATE ips
         set current = False
-        where last_seen < (CURRENT_DATE - INTERVAL '3 days')
+        where last_seen < (CURRENT_DATE - INTERVAL '15 days') or last_seen isnull;
         """
     )
     conn.commit()
@@ -525,7 +544,7 @@ def identify_sub_changes(conn):
         """
         UPDATE sub_domains
         set current = True
-        where last_seen > (CURRENT_DATE - INTERVAL '3 days')
+        where last_seen > (CURRENT_DATE - INTERVAL '15 days')
         """
     )
     conn.commit()
@@ -536,7 +555,7 @@ def identify_sub_changes(conn):
         """
         UPDATE sub_domains
         set current = False
-        where last_seen < (CURRENT_DATE - INTERVAL '3 days')
+        where last_seen < (CURRENT_DATE - INTERVAL '15 days') or last_seen isnull;
         """
     )
     conn.commit()
@@ -550,7 +569,7 @@ def identify_ip_sub_changes(conn):
         """
         UPDATE ips_subs
         set current = True
-        where last_seen > (CURRENT_DATE - INTERVAL '3 days')
+        where last_seen > (CURRENT_DATE - INTERVAL '15 days')
         """
     )
     conn.commit()
@@ -561,7 +580,7 @@ def identify_ip_sub_changes(conn):
         """
         UPDATE ips_subs
         set current = False
-        where last_seen < (CURRENT_DATE - INTERVAL '3 days')
+        where last_seen < (CURRENT_DATE - INTERVAL '15 days') or last_seen isnull;
         """
     )
     conn.commit()
@@ -587,3 +606,31 @@ def insert_cyhy_scorecard_data(conn, df, table_name, on_conflict):
         # Show error and close connection if failed
         LOGGER.error("There was a problem with your database query %s", err)
         cursor.close()
+
+
+def identified_sub_domains(conn):
+    """Set sub-domains to identified."""
+
+    # If the sub's root-domain has enumerate=False, then "identified" is True
+    cursor = conn.cursor()
+    LOGGER.info("Marking identified sub-domains.")
+    cursor.execute(
+        """
+        UPDATE sub_domains sd
+        set identified = true
+        from root_domains rd
+        where rd.root_domain_uid = sd.root_domain_uid and rd.enumerate_subs = false;
+        """
+    )
+    conn.commit()
+    cursor.close()
+
+
+def get_fceb_orgs(conn):
+    """Query fceb orgs."""
+    sql = """select * from organizations o 
+            where o.fceb or o.fceb_child;
+            """
+    df = pd.read_sql(sql, conn)
+    fceb_list = list(df["cyhy_db_name"])
+    return fceb_list
