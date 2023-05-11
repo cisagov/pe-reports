@@ -380,65 +380,175 @@ def query_trusty_mail(org_id_list):
 
 # v ---------- D-Score SQL Queries ---------- v
 # ----- VS Cert -----
-def query_dscore_vs_data_cert():
-    """Query all VS certificate data needed for D-Score calculation."""
+def query_dscore_vs_data_cert(org_list):
+    """
+    Query all VS certificate data needed for D-Score calculation.
+
+    Args:
+        org_list: The specified list of organizations to retrieve data for
+    Return:
+        All VS certificate data of the specified orgs needed for the D-Score
+    """
     # Open connection
     conn = connect()
+    # Build query
+    sector_str = (
+        "UUID('" + "')), (UUID('".join(org_list["organizations_uid"].tolist()) + "')"
+    )
+    sql = """
+    SELECT 
+        sector.organizations_uid, cert.num_ident_cert, cert.num_monitor_cert
+    FROM
+        (VALUES (%(sector_str)s)) AS sector(organizations_uid)
+        LEFT JOIN
+        vw_dscore_vs_cert cert
+        ON sector.organizations_uid = cert.organizations_uid;"""
     # Make query
-    sql = """SELECT * FROM vw_dscore_vs_cert;"""
-    dscore_vs_data_cert = pd.read_sql(sql, conn)
+    dscore_vs_data_cert = pd.read_sql(
+        sql,
+        conn,
+        params={"sector_str": sector_str},
+    )
     # Close connection
     conn.close()
     return dscore_vs_data_cert
 
 
 # ----- VS Mail -----
-def query_dscore_vs_data_mail():
-    """Query all VS mail data needed for D-Score calculation."""
+def query_dscore_vs_data_mail(org_list):
+    """
+    Query all VS mail data needed for D-Score calculation.
+
+    Args:
+        org_list: The specified list of organizations to retrieve data for
+    Return:
+        All VS mail data of the specified orgs needed for the D-Score
+    """
     # Open connection
     conn = connect()
+    # Build query
+    sector_str = (
+        "UUID('" + "')), (UUID('".join(org_list["organizations_uid"].tolist()) + "')"
+    )
+    sql = """
+    SELECT 
+        sector.organizations_uid, mail.num_valid_dmarc, mail.num_valid_spf, mail.num_valid_dmarc_or_spf, mail.total_mail_domains
+    FROM
+        (VALUES (%(sector_str)s)) AS sector(organizations_uid)
+        LEFT JOIN
+        vw_dscore_vs_mail mail
+        ON sector.organizations_uid = mail.organizations_uid;"""
     # Make query
-    sql = """SELECT * FROM vw_dscore_vs_mail;"""
-    dscore_vs_data_mail = pd.read_sql(sql, conn)
+    dscore_vs_data_mail = pd.read_sql(
+        sql,
+        conn,
+        params={"sector_str": sector_str},
+    )
     # Close connection
     conn.close()
     return dscore_vs_data_mail
 
 
 # ----- PE IP -----
-def query_dscore_pe_data_ip():
-    """Query all PE IP data needed for D-Score calculation."""
+def query_dscore_pe_data_ip(org_list):
+    """
+    Query all PE IP data needed for D-Score calculation.
+
+    Args:
+        org_list: The specified list of organizations to retrieve data for
+    Return:
+        All PE ip data of the specified orgs needed for the D-Score
+    """
     # Open connection
     conn = connect()
+    # Build query
+    sector_str = (
+        "UUID('" + "')), (UUID('".join(org_list["organizations_uid"].tolist()) + "')"
+    )
+    sql = """
+    SELECT 
+        sector.organizations_uid, ip.num_ident_ip, ip.num_monitor_ip
+    FROM
+        (VALUES (%(sector_str)s)) AS sector(organizations_uid)
+        LEFT JOIN
+        vw_dscore_pe_ip ip
+        ON sector.organizations_uid = ip.organizations_uid;"""
     # Make query
-    sql = """SELECT * FROM vw_dscore_pe_ip;"""
-    dscore_pe_data_ip = pd.read_sql(sql, conn)
+    dscore_pe_data_ip = pd.read_sql(
+        sql,
+        conn,
+        params={"sector_str": sector_str},
+    )
     # Close connection
     conn.close()
     return dscore_pe_data_ip
 
 
 # ----- PE Domain -----
-def query_dscore_pe_data_domain():
-    """Query all PE domain data needed for D-Score calculation."""
+def query_dscore_pe_data_domain(org_list):
+    """
+    Query all PE domain data needed for D-Score calculation.
+
+    Args:
+        org_list: The specified list of organizations to retrieve data for
+    Return:
+        All PE domain data of the specified orgs needed for the D-Score
+    """
     # Open connection
     conn = connect()
+    # Build query
+    sector_str = (
+        "UUID('" + "')), (UUID('".join(org_list["organizations_uid"].tolist()) + "')"
+    )
+    sql = """
+    SELECT 
+        sector.organizations_uid, domain.num_ident_domain, domain.num_monitor_domain
+    FROM
+        (VALUES (%(sector_str)s)) AS sector(organizations_uid)
+        LEFT JOIN
+        vw_dscore_pe_domain domain
+        ON sector.organizations_uid = domain.organizations_uid;"""
     # Make query
-    sql = """SELECT * FROM vw_dscore_pe_domain;"""
-    dscore_pe_data_domain = pd.read_sql(sql, conn)
+    dscore_pe_data_domain = pd.read_sql(
+        sql,
+        conn,
+        params={"sector_str": sector_str},
+    )
     # Close connection
     conn.close()
     return dscore_pe_data_domain
 
 
 # ----- WAS Webapp -----
-def query_dscore_was_data_webapp():
-    """Query all WAS webapp data needed for D-Score calculation."""
+def query_dscore_was_data_webapp(org_list):
+    """
+    Query all WAS webapp data needed for D-Score calculation.
+
+    Args:
+        org_list: The specified list of organizations to retrieve data for
+    Return:
+        All WAS webapp data of the specified orgs needed for the D-Score
+    """
     # Open connection
     conn = connect()
+    # Build query
+    sector_str = (
+        "UUID('" + "')), (UUID('".join(org_list["organizations_uid"].tolist()) + "')"
+    )
+    sql = """
+    SELECT 
+        sector.organizations_uid, webapp.num_ident_webapp, webapp.num_monitor_webapp
+    FROM
+        (VALUES (%(sector_str)s)) AS sector(organizations_uid)
+        LEFT JOIN
+        vw_dscore_was_webapp webapp
+        ON sector.organizations_uid = webapp.organizations_uid;"""
     # Make query
-    sql = """SELECT * FROM vw_dscore_was_webapp;"""
-    dscore_was_data_webapp = pd.read_sql(sql, conn)
+    dscore_was_data_webapp = pd.read_sql(
+        sql,
+        conn,
+        params={"sector_str": sector_str},
+    )
     # Close connection
     conn.close()
     return dscore_was_data_webapp
@@ -446,13 +556,35 @@ def query_dscore_was_data_webapp():
 
 # v ---------- I-Score SQL Queries ---------- v
 # ----- VS Vulns -----
-def query_iscore_vs_data_vuln():
-    """Query all VS vuln data needed for I-Score calculation."""
+def query_iscore_vs_data_vuln(org_list):
+    """
+    Query all VS vuln data needed for I-Score calculation.
+
+    Args:
+        org_list: The specified list of organizations to retrieve data for
+    Return:
+        All VS vuln data of the specified orgs needed for the I-Score
+    """
     # Open connection
     conn = connect()
+    # Build query
+    sector_str = (
+        "UUID('" + "')), (UUID('".join(org_list["organizations_uid"].tolist()) + "')"
+    )
+    sql = """
+    SELECT 
+        sector.organizations_uid, vuln.cve_name, vuln.cvss_score
+    FROM
+        (VALUES (%(sector_str)s)) AS sector(organizations_uid)
+        LEFT JOIN
+        vw_iscore_vs_vuln vuln
+        ON sector.organizations_uid = vuln.organizations_uid;"""
     # Make query
-    sql = """SELECT * FROM vw_iscore_vs_vuln;"""
-    iscore_vs_vuln_data = pd.read_sql(sql, conn)
+    iscore_vs_vuln_data = pd.read_sql(
+        sql,
+        conn,
+        params={"sector_str": sector_str},
+    )
     # Close connection
     conn.close()
     # Check if dataframe comes back empty
@@ -477,14 +609,42 @@ def query_iscore_vs_data_vuln():
 
 
 # ----- VS Vulns Previous -----
-def query_iscore_vs_data_vuln_prev(start_date, end_date):
-    """Query all VS prev vuln data needed for I-Score calculation."""
+def query_iscore_vs_data_vuln_prev(org_list, start_date, end_date):
+    """
+    Query all VS prev vuln data needed for I-Score calculation.
+
+    Args:
+        org_list: The specified list of organizations to retrieve data for
+        start_date: Start date of specified report period
+        end_date: End date of specified report period
+    Return:
+        All VS prev vuln data of the specified orgs needed for the I-Score
+    """
     # Open connection
     conn = connect()
+    # Build query
+    sector_str = (
+        "UUID('" + "')), (UUID('".join(org_list["organizations_uid"].tolist()) + "')"
+    )
+    sql = """
+    SELECT 
+        sector.organizations_uid, prev_vuln.cve_name, prev_vuln.cvss_score, prev_vuln.time_closed
+    FROM
+        (VALUES (%(sector_str)s)) AS sector(organizations_uid)
+        LEFT JOIN
+        vw_iscore_vs_vuln prev_vuln
+        ON sector.organizations_uid = prev_vuln.organizations_uid
+    WHERE 
+        time_closed BETWEEN '%(start_date)s' AND '%(end_date)s';"""
     # Make query
-    sql = """SELECT * FROM vw_iscore_vs_vuln_prev WHERE time_closed BETWEEN %(start_date)s AND %(end_date)s;"""
     iscore_vs_vuln_prev_data = pd.read_sql(
-        sql, conn, params={"start_date": start_date, "end_date": end_date}
+        sql,
+        conn,
+        params={
+            "sector_str": sector_str,
+            "start_date": start_date,
+            "end_date": end_date,
+        },
     )
     # Close connection
     conn.close()
@@ -511,14 +671,42 @@ def query_iscore_vs_data_vuln_prev(start_date, end_date):
 
 
 # ----- PE Vulns -----
-def query_iscore_pe_data_vuln(start_date, end_date):
-    """Query all PE vuln data needed for I-Score calculation."""
+def query_iscore_pe_data_vuln(org_list, start_date, end_date):
+    """
+    Query all PE vuln data needed for I-Score calculation.
+
+    Args:
+        org_list: The specified list of organizations to retrieve data for
+        start_date: Start date of specified report period
+        end_date: End date of specified report period
+    Return:
+        All PE vuln data of the specified orgs needed for the I-Score
+    """
     # Open connection
     conn = connect()
+    # Build query
+    sector_str = (
+        "UUID('" + "')), (UUID('".join(org_list["organizations_uid"].tolist()) + "')"
+    )
+    sql = """
+    SELECT 
+        sector.organizations_uid, vuln.date, vuln.cve_name, vuln.cvss_score
+    FROM
+        (VALUES (%(sector_str)s)) AS sector(organizations_uid)
+        LEFT JOIN
+        vw_iscore_pe_vuln vuln
+        ON sector.organizations_uid = vuln.organizations_uid
+    WHERE 
+        date BETWEEN '%(start_date)s' AND '%(end_date)s';"""
     # Make query
-    sql = """SELECT * FROM vw_iscore_pe_vuln WHERE date BETWEEN %(start_date)s AND %(end_date)s;"""
     iscore_pe_vuln_data = pd.read_sql(
-        sql, conn, params={"start_date": start_date, "end_date": end_date}
+        sql,
+        conn,
+        params={
+            "sector_str": sector_str,
+            "start_date": start_date,
+            "end_date": end_date,
+        },
     )
     # Close connection
     conn.close()
@@ -549,14 +737,42 @@ def query_iscore_pe_data_vuln(start_date, end_date):
 
 
 # ----- PE Creds -----
-def query_iscore_pe_data_cred(start_date, end_date):
-    """Query all PE cred data needed for I-Score calculation."""
+def query_iscore_pe_data_cred(org_list, start_date, end_date):
+    """
+    Query all PE cred data needed for I-Score calculation.
+
+    Args:
+        org_list: The specified list of organizations to retrieve data for
+        start_date: Start date of specified report period
+        end_date: End date of specified report period
+    Return:
+        All PE cred data of the specified orgs needed for the I-Score
+    """
     # Open connection
     conn = connect()
+    # Build query
+    sector_str = (
+        "UUID('" + "')), (UUID('".join(org_list["organizations_uid"].tolist()) + "')"
+    )
+    sql = """
+    SELECT 
+        sector.organizations_uid, cred.date, cred.password_creds, cred.total_creds
+    FROM
+        (VALUES (%(sector_str)s)) AS sector(organizations_uid)
+        LEFT JOIN
+        vw_iscore_pe_cred cred
+        ON sector.organizations_uid = cred.organizations_uid
+    WHERE 
+        date BETWEEN '%(start_date)s' AND '%(end_date)s';"""
     # Make query
-    sql = """SELECT * FROM vw_iscore_pe_cred WHERE date BETWEEN %(start_date)s AND %(end_date)s;"""
     iscore_pe_cred_data = pd.read_sql(
-        sql, conn, params={"start_date": start_date, "end_date": end_date}
+        sql,
+        conn,
+        params={
+            "sector_str": sector_str,
+            "start_date": start_date,
+            "end_date": end_date,
+        },
     )
     # Close connection
     conn.close()
@@ -583,14 +799,42 @@ def query_iscore_pe_data_cred(start_date, end_date):
 
 
 # ----- PE Breaches -----
-def query_iscore_pe_data_breach(start_date, end_date):
-    """Query all PE breach data needed for I-Score calculation."""
+def query_iscore_pe_data_breach(org_list, start_date, end_date):
+    """
+    Query all PE breach data needed for I-Score calculation.
+
+    Args:
+        org_list: The specified list of organizations to retrieve data for
+        start_date: Start date of specified report period
+        end_date: End date of specified report period
+    Return:
+        All PE breach data of the specified orgs needed for the I-Score
+    """
     # Open connection
     conn = connect()
+    # Build query
+    sector_str = (
+        "UUID('" + "')), (UUID('".join(org_list["organizations_uid"].tolist()) + "')"
+    )
+    sql = """
+    SELECT 
+        sector.organizations_uid, breach.date, breach.breach_count
+    FROM
+        (VALUES (%(sector_str)s)) AS sector(organizations_uid)
+        LEFT JOIN
+        vw_iscore_pe_breach breach
+        ON sector.organizations_uid = breach.organizations_uid
+    WHERE 
+        date BETWEEN '%(start_date)s' AND '%(end_date)s';"""
     # Make query
-    sql = """SELECT * FROM vw_iscore_pe_breach WHERE date BETWEEN %(start_date)s AND %(end_date)s;"""
     iscore_pe_breach_data = pd.read_sql(
-        sql, conn, params={"start_date": start_date, "end_date": end_date}
+        sql,
+        conn,
+        params={
+            "sector_str": sector_str,
+            "start_date": start_date,
+            "end_date": end_date,
+        },
     )
     # Close connection
     conn.close()
@@ -616,14 +860,42 @@ def query_iscore_pe_data_breach(start_date, end_date):
 
 
 # ----- PE DarkWeb -----
-def query_iscore_pe_data_darkweb(start_date, end_date):
-    """Query all PE dark web data needed for I-Score calculation."""
+def query_iscore_pe_data_darkweb(org_list, start_date, end_date):
+    """
+    Query all PE dark web data needed for I-Score calculation.
+
+    Args:
+        org_list: The specified list of organizations to retrieve data for
+        start_date: Start date of specified report period
+        end_date: End date of specified report period
+    Return:
+        All PE darkweb data of the specified orgs needed for the I-Score
+    """
     # Open connection
     conn = connect()
+    # Build query
+    sector_str = (
+        "UUID('" + "')), (UUID('".join(org_list["organizations_uid"].tolist()) + "')"
+    )
+    sql = """
+    SELECT 
+        sector.organizations_uid, darkweb.alert_type, darkweb.date, darkweb."Count"
+    FROM
+        (VALUES (%(sector_str)s)) AS sector(organizations_uid)
+        LEFT JOIN
+        vw_iscore_pe_darkweb darkweb
+        ON sector.organizations_uid = darkweb.organizations_uid
+    WHERE 
+        date BETWEEN '%(start_date)s' AND '%(end_date)s' OR date = '0001-01-01';"""
     # Make query
-    sql = """SELECT * FROM vw_iscore_pe_darkweb WHERE date BETWEEN %(start_date)s AND %(end_date)s OR date = '0001-01-01';"""
     iscore_pe_darkweb_data = pd.read_sql(
-        sql, conn, params={"start_date": start_date, "end_date": end_date}
+        sql,
+        conn,
+        params={
+            "sector_str": sector_str,
+            "start_date": start_date,
+            "end_date": end_date,
+        },
     )
     # Close connection
     conn.close()
@@ -650,14 +922,42 @@ def query_iscore_pe_data_darkweb(start_date, end_date):
 
 
 # ----- PE Protocol -----
-def query_iscore_pe_data_protocol(start_date, end_date):
-    """Query all PE protocol data needed for I-Score calculation."""
+def query_iscore_pe_data_protocol(org_list, start_date, end_date):
+    """
+    Query all PE protocol data needed for I-Score calculation.
+
+    Args:
+        org_list: The specified list of organizations to retrieve data for
+        start_date: Start date of specified report period
+        end_date: End date of specified report period
+    Return:
+        All PE protocol data of the specified orgs needed for the I-Score
+    """
     # Open connection
     conn = connect()
+    # Build query
+    sector_str = (
+        "UUID('" + "')), (UUID('".join(org_list["organizations_uid"].tolist()) + "')"
+    )
+    sql = """
+    SELECT 
+        sector.organizations_uid, protocol.port, protocol.ip, protocol.protocol, protocol.protocol_type, protocol.date
+    FROM
+        (VALUES (%(sector_str)s)) AS sector(organizations_uid)
+        LEFT JOIN
+        vw_iscore_pe_protocol protocol
+        ON sector.organizations_uid = protocol.organizations_uid
+    WHERE 
+        date BETWEEN '%(start_date)s' AND '%(end_date)s';"""
     # Make query
-    sql = """SELECT * FROM vw_iscore_pe_protocol WHERE date BETWEEN %(start_date)s AND %(end_date)s;"""
     iscore_pe_protocol_data = pd.read_sql(
-        sql, conn, params={"start_date": start_date, "end_date": end_date}
+        sql,
+        conn,
+        params={
+            "sector_str": sector_str,
+            "start_date": start_date,
+            "end_date": end_date,
+        },
     )
     # Close connection
     conn.close()
@@ -686,14 +986,42 @@ def query_iscore_pe_data_protocol(start_date, end_date):
 
 
 # ----- WAS Vulns -----
-def query_iscore_was_data_vuln(start_date, end_date):
-    """Query all WAS vuln data needed for I-Score calculation."""
+def query_iscore_was_data_vuln(org_list, start_date, end_date):
+    """
+    Query all WAS vuln data needed for I-Score calculation.
+
+    Args:
+        org_list: The specified list of organizations to retrieve data for
+        start_date: Start date of specified report period
+        end_date: End date of specified report period
+    Return:
+        All WAS vuln data of the specified orgs needed for the I-Score
+    """
     # Open connection
     conn = connect()
+    # Build query
+    sector_str = (
+        "UUID('" + "')), (UUID('".join(org_list["organizations_uid"].tolist()) + "')"
+    )
+    sql = """
+    SELECT 
+        sector.organizations_uid, vuln.date, vuln.cve_name, vuln.cvss_score, vuln.owasp_category
+    FROM
+        (VALUES (%(sector_str)s)) AS sector(organizations_uid)
+        LEFT JOIN
+        vw_iscore_was_vuln vuln
+        ON sector.organizations_uid = vuln.organizations_uid
+    WHERE 
+        date BETWEEN '%(start_date)s' AND '%(end_date)s';"""
     # Make query
-    sql = """SELECT * FROM vw_iscore_was_vuln WHERE date BETWEEN %(start_date)s AND %(end_date)s;"""
     iscore_was_vuln_data = pd.read_sql(
-        sql, conn, params={"start_date": start_date, "end_date": end_date}
+        sql,
+        conn,
+        params={
+            "sector_str": sector_str,
+            "start_date": start_date,
+            "end_date": end_date,
+        },
     )
     # Close connection
     conn.close()
@@ -721,14 +1049,42 @@ def query_iscore_was_data_vuln(start_date, end_date):
 
 
 # ----- WAS Vulns Previous -----
-def query_iscore_was_data_vuln_prev(start_date, end_date):
-    """Query all WAS prev vuln data needed for I-Score calculation."""
+def query_iscore_was_data_vuln_prev(org_list, start_date, end_date):
+    """
+    Query all WAS prev vuln data needed for I-Score calculation.
+
+    Args:
+        org_list: The specified list of organizations to retrieve data for
+        start_date: Start date of specified report period
+        end_date: End date of specified report period
+    Return:
+        All WAS vuln prev data of the specified orgs needed for the I-Score
+    """
     # Open connection
     conn = connect()
+    # Build query
+    sector_str = (
+        "UUID('" + "')), (UUID('".join(org_list["organizations_uid"].tolist()) + "')"
+    )
+    sql = """
+    SELECT 
+        sector.organizations_uid, prev_vuln.was_total_vulns_prev, prev_vuln.date
+    FROM
+        (VALUES (%(sector_str)s)) AS sector(organizations_uid)
+        LEFT JOIN
+        vw_iscore_was_vuln_prev prev_vuln
+        ON sector.organizations_uid = prev_vuln.organizations_uid
+    WHERE 
+        date BETWEEN '%(start_date)s' AND '%(end_date)s';"""
     # Make query
-    sql = """SELECT * FROM vw_iscore_was_vuln_prev WHERE date BETWEEN %(start_date)s AND %(end_date)s;"""
     iscore_was_vuln_prev_data = pd.read_sql(
-        sql, conn, params={"start_date": start_date, "end_date": end_date}
+        sql,
+        conn,
+        params={
+            "sector_str": sector_str,
+            "start_date": start_date,
+            "end_date": end_date,
+        },
     )
     # Close connection
     conn.close()
