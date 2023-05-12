@@ -1134,7 +1134,11 @@ def create_scorecard(
     ]
     col_widths = [3.2 * inch, 2.1 * inch, 2.4 * inch]
     if not exclude_bods:
-        vulns_data[0].append("BOD Compliance")
+        if data_dict["sector"] in ["FCEB", "EXECUTIVE"]:
+            header = "BOD Compliance"
+        else:
+            header = "BOD Compliance**"
+        vulns_data[0].append(header)
         vulns_data[1].append("22-01:         ")
         vulns_data[2].append("19-02:         ")
         vulns_data[3].append("19-02:         ")
@@ -1201,7 +1205,11 @@ def create_scorecard(
             data_dict["web_app_org_critical_ttr"],
             data_dict["web_app_sector_critical_ttr"],
         ],
-        ["High", data_dict["web_app_org_high_ttr"], data_dict["web_app_sector_high_ttr"]],
+        [
+            "High",
+            data_dict["web_app_org_high_ttr"],
+            data_dict["web_app_sector_high_ttr"],
+        ],
     ]
     web_app_table = format_table(web_app_data, [3.2 * inch, 2.1 * inch, 2.4 * inch])
     web_app_table_frame = Frame(
@@ -1218,9 +1226,11 @@ def create_scorecard(
         bod18_header_frame = Frame(
             col1_x_value, y_value + 2 * inch, box_width, 0.42 * inch, showBoundary=False
         )
-        bod18_header_frame.addFromList(
-            [Paragraph("BOD 18-01", style=header_style)], can
-        )
+        if data_dict["sector"] in ["FCEB", "EXECUTIVE"]:
+            title = "BOD 18-01"
+        else:
+            title = "BOD 18-01**"
+        bod18_header_frame.addFromList([Paragraph(title, style=header_style)], can)
         if data_dict["email_compliance_pct"] is not None:
             email_compliance = str(data_dict["email_compliance_pct"]) + "%"
         else:
@@ -1290,15 +1300,27 @@ def create_scorecard(
     fine_print_frame = Frame(
         0.25 * inch, y_value - 0.05 * inch, 8.1 * inch, 0.6 * inch, showBoundary=False
     )
-    fine_print_frame.addFromList(
-        [
+    fine_print = [
+        Paragraph(
+            "*Data was last pulled on "
+            + data_dict["data_pulled_date"]
+            + ". Any changes made after this date will not be reflected in this scorecard.",
+            style=fine_print_style,
+        ),
+    ]
+
+    if data_dict["sector"] not in ["FCEB", "EXECUTIVE"]:
+        fine_print.append(
             Paragraph(
-                "*Data was last pulled on "
-                + data_dict["data_pulled_date"]
-                + ". Any changes made after this date will not be reflected in this scorecard.",
+                "**"
+                + data_dict["agency_id"]
+                + " is not required to comply with CISA BODs however compliance has been calculated for your awareness.",
                 style=fine_print_style,
             )
-        ],
+        )
+
+    fine_print_frame.addFromList(
+        fine_print,
         can,
     )
 
