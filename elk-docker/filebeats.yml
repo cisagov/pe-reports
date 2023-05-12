@@ -1,0 +1,31 @@
+# This is the input section. It defines where Filebeat is looking for log information.
+filebeat.inputs:
+- type: log                      # The type of input source. Here it's set to 'log'.
+  enabled: true                  # This setting enables the log input.
+  paths:                         # These are the paths to the log files which Filebeat should monitor.
+    - /var/lib/docker/containers/*/*.log # Docker container logs.
+    - /var/log/*.log                    # Logs in the /var/log directory.
+    - /var/log/*/*.log                  # Logs in any subdirectory of /var/log.
+    - /var/log/syslog                   # System logs.
+    - /var/log/auth.log                 # Authentication logs.
+    - /var/log/kern.log                 # Kernel logs.
+    - /var/log/dpkg.log                 # Package manager logs.
+    - /var/log/apt/history.log          # APT package history logs.
+    - /var/log/apt/term.log             # APT terminal logs.
+    - /var/log/mail.log                 # Mail server logs.
+    - /var/log/mail.err                 # Mail error logs.
+
+# This is the processors section. It defines processors that transform the data collected before shipping.
+processors:
+- add_docker_metadata: ~          # This processor adds Docker metadata to the logs.
+
+# This is the output section. It defines where Filebeat sends the data.
+output.elasticsearch:             # Here the output is sent to Elasticsearch.
+  hosts: ["https://es01:9200"]    # The address of the Elasticsearch instance.
+  username: "elastic"             # The username used to connect to Elasticsearch.
+  password: "${ELASTIC_PASSWORD}"        # The password used to connect to Elasticsearch.
+  ssl.enabled: true               # This enables SSL for secure communication.
+  ssl.certificate_authorities: ["/usr/share/filebeat/config/certs/ca/ca.crt"] # The path to the Certificate Authority (CA) certificates for verifying the server's identity.
+  ssl.certificate: "/usr/share/filebeat/config/certs/ca/ca.crt" # The path to the public SSL certificate that Filebeat will use when connecting to Elasticsearch.
+  ssl.key: "/usr/share/filebeat/config/certs/ca/ca.key" # The path to the private key that Filebeat will use when connecting to Elasticsearch.
+

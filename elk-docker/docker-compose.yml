@@ -156,10 +156,10 @@ services:
       dockerfile: Dockerfile.logstash # Path to the Logstash Dockerfile
     container_name: logstash # Name for the container
     volumes:
-      #- ./logstash.conf:/usr/share/logstash/pipeline/logstash.conf # Mount the Logstash configuration file
+      - ./logstash.conf:/usr/share/logstash/config/logstash.conf # Mount the Logstash configuration file
       - ./logs:/usr/share/logstash/logs # Mount the logs directory for Logstash
-      #- ./logstash.yml:/usr/share/logstash/config/logstash.yml # Mount the Logstash YAML configuration file
-      - certs:/usr/share/logstash/config/certs # Add this line
+      - ./logstash.yml:/usr/share/logstash/config/logstash.yml # Mount the Logstash YAML configuration file
+      - certs:/usr/share/logstash/config/certs # Mount the certificates directory
     environment:
       - "LS_JAVA_OPTS=-Xmx512m -Xms512m" # Set the Java options for Logstash (memory settings)
     ports:
@@ -180,6 +180,23 @@ services:
       - logstash
       - es01
     command: metricbeat -e -strict.perms=false # Start Metricbeat with error logging and disabled strict permission checks
+    networks:
+      - elk
+
+  filebeat:
+    # Filebeat Service
+    image: docker.elastic.co/beats/filebeat:${STACK_VERSION} # Filebeat image to use
+    depends_on:
+      # Define dependencies for the service
+      es01:
+        condition: service_healthy # Start only when the Elasticsearch service (es01) is healthy
+    container_name: filebeat
+    user: root
+    volumes:
+      - ./filebeats.yml:/usr/share/filebeat/filebeat.yml # Mount the Filebeats configuration file
+      - certs:/usr/share/filebeat/config/certs # Mount the certificates directory
+      - /var/log:/var/log
+    command: filebeat -e -strict.perms=false # Start Filebeats with error logging and disabled strict permission checks
     networks:
       - elk
 
