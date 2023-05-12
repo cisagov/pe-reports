@@ -42,6 +42,7 @@ class Scorecard:
         self,
         month,
         year,
+        sector,
         org_data,
         org_uid_list,
         cyhy_id_list,
@@ -54,7 +55,7 @@ class Scorecard:
         self.scorecard_dict = {
             "agency_name": org_data["name"],
             "agency_id": org_data["cyhy_db_name"],
-            "sector_name": "FCEB" if org_data["fceb"] is True else "Sector",
+            "sector_name": "FCEB" if sector == "EXECUTIVE" else sector,
             "date": calendar.month_name[int(month)] + " " + year,
             "data_pulled_date": find_last_scan_date()[0].strftime("%b %d, %Y"),
         }
@@ -675,6 +676,8 @@ class Scorecard:
             output_directory
             + "/scorecard_"
             + scorecard_dict["agency_id"]
+            + "_"
+            + scorecard_dict["sector"]
             + "_"
             + self.start_date.strftime("%b-%Y")
             + ".pdf"
