@@ -23,6 +23,7 @@ from pe_scorecard.data.db_query import (
     # WAS queries
     query_dscore_was_data_webapp,
     # FCEB Stakeholder sectors by size
+    query_fceb_status,
     query_xs_stakeholder_list,
     query_s_stakeholder_list,
     query_m_stakeholder_list,
@@ -74,8 +75,15 @@ def import_discov_data(curr_start, curr_end, stakeholder_list):
 
     # --------------- Import Other Data from Database: ---------------
     # Retrieve any other necessary data from the database
+    # ----- FCEB status of each org in this sector: -----
+    LOGGER.info("Retrieving FCEB status data for D-Score...")
+    fceb_status = query_fceb_status(stakeholder_list)
+    LOGGER.info("\tDone!")
     # ----- List of orgs for this sector: -----
     org_list = stakeholder_list
+
+    # Add FCEB status to organization list
+    org_list = pd.merge(org_list, fceb_status, on="organizations_uid", how="inner")
 
     # --------------- Process VS Data: ---------------
     # Requires 2 Views:
@@ -199,8 +207,17 @@ def calc_discov_scores(discov_data, stakeholder_list):
 
     # ---------- VS-Subscribed Data ----------
     # Index locations of VS metrics
-    vs_cert_locs = list(range(2, 5))
-    vs_mail_locs = list(range(5, 10))
+    vs_cert_locs = list(range(3, 6))
+    vs_mail_locs = list(range(6, 11))
+
+    # Temporary fix, give 100% score to non-FCEB organizations
+    # in the VS certificate (ED 19-01) and VS mail (BOD 18-01) sections
+    discov_data_df["percent_monitor_cert"] = np.where(
+        discov_data_df["fceb"] == False, 100, discov_data_df["percent_monitor_cert"]
+    )
+    discov_data_df["percent_secure_mail"] = np.where(
+        discov_data_df["fceb"] == False, 100, discov_data_df["percent_secure_mail"]
+    )
 
     # VS Mail Feature:
     # Penalty amount for VS mail feature
@@ -212,8 +229,8 @@ def calc_discov_scores(discov_data, stakeholder_list):
 
     # ---------- PE-Subscribed Data ----------
     # Index locations of PE metrics
-    pe_ip_locs = list(range(10, 13))
-    pe_domain_locs = list(range(13, 16))
+    pe_ip_locs = list(range(11, 14))
+    pe_domain_locs = list(range(14, 17))
 
     # PE Nameserver Feature:
     # Nameserver data not yet available, but
@@ -225,7 +242,7 @@ def calc_discov_scores(discov_data, stakeholder_list):
 
     # ---------- WAS-Subscribed Data ----------
     # Index locations of WAS metrics
-    was_webapp_locs = list(range(16, 19))
+    was_webapp_locs = list(range(17, 20))
 
     # No WAS features yet, but maybe in future revisions
 
@@ -247,7 +264,7 @@ def calc_discov_scores(discov_data, stakeholder_list):
 
     # ---------- Aggregate Metrics ----------
     # Rescaling metrics 0-45 for final aggregation
-    for col_idx in range(2, 19):
+    for col_idx in range(3, 20):
         discov_data_df.iloc[:, col_idx] = rescale(
             discov_data_df.iloc[:, col_idx], 45, 0
         )

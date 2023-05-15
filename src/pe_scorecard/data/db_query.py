@@ -1254,6 +1254,47 @@ def query_pe_stakeholder_list():
     return pe_stakeholder_list
 
 
+# ----- FCEB Status -----
+def query_fceb_status(org_list):
+    """
+    Check if each organization in the list is FCEB or non-FCEB.
+
+    Args:
+        org_list: The specified list of organizations to retrieve data for
+    Return:
+        org list with additional boolean column of FCEB true/false
+    """
+    # Open connection
+    conn = connect()
+    # Build query
+    sector_str = (
+        "UUID('" + "')), (UUID('".join(org_list["organizations_uid"].tolist()) + "')"
+    )
+    sql = """
+    SELECT 
+        sector.organizations_uid, COALESCE(fceb_status.fceb, false) as fceb
+    FROM
+        (VALUES (%(sector_str)s)) AS sector(organizations_uid)
+        LEFT JOIN
+        (
+            SELECT
+                organizations_uid,
+                fceb
+            FROM
+                organizations
+        ) fceb_status
+        ON sector.organizations_uid = fceb_status.organizations_uid;"""
+    # Make query
+    orgs_fceb_status = pd.read_sql(
+        sql,
+        conn,
+        params={"sector_str": sector_str},
+    )
+    # Close connection
+    conn.close()
+    return orgs_fceb_status
+
+
 def query_cyhy_snapshots(start_date, end_date):
     """Query PE database for cyhy snapshots."""
     conn = connect()
@@ -1834,6 +1875,7 @@ def query_profiling_views(start_date, org_uid_list):
     conn.close()
     return profiling_dict
 
+
 def get_stakeholders():
     conn = connect()
     try:
@@ -1849,6 +1891,7 @@ def get_stakeholders():
     finally:
         if conn is not None:
             close(conn)
+
 
 def get_was_stakeholders():
     conn = connect()
@@ -1866,6 +1909,7 @@ def get_was_stakeholders():
         if conn is not None:
             close(conn)
 
+
 def get_hosts(start_date, end_date):
     conn = connect()
     try:
@@ -1874,13 +1918,16 @@ def get_hosts(start_date, end_date):
         left join cyhy_snapshots cs on
         o.organizations_uid = cs.organizations_uid 
         where o.report_on  = true and cs.cyhy_last_change between %(start_date)s AND %(end_date)s"""
-        snapshots_df = pd.read_sql(sql, conn, params={"start_date": start_date, "end_date": end_date})
+        snapshots_df = pd.read_sql(
+            sql, conn, params={"start_date": start_date, "end_date": end_date}
+        )
         return snapshots_df
     except (Exception, psycopg2.DatabaseError) as error:
         LOGGER.error("There was a problem with your database query %s", error)
     finally:
         if conn is not None:
             close(conn)
+
 
 def get_port_scans(start_date, end_date):
     conn = connect()
@@ -1898,13 +1945,16 @@ def get_port_scans(start_date, end_date):
         inner join mat_vw_cyhy_services_counts mvcsc2 on 
         mvcsc2.organizations_uid  = mvcpc.organizations_uid
         where mvcpc.report_period between %(start_date)s AND %(end_date)s"""
-        df_port_scans = pd.read_sql(sql, conn, params={"start_date": start_date, "end_date": end_date})
+        df_port_scans = pd.read_sql(
+            sql, conn, params={"start_date": start_date, "end_date": end_date}
+        )
         return df_port_scans
     except (Exception, psycopg2.DatabaseError) as error:
         LOGGER.error("There was a problem with your database query %s", error)
     finally:
         if conn is not None:
-            close(conn) 
+            close(conn)
+
 
 def get_was_summary():
     conn = connect()
@@ -1923,6 +1973,7 @@ def get_was_summary():
         if conn is not None:
             close(conn)
 
+
 def get_software(start_date, end_date):
     conn = connect()
     try:
@@ -1932,13 +1983,16 @@ def get_software(start_date, end_date):
         o.organizations_uid = cvs.organizations_uid 
         where (o.fceb = true or o.fceb_child = true) and cvs.plugin_name = 'Unsupported Web Server Detection' and cvs.cyhy_time between %(start_date)s AND %(end_date)s
         group by o.organizations_uid, o.cyhy_db_name, o.parent_org_uid"""
-        vuln_scans_df = pd.read_sql(sql, conn, params={"start_date": start_date, "end_date": end_date})
+        vuln_scans_df = pd.read_sql(
+            sql, conn, params={"start_date": start_date, "end_date": end_date}
+        )
         return vuln_scans_df
     except (Exception, psycopg2.DatabaseError) as error:
         LOGGER.error("There was a problem with your database query %s", error)
     finally:
         if conn is not None:
             close(conn)
+
 
 def get_bod_18():
     conn = connect()
@@ -1954,7 +2008,8 @@ def get_bod_18():
         LOGGER.error("There was a problem with your database query %s", error)
     finally:
         if conn is not None:
-            close(conn) 
+            close(conn)
+
 
 def get_ports_protocols(start_date, end_date):
     conn = connect()
@@ -1968,14 +2023,16 @@ def get_ports_protocols(start_date, end_date):
         inner join organizations o on 
         o.organizations_uid = mvcpc.organizations_uid 
         where mvcpc.report_period between %(start_date)s AND %(end_date)s"""
-        df_port_scans = pd.read_sql(sql, conn, params={"start_date": start_date, "end_date": end_date})
+        df_port_scans = pd.read_sql(
+            sql, conn, params={"start_date": start_date, "end_date": end_date}
+        )
         return df_port_scans
     except (Exception, psycopg2.DatabaseError) as error:
         LOGGER.error("There was a problem with your database query %s", error)
     finally:
         if conn is not None:
-            close(conn) 
-    
+            close(conn)
+
 
 def get_pe_vulns(start_date, end_date):
     conn = connect()
@@ -1985,13 +2042,16 @@ def get_pe_vulns(start_date, end_date):
         left join organizations o on
         o.organizations_uid = vsv.organizations_uid
         where (o.fceb = true or o.fceb_child = true) and vsv."timestamp" BETWEEN %(start_date)s AND %(end_date)s"""
-        pe_vulns_df = pd.read_sql(sql, conn, params={"start_date": start_date, "end_date": end_date})
+        pe_vulns_df = pd.read_sql(
+            sql, conn, params={"start_date": start_date, "end_date": end_date}
+        )
         return pe_vulns_df
     except (Exception, psycopg2.DatabaseError) as error:
         LOGGER.error("There was a problem with your database query %s", error)
     finally:
         if conn is not None:
-            close(conn)  
+            close(conn)
+
 
 def get_kevs():
     conn = connect()
@@ -2003,7 +2063,8 @@ def get_kevs():
         LOGGER.error("There was a problem with your database query %s", error)
     finally:
         if conn is not None:
-            close(conn) 
+            close(conn)
+
 
 def get_vs_open_vulns():
     conn = connect()
@@ -2021,6 +2082,7 @@ def get_vs_open_vulns():
         if conn is not None:
             close(conn)
 
+
 def get_vs_closed_vulns(start_date, end_date):
     conn = connect()
     try:
@@ -2029,13 +2091,16 @@ def get_vs_closed_vulns(start_date, end_date):
         left join organizations o on 
         ct.organizations_uid = o.organizations_uid
         where ct.false_positive = 'false' and ct.cvss_base_score != 'NaN' and (o.fceb = true  or o.fceb_child = true) and (ct.time_closed between %(start_date)s and %(end_date)s)"""
-        vs_open_vulns_df = pd.read_sql(sql, conn, params={"start_date": start_date, "end_date": end_date})
+        vs_open_vulns_df = pd.read_sql(
+            sql, conn, params={"start_date": start_date, "end_date": end_date}
+        )
         return vs_open_vulns_df
     except (Exception, psycopg2.DatabaseError) as error:
         LOGGER.error("There was a problem with your database query %s", error)
     finally:
         if conn is not None:
             close(conn)
+
 
 def get_was_open_vulns(start_date, end_date):
     conn = connect()
@@ -2045,13 +2110,16 @@ def get_was_open_vulns(start_date, end_date):
         left join was_map wm on
         wf.was_org_id = wm.was_org_id 
         where (wf.last_detected between %(start_date)s and %(end_date)s) and wf.fstatus != 'FIXED' and wm.pe_org_id notnull"""
-        was_open_vulns_df = pd.read_sql(sql, conn, params={"start_date": start_date, "end_date": end_date})
+        was_open_vulns_df = pd.read_sql(
+            sql, conn, params={"start_date": start_date, "end_date": end_date}
+        )
         return was_open_vulns_df
     except (Exception, psycopg2.DatabaseError) as error:
         LOGGER.error("There was a problem with your database query %s", error)
     finally:
         if conn is not None:
             close(conn)
+
 
 def get_was_closed_vulns(start_date, end_date):
     conn = connect()
@@ -2061,7 +2129,9 @@ def get_was_closed_vulns(start_date, end_date):
         left join was_map wm on
         wf.was_org_id = wm.was_org_id 
         where (wf.last_detected between %(start_date)s and %(end_date)s) and wf.fstatus = 'FIXED' and wm.pe_org_id notnull"""
-        was_open_vulns_df = pd.read_sql(sql, conn, params={"start_date": start_date, "end_date": end_date})
+        was_open_vulns_df = pd.read_sql(
+            sql, conn, params={"start_date": start_date, "end_date": end_date}
+        )
         return was_open_vulns_df
     except (Exception, psycopg2.DatabaseError) as error:
         LOGGER.error("There was a problem with your database query %s", error)
