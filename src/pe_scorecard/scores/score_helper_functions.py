@@ -2,6 +2,7 @@
 # Standard Python Libraries
 import calendar
 import math
+from datetime import datetime
 
 # Third-Party Libraries
 import pandas as pd
@@ -100,3 +101,66 @@ def get_prev_startstop(curr_date, num_periods):
                 start_stops.insert(0, [start_date.date(), end_date.date()])
     # Return 2D list of start/stop dates
     return start_stops
+
+     
+def get_letter_grade(score):
+    if score < 65.0:
+        return "F"
+    elif score >= 65.0 and score < 67.0:
+        return "D"
+    elif score >= 67.0 and score < 70.0:
+        return "D+"
+    elif score >= 70.0 and score < 73.0:
+        return "C-"
+    elif score >= 73.0 and score < 77.0:
+        return "C"
+    elif score >= 77.0 and score < 80.0:
+        return "C+"
+    elif score >= 80.0 and score < 83.0:
+        return "B-"
+    elif score >= 83.0 and score < 87.0:
+        return "B"
+    elif score >= 87.0 and score < 90.0:
+        return "B+"
+    elif score >= 90.0 and score < 93.0:
+        return "A-"
+    elif score >= 93.0 and score < 97.0:
+        return "A"
+    else:
+        return "A+"
+
+def get_next_month(report_period_year, report_period_month):
+    next_report_period_month = 0
+    next_report_period_year = 0
+    if report_period_month == 12:
+        next_report_period_month = 1
+        next_report_period_year = report_period_year + 1
+    else:
+        next_report_period_month = report_period_month + 1
+        next_report_period_year = report_period_year
+    next_report_period_date = datetime(next_report_period_year, next_report_period_month, 1)
+    return next_report_period_date
+
+def get_last_month(report_period_year, report_period_month):
+    last_report_period_month = 0
+    last_report_period_year = 0
+    if report_period_month == 1:
+        last_report_period_month = 12
+        last_report_period_year = report_period_year - 1
+    else:
+        last_report_period_month = report_period_month - 1
+        last_report_period_year = report_period_year
+    last_report_period_date = datetime(last_report_period_year, last_report_period_month, 1)
+    return last_report_period_date
+
+def average_list(list):
+    if len(list) == 0:
+        return 0
+    else:
+        return round(sum(list)/len(list), 2)
+
+def average_numbers(vuln_count, total):
+    if total == 0:
+        return 0.0
+    else:
+        return round((vuln_count/total) * 100, 2)

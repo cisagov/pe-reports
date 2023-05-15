@@ -41,8 +41,8 @@ app.config[
 
 
 # Configure the redis server
-app.config["CELERY_BROKER_URL"] = "redis://localhost:6379/0"
-app.config["CELERY_RESULT_BACKEND"] = "redis://localhost:6379/0"
+# app.config["CELERY_BROKER_URL"] = "redis://localhost:6379/0"
+# app.config["CELERY_RESULT_BACKEND"] = "redis://localhost:6379/0"
 app.config["UPLOAD_FOLDER"] = "src/pe_reports/uploads/"
 app.config["ALLOWED_EXTENSIONS"] = {"txt", "csv"}
 
@@ -68,8 +68,8 @@ logging.basicConfig(
 app.config["LOGGER"] = logging.getLogger(__name__)
 
 # Creates a Celery object
-celery = Celery(app.name, broker=app.config["CELERY_BROKER_URL"])
-celery.conf.update(app.config)
+# celery = Celery(app.name, broker=app.config["CELERY_BROKER_URL"])
+# celery.conf.update(app.config)
 
 # Config DB
 db = SQLAlchemy(app)
