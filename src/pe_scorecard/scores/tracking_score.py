@@ -36,7 +36,8 @@ from pe_scorecard.scores.score_helper_functions import (
     get_letter_grade,
     get_next_month,
     get_last_month,
-    average_list
+    average_list,
+    average_numbers
 )
 
 LOGGER = logging.getLogger(__name__)
@@ -614,19 +615,13 @@ def summarize_port_scans(orgs_df, last_month, this_month, next_month):
                     this_month_total_protocols = this_month_total_protocols + ports['protocols']
                     this_month_vuln_protocols = this_month_vuln_protocols + ports['risky_protocols']
 
-        change_in_ports = average_values(this_month_vuln_ports, this_month_total_ports) - average_values(last_month_vuln_ports, last_month_total_ports)
-        change_in_protocols = average_values(this_month_vuln_protocols, this_month_total_protocols) - average_values(last_month_vuln_protocols, last_month_total_protocols)
+        change_in_ports = average_numbers(this_month_vuln_ports, this_month_total_ports) - average_numbers(last_month_vuln_ports, last_month_total_ports)
+        change_in_protocols = average_numbers(this_month_vuln_protocols, this_month_total_protocols) - average_numbers(last_month_vuln_protocols, last_month_total_protocols)
         
         port_scans_list.append([org['organizations_uid'], org['cyhy_db_name'], org['group'], change_in_ports, change_in_protocols])
     df_port_scans = pd.DataFrame(port_scans_list, columns= ["organizations_uid", "cyhy_db_name", "group", "change_in_ports", "change_in_protocols"])
     return df_port_scans
-                    
-def average_values(vuln_count, total_count):
-    if total_count == 0:
-        return 0
-    else:
-        return round((vuln_count/total_count) * 100, 2)
-  
+
 def normalize_vulns(df_vulns, team):
     vulns_list = []
     for index, org in df_vulns.iterrows():
