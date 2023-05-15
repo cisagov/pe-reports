@@ -3,16 +3,13 @@
 
 # Standard Python Libraries
 import datetime
-import datetime
 import logging
 import sys
 
 # Third-Party Libraries
 import pandas as pd
-import pandas as pd
 import psycopg2
 from psycopg2 import OperationalError
-from psycopg2.extensions import AsIs
 from psycopg2.extensions import AsIs
 
 from .config import config, staging_config
@@ -433,7 +430,7 @@ def query_dscore_vs_data_cert(org_list):
         "UUID('" + "')), (UUID('".join(org_list["organizations_uid"].tolist()) + "')"
     )
     sql = """
-    SELECT 
+    SELECT
         sector.organizations_uid, cert.num_ident_cert, cert.num_monitor_cert
     FROM
         (VALUES (%(sector_str)s)) AS sector(organizations_uid)
@@ -468,7 +465,7 @@ def query_dscore_vs_data_mail(org_list):
         "UUID('" + "')), (UUID('".join(org_list["organizations_uid"].tolist()) + "')"
     )
     sql = """
-    SELECT 
+    SELECT
         sector.organizations_uid, mail.num_valid_dmarc, mail.num_valid_spf, mail.num_valid_dmarc_or_spf, mail.total_mail_domains
     FROM
         (VALUES (%(sector_str)s)) AS sector(organizations_uid)
@@ -503,7 +500,7 @@ def query_dscore_pe_data_ip(org_list):
         "UUID('" + "')), (UUID('".join(org_list["organizations_uid"].tolist()) + "')"
     )
     sql = """
-    SELECT 
+    SELECT
         sector.organizations_uid, ip.num_ident_ip, ip.num_monitor_ip
     FROM
         (VALUES (%(sector_str)s)) AS sector(organizations_uid)
@@ -538,7 +535,7 @@ def query_dscore_pe_data_domain(org_list):
         "UUID('" + "')), (UUID('".join(org_list["organizations_uid"].tolist()) + "')"
     )
     sql = """
-    SELECT 
+    SELECT
         sector.organizations_uid, domain.num_ident_domain, domain.num_monitor_domain
     FROM
         (VALUES (%(sector_str)s)) AS sector(organizations_uid)
@@ -573,7 +570,7 @@ def query_dscore_was_data_webapp(org_list):
         "UUID('" + "')), (UUID('".join(org_list["organizations_uid"].tolist()) + "')"
     )
     sql = """
-    SELECT 
+    SELECT
         sector.organizations_uid, webapp.num_ident_webapp, webapp.num_monitor_webapp
     FROM
         (VALUES (%(sector_str)s)) AS sector(organizations_uid)
@@ -609,7 +606,7 @@ def query_iscore_vs_data_vuln(org_list):
         "UUID('" + "')), (UUID('".join(org_list["organizations_uid"].tolist()) + "')"
     )
     sql = """
-    SELECT 
+    SELECT
         sector.organizations_uid, vuln.cve_name, vuln.cvss_score
     FROM
         (VALUES (%(sector_str)s)) AS sector(organizations_uid)
@@ -664,14 +661,14 @@ def query_iscore_vs_data_vuln_prev(org_list, start_date, end_date):
         "UUID('" + "')), (UUID('".join(org_list["organizations_uid"].tolist()) + "')"
     )
     sql = """
-    SELECT 
+    SELECT
         sector.organizations_uid, prev_vuln.cve_name, prev_vuln.cvss_score, prev_vuln.time_closed
     FROM
         (VALUES (%(sector_str)s)) AS sector(organizations_uid)
         LEFT JOIN
         vw_iscore_vs_vuln prev_vuln
         ON sector.organizations_uid = prev_vuln.organizations_uid
-    WHERE 
+    WHERE
         time_closed BETWEEN '%(start_date)s' AND '%(end_date)s';"""
     # Make query
     iscore_vs_vuln_prev_data = pd.read_sql(
@@ -726,14 +723,14 @@ def query_iscore_pe_data_vuln(org_list, start_date, end_date):
         "UUID('" + "')), (UUID('".join(org_list["organizations_uid"].tolist()) + "')"
     )
     sql = """
-    SELECT 
+    SELECT
         sector.organizations_uid, vuln.date, vuln.cve_name, vuln.cvss_score
     FROM
         (VALUES (%(sector_str)s)) AS sector(organizations_uid)
         LEFT JOIN
         vw_iscore_pe_vuln vuln
         ON sector.organizations_uid = vuln.organizations_uid
-    WHERE 
+    WHERE
         date BETWEEN '%(start_date)s' AND '%(end_date)s';"""
     # Make query
     iscore_pe_vuln_data = pd.read_sql(
@@ -792,14 +789,14 @@ def query_iscore_pe_data_cred(org_list, start_date, end_date):
         "UUID('" + "')), (UUID('".join(org_list["organizations_uid"].tolist()) + "')"
     )
     sql = """
-    SELECT 
+    SELECT
         sector.organizations_uid, cred.date, cred.password_creds, cred.total_creds
     FROM
         (VALUES (%(sector_str)s)) AS sector(organizations_uid)
         LEFT JOIN
         vw_iscore_pe_cred cred
         ON sector.organizations_uid = cred.organizations_uid
-    WHERE 
+    WHERE
         date BETWEEN '%(start_date)s' AND '%(end_date)s';"""
     # Make query
     iscore_pe_cred_data = pd.read_sql(
@@ -854,14 +851,14 @@ def query_iscore_pe_data_breach(org_list, start_date, end_date):
         "UUID('" + "')), (UUID('".join(org_list["organizations_uid"].tolist()) + "')"
     )
     sql = """
-    SELECT 
+    SELECT
         sector.organizations_uid, breach.date, breach.breach_count
     FROM
         (VALUES (%(sector_str)s)) AS sector(organizations_uid)
         LEFT JOIN
         vw_iscore_pe_breach breach
         ON sector.organizations_uid = breach.organizations_uid
-    WHERE 
+    WHERE
         date BETWEEN '%(start_date)s' AND '%(end_date)s';"""
     # Make query
     iscore_pe_breach_data = pd.read_sql(
@@ -915,14 +912,14 @@ def query_iscore_pe_data_darkweb(org_list, start_date, end_date):
         "UUID('" + "')), (UUID('".join(org_list["organizations_uid"].tolist()) + "')"
     )
     sql = """
-    SELECT 
+    SELECT
         sector.organizations_uid, darkweb.alert_type, darkweb.date, darkweb."Count"
     FROM
         (VALUES (%(sector_str)s)) AS sector(organizations_uid)
         LEFT JOIN
         vw_iscore_pe_darkweb darkweb
         ON sector.organizations_uid = darkweb.organizations_uid
-    WHERE 
+    WHERE
         date BETWEEN '%(start_date)s' AND '%(end_date)s' OR date = '0001-01-01';"""
     # Make query
     iscore_pe_darkweb_data = pd.read_sql(
@@ -977,14 +974,14 @@ def query_iscore_pe_data_protocol(org_list, start_date, end_date):
         "UUID('" + "')), (UUID('".join(org_list["organizations_uid"].tolist()) + "')"
     )
     sql = """
-    SELECT 
+    SELECT
         sector.organizations_uid, protocol.port, protocol.ip, protocol.protocol, protocol.protocol_type, protocol.date
     FROM
         (VALUES (%(sector_str)s)) AS sector(organizations_uid)
         LEFT JOIN
         vw_iscore_pe_protocol protocol
         ON sector.organizations_uid = protocol.organizations_uid
-    WHERE 
+    WHERE
         date BETWEEN '%(start_date)s' AND '%(end_date)s';"""
     # Make query
     iscore_pe_protocol_data = pd.read_sql(
@@ -1041,14 +1038,14 @@ def query_iscore_was_data_vuln(org_list, start_date, end_date):
         "UUID('" + "')), (UUID('".join(org_list["organizations_uid"].tolist()) + "')"
     )
     sql = """
-    SELECT 
+    SELECT
         sector.organizations_uid, vuln.date, vuln.cve_name, vuln.cvss_score, vuln.owasp_category
     FROM
         (VALUES (%(sector_str)s)) AS sector(organizations_uid)
         LEFT JOIN
         vw_iscore_was_vuln vuln
         ON sector.organizations_uid = vuln.organizations_uid
-    WHERE 
+    WHERE
         date BETWEEN '%(start_date)s' AND '%(end_date)s';"""
     # Make query
     iscore_was_vuln_data = pd.read_sql(
@@ -1104,14 +1101,14 @@ def query_iscore_was_data_vuln_prev(org_list, start_date, end_date):
         "UUID('" + "')), (UUID('".join(org_list["organizations_uid"].tolist()) + "')"
     )
     sql = """
-    SELECT 
+    SELECT
         sector.organizations_uid, prev_vuln.was_total_vulns_prev, prev_vuln.date
     FROM
         (VALUES (%(sector_str)s)) AS sector(organizations_uid)
         LEFT JOIN
         vw_iscore_was_vuln_prev prev_vuln
         ON sector.organizations_uid = prev_vuln.organizations_uid
-    WHERE 
+    WHERE
         date BETWEEN '%(start_date)s' AND '%(end_date)s';"""
     # Make query
     iscore_was_vuln_prev_data = pd.read_sql(
@@ -1481,23 +1478,23 @@ def query_open_vulns(org_id_list):
 def execute_scorecard_summary_data(summary_dict):
     """Save summary statistics for an organization to the database."""
     try:
-        if summary_dict["web_app_kev"] in ["N/A", None]:
-            summary_dict["web_app_kev"] = 0
+        if summary_dict["web_apps_kev"] in ["N/A", None]:
+            summary_dict["web_apps_kev"] = 0
 
-        if summary_dict["external_host_kev"] in ["N/A", None]:
-            summary_dict["external_host_kev"] = 0
+        if summary_dict["ext_host_kev"] in ["N/A", None]:
+            summary_dict["ext_host_kev"] = 0
 
-        if summary_dict["web_app_critical"] in ["N/A", None]:
-            summary_dict["web_app_critical"] = 0
+        if summary_dict["web_apps_vuln_critical"] in ["N/A", None]:
+            summary_dict["web_apps_vuln_critical"] = 0
 
-        if summary_dict["external_host_critical"] in ["N/A", None]:
-            summary_dict["external_host_critical"] = 0
+        if summary_dict["ext_host_vuln_critical"] in ["N/A", None]:
+            summary_dict["ext_host_vuln_critical"] = 0
 
-        if summary_dict["external_host_high"] in ["N/A", None]:
-            summary_dict["external_host_high"] = 0
+        if summary_dict["ext_host_vuln_high"] in ["N/A", None]:
+            summary_dict["ext_host_vuln_high"] = 0
 
-        if summary_dict["web_app_high"] in ["N/A", None]:
-            summary_dict["web_app_high"] = 0
+        if summary_dict["web_apps_vuln_high"] in ["N/A", None]:
+            summary_dict["web_apps_vuln_high"] = 0
         conn = connect()
         cur = conn.cursor()
         sql = """
@@ -1551,7 +1548,8 @@ def execute_scorecard_summary_data(summary_dict):
             sect_web_avg_days_remediate_critical,
             sect_web_avg_days_remediate_high,
             email_compliance_pct,
-            https_compliance_pct
+            https_compliance_pct,
+            sector_name
         )
         VALUES(
             %s,%s,%s,%s,%s,%s,%s,%s,%s,%s,
@@ -1560,7 +1558,7 @@ def execute_scorecard_summary_data(summary_dict):
             %s,%s,%s,%s,%s,%s,%s,%s,%s,%s,
             %s,%s,%s,%s,%s,%s,%s,%s,%s,%s
         )
-        ON CONFLICT(organizations_uid, start_date)
+        ON CONFLICT(organizations_uid, start_date, sector_name)
         DO
         UPDATE SET
             score = EXCLUDED.score,
@@ -1619,7 +1617,7 @@ def execute_scorecard_summary_data(summary_dict):
                 summary_dict["organizations_uid"],
                 summary_dict["start_date"],
                 summary_dict["end_date"],
-                AsIs(summary_dict["overall_score"]),
+                AsIs(summary_dict["score"]),
                 AsIs(summary_dict["discovery_score"]),
                 AsIs(summary_dict["profiling_score"]),
                 AsIs(summary_dict["identification_score"]),
@@ -1636,39 +1634,43 @@ def execute_scorecard_summary_data(summary_dict):
                 AsIs(summary_dict["certs_self_reported"]),
                 AsIs(summary_dict["certs_discovered"]),
                 AsIs(summary_dict["certs_monitored"]),
-                AsIs(summary_dict["ports_total_count"]),
-                AsIs(summary_dict["ports_risky_count"]),
-                AsIs(summary_dict["protocol_total_count"]),
-                AsIs(summary_dict["protocol_insecure_count"]),
-                AsIs(summary_dict["services_total_count"]),
-                AsIs(summary_dict["software_unsupported_count"]),
-                AsIs(summary_dict["external_host_kev"]),
-                AsIs(summary_dict["external_host_critical"]),
-                AsIs(summary_dict["external_host_high"]),
-                AsIs(summary_dict["web_app_kev"]),
-                AsIs(summary_dict["web_app_critical"]),
-                AsIs(summary_dict["web_app_high"]),
-                AsIs(summary_dict["web_app_kev"] + summary_dict["external_host_kev"]),
+                AsIs(summary_dict["total_ports"]),
+                AsIs(summary_dict["risky_ports"]),
+                AsIs(summary_dict["protocols"]),
+                AsIs(summary_dict["insecure_protocols"]),
+                AsIs(summary_dict["total_services"]),
+                AsIs(summary_dict["unsupported_software"]),
+                AsIs(summary_dict["ext_host_kev"]),
+                AsIs(summary_dict["ext_host_vuln_critical"]),
+                AsIs(summary_dict["ext_host_vuln_high"]),
+                AsIs(summary_dict["web_apps_kev"]),
+                AsIs(summary_dict["web_apps_vuln_critical"]),
+                AsIs(summary_dict["web_apps_vuln_high"]),
+                AsIs(summary_dict["web_apps_kev"] + summary_dict["ext_host_kev"]),
                 AsIs(
-                    summary_dict["web_app_critical"]
-                    + summary_dict["external_host_critical"]
+                    summary_dict["web_apps_vuln_critical"]
+                    + summary_dict["ext_host_vuln_critical"]
                 ),
-                AsIs(summary_dict["external_host_high"] + summary_dict["web_app_high"]),
-                AsIs(summary_dict["vuln_org_kev_ttr"]),
-                AsIs(summary_dict["vuln_org_critical_ttr"]),
-                AsIs(summary_dict["vuln_org_high_ttr"]),
-                AsIs(summary_dict["vuln_sector_kev_ttr"]),
-                AsIs(summary_dict["vuln_sector_critical_ttr"]),
-                AsIs(summary_dict["vuln_sector_high_ttr"]),
-                summary_dict["vuln_bod_22-01"],
-                summary_dict["vuln_critical_bod_19-02"],
-                summary_dict["vuln_high_bod_19-02"],
-                AsIs(summary_dict["web_app_org_critical_ttr"]),
-                AsIs(summary_dict["web_app_org_high_ttr"]),
-                AsIs(summary_dict["web_app_sector_critical_ttr"]),
-                AsIs(summary_dict["web_app_sector_high_ttr"]),
+                AsIs(
+                    summary_dict["ext_host_vuln_high"]
+                    + summary_dict["web_apps_vuln_high"]
+                ),
+                AsIs(summary_dict["org_avg_days_remediate_kev"]),
+                AsIs(summary_dict["org_avg_days_remediate_critical"]),
+                AsIs(summary_dict["org_avg_days_remediate_high"]),
+                AsIs(summary_dict["sect_avg_days_remediate_kev"]),
+                AsIs(summary_dict["sect_avg_days_remediate_critical"]),
+                AsIs(summary_dict["sect_avg_days_remediate_high"]),
+                summary_dict["bod_22_01-01"],
+                summary_dict["bod_19_02_critical"],
+                summary_dict["bod_19_02_high"],
+                AsIs(summary_dict["org_web_avg_days_remediate_critical"]),
+                AsIs(summary_dict["org_web_avg_days_remediate_high"]),
+                AsIs(summary_dict["sect_web_avg_days_remediate_critical"]),
+                AsIs(summary_dict["sect_web_avg_days_remediate_high"]),
                 AsIs(summary_dict["email_compliance_pct"]),
                 AsIs(summary_dict["https_compliance_pct"]),
+                AsIs(summary_dict("sector_name")),
             ),
         )
         conn.commit()

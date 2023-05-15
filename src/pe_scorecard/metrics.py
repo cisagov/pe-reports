@@ -55,7 +55,7 @@ class Scorecard:
         self.scorecard_dict = {
             "agency_name": org_data["name"],
             "agency_id": org_data["cyhy_db_name"],
-            "sector_name": "FCEB" if sector == "EXECUTIVE" else sector,
+            "sector_name": sector,
             "date": calendar.month_name[int(month)] + " " + year,
             "data_pulled_date": find_last_scan_date()[0].strftime("%b %d, %Y"),
         }
@@ -81,7 +81,7 @@ class Scorecard:
         self.scorecard_dict["organizations_uid"] = org_data["organizations_uid"]
 
         # TODO: Actually calculate these. This is just a placeholder
-        self.scorecard_dict["overall_score"] = None
+        self.scorecard_dict["score"] = None
         self.scorecard_dict["discovery_score"] = None
         self.scorecard_dict["profiling_score"] = None
         self.scorecard_dict["identification_score"] = None
@@ -246,27 +246,29 @@ class Scorecard:
         # self.scorecard_dict["protocol_total_count"] = len(total_protocols)
         # self.scorecard_dict["protocol_insecure_count"] = len(insecure_protocols)
         # self.scorecard_dict["services_total_count"] = len(total_services)
-        self.scorecard_dict["ports_total_count"] = profiling_dict["ports_count"]
-        self.scorecard_dict["ports_risky_count"] = profiling_dict["risky_ports_count"]
-        self.scorecard_dict["protocol_total_count"] = profiling_dict["protocols_count"]
-        self.scorecard_dict["protocol_insecure_count"] = profiling_dict[
+        self.scorecard_dict["total_ports"] = profiling_dict["ports_count"]
+        self.scorecard_dict["risky_ports"] = profiling_dict["risky_ports_count"]
+        self.scorecard_dict["protocols"] = profiling_dict["protocols_count"]
+        self.scorecard_dict["insecure_protocols"] = profiling_dict[
             "risky_protocols_count"
         ]
-        self.scorecard_dict["services_total_count"] = profiling_dict["services"]
+        self.scorecard_dict["total_services"] = profiling_dict["services"]
 
         software_df = self.software_counts
-        self.scorecard_dict["software_unsupported_count"] = software_df["count"].sum()
+        self.scorecard_dict["unsupported_software"] = software_df["count"].sum()
 
     def calculate_identification_metrics(self):
         """Summarize identification findings into key metrics."""
         vuln_counts = self.vs_vuln_counts
-        self.scorecard_dict["external_host_kev"] = vuln_counts["kev"].sum()
-        self.scorecard_dict["external_host_critical"] = vuln_counts["critical"].sum()
-        self.scorecard_dict["external_host_high"] = vuln_counts["high"].sum()
+        self.scorecard_dict["ext_host_kev"] = vuln_counts["kev"].sum()
+        self.scorecard_dict["ext_host_vuln_critical"] = vuln_counts["critical"].sum()
+        self.scorecard_dict["ext_host_vuln_high"] = vuln_counts["high"].sum()
         was_counts = self.web_app_counts
-        self.scorecard_dict["web_app_kev"] = "N/A"
-        self.scorecard_dict["web_app_critical"] = was_counts["crit_vuln_cnt"].sum()
-        self.scorecard_dict["web_app_high"] = was_counts["high_vuln_cnt"].sum()
+        self.scorecard_dict["web_apps_kev"] = "N/A"
+        self.scorecard_dict["web_apps_vuln_critical"] = was_counts[
+            "crit_vuln_cnt"
+        ].sum()
+        self.scorecard_dict["web_apps_vuln_high"] = was_counts["high_vuln_cnt"].sum()
 
     def calculate_tracking_metrics(self):
         """Summarize tracking findings into key metrics."""
@@ -275,34 +277,36 @@ class Scorecard:
         print(vs_remediation_df)
         vuln_kev_attr = vs_remediation_df["weighted_kev"].sum()
         if vs_remediation_df["kev_count"].sum() == 0:
-            self.scorecard_dict["vuln_org_kev_ttr"] = "N/A"
+            self.scorecard_dict["org_avg_days_remediate_kev"] = "N/A"
         else:
-            self.scorecard_dict["vuln_org_kev_ttr"] = round(vuln_kev_attr)
+            self.scorecard_dict["org_avg_days_remediate_kev"] = round(vuln_kev_attr)
 
         vuln_critical_attr = vs_remediation_df["weighted_critical"].sum()
         if vs_remediation_df["critical_count"].sum() == 0:
-            self.scorecard_dict["vuln_org_critical_ttr"] = "N/A"
+            self.scorecard_dict["org_avg_days_remediate_critical"] = "N/A"
         else:
-            self.scorecard_dict["vuln_org_critical_ttr"] = round(vuln_critical_attr)
+            self.scorecard_dict["org_avg_days_remediate_critical"] = round(
+                vuln_critical_attr
+            )
 
         vuln_high_attr = vs_remediation_df["weighted_high"].mean()
         if vs_remediation_df["high_count"].sum() == 0:
-            self.scorecard_dict["vuln_org_high_ttr"] = "N/A"
+            self.scorecard_dict["org_avg_days_remediate_high"] = "N/A"
         else:
-            self.scorecard_dict["vuln_org_high_ttr"] = round(vuln_high_attr)
+            self.scorecard_dict["org_avg_days_remediate_high"] = round(vuln_high_attr)
 
         vs_fceb_df = self.vs_fceb_results
-        self.scorecard_dict["vuln_sector_kev_ttr"] = (
+        self.scorecard_dict["sect_avg_days_remediate_kev"] = (
             "N/A"
             if vs_fceb_df["ATTR KEVs"] is np.nan
             else round(vs_fceb_df["ATTR KEVs"])
         )
-        self.scorecard_dict["vuln_sector_critical_ttr"] = (
+        self.scorecard_dict["sect_avg_days_remediate_critical"] = (
             "N/A"
             if vs_fceb_df["ATTR Crits"] is np.nan
             else round(vs_fceb_df["ATTR Crits"])
         )
-        self.scorecard_dict["vuln_sector_high_ttr"] = (
+        self.scorecard_dict["sect_avg_days_remediate_high"] = (
             "N/A"
             if vs_fceb_df["ATTR Highs"] is np.nan
             else round(vs_fceb_df["ATTR Highs"])
@@ -334,15 +338,11 @@ class Scorecard:
                 if age > 30.0:
                     overdue_highs += 1
         bod_22_01 = self.get_percent_compliance(total_kevs, overdue_kevs)
-        self.scorecard_dict["vuln_bod_22-01"] = True if bod_22_01 == 100 else False
+        self.scorecard_dict["bod_22_01-01"] = True if bod_22_01 == 100 else False
         crit_19_02 = self.get_percent_compliance(total_crits, overdue_crits)
-        self.scorecard_dict["vuln_critical_bod_19-02"] = (
-            True if crit_19_02 == 100 else False
-        )
+        self.scorecard_dict["bod_19_02_critical"] = True if crit_19_02 == 100 else False
         high_19_02 = self.get_percent_compliance(total_highs, overdue_highs)
-        self.scorecard_dict["vuln_high_bod_19-02"] = (
-            True if high_19_02 == 100 else False
-        )
+        self.scorecard_dict["bod_19_02_high"] = True if high_19_02 == 100 else False
 
         web_app_df = self.web_app_counts
         was_fceb_ttr = self.was_fceb_ttr
@@ -352,7 +352,7 @@ class Scorecard:
             web_app_df["crit_rem_cnt"] / total_critical
         ) * web_app_df["crit_rem_time"]
 
-        self.scorecard_dict["web_app_org_critical_ttr"] = (
+        self.scorecard_dict["org_web_avg_days_remediate_critical"] = (
             web_app_df["weighted_critical"].sum() if total_critical > 0 else "N/A"
         )
 
@@ -360,12 +360,14 @@ class Scorecard:
         web_app_df["weighted_high"] = (
             web_app_df["high_rem_cnt"] / total_high
         ) * web_app_df["high_rem_time"]
-        self.scorecard_dict["web_app_org_high_ttr"] = (
+        self.scorecard_dict["org_web_avg_days_remediate_high"] = (
             web_app_df["weighted_high"].sum() if total_high > 0 else "N/A"
         )
 
-        self.scorecard_dict["web_app_sector_critical_ttr"] = was_fceb_ttr["critical"]
-        self.scorecard_dict["web_app_sector_high_ttr"] = was_fceb_ttr["high"]
+        self.scorecard_dict["sect_web_avg_days_remediate_critical"] = was_fceb_ttr[
+            "critical"
+        ]
+        self.scorecard_dict["sect_web_avg_days_remediate_high"] = was_fceb_ttr["high"]
 
         self.scorecard_dict[
             "email_compliance_pct"
@@ -616,14 +618,12 @@ class Scorecard:
             domains_monitored_trend = self.scorecard_dict["domains_monitored"]
             web_apps_monitored_trend = self.scorecard_dict["web_apps_monitored"]
             certs_monitored_trend = self.scorecard_dict["certs_monitored"]
-            ports_total_trend = self.scorecard_dict["ports_total_count"]
-            ports_risky_trend = self.scorecard_dict["ports_risky_count"]
-            protocol_total_trend = self.scorecard_dict["protocol_total_count"]
-            protocol_insecure_trend = self.scorecard_dict["protocol_insecure_count"]
-            services_total_trend = self.scorecard_dict["services_total_count"]
-            software_unsupported_trend = self.scorecard_dict[
-                "software_unsupported_count"
-            ]
+            ports_total_trend = self.scorecard_dict["total_ports"]
+            ports_risky_trend = self.scorecard_dict["risky_ports"]
+            protocol_total_trend = self.scorecard_dict["protocols"]
+            protocol_insecure_trend = self.scorecard_dict["insecure_protocols"]
+            services_total_trend = self.scorecard_dict["total_services"]
+            software_unsupported_trend = self.scorecard_dict["unsupported_software"]
             email_compliance_last_period = self.scorecard_dict["email_compliance_pct"]
             https_compliance_last_period = self.scorecard_dict["https_compliance_pct"]
             discovery_trend = self.scorecard_dict.get("discovery_score", 0)
@@ -641,8 +641,12 @@ class Scorecard:
             protocol_insecure_trend = scorecard_dict_past["insecure_protocols"][0]
             services_total_trend = scorecard_dict_past["total_services"][0]
             software_unsupported_trend = scorecard_dict_past["unsupported_software"][0]
-            email_compliance_last_period = scorecard_dict_past["email_compliance_pct"][0]
-            https_compliance_last_period = scorecard_dict_past["https_compliance_pct"][0]
+            email_compliance_last_period = scorecard_dict_past["email_compliance_pct"][
+                0
+            ]
+            https_compliance_last_period = scorecard_dict_past["https_compliance_pct"][
+                0
+            ]
             discovery_trend = scorecard_dict_past["discovery_score"][0]
             profiling_trend = scorecard_dict_past["profiling_score"][0]
             identification_trend = scorecard_dict_past["identification_score"][0]
@@ -677,7 +681,7 @@ class Scorecard:
             + "/scorecard_"
             + scorecard_dict["agency_id"]
             + "_"
-            + scorecard_dict["sector"]
+            + scorecard_dict["sector_name"]
             + "_"
             + self.start_date.strftime("%b-%Y")
             + ".pdf"

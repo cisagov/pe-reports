@@ -54,8 +54,12 @@ from .data.db_query import (
     query_was_sector_ttr,
     refresh_views,
 )
-from .helpers.email_scorecard import email_scorecard_report
+
+# from .helpers.email_scorecard import email_scorecard_report
 from .metrics import Scorecard
+
+# from .scores.generate_d_score import gen_discov_scores
+# from .scores.generate_i_score import gen_ident_scores
 
 LOGGER = logging.getLogger(__name__)
 ACCESSOR_AWS_PROFILE = os.getenv("ACCESSOR_PROFILE")
@@ -188,18 +192,32 @@ def generate_scorecards(
                     was_sector_ttr,
                 )
                 scorecard.fill_scorecard_dict()
-                filename = scorecard.generate_scorecard(
-                    output_directory, exclude_bods=exclude_bods
-                )
+                # filename = scorecard.generate_scorecard(
+                #     output_directory, exclude_bods=exclude_bods
+                # )
                 # scorecard.calculate_ips_counts()
 
                 # Insert dictionary into the summary table
                 execute_scorecard_summary_data(scorecard.scorecard_dict)
 
                 # If email, email the report out to customer
-                if email:
-                    # TODO: Encrypt the report
-                    email_scorecard_report(org["cyhy_db_name"], filename, month, year)
+                # if email:
+                #     # TODO: Encrypt the report
+                #     email_scorecard_report(org["cyhy_db_name"], filename, month, year)
+
+            except Exception as e:
+                LOGGER.error("Scorecard failed for %s: %s", org["cyhy_db_name"], e)
+                LOGGER.error(traceback.format_exc())
+                failed += org["cyhy_db_name"]
+
+        # TODO Calculate scores
+        # discovery_scores = gen_discov_scores()
+        # identification_scores = gen_ident_scores()
+
+        # Generate scorecards
+        for i, org in recipient_orgs_df.iterrows():
+            try:
+                print("running")
 
             except Exception as e:
                 LOGGER.error("Scorecard failed for %s: %s", org["cyhy_db_name"], e)
