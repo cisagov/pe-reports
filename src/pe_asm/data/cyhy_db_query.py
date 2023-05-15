@@ -2,6 +2,7 @@
 """CyHy database and sync queries."""
 
 # Standard Python Libraries
+import datetime
 import logging
 import sys
 import time
@@ -132,21 +133,19 @@ def get_pe_org_map(pe_db_conn):
 
 def insert_assets(conn, assets_df, table):
     """Insert CyHy assets into the P&E databse."""
-    on_conflict = """
-        ON CONFLICT (org_id, network)
-        DO UPDATE SET
-            contact = EXCLUDED.contact,
-            org_name = EXCLUDED.org_name,
-            type = EXCLUDED.type,
-            last_seen = EXCLUDED.last_seen;
-    """
+    on_conflict = """ ON CONFLICT (org_id, network)
+    DO UPDATE SET
+    contact = EXCLUDED.contact,
+    org_name = EXCLUDED.org_name,
+    type = EXCLUDED.type,
+    last_seen = EXCLUDED.last_seen; """
     tpls = [tuple(x) for x in assets_df.to_numpy()]
     cols = ",".join(list(assets_df.columns))
-    sql = "INSERT INTO {}({}) VALUES %s".format(table, cols)
+    sql = "INSERT INTO {}({}) VALUES %s"
     sql = sql + on_conflict
     cursor = conn.cursor()
     try:
-        extras.execute_values(cursor, sql, tpls)
+        extras.execute_values(cursor, sql.format(table, cols), tpls)
         conn.commit()
         LOGGER.info("Asset data inserted using execute_values() successfully")
     except (Exception, psycopg2.DatabaseError) as err:
@@ -165,11 +164,11 @@ def insert_contacts(conn, contacts_df, table):
     """
     tpls = [tuple(x) for x in contacts_df.to_numpy()]
     cols = ",".join(list(contacts_df.columns))
-    sql = "INSERT INTO {}({}) VALUES %s".format(table, cols)
+    sql = "INSERT INTO {}({}) VALUES %s"
     sql = sql + on_conflict
     cursor = conn.cursor()
     try:
-        extras.execute_values(cursor, sql, tpls)
+        extras.execute_values(cursor, sql.format(table, cols), tpls)
         conn.commit()
         LOGGER.info("Contact data inserted using execute_values() successfully")
     except (Exception, psycopg2.DatabaseError) as err:
@@ -186,9 +185,9 @@ def insert_cyhy_agencies(conn, cyhy_agency_df):
             sql = """
             INSERT INTO organizations(name, cyhy_db_name, agency_type, retired,
             receives_cyhy_report, receives_bod_report, receives_cybex_report,
-            is_parent, fceb, cyhy_period_start, password) VALUES (%s, %s, %s, %s,
+            is_parent, fceb, cyhy_period_start, scorecard, password) VALUES (%s, %s, %s, %s,
              %s, %s, %s,
-             %s, %s, %s, PGP_SYM_ENCRYPT(%s, %s))
+             %s, %s, %s, %s, PGP_SYM_ENCRYPT(%s, %s))
             ON CONFLICT (cyhy_db_name)
             DO UPDATE SET
                 name = EXCLUDED.name,
@@ -200,7 +199,8 @@ def insert_cyhy_agencies(conn, cyhy_agency_df):
                 receives_cybex_report = EXCLUDED.receives_cybex_report,
                 is_parent = EXCLUDED.is_parent,
                 fceb = EXCLUDED.fceb,
-                cyhy_period_start = EXCLUDED.cyhy_period_start
+                cyhy_period_start = EXCLUDED.cyhy_period_start,
+                scorecard = EXCLUDED.scorecard
             """
             cur.execute(
                 sql,
@@ -215,6 +215,7 @@ def insert_cyhy_agencies(conn, cyhy_agency_df):
                     row["is_parent"],
                     row["fceb"],
                     row["cyhy_period_start"],
+                    row["scorecard"],
                     row["password"],
                     password,
                 ),
@@ -228,11 +229,97 @@ def insert_cyhy_agencies(conn, cyhy_agency_df):
     LOGGER.info("Agencies inserted using execute_values() successfully..")
 
 
+def insert_sectors(conn, sectors_list):
+    """Insert sectors into database."""
+    password = db_password_key()
+    for sector in sectors_list:
+        try:
+            cur = conn.cursor()
+            sql = """
+            INSERT INTO sectors(id, acronym, name, email, contact_name, retired, first_seen, last_seen, password) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, PGP_SYM_ENCRYPT(%s, %s))
+            ON CONFLICT (id)
+            DO UPDATE SET
+                acronym = EXCLUDED.acronym,
+                name = EXCLUDED.name,
+                email = EXCLUDED.email,
+                contact_name = EXCLUDED.contact_name,
+                retired = EXCLUDED.retired,
+                last_seen = EXCLUDED.last_seen,
+                password = EXCLUDED.password
+            """
+            cur.execute(
+                sql,
+                (
+                    sector["id"],
+                    sector["acronym"],
+                    sector["name"],
+                    sector["email"],
+                    sector["contact_name"],
+                    sector["retired"],
+                    datetime.datetime.today().date(),
+                    datetime.datetime.today().date(),
+                    sector["password"],
+                    password,
+                ),
+            )
+            conn.commit()
+            cur.close()
+
+        except (Exception, psycopg2.DatabaseError) as err:
+            show_psycopg2_exception(err)
+            cur.close()
+            continue
+
+
+def insert_sector_org_relationship(conn, sector_org_list):
+    """Insert sector org relationship into many to many table."""
+    # MAYBE TODO delete relationships first to make sure we are up to date
+
+    for element in sector_org_list:
+        try:
+            cur = conn.cursor()
+            sql = """
+                INSERT INTO sectors_orgs(sector_uid, organizations_uid, first_seen, last_seen)
+                VALUES (%s, %s, %s, %s)
+                ON CONFLICT (sector_uid, organizations_uid)
+                DO UPDATE SET
+                last_seen = EXCLUDED.last_seen
+            """
+            cur.execute(sql, (element[0], element[1], element[2], element[3]))
+            conn.commit()
+            cur.close()
+
+            # conflict = """ON CONFLICT (sector_uid, organizations_uid)
+            #     DO UPDATE SET
+            #     last_seen = EXCLUDED.last_seen"""
+            # cols = "sector_uid, organizations_uid, first_seen, last_seen"
+            # sql = "INSERT INTO sectors_orgs({}) VALUES %s".format(cols)
+            # sql = sql + conflict
+            # cursor = conn.cursor()
+
+            # extras.execute_values(cursor, sql, sector_org_list)
+            # conn.commit()
+        except (Exception, psycopg2.DatabaseError) as err:
+            show_psycopg2_exception(err)
+            cur.close()
+            continue
+
+
 def query_pe_orgs(conn):
     """Query P&E organizations."""
     sql = """
-    SELECT organizations_uid, cyhy_db_name, name, agency_type, report_on, fceb
+    SELECT organizations_uid, cyhy_db_name, name, agency_type, report_on, fceb, scorecard
     FROM organizations o
+    """
+    df = pd.read_sql(sql, conn)
+    return df
+
+
+def query_pe_sectors(conn):
+    """Query P&E sectors."""
+    sql = """
+    SELECT sector_uid, id, acronym, run_scorecards
+    FROM sectors
     """
     df = pd.read_sql(sql, conn)
     return df
@@ -265,6 +352,22 @@ def update_child_parent_orgs(conn, parent_uid, child_name):
     cursor.close()
 
 
+def add_sector_hierachy(conn, child_uid, parent_uid):
+    """Update parent_sector_uid field."""
+    cursor = conn.cursor()
+    cursor.execute(
+        """
+        UPDATE sectors
+        set parent_sector_uid = %s
+        where sector_uid = %s
+        """,
+        (parent_uid, child_uid),
+    )
+
+    conn.commit()
+    cursor.close()
+
+
 def update_scan_status(conn, child_name):
     """Update child parent relationships between organizations."""
     cursor = conn.cursor()
@@ -272,10 +375,9 @@ def update_scan_status(conn, child_name):
         """
         UPDATE organizations
         set run_scans = True
-        where cyhy_db_name = '{}'
-        """.format(
-            child_name
-        ),
+        where cyhy_db_name = %s
+        """,
+        (child_name),
     )
 
     conn.commit()
@@ -289,10 +391,25 @@ def update_fceb_child_status(conn, child_name):
         """
         UPDATE organizations
         set fceb_child = True
-        where cyhy_db_name = '{}'
-        """.format(
-            child_name
-        ),
+        where cyhy_db_name = %s
+        """,
+        (child_name),
+    )
+
+    conn.commit()
+    cursor.close()
+
+
+def updated_scorecard_child_status(conn, child_name):
+    """Update organizations that are children of scorecard orgs."""
+    cursor = conn.cursor()
+    cursor.execute(
+        """
+        UPDATE organizations
+        set scorecard_child = True
+        where cyhy_db_name = %s
+        """,
+        (child_name),
     )
 
     conn.commit()
@@ -307,11 +424,11 @@ def insert_dot_gov_domains(conn, dotgov_df, table):
     """
     tpls = [tuple(x) for x in dotgov_df.to_numpy()]
     cols = ",".join(list(dotgov_df.columns))
-    sql = "INSERT INTO {}({}) VALUES %s".format(table, cols)
+    sql = "INSERT INTO {}({}) VALUES %s"
     sql = sql + conflict
     cursor = conn.cursor()
     try:
-        extras.execute_values(cursor, sql, tpls)
+        extras.execute_values(cursor, sql.format(table, cols), tpls)
         conn.commit()
         LOGGER.info("Dot gov data inserted using execute_values() successfully..")
     except (Exception, psycopg2.DatabaseError) as err:
@@ -610,7 +727,6 @@ def insert_cyhy_scorecard_data(conn, df, table_name, on_conflict):
 
 def identified_sub_domains(conn):
     """Set sub-domains to identified."""
-
     # If the sub's root-domain has enumerate=False, then "identified" is True
     cursor = conn.cursor()
     LOGGER.info("Marking identified sub-domains.")
@@ -628,7 +744,7 @@ def identified_sub_domains(conn):
 
 def get_fceb_orgs(conn):
     """Query fceb orgs."""
-    sql = """select * from organizations o 
+    sql = """select * from organizations o
             where o.fceb or o.fceb_child;
             """
     df = pd.read_sql(sql, conn)

@@ -56,13 +56,40 @@ def close(conn):
     return
 
 
-def get_orgs():
+def get_scorecard_sectors():
+    """Query sectors flagged to run scorecards."""
+    print("running get_orgs")
+    conn = connect()
+    sql = """SELECT * FROM sectors
+            WHERE run_scorecards = True"""
+    pe_orgs = pd.read_sql(sql, conn)
+    conn.close()
+    return pe_orgs
+
+
+def find_sub_sectors(sector):
+    """Find subsectors for a given sector."""
+    conn = connect()
+    sql = """
+            with recursive sector_queries as
+            (
+                select * from sectors s where s.run_scorecards = true and s.id = %(sector)s
+                union all
+                select e.* from sectors e
+                inner join sector_queries c on e.parent_sector_uid  =  c.sector_uid
+            )
+            select cq.id from sector_queries cq
+        """
+    sub_sectors = pd.read_sql(sql, conn, params={"sector": sector})
+    conn.close()
+    return sub_sectors
+
+
+def get_scorecard_orgs():
     """Query organizations table."""
     print("running get_orgs")
     conn = connect()
-    sql = (
-        """SELECT * FROM organizations where (fceb or fceb_child) and retired = False"""
-    )
+    sql = """SELECT * FROM vw_scorecard_orgs"""
     pe_orgs = pd.read_sql(sql, conn)
     conn.close()
     return pe_orgs
@@ -202,18 +229,28 @@ def query_domain_counts(org_uid_list):
     return domain_counts
 
 
-def query_was_fceb_ttr(date_period):
-    """Calculate Summary results for all of FCEB."""
+def query_was_sector_ttr(date_period, sector):
+    """Calculate Summary results for a provided sector."""
     conn = connect()
-    print("running query_was_fceb_ttr")
-    sql = """ SELECT wh.crit_rem_time, wh.crit_rem_cnt, wh.high_rem_time, wh.high_rem_cnt
+    print("running query_was_sector_ttr")
+    sql = """
+        SELECT vso.sector_id, o.cyhy_db_name , wh.crit_rem_time, wh.crit_rem_cnt, wh.high_rem_time, wh.high_rem_cnt
         from was_history wh
         join was_map wm on wh.was_org_id = wm.was_org_id
         join organizations o on o.organizations_uid = wm.pe_org_id
-        where wh.report_period = %(start_date)s
-        and (o.fceb or o.fceb_child) and o.retired = False;
+        join vw_scorecard_orgs vso on o.organizations_uid = vso.organizations_uid
+        inner join (with recursive sector_queries as
+        (
+            select * from sectors s where s.run_scorecards = true and s.id = %(sector)s
+            union all
+            select e.* from sectors e
+            inner join sector_queries c on e.parent_sector_uid  =  c.sector_uid
+        )
+        select cq.id from sector_queries cq ) as sec on vso.sector_id = sec.id
+            where wh.report_period = %(start_date)s
+            and o.retired = False;
     """
-    df = pd.read_sql(sql, conn, params={"start_date": date_period})
+    df = pd.read_sql(sql, conn, params={"sector": sector, "start_date": date_period})
     # Change critical vuln count to closed critical vuln count
     total_critical = df["crit_rem_cnt"].sum()
     df["weighted_critical"] = (df["crit_rem_cnt"] / total_critical) * df[
@@ -228,14 +265,14 @@ def query_was_fceb_ttr(date_period):
     df["weighted_high"] = (df["high_rem_cnt"] / total_high) * df["high_rem_time"]
     high = df["weighted_high"].sum() if total_high > 0 else "N/A"
     close(conn)
-    fceb_dict = {"critical": critical, "high": high}
-    print(fceb_dict)
+    sector_dict = {"critical": critical, "high": high}
+    print(sector_dict)
     # if not fceb_dict["critical"]:
     # # fceb_dict["critical"] = "N/A"
 
     # # if not fceb_dict["high"]:
     # # fceb_dict["high"] = "N/A"
-    return fceb_dict
+    return sector_dict
 
 
 def query_web_app_counts(date_period, org_uid_list):
@@ -1698,18 +1735,28 @@ def find_last_data_updated(id_list):
     return last_updated
 
 
-def query_fceb_ttr(month, year):
-    """Return FCEB time to remediate data for vulns closed in a given month and year."""
+def query_sector_ttr(month, year, sector):
+    """Return a given sector's time to remediate data for vulns closed in a given month and year."""
     conn = connect()
     sql = """
-    select organizations_uid, cyhy_db_name,
-    EXTRACT(epoch FROM kev_ttr) / 86400 as kev_ttr, kev_count,
-    EXTRACT(epoch FROM critical_ttr) / 86400 as critical_ttr, critical_count,
-    EXTRACT(epoch FROM high_ttr) / 86400 as high_ttr, high_count
-    from vw_fceb_time_to_remediate
+    select ttr.organizations_uid, ttr.cyhy_db_name, ttr.sector_id,
+    EXTRACT(epoch FROM ttr.kev_ttr) / 86400 as kev_ttr, kev_count,
+    EXTRACT(epoch FROM ttr.critical_ttr) / 86400 as critical_ttr, critical_count,
+    EXTRACT(epoch FROM ttr.high_ttr) / 86400 as high_ttr, high_count
+    from vw_sector_time_to_remediate ttr
+    inner join (with recursive sector_queries as
+    (
+        select * from sectors s where s.run_scorecards = true and s.id = %(sector)s
+        union all
+        select e.* from sectors e
+        inner join sector_queries c on e.parent_sector_uid  =  c.sector_uid
+    )
+    select cq.id from sector_queries cq ) as sec on ttr.sector_id = sec.id
     where month_seen = %(month_seen)s and year_seen = %(year_seen)s
     """
-    df = pd.read_sql(sql, conn, params={"month_seen": month, "year_seen": year})
+    df = pd.read_sql(
+        sql, conn, params={"sector": sector, "month_seen": month, "year_seen": year}
+    )
     conn.close()
     df_unedited = df.copy()
     total_kevs = df["kev_count"].sum()
@@ -1722,13 +1769,13 @@ def query_fceb_ttr(month, year):
 
     total_high = df["high_count"].sum()
     df["weighted_high"] = (df["high_count"] / total_high) * df["high_ttr"]
-    fceb_dict = {
-        "name": "FCEB",
+    sector_dict = {
+        "name": sector,
         "ATTR KEVs": df["weighted_kev"].sum(),
         "ATTR Crits": df["weighted_critical"].sum(),
         "ATTR Highs": df["weighted_high"].sum(),
     }
-    return (df_unedited, fceb_dict)
+    return (df_unedited, sector_dict)
 
 
 def query_profiling_views(start_date, org_uid_list):
