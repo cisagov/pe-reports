@@ -1268,7 +1268,7 @@ def query_fceb_status(org_list):
         "UUID('" + "')), (UUID('".join(org_list["organizations_uid"].tolist()) + "')"
     )
     sql = """
-    SELECT 
+    SELECT
         sector.organizations_uid, COALESCE(fceb_status.fceb, false) as fceb
     FROM
         (VALUES (%(sector_str)s)) AS sector(organizations_uid)
@@ -2240,7 +2240,7 @@ def get_was_closed_vulns(start_date, end_date):
 
 
 def insert_scores(start_date, org_uid, score, score_name, sector):
-    """Insert a dataframe of scores into the summary table."""
+    """Insert a score into the scorecard summary stats table."""
     try:
         conn = connect()
 
