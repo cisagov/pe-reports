@@ -37,6 +37,7 @@ from typing import Any, Dict
 
 # Third-Party Libraries
 import docopt
+import numpy as np
 from schema import And, Schema, SchemaError, Use
 
 # cisagov Libraries
@@ -287,11 +288,54 @@ def generate_scorecards(
                     sector,
                 )
 
+                # Calculate Overall Score
+                overall_score = (
+                    (discovery_score * 0.2)
+                    + (profiling_score * 0.2)
+                    + (identification_score * 0.3)
+                    + (tracking_score * 0.3)
+                )
+                insert_scores(
+                    start_date,
+                    org["organizations_uid"],
+                    overall_score,
+                    "score",
+                    sector,
+                )
+
+                letter_ranges = [
+                    overall_score < 65,  # F
+                    (overall_score >= 65) & (overall_score < 67),  # D
+                    (overall_score >= 67) & (overall_score < 70),  # D+
+                    (overall_score >= 70) & (overall_score < 73),  # C-
+                    (overall_score >= 73) & (overall_score < 77),  # C
+                    (overall_score >= 77) & (overall_score < 80),  # C+
+                    (overall_score >= 80) & (overall_score < 83),  # B-
+                    (overall_score >= 83) & (overall_score < 87),  # B
+                    (overall_score >= 87) & (overall_score < 90),  # B+
+                    (overall_score >= 90) & (overall_score < 93),  # A-
+                    (overall_score >= 93) & (overall_score < 97),  # A
+                    (overall_score >= 97) & (overall_score <= 100),  # A+
+                ]
+                letter_grades = [
+                    "F",
+                    "D",
+                    "D+",
+                    "C-",
+                    "C",
+                    "C+",
+                    "B-",
+                    "B",
+                    "B+",
+                    "A-",
+                    "A",
+                    "A+",
+                ]
                 # Query the data for the scorecard
                 scorecard_dict = query_scorecard_data(
                     org["organizations_uid"], start_date, sector
                 )
-
+                scorecard_dict["score"] = np.select(letter_ranges, letter_grades)
                 # # Add scores to scorecard_dict
                 # scorecard_dict['discovery_score'] = discovery_score
                 scorecard_dict["discovery_grade"] = discovery_grade
