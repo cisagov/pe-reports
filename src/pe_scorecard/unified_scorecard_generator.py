@@ -293,10 +293,10 @@ def create_scorecard(
             showBoundary=False,
         )
         discover_score_frame.addFromList(
-            [Paragraph(data_dict["discovery_score"], style=score_style)], can
+            [Paragraph(data_dict["discovery_grade"], style=score_style)], can
         )
         if include_trending:
-            if data_dict["discovery_trend_dir"] == -1:
+            if data_dict["discovery_score"] - data_dict["discovery_trend"] < 0:
                 can.drawImage(
                     BASE_DIR + "/scorecard_assets/red_score_arrow.png",
                     6.3 * inch,
@@ -305,7 +305,7 @@ def create_scorecard(
                     height=0.3 * inch,
                     mask="auto",
                 )
-            elif data_dict["discovery_trend_dir"] == 1:
+            elif data_dict["discovery_score"] - data_dict["discovery_trend"] > 0:
                 can.drawImage(
                     BASE_DIR + "/scorecard_assets/green_score_arrow.png",
                     6.3 * inch,
@@ -697,10 +697,10 @@ def create_scorecard(
             showBoundary=False,
         )
         profiling_score_frame.addFromList(
-            [Paragraph(data_dict["profiling_score"], style=score_style)], can
+            [Paragraph(data_dict["profiling_grade"], style=score_style)], can
         )
         if include_trending:
-            if data_dict["profiling_trend_dir"] == -1:
+            if data_dict["profiling_score"] - data_dict["profiling_trend"] < 0:
                 can.drawImage(
                     BASE_DIR + "/scorecard_assets/red_score_arrow.png",
                     6.3 * inch,
@@ -709,7 +709,7 @@ def create_scorecard(
                     height=0.3 * inch,
                     mask="auto",
                 )
-            elif data_dict["profiling_trend_dir"] == 1:
+            elif data_dict["profiling_score"] - data_dict["profiling_trend"] > 0:
                 can.drawImage(
                     BASE_DIR + "/scorecard_assets/green_score_arrow.png",
                     6.3 * inch,
@@ -974,10 +974,13 @@ def create_scorecard(
             showBoundary=False,
         )
         identification_score_frame.addFromList(
-            [Paragraph(data_dict["identification_score"], style=score_style)], can
+            [Paragraph(data_dict["identification_grade"], style=score_style)], can
         )
         if include_trending:
-            if data_dict["identification_trend_dir"] == -1:
+            if (
+                data_dict["identification_score"] - data_dict["identification_trend"]
+                < 0
+            ):
                 can.drawImage(
                     BASE_DIR + "/scorecard_assets/red_score_arrow.png",
                     6.3 * inch,
@@ -986,7 +989,10 @@ def create_scorecard(
                     height=0.3 * inch,
                     mask="auto",
                 )
-            elif data_dict["identification_trend_dir"] == 1:
+            elif (
+                data_dict["identification_score"] - data_dict["identification_trend"]
+                > 0
+            ):
                 can.drawImage(
                     BASE_DIR + "/scorecard_assets/green_score_arrow.png",
                     6.3 * inch,
@@ -1068,10 +1074,10 @@ def create_scorecard(
             showBoundary=False,
         )
         tracking_score_frame.addFromList(
-            [Paragraph(data_dict["tracking_score"], style=score_style)], can
+            [Paragraph(data_dict["tracking_grade"], style=score_style)], can
         )
         if include_trending:
-            if data_dict["tracking_trend_dir"] == -1:
+            if data_dict["tracking_score"] - data_dict["tracking_trend"] < 0:
                 can.drawImage(
                     BASE_DIR + "/scorecard_assets/red_score_arrow.png",
                     6.3 * inch,
@@ -1080,7 +1086,7 @@ def create_scorecard(
                     height=0.3 * inch,
                     mask="auto",
                 )
-            elif data_dict["tracking_trend_dir"] == 1:
+            elif data_dict["tracking_score"] - data_dict["tracking_trend"] > 0:
                 can.drawImage(
                     BASE_DIR + "/scorecard_assets/green_score_arrow.png",
                     6.3 * inch,

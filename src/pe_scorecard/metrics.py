@@ -383,7 +383,7 @@ class Scorecard:
         self.calculate_profiling_metrics()
         self.calculate_identification_metrics()
         self.calculate_tracking_metrics()
-        self.get_last_month_metrics()
+        # self.get_last_month_metrics()
         print(self.scorecard_dict)
 
     @staticmethod
