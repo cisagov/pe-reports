@@ -1251,6 +1251,47 @@ def query_pe_stakeholder_list():
     return pe_stakeholder_list
 
 
+# ----- FCEB Status -----
+def query_fceb_status(org_list):
+    """
+    Check if each organization in the list is FCEB or non-FCEB.
+
+    Args:
+        org_list: The specified list of organizations to retrieve data for
+    Return:
+        org list with additional boolean column of FCEB true/false
+    """
+    # Open connection
+    conn = connect()
+    # Build query
+    sector_str = (
+        "UUID('" + "')), (UUID('".join(org_list["organizations_uid"].tolist()) + "')"
+    )
+    sql = """
+    SELECT 
+        sector.organizations_uid, COALESCE(fceb_status.fceb, false) as fceb
+    FROM
+        (VALUES (%(sector_str)s)) AS sector(organizations_uid)
+        LEFT JOIN
+        (
+            SELECT
+                organizations_uid,
+                fceb
+            FROM
+                organizations
+        ) fceb_status
+        ON sector.organizations_uid = fceb_status.organizations_uid;"""
+    # Make query
+    orgs_fceb_status = pd.read_sql(
+        sql,
+        conn,
+        params={"sector_str": sector_str},
+    )
+    # Close connection
+    conn.close()
+    return orgs_fceb_status
+
+
 def query_cyhy_snapshots(start_date, end_date):
     """Query PE database for cyhy snapshots."""
     conn = connect()
