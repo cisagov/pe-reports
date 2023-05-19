@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """Classes and associated functions that render the UI app pages."""
 
 # Standard Python Libraries
@@ -6,10 +7,10 @@ from datetime import date
 from ipaddress import ip_address, ip_network
 import json
 import logging
-import os
+
+# import os
 import re
 import socket
-import traceback
 
 # Third-Party Libraries
 from bs4 import BeautifulSoup
@@ -24,30 +25,31 @@ import requests
 import spacy
 
 # cisagov Libraries
-from pe_reports.data.config import config
-from pe_reports.data.db_query import execute_values, get_orgs_df
-from pe_reports.data.tasks.tasks import add, fill_ips_task
-from pe_reports.helpers.enumerate_subs_from_root import (
-    enumerate_and_save_subs,
-    query_roots,
-)
 from pe_asm.helpers.fill_cidrs_from_cyhy_assets import fill_cidrs
 from pe_asm.helpers.fill_ips_from_cidrs import fill_ips_from_cidrs
 from pe_asm.helpers.link_subs_and_ips_from_ips import connect_subs_from_ips
 from pe_asm.helpers.link_subs_and_ips_from_subs import connect_ips_from_subs
 from pe_asm.helpers.shodan_dedupe import dedupe
+from pe_reports.data.config import config
+from pe_reports.data.db_query import execute_values, get_orgs_df
+
+# from pe_reports.data.tasks.tasks import add, fill_ips_task
+from pe_reports.helpers.enumerate_subs_from_root import (
+    enumerate_and_save_subs,
+    query_roots,
+)
 from pe_reports.stakeholder_full.forms import InfoFormExternal
 
+# import traceback
+
+
 # If you are getting errors saying that a "en_core_web_lg" is loaded. Run the command " python -m spacy download en_core_web_trf" but might have to chagne the name fo the spacy model
-# nlp = spacy.load("en_core_web_lg")
+nlp = spacy.load("en_core_web_lg")
 
 LOGGER = logging.getLogger(__name__)
 
 # CSG credentials
-# TODO: Insert credentials
-API_Client_ID = ""
-API_Client_secret = ""
-API_WHOIS = ""
+# TODO: Insert credentialsd
 
 conn = None
 cursor = None
@@ -56,17 +58,7 @@ thedateToday = date.today().strftime("%Y-%m-%d")
 
 def getToken():
     """Get authorization token from Cybersixgill (CSG)."""
-    logging.info(API_Client_ID)
-    logging.info(API_Client_secret)
-    d = {
-        "grant_type": "client_credentials",
-        "client_id": f"{API_Client_ID}",
-        "client_secret": f"{API_Client_secret}",
-    }
-    r = requests.post("https://api.cybersixgill.com/auth/token", data=d)
-    logging.info(r)
-    r = r.text.split(":")
-    r = r[1].lstrip('"').rsplit('"')[0]
+    r = "token"
     return r
 
 
@@ -443,7 +435,7 @@ def setOrganizationUsers(org_id):
             }
 
             response = requests.post(url, headers=headers).json()
-            # logging.info(response)
+            logging.info(response)
 
 
 def setOrganizationDetails(org_id, orgAliases, orgDomain, orgIP, orgExecs):
@@ -490,7 +482,7 @@ stakeholder_full_blueprint = Blueprint(
 
 
 def getNames(url):
-
+    """Get names from the about page of an organization."""
     doc = nlp(getAbout(url))
 
     d = []
@@ -502,6 +494,7 @@ def getNames(url):
 
 
 def getAbout(url):
+    """Get the about page of a url and parse it."""
     thepage = requests.get(url).text
 
     soup = BeautifulSoup(thepage, "lxml")
@@ -518,6 +511,7 @@ def getAbout(url):
 
 
 def theExecs(URL):
+    """Get the Excutives and return the list to the database."""
     mytext = getAbout(URL)
 
     tokens = word_tokenize(mytext)

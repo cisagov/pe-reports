@@ -222,7 +222,7 @@ def mal_vuln(
     }
     with open(vuln_json, "w") as outfile:
         json.dump(final_dict, outfile, default=str)
-    
+
     # Create Suspected vulnerability Excel file
     vuln_xlsx = f"{output_directory}/{org_code}/vuln_alerts.xlsx"
     vulnWriter = pd.ExcelWriter(vuln_xlsx, engine="xlsxwriter")
@@ -231,13 +231,7 @@ def mal_vuln(
     Malware_Vuln.vulns_df.to_excel(vulnWriter, sheet_name="Verified Vulns", index=False)
     vulnWriter.save()
 
-    return (
-        scorecard_dict,
-        chevron_dict,
-        vuln_json,
-        all_cves_df,
-        vuln_xlsx
-    )
+    return (scorecard_dict, chevron_dict, vuln_json, all_cves_df, vuln_xlsx)
 
 
 def dark_web(
@@ -327,27 +321,21 @@ def dark_web(
     }
     with open(mi_json, "w") as outfile:
         json.dump(final_dict, outfile, default=str)
-    
+
     # Create dark web Excel file
     mi_xlsx = f"{output_directory}/{org_code}/mention_incidents.xlsx"
     miWriter = pd.ExcelWriter(mi_xlsx, engine="xlsxwriter")
-    mentions_df.to_excel(
-        miWriter, sheet_name="Dark Web Mentions", index=False
-    )
+    mentions_df.to_excel(miWriter, sheet_name="Dark Web Mentions", index=False)
     Cyber6.alerts.to_excel(miWriter, sheet_name="Dark Web Alerts", index=False)
     Cyber6.top_cves.to_excel(miWriter, sheet_name="Top CVEs", index=False)
     miWriter.save()
 
-    return (
-        scorecard_dict,
-        chevron_dict,
-        mi_json,
-        mi_xlsx
-    )
+    return (scorecard_dict, chevron_dict, mi_json, mi_xlsx)
 
 
 def init(
-    datestring,
+    start_string,
+    end_string,
     org_name,
     org_code,
     org_uid,
@@ -360,14 +348,15 @@ def init(
     # Format start_date and end_date for the bi-monthly reporting period.
     # If the given end_date is the 15th, then the start_date is the 1st.
     # Otherwise, the start_date will be the 16th of the respective month.
-
-    end_date = datetime.datetime.strptime(datestring, "%Y-%m-%d").date()
-    if end_date.day == 15:
-        start_date = datetime.datetime(end_date.year, end_date.month, 1)
-    else:
-        start_date = datetime.datetime(end_date.year, end_date.month, 16)
-    days = datetime.timedelta(27)
-    trending_start_date = end_date - days
+    start_date = datetime.datetime.strptime(start_string, "%Y-%m-%d").date()
+    end_date = datetime.datetime.strptime(end_string, "%Y-%m-%d").date()
+    time_delta = end_date - start_date
+    # if end_date.day == 15:
+    #     start_date = datetime.datetime(end_date.year, end_date.month, 1)
+    # else:
+    #     start_date = datetime.datetime(end_date.year, end_date.month, 16)
+    # days = datetime.timedelta(27)
+    trending_start_date = start_date - time_delta
     previous_end_date = start_date - datetime.timedelta(days=1)
 
     # Get base directory to save images
@@ -507,5 +496,5 @@ def init(
         cred_xlsx,
         da_xlsx,
         vuln_xlsx,
-        mi_xlsx
+        mi_xlsx,
     )

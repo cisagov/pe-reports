@@ -5,7 +5,8 @@ Usage:
 
 Options:
   -h --help                         Show this message.
-  REPORT_DATE                       Date of the report, format YYYY-MM-DD
+  START_DATE                        First day of the report, format YYYY-MM-DD
+  END_DATE                          Last date of the report, format YYYY-MM-DD
   OUTPUT_DIRECTORY                  The directory where the final PDF
                                     reports should be saved.
   -l --log-level=LEVEL              If specified, then the log level will be set to
@@ -25,34 +26,37 @@ import boto3
 from botocore.exceptions import ClientError
 import docopt
 import fitz
-from schema import And, Schema, SchemaError, Use
 import pandas as pd
+from schema import And, Schema, SchemaError, Use
 
 # cisagov Libraries
 import pe_reports
 
 from ._version import __version__
 from .asm_generator import create_summary
-from .data.db_query import connect, get_orgs, refresh_asset_counts_vw, set_from_cidr
-from .helpers.generate_score import get_pe_scores
+from .data.db_query import connect, get_orgs
+
+# , refresh_asset_counts_vw, set_from_cidr
+# from .helpers.generate_score import get_pe_scores
 from .pages import init
 from .reportlab_generator import report_gen
-from .scorecard_generator import create_scorecard
+
+# from .scorecard_generator import create_scorecard
 
 LOGGER = logging.getLogger(__name__)
 ACCESSOR_AWS_PROFILE = os.getenv("ACCESSOR_PROFILE")
 
 
-def upload_file_to_s3(file_name, datestring, bucket, excel_org):
+def upload_file_to_s3(file_name, end_date, bucket, excel_org):
     """Upload a file to an S3 bucket."""
     session = boto3.Session(profile_name=ACCESSOR_AWS_PROFILE)
     s3_client = session.client("s3")
 
     # If S3 object_name was not specified, use file_name
-    object_name = f"{datestring}/{os.path.basename(file_name)}"
+    object_name = f"{end_date}/{os.path.basename(file_name)}"
 
     if excel_org is not None:
-        object_name = f"{datestring}/{excel_org}-raw-data/{os.path.basename(file_name)}"
+        object_name = f"{end_date}/{excel_org}-raw-data/{os.path.basename(file_name)}"
 
     try:
         response = s3_client.upload_file(file_name, bucket, object_name)
@@ -67,7 +71,7 @@ def upload_file_to_s3(file_name, datestring, bucket, excel_org):
 def embed(
     output_directory,
     org_code,
-    datestring,
+    end_date,
     file,
     cred_json,
     da_json,
@@ -76,13 +80,13 @@ def embed(
     cred_xlsx,
     da_xlsx,
     vuln_xlsx,
-    mi_xlsx
+    mi_xlsx,
 ):
     """Embeds raw data into PDF and encrypts file."""
     doc = fitz.open(file)
     # Get the summary page of the PDF on page 4
     page = doc[4]
-    output = f"{output_directory}/{org_code}/Posture_and_Exposure_Report-{org_code}-{datestring}.pdf"
+    output = f"{output_directory}/{org_code}/Posture_and_Exposure_Report-{org_code}-{end_date}.pdf"
 
     # Open CSV data as binary
     cc = open(cred_json, "rb").read()
@@ -146,7 +150,7 @@ def embed(
     return filesize, tooLarge, output
 
 
-def generate_reports(datestring, output_directory, soc_med_included=False):
+def generate_reports(start_date, end_date, output_directory, soc_med_included=False):
     """Process steps for generating report data."""
     # Get PE orgs from PE db
     conn = connect()
@@ -169,7 +173,7 @@ def generate_reports(datestring, output_directory, soc_med_included=False):
         # Generate PE scores for all stakeholders.
         LOGGER.info("Calculating P&E Scores")
         # pe_scores_df = get_pe_scores(datestring, 12)
-        go = 0
+        # go = 0
         # pe_orgs.reverse()
         for org in pe_orgs:
             # Assign organization values
@@ -182,13 +186,12 @@ def generate_reports(datestring, output_directory, soc_med_included=False):
 
             # DOL, USDA
 
-
             # if org_code == "HHS_FDA":
             #     go = 1
             #     continue
             # if go != 1:
             #     continue
-            #Rapidgator%20 DOI_BIA
+            # Rapidgator%20 DOI_BIA
 
             LOGGER.info("Running on %s", org_code)
 
@@ -196,7 +199,7 @@ def generate_reports(datestring, output_directory, soc_med_included=False):
             for dir_name in ("ppt", org_code):
                 if not os.path.exists(f"{output_directory}/{dir_name}"):
                     os.mkdir(f"{output_directory}/{dir_name}")
-            
+
             pe_scores_df = pd.DataFrame()
             if not pe_scores_df.empty:
                 score = pe_scores_df.loc[
@@ -221,9 +224,10 @@ def generate_reports(datestring, output_directory, soc_med_included=False):
                 cred_xlsx,
                 da_xlsx,
                 vuln_xlsx,
-                mi_xlsx
+                mi_xlsx,
             ) = init(
-                datestring,
+                start_date,
+                end_date,
                 org_name,
                 org_code,
                 org_uid,
@@ -245,7 +249,7 @@ def generate_reports(datestring, output_directory, soc_med_included=False):
                 summary_dict,
                 summary_filename,
                 summary_json_filename,
-                summary_excel_filename
+                summary_excel_filename,
             )
             LOGGER.info("Done")
 
@@ -256,19 +260,19 @@ def generate_reports(datestring, output_directory, soc_med_included=False):
             LOGGER.info("Done")
 
             # Convert to HTML to PDF
-            output_filename = f"{output_directory}/Posture_and_Exposure_Report-{org_code}-{datestring}.pdf"
+            output_filename = f"{output_directory}/Posture_and_Exposure_Report-{org_code}-{end_date}.pdf"
             # convert_html_to_pdf(source_html, output_filename)#TODO possibly generate report here
             chevron_dict["filename"] = output_filename
             report_gen(chevron_dict, soc_med_included)
 
             # Grab the PDF
-            pdf = f"{output_directory}/Posture_and_Exposure_Report-{org_code}-{datestring}.pdf"
+            pdf = f"{output_directory}/Posture_and_Exposure_Report-{org_code}-{end_date}.pdf"
 
             # Embed Excel files
             (filesize, tooLarge, output) = embed(
                 output_directory,
                 org_code,
-                datestring,
+                end_date,
                 pdf,
                 cred_json,
                 da_json,
@@ -277,7 +281,7 @@ def generate_reports(datestring, output_directory, soc_med_included=False):
                 cred_xlsx,
                 da_xlsx,
                 vuln_xlsx,
-                mi_xlsx
+                mi_xlsx,
             )
 
             # Log a message if the report is too large.  Our current mailer
@@ -290,22 +294,21 @@ def generate_reports(datestring, output_directory, soc_med_included=False):
             bucket_name = "cisa-crossfeed-staging-reports"
 
             # Upload excel files
-            upload_file_to_s3(cred_xlsx, datestring, bucket_name, org_code)
-            upload_file_to_s3(da_xlsx, datestring, bucket_name, org_code)
-            upload_file_to_s3(vuln_xlsx, datestring, bucket_name, org_code)
-            upload_file_to_s3(mi_xlsx, datestring, bucket_name, org_code)
-            upload_file_to_s3(asm_xlsx, datestring, bucket_name, org_code)
+            upload_file_to_s3(cred_xlsx, end_date, bucket_name, org_code)
+            upload_file_to_s3(da_xlsx, end_date, bucket_name, org_code)
+            upload_file_to_s3(vuln_xlsx, end_date, bucket_name, org_code)
+            upload_file_to_s3(mi_xlsx, end_date, bucket_name, org_code)
+            upload_file_to_s3(asm_xlsx, end_date, bucket_name, org_code)
 
             # Upload report
-            upload_file_to_s3(output, datestring, bucket_name, None)
+            upload_file_to_s3(output, end_date, bucket_name, None)
 
             # Upload scorecard
-            upload_file_to_s3(final_summary_output, datestring, bucket_name, None)
+            upload_file_to_s3(final_summary_output, end_date, bucket_name, None)
 
             # Upload ASM Summary
             # upload_file_to_s3(scorecard_filename, datestring, bucket_name, None)
             generated_reports += 1
-
 
     else:
         LOGGER.error(
@@ -365,7 +368,8 @@ def main():
         soc_med = False
     # Generate reports
     generate_reports(
-        validated_args["REPORT_DATE"],
+        validated_args["START_DATE"],
+        validated_args["END_DATE"],
         validated_args["OUTPUT_DIRECTORY"],
         soc_med,
     )
