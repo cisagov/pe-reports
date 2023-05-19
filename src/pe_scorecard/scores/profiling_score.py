@@ -35,8 +35,7 @@ from pe_scorecard.scores.score_helper_functions import (
 LOGGER = logging.getLogger(__name__)
 
 # df_orgs_df is a datframe of stakeholders with two columns: organizations_uid and cyhy_db_name
-# def get_profiling_score(df_orgs_df, report_period_year, report_period_month):
-def get_profiling_score():
+def get_profiling_score(df_orgs_df, report_period_year, report_period_month):
     report_period_year = 2023
     report_period_month = 4
     this_month = datetime(report_period_year, report_period_month, 1)
@@ -46,8 +45,6 @@ def get_profiling_score():
     df_org_info = get_stakeholders()
     df_orgs = df_orgs_df.merge(df_org_info, on='organizations_uid', how='left')
     df_orgs.fillna(False, inplace=True)
-    # conditions = [(df_orgs['fceb'] == False), (df_orgs['fceb'] == True) & (df_orgs['total_ips'] <= 100), (df_orgs['fceb'] == True) & (df_orgs['total_ips'] > 100) & (df_orgs['total_ips'] <= 1000), (df_orgs['fceb'] == True) & (df_orgs['total_ips'] > 1000) & (df_orgs['total_ips'] <= 10000), (df_orgs['fceb'] == True) & (df_orgs['total_ips'] > 10000) & (df_orgs['total_ips'] <= 100000), (df_orgs['fceb'] == True) & (df_orgs['total_ips'] > 100000)]
-    # groups = ["N/A", "XS", "S", "M", "L", "XL"]
     conditions = [(df_orgs['fceb'] == False) & (df_orgs['agency_type'] == "LOCAL"), (df_orgs['fceb'] == False) & (df_orgs['agency_type'] == "STATE"), (df_orgs['fceb'] == False) & (df_orgs['agency_type'] == "TRIBAL"), (df_orgs['fceb'] == False) & (df_orgs['agency_type'] == "TERRITORIAL"), (df_orgs['fceb'] == False) & (df_orgs['agency_type'] == "PRIVATE"), (df_orgs['fceb'] == True) & (df_orgs['total_ips'] <= 100), (df_orgs['fceb'] == True) & (df_orgs['total_ips'] > 100) & (df_orgs['total_ips'] <= 1000), (df_orgs['fceb'] == True) & (df_orgs['total_ips'] > 1000) & (df_orgs['total_ips'] <= 10000), (df_orgs['fceb'] == True) & (df_orgs['total_ips'] > 10000) & (df_orgs['total_ips'] <= 100000), (df_orgs['fceb'] == True) & (df_orgs['total_ips'] > 100000)]
     groups = ["LOCAL", "STATE", "TRIBAL", "TERRITORIAL", "PRIVATE", "XS", "S", "M", "L", "XL"]
     df_orgs["group"] = np.select(conditions, groups)
@@ -57,38 +54,37 @@ def get_profiling_score():
     df_software = summarize_software(df_orgs, this_month, next_month)
     df_norm_software = normalize_software(df_software)
     df_hosts = summarize_hosts(df_orgs, this_month, next_month)
-    print(df_orgs)
 
-#     profiling_score_list = []
-#     for index, org in df_orgs.iterrows():
-#         org_id = org['organizations_uid']
+    profiling_score_list = []
+    for index, org in df_orgs.iterrows():
+        org_id = org['organizations_uid']
 
-#         df_port_scans_org = df_port_scans.loc[df_port_scans['organizations_uid'] == org_id]
-#         # Multiplying by predetermined weights for base metrics (see profiling score documentation)
-#         vuln_ports = (100 - df_port_scans_org['percent_vuln_ports']) * .2
-#         vuln_protocols = (100 - df_port_scans_org['percent_vuln_protocols']) * .2
-#         vuln_services = (100 - df_port_scans_org['percent_vuln_services']) * .2
+        df_port_scans_org = df_port_scans.loc[df_port_scans['organizations_uid'] == org_id]
+        # Multiplying by predetermined weights for base metrics (see profiling score documentation)
+        vuln_ports = (100 - df_port_scans_org['percent_vuln_ports']) * .2
+        vuln_protocols = (100 - df_port_scans_org['percent_vuln_protocols']) * .2
+        vuln_services = (100 - df_port_scans_org['percent_vuln_services']) * .2
 
-#         df_software_org = df_norm_software.loc[df_norm_software['organizations_uid'] == org_id]
-#         # Multiplying by predetermined weights for base metrics (see profiling score documentation)
-#         total_software = (100 - df_software_org['norm_software']) * .2
+        df_software_org = df_norm_software.loc[df_norm_software['organizations_uid'] == org_id]
+        # Multiplying by predetermined weights for base metrics (see profiling score documentation)
+        total_software = (100 - df_software_org['norm_software']) * .2
 
-#         df_web_apps_org = df_web_apps.loc[df_web_apps['organizations_uid'] == org_id]
-#         # Multiplying by predetermined weights for base metrics (see profiling score documentation)
-#         vuln_web_apps = (100 - df_web_apps_org['percent_vuln_webapps']) * .1
+        df_web_apps_org = df_web_apps.loc[df_web_apps['organizations_uid'] == org_id]
+        # Multiplying by predetermined weights for base metrics (see profiling score documentation)
+        vuln_web_apps = (100 - df_web_apps_org['percent_vuln_webapps']) * .1
 
-#         df_hosts_orgs = df_hosts.loc[df_hosts['organizations_uid'] == org_id]
-#         # Multiplying by predetermined weights for base metrics (see profiling score documentation)
-#         vuln_hosts = (100 - df_hosts_orgs['percent_vuln_hosts']) * .1
+        df_hosts_orgs = df_hosts.loc[df_hosts['organizations_uid'] == org_id]
+        # Multiplying by predetermined weights for base metrics (see profiling score documentation)
+        vuln_hosts = (100 - df_hosts_orgs['percent_vuln_hosts']) * .1
 
-#         metrics_aggregation = float(vuln_ports) + float(vuln_protocols) + float(vuln_services) + float(total_software) + float(vuln_web_apps) + float(vuln_hosts)
-#         profiing_score = 100.0 - metrics_aggregation
-#         rescaled_profiing_score = round((profiing_score * .4) + 60.0, 2)
-#         profiling_score_list.append([org['organizations_uid'], org['cyhy_db_name'], rescaled_profiing_score, get_letter_grade(rescaled_profiing_score)])
-#         print([org['organizations_uid'], org['cyhy_db_name'], rescaled_profiing_score, get_letter_grade(rescaled_profiing_score)])
-#     df_profiling_score = pd.DataFrame(profiling_score_list, columns= ["organizations_uid", "cyhy_db_name", "profiling_score", "letter_grade"])
+        metrics_aggregation = float(vuln_ports) + float(vuln_protocols) + float(vuln_services) + float(total_software) + float(vuln_web_apps) + float(vuln_hosts)
+        profiing_score = 100.0 - metrics_aggregation
+        rescaled_profiing_score = round((profiing_score * .4) + 60.0, 2)
+        profiling_score_list.append([org['organizations_uid'], org['cyhy_db_name'], rescaled_profiing_score, get_letter_grade(rescaled_profiing_score)])
+        print([org['organizations_uid'], org['cyhy_db_name'], rescaled_profiing_score, get_letter_grade(rescaled_profiing_score)])
+    df_profiling_score = pd.DataFrame(profiling_score_list, columns= ["organizations_uid", "cyhy_db_name", "profiling_score", "letter_grade"])
     
-#     return df_profiling_score
+    return df_profiling_score
 
 def summarize_software(orgs_df, this_month, next_month):
     df_software = get_software(this_month, next_month)
@@ -187,6 +183,3 @@ def summarize_hosts(orgs_df, this_month, next_month):
         hosts_list.append([org['organizations_uid'], org['cyhy_db_name'], org['group'], percent_vuln_hosts])
     df_hosts = pd.DataFrame(hosts_list, columns= ["organizations_uid", "cyhy_db_name", "group", "percent_vuln_hosts"])
     return df_hosts
-
-if __name__ == "__main__":
-    get_profiling_score()
