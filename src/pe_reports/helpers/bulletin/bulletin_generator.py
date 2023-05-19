@@ -105,7 +105,6 @@ def generate_cybersix_bulletin(
     resp = get_post(id)
 
     for post in resp["intel_items"]:
-
         outputText = template.render(
             post,
             user_provided_content=user_text,

@@ -176,7 +176,6 @@ def run_dnstwist(orgs_list):
 
         # Only run on orgs in the org list
         if pe_org_id in orgs_list or orgs_list == "all":
-
             LOGGER.info("Running dnstwist on %s", pe_org_id)
 
             """Collect dnstwist data from Crossfeed"""
