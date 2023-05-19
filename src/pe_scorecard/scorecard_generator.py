@@ -215,11 +215,11 @@ def generate_scorecards(
         discovery_scores = gen_discov_scores(
             end_date - datetime.timedelta(days=1), sectors_df
         )
-        profiling_scores = get_profiling_score(year, month, sectors_df)
+        profiling_scores = get_profiling_score(sectors_df, year, month)
         identification_scores = gen_ident_scores(
             end_date - datetime.timedelta(days=1), sectors_df
         )
-        tracking_scores = get_tracking_score(year, month, sectors_df)
+        tracking_scores = get_tracking_score(sectors_df, year, month)
 
         # Loop through orgs again to generate scorecards
         for i, org in recipient_orgs_df.iterrows():
