@@ -1837,11 +1837,26 @@ def query_profiling_views(start_date, org_uid_list):
 def get_stakeholders():
     conn = connect()
     try:
-        sql = """select mvfti.organizations_uid, mvfti.cyhy_db_name, mvfti.total_ips, o.fceb, o.report_on 
+        sql = """select mvfti.organizations_uid, mvfti.total_ips, o.fceb, o.agency_type, o.report_on 
         from mat_vw_fceb_total_ips mvfti 
-        inner join organizations o on 
+        left join organizations o on 
         o.organizations_uid = mvfti.organizations_uid 
-        where o.fceb = true and and retired = False"""
+        where o.retired = False"""
+        pe_orgs_df = pd.read_sql(sql, conn)
+        return pe_orgs_df
+    except (Exception, psycopg2.DatabaseError) as error:
+        LOGGER.error("There was a problem with your database query %s", error)
+    finally:
+        if conn is not None:
+            close(conn)
+
+#Temp query to test using a org dataframe as a parameter
+def get_temp_stakeholders():
+    conn = connect()
+    try:
+        sql = """select o.organizations_uid, o.cyhy_db_name
+        from organizations o 
+        where (o.agency_type = 'LOCAL' or o.fceb = true) and o.retired = False"""
         pe_orgs_df = pd.read_sql(sql, conn)
         return pe_orgs_df
     except (Exception, psycopg2.DatabaseError) as error:
@@ -1856,8 +1871,7 @@ def get_was_stakeholders():
         sql = """select o.organizations_uid, o.cyhy_db_name, wm.was_org_id, o.fceb, o.fceb_child, o.parent_org_uid 
         from organizations o
         right join was_map wm on
-        o.organizations_uid = wm.pe_org_id 
-        where o.fceb = true or o.fceb_child  = true"""
+        o.organizations_uid = wm.pe_org_id"""
         fceb_orgs_df = pd.read_sql(sql, conn)
         return fceb_orgs_df
     except (Exception, psycopg2.DatabaseError) as error:
@@ -1873,7 +1887,7 @@ def get_hosts(start_date, end_date):
         from organizations o 
         left join cyhy_snapshots cs on
         o.organizations_uid = cs.organizations_uid 
-        where o.report_on  = true and cs.cyhy_last_change between %(start_date)s AND %(end_date)s"""
+        where cs.cyhy_last_change between %(start_date)s AND %(end_date)s"""
         snapshots_df = pd.read_sql(sql, conn, params={"start_date": start_date, "end_date": end_date})
         return snapshots_df
     except (Exception, psycopg2.DatabaseError) as error:
@@ -1926,12 +1940,12 @@ def get_was_summary():
 def get_software(start_date, end_date):
     conn = connect()
     try:
-        sql = """select o.organizations_uid, o.cyhy_db_name, o.parent_org_uid, count(cvs.plugin_name)
+        sql = """select o.organizations_uid, o.cyhy_db_name, o.parent_org_uid, o.fceb, count(cvs.plugin_name)
         from organizations o 
         left join cyhy_vuln_scans cvs on
         o.organizations_uid = cvs.organizations_uid 
-        where (o.fceb = true or o.fceb_child = true) and cvs.plugin_name = 'Unsupported Web Server Detection' and cvs.cyhy_time between %(start_date)s AND %(end_date)s
-        group by o.organizations_uid, o.cyhy_db_name, o.parent_org_uid"""
+        where cvs.plugin_name = 'Unsupported Web Server Detection' and cvs.cyhy_time between %(start_date)s AND %(end_date)s
+        group by o.organizations_uid, o.cyhy_db_name, o.parent_org_uid, o.fceb"""
         vuln_scans_df = pd.read_sql(sql, conn, params={"start_date": start_date, "end_date": end_date})
         return vuln_scans_df
     except (Exception, psycopg2.DatabaseError) as error:
