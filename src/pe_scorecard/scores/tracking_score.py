@@ -57,7 +57,7 @@ def get_tracking_score(df_orgs_df, report_period_year, report_period_month):
     df_vs_attr = summarize_vs_attr(df_orgs, this_month, next_month)
     df_was_atr = summarize_was_attr(df_orgs, this_month, next_month)
     
-    #Data before Normalization
+    # Data before Normalization
     df_pe_vulns = summarize_pe_vuln_counts(df_orgs, last_month, this_month, next_month)
     df_vs_vulns = summarize_vs_vuln_counts(df_orgs, this_month)
     df_was_vulns = summarize_was_vuln_counts(df_orgs, last_month, this_month, next_month)
