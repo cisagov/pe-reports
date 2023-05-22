@@ -62,6 +62,7 @@ from home.models import VwBreachcompBreachdetails
 from home.models import WasTrackerCustomerdata
 from home.models import WeeklyStatuses
 from home.models import CyhyPortScans
+from dataAPI.tasks import get_vs_info
 
 
 from .models import apiUser
