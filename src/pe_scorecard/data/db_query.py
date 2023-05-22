@@ -1254,6 +1254,47 @@ def query_pe_stakeholder_list():
     return pe_stakeholder_list
 
 
+# ----- FCEB Status -----
+def query_fceb_status(org_list):
+    """
+    Check if each organization in the list is FCEB or non-FCEB.
+
+    Args:
+        org_list: The specified list of organizations to retrieve data for
+    Return:
+        org list with additional boolean column of FCEB true/false
+    """
+    # Open connection
+    conn = connect()
+    # Build query
+    sector_str = (
+        "UUID('" + "')), (UUID('".join(org_list["organizations_uid"].tolist()) + "')"
+    )
+    sql = """
+    SELECT 
+        sector.organizations_uid, COALESCE(fceb_status.fceb, false) as fceb
+    FROM
+        (VALUES (%(sector_str)s)) AS sector(organizations_uid)
+        LEFT JOIN
+        (
+            SELECT
+                organizations_uid,
+                fceb
+            FROM
+                organizations
+        ) fceb_status
+        ON sector.organizations_uid = fceb_status.organizations_uid;"""
+    # Make query
+    orgs_fceb_status = pd.read_sql(
+        sql,
+        conn,
+        params={"sector_str": sector_str},
+    )
+    # Close connection
+    conn.close()
+    return orgs_fceb_status
+
+
 def query_cyhy_snapshots(start_date, end_date):
     """Query PE database for cyhy snapshots."""
     conn = connect()
@@ -1834,6 +1875,7 @@ def query_profiling_views(start_date, org_uid_list):
     conn.close()
     return profiling_dict
 
+
 def get_stakeholders():
     conn = connect()
     try:
@@ -1847,6 +1889,7 @@ def get_stakeholders():
     finally:
         if conn is not None:
             close(conn)
+
 
 def get_was_stakeholders():
     conn = connect()
@@ -1938,6 +1981,7 @@ def get_software(start_date, end_date, df_orgs=[]):
         if conn is not None:
             close(conn)
 
+
 def get_bod_18():
     conn = connect()
     try:
@@ -1952,7 +1996,8 @@ def get_bod_18():
         LOGGER.error("There was a problem with your database query %s", error)
     finally:
         if conn is not None:
-            close(conn) 
+            close(conn)
+
 
 def get_ports_protocols(start_date, end_date, df_orgs=[]):
     conn = connect()
@@ -1972,8 +2017,8 @@ def get_ports_protocols(start_date, end_date, df_orgs=[]):
         print("There was a problem with your database query %s", error)
     finally:
         if conn is not None:
-            close(conn) 
-    
+            close(conn)
+
 
 def get_pe_vulns(start_date, end_date, df_orgs=[]):
     conn = connect()
@@ -1989,7 +2034,8 @@ def get_pe_vulns(start_date, end_date, df_orgs=[]):
         LOGGER.error("There was a problem with your database query %s", error)
     finally:
         if conn is not None:
-            close(conn)  
+            close(conn)
+
 
 def get_kevs():
     conn = connect()
@@ -2001,7 +2047,8 @@ def get_kevs():
         LOGGER.error("There was a problem with your database query %s", error)
     finally:
         if conn is not None:
-            close(conn) 
+            close(conn)
+
 
 def get_vs_open_vulns(df_orgs=[]):
     conn = connect()
