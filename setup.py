@@ -131,6 +131,7 @@ setup(
         "python-pptx == 0.6.21",
         "pytz",
         "pyyaml == 6.0",
+        "redis",
         "reportlab",
         "requests",
         "schema == 0.7.5",
