@@ -26,7 +26,6 @@ import spacy
 # cisagov Libraries
 from pe_reports.data.config import config
 from pe_reports.data.db_query import execute_values, get_orgs_df
-from pe_reports.data.tasks.tasks import add, fill_ips_task
 from pe_reports.helpers.enumerate_subs_from_root import (
     enumerate_and_save_subs,
     query_roots,

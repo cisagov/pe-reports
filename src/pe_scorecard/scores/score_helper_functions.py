@@ -126,8 +126,10 @@ def get_letter_grade(score):
         return "A-"
     elif score >= 93.0 and score < 97.0:
         return "A"
-    else:
+    elif score >= 97.0:
         return "A+"
+    else:
+        return "N/A"
 
 def get_next_month(report_period_year, report_period_month):
     next_report_period_month = 0

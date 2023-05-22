@@ -25,7 +25,6 @@ def config(filename=REPORT_DB_CONFIG, section="postgres"):
 
     return db
 
-
 def staging_config(filename=REPORT_DB_CONFIG, section="staging"):
     """Parse Postgres configuration details from database configuration file."""
     parser = ConfigParser()
