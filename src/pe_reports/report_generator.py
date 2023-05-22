@@ -1,7 +1,7 @@
 """cisagov/pe-reports: A tool for creating Posture & Exposure reports.
 
 Usage:
-  pe-reports REPORT_DATE OUTPUT_DIRECTORY [--log-level=LEVEL] [--soc_med_included]
+  pe-reports START_DATE END_DATE OUTPUT_DIRECTORY [--log-level=LEVEL] [--soc_med_included]
 
 Options:
   -h --help                         Show this message.
@@ -36,7 +36,7 @@ from ._version import __version__
 from .asm_generator import create_summary
 from .data.db_query import connect, get_orgs
 
-# , refresh_asset_counts_vw, set_from_cidr
+from .data.db_query import refresh_asset_counts_vw, set_from_cidr
 # from .helpers.generate_score import get_pe_scores
 from .pages import init
 from .reportlab_generator import report_gen
@@ -161,10 +161,10 @@ def generate_reports(start_date, end_date, output_directory, soc_med_included=Fa
     generated_reports = 0
 
     # Resfresh ASM counts view
-    # LOGGER.info("Refreshing ASM count view and IPs from cidrs")
-    # refresh_asset_counts_vw()
+    LOGGER.info("Refreshing ASM count view and IPs from cidrs")
+    refresh_asset_counts_vw()
     # set_from_cidr()
-    # LOGGER.info("Finished refreshing ASM count view and IPs from Cidrs")
+    LOGGER.info("Finished refreshing ASM count view and IPs from Cidrs")
 
     # Iterate over organizations
 
@@ -181,8 +181,8 @@ def generate_reports(start_date, end_date, output_directory, soc_med_included=Fa
             org_name = org[1]
             org_code = org[2]
 
-            # if org_code not in ["DOL","USDA"]:
-            #     continue
+            if org_code not in ["DE"]:
+                continue
 
             # DOL, USDA
 

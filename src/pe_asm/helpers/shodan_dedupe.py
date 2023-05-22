@@ -350,6 +350,9 @@ def dedupe(staging):
     # Loop through orgs
     org_count = 0
     for org_index, org in orgs_df.iterrows():
+        
+        if org["cyhy_db_name"] != 'DE':
+            continue
         # Connect to database
         if staging:
             conn = pe_db_staging_connect()

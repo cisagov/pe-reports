@@ -23,7 +23,7 @@ from .data.pe_db.db_query import (
 
 # Calculate Datetimes for collection period
 TODAY = datetime.date.today()
-DAYS_BACK = datetime.timedelta(days=16)
+DAYS_BACK = datetime.timedelta(days=50)
 START_DATE = (TODAY - DAYS_BACK).strftime("%Y-%m-%d %H:%M:%S")
 END_DATE = TODAY.strftime("%Y-%m-%d %H:%M:%S")
 # Get data source uid

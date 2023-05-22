@@ -65,7 +65,7 @@ def run_shodan_thread(api, org_chunk, thread_name):
 def get_dates():
     """Get dates for the query."""
     now = datetime.datetime.now()
-    days_back = datetime.timedelta(days=30)
+    days_back = datetime.timedelta(days=55)
     days_forward = datetime.timedelta(days=1)
     start = now - days_back
     end = now + days_forward

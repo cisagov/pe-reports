@@ -121,12 +121,11 @@ def run_dnstwist(orgs, thread):
 
         # Get data source
         source_uid = getDataSource(PE_conn, "DNSTwist")[0]
-
         pe_org_uid = org_row["organizations_uid"]
         org_name = org_row["name"]
-
-        # if org_row["cyhy_db_name"] not in ["DOI_FWS"]:
-        #     continue
+        
+        if org_row["name"] != "Duke Energy":
+            continue
 
         LOGGER.info("%s: Running dnstwist on %s", thread, org_row["cyhy_db_name"])
 
@@ -134,6 +133,7 @@ def run_dnstwist(orgs, thread):
         try:
             # Get root domains
             rd_df = org_root_domains(PE_conn, pe_org_uid)
+            print(rd_df)
             # LOGGER.info(rd_df)
             domain_list = []
             perm_list = []

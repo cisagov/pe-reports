@@ -107,7 +107,7 @@ def get_orgs(conn):
     try:
         cur = conn.cursor()
         sql = """SELECT * FROM organizations
-        WHERE report_on is True"""
+        WHERE fceb"""
         cur.execute(sql)
         pe_orgs = cur.fetchall()
         cur.close()

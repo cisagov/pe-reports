@@ -250,7 +250,7 @@ def query_ips(org_id):
 def query_orgs_rev():
     """Query orgs in reverse."""
     conn = connect("")
-    sql = "SELECT * FROM organizations WHERE report_on is True;"
+    sql = "SELECT * FROM organizations WHERE fceb;"
     df = pd.read_sql_query(sql, conn)
     close(conn)
     return df
