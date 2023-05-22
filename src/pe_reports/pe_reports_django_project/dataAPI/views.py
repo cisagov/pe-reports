@@ -62,6 +62,7 @@ from home.models import VwBreachcompBreachdetails
 from home.models import WasTrackerCustomerdata
 from home.models import WeeklyStatuses
 from home.models import CyhyPortScans
+from dataAPI.tasks import get_vs_info
 
 
 from .models import apiUser
@@ -576,30 +577,36 @@ def upload(tokens: dict = Depends(get_api_key), file: UploadFile = File(...)):
         file.file.close()
 
 @api_router.post("/vs_info", dependencies=[Depends(get_api_key)],
-                #  response_model=List[schemas.VwOrgsAllIps],
+                 response_model=schemas.TaskResponse,
                  tags=["List of all VS data"])
-def vs_info(request: Request, tokens: dict = Depends(get_api_key)):
+def vs_info(cyhy_db_names: List[str], tokens: dict = Depends(get_api_key)):
     """API endpoint to get all WAS data."""
-    
+    print(cyhy_db_names)
+    vs_data = list(MatVwOrgsAllIps.objects.filter(cyhy_db_name__in=cyhy_db_names))
+
+    # orgs_df = pd.DataFrame(orgs)
+
     LOGGER.info(f"The api key submitted {tokens}")
-    print(tokens)
     if tokens:
-        try:
-            cyhy_db_names = json.loads(request.headers.get("x-org-list"))
-            print(cyhy_db_names)
-            vs_data = list(VwOrgsAllIps.objects.filter(cyhy_db_name__in=cyhy_db_names))
-            print(vs_data)
-            if not vs_data:
-                raise HTTPException(status_code=404,
-                                    detail="No matching records found")
-            return vs_data
-
-        except Exception as e:
-            LOGGER.info('API key expired please try again')
-            print(e)
-
+        task = get_vs_info.delay(cyhy_db_names)
+        return {"task_id": task.id, "status": "Processing"}
     else:
         return {'message': "No api key was submitted"}
+
+@api_router.get("/vs_info/task/{task_id}", dependencies=[Depends(get_api_key)],
+                response_model=schemas.TaskResponse,
+                tags=["Check task status"])
+async def get_task_status(task_id: str, tokens: dict = Depends(get_api_key)):
+    task = tasks.get_vs_info.AsyncResult(task_id)
+
+    if task.state == "SUCCESS":
+        return {"task_id": task_id, "status": "Completed", "result": task.result}
+    elif task.state == "PENDING":
+        return {"task_id": task_id, "status": "Pending"}
+    elif task.state == "FAILURE":
+        return {"task_id": task_id, "status": "Failed", "error": str(task.result)}
+    else:
+        return {"task_id": task_id, "status": task.state}
 
 
 @api_router.post(

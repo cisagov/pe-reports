@@ -9,6 +9,7 @@ import psycopg2.extras as extras
 from sshtunnel import SSHTunnelForwarder
 import logging
 from datetime import datetime
+import math
 
 # from .config import config, staging_config
 # cisagov Libraries
@@ -32,13 +33,13 @@ from pe_scorecard.scores.score_helper_functions import (
 
 LOGGER = logging.getLogger(__name__)
 
-def get_profiling_score(report_period_year, report_period_month):
+# df_orgs_df is a datframe of stakeholders with two columns: organizations_uid and cyhy_db_name
+def get_profiling_score(df_orgs_df, report_period_year, report_period_month):
     this_month = datetime(report_period_year, report_period_month, 1)
     next_month = get_next_month(report_period_year, report_period_month)
-    df_orgs = get_stakeholders()
-    conditions = [df_orgs['total_ips'] <= 100, (df_orgs['total_ips'] > 100) & (df_orgs['total_ips'] <= 1000), (df_orgs['total_ips'] > 1000) & (df_orgs['total_ips'] <= 10000), (df_orgs['total_ips'] > 10000) & (df_orgs['total_ips'] <= 100000), df_orgs['total_ips'] > 100000]
-    groups = ["XS", "S", "M", "L", "XL"]
-    df_orgs["group"] = np.select(conditions, groups)
+
+    df_org_info = get_stakeholders()
+    df_orgs = df_orgs_df.merge(df_org_info, on='organizations_uid', how='left')
 
     df_web_apps = summarize_vuln_webapps(df_orgs)
     df_port_scans = summarize_port_scans(df_orgs, this_month, next_month)
@@ -70,26 +71,28 @@ def get_profiling_score(report_period_year, report_period_month):
 
         metrics_aggregation = float(vuln_ports) + float(vuln_protocols) + float(vuln_services) + float(total_software) + float(vuln_web_apps) + float(vuln_hosts)
         profiing_score = 100.0 - metrics_aggregation
-        rescaled_profiing_score= round((profiing_score * .4) + 60.0, 2)
+        rescaled_profiing_score = round((profiing_score * .4) + 60.0, 2)
         profiling_score_list.append([org['organizations_uid'], org['cyhy_db_name'], rescaled_profiing_score, get_letter_grade(rescaled_profiing_score)])
     df_profiling_score = pd.DataFrame(profiling_score_list, columns= ["organizations_uid", "cyhy_db_name", "profiling_score", "letter_grade"])
     
     return df_profiling_score
 
 def summarize_software(orgs_df, this_month, next_month):
-    df_software = get_software(this_month, next_month)
+    org_list = orgs_df['organizations_uid'].values.tolist()
+    df_software = get_software(this_month, next_month, org_list)
     software_list = []
     for index, org in orgs_df.iterrows():
         total_software = 0
         for index2, software in df_software.iterrows():
             if org['organizations_uid'] == software['organizations_uid'] or org['organizations_uid'] == software['parent_org_uid']:
                 total_software = total_software + software['count']
-        software_list.append([org['organizations_uid'], org['cyhy_db_name'], org['group'], total_software])
-    df_port_scans = pd.DataFrame(software_list, columns= ["organizations_uid", "cyhy_db_name", "group", "total_software"])
+        software_list.append([org['organizations_uid'], org['cyhy_db_name'], total_software])
+    df_port_scans = pd.DataFrame(software_list, columns= ["organizations_uid", "cyhy_db_name", "total_software"])
     return df_port_scans
 
 def summarize_port_scans(orgs_df, this_month, next_month):
-    df_port_scans = get_port_scans(this_month, next_month)
+    org_list = orgs_df['organizations_uid'].values.tolist()
+    df_port_scans = get_port_scans(this_month, next_month, org_list)
     port_scans_list = []
     for index, org in orgs_df.iterrows():
         this_month_total_ports = 0
@@ -109,18 +112,15 @@ def summarize_port_scans(orgs_df, this_month, next_month):
         percent_vuln_ports = average_numbers(this_month_vuln_ports, this_month_total_ports)
         percent_vuln_protocols = average_numbers(this_month_vuln_protocols, this_month_total_protocols)
         percent_vuln_services = average_numbers(this_month_vuln_services, this_month_total_services)
-        
-        port_scans_list.append([org['organizations_uid'], org['cyhy_db_name'], org['group'], percent_vuln_ports, percent_vuln_protocols, percent_vuln_services])
-    df_port_scans = pd.DataFrame(port_scans_list, columns= ["organizations_uid", "cyhy_db_name", "group", "percent_vuln_ports", "percent_vuln_protocols", "percent_vuln_services"])
+        port_scans_list.append([org['organizations_uid'], org['cyhy_db_name'], percent_vuln_ports, percent_vuln_protocols, percent_vuln_services])
+    df_port_scans = pd.DataFrame(port_scans_list, columns= ["organizations_uid", "cyhy_db_name", "percent_vuln_ports", "percent_vuln_protocols", "percent_vuln_services"])
     return df_port_scans 
 
 def normalize_software(df_software):
     software_list = []
     for index, org in df_software.iterrows():
-        group = org['group']
-        df = df_software.loc[df_software['group'] == group]
-        software_max = df['total_software'].max()
-        software_min = df['total_software'].min()
+        software_max = df_software['total_software'].max()
+        software_min = df_software['total_software'].min()
 
         norm_software = 0
         if software_max == 0 or software_max - software_min == 0:
@@ -128,8 +128,8 @@ def normalize_software(df_software):
         else:
             norm_software = ((org['total_software'] - software_min) / (software_max - software_min)) * 100
 
-        software_list.append([org['organizations_uid'], org['group'], norm_software])
-    df_norm_soft = pd.DataFrame(software_list, columns= ["organizations_uid", "group", "norm_software"])   
+        software_list.append([org['organizations_uid'], norm_software])
+    df_norm_soft = pd.DataFrame(software_list, columns= ["organizations_uid", "norm_software"])   
     return df_norm_soft
 
 def summarize_vuln_webapps(orgs_df):
@@ -140,7 +140,8 @@ def summarize_vuln_webapps(orgs_df):
     orgs_df["was_org"] = np.select(conditions, was_customer)
     was_orgs_df = orgs_df.loc[orgs_df['was_org'] == "Yes"]
     vs_orgs_df = orgs_df.loc[orgs_df['was_org'] == "No"]
-    df_was_sum = get_was_summary()
+    org_list = orgs_df['cyhy_db_name'].values.tolist()
+    df_was_sum = get_was_summary(org_list)
     web_apps_list = []
     for index, org in was_orgs_df.iterrows():
         total_web_apps = 0
@@ -150,18 +151,17 @@ def summarize_vuln_webapps(orgs_df):
                 total_web_apps = total_web_apps + was['webapp_count']
                 vuln_web_apps = vuln_web_apps + was['webapp_with_vulns_count']
         percent_vuln_webapps = average_numbers(vuln_web_apps, total_web_apps)
-        web_apps_list.append([org['organizations_uid'], org['group'], org['cyhy_db_name'], percent_vuln_webapps])
-    was_df_attr = pd.DataFrame(web_apps_list, columns= ["organizations_uid", "group", "cyhy_db_name", "percent_vuln_webapps"])
+        web_apps_list.append([org['organizations_uid'], org['cyhy_db_name'], percent_vuln_webapps])
+    was_df_attr = pd.DataFrame(web_apps_list, columns= ["organizations_uid", "cyhy_db_name", "percent_vuln_webapps"])
     for index, org in vs_orgs_df.iterrows():
-        group = org['group']
-        df = was_df_attr.loc[was_df_attr['group'] == group]
-        percent_vuln_webapps = df['percent_vuln_webapps'].mean()
-        web_apps_list.append([org['organizations_uid'], org['cyhy_db_name'], org['group'], percent_vuln_webapps])
-    df_web_apps = pd.DataFrame(web_apps_list, columns= ["organizations_uid", "cyhy_db_name", "group", "percent_vuln_webapps"])
+        percent_vuln_webapps = was_df_attr['percent_vuln_webapps'].mean()
+        web_apps_list.append([org['organizations_uid'], org['cyhy_db_name'], percent_vuln_webapps])
+    df_web_apps = pd.DataFrame(web_apps_list, columns= ["organizations_uid", "cyhy_db_name", "percent_vuln_webapps"])
     return df_web_apps
     
 def summarize_hosts(orgs_df, this_month, next_month):
-    df_hosts = get_hosts(this_month, next_month)
+    org_list = orgs_df['organizations_uid'].values.tolist()
+    df_hosts = get_hosts(this_month, next_month, org_list)
     hosts_list = []
     for index, org in orgs_df.iterrows():
         total_hosts = 0
@@ -171,7 +171,6 @@ def summarize_hosts(orgs_df, this_month, next_month):
                 total_hosts = total_hosts + hosts['host_count']
                 total_vuln_hosts = total_vuln_hosts + hosts['vulnerable_host_count']
         percent_vuln_hosts = average_numbers(total_vuln_hosts, total_hosts)
-        hosts_list.append([org['organizations_uid'], org['cyhy_db_name'], org['group'], percent_vuln_hosts])
-    df_hosts = pd.DataFrame(hosts_list, columns= ["organizations_uid", "cyhy_db_name", "group", "percent_vuln_hosts"])
+        hosts_list.append([org['organizations_uid'], org['cyhy_db_name'], percent_vuln_hosts])
+    df_hosts = pd.DataFrame(hosts_list, columns= ["organizations_uid", "cyhy_db_name", "percent_vuln_hosts"])
     return df_hosts
-        
