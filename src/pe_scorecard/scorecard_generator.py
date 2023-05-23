@@ -210,7 +210,6 @@ def generate_scorecards(
                 failed += org["cyhy_db_name"]
 
         # Calculate scores
-        # TODO adjust end_date to be last day of month not first day of next month
         sectors_df = sector_orgs[["organizations_uid", "cyhy_db_name"]]
         discovery_scores = gen_discov_scores(
             end_date - datetime.timedelta(days=1), sectors_df

@@ -587,93 +587,95 @@ def create_scorecard(
             height=22,
             mask="auto",
         )
-    # **** Generate Certificates Boxes ******
-    can.drawImage(
-        BASE_DIR + "/scorecard_assets/data_box.png",
-        col2_x_value,
-        row2_y_value,
-        width=box_width,
-        height=box_height,
-        mask="auto",
-    )
-    certs_header_frame = Frame(
-        col2_x_value,
-        row2_y_value + 1.3 * inch,
-        box_width,
-        0.42 * inch,
-        showBoundary=False,
-    )
-    certs_header_frame.addFromList(
-        [Paragraph("Certificates (ED 19-01)", style=header_style)], can
-    )
 
-    certs_reported_frame = Frame(
-        col2_x_value + 2,
-        row2_y_value + 0.54 * inch,
-        box_width / 2,
-        0.7 * inch,
-        showBoundary=False,
-    )
-    certs_reported_frame.addFromList(
-        [
-            Paragraph(
-                f'{data_dict["certs_self_reported"]:,}'
-                + "<br/><font size='14'> Self Reported</font>",
-                style=databox_style_left,
-            )
-        ],
-        can,
-    )
-
-    certs_discovered_frame = Frame(
-        col2_x_value + box_width / 2 - 2,
-        row2_y_value + 0.54 * inch,
-        box_width / 2,
-        0.7 * inch,
-        showBoundary=False,
-    )
-    certs_discovered_frame.addFromList(
-        [
-            Paragraph(
-                f'{data_dict["certs_discovered"]:,}'
-                + "<br/><font size='14'> Discovered</font>",
-                style=databox_style_right,
-            )
-        ],
-        can,
-    )
-
-    certs_monitored_frame = Frame(
-        col2_x_value, row2_y_value, box_width, 0.48 * inch, showBoundary=False
-    )
-    if not data_dict["certs_monitored"]:
-        certs_monitored_frame.addFromList(
-            [Paragraph("Zero Monitored", style=databox_style_center)], can
+    if data_dict["sector_name"] in ["FCEB", "EXECUTIVE", "FEDERAL"]:
+        # **** Generate Certificates Boxes ******
+        can.drawImage(
+            BASE_DIR + "/scorecard_assets/data_box.png",
+            col2_x_value,
+            row2_y_value,
+            width=box_width,
+            height=box_height,
+            mask="auto",
         )
-    else:
-        certs_monitored_frame.addFromList(
+        certs_header_frame = Frame(
+            col2_x_value,
+            row2_y_value + 1.3 * inch,
+            box_width,
+            0.42 * inch,
+            showBoundary=False,
+        )
+        certs_header_frame.addFromList(
+            [Paragraph("Certificates (ED 19-01)", style=header_style)], can
+        )
+
+        certs_reported_frame = Frame(
+            col2_x_value + 2,
+            row2_y_value + 0.54 * inch,
+            box_width / 2,
+            0.7 * inch,
+            showBoundary=False,
+        )
+        certs_reported_frame.addFromList(
             [
                 Paragraph(
-                    f'{data_dict["certs_monitored"]:,}' + " Monitored",
-                    style=databox_style_center,
+                    f'{data_dict["certs_self_reported"]:,}'
+                    + "<br/><font size='14'> Self Reported</font>",
+                    style=databox_style_left,
                 )
             ],
             can,
         )
 
-    if include_trending:
-        trend_image = determine_arrow(
-            data_dict["certs_monitored"],
-            data_dict["certs_monitored_trend"],
+        certs_discovered_frame = Frame(
+            col2_x_value + box_width / 2 - 2,
+            row2_y_value + 0.54 * inch,
+            box_width / 2,
+            0.7 * inch,
+            showBoundary=False,
         )
-        can.drawImage(
-            trend_image,
-            col2_x_value + 0.5 * inch,
-            row2_y_value + 0.13 * inch,
-            width=22,
-            height=22,
-            mask="auto",
+        certs_discovered_frame.addFromList(
+            [
+                Paragraph(
+                    f'{data_dict["certs_discovered"]:,}'
+                    + "<br/><font size='14'> Discovered</font>",
+                    style=databox_style_right,
+                )
+            ],
+            can,
         )
+
+        certs_monitored_frame = Frame(
+            col2_x_value, row2_y_value, box_width, 0.48 * inch, showBoundary=False
+        )
+        if not data_dict["certs_monitored"]:
+            certs_monitored_frame.addFromList(
+                [Paragraph("Zero Monitored", style=databox_style_center)], can
+            )
+        else:
+            certs_monitored_frame.addFromList(
+                [
+                    Paragraph(
+                        f'{data_dict["certs_monitored"]:,}' + " Monitored",
+                        style=databox_style_center,
+                    )
+                ],
+                can,
+            )
+
+        if include_trending:
+            trend_image = determine_arrow(
+                data_dict["certs_monitored"],
+                data_dict["certs_monitored_trend"],
+            )
+            can.drawImage(
+                trend_image,
+                col2_x_value + 0.5 * inch,
+                row2_y_value + 0.13 * inch,
+                width=22,
+                height=22,
+                mask="auto",
+            )
     # **** Generate Profiling Divider *****
     y_value = 4.3 * inch
     can.drawImage(
@@ -1234,71 +1236,71 @@ def create_scorecard(
         bod18_header_frame = Frame(
             col1_x_value, y_value + 2 * inch, box_width, 0.42 * inch, showBoundary=False
         )
-        if data_dict["sector_name"] in ["FCEB", "EXECUTIVE"]:
+        if data_dict["sector_name"] not in ["FCEB", "EXECUTIVE", "FEDERAL"]:
+            print("No BOD INFO")
+        else:
             title = "BOD 18-01"
-        else:
-            title = "BOD 18-01**"
-        bod18_header_frame.addFromList([Paragraph(title, style=header_style)], can)
-        if data_dict["email_compliance_pct"] is not None:
-            email_compliance = str(data_dict["email_compliance_pct"]) + "%"
-        else:
-            email_compliance = "N/A"
+            bod18_header_frame.addFromList([Paragraph(title, style=header_style)], can)
+            if data_dict["email_compliance_pct"] is not None:
+                email_compliance = str(data_dict["email_compliance_pct"]) + "%"
+            else:
+                email_compliance = "N/A"
 
-        if data_dict["https_compliance_pct"] is not None:
-            https_compliance = str(data_dict["https_compliance_pct"]) + "%"
-        else:
-            https_compliance = "N/A"
+            if data_dict["https_compliance_pct"] is not None:
+                https_compliance = str(data_dict["https_compliance_pct"]) + "%"
+            else:
+                https_compliance = "N/A"
 
-        if include_trending:
-            bod18_data = [
-                ["", "Percent", ""],
-                [
-                    "Email Compliance",
-                    email_compliance,
-                    Image(
-                        determine_arrow(
-                            data_dict["email_compliance_pct"],
-                            data_dict["email_compliance_last_period"],
-                            color=True,
-                            up_is_good=True,
+            if include_trending:
+                bod18_data = [
+                    ["", "Percent", ""],
+                    [
+                        "Email Compliance",
+                        email_compliance,
+                        Image(
+                            determine_arrow(
+                                data_dict["email_compliance_pct"],
+                                data_dict["email_compliance_last_period"],
+                                color=True,
+                                up_is_good=True,
+                            ),
+                            20,
+                            20,
                         ),
-                        20,
-                        20,
-                    ),
-                ],
-                [
-                    "https Compliance",
-                    https_compliance,
-                    Image(
-                        determine_arrow(
-                            data_dict["https_compliance_pct"],
-                            data_dict["https_compliance_last_period"],
-                            color=True,
-                            up_is_good=True,
+                    ],
+                    [
+                        "https Compliance",
+                        https_compliance,
+                        Image(
+                            determine_arrow(
+                                data_dict["https_compliance_pct"],
+                                data_dict["https_compliance_last_period"],
+                                color=True,
+                                up_is_good=True,
+                            ),
+                            20,
+                            20,
                         ),
-                        20,
-                        20,
-                    ),
-                ],
-            ]
-            col_widths = [2.4 * inch, 1.05 * inch, 0.4 * inch]
-            bod18_table = format_table(bod18_data, col_widths)
-        else:
-            bod18_data = [
-                [
-                    "",
-                    "Percent",
-                ],
-                ["Email Compliance", email_compliance],
-                ["https Compliance", https_compliance],
-            ]
-            col_widths = [2.5 * inch, 1.35 * inch]
-            bod18_table = format_table(bod18_data, col_widths)
+                    ],
+                ]
+                col_widths = [2.4 * inch, 1.05 * inch, 0.4 * inch]
+                bod18_table = format_table(bod18_data, col_widths)
+            else:
+                bod18_data = [
+                    [
+                        "",
+                        "Percent",
+                    ],
+                    ["Email Compliance", email_compliance],
+                    ["https Compliance", https_compliance],
+                ]
+                col_widths = [2.5 * inch, 1.35 * inch]
+                bod18_table = format_table(bod18_data, col_widths)
 
-        bod18_table_frame = Frame(
-            col1_x_value, y_value, box_width, 2 * inch, showBoundary=False
-        )
-        bod18_table_frame.addFromList([bod18_table], can)
+            bod18_table_frame = Frame(
+                col1_x_value, y_value, box_width, 2 * inch, showBoundary=False
+            )
+            bod18_table_frame.addFromList([bod18_table], can)
 
     fine_print_style = ParagraphStyle(
         "fine_print_style",
