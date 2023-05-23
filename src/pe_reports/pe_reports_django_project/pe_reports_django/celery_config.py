@@ -15,3 +15,5 @@ app = Celery('pe_reports_django',
 
 app.config_from_object('django.conf:settings', namespace='CELERY')
 app.autodiscover_tasks(lambda: [n.name for n in apps.get_app_configs()])
+
+app.conf.result_expires = 3600
