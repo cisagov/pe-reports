@@ -431,7 +431,7 @@ def query_dscore_vs_data_cert(org_list):
     )
     sql = """
     SELECT
-        sector.organizations_uid, cert.num_ident_cert, cert.num_monitor_cert
+        sector.organizations_uid, cert.parent_org_uid, cert.num_ident_cert, cert.num_monitor_cert
     FROM
         (VALUES (%(sector_str)s)) AS sector(organizations_uid)
         LEFT JOIN
@@ -466,7 +466,7 @@ def query_dscore_vs_data_mail(org_list):
     )
     sql = """
     SELECT
-        sector.organizations_uid, mail.num_valid_dmarc, mail.num_valid_spf, mail.num_valid_dmarc_or_spf, mail.total_mail_domains
+        sector.organizations_uid, mail.parent_org_uid, mail.num_valid_dmarc, mail.num_valid_spf, mail.num_valid_dmarc_or_spf, mail.total_mail_domains
     FROM
         (VALUES (%(sector_str)s)) AS sector(organizations_uid)
         LEFT JOIN
@@ -501,7 +501,7 @@ def query_dscore_pe_data_ip(org_list):
     )
     sql = """
     SELECT
-        sector.organizations_uid, ip.num_ident_ip, ip.num_monitor_ip
+        sector.organizations_uid, ip.parent_org_uid, ip.num_ident_ip, ip.num_monitor_ip
     FROM
         (VALUES (%(sector_str)s)) AS sector(organizations_uid)
         LEFT JOIN
@@ -536,7 +536,7 @@ def query_dscore_pe_data_domain(org_list):
     )
     sql = """
     SELECT
-        sector.organizations_uid, domain.num_ident_domain, domain.num_monitor_domain
+        sector.organizations_uid, domain.parent_org_uid, domain.num_ident_domain, domain.num_monitor_domain
     FROM
         (VALUES (%(sector_str)s)) AS sector(organizations_uid)
         LEFT JOIN
@@ -571,7 +571,7 @@ def query_dscore_was_data_webapp(org_list):
     )
     sql = """
     SELECT
-        sector.organizations_uid, webapp.num_ident_webapp, webapp.num_monitor_webapp
+        sector.organizations_uid, webapp.parent_org_uid, webapp.num_ident_webapp, webapp.num_monitor_webapp
     FROM
         (VALUES (%(sector_str)s)) AS sector(organizations_uid)
         LEFT JOIN
@@ -607,7 +607,7 @@ def query_iscore_vs_data_vuln(org_list):
     )
     sql = """
     SELECT
-        sector.organizations_uid, vuln.cve_name, vuln.cvss_score
+        sector.organizations_uid, vuln.parent_org_uid, vuln.cve_name, vuln.cvss_score
     FROM
         (VALUES (%(sector_str)s)) AS sector(organizations_uid)
         LEFT JOIN
@@ -631,6 +631,7 @@ def query_iscore_vs_data_vuln(org_list):
                 pd.DataFrame(
                     {
                         "organizations_uid": "test_org",
+                        "parent_org_uid": "test_parent_org",
                         "cve_name": "test_cve",
                         "cvss_score": 1.0,
                     },
@@ -662,7 +663,7 @@ def query_iscore_vs_data_vuln_prev(org_list, start_date, end_date):
     )
     sql = """
     SELECT
-        sector.organizations_uid, prev_vuln.cve_name, prev_vuln.cvss_score, prev_vuln.time_closed
+        sector.organizations_uid, prev_vuln.parent_org_uid, prev_vuln.cve_name, prev_vuln.cvss_score, prev_vuln.time_closed
     FROM
         (VALUES (%(sector_str)s)) AS sector(organizations_uid)
         LEFT JOIN
@@ -692,6 +693,7 @@ def query_iscore_vs_data_vuln_prev(org_list, start_date, end_date):
                 pd.DataFrame(
                     {
                         "organizations_uid": "test_org",
+                        "parent_org_uid": "test_parent_org",
                         "cve_name": "test_cve",
                         "cvss_score": 1.0,
                         "time_closed": datetime.date(1, 1, 1),
@@ -724,7 +726,7 @@ def query_iscore_pe_data_vuln(org_list, start_date, end_date):
     )
     sql = """
     SELECT
-        sector.organizations_uid, vuln.date, vuln.cve_name, vuln.cvss_score
+        sector.organizations_uid, vuln.parent_org_uid, vuln.date, vuln.cve_name, vuln.cvss_score
     FROM
         (VALUES (%(sector_str)s)) AS sector(organizations_uid)
         LEFT JOIN
@@ -754,6 +756,7 @@ def query_iscore_pe_data_vuln(org_list, start_date, end_date):
                 pd.DataFrame(
                     {
                         "organizations_uid": "test_org",
+                        "parent_org_uid": "test_parent_org",
                         "date": datetime.date(1, 1, 1),
                         "cve_name": "test_cve",
                         "cvss_score": 1.0,
@@ -790,7 +793,7 @@ def query_iscore_pe_data_cred(org_list, start_date, end_date):
     )
     sql = """
     SELECT
-        sector.organizations_uid, cred.date, cred.password_creds, cred.total_creds
+        sector.organizations_uid, cred.parent_org_uid, cred.date, cred.password_creds, cred.total_creds
     FROM
         (VALUES (%(sector_str)s)) AS sector(organizations_uid)
         LEFT JOIN
@@ -820,6 +823,7 @@ def query_iscore_pe_data_cred(org_list, start_date, end_date):
                 pd.DataFrame(
                     {
                         "organizations_uid": "test_org",
+                        "parent_org_uid": "test_parent_org",
                         "date": datetime.date(1, 1, 1),
                         "password_creds": 0,
                         "total_creds": 0,
@@ -852,7 +856,7 @@ def query_iscore_pe_data_breach(org_list, start_date, end_date):
     )
     sql = """
     SELECT
-        sector.organizations_uid, breach.date, breach.breach_count
+        sector.organizations_uid, breach.parent_org_uid, breach.date, breach.breach_count
     FROM
         (VALUES (%(sector_str)s)) AS sector(organizations_uid)
         LEFT JOIN
@@ -882,6 +886,7 @@ def query_iscore_pe_data_breach(org_list, start_date, end_date):
                 pd.DataFrame(
                     {
                         "organizations_uid": "test_org",
+                        "parent_org_uid": "test_parent_org",
                         "date": datetime.date(1, 1, 1),
                         "breach_count": 0,
                     },
@@ -913,7 +918,7 @@ def query_iscore_pe_data_darkweb(org_list, start_date, end_date):
     )
     sql = """
     SELECT
-        sector.organizations_uid, darkweb.alert_type, darkweb.date, darkweb."Count"
+        sector.organizations_uid, darkweb.parent_org_uid, darkweb.alert_type, darkweb.date, darkweb."Count"
     FROM
         (VALUES (%(sector_str)s)) AS sector(organizations_uid)
         LEFT JOIN
@@ -943,6 +948,7 @@ def query_iscore_pe_data_darkweb(org_list, start_date, end_date):
                 pd.DataFrame(
                     {
                         "organizations_uid": "test_org",
+                        "parent_org_uid": "test_parent_org",
                         "alert_type": "TEST_TYPE",
                         "date": datetime.date(1, 1, 1),
                         "Count": 0,
@@ -975,7 +981,7 @@ def query_iscore_pe_data_protocol(org_list, start_date, end_date):
     )
     sql = """
     SELECT
-        sector.organizations_uid, protocol.port, protocol.ip, protocol.protocol, protocol.protocol_type, protocol.date
+        sector.organizations_uid, protocol.parent_org_uid, protocol.port, protocol.ip, protocol.protocol, protocol.protocol_type, protocol.date
     FROM
         (VALUES (%(sector_str)s)) AS sector(organizations_uid)
         LEFT JOIN
@@ -1005,6 +1011,7 @@ def query_iscore_pe_data_protocol(org_list, start_date, end_date):
                 pd.DataFrame(
                     {
                         "organizations_uid": "test_org",
+                        "parent_org_uid": "test_parent_org",
                         "port": "test_port",
                         "ip": "test_ip",
                         "protocol": "test_protocol",
@@ -1039,7 +1046,7 @@ def query_iscore_was_data_vuln(org_list, start_date, end_date):
     )
     sql = """
     SELECT
-        sector.organizations_uid, vuln.date, vuln.cve_name, vuln.cvss_score, vuln.owasp_category
+        sector.organizations_uid, vuln.parent_org_uid, vuln.date, vuln.cve_name, vuln.cvss_score, vuln.owasp_category
     FROM
         (VALUES (%(sector_str)s)) AS sector(organizations_uid)
         LEFT JOIN
@@ -1069,6 +1076,7 @@ def query_iscore_was_data_vuln(org_list, start_date, end_date):
                 pd.DataFrame(
                     {
                         "organizations_uid": "test_org",
+                        "parent_org_uid": "test_parent_org",
                         "date": datetime.date(1, 1, 1),
                         "cve_name": "test_cve",
                         "cvss_score": 1.0,
@@ -1102,7 +1110,7 @@ def query_iscore_was_data_vuln_prev(org_list, start_date, end_date):
     )
     sql = """
     SELECT
-        sector.organizations_uid, prev_vuln.was_total_vulns_prev, prev_vuln.date
+        sector.organizations_uid, prev_vuln.parent_org_uid, prev_vuln.was_total_vulns_prev, prev_vuln.date
     FROM
         (VALUES (%(sector_str)s)) AS sector(organizations_uid)
         LEFT JOIN
@@ -1132,6 +1140,7 @@ def query_iscore_was_data_vuln_prev(org_list, start_date, end_date):
                 pd.DataFrame(
                     {
                         "organizations_uid": "test_org",
+                        "parent_org_uid": "test_parent_org",
                         "was_total_vulns_prev": 0,
                         "date": datetime.date(1, 1, 1),
                     },

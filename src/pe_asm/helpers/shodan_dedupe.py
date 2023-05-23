@@ -200,6 +200,7 @@ def ip_dedupe(api, ips, agency_type, conn):
                             "ip": h["ip_str"],
                             "shodan_results": False,
                             "origin_cidr": None,
+                            "current": True,
                         }
                     )
                 else:
@@ -209,6 +210,7 @@ def ip_dedupe(api, ips, agency_type, conn):
                             "ip": h["ip_str"],
                             "shodan_results": True,
                             "origin_cidr": None,
+                            "current": True,
                         }
                     )
         else:
@@ -222,6 +224,7 @@ def ip_dedupe(api, ips, agency_type, conn):
                         "ip": hosts["ip_str"],
                         "shodan_results": False,
                         "origin_cidr": None,
+                        "current": True,
                     }
                 )
             else:
@@ -231,6 +234,7 @@ def ip_dedupe(api, ips, agency_type, conn):
                         "ip": hosts["ip_str"],
                         "shodan_results": True,
                         "origin_cidr": None,
+                        "current": True,
                     }
                 )
         matched = matched + len(hosts)
@@ -268,6 +272,7 @@ def search(api, query, ip_obj, cidr_uid, org_type):
                         "ip": result["ip_str"],
                         "shodan_results": False,
                         "origin_cidr": cidr_uid,
+                        "current": True,
                     }
                 )
             else:
@@ -277,6 +282,7 @@ def search(api, query, ip_obj, cidr_uid, org_type):
                         "ip": result["ip_str"],
                         "shodan_results": True,
                         "origin_cidr": cidr_uid,
+                        "current": True,
                     }
                 )
         i = 1
@@ -305,6 +311,7 @@ def search(api, query, ip_obj, cidr_uid, org_type):
                                 "ip": result["ip_str"],
                                 "shodan_results": False,
                                 "origin_cidr": cidr_uid,
+                                "current": True,
                             }
                         )
                     else:
@@ -314,6 +321,7 @@ def search(api, query, ip_obj, cidr_uid, org_type):
                                 "ip": result["ip_str"],
                                 "shodan_results": True,
                                 "origin_cidr": cidr_uid,
+                                "current": True,
                             }
                         )
                 i = i + 1
