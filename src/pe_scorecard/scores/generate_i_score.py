@@ -12,7 +12,11 @@ import pandas as pd
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", ".."))
 
 # cisagov Libraries
-from score_helper_functions import rescale, get_prev_startstop
+from score_helper_functions import (
+    rescale,
+    get_prev_startstop,
+    split_parent_child_records,
+)
 from pe_scorecard.data.db_query import (
     # VS queries
     query_iscore_vs_data_vuln,
@@ -116,6 +120,19 @@ def import_ident_data(prev_start, prev_end, curr_start, curr_end, stakeholder_li
     LOGGER.info("\tDone!")
     # ----- List of orgs for this sector: -----
     org_list = stakeholder_list
+
+    # ---------- Preprocessing for Rollup Support -----------
+    # Split parent/child records to support rollup functionality
+    vs_data_vuln = split_parent_child_records(vs_data_vuln)
+    vs_data_vuln_prev = split_parent_child_records(vs_data_vuln_prev)
+    pe_data_vuln = split_parent_child_records(pe_data_vuln)
+    pe_data_vuln_prev = split_parent_child_records(pe_data_vuln_prev)
+    pe_data_cred = split_parent_child_records(pe_data_cred)
+    pe_data_breach = split_parent_child_records(pe_data_breach)
+    pe_data_dw = split_parent_child_records(pe_data_dw)
+    pe_data_proto = split_parent_child_records(pe_data_proto)
+    was_data_vuln = split_parent_child_records(was_data_vuln)
+    was_data_vuln_prev = split_parent_child_records(was_data_vuln_prev)
 
     # --------------- Process VS Data: ---------------
     # Requires 2 view:

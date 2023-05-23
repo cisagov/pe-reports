@@ -12,7 +12,11 @@ import pandas as pd
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", ".."))
 
 # cisagov Libraries
-from score_helper_functions import rescale, get_prev_startstop
+from score_helper_functions import (
+    rescale,
+    get_prev_startstop,
+    split_parent_child_records,
+)
 from pe_scorecard.data.db_query import (
     # VS queries
     query_dscore_vs_data_cert,
@@ -81,6 +85,21 @@ def import_discov_data(curr_start, curr_end, stakeholder_list):
     LOGGER.info("\tDone!")
     # ----- List of orgs for this sector: -----
     org_list = stakeholder_list
+
+    # ---------- Preprocessing for Rollup Support -----------
+    # Split parent/child records to support rollup functionality
+    vs_data_cert = split_parent_child_records(vs_data_cert)
+    vs_data_mail = split_parent_child_records(vs_data_mail)
+    pe_data_ip = split_parent_child_records(pe_data_ip)
+    pe_data_domain = split_parent_child_records(pe_data_domain)
+    was_data_webapp = split_parent_child_records(was_data_webapp)
+
+    # Re-Groupby organizations_uid again to consolidate parent org data
+    vs_data_cert = vs_data_cert.groupby("organizations_uid", as_index=False).sum()
+    vs_data_mail = vs_data_mail.groupby("organizations_uid", as_index=False).sum()
+    pe_data_ip = pe_data_ip.groupby("organizations_uid", as_index=False).sum()
+    pe_data_domain = pe_data_domain.groupby("organizations_uid", as_index=False).sum()
+    was_data_webapp = was_data_webapp.groupby("organizations_uid", as_index=False).sum()
 
     # Add FCEB status to organization list
     org_list = pd.merge(org_list, fceb_status, on="organizations_uid", how="inner")

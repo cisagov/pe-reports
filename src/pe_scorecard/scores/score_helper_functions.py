@@ -102,7 +102,7 @@ def get_prev_startstop(curr_date, num_periods):
     # Return 2D list of start/stop dates
     return start_stops
 
-     
+
 def get_letter_grade(score):
     if score < 65.0:
         return "F"
@@ -131,6 +131,7 @@ def get_letter_grade(score):
     else:
         return "N/A"
 
+
 def get_next_month(report_period_year, report_period_month):
     next_report_period_month = 0
     next_report_period_year = 0
@@ -140,8 +141,11 @@ def get_next_month(report_period_year, report_period_month):
     else:
         next_report_period_month = report_period_month + 1
         next_report_period_year = report_period_year
-    next_report_period_date = datetime(next_report_period_year, next_report_period_month, 1)
+    next_report_period_date = datetime(
+        next_report_period_year, next_report_period_month, 1
+    )
     return next_report_period_date
+
 
 def get_last_month(report_period_year, report_period_month):
     last_report_period_month = 0
@@ -152,17 +156,54 @@ def get_last_month(report_period_year, report_period_month):
     else:
         last_report_period_month = report_period_month - 1
         last_report_period_year = report_period_year
-    last_report_period_date = datetime(last_report_period_year, last_report_period_month, 1)
+    last_report_period_date = datetime(
+        last_report_period_year, last_report_period_month, 1
+    )
     return last_report_period_date
+
 
 def average_list(list):
     if len(list) == 0:
         return 0
     else:
-        return round(sum(list)/len(list), 2)
+        return round(sum(list) / len(list), 2)
+
 
 def average_numbers(vuln_count, total):
     if total == 0:
         return 0.0
     else:
-        return round((vuln_count/total) * 100, 2)
+        return round((vuln_count / total) * 100, 2)
+
+
+def split_parent_child_records(df):
+    """
+    Splits rows with both an organizations_uid and parent_uid into two rows for roll up support.
+
+    Args:
+        df: Dataframe of database view data containing both organizations_uid and parent_org_uid columns
+
+    Returns:
+        Dataframe where any rows with both a organizations_uid and parent_org_uid have been split into two rows.
+        One row has the organizations_uid, and the other row is an exact copy, but with the parent_org_uid.
+        Returned dataframe only has a single organizations_uid column.
+    """
+    # For child orgs and standalone orgs that don't
+    # have a parent, simply drop parent_uid column
+    standalone_df = df.drop(columns="parent_org_uid")
+
+    # For orgs that have an org_uid AND a parent_uid
+    # Create a duplicate data row for the parent org
+    parent_mask = df["parent_org_uid"].notnull() & df["organizations_uid"].notnull()
+    duplicate_df = (
+        df[parent_mask]
+        .drop(columns="organizations_uid")
+        .rename(columns={"parent_org_uid": "organizations_uid"})
+    )
+
+    # Combine standalone/child orgs rows and duplicated
+    # parent rows into the final dataframe
+    final_df = pd.concat([standalone_df, duplicate_df], ignore_index=True)
+
+    # Warning: final_df still needs aggregation after applying this function
+    return final_df
