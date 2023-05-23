@@ -6541,11 +6541,9 @@ GRANT ALL ON SCHEMA public TO PUBLIC;
 -- Fill table with DHS
 --
 
-INSERT INTO public.organizations (name, cyhy_db_name, organizations_uid)
-VALUES ('Department of Homeland Security', 'DHS', '385caaea-416f-11ec-bf33-02589a36c9d7');
+INSERT INTO public.organizations (name, cyhy_db_name, organizations_uid, report_on)
+VALUES ('Department of Homeland Security', 'DHS', '385caaea-416f-11ec-bf33-02589a36c9d7', true);
 
-INSERT INTO public.organizations (name, cyhy_db_name)
-VALUES ('Department of State', 'DOS');
 
 INSERT INTO public.data_source(name, description, last_run)
 VALUES ('Shodan', 'IoT scanner', '2022-03-14');
@@ -6642,3 +6640,53 @@ INSERT INTO public.ips(ip, ip_hash, origin_cidr, current, from_cidr)
 VALUES ('65.246.123.94','a30', '677fb376-056e-11ed-8dbf-02c6a3fe975b', true, true);
 INSERT INTO public.ips(ip, ip_hash, origin_cidr, current, from_cidr)
 VALUES ('65.246.123.95','a31', '677fb376-056e-11ed-8dbf-02c6a3fe975b', true, true);
+
+
+INSERT INTO public.data_source(name, description, last_run)
+VALUES ('Shodan', 'IoT scanner', '2023-05-23');
+
+INSERT INTO public.data_source(name, description, last_run)
+VALUES ('IntelX', 'Credentials and web posts identified by IntelX', '2023-05-23');
+
+
+INSERT INTO public.cidrs(cidr_uid, network, organizations_uid, current)
+VALUES ('3475a99e-0475-11ed-8e55-02c6a3fe975b', '209.37.109.142/31', '385caaea-416f-11ec-bf33-02589a36c9d7', true);
+
+INSERT INTO public.ips(ip, ip_hash, origin_cidr, current, from_cidr)
+VALUES ('209.37.109.142', 'b1', '3475a99e-0475-11ed-8e55-02c6a3fe975b', true, true);
+
+INSERT INTO public.ips(ip, ip_hash, origin_cidr, current, from_cidr)
+VALUES ('209.37.109.141', 'b2', '3475a99e-0475-11ed-8e55-02c6a3fe975b', true, true);
+
+
+INSERT INTO public.cidrs (network, organizations_uid, current)
+VALUES ('12.125.15.78/32', '385caaea-416f-11ec-bf33-02589a36c9d7', true),
+       ('12.170.240.128/27', '385caaea-416f-11ec-bf33-02589a36c9d7', true),
+       ('23.35.119.179/32', '385caaea-416f-11ec-bf33-02589a36c9d7', true),
+       ('23.59.17.226/32', '385caaea-416f-11ec-bf33-02589a36c9d7', true),
+       ('23.59.196.56/32', '385caaea-416f-11ec-bf33-02589a36c9d7', true),
+       ('23.59.199.179/32', '385caaea-416f-11ec-bf33-02589a36c9d7', true),
+       ('216.81.89.147/32', '385caaea-416f-11ec-bf33-02589a36c9d7', true),
+       ('12.22.250.40/29', '385caaea-416f-11ec-bf33-02589a36c9d7', true),
+       ('12.22.250.48/28', '385caaea-416f-11ec-bf33-02589a36c9d7', true),
+       ('12.53.154.64/27', '385caaea-416f-11ec-bf33-02589a36c9d7', true),
+       ('12.104.99.32/27', '385caaea-416f-11ec-bf33-02589a36c9d7', true),
+       ('12.110.111.112/29', '385caaea-416f-11ec-bf33-02589a36c9d7', true),
+       ('12.86.82.110/32', '385caaea-416f-11ec-bf33-02589a36c9d7', true),
+       ('69.228.70.5/32', '385caaea-416f-11ec-bf33-02589a36c9d7', true),
+       ('76.233.148.144/28', '385caaea-416f-11ec-bf33-02589a36c9d7', true),
+       ('99.3.159.96/28', '385caaea-416f-11ec-bf33-02589a36c9d7', true),
+       ('12.118.95.65/32', '385caaea-416f-11ec-bf33-02589a36c9d7', true),
+       ('99.33.16.16/29', '385caaea-416f-11ec-bf33-02589a36c9d7', true),
+       ('166.112.0.0/16', '385caaea-416f-11ec-bf33-02589a36c9d7', true),
+       ('64.119.224.0/20', '385caaea-416f-11ec-bf33-02589a36c9d7', true),
+       ('99.54.73.208/29', '385caaea-416f-11ec-bf33-02589a36c9d7', true),
+       ('205.142.100.0/22', '385caaea-416f-11ec-bf33-02589a36c9d7', true),
+       ('12.226.130.0/23', '385caaea-416f-11ec-bf33-02589a36c9d7', true),
+       ('63.161.169.0/24', '385caaea-416f-11ec-bf33-02589a36c9d7', true),
+       ('50.193.124.224/28', '385caaea-416f-11ec-bf33-02589a36c9d7', true),
+       ('207.238.6.32/27', '385caaea-416f-11ec-bf33-02589a36c9d7', true),
+       ('54.85.181.131/32', '385caaea-416f-11ec-bf33-02589a36c9d7', true),
+       ('209.37.109.204/31', '385caaea-416f-11ec-bf33-02589a36c9d7', true),
+       ('173.255.57.26/32', '385caaea-416f-11ec-bf33-02589a36c9d7', true),
+       ('162.83.67.224/27', '385caaea-416f-11ec-bf33-02589a36c9d7', true);

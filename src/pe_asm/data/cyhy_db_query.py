@@ -550,7 +550,8 @@ def update_shodan_ips(conn, df):
         INSERT INTO {}({})
         VALUES %s
         ON CONFLICT (ip)
-            DO UPDATE SET shodan_results = EXCLUDED.shodan_results"""
+            DO UPDATE SET shodan_results = EXCLUDED.shodan_results,
+            current = EXCLUDED.current"""
     cursor = conn.cursor()
     try:
         extras.execute_values(cursor, sql.format(table, cols), tpls)

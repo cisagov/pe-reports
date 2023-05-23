@@ -32,17 +32,7 @@ def run_shodan_thread(api, org_chunk, thread_name):
         LOGGER.info("{} Running IPs for {}".format(thread_name, org_name))
         start, end = get_dates()
         try:
-            if org_name == "DHS":
-                LOGGER.info("Pulling in extra DHS IPs.")
-                ips = get_ips_dhs(org_uid)
-            elif org_name == "NASA":
-                LOGGER.info("Pulling in extra NASA IPs.")
-                ips = get_ips_nasa(org_uid)
-            elif org_name == "HHS":
-                LOGGER.info("Pulling in extra HHS IPs.")
-                ips = get_ips_hhs(org_uid)
-            else:
-                ips = get_ips(org_uid)
+            ips = get_ips(org_uid)
         except Exception as e:
             LOGGER.error("{} Failed fetching IPs for {}.".format(thread_name, org_name))
             LOGGER.error("{} {} - {}".format(thread_name, e, org_name))
