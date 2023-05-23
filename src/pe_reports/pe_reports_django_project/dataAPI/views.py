@@ -59,7 +59,7 @@ from home.models import VwBreachcompBreachdetails
 from home.models import WasTrackerCustomerdata
 from home.models import WeeklyStatuses
 from home.models import CyhyPortScans
-from . import tasks
+from dataAPI.tasks import get_vs_info
 
 
 from .models import apiUser
@@ -514,7 +514,7 @@ def upload(file: UploadFile = File(...)):
         file.file.close()
 
 @api_router.post("/vs_info", dependencies=[Depends(get_api_key)],
-                 response_model=List[schemas.MatVwOrgsAllIps],
+                 response_model=schemas.TaskResponse,
                  tags=["List of all VS data"])
 def vs_info(cyhy_db_names: List[str], tokens: dict = Depends(get_api_key)):
     """API endpoint to get all WAS data."""
@@ -525,25 +525,25 @@ def vs_info(cyhy_db_names: List[str], tokens: dict = Depends(get_api_key)):
 
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
-        task = tasks.get_vs_info.delay(cyhy_db_names)
+        task = get_vs_info.delay(cyhy_db_names)
         return {"task_id": task.id, "status": "Processing"}
     else:
         return {'message': "No api key was submitted"}
 
 @api_router.get("/vs_info/task/{task_id}", dependencies=[Depends(get_api_key)],
-                response_model=List[schemas.MatVwOrgsAllIps],
+                response_model=schemas.TaskResponse,
                 tags=["Check task status"])
 async def get_task_status(task_id: str, tokens: dict = Depends(get_api_key)):
     task = tasks.get_vs_info.AsyncResult(task_id)
 
     if task.state == "SUCCESS":
-        return {"status": "Completed", "result": task.result}
+        return {"task_id": task_id, "status": "Completed", "result": task.result}
     elif task.state == "PENDING":
-        return {"status": "Pending"}
+        return {"task_id": task_id, "status": "Pending"}
     elif task.state == "FAILURE":
-        return {"status": "Failed", "error": str(task.result)}
+        return {"task_id": task_id, "status": "Failed", "error": str(task.result)}
     else:
-        return {"status": task.state}
+        return {"task_id": task_id, "status": task.state}
 
 @api_router.post("/was_info", dependencies=[Depends(get_api_key)],
                  response_model=List[schemas.WASDataBase],

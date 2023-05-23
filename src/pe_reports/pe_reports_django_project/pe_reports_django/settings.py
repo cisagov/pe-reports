@@ -18,6 +18,8 @@ from django.contrib.messages import constants as messages
 import mimetypes
 
 
+
+
 mimetypes.add_type("text/css", ".css", True)
 mimetypes.add_type("text/html", ".html", True)
 
@@ -129,6 +131,21 @@ LOGGING = {
             'level': 'INFO',
             'propagate': True,
         },
+        'celery': {
+            'handlers': ['file'],
+            'level': 'INFO',
+            'propagate': True,
+        },
+        'celery.task': {
+            'handlers': ['file'],
+            'level': 'INFO',
+            'propagate': True,
+        },
+        'celery.worker': {
+            'handlers': ['file'],
+            'level': 'INFO',
+            'propagate': True,
+        },
 
     },
 }
@@ -181,12 +198,9 @@ DATABASES = {
 }
 
 #Celery settings
-
-# CELERY_BROKER_URL = "redis://localhost:6379/0"
-# CELERY_RESULT_BACKEND = "redis://localhost:6379/0"
-
 CELERY_BROKER_URL = f"amqp://{config('RABBITMQ_USER')}:{config('RABBITMQ_PASS')}@localhost:5672/"
-CELERY_RESULT_BACKEND = f"rpc://{config('RABBITMQ_USER')}:{config('RABBITMQ_PASS')}@localhost:5672/"
+CELERY_RESULT_BACKEND = "redis://localhost:6379"
+CELERY_RESULT_EXPIRES = 3600
 
 
 

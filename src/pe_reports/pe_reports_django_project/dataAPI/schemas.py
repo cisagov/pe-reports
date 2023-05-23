@@ -130,6 +130,12 @@ class MatVwOrgsAllIps(BaseModel):
     class Config:
         orm_mode = True
 
+class TaskResponse(BaseModel):
+    task_id: str
+    status: str
+    result: List[MatVwOrgsAllIps] = None
+    error: str = None
+
 
 class WASDataBase(BaseModel):
     # customer_id: UUID
