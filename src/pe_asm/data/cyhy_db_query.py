@@ -459,7 +459,8 @@ def execute_ips(conn, df):
         ON CONFLICT (ip)
         DO UPDATE SET
             origin_cidr = UUID(EXCLUDED.origin_cidr),
-            last_seen = EXCLUDED.last_seen;
+            last_seen = EXCLUDED.last_seen,
+            organizations_uid = EXCLUDE.organizations_uid;
         """
         cursor = conn.cursor()
         extras.execute_values(cursor, sql.format(table, cols), tpls, page_size=100000)
