@@ -58,11 +58,17 @@ def passthrough(ip_list):
     returnList = []
     whoisRecords = getDomains(requestId,1,10)
     for record in whoisRecords:
+        try:
+            reg = str(record['whoisRecord']['registryData']['registrant'])
+            admin = str(record['whoisRecord']['registryData']['administrativeContact'])
+            technical = str(record['whoisRecord']['registryData']['technicalContact'])
+        except KeyError:
+            reg, admin, technical = "None Found.","None Found.","None Found."
         ipEntry = {
             'ip' : record['domainName'],
-            'registrant' : str(record['whoisRecord']['registryData']['registrant']),
-            'administrativeContact' : str(record['whoisRecord']['registryData']['administrativeContact']),   
-            'technicalContact': str(record['whoisRecord']['registryData']['technicalContact'])
+            'registrant' : reg,
+            'administrativeContact' : admin,   
+            'technicalContact': technical
         }
         returnList.append(ipEntry)
         return returnList
