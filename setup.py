@@ -106,6 +106,7 @@ setup(
         "chevron == 0.14.0",
         "celery",
         "click",
+        "demoji",
         "dnstwist",
         "docopt",
         "DShield",
