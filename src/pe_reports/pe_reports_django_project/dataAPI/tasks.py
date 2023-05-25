@@ -8,3 +8,10 @@ from home.models import MatVwOrgsAllIps
 def get_vs_info(cyhy_db_names: List[str]):
     vs_data = list(MatVwOrgsAllIps.objects.filter(cyhy_db_name__in=cyhy_db_names))
     return vs_data
+
+
+@shared_task
+def get_ve_info(ip_address: List[str]):
+    vs_data = list(MatVwOrgsAllIps.objects.filter(
+        ip_addresses__contains=[ip_address]))
+    return vs_data
