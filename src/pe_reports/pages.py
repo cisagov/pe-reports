@@ -2,75 +2,36 @@
 
 # Standard Python Libraries
 import datetime
+import json
 import logging
 import os
 
 # Third-Party Libraries
-import chevron
+import pandas as pd
 
 from .charts import Charts
 
 # Import Classes
 from .metrics import Credentials, Cyber_Six, Domains_Masqs, Malware_Vulns
 
-
-# Style and build tables
-def buildTable(df, classList, sizingList=[]):
-    """Build HTML tables from a pandas dataframe."""
-    # SizingList specifies the proportional width of each column.
-    # The number of integers in the list must equal the number of
-    # columns in the dataframe AND add up to 100
-    if not sizingList:
-        average = 100 / len(df.columns)
-        sizingList = [average] * len(df.columns)
-    headers = """<table border="1" class="{classes}">\n<thead>\n""".format(
-        classes=", ".join(classList)
-    )
-    headers += '<tr style="text-align: right;">'
-    for head in df.columns:
-        headers += "<th>" + head + "</th>\n"
-    headers += "</tr>\n</thead>"
-    html = ""
-    body = "<tbody>\n"
-    counter = 0
-    for row in df.itertuples(index=False):
-        if counter % 2 == 0:
-            body += '<tr class="even">\n'
-        else:
-            body += '<tr class="odd">\n'
-        for col in range(0, len(df.columns)):
-            body += (
-                "<td style='width:{size}%'>".format(size=str(sizingList[col]))
-                + str(row[col])
-                + "</td>\n"
-            )
-
-        body += "</tr>\n"
-        counter += 1
-    body += "</tbody>\n</table>"
-    html = headers + body
-    return html
+# Setup logging to central
+LOGGER = logging.getLogger(__name__)
 
 
-def buildAppendixList(df):
-    """Build report appendix."""
-    html = "<div> \n"
-
-    for row in df.itertuples(index=False):
-        html += """<p class="content"><b style="font-size: 15px;">{breach_name}</b><br>{description}
-        </p>\n""".format(
-            breach_name=row[0], description=row[1]
-        )
-    html += "\n</div>"
-    return html
-
-
-def credential(chevron_dict, trending_start_date, start_date, end_date, org_uid):
+def credential(
+    report_dict,
+    trending_start_date,
+    start_date,
+    end_date,
+    org_uid,
+    org_code,
+    output_directory,
+):
     """Build exposed credential page."""
     Credential = Credentials(trending_start_date, start_date, end_date, org_uid)
     # Build exposed credential stacked bar chart
-    width = 24
-    height = 9.5
+    width = 16.51
+    height = 10
     name = "inc_date_df"
     title = "Trending Exposures by Week"
     x_label = "Week Reported"
@@ -85,42 +46,76 @@ def credential(chevron_dict, trending_start_date, start_date, end_date, org_uid)
         y_label,
     )
     cred_date_chart.line_chart()
-    breach_table = buildTable(Credential.breach_details(), ["table"])
 
     creds_dict = {
         "breach": Credential.breaches(),
         "creds": Credential.total(),
         "pw_creds": Credential.password(),
-        "breach_table": breach_table,
-        "breachAppendix": buildAppendixList(Credential.breach_appendix()),
+        "breach_table": Credential.breach_details()[:15],
+        "breach_appendix": Credential.breach_appendix(),
     }
-    chevron_dict.update(creds_dict)
+    report_dict.update(creds_dict)
 
-    return chevron_dict, Credential.creds_view
+    # Create Credential Exposure JSON file
+    cred_json = f"{output_directory}/{org_code}/compromised_credentials.json"
+    cred_dict = Credential.creds_view.to_dict(orient="records")
+    final_dict = {"credentials": cred_dict}
+    with open(cred_json, "w") as outfile:
+        json.dump(final_dict, outfile, default=str)
+
+    # Create Credential Exposure Excel file
+    cred_xlsx = f"{output_directory}/{org_code}/compromised_credentials.xlsx"
+    credWriter = pd.ExcelWriter(cred_xlsx, engine="xlsxwriter")
+    Credential.creds_view.to_excel(credWriter, sheet_name="Credentials", index=False)
+    credWriter.save()
+
+    return report_dict, cred_json, cred_xlsx
 
 
-def masquerading(chevron_dict, start_date, end_date, org_uid):
+def masquerading(
+    report_dict, start_date, end_date, org_uid, org_code, output_directory
+):
     """Build masquerading page."""
     Domain_Masq = Domains_Masqs(start_date, end_date, org_uid)
-    chevron_dict.update(
+    report_dict.update(
         {
-            "domain_table": buildTable(Domain_Masq.summary(), ["table"], []),
+            "domain_table": Domain_Masq.summary()[:10],
+            "domain_alerts_table": Domain_Masq.alerts()[:10],
             "suspectedDomains": Domain_Masq.count(),
-            "uniqueTlds": Domain_Masq.utlds(),
+            "domain_alerts": Domain_Masq.alert_count(),
         }
     )
-    return chevron_dict, Domain_Masq.df_mal
+    # Create Domain Masquerading JSON file
+    da_json = f"{output_directory}/{org_code}/domain_alerts.json"
+    susp_domains_dict = Domain_Masq.df_mal.to_dict(orient="records")
+    dom_alerts_dict = Domain_Masq.alerts_sum().to_dict(orient="records")
+    final_dict = {
+        "suspected_domains": susp_domains_dict,
+        "domain_alerts": dom_alerts_dict,
+    }
+    with open(da_json, "w") as outfile:
+        json.dump(final_dict, outfile, default=str)
+
+    # Create Domain Masquerading Excel file
+    da_xlsx = f"{output_directory}/{org_code}/domain_alerts.xlsx"
+    domWriter = pd.ExcelWriter(da_xlsx, engine="xlsxwriter")
+    Domain_Masq.df_mal.to_excel(domWriter, sheet_name="Suspected Domains", index=False)
+    Domain_Masq.alerts_sum().to_excel(
+        domWriter, sheet_name="Domain Alerts", index=False
+    )
+    domWriter.save()
+    return report_dict, da_json, da_xlsx
 
 
-def mal_vuln(chevron_dict, start_date, end_date, org_uid):
+def mal_vuln(report_dict, start_date, end_date, org_uid, org_code, output_directory):
     """Build Malwares and Vulnerabilities page."""
     Malware_Vuln = Malware_Vulns(start_date, end_date, org_uid)
     # Build insecure protocol horizontal bar chart
-    width = 9
-    height = 4.7
+    width = 16.51
+    height = 5.3
     name = "pro_count"
     title = ""
-    x_label = ""
+    x_label = "Insecure Protocols"
     y_label = ""
     protocol_chart = Charts(
         Malware_Vuln.protocol_count(),
@@ -133,14 +128,14 @@ def mal_vuln(chevron_dict, start_date, end_date, org_uid):
     )
     protocol_chart.h_bar()
     # Build unverified vulnerability horizontal bar chart
-    width = 9
-    height = 4.7
+    width = 16.51
+    height = 9
     name = "unverif_vuln_count"
     title = ""
     x_label = "Unverified CVEs"
     y_label = ""
     unverif_vuln_chart = Charts(
-        Malware_Vuln.unverified_cve(),
+        Malware_Vuln.unverified_cv_count(),
         width,
         height,
         name,
@@ -149,42 +144,74 @@ def mal_vuln(chevron_dict, start_date, end_date, org_uid):
         y_label,
     )
     unverif_vuln_chart.h_bar()
+    unverif_vuln_chart.h_bar()
     # Build tables
-    risky_assets = Malware_Vuln.isolate_risky_assets(Malware_Vuln.insecure_df)
-    risky_assets = risky_assets[:7]
-    risky_assets.columns = ["IP", "Protocol"]
-    risky_assets_table = buildTable(risky_assets, ["table"], [50, 50])
-    verif_vulns = Malware_Vuln.verif_vulns()
+    risky_assets = Malware_Vuln.insecure_protocols()
+    risky_assets = risky_assets[:10]
+    risky_assets.columns = ["Protocol", "IP", "Port"]
+    verif_vulns = Malware_Vuln.verif_vulns()[:10]
     verif_vulns.columns = ["CVE", "IP", "Port"]
-    verif_vulns_table = buildTable(verif_vulns, ["table"], [40, 40, 20])
-    verif_vulns_summary_table = buildTable(
-        Malware_Vuln.verif_vulns_summary(), ["table"], [15, 15, 15, 55]
-    )
-
+    risky_ports = Malware_Vuln.risky_ports_count()
+    verif_vulns_count = Malware_Vuln.total_verif_vulns()
+    unverif_vulns = Malware_Vuln.unverified_vuln_count()
     # Update chevron dictionary
     vulns_dict = {
-        "verif_vulns": verif_vulns_table,
-        "verif_vulns_summary": verif_vulns_summary_table,
-        "risky_assets": risky_assets_table,
-        "riskyPorts": Malware_Vuln.risky_ports_count(),
-        "verifVulns": Malware_Vuln.total_verif_vulns(),
-        "unverifVulns": Malware_Vuln.unverified_vuln_count(),
+        "verif_vulns": verif_vulns,
+        "risky_assets": risky_assets,
+        "riskyPorts": risky_ports,
+        "verifVulns": verif_vulns_count,
+        "unverifVulns": unverif_vulns,
+        "verif_vulns_summary": Malware_Vuln.verif_vulns_summary(),
     }
-    chevron_dict.update(vulns_dict)
-    return (
-        chevron_dict,
-        Malware_Vuln.insecure_df,
-        Malware_Vuln.vulns_df,
-        Malware_Vuln.assets_df,
-    )
+    all_cves_df = Malware_Vuln.all_cves()
+    report_dict.update(vulns_dict)
+
+    # Create Suspected vulnerability JSON file
+    vuln_json = f"{output_directory}/{org_code}/vuln_alerts.json"
+    assets_dict = Malware_Vuln.assets_df.to_dict(orient="records")
+    insecure_dict = Malware_Vuln.insecure_df.to_dict(orient="records")
+    vulns_dict = Malware_Vuln.vulns_df.to_dict(orient="records")
+    final_dict = {
+        "assets": assets_dict,
+        "insecure": insecure_dict,
+        "verified_vulns": vulns_dict,
+    }
+    with open(vuln_json, "w") as outfile:
+        json.dump(final_dict, outfile, default=str)
+
+    # Create Suspected vulnerability Excel file
+    vuln_xlsx = f"{output_directory}/{org_code}/vuln_alerts.xlsx"
+    vulnWriter = pd.ExcelWriter(vuln_xlsx, engine="xlsxwriter")
+    Malware_Vuln.assets_df.to_excel(vulnWriter, sheet_name="Assets", index=False)
+    Malware_Vuln.insecure_df.to_excel(vulnWriter, sheet_name="Insecure", index=False)
+    Malware_Vuln.vulns_df.to_excel(vulnWriter, sheet_name="Verified Vulns", index=False)
+    vulnWriter.save()
+    return (report_dict, vuln_json, all_cves_df, vuln_xlsx)
 
 
-def dark_web(chevron_dict, trending_start_date, start_date, end_date, org_uid):
+def dark_web(
+    report_dict,
+    trending_start_date,
+    start_date,
+    end_date,
+    org_uid,
+    all_cves_df,
+    soc_med_included,
+    org_code,
+    output_directory,
+):
     """Dark Web Mentions."""
-    Cyber6 = Cyber_Six(trending_start_date, start_date, end_date, org_uid)
+    Cyber6 = Cyber_Six(
+        trending_start_date,
+        start_date,
+        end_date,
+        org_uid,
+        all_cves_df,
+        soc_med_included,
+    )
     # Build dark web mentions over time line chart
-    width = 19
-    height = 9
+    width = 16.51
+    height = 10
     name = "web_only_df_2"
     title = ""
     x_label = "Dark Web Mentions"
@@ -199,71 +226,62 @@ def dark_web(chevron_dict, trending_start_date, start_date, end_date, org_uid):
         y_label,
     )
     dark_mentions_chart.line_chart()
-    # Build forum type / conversation content pie chart
-    width = 19
-    height = 9
-    name = "dark_web_forum_pie"
-    title = ""
-    x_label = ""
-    y_label = ""
-    pie_chart = Charts(
-        Cyber6.dark_web_content(),
-        width,
-        height,
-        name,
-        title,
-        x_label,
-        y_label,
-    )
-    pie_chart.pie()
 
     # Limit the number of rows for large dataframes
-    dark_web_bad_actors = Cyber6.dark_web_bad_actors()[:10]
-    alert_exec = Cyber6.alerts_exec()[:8]
+    dark_web_actors = Cyber6.dark_web_bad_actors()
 
-    # Build tables
-    dark_web_sites_table = buildTable(Cyber6.dark_web_sites(), ["table"], [50, 50])
-    alerts_threats_table = buildTable(Cyber6.alerts_threats(), ["table"], [40, 40, 20])
-    dark_web_actors_table = buildTable(dark_web_bad_actors, ["table"], [50, 50])
-    dark_web_tags_table = buildTable(Cyber6.dark_web_tags(), ["table"], [60, 40])
-    alerts_exec_table = buildTable(alert_exec, ["table"], [15, 70, 15])
-    dark_web_act_table = buildTable(Cyber6.dark_web_most_act(), ["table"], [75, 25])
-    alerts_site_table = buildTable(Cyber6.alerts_site(), ["table"], [50, 50])
-    top_cves_table = buildTable(Cyber6.top_cve_table(), ["table"], [30, 70])
-
+    social_media = Cyber6.social_media_most_act()
+    if not soc_med_included:
+        social_media = social_media[0:0]
     dark_web_dict = {
         "darkWeb": Cyber6.dark_web_count(),
-        "dark_web_sites": dark_web_sites_table,
-        "alerts_threats": alerts_threats_table,
-        "dark_web_actors": dark_web_actors_table,
-        "dark_web_tags": dark_web_tags_table,
-        "alerts_exec": alerts_exec_table,
-        "dark_web_act": dark_web_act_table,
-        "alerts_site": alerts_site_table,
-        "top_cves": top_cves_table,
+        "mentions_count": Cyber6.dark_web_mentions_count(),
+        "dark_web_sites": Cyber6.dark_web_sites(),
+        "alerts_threats": Cyber6.alerts_threats(),
+        "dark_web_actors": dark_web_actors,
+        "alerts_exec": Cyber6.alerts_exec()[:10],
+        "asset_alerts": Cyber6.asset_alerts()[:10],
+        "dark_web_act": Cyber6.dark_web_most_act(),
+        "social_med_act": social_media,
+        "markets_table": Cyber6.invite_only_markets(),
+        "top_cves": Cyber6.top_cve_table(),
     }
 
-    chevron_dict.update(dark_web_dict)
-    return (chevron_dict, Cyber6.dark_web_mentions, Cyber6.alerts, Cyber6.top_cves)
+    report_dict.update(dark_web_dict)
+
+    # Create dark web Excel file
+    mentions_df = Cyber6.dark_web_mentions
+    mentions_df["content"] = mentions_df["content"].str[:2000]
+    mi_json = f"{output_directory}/{org_code}/mention_incidents.json"
+    mentions_dict = mentions_df.to_dict(orient="records")
+    alerts_dict = Cyber6.alerts.to_dict(orient="records")
+    cve_dict = Cyber6.top_cves.to_dict(orient="records")
+    final_dict = {
+        "dark_web_mentions": mentions_dict,
+        "dark_web_alerts": alerts_dict,
+        "top_cves": cve_dict,
+    }
+    with open(mi_json, "w") as outfile:
+        json.dump(final_dict, outfile, default=str)
+
+    # Create dark web Excel file
+    mi_xlsx = f"{output_directory}/{org_code}/mention_incidents.xlsx"
+    miWriter = pd.ExcelWriter(mi_xlsx, engine="xlsxwriter")
+    mentions_df.to_excel(miWriter, sheet_name="Dark Web Mentions", index=False)
+    Cyber6.alerts.to_excel(miWriter, sheet_name="Dark Web Alerts", index=False)
+    Cyber6.top_cves.to_excel(miWriter, sheet_name="Top CVEs", index=False)
+    miWriter.save()
+
+    return (report_dict, mi_json, mi_xlsx)
 
 
-def init(datestring, org_name, org_uid):
+def init(
+    datestring, org_name, org_code, org_uid, output_directory, soc_med_included=False
+):
     """Call each page of the report."""
     # Format start_date and end_date for the bi-monthly reporting period.
     # If the given end_date is the 15th, then the start_date is the 1st.
     # Otherwise, the start_date will be the 16th of the respective month.
-
-    # Load source HTML
-    try:
-        basedir = os.path.abspath(os.path.dirname(__file__))
-        template = os.path.join(basedir, "template.html")
-        file = open(template)
-        source_html = file.read().replace("\n", " ")
-        # Close PDF
-        file.close()
-    except FileNotFoundError:
-        logging.error("Template cannot be found. It must be named: '%s'", template)
-        return 1
 
     end_date = datetime.datetime.strptime(datestring, "%Y-%m-%d").date()
     if end_date.day == 15:
@@ -274,38 +292,70 @@ def init(datestring, org_name, org_uid):
     # 27 days plus the last day is 4 weeks
     days = datetime.timedelta(27)
     trending_start_date = end_date - days
+    # previous_end_date = start_date - datetime.timedelta(days=1)
+
+    # Get base directory to save images
+    base_dir = os.path.abspath(os.path.dirname(__file__))
     start = start_date.strftime("%m/%d/%Y")
     end = end_date.strftime("%m/%d/%Y")
-    chevron_dict = {
+    report_dict = {
         "department": org_name,
         "dateRange": start + " - " + end,
         "endDate": end,
+        "base_dir": base_dir,
     }
-
-    chevron_dict, creds_sum = credential(
-        chevron_dict, trending_start_date, start_date, end_date, org_uid
+    # Fill credentials data
+    (report_dict, cred_json, cred_xlsx) = credential(
+        report_dict,
+        trending_start_date,
+        start_date,
+        end_date,
+        org_uid,
+        org_code,
+        output_directory,
     )
 
-    chevron_dict, masq_df = masquerading(chevron_dict, start_date, end_date, org_uid)
-
-    chevron_dict, insecure_df, vulns_df, assets_df = mal_vuln(
-        chevron_dict, start_date, end_date, org_uid
+    # Domain Masquerading
+    report_dict, da_json, da_xlsx = masquerading(
+        report_dict,
+        start_date,
+        end_date,
+        org_uid,
+        org_code,
+        output_directory,
     )
 
-    chevron_dict, dark_web_mentions, alerts, top_cves = dark_web(
-        chevron_dict, trending_start_date, start_date, end_date, org_uid
+    # Inferred/Verified Vulnerabilities
+    (report_dict, vuln_json, all_cves_df, vuln_xlsx) = mal_vuln(
+        report_dict,
+        start_date,
+        end_date,
+        org_uid,
+        org_code,
+        output_directory,
     )
 
-    html = chevron.render(source_html, chevron_dict)
+    # Dark web mentions and alerts
+    report_dict, mi_json, mi_xlsx = dark_web(
+        report_dict,
+        trending_start_date,
+        start_date,
+        end_date,
+        org_uid,
+        all_cves_df,
+        soc_med_included,
+        org_code,
+        output_directory,
+    )
 
     return (
-        html,
-        creds_sum,
-        masq_df,
-        insecure_df,
-        vulns_df,
-        assets_df,
-        dark_web_mentions,
-        alerts,
-        top_cves,
+        report_dict,
+        cred_json,
+        da_json,
+        vuln_json,
+        mi_json,
+        cred_xlsx,
+        da_xlsx,
+        vuln_xlsx,
+        mi_xlsx,
     )
