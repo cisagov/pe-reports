@@ -292,7 +292,6 @@ def init(
     # 27 days plus the last day is 4 weeks
     days = datetime.timedelta(27)
     trending_start_date = end_date - days
-    # previous_end_date = start_date - datetime.timedelta(days=1)
 
     # Get base directory to save images
     base_dir = os.path.abspath(os.path.dirname(__file__))
