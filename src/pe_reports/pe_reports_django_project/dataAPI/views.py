@@ -56,13 +56,14 @@ from home.models import Organizations
 from home.models import VwBreachcomp
 from home.models import VwBreachcompCredsbydate
 from home.models import VwCidrs
-from home.models import VwOrgsAllIps
+from home.models import MatVwOrgsAllIps
 from home.models import VwOrgsAttacksurface
 from home.models import VwBreachcompBreachdetails
 from home.models import WasTrackerCustomerdata
 from home.models import WeeklyStatuses
 from home.models import CyhyPortScans
 from dataAPI.tasks import get_vs_info
+from dataAPI.tasks import get_ve_info
 
 
 from .models import apiUser
@@ -575,6 +576,39 @@ def upload(tokens: dict = Depends(get_api_key), file: UploadFile = File(...)):
 
     finally:
         file.file.close()
+
+
+@api_router.post("/ve_info", dependencies=[Depends(get_api_key)],
+                 response_model=schemas.TaskResponse,
+                 tags=["List of all VE data"])
+def ve_info(ip_address: List[str], tokens: dict = Depends(get_api_key)):
+    """API endpoint to get all WAS data."""
+    print(ip_address)
+
+    # orgs_df = pd.DataFrame(orgs)
+
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        task = get_ve_info.delay(ip_address)
+        return {"task_id": task.id, "status": "Processing"}
+    else:
+        return {'message': "No api key was submitted"}
+
+@api_router.get("/ve_info/task/{task_id}", dependencies=[Depends(get_api_key)],
+                response_model=schemas.TaskResponse,
+                tags=["Check task VE status"])
+async def get_ve_task_status(task_id: str, tokens: dict = Depends(get_api_key)):
+    task = get_ve_info.AsyncResult(task_id)
+
+    if task.state == "SUCCESS":
+
+        return {"task_id": task_id, "status": "Completed", "result": task.result}
+    elif task.state == "PENDING":
+        return {"task_id": task_id, "status": "Pending"}
+    elif task.state == "FAILURE":
+        return {"task_id": task_id, "status": "Failed", "error": str(task.result)}
+    else:
+        return {"task_id": task_id, "status": task.state}
 
 @api_router.post("/vs_info", dependencies=[Depends(get_api_key)],
                  response_model=schemas.TaskResponse,
