@@ -238,6 +238,19 @@ def test_report_generator(mock_db_connect, mock_get_orgs, mock_init, mock_embed)
         PROJECT_ROOT + "/assets/cisa.png",
         PROJECT_ROOT + "/assets/inc_date_df.png",
     )
+    shutil.copyfile(
+        PROJECT_ROOT + "/assets/cisa.png",
+        PROJECT_ROOT + "/assets/pro_count.png",
+    )
+    shutil.copyfile(
+        PROJECT_ROOT + "/assets/cisa.png",
+        PROJECT_ROOT + "/assets/unverif_vuln_count.png",
+    )
+    shutil.copyfile(
+        PROJECT_ROOT + "/assets/cisa.png",
+        PROJECT_ROOT + "/assets/web_only_df_2.png",
+    )
+
     return_value = pe_reports.report_generator.generate_reports(
         "2022-09-30", "output", True
     )
