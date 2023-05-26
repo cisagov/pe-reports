@@ -163,29 +163,30 @@ def test_report_generator(mock_db_connect, mock_get_orgs, mock_init, mock_embed)
     """Test report is generated."""
     mock_db_connect.return_value = "connection"
     mock_get_orgs.return_value = [("pe_org_uid", "Test Org", "TestOrg")]
-    source_html = ""
-    creds_sum = ""
-    creds_sum = pd.DataFrame()
-    masq_df = pd.DataFrame()
-    insecure_df = pd.DataFrame()
-    vulns_df = pd.DataFrame()
-    assets_df = pd.DataFrame()
-    dark_web_mentions = pd.DataFrame()
-    alerts = pd.DataFrame()
-    top_cves = pd.Series(dtype="object")
+    report_dict = {}
+    cred_json = ""
+    da_json = ""
+    vuln_json = ""
+    mi_json = ""
+    cred_xlsx = ""
+    da_xlsx = ""
+    vuln_xlsx = ""
+    mi_xlsx = ""
     mock_init.return_value = (
-        source_html,
-        creds_sum,
-        masq_df,
-        insecure_df,
-        vulns_df,
-        assets_df,
-        dark_web_mentions,
-        alerts,
-        top_cves,
+        report_dict,
+        cred_json,
+        da_json,
+        vuln_json,
+        mi_json,
+        cred_xlsx,
+        da_xlsx,
+        vuln_xlsx,
+        mi_xlsx,
     )
     mock_embed.return_value = 10000000, False
-    return_value = pe_reports.report_generator.generate_reports("2022-09-30", "output")
+    return_value = pe_reports.report_generator.generate_reports(
+        "2022-09-30", "output", True
+    )
     assert return_value == 1
 
 
