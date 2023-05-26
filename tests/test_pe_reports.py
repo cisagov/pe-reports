@@ -216,10 +216,10 @@ def test_credential_metrics(mock_creds_view, mock_creds_byday, mock_breach_detai
 
     # Test by_week output
     expected_output_json = [
-        {"modified_date": "09/03", "No Password": 0.0, "Passwords Included": 0.0},
-        {"modified_date": "09/10", "No Password": 0.0, "Passwords Included": 0.0},
-        {"modified_date": "09/17", "No Password": 0.0, "Passwords Included": 1.0},
-        {"modified_date": "09/24", "No Password": 1.0, "Passwords Included": 2.0},
+        {"modified_date": "Sep 03", "No Password": 0.0, "Passwords Included": 0.0},
+        {"modified_date": "Sep 10", "No Password": 0.0, "Passwords Included": 0.0},
+        {"modified_date": "Sep 17", "No Password": 0.0, "Passwords Included": 1.0},
+        {"modified_date": "Sep 24", "No Password": 1.0, "Passwords Included": 2.0},
     ]
     expected_output = pd.json_normalize(expected_output_json).set_index("modified_date")
     pd.testing.assert_frame_equal(
