@@ -203,6 +203,7 @@ def generate_reports(datestring, output_directory, soc_med_included=False):
         )
 
     LOGGER.info("%s reports generated", generated_reports)
+    return generated_reports
 
 
 def main():
