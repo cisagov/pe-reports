@@ -235,7 +235,7 @@ def test_report_generator(mock_db_connect, mock_get_orgs, mock_init, mock_embed)
     mock_embed.return_value = 10000000, False
 
     shutil.copyfile(
-        PROJECT_ROOT + "/assets/Image_not_available.png",
+        PROJECT_ROOT + "/assets/cisa.png",
         PROJECT_ROOT + "/assets/inc_date_df.png",
     )
     return_value = pe_reports.report_generator.generate_reports(
