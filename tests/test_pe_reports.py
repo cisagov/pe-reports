@@ -232,7 +232,7 @@ def test_report_generator(mock_db_connect, mock_get_orgs, mock_init, mock_embed)
         vuln_xlsx,
         mi_xlsx,
     )
-    mock_embed.return_value = 10000000, False
+    mock_embed.return_value = 10000000, False, "filename"
 
     shutil.copyfile(
         PROJECT_ROOT + "/assets/cisa.png",
