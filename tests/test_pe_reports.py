@@ -175,11 +175,11 @@ def test_report_generator(mock_db_connect, mock_get_orgs, mock_init, mock_embed)
         "pw_creds": 20,
         "breach_table": pd.DataFrame(
             columns=[
-                "breach_name",
-                "modified_date",
-                "breach_date",
-                "password_included",
-                "number_of_creds",
+                "Breach Name",
+                "Breach Date",
+                "Date Reported",
+                "Password Included",
+                "Number of Creds",
             ]
         ),
         "breach_appendix": pd.DataFrame(columns=["breach_name", "description"]),
