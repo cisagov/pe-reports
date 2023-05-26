@@ -56,7 +56,7 @@ from home.models import Organizations
 from home.models import VwBreachcomp
 from home.models import VwBreachcompCredsbydate
 from home.models import VwCidrs
-from home.models import VwOrgsAllIps
+from home.models import MatVwOrgsAllIps
 from home.models import VwOrgsAttacksurface
 from home.models import VwBreachcompBreachdetails
 from home.models import WasTrackerCustomerdata
