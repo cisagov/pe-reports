@@ -13,14 +13,12 @@ import pandas as pd
 import pytest
 
 # cisagov Libraries
-from pe_reports import CENTRAL_LOGGING_FILE
+from pe_reports import CENTRAL_LOGGING_FILE, PROJECT_ROOT
 from pe_reports import app as flask_app
 import pe_reports.data.db_query
 import pe_reports.metrics
 from pe_reports.report_gen.views import validate_date, validate_filename
 import pe_reports.report_generator
-
-BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 
 log_levels = (
     "debug",
@@ -237,8 +235,8 @@ def test_report_generator(mock_db_connect, mock_get_orgs, mock_init, mock_embed)
     mock_embed.return_value = 10000000, False
 
     shutil.copyfile(
-        BASE_DIR + "/assets/Image_not_available.png",
-        BASE_DIR + "/assets/inc_date_df.png",
+        PROJECT_ROOT + "/assets/Image_not_available.png",
+        PROJECT_ROOT + "/assets/inc_date_df.png",
     )
     return_value = pe_reports.report_generator.generate_reports(
         "2022-09-30", "output", True
