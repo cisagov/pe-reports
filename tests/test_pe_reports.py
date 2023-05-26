@@ -3,6 +3,7 @@
 # Standard Python Libraries
 import datetime
 import logging
+import os
 import sys
 from unittest.mock import patch
 
@@ -163,7 +164,54 @@ def test_report_generator(mock_db_connect, mock_get_orgs, mock_init, mock_embed)
     """Test report is generated."""
     mock_db_connect.return_value = "connection"
     mock_get_orgs.return_value = [("pe_org_uid", "Test Org", "TestOrg")]
-    report_dict = {}
+    report_dict = {
+        "department": "Test Org",
+        "dateRange": "Start - Stop",
+        "endDate": "01/01/2023",
+        "base_dir": os.path.abspath(os.path.dirname(__file__)),
+        "breach": 10,
+        "creds": 100,
+        "pw_creds": 20,
+        "breach_table": pd.DataFrame(
+            columns=[
+                "breach_name",
+                "modified_date",
+                "breach_date",
+                "password_included",
+                "number_of_creds",
+            ]
+        ),
+        "breach_appendix": pd.DataFrame(columns=["breach_name", "description"]),
+        "domain_table": pd.DataFrame(
+            columns=[
+                "Domain",
+                "IPv4",
+                "IPv6",
+                "Mail Server",
+                "Name Server",
+            ]
+        ),
+        "domain_alerts_table": pd.DataFrame(columns=["Alert", "Date"]),
+        "suspectedDomains": 7,
+        "domain_alerts": 50,
+        "verif_vulns": pd.DataFrame(columns=["CVE", "IP", "Port"]),
+        "risky_assets": pd.DataFrame(columns=["Protocol", "IP", "Port"]),
+        "riskyPorts": 75,
+        "verifVulns": 12,
+        "unverifVulns": 320,
+        "verif_vulns_summary": pd.DataFrame(columns=["CVE", "IP", "Port", "Summary"]),
+        "darkWeb": 100,
+        "mentions_count": 65,
+        "dark_web_sites": pd.DataFrame(columns=["Site", "count"]),
+        "alerts_threats": pd.DataFrame(columns=["Site", "Threats", "Events"]),
+        "dark_web_actors": pd.DataFrame(columns=["Creator", "Grade"]),
+        "alerts_exec": pd.DataFrame(columns=["Site", "Title", "Events"]),
+        "asset_alerts": pd.DataFrame(columns=["Site", "Title", "Events"]),
+        "dark_web_act": pd.DataFrame(columns=["Title", "Comments Count"]),
+        "social_med_act": pd.DataFrame(columns=["Title", "Comments Count"]),
+        "markets_table": pd.DataFrame(columns=["Site", "Alerts"]),
+        "top_cves": pd.DataFrame(columns=["CVE", "Description", "Cybersixgill"]),
+    }
     cred_json = ""
     da_json = ""
     vuln_json = ""
