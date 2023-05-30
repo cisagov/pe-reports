@@ -138,7 +138,7 @@ def query_breachdetails_view(org_uid, start_date, end_date):
 
 
 def query_domMasq(org_uid, start_date, end_date):
-    """Query domain_permuations associated witha given org."""
+    """Query domain_permuations associated with a given org."""
     conn = connect()
     try:
         sql = """SELECT * FROM domain_permutations
