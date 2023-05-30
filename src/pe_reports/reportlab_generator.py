@@ -1330,7 +1330,7 @@ def report_gen(data_dict, soc_med_included=False):
                     <font face="Franklin_Gothic_Medium_Regular">Table """
                     + str(table_num)
                     + """</font> includes discussions involving stakeholder
-                    assets such as domain names and IP's.
+                    assets such as domain names and IPs.
                 """,
                     body,
                 ),
