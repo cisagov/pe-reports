@@ -1742,7 +1742,7 @@ def report_gen(data_dict, soc_med_included=False):
                     activity can indicate a greater likelihood of an attack, vulnerability, or data leakage. Additionally,
                     the urgency of the threat can be evaluated based on the threat actors involved along with other thresholds.
                     Evaluating this content may also indicate if a stakeholder has been involved in a hacking incident as that data
-                    will often be published or offered 'for sale'. This information along with a list of the most active CVE's on the
+                    will often be published or offered 'for sale'. This information along with a list of the most active CVEs on the
                     Dark Web may assist in prioritizing remediation activities.
 
                 """,
