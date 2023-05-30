@@ -211,28 +211,27 @@ class Charts:
         plt.tight_layout()
 
         # Add data labels
-        # loop through the dataframe
+        # Loop through the dataframe
         for row in df.itertuples():
-            # check if there is only one row of values
+            # Check if there is only one row of values
             if len(row) == 2:
                 plt.annotate(
                     str(int(row[1])),
                     xy=(row[0], row[1]),
-                    textcoords="offset points",  # how to position the text
+                    textcoords="offset points",  # Set the manner to position the text
                     xytext=(
                         0,
                         8,
-                    ),  # distance from text to points (x,y)
-                    ha="center",  # horizontal alignment can be left, right or center
-                    # fontsize=2,
+                    ),  # Distance from text to points (x,y)
+                    ha="center",  # Set horizontal alignment to center
                     color="#003e67",
                 )
-                # check if there are two rows of data
+                # Check if there are two rows of data
             elif len(row) == 3:
-                # check if the two values are within 1/10th of the max y value
+                # Check if the two values are within 1/10th of the max y value
                 value_diff = abs(row[1] - row[2])
                 if value_diff < y_max / 10:
-                    # if the values are on the bottom quarter of the graph don't label below values
+                    # If the values are on the bottom quarter of the graph don't label below values
                     if min(row[1], row[2]) < y_max / 4:
                         y1 = y2 = max(row[1], row[2])
                         if row[1] > row[2]:
@@ -241,7 +240,7 @@ class Charts:
                         else:
                             y1_offset = 8
                             y2_offset = 18
-                    # if the values are not in the bottom quarter place the lower value below the point
+                    # If the values are not in the bottom quarter place the lower value below the point
                     else:
                         y1 = row[1]
                         y2 = row[2]
@@ -251,7 +250,7 @@ class Charts:
                         else:
                             y1_offset = -17
                             y2_offset = 8
-                # if values are not close to each other put the labels directly above the value
+                # If values are not close to each other put the labels directly above the value
                 else:
                     y1 = row[1]
                     y2 = row[2]
@@ -263,24 +262,23 @@ class Charts:
                 plt.annotate(
                     str(int(row[1])),
                     xy=(row[0], y1),
-                    textcoords="offset points",  # how to position the text
+                    textcoords="offset points",  # Set how to position the text
                     xytext=(
                         0,
                         y1_offset,
-                    ),  # distance from text to points (x,y)
-                    ha="center",  # horizontal alignment can be left, right or center
-                    # fontsize=2,
+                    ),  # Distance from text to points (x,y)
+                    ha="center",  # Horizontal alignment can be left, right or center
                     color="#005288",
                 )
                 plt.annotate(
                     str(int(row[2])),
                     xy=(row[0], y2),
-                    textcoords="offset points",  # how to position the text
+                    textcoords="offset points",  # Set how to position the text
                     xytext=(
                         0,
                         y2_offset,
-                    ),  # distance from text to points (x,y)
-                    ha="center",  # horizontal alignment can be left, right or center
+                    ),  # Distance from text to points (x,y)
+                    ha="center",  # Set horizontal alignment to center
                     # fontsize=2,
                     color="#c41230",
                 )
