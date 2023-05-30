@@ -1633,7 +1633,7 @@ def report_gen(data_dict, soc_med_included=False):
         Story.append(
             Paragraph(
                 """Verified vulnerabilities are determined by the Shodan scanner and identify assets with active, known vulnerabilities. More information
-                about CVE's can be found <link href="https://nvd.nist.gov/">here</link>.""",
+                about CVEs can be found <link href="https://nvd.nist.gov/">here</link>.""",
                 body,
             )
         )
