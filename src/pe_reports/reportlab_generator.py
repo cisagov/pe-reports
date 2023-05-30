@@ -662,7 +662,7 @@ def report_gen(data_dict, soc_med_included=False):
         Paragraph(
             """<br/>It is important to note that these findings have not been verified; everything is
                             gathered via passive analysis of publicly available sources. As such there may be false
-                            positive findings, however, these findings should be treated as information that your
+                            positive findings; however, these findings should be treated as information that your
                             organization is leaking out to the internet for adversaries to notice.<br/><br/>""",
             body,
         )
