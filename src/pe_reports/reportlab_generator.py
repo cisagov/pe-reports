@@ -1710,7 +1710,7 @@ def report_gen(data_dict, soc_med_included=False):
             """
             <font face="Franklin_Gothic_Medium_Regular">Credentials Leaked/Exposed:</font><br/>
             Credential leakage occurs when user credentials, often including passwords, are stolen via phishing campaigns,
-            network compromise or misconfiguration of databases leading to public exposure. This leaked data is then listed
+            network compromise, or misconfiguration of databases leading to public exposure. This leaked data is then listed
             for sale on numerous forums and sites on the dark web, which provides attackers easy access to a stakeholders'
             networks.
         """,
