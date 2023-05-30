@@ -50,7 +50,7 @@ def embed(
     vuln_xlsx,
     mi_xlsx,
 ):
-    """Embed raw data into PDF and encrypts file."""
+    """Embed raw data into PDF and encrypt file."""
     doc = fitz.open(file)
     # Get the summary page of the PDF on page 4
     page = doc[4]
