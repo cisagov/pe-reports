@@ -961,7 +961,7 @@ def report_gen(data_dict, soc_med_included=False):
                 Paragraph("3.2.2 Suspected Domain Masquerading", h3),
                 Paragraph(
                     """
-                    <font face="Franklin_Gothic_Medium_Regular">Table 3</font>  shows registered or updated domains that were
+                    <font face="Franklin_Gothic_Medium_Regular">Table 3</font> shows registered or updated domains that were
                     flagged by a blocklist service.
                 """,
                     body,
