@@ -6,6 +6,8 @@ import datetime
 import datetime
 import logging
 import sys
+import requests
+import json
 
 # Third-Party Libraries
 import pandas as pd
@@ -2193,3 +2195,457 @@ def get_was_closed_vulns(start_date, end_date, df_orgs=[]):
     finally:
         if conn is not None:
             close(conn)
+
+
+# v ========== API VERSIONS OF QUERIES ========== v
+# ---------- D-Score API Queries ----------
+def api_dscore_vs_cert(org_list):
+    """
+    Query API for all VS certificate data needed for D-Score calculation.
+
+    Args:
+        org_list: The specified list of organizations to retrieve data for
+    Return:
+        All VS certificate data of the specified orgs needed for the D-Score
+    """
+    # API call info
+    endpoint_url = "http://127.0.0.1:8000/apiv1/dscore_vs_cert"
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": f'{api_config("API_KEY")}',
+    }
+    body = {"org_list": org_list}
+    # Attempt API call, catch errors
+    try:
+        response = requests.post(endpoint_url, headers=headers, data=body).json()
+        return response
+    except requests.exceptions.HTTPError as errh:
+        print(errh)
+    except requests.exceptions.ConnectionError as errc:
+        print(errc)
+    except requests.exceptions.Timeout as errt:
+        print(errt)
+    except requests.exceptions.RequestException as errr:
+        print(errr)
+    except json.decoder.JSONDecodeError as errj:
+        print(errj)
+
+
+def api_dscore_vs_mail(org_list):
+    """
+    Query API for all VS mail data needed for D-Score calculation.
+
+    Args:
+        org_list: The specified list of organizations to retrieve data for
+    Return:
+        All VS mail data of the specified orgs needed for the D-Score
+    """
+    # API call info
+    endpoint_url = "http://127.0.0.1:8000/apiv1/dscore_vs_mail"
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": f'{api_config("API_KEY")}',
+    }
+    body = {"org_list": org_list}
+    # Attempt API call, catch errors
+    try:
+        response = requests.post(endpoint_url, headers=headers, data=body).json()
+        return response
+    except requests.exceptions.HTTPError as errh:
+        print(errh)
+    except requests.exceptions.ConnectionError as errc:
+        print(errc)
+    except requests.exceptions.Timeout as errt:
+        print(errt)
+    except requests.exceptions.RequestException as errr:
+        print(errr)
+    except json.decoder.JSONDecodeError as errj:
+        print(errj)
+
+
+def api_dscore_pe_ip(org_list):
+    """
+    Query API for all PE IP data needed for D-Score calculation.
+
+    Args:
+        org_list: The specified list of organizations to retrieve data for
+    Return:
+        All PE IP data of the specified orgs needed for the D-Score
+    """
+    # API call info
+    endpoint_url = "http://127.0.0.1:8000/apiv1/dscore_pe_ip"
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": f'{api_config("API_KEY")}',
+    }
+    body = {"org_list": org_list}
+    # Attempt API call, catch errors
+    try:
+        response = requests.post(endpoint_url, headers=headers, data=body).json()
+        return response
+    except requests.exceptions.HTTPError as errh:
+        print(errh)
+    except requests.exceptions.ConnectionError as errc:
+        print(errc)
+    except requests.exceptions.Timeout as errt:
+        print(errt)
+    except requests.exceptions.RequestException as errr:
+        print(errr)
+    except json.decoder.JSONDecodeError as errj:
+        print(errj)
+
+
+def api_dscore_pe_domain(org_list):
+    """
+    Query API for all PE domain data needed for D-Score calculation.
+
+    Args:
+        org_list: The specified list of organizations to retrieve data for
+    Return:
+        All PE domain data of the specified orgs needed for the D-Score
+    """
+    # API call info
+    endpoint_url = "http://127.0.0.1:8000/apiv1/dscore_pe_domain"
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": f'{api_config("API_KEY")}',
+    }
+    body = {"org_list": org_list}
+    # Attempt API call, catch errors
+    try:
+        response = requests.post(endpoint_url, headers=headers, data=body).json()
+        return response
+    except requests.exceptions.HTTPError as errh:
+        print(errh)
+    except requests.exceptions.ConnectionError as errc:
+        print(errc)
+    except requests.exceptions.Timeout as errt:
+        print(errt)
+    except requests.exceptions.RequestException as errr:
+        print(errr)
+    except json.decoder.JSONDecodeError as errj:
+        print(errj)
+
+
+def api_dscore_was_webapp(org_list):
+    """
+    Query API for all WAS webapp data needed for D-Score calculation.
+
+    Args:
+        org_list: The specified list of organizations to retrieve data for
+    Return:
+        All WAS webapp data of the specified orgs needed for the D-Score
+    """
+    # API call info
+    endpoint_url = "http://127.0.0.1:8000/apiv1/dscore_was_webapp"
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": f'{api_config("API_KEY")}',
+    }
+    body = {"org_list": org_list}
+    # Attempt API call, catch errors
+    try:
+        response = requests.post(endpoint_url, headers=headers, data=body).json()
+        return response
+    except requests.exceptions.HTTPError as errh:
+        print(errh)
+    except requests.exceptions.ConnectionError as errc:
+        print(errc)
+    except requests.exceptions.Timeout as errt:
+        print(errt)
+    except requests.exceptions.RequestException as errr:
+        print(errr)
+    except json.decoder.JSONDecodeError as errj:
+        print(errj)
+
+
+# ---------- I-Score API Queries ----------
+def api_iscore_vs_vuln(org_list):
+    """
+    Query API for all VS vuln data needed for I-Score calculation.
+
+    Args:
+        org_list: The specified list of organizations to retrieve data for
+    Return:
+        All VS vuln data of the specified orgs needed for the I-Score
+    """
+    # API call info
+    endpoint_url = "http://127.0.0.1:8000/apiv1/iscore_vs_vuln"
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": f'{api_config("API_KEY")}',
+    }
+    body = {"org_list": org_list}
+    # Attempt API call, catch errors
+    try:
+        response = requests.post(endpoint_url, headers=headers, data=body).json()
+        return response
+    except requests.exceptions.HTTPError as errh:
+        print(errh)
+    except requests.exceptions.ConnectionError as errc:
+        print(errc)
+    except requests.exceptions.Timeout as errt:
+        print(errt)
+    except requests.exceptions.RequestException as errr:
+        print(errr)
+    except json.decoder.JSONDecodeError as errj:
+        print(errj)
+
+
+def api_iscore_vs_vuln_prev(org_list, start_date, end_date):
+    """
+    Query API for all previous VS vuln data needed for I-Score calculation.
+
+    Args:
+        org_list: The specified list of organizations to retrieve data for
+    Return:
+        All previous VS vuln data of the specified orgs needed for the I-Score
+    """
+    # API call info
+    endpoint_url = "http://127.0.0.1:8000/apiv1/iscore_vs_vuln_prev"
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": f'{api_config("API_KEY")}',
+    }
+    body = {"org_list": org_list, "start_date": start_date, "end_date": end_date}
+    # Attempt API call, catch errors
+    try:
+        response = requests.post(endpoint_url, headers=headers, data=body).json()
+        return response
+    except requests.exceptions.HTTPError as errh:
+        print(errh)
+    except requests.exceptions.ConnectionError as errc:
+        print(errc)
+    except requests.exceptions.Timeout as errt:
+        print(errt)
+    except requests.exceptions.RequestException as errr:
+        print(errr)
+    except json.decoder.JSONDecodeError as errj:
+        print(errj)
+
+
+def api_iscore_pe_vuln(org_list, start_date, end_date):
+    """
+    Query API for all PE vuln data needed for I-Score calculation.
+
+    Args:
+        org_list: The specified list of organizations to retrieve data for
+    Return:
+        All PE vuln data of the specified orgs needed for the I-Score
+    """
+    # API call info
+    endpoint_url = "http://127.0.0.1:8000/apiv1/iscore_pe_vuln"
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": f'{api_config("API_KEY")}',
+    }
+    body = {"org_list": org_list, "start_date": start_date, "end_date": end_date}
+    # Attempt API call, catch errors
+    try:
+        response = requests.post(endpoint_url, headers=headers, data=body).json()
+        return response
+    except requests.exceptions.HTTPError as errh:
+        print(errh)
+    except requests.exceptions.ConnectionError as errc:
+        print(errc)
+    except requests.exceptions.Timeout as errt:
+        print(errt)
+    except requests.exceptions.RequestException as errr:
+        print(errr)
+    except json.decoder.JSONDecodeError as errj:
+        print(errj)
+
+
+def api_iscore_pe_cred(org_list, start_date, end_date):
+    """
+    Query API for all PE cred data needed for I-Score calculation.
+
+    Args:
+        org_list: The specified list of organizations to retrieve data for
+    Return:
+        All PE cred data of the specified orgs needed for the I-Score
+    """
+    # API call info
+    endpoint_url = "http://127.0.0.1:8000/apiv1/iscore_pe_cred"
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": f'{api_config("API_KEY")}',
+    }
+    body = {"org_list": org_list, "start_date": start_date, "end_date": end_date}
+    # Attempt API call, catch errors
+    try:
+        response = requests.post(endpoint_url, headers=headers, data=body).json()
+        return response
+    except requests.exceptions.HTTPError as errh:
+        print(errh)
+    except requests.exceptions.ConnectionError as errc:
+        print(errc)
+    except requests.exceptions.Timeout as errt:
+        print(errt)
+    except requests.exceptions.RequestException as errr:
+        print(errr)
+    except json.decoder.JSONDecodeError as errj:
+        print(errj)
+
+
+def api_iscore_pe_breach(org_list, start_date, end_date):
+    """
+    Query API for all PE breach data needed for I-Score calculation.
+
+    Args:
+        org_list: The specified list of organizations to retrieve data for
+    Return:
+        All PE breach data of the specified orgs needed for the I-Score
+    """
+    # API call info
+    endpoint_url = "http://127.0.0.1:8000/apiv1/iscore_pe_breach"
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": f'{api_config("API_KEY")}',
+    }
+    body = {"org_list": org_list, "start_date": start_date, "end_date": end_date}
+    # Attempt API call, catch errors
+    try:
+        response = requests.post(endpoint_url, headers=headers, data=body).json()
+        return response
+    except requests.exceptions.HTTPError as errh:
+        print(errh)
+    except requests.exceptions.ConnectionError as errc:
+        print(errc)
+    except requests.exceptions.Timeout as errt:
+        print(errt)
+    except requests.exceptions.RequestException as errr:
+        print(errr)
+    except json.decoder.JSONDecodeError as errj:
+        print(errj)
+
+
+def api_iscore_pe_darkweb(org_list, start_date, end_date):
+    """
+    Query API for all PE darkweb data needed for I-Score calculation.
+
+    Args:
+        org_list: The specified list of organizations to retrieve data for
+    Return:
+        All PE darkweb data of the specified orgs needed for the I-Score
+    """
+    # API call info
+    endpoint_url = "http://127.0.0.1:8000/apiv1/iscore_pe_darkweb"
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": f'{api_config("API_KEY")}',
+    }
+    body = {"org_list": org_list, "start_date": start_date, "end_date": end_date}
+    # Attempt API call, catch errors
+    try:
+        response = requests.post(endpoint_url, headers=headers, data=body).json()
+        return response
+    except requests.exceptions.HTTPError as errh:
+        print(errh)
+    except requests.exceptions.ConnectionError as errc:
+        print(errc)
+    except requests.exceptions.Timeout as errt:
+        print(errt)
+    except requests.exceptions.RequestException as errr:
+        print(errr)
+    except json.decoder.JSONDecodeError as errj:
+        print(errj)
+
+
+def api_iscore_pe_protocol(org_list, start_date, end_date):
+    """
+    Query API for all PE protocol data needed for I-Score calculation.
+
+    Args:
+        org_list: The specified list of organizations to retrieve data for
+    Return:
+        All PE protocol data of the specified orgs needed for the I-Score
+    """
+    # API call info
+    endpoint_url = "http://127.0.0.1:8000/apiv1/iscore_pe_protocol"
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": f'{api_config("API_KEY")}',
+    }
+    body = {"org_list": org_list, "start_date": start_date, "end_date": end_date}
+    # Attempt API call, catch errors
+    try:
+        response = requests.post(endpoint_url, headers=headers, data=body).json()
+        return response
+    except requests.exceptions.HTTPError as errh:
+        print(errh)
+    except requests.exceptions.ConnectionError as errc:
+        print(errc)
+    except requests.exceptions.Timeout as errt:
+        print(errt)
+    except requests.exceptions.RequestException as errr:
+        print(errr)
+    except json.decoder.JSONDecodeError as errj:
+        print(errj)
+
+
+def api_iscore_was_vuln(org_list, start_date, end_date):
+    """
+    Query API for all WAS vuln data needed for I-Score calculation.
+
+    Args:
+        org_list: The specified list of organizations to retrieve data for
+    Return:
+        All WAS vuln data of the specified orgs needed for the I-Score
+    """
+    # API call info
+    endpoint_url = "http://127.0.0.1:8000/apiv1/iscore_was_vuln"
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": f'{api_config("API_KEY")}',
+    }
+    body = {"org_list": org_list, "start_date": start_date, "end_date": end_date}
+    # Attempt API call, catch errors
+    try:
+        response = requests.post(endpoint_url, headers=headers, data=body).json()
+        return response
+    except requests.exceptions.HTTPError as errh:
+        print(errh)
+    except requests.exceptions.ConnectionError as errc:
+        print(errc)
+    except requests.exceptions.Timeout as errt:
+        print(errt)
+    except requests.exceptions.RequestException as errr:
+        print(errr)
+    except json.decoder.JSONDecodeError as errj:
+        print(errj)
+
+
+def api_iscore_was_vuln_prev(org_list, start_date, end_date):
+    """
+    Query API for all previous WAS vuln data needed for I-Score calculation.
+
+    Args:
+        org_list: The specified list of organizations to retrieve data for
+    Return:
+        All previous WAS vuln data of the specified orgs needed for the I-Score
+    """
+    # API call info
+    endpoint_url = "http://127.0.0.1:8000/apiv1/iscore_was_vuln_prev"
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": f'{api_config("API_KEY")}',
+    }
+    body = {"org_list": org_list, "start_date": start_date, "end_date": end_date}
+    # Attempt API call, catch errors
+    try:
+        response = requests.post(endpoint_url, headers=headers, data=body).json()
+        return response
+    except requests.exceptions.HTTPError as errh:
+        print(errh)
+    except requests.exceptions.ConnectionError as errc:
+        print(errc)
+    except requests.exceptions.Timeout as errt:
+        print(errt)
+    except requests.exceptions.RequestException as errr:
+        print(errr)
+    except json.decoder.JSONDecodeError as errj:
+        print(errj)
+
+
+# ^ ========== API CONVERSIONS OF QUERIES ========== ^
