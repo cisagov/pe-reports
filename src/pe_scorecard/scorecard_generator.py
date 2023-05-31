@@ -1,7 +1,7 @@
 """A tool for creating CISA unified scorecard.
 
 Usage:
-  pe-scorecard REPORT_MONTH REPORT_YEAR OUTPUT_DIRECTORY [--log-level=LEVEL] [--orgs=ORG_LIST] [--email] [--cancel-refresh] [--exclude_bods]
+  pe-scorecard REPORT_MONTH REPORT_YEAR OUTPUT_DIRECTORY [--log-level=LEVEL] [--sectors=SECTOR_LIST] [--orgs=ORG_LIST] [--email] [--cancel-refresh] [--exclude_bods]
 
 Options:
   -h --help                         Show this message.
