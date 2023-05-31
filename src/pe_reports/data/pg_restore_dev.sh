@@ -2,7 +2,7 @@
 # Get the zip file from Accessor by running:
 # rsync -avrhP ubuntu@localhost:/home/ubuntu/db_backups/<latest dump file name>.zip <destination directory>
 # Set path to pg dump and globals backup files. ex: /Users/user/Desktop/backups
-path=/Users/loftusa/Documents/GitHub/pe-reports/src/pe_reports/data/db_dev_schema.sql
+path=src/pe_reports/data/db_dev_schema.sql
 
 dropdb pe_dev -h localhost -U postgres --if-exists
 
