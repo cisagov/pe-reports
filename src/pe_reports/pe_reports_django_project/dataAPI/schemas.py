@@ -136,6 +136,18 @@ class TaskResponse(BaseModel):
     result: List[MatVwOrgsAllIps] = None
     error: str = None
 
+    class veMatVwOrgsAllIps(BaseModel):
+        cyhy_db_name: Optional[str]
+
+        class Config:
+            orm_mode = True
+
+    class veTaskResponse(BaseModel):
+        task_id: str
+        status: str
+        result: List[veMatVwOrgsAllIps] = None
+        error: str = None
+
 
 class WASDataBase(BaseModel):
     # customer_id: UUID

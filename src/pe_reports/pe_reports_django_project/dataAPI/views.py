@@ -532,7 +532,7 @@ def ve_info(ip_address: List[str], tokens: dict = Depends(get_api_key)):
         return {'message': "No api key was submitted"}
 
 @api_router.get("/ve_info/task/{task_id}", dependencies=[Depends(get_api_key)],
-                response_model=schemas.TaskResponse,
+                response_model=schemas.veTaskResponse,
                 tags=["Check task VE status"])
 async def get_ve_task_status(task_id: str, tokens: dict = Depends(get_api_key)):
     task = get_ve_info.AsyncResult(task_id)
@@ -549,14 +549,11 @@ async def get_ve_task_status(task_id: str, tokens: dict = Depends(get_api_key)):
 
 
 @api_router.post("/vs_info", dependencies=[Depends(get_api_key)],
-                 response_model=schemas.TaskResponse,
+                 response_model=schemas.veTaskResponse,
                  tags=["List of all VS data"])
 def vs_info(cyhy_db_names: List[str], tokens: dict = Depends(get_api_key)):
     """API endpoint to get all WAS data."""
     print(cyhy_db_names)
-    vs_data = list(MatVwOrgsAllIps.objects.filter(cyhy_db_name__in=cyhy_db_names))
-
-    # orgs_df = pd.DataFrame(orgs)
 
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:

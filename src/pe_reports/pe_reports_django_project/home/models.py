@@ -1297,7 +1297,9 @@ class VwOrgsTotalIps(models.Model):
 class MatVwOrgsAllIps(models.Model):
     organizations_uid = models.UUIDField(primary_key=True)
     cyhy_db_name = models.TextField(blank=True, null=True)
-    ip_addresses = ArrayField(models.CharField(max_length=255, blank=True, null=True), blank=True, null=True)
+    ip_addresses = ArrayField(
+        models.GenericIPAddressField(blank=True, null=True), blank=True,
+        null=True)
 
     class Meta:
         managed = False  # Created from a view. Don't remove.
