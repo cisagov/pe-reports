@@ -4,17 +4,18 @@ from home.models import MatVwOrgsAllIps
 import datetime
 from django.db.models import Q
 
-# D-Score View Models:
+
 from home.models import (
+    # General DB Table Models:
+    CyhyKevs,
+    Organizations,
+    # D-Score View Models:
     VwDscoreVSCert,
     VwDscoreVSMail,
     VwDscorePEIp,
     VwDscorePEDomain,
     VwDscoreWASWebapp,
-)
-
-# I-Score View Models:
-from home.models import (
+    # I-Score View Models:
     VwIscoreVSVuln,
     VwIscoreVSVulnPrev,
     VwIscorePEVuln,
@@ -24,10 +25,9 @@ from home.models import (
     VwIscorePEProtocol,
     VwIscoreWASVuln,
     VwIscoreWASVulnPrev,
+    # Misc. Score View Models:
+    VwIscoreOrgsIpCounts,
 )
-
-# Misc. Score View Models:
-# Need: kev_list, fceb_status, stakeholder lists?
 
 
 @shared_task(bind=True)
@@ -85,6 +85,18 @@ def get_dscore_was_webapp_info(self, specified_orgs: List[str]):
         VwDscoreWASWebapp.objects.filter(organizations_uid__in=specified_orgs)
     )
     return dscore_was_webapp
+
+
+@shared_task(bind=True)
+def get_fceb_status_info(self, specified_orgs: List[str]):
+    """Task function for the FCEB status query API endpoint."""
+    # Make database query
+    fceb_status = list(
+        Organizations.objects.filter(organizations_uid__in=specified_orgs).values(
+            "organizations_uid", "fceb"
+        )
+    )
+    return fceb_status
 
 
 # ---------- I-Score View Tasks ----------
@@ -223,3 +235,76 @@ def get_iscore_was_vuln_prev_info(
         )
     )
     return iscore_was_vuln_prev
+
+
+@shared_task(bind=True)
+def get_kev_list_info(self, specified_orgs: List[str]):
+    """Task function for the KEV list query API endpoint."""
+    # Make database query
+    kev_list = list(CyhyKevs.objects.values("kevs"))
+    return kev_list
+
+
+# ---------- Misc. Score View Tasks ----------
+@shared_task(bind=True)
+def get_xs_stakeholders_info(self):
+    """Task function for the XS stakeholder list query API endpoint."""
+    # Make database query
+    xs_stakeholders = list(
+        VwIscoreOrgsIpCounts.objects.filter(
+            ip_count__gte=0,
+            ip_count__lte=100,
+        ).values("organizations_uid", "cyhy_db_name")
+    )
+    return xs_stakeholders
+
+
+@shared_task(bind=True)
+def get_s_stakeholders_info(self):
+    """Task function for the S stakeholder list query API endpoint."""
+    # Make database query
+    s_stakeholders = list(
+        VwIscoreOrgsIpCounts.objects.filter(
+            ip_count__gt=100,
+            ip_count__lte=1000,
+        ).values("organizations_uid", "cyhy_db_name")
+    )
+    return s_stakeholders
+
+
+@shared_task(bind=True)
+def get_m_stakeholders_info(self):
+    """Task function for the M stakeholder list query API endpoint."""
+    # Make database query
+    m_stakeholders = list(
+        VwIscoreOrgsIpCounts.objects.filter(
+            ip_count__gt=1000,
+            ip_count__lte=10000,
+        ).values("organizations_uid", "cyhy_db_name")
+    )
+    return m_stakeholders
+
+
+@shared_task(bind=True)
+def get_l_stakeholders_info(self):
+    """Task function for the L stakeholder list query API endpoint."""
+    # Make database query
+    l_stakeholders = list(
+        VwIscoreOrgsIpCounts.objects.filter(
+            ip_count__gt=10000,
+            ip_count__lte=100000,
+        ).values("organizations_uid", "cyhy_db_name")
+    )
+    return l_stakeholders
+
+
+@shared_task(bind=True)
+def get_xl_stakeholders_info(self):
+    """Task function for the XL stakeholder list query API endpoint."""
+    # Make database query
+    xl_stakeholders = list(
+        VwIscoreOrgsIpCounts.objects.filter(ip_count__gt=100000).values(
+            "organizations_uid", "cyhy_db_name"
+        )
+    )
+    return xl_stakeholders

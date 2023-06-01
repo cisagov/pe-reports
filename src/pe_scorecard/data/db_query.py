@@ -3,11 +3,11 @@
 
 # Standard Python Libraries
 import datetime
-import datetime
 import logging
 import sys
 import requests
 import json
+import time
 
 # Third-Party Libraries
 import pandas as pd
@@ -2359,6 +2359,38 @@ def api_dscore_was_webapp(org_list):
         print(errj)
 
 
+def api_fceb_status(org_list):
+    """
+    Query API for the FCEB status of a list of organizations.
+
+    Args:
+        org_list: The specified list of organizations to retrieve data for
+    Return:
+        The FCEB status of the specified list of organizations
+    """
+    # API call info
+    endpoint_url = "http://127.0.0.1:8000/apiv1/fceb_status"
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": f'{api_config("API_KEY")}',
+    }
+    body = {"org_list": org_list}
+    # Attempt API call, catch errors
+    try:
+        response = requests.post(endpoint_url, headers=headers, data=body).json()
+        return response
+    except requests.exceptions.HTTPError as errh:
+        print(errh)
+    except requests.exceptions.ConnectionError as errc:
+        print(errc)
+    except requests.exceptions.Timeout as errt:
+        print(errt)
+    except requests.exceptions.RequestException as errr:
+        print(errr)
+    except json.decoder.JSONDecodeError as errj:
+        print(errj)
+
+
 # ---------- I-Score API Queries ----------
 def api_iscore_vs_vuln(org_list):
     """
@@ -2648,4 +2680,239 @@ def api_iscore_was_vuln_prev(org_list, start_date, end_date):
         print(errj)
 
 
+def api_kev_list(org_list):
+    """
+    Query API for list of all KEVs.
+
+    Return:
+        List of all KEVs
+    """
+    # API call info
+    endpoint_url = "http://127.0.0.1:8000/apiv1/kev_list"
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": f'{api_config("API_KEY")}',
+    }
+    # body = {"org_list": org_list}
+    # Attempt API call, catch errors
+    try:
+        response = requests.post(endpoint_url, headers=headers).json()
+        return response
+    except requests.exceptions.HTTPError as errh:
+        print(errh)
+    except requests.exceptions.ConnectionError as errc:
+        print(errc)
+    except requests.exceptions.Timeout as errt:
+        print(errt)
+    except requests.exceptions.RequestException as errr:
+        print(errr)
+    except json.decoder.JSONDecodeError as errj:
+        print(errj)
+
+
+# ---------- Misc. Score Related API Queries ----------
+def xs_stakeholders():
+    """
+    Query API for list of all XS stakeholders.
+
+    Return:
+        List of all XS stakeholders
+    """
+    # API call info
+    endpoint_url = "http://127.0.0.1:8000/apiv1/xs_stakeholders"
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": f'{api_config("API_KEY")}',
+    }
+    # body = {"org_list": org_list}
+    # Attempt API call, catch errors
+    try:
+        response = requests.post(endpoint_url, headers=headers).json()
+        return response
+    except requests.exceptions.HTTPError as errh:
+        print(errh)
+    except requests.exceptions.ConnectionError as errc:
+        print(errc)
+    except requests.exceptions.Timeout as errt:
+        print(errt)
+    except requests.exceptions.RequestException as errr:
+        print(errr)
+    except json.decoder.JSONDecodeError as errj:
+        print(errj)
+
+
+def s_stakeholders():
+    """
+    Query API for list of all S stakeholders.
+
+    Return:
+        List of all S stakeholders
+    """
+    # API call info
+    endpoint_url = "http://127.0.0.1:8000/apiv1/s_stakeholders"
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": f'{api_config("API_KEY")}',
+    }
+    # body = {"org_list": org_list}
+    # Attempt API call, catch errors
+    try:
+        response = requests.post(endpoint_url, headers=headers).json()
+        return response
+    except requests.exceptions.HTTPError as errh:
+        print(errh)
+    except requests.exceptions.ConnectionError as errc:
+        print(errc)
+    except requests.exceptions.Timeout as errt:
+        print(errt)
+    except requests.exceptions.RequestException as errr:
+        print(errr)
+    except json.decoder.JSONDecodeError as errj:
+        print(errj)
+
+
+def m_stakeholders():
+    """
+    Query API for list of all M stakeholders.
+
+    Return:
+        List of all M stakeholders
+    """
+    # API call info
+    endpoint_url = "http://127.0.0.1:8000/apiv1/m_stakeholders"
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": f'{api_config("API_KEY")}',
+    }
+    # body = {"org_list": org_list}
+    # Attempt API call, catch errors
+    try:
+        response = requests.post(endpoint_url, headers=headers).json()
+        return response
+    except requests.exceptions.HTTPError as errh:
+        print(errh)
+    except requests.exceptions.ConnectionError as errc:
+        print(errc)
+    except requests.exceptions.Timeout as errt:
+        print(errt)
+    except requests.exceptions.RequestException as errr:
+        print(errr)
+    except json.decoder.JSONDecodeError as errj:
+        print(errj)
+
+
+def l_stakeholders():
+    """
+    Query API for list of all L stakeholders.
+
+    Return:
+        List of all L stakeholders
+    """
+    # API call info
+    endpoint_url = "http://127.0.0.1:8000/apiv1/l_stakeholders"
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": f'{api_config("API_KEY")}',
+    }
+    # body = {"org_list": org_list}
+    # Attempt API call, catch errors
+    try:
+        response = requests.post(endpoint_url, headers=headers).json()
+        return response
+    except requests.exceptions.HTTPError as errh:
+        print(errh)
+    except requests.exceptions.ConnectionError as errc:
+        print(errc)
+    except requests.exceptions.Timeout as errt:
+        print(errt)
+    except requests.exceptions.RequestException as errr:
+        print(errr)
+    except json.decoder.JSONDecodeError as errj:
+        print(errj)
+
+
+def xl_stakeholders():
+    """
+    Query API for list of all XL stakeholders.
+
+    Return:
+        List of all XL stakeholders
+    """
+    # API call info
+    endpoint_url = "http://127.0.0.1:8000/apiv1/xl_stakeholders"
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": f'{api_config("API_KEY")}',
+    }
+    # body = {"org_list": org_list}
+    # Attempt API call, catch errors
+    try:
+        response = requests.post(endpoint_url, headers=headers).json()
+        return response
+    except requests.exceptions.HTTPError as errh:
+        print(errh)
+    except requests.exceptions.ConnectionError as errc:
+        print(errc)
+    except requests.exceptions.Timeout as errt:
+        print(errt)
+    except requests.exceptions.RequestException as errr:
+        print(errr)
+    except json.decoder.JSONDecodeError as errj:
+        print(errj)
+
+
 # ^ ========== API CONVERSIONS OF QUERIES ========== ^
+
+
+# db_query function to test functionality of new API endpoints
+def test_query():
+    """
+    Function for testing new API endpoints.
+
+    Return:
+        Test data
+    """
+    # API call info
+    endpoint_url = "http://127.0.0.1:8000/apiv1/xs_stakeholders"
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": f'{api_config("API_KEY")}',
+    }
+    # body = {"org_list": org_list}
+    # Attempt API call, catch errors
+    try:
+        # Make initial call to start task
+        task = requests.post(endpoint_url, headers=headers).json()
+        task_id = task.get("task_id")
+        # Repeatedly ping endpoint to check status of task
+        task_done = False
+        result = None
+        while task_done == False:
+            # url for task status endpoint
+            status_url = "http://127.0.0.1:8000/apiv1/xs_stakeholders/task/%s" % task_id
+            # Get current task status
+            task_status = requests.post(status_url, headers=headers).json()
+            if task_status.get("status") == "Completed":
+                # If task completed, extract finished data and return
+                result = task_status.get("result")
+                task_done = True
+            elif task_status.get("status") == "Failed":
+                # If task failed, exit with error
+                result = "Error: Query task failed"
+                task_done = True
+            else:
+                # If not completed or failed, status is pending
+                # wait 3 second delay and ping again
+                time.sleep(3)
+        # Return result
+        return result
+    except requests.exceptions.HTTPError as errh:
+        print(errh)
+    except requests.exceptions.ConnectionError as errc:
+        print(errc)
+    except requests.exceptions.Timeout as errt:
+        print(errt)
+    except requests.exceptions.RequestException as errr:
+        print(errr)
+    except json.decoder.JSONDecodeError as errj:
+        print(errj)

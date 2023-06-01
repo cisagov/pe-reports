@@ -1757,3 +1757,28 @@ class VwIscoreWASVulnPrev(models.Model):
     class Meta:
         managed = False  # Created from a view. Don't remove.
         db_table = "vw_iscore_was_vuln_prev"
+
+
+# ---------- Misc. Score Related Models ----------
+# cyhy_kevs table model (needed for I-Score)
+class CyhyKevs(models.Model):
+    cyhy_kevs_uid = models.UUIDField(primary_key=True)
+    kev = models.CharField(blank=True, null=True)
+    first_seen = models.DateField(blank=True, null=True)
+    last_seen = models.DateField(blank=True, null=True)
+
+    class Meta:
+        managed = False
+        db_table = "cyhy_kevs"
+
+
+# vw_iscore_orgs_ip_counts view model
+# (can be used for any score, not just I-Score)
+class VwIscoreOrgsIpCounts(models.Model):
+    organizations_uid = models.UUIDField(primary_key=True)
+    cyhy_db_name = models.CharField(blank=True, null=True)
+    ip_count = models.BigIntegerField(blank=True, null=True)
+
+    class Meta:
+        managed = False
+        db_table = "vw_iscore_orgs_ip_counts"

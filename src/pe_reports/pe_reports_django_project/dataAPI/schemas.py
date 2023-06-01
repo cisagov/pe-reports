@@ -474,6 +474,31 @@ class VwDscoreWASWebappTaskResp(BaseModel):
     error: str = None
 
 
+# FCEB status query schema (no view):
+class FCEBStatus(BaseModel):
+    organizations_uid: UUID
+    fceb: bool
+
+    class Config:
+        orm_mode = True
+
+
+# FCEB status query input schema (no view):
+class FCEBStatusInput(BaseModel):
+    specified_orgs: list
+
+    class Config:
+        orm_mode = True
+
+
+# FCEB status query task response schema (no view):
+class FCEBStatusTaskResp(BaseModel):
+    task_id: str
+    status: str
+    result: List[FCEBStatus] = None
+    error: str = None
+
+
 # ---------- I-Score View Schemas ----------
 # vw_iscore_vs_vuln schema:
 class VwIscoreVSVuln(BaseModel):
@@ -741,4 +766,41 @@ class VwIscoreWASVulnPrevTaskResp(BaseModel):
     task_id: str
     status: str
     result: List[VwIscoreWASVulnPrev] = None
+    error: str = None
+
+
+# KEV list query schema (no view):
+# KEV list query does not use any input parameters
+class KEVList(BaseModel):
+    kev: str
+
+    class Config:
+        orm_mode = True
+
+
+# KEV list query task response schema (no view):
+class KEVListTaskResp(BaseModel):
+    task_id: str
+    status: str
+    result: List[KEVList] = None
+    error: str = None
+
+
+# ---------- Misc. Score Schemas ----------
+# vw_iscore_orgs_ip_counts schema:
+# vw_iscore_orgs_ip_counts does not use any input parameters
+class VwIscoreOrgsIpCounts(BaseModel):
+    organizations_uid: UUID
+    cyhy_db_name: str
+    # ip_count: int
+
+    class Config:
+        orm_mode = True
+
+
+# vw_iscore_orgs_ip_counts task response schema:
+class VwIscoreOrgsIpCountsTaskResp(BaseModel):
+    task_id: str
+    status: str
+    result: List[VwIscoreOrgsIpCounts] = None
     error: str = None
