@@ -45,6 +45,7 @@
 
     </div>
     <br/>
+{% if user.is_superuser %}
     <div class="row justify-content-lg-center">
         <div class="row col-lg-4">
 
@@ -57,7 +58,7 @@
     <br/>
 
     <br/>
-{% if user.is_superuser %}
+
      <div class="row">
         <div class="col-8 offset-2">
             <table id="weekly-status-table"
