@@ -42,7 +42,7 @@ from .cybersixgill import Cybersixgill
 from .dnsmonitor import DNSMonitor
 from .dnstwistscript import run_dnstwist
 from .intelx_identity import IntelX
-from .shodan import Shodan
+from .pe_shodan import Shodan
 
 LOGGER = logging.getLogger(__name__)
 
