@@ -41,5 +41,18 @@ echo "LOGSTASH_PIPELINE_PATH=.${LOGSTASH_PIPELINE_PATH}" >> .env
 MEM_LIMIT=$(aws ssm get-parameter --name /ELK-Test/MEM_LIMIT --with-decryption --query 'Parameter.Value' --output text)
 echo "MEM_LIMIT=${MEM_LIMIT}" >> .env
 
+# Get the Kibana Username parameter, decrypt it, and append it to the .env file.
+KIBANA_USERNAME=$(aws ssm get-parameter --name /ELK-Test/KIBANA_USERNAME --with-decryption --query 'Parameter.Value' --output text)
+echo "KIBANA_USERNAME=${KIBANA_USERNAME}" >> .env
+
+# Get the Elastic Username parameter, decrypt it, and append it to the .env file.
+ELASTIC_USERNAME=$(aws ssm get-parameter --name /ELK-Test/ELASTIC_USERNAME --with-decryption --query 'Parameter.Value' --output text)
+echo "ELASTIC_USERNAME=${ELASTIC_USERNAME}" >> .env
+
+# Get the Logstash Port parameter, decrypt it, and append it to the .env file.
+LOGSTASH_PORT=$(aws ssm get-parameter --name /ELK-Test/LOGSTASH_PORT --with-decryption --query 'Parameter.Value' --output text)
+echo "LOGSTASH_PORT=${LOGSTASH_PORT}" >> .env
+
 # Get the Crypto Password parameter, decrypt it, and append it to the .env file.
-Crypto_Password=$(aws ssm get-parameter --name /ELK-Test/Crypto_Password --with-decryption --query 'Parameter.Value' --output text
+CRYPTO_PASSWORD=$(aws ssm get-parameter --name /ELK-Test/CRYPTO_PASSWORD --with-decryption --query 'Parameter.Value' --output text)
+echo "CRYPTO_PASSWORD=${CRYPTO_PASSWORD}" >> .env
