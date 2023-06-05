@@ -75,81 +75,81 @@ def get_tracking_score(df_orgs_df, report_period_year, report_period_month):
 
         df_bod_18_org = df_bod_18.loc[df_bod_18['organizations_uid'] == org_id]
         # Multiplying by predetermined weights for base metrics (see tracking score documentation)
-        bod_18_email = (100 - df_bod_18_org['email_bod_compliance']) * .125
-        bod_18_web = (100 - df_bod_18_org['web_bod_compliance']) * .125
+        bod_18_email = (100.0 - df_bod_18_org['email_bod_compliance']) * .125
+        bod_18_web = (100.0 - df_bod_18_org['web_bod_compliance']) * .125
 
         vs_df_bod_19_22_org = df_bod_19_22.loc[df_bod_19_22['organizations_uid'] == org_id]
         # Multiplying by predetermined weights for base metrics (see tracking score documentation)
-        vs_bod_22_kevs = (100 - vs_df_bod_19_22_org['percent_compliance_kevs']) * .25
-        vs_bod_19_crits = (100 - vs_df_bod_19_22_org['percent_compliance_crits']) * .2
-        vs_bod_19_highs = (100 - vs_df_bod_19_22_org['percent_compliance_highs']) * .15
-        vs_bod_19_meds = (100 - vs_df_bod_19_22_org['percent_compliance_meds']) * .1
-        vs_bod_19_lows = (100 - vs_df_bod_19_22_org['percent_compliance_lows']) * .05
+        vs_bod_22_kevs = (100.0 - vs_df_bod_19_22_org['percent_compliance_kevs']) * .25
+        vs_bod_19_crits = (100.0 - vs_df_bod_19_22_org['percent_compliance_crits']) * .2
+        vs_bod_19_highs = (100.0 - vs_df_bod_19_22_org['percent_compliance_highs']) * .15
+        vs_bod_19_meds = (100.0 - vs_df_bod_19_22_org['percent_compliance_meds']) * .1
+        vs_bod_19_lows = (100.0 - vs_df_bod_19_22_org['percent_compliance_lows']) * .05
 
         # Multiplying by predetermined weights for metric subsections (see tracking score documentation)
         vs_overdue_vuln_section = (float(bod_18_email) + float(bod_18_web) + float(vs_bod_22_kevs) + float(vs_bod_19_crits) + float(vs_bod_19_highs) + float(vs_bod_19_meds) + float(vs_bod_19_lows)) * .5
 
         df_vs_attr_org = df_vs_attr.loc[df_vs_attr['organizations_uid'] == org_id]
         # Multiplying by predetermined weights for base metrics (see tracking score documentation)
-        vs_attr_kevs = (100 - df_vs_attr_org['attr_kevs']) * .4
-        vs_attr_crits = (100 - df_vs_attr_org['attr_crits']) * .35
-        vs_attr_highs = (100 - df_vs_attr_org['attr_highs']) * .25
+        vs_attr_kevs = (100.0 - df_vs_attr_org['attr_kevs']) * .4
+        vs_attr_crits = (100.0 - df_vs_attr_org['attr_crits']) * .35
+        vs_attr_highs = (100.0 - df_vs_attr_org['attr_highs']) * .25
 
         # Multiplying by predetermined weights for metric subsections (see tracking score documentation)
         vs_attr_section = (vs_attr_kevs + vs_attr_crits + vs_attr_highs) * .25
 
         df_vs_vulns_org = df_norm_vs_vulns.loc[df_norm_vs_vulns['organizations_uid'] == org_id]
         # Multiplying by predetermined weights for base metrics (see tracking score documentation)
-        vs_kevs = (100 - df_vs_vulns_org['norm_kevs']) * .2
-        vs_crits = (100 - df_vs_vulns_org['norm_crits']) * .15
-        vs_highs = (100 - df_vs_vulns_org['norm_highs']) * .1
-        vs_meds = (100 - df_vs_vulns_org['norm_meds']) * .08
-        vs_lows = (100 - df_vs_vulns_org['norm_lows']) * .05
+        vs_kevs = (100.0 - df_vs_vulns_org['norm_kevs']) * .2
+        vs_crits = (100.0 - df_vs_vulns_org['norm_crits']) * .15
+        vs_highs = (100.0 - df_vs_vulns_org['norm_highs']) * .1
+        vs_meds = (100.0 - df_vs_vulns_org['norm_meds']) * .08
+        vs_lows = (100.0 - df_vs_vulns_org['norm_lows']) * .05
 
         df_vs_ports_org = df_norm_ports_prot.loc[df_norm_ports_prot['organizations_uid'] == org_id]
         # Multiplying by predetermined weights for base metrics (see tracking score documentation)
-        vs_ports = (100 - df_vs_ports_org['norm_ports']) * .14
-        vs_protocols = (100 - df_vs_ports_org['norm_protocols']) * .14
-        vs_services = (100 - df_vs_ports_org['norm_services']) * .14
+        vs_ports = (100.0 - df_vs_ports_org['norm_ports']) * .14
+        vs_protocols = (100.0 - df_vs_ports_org['norm_protocols']) * .14
+        vs_services = (100.0 - df_vs_ports_org['norm_services']) * .14
 
         # Multiplying by predetermined weights for metric subsections (see tracking score documentation)
         vs_historical_trend_section = (vs_kevs + vs_crits + vs_highs + vs_meds + vs_lows + vs_ports + vs_protocols + vs_services) * .25
         
         df_pe_vulns_org = df_norm_pe_vulns.loc[df_norm_pe_vulns['organizations_uid'] == org_id]
         # Multiplying by predetermined weights for base metrics (see tracking score documentation)
-        pe_kevs = (100 - df_pe_vulns_org['norm_kevs']) * .2
-        pe_crits = (100 - df_pe_vulns_org['norm_crits']) * .15
-        pe_highs = (100 - df_pe_vulns_org['norm_highs']) * .1
-        pe_meds = (100 - df_pe_vulns_org['norm_meds']) * .08
-        pe_lows = (100 - df_pe_vulns_org['norm_lows']) * .05
+        pe_kevs = (100.0 - df_pe_vulns_org['norm_kevs']) * .2
+        pe_crits = (100.0 - df_pe_vulns_org['norm_crits']) * .15
+        pe_highs = (100.0 - df_pe_vulns_org['norm_highs']) * .1
+        pe_meds = (100.0 - df_pe_vulns_org['norm_meds']) * .08
+        pe_lows = (100.0 - df_pe_vulns_org['norm_lows']) * .05
 
         # Multiplying by predetermined weights for metric subsections (see tracking score documentation)
         pe_historical_trend_section = (pe_kevs + pe_crits + pe_highs + pe_meds + pe_lows)
 
         df_was_vulns_org = df_norm_was_vulns.loc[df_norm_was_vulns['organizations_uid'] == org_id]
         # Multiplying by predetermined weights for base metrics (see tracking score documentation)
-        was_crits = (100 - df_was_vulns_org['norm_crits']) * .4
-        was_highs = (100 - df_was_vulns_org['norm_highs']) * .3
-        was_meds = (100 - df_was_vulns_org['norm_meds']) * .2
-        was_lows = (100 - df_was_vulns_org['norm_lows']) * .1
+        was_crits = (100.0 - df_was_vulns_org['norm_crits']) * .4
+        was_highs = (100.0 - df_was_vulns_org['norm_highs']) * .3
+        was_meds = (100.0 - df_was_vulns_org['norm_meds']) * .2
+        was_lows = (100.0 - df_was_vulns_org['norm_lows']) * .1
 
         # Multiplying by predetermined weights for metric subsections (see tracking score documentation)
         was_historical_trend_section = (was_crits + was_highs + was_meds + was_lows) * .25
 
         df_was_bod_19_org = df_was_bod_19.loc[df_was_bod_19['organizations_uid'] == org_id]
         # Multiplying by predetermined weights for base metrics (see tracking score documentation)
-        was_bod_19_crits = (100 - df_was_bod_19_org['percent_compliance_crits']) * .4
-        was_bod_19_highs = (100 - df_was_bod_19_org['percent_compliance_highs']) * .3
-        was_bod_19_meds = (100 - df_was_bod_19_org['percent_compliance_meds']) * .2
-        was_bod_19_lows = (100 - df_was_bod_19_org['percent_compliance_lows']) * .1
+        was_bod_19_crits = (100.0 - df_was_bod_19_org['percent_compliance_crits']) * .4
+        was_bod_19_highs = (100.0 - df_was_bod_19_org['percent_compliance_highs']) * .3
+        was_bod_19_meds = (100.0 - df_was_bod_19_org['percent_compliance_meds']) * .2
+        was_bod_19_lows = (100.0 - df_was_bod_19_org['percent_compliance_lows']) * .1
         
         # Multiplying by predetermined weights for metric subsections (see tracking score documentation)
         was_overdue_vuln_section = (was_bod_19_crits + was_bod_19_highs + was_bod_19_meds + was_bod_19_lows) * .5
 
         df_was_attr_org = df_was_atr.loc[df_was_atr['organizations_uid'] == org_id]
         # Multiplying by predetermined weights for base metrics (see tracking score documentation)
-        was_attr_crits = (100 - df_was_attr_org['attr_compl_crits']) * .55
-        was_attr_highs = (100 - df_was_attr_org['attr_compl_highs']) * .45
+        was_attr_crits = (100.0 - df_was_attr_org['attr_compl_crits']) * .55
+        was_attr_highs = (100.0 - df_was_attr_org['attr_compl_highs']) * .45
 
         # Multiplying by predetermined weights for metric subsections (see tracking score documentation)
         was_attr_section = (was_attr_crits + was_attr_highs) * .25
@@ -193,8 +193,8 @@ def summarize_vs_attr(orgs_df, this_month, next_month):
     return df_attr
 
 def calculate_attr_compliance(vuln_attr, type):
-    compliance_min = 0
-    compliance_max = 0
+    compliance_min = 0.0
+    compliance_max = 0.0
     if vuln_attr == "N/A":
         return 100.0
     if type == "KEV":
@@ -220,41 +220,41 @@ def get_bod_19_22(orgs_df):
 
     bod_19_22_list = []
     for index, org in orgs_df.iterrows():
-        total_kevs = 0
-        overdue_kevs = 0
-        total_crits = 0
-        overdue_crits = 0
-        total_highs = 0
-        overdue_highs = 0
-        total_medium = 0
-        overdue_medium = 0
-        total_low = 0
-        overdue_low = 0
+        total_kevs = 0.0
+        overdue_kevs = 0.0
+        total_crits = 0.0
+        overdue_crits = 0.0
+        total_highs = 0.0
+        overdue_highs = 0.0
+        total_medium = 0.0
+        overdue_medium = 0.0
+        total_low = 0.0
+        overdue_low = 0.0
         for index2, ticket in open_tickets_df.iterrows():
             if org['cyhy_db_name'] == ticket['cyhy_db_name'] or org['organizations_uid'] == ticket['parent_org_uid']:
                 time_opened = ticket['time_opened']
                 now = datetime.now()
                 age = get_age(time_opened, now)   
                 if ticket['cve'] in kevs_df['kev'].values:
-                    total_kevs = total_kevs + 1
+                    total_kevs = total_kevs + 1.0
                     if age > 14.0:
-                        overdue_kevs = overdue_kevs + 1
+                        overdue_kevs = overdue_kevs + 1.0
                 if ticket['cvss_base_score'] >= 9.0:
-                    total_crits = total_crits + 1
+                    total_crits = total_crits + 1.0
                     if age > 15.0:
-                        overdue_crits = overdue_crits + 1
+                        overdue_crits = overdue_crits + 1.0
                 elif ticket['cvss_base_score'] >= 7.0 and ticket['cvss_base_score'] < 9.0:
-                    total_highs = total_highs + 1
-                    if age >30.0:
-                        overdue_highs = overdue_highs + 1
+                    total_highs = total_highs + 1.0
+                    if age > 30.0:
+                        overdue_highs = overdue_highs + 1.0
                 elif ticket['cvss_base_score'] >= 4.0 and ticket['cvss_base_score'] < 7.0:
-                    total_medium = total_medium + 1
+                    total_medium = total_medium + 1.0
                     if age > 90.0:
-                        overdue_medium = overdue_medium + 1
+                        overdue_medium = overdue_medium + 1.0
                 else:
-                    total_low = total_low + 1
+                    total_low = total_low + 1.0
                     if age > 180.0:
-                        overdue_low = overdue_low + 1
+                        overdue_low = overdue_low + 1.0
         percent_compliance_kevs = get_percent_compliance(total_kevs, overdue_kevs)
         percent_compliance_crits = get_percent_compliance(total_crits, overdue_crits)
         percent_compliance_highs = get_percent_compliance(total_highs, overdue_highs)
@@ -266,7 +266,7 @@ def get_bod_19_22(orgs_df):
     return df_bod_19_22
 
 def get_percent_compliance(total, overdue):
-    if total == 0:
+    if total == 0.0:
         return 100.0
     else:
         return round(((total - overdue)/total)* 100.0, 2)
@@ -295,40 +295,40 @@ def summarize_vs_vuln_counts(orgs_df, this_month):
     df_kevs = get_kevs()
     vulns_list = []
     for index, org in orgs_df.iterrows():
-        last_month_kevs = 0
-        last_month_crits = 0
-        last_month_highs = 0
-        last_month_meds = 0
-        last_month_lows = 0
-        this_month_kevs = 0
-        this_month_crits = 0
-        this_month_highs = 0
-        this_month_meds = 0
-        this_month_lows = 0
+        last_month_kevs = 0.0
+        last_month_crits = 0.0
+        last_month_highs = 0.0
+        last_month_meds = 0.0
+        last_month_lows = 0.0
+        this_month_kevs = 0.0
+        this_month_crits = 0.0
+        this_month_highs = 0.0
+        this_month_meds = 0.0
+        this_month_lows = 0.0
         for index2, vulns in df_vulns.iterrows():
             if org['organizations_uid'] == vulns['organizations_uid'] or org['organizations_uid'] == vulns['parent_org_uid']:
                 if vulns['time_opened'] >= this_month:
                     if vulns['cvss_base_score'] >= 9.0:
-                        this_month_crits = this_month_crits + 1
+                        this_month_crits = this_month_crits + 1.0
                     elif vulns['cvss_base_score'] >= 7.0:
-                        this_month_highs = this_month_highs + 1
+                        this_month_highs = this_month_highs + 1.0
                     elif vulns['cvss_base_score'] >= 4.0:
-                        this_month_meds = this_month_meds + 1
+                        this_month_meds = this_month_meds + 1.0
                     else:
-                        this_month_lows = this_month_lows + 1
+                        this_month_lows = this_month_lows + 1.0
                     if vulns['cve'] in df_kevs['kev'].values:
-                            this_month_kevs = this_month_kevs + 1
+                            this_month_kevs = this_month_kevs + 1.0
                 else:
                     if vulns['cvss_base_score'] >= 9.0:
-                        last_month_crits = last_month_crits + 1
+                        last_month_crits = last_month_crits + 1.0
                     elif vulns['cvss_base_score'] >= 7.0:
-                        last_month_highs = last_month_highs + 1
+                        last_month_highs = last_month_highs + 1.0
                     elif vulns['cvss_base_score'] >= 4.0:
-                        last_month_meds = last_month_meds + 1
+                        last_month_meds = last_month_meds + 1.0
                     else:
-                        last_month_lows = last_month_lows + 1
+                        last_month_lows = last_month_lows + 1.0
                     if vulns['cve'] in df_kevs['kev'].values:
-                        last_month_kevs = last_month_kevs + 1
+                        last_month_kevs = last_month_kevs + 1.0
         change_in_kevs =  this_month_kevs - last_month_kevs
         change_in_crits = this_month_crits - last_month_crits
         change_in_highs = this_month_highs - last_month_highs
@@ -346,40 +346,40 @@ def summarize_pe_vuln_counts(orgs_df, last_month, this_month, next_month):
     pe_orgs = orgs_df.loc[orgs_df['report_on'] == True]
     vulns_list = []
     for index, org in pe_orgs.iterrows():
-        last_month_kevs = 0
-        last_month_crits = 0
-        last_month_highs = 0
-        last_month_meds = 0
-        last_month_lows = 0
-        this_month_kevs = 0
-        this_month_crits = 0
-        this_month_highs = 0
-        this_month_meds = 0
-        this_month_lows = 0
+        last_month_kevs = 0.0
+        last_month_crits = 0.0
+        last_month_highs = 0.0
+        last_month_meds = 0.0
+        last_month_lows = 0.0
+        this_month_kevs = 0.0
+        this_month_crits = 0.0
+        this_month_highs = 0.0
+        this_month_meds = 0.0
+        this_month_lows = 0.0
         for index2, vulns in df_vulns.iterrows():
             if org['cyhy_db_name'] == vulns['cyhy_db_name'] or org['organizations_uid'] == vulns['parent_org_uid']:
                 if vulns['timestamp'] >= this_month:
                     if vulns['cvss'] >= 9.0:
-                        this_month_crits = this_month_crits + 1
+                        this_month_crits = this_month_crits + 1.0
                     elif vulns['cvss'] >= 7.0:
-                        this_month_highs = this_month_highs + 1
+                        this_month_highs = this_month_highs + 1.0
                     elif vulns['cvss'] >= 4.0:
-                        this_month_meds = this_month_meds + 1
+                        this_month_meds = this_month_meds + 1.0
                     else:
-                        this_month_lows = this_month_lows + 1
+                        this_month_lows = this_month_lows + 1.0
                     if vulns['cve'] in df_kevs['kev'].values:
-                        this_month_kevs = this_month_kevs + 1
+                        this_month_kevs = this_month_kevs + 1.0
                 else:
                     if vulns['cvss'] >= 9.0:
-                        last_month_crits = last_month_crits + 1
+                        last_month_crits = last_month_crits + 1.0
                     elif vulns['cvss'] >= 7.0:
-                        last_month_highs = last_month_highs + 1
+                        last_month_highs = last_month_highs + 1.0
                     elif vulns['cvss'] >= 4.0:
-                        last_month_meds = last_month_meds + 1
+                        last_month_meds = last_month_meds + 1.0
                     else:
-                        last_month_lows = last_month_lows + 1
+                        last_month_lows = last_month_lows + 1.0
                     if vulns['cve'] in df_kevs['kev'].values:
-                        last_month_kevs = last_month_kevs + 1
+                        last_month_kevs = last_month_kevs + 1.0
         change_in_kevs =  this_month_kevs - last_month_kevs
         change_in_crits = this_month_crits - last_month_crits
         change_in_highs = this_month_highs - last_month_highs
@@ -387,12 +387,13 @@ def summarize_pe_vuln_counts(orgs_df, last_month, this_month, next_month):
         change_in_lows = this_month_lows - last_month_lows
         vulns_list.append([org['organizations_uid'], org['cyhy_db_name'], change_in_kevs, change_in_crits, change_in_highs, change_in_meds, change_in_lows])
     df_pe_vulns = pd.DataFrame(vulns_list, columns= ["organizations_uid", "cyhy_db_name", "change_in_kevs", "change_in_crits", "change_in_highs", "change_in_meds", "change_in_lows"])
+    
+    vs_change_in_kevs = df_pe_vulns['change_in_kevs'].mean()
+    vs_change_in_crits = df_pe_vulns['change_in_crits'].mean()
+    vs_change_in_highs = df_pe_vulns['change_in_highs'].mean()
+    vs_change_in_meds = df_pe_vulns['change_in_meds'].mean()
+    vs_change_in_lows = df_pe_vulns['change_in_lows'].mean()
     for index, org in vs_orgs.iterrows():
-        vs_change_in_kevs = df_pe_vulns['change_in_kevs'].mean()
-        vs_change_in_crits = df_pe_vulns['change_in_crits'].mean()
-        vs_change_in_highs = df_pe_vulns['change_in_highs'].mean()
-        vs_change_in_meds = df_pe_vulns['change_in_meds'].mean()
-        vs_change_in_lows = df_pe_vulns['change_in_lows'].mean()
         vulns_list.append([org['organizations_uid'], org['cyhy_db_name'], vs_change_in_kevs, vs_change_in_crits, vs_change_in_highs, vs_change_in_meds, vs_change_in_lows])
     df_vulns = pd.DataFrame(vulns_list, columns= ["organizations_uid", "cyhy_db_name", "change_in_kevs", "change_in_crits", "change_in_highs", "change_in_meds", "change_in_lows"])
     return df_vulns
@@ -409,47 +410,48 @@ def summarize_was_vuln_counts(orgs_df, last_month, this_month, next_month):
     was_open_vulns = get_was_open_vulns(last_month, next_month, org_list)
     vulns_list = []
     for index, org in was_orgs_df.iterrows():
-        last_month_crits = 0
-        last_month_highs = 0
-        last_month_meds = 0
-        last_month_lows = 0
-        this_month_crits = 0
-        this_month_highs = 0
-        this_month_meds = 0
-        this_month_lows = 0
+        last_month_crits = 0.0
+        last_month_highs = 0.0
+        last_month_meds = 0.0
+        last_month_lows = 0.0
+        this_month_crits = 0.0
+        this_month_highs = 0.0
+        this_month_meds = 0.0
+        this_month_lows = 0.0
         for index2, vulns in was_open_vulns.iterrows():
             if org['organizations_uid'] == vulns['pe_org_id']:
                 last_detected = vulns['last_detected']
                 last_detected = datetime(last_detected.year, last_detected.month, last_detected.day)
                 if last_detected >= this_month:
                     if vulns['base_score'] >= 9.0:
-                        this_month_crits = this_month_crits + 1
+                        this_month_crits = this_month_crits + 1.0
                     elif vulns['base_score'] >= 7.0:
-                        this_month_highs = this_month_highs + 1
+                        this_month_highs = this_month_highs + 1.0
                     elif vulns['base_score'] >= 4.0:
-                        this_month_meds = this_month_meds + 1
+                        this_month_meds = this_month_meds + 1.0
                     else:
-                        this_month_lows = this_month_lows + 1
+                        this_month_lows = this_month_lows + 1.0
                 else:
                     if vulns['base_score'] >= 9.0:
-                        last_month_crits = last_month_crits + 1
+                        last_month_crits = last_month_crits + 1.0
                     elif vulns['base_score'] >= 7.0:
-                        last_month_highs = last_month_highs + 1
+                        last_month_highs = last_month_highs + 1.0
                     elif vulns['base_score'] >= 4.0:
-                        last_month_meds = last_month_meds + 1
+                        last_month_meds = last_month_meds + 1.0
                     else:
-                        last_month_lows = last_month_lows + 1
+                        last_month_lows = last_month_lows + 1.0
         change_in_crits = this_month_crits - last_month_crits
         change_in_highs = this_month_highs - last_month_highs
         change_in_meds = this_month_meds - last_month_meds
         change_in_lows = this_month_lows - last_month_lows
         vulns_list.append([org['organizations_uid'], org['cyhy_db_name'], change_in_crits, change_in_highs, change_in_meds, change_in_lows])
     df_was_vulns = pd.DataFrame(vulns_list, columns= ["organizations_uid", "cyhy_db_name", "change_in_crits", "change_in_highs", "change_in_meds", "change_in_lows"])
+    
+    vs_change_in_crits = df_was_vulns['change_in_crits'].mean()
+    vs_change_in_highs = df_was_vulns['change_in_highs'].mean()
+    vs_change_in_meds = df_was_vulns['change_in_meds'].mean()
+    vs_change_in_lows = df_was_vulns['change_in_lows'].mean()
     for index, org in vs_orgs_df.iterrows():
-        vs_change_in_crits = df_was_vulns['change_in_crits'].mean()
-        vs_change_in_highs = df_was_vulns['change_in_highs'].mean()
-        vs_change_in_meds = df_was_vulns['change_in_meds'].mean()
-        vs_change_in_lows = df_was_vulns['change_in_lows'].mean()
         vulns_list.append([org['organizations_uid'], org['cyhy_db_name'], vs_change_in_crits, vs_change_in_highs, vs_change_in_meds, vs_change_in_lows])
     df_vulns = pd.DataFrame(vulns_list, columns= ["organizations_uid", "cyhy_db_name", "change_in_crits", "change_in_highs", "change_in_meds", "change_in_lows"])
     return df_vulns
@@ -483,14 +485,14 @@ def summarize_was_bod_19(orgs_df, this_month, next_month):
     was_open_vulns = get_was_open_vulns(this_month, next_month, org_list)
     vulns_list = []
     for index, org in was_orgs_df.iterrows():
-        total_crits = 0
-        overdue_crits = 0
-        total_highs = 0
-        overdue_highs = 0
-        total_medium = 0
-        overdue_medium = 0
-        total_low = 0
-        overdue_low = 0
+        total_crits = 0.0
+        overdue_crits = 0.0
+        total_highs = 0.0
+        overdue_highs = 0.0
+        total_medium = 0.0
+        overdue_medium = 0.0
+        total_low = 0.0
+        overdue_low = 0.0
         for index2, vulns in was_open_vulns.iterrows():
             if org['organizations_uid'] == vulns['pe_org_id']:
                 last_detected = vulns['last_detected']
@@ -499,32 +501,33 @@ def summarize_was_bod_19(orgs_df, this_month, next_month):
                 first_detected = datetime(first_detected.year, first_detected.month, first_detected.day)
                 age = get_age(first_detected, last_detected)
                 if vulns['base_score'] >= 9.0:
-                    total_crits = total_crits + 1
+                    total_crits = total_crits + 1.0
                     if age > 15.0:
-                        overdue_crits = overdue_crits + 1
+                        overdue_crits = overdue_crits + 1.0
                 elif vulns['base_score'] >= 7.0 and vulns['base_score'] < 9.0:
-                    total_highs = total_highs + 1
+                    total_highs = total_highs + 1.0
                     if age >30.0:
-                        overdue_highs = overdue_highs + 1
+                        overdue_highs = overdue_highs + 1.0
                 elif vulns['base_score']>= 4.0 and vulns['base_score'] < 7.0:
-                    total_medium = total_medium + 1
+                    total_medium = total_medium + 1.0
                     if age > 90.0:
-                        overdue_medium = overdue_medium + 1
+                        overdue_medium = overdue_medium + 1.0
                 else:
-                    total_low = total_low + 1
+                    total_low = total_low + 1.0
                     if age > 180.0:
-                        overdue_low = overdue_low + 1
+                        overdue_low = overdue_low + 1.0
         percent_compliance_crits = get_percent_compliance(total_crits, overdue_crits)
         percent_compliance_highs = get_percent_compliance(total_highs, overdue_highs)
         percent_compliance_medium = get_percent_compliance(total_medium, overdue_medium)
         percent_compliance_low = get_percent_compliance(total_low, overdue_low)
         vulns_list.append([org['organizations_uid'], org['cyhy_db_name'], percent_compliance_crits, percent_compliance_highs, percent_compliance_medium, percent_compliance_low])
     df_was_vulns = pd.DataFrame(vulns_list, columns= ["organizations_uid", "cyhy_db_name", "percent_compliance_crits", "percent_compliance_highs", "percent_compliance_meds", "percent_compliance_lows"])
+    
+    was_crits_compl = df_was_vulns['percent_compliance_crits'].mean()
+    was_highs_compl = df_was_vulns['percent_compliance_highs'].mean()
+    was_meds_compl = df_was_vulns['percent_compliance_meds'].mean()
+    was_lows_compl = df_was_vulns['percent_compliance_lows'].mean()
     for index, org in vs_orgs_df.iterrows():
-        was_crits_compl = df_was_vulns['percent_compliance_crits'].mean()
-        was_highs_compl = df_was_vulns['percent_compliance_highs'].mean()
-        was_meds_compl = df_was_vulns['percent_compliance_meds'].mean()
-        was_lows_compl = df_was_vulns['percent_compliance_lows'].mean()
         vulns_list.append([org['organizations_uid'], org['cyhy_db_name'], was_crits_compl, was_highs_compl, was_meds_compl, was_lows_compl])
     df_vulns = pd.DataFrame(vulns_list, columns= ["organizations_uid", "cyhy_db_name", "percent_compliance_crits", "percent_compliance_highs", "percent_compliance_meds", "percent_compliance_lows"])
     return df_vulns
@@ -554,9 +557,10 @@ def summarize_was_attr(orgs_df, this_month, next_month):
         average_highs = average_list(org_highs)
         average_time_to_remediate_list.append([org['organizations_uid'], org['cyhy_db_name'], average_crits, average_highs, calculate_attr_compliance(average_crits, "CRIT"), calculate_attr_compliance(average_highs, "HIGH")])
     was_df_attr = pd.DataFrame(average_time_to_remediate_list, columns= ["organizations_uid", "cyhy_db_name", "attr_crits", "attr_highs", "attr_compl_crits", "attr_compl_highs"])
+    
+    attr_crtis = was_df_attr['attr_crits'].mean()
+    attr_highs = was_df_attr['attr_highs'].mean()
     for index, org in vs_orgs_df.iterrows():
-        attr_crtis = was_df_attr['attr_crits'].mean()
-        attr_highs = was_df_attr['attr_highs'].mean()
         average_time_to_remediate_list.append([org['organizations_uid'], org['cyhy_db_name'], attr_crtis, attr_highs, calculate_attr_compliance(attr_crtis, "CRIT"), calculate_attr_compliance(attr_highs, "HIGH")])
     df_attr = pd.DataFrame(average_time_to_remediate_list, columns= ["organizations_uid", "cyhy_db_name", "attr_crits", "attr_highs", "attr_compl_crits", "attr_compl_highs"])
     return df_attr
@@ -564,25 +568,25 @@ def summarize_was_attr(orgs_df, this_month, next_month):
 def normalize_port_scans(df_ports):
     port_list = []
     for index, org in df_ports.iterrows():
-        ports_max = df_ports['change_in_ports'].max()
-        ports_min = df_ports['change_in_ports'].min()
-        protocols_max = df_ports['change_in_protocols'].max()
-        protocols_min = df_ports['change_in_protocols'].min()
+        ports_max = float(df_ports['change_in_ports'].max())
+        ports_min = float(df_ports['change_in_ports'].min())
+        protocols_max = float(df_ports['change_in_protocols'].max())
+        protocols_min = float(df_ports['change_in_protocols'].min())
 
-        norm_ports = 0
-        norm_protocols = 0
+        norm_ports = 0.0
+        norm_protocols = 0.0
         
-        if ports_max == 0 or ports_max - ports_min == 0:
-            norm_ports = 75 
+        if ports_max == 0.0 or ports_max - ports_min == 0.0:
+            norm_ports = 75.0
         else:
-            norm_ports = ((org['change_in_ports'] - ports_min) / (ports_max - ports_min)) * 100
+            norm_ports = ((org['change_in_ports'] - ports_min) / (ports_max - ports_min)) * 100.0
 
-        if protocols_max == 0 or protocols_max - protocols_min == 0:
-            norm_protocols = 75 
+        if protocols_max == 0.0 or protocols_max - protocols_min == 0.0:
+            norm_protocols = 75.0
         else:
-            norm_protocols = ((org['change_in_protocols'] - protocols_min) / (protocols_max - protocols_min)) * 100
+            norm_protocols = ((org['change_in_protocols'] - protocols_min) / (protocols_max - protocols_min)) * 100.0
 
-        norm_services = 100
+        norm_services = 100.0
 
         port_list.append([org['organizations_uid'], norm_ports, norm_protocols, norm_services])
     df_vulns = pd.DataFrame(port_list, columns= ["organizations_uid", "norm_ports", "norm_protocols", "norm_services"])   
@@ -593,14 +597,14 @@ def summarize_port_scans(orgs_df, last_month, this_month, next_month):
     df_port_scans = df_port_scans = get_ports_protocols(last_month, next_month, org_list)
     port_scans_list = []
     for index, org in orgs_df.iterrows():
-        last_month_total_ports = 0
-        last_month_vuln_ports = 0
-        last_month_total_protocols = 0
-        last_month_vuln_protocols = 0
-        this_month_total_ports = 0
-        this_month_vuln_ports = 0
-        this_month_total_protocols = 0
-        this_month_vuln_protocols = 0
+        last_month_total_ports = 0.0
+        last_month_vuln_ports = 0.0
+        last_month_total_protocols = 0.0
+        last_month_vuln_protocols = 0.0
+        this_month_total_ports = 0.0
+        this_month_vuln_ports = 0.0
+        this_month_total_protocols = 0.0
+        this_month_vuln_protocols = 0.0
         for index2, ports in df_port_scans.iterrows():
             if org['organizations_uid'] == ports['organizations_uid'] or org['organizations_uid'] == ports['parent_org_uid']:
                 if ports['report_period'] < this_month:
@@ -625,50 +629,50 @@ def normalize_vulns(df_vulns, team):
     vulns_list = []
     for index, org in df_vulns.iterrows():
 
-        kevs_max = 0
-        kevs_min = 0
+        kevs_max = 0.0
+        kevs_min = 0.0
         if team != "WAS":
-            kevs_max = df_vulns['change_in_kevs'].max()
-            kevs_min = df_vulns['change_in_kevs'].min()
-        crits_max = df_vulns['change_in_crits'].max()
-        crits_min = df_vulns['change_in_crits'].min()
-        highs_max = df_vulns['change_in_highs'].max()
-        highs_min = df_vulns['change_in_highs'].min()
-        meds_max = df_vulns['change_in_meds'].max()
-        meds_min = df_vulns['change_in_meds'].min()
-        lows_max = df_vulns['change_in_lows'].max()
-        lows_min = df_vulns['change_in_lows'].min()
+            kevs_max = float(df_vulns['change_in_kevs'].max())
+            kevs_min = float(df_vulns['change_in_kevs'].min())
+        crits_max = float(df_vulns['change_in_crits'].max())
+        crits_min = float(df_vulns['change_in_crits'].min())
+        highs_max = float(df_vulns['change_in_highs'].max())
+        highs_min = float(df_vulns['change_in_highs'].min())
+        meds_max = float(df_vulns['change_in_meds'].max())
+        meds_min = float(df_vulns['change_in_meds'].min())
+        lows_max = float(df_vulns['change_in_lows'].max())
+        lows_min = float(df_vulns['change_in_lows'].min())
 
-        norm_kevs = 0
+        norm_kevs = 0.0
         if team != "WAS":
-            if kevs_max == 0 or kevs_max - kevs_min == 0:
-                norm_kevs = 75
+            if kevs_max == 0.0 or kevs_max - kevs_min == 0.0:
+                norm_kevs = 75.0
             else:
                 norm_kevs = ((org['change_in_kevs'] - kevs_min) / (kevs_max - kevs_min)) * 100
         else:
             norm_kevs = "N/A"
 
-        norm_crits = 0
-        if crits_max == 0 or crits_max - crits_min == 0:
-            norm_crits = 75 
+        norm_crits = 0.0
+        if crits_max == 0.0 or crits_max - crits_min == 0.0:
+            norm_crits = 75.0 
         else:
-            norm_crits = ((org['change_in_crits'] - crits_min) / (crits_max - crits_min)) * 100
+            norm_crits = ((org['change_in_crits'] - crits_min) / (crits_max - crits_min)) * 100.0
 
-        norm_highs = 0
-        if highs_max == 0 or highs_max - highs_min == 0:
-            norm_highs = 75 
+        norm_highs = 0.0
+        if highs_max == 0.0 or highs_max - highs_min == 0.0:
+            norm_highs = 75.0
         else:
-            norm_highs = ((org['change_in_highs'] - highs_min) / (highs_max - highs_min)) * 100
+            norm_highs = ((org['change_in_highs'] - highs_min) / (highs_max - highs_min)) * 100.0
 
-        norm_meds = 0
-        if meds_max == 0 or meds_max - meds_min == 0:
-            norm_meds = 75
+        norm_meds = 0.0
+        if meds_max == 0.0 or meds_max - meds_min == 0.0:
+            norm_meds = 75.0
         else:
-            norm_meds = ((org['change_in_meds'] - meds_min) / (meds_max - meds_min)) * 100
+            norm_meds = ((org['change_in_meds'] - meds_min) / (meds_max - meds_min)) * 100.0
 
-        norm_lows = 0
-        if lows_max == 0 or lows_max - lows_min == 0:
-            norm_lows = 75 
+        norm_lows = 0.0
+        if lows_max == 0.0 or lows_max - lows_min == 0.0:
+            norm_lows = 75.0
         else:
             norm_lows = (org['change_in_lows'] - lows_min) / (lows_max - lows_min)
 
