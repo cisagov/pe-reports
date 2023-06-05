@@ -12,7 +12,7 @@ import pandas as pd
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", ".."))
 
 # cisagov Libraries
-from score_helper_functions import (
+from pe_scorecard.scores.score_helper_functions import (
     rescale,
     get_prev_startstop,
     split_parent_child_records,

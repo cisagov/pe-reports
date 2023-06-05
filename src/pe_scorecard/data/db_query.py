@@ -426,22 +426,29 @@ def query_dscore_vs_data_cert(org_list):
     # Open connection
     conn = connect()
     # Build query
-    sector_str = (
-        "UUID('" + "')), (UUID('".join(org_list["organizations_uid"].tolist()) + "')"
-    )
+    # sector_str = (
+    #     "UUID('" + "')), (UUID('".join(org_list["organizations_uid"].tolist()) + "')"
+    # )
+    
+    # sql = """
+    # SELECT
+    #     sector.organizations_uid, cert.parent_org_uid, cert.num_ident_cert, cert.num_monitor_cert
+    # FROM
+    #     (VALUES (%(sector_str)s)) AS sector(organizations_uid)
+    #     LEFT JOIN
+    #     vw_dscore_vs_cert cert
+    #     ON sector.organizations_uid = cert.organizations_uid::varchar;"""
+
     sql = """
-    SELECT
-        sector.organizations_uid, cert.parent_org_uid, cert.num_ident_cert, cert.num_monitor_cert
-    FROM
-        (VALUES (%(sector_str)s)) AS sector(organizations_uid)
-        LEFT JOIN
-        vw_dscore_vs_cert cert
-        ON sector.organizations_uid = cert.organizations_uid;"""
+       SELECT  cert.organizations_uid, cert.parent_org_uid, cert.num_ident_cert, cert.num_monitor_cert
+        FROM  vw_dscore_vs_cert cert
+        Where cert.organizations_uid in %(sector_str)s
+    """
     # Make query
     dscore_vs_data_cert = pd.read_sql(
         sql,
         conn,
-        params={"sector_str": sector_str},
+        params={"sector_str": tuple(org_list["organizations_uid"].tolist())},
     )
     # Close connection
     conn.close()
@@ -461,22 +468,28 @@ def query_dscore_vs_data_mail(org_list):
     # Open connection
     conn = connect()
     # Build query
-    sector_str = (
-        "UUID('" + "')), (UUID('".join(org_list["organizations_uid"].tolist()) + "')"
-    )
+    # sector_str = (
+    #     "UUID('" + "')), (UUID('".join(org_list["organizations_uid"].tolist()) + "')"
+    # )
+    # sql = """
+    # SELECT
+    #     sector.organizations_uid, mail.parent_org_uid, mail.num_valid_dmarc, mail.num_valid_spf, mail.num_valid_dmarc_or_spf, mail.total_mail_domains
+    # FROM
+    #     (VALUES (%(sector_str)s)) AS sector(organizations_uid)
+    #     LEFT JOIN
+    #     vw_dscore_vs_mail mail
+    #     ON sector.organizations_uid = mail.organizations_uid;"""
+
     sql = """
-    SELECT
-        sector.organizations_uid, mail.parent_org_uid, mail.num_valid_dmarc, mail.num_valid_spf, mail.num_valid_dmarc_or_spf, mail.total_mail_domains
-    FROM
-        (VALUES (%(sector_str)s)) AS sector(organizations_uid)
-        LEFT JOIN
-        vw_dscore_vs_mail mail
-        ON sector.organizations_uid = mail.organizations_uid;"""
+       SELECT  mail.organizations_uid, mail.parent_org_uid, mail.num_valid_dmarc, mail.num_valid_spf, mail.num_valid_dmarc_or_spf, mail.total_mail_domains
+        FROM  vw_dscore_vs_mail mail
+        Where mail.organizations_uid in %(sector_str)s
+    """
     # Make query
     dscore_vs_data_mail = pd.read_sql(
         sql,
         conn,
-        params={"sector_str": sector_str},
+        params={"sector_str": tuple(org_list["organizations_uid"].tolist())},
     )
     # Close connection
     conn.close()
@@ -496,22 +509,28 @@ def query_dscore_pe_data_ip(org_list):
     # Open connection
     conn = connect()
     # Build query
-    sector_str = (
-        "UUID('" + "')), (UUID('".join(org_list["organizations_uid"].tolist()) + "')"
-    )
+    # sector_str = (
+    #     "UUID('" + "')), (UUID('".join(org_list["organizations_uid"].tolist()) + "')"
+    # )
+    # sql = """
+    # SELECT
+    #     sector.organizations_uid, ip.parent_org_uid, ip.num_ident_ip, ip.num_monitor_ip
+    # FROM
+    #     (VALUES (%(sector_str)s)) AS sector(organizations_uid)
+    #     LEFT JOIN
+    #     vw_dscore_pe_ip ip
+    #     ON sector.organizations_uid = ip.organizations_uid;"""
+
     sql = """
-    SELECT
-        sector.organizations_uid, ip.parent_org_uid, ip.num_ident_ip, ip.num_monitor_ip
-    FROM
-        (VALUES (%(sector_str)s)) AS sector(organizations_uid)
-        LEFT JOIN
-        vw_dscore_pe_ip ip
-        ON sector.organizations_uid = ip.organizations_uid;"""
+       SELECT  ip.organizations_uid, ip.parent_org_uid, ip.num_ident_ip, ip.num_monitor_ip
+        FROM  vw_dscore_pe_ip ip
+        Where ip.organizations_uid in %(sector_str)s
+    """
     # Make query
     dscore_pe_data_ip = pd.read_sql(
         sql,
         conn,
-        params={"sector_str": sector_str},
+        params={"sector_str": tuple(org_list["organizations_uid"].tolist())},
     )
     # Close connection
     conn.close()
@@ -531,22 +550,30 @@ def query_dscore_pe_data_domain(org_list):
     # Open connection
     conn = connect()
     # Build query
-    sector_str = (
-        "UUID('" + "')), (UUID('".join(org_list["organizations_uid"].tolist()) + "')"
-    )
+    # sector_str = (
+    #     "UUID('" + "')), (UUID('".join(org_list["organizations_uid"].tolist()) + "')"
+    # )
+    # sql = """
+    # SELECT
+    #     sector.organizations_uid, domain.parent_org_uid, domain.num_ident_domain, domain.num_monitor_domain
+    # FROM
+    #     (VALUES (%(sector_str)s)) AS sector(organizations_uid)
+    #     LEFT JOIN
+    #     vw_dscore_pe_domain domain
+    #     ON sector.organizations_uid = domain.organizations_uid;"""
+
     sql = """
-    SELECT
-        sector.organizations_uid, domain.parent_org_uid, domain.num_ident_domain, domain.num_monitor_domain
-    FROM
-        (VALUES (%(sector_str)s)) AS sector(organizations_uid)
-        LEFT JOIN
-        vw_dscore_pe_domain domain
-        ON sector.organizations_uid = domain.organizations_uid;"""
+       SELECT  
+            domain.organizations_uid, domain.parent_org_uid, domain.num_ident_domain, domain.num_monitor_domain
+       FROM  
+            vw_dscore_pe_domain domain
+        Where domain.organizations_uid in %(sector_str)s
+    """
     # Make query
     dscore_pe_data_domain = pd.read_sql(
         sql,
         conn,
-        params={"sector_str": sector_str},
+        params={"sector_str": tuple(org_list["organizations_uid"].tolist())},
     )
     # Close connection
     conn.close()
@@ -566,22 +593,30 @@ def query_dscore_was_data_webapp(org_list):
     # Open connection
     conn = connect()
     # Build query
-    sector_str = (
-        "UUID('" + "')), (UUID('".join(org_list["organizations_uid"].tolist()) + "')"
-    )
+    # sector_str = (
+    #     "UUID('" + "')), (UUID('".join(org_list["organizations_uid"].tolist()) + "')"
+    # )
+    # sql = """
+    # SELECT
+    #     sector.organizations_uid, webapp.parent_org_uid, webapp.num_ident_webapp, webapp.num_monitor_webapp
+    # FROM
+    #     (VALUES (%(sector_str)s)) AS sector(organizations_uid)
+    #     LEFT JOIN
+    #     vw_dscore_was_webapp webapp
+    #     ON sector.organizations_uid = webapp.organizations_uid;"""
     sql = """
-    SELECT
-        sector.organizations_uid, webapp.parent_org_uid, webapp.num_ident_webapp, webapp.num_monitor_webapp
-    FROM
-        (VALUES (%(sector_str)s)) AS sector(organizations_uid)
-        LEFT JOIN
-        vw_dscore_was_webapp webapp
-        ON sector.organizations_uid = webapp.organizations_uid;"""
+       SELECT  
+            webapp.organizations_uid, webapp.parent_org_uid, webapp.num_ident_webapp, webapp.num_monitor_webapp
+       FROM  
+            vw_dscore_was_webapp webapp
+        Where webapp.organizations_uid in %(sector_str)s
+    """
+
     # Make query
     dscore_was_data_webapp = pd.read_sql(
         sql,
         conn,
-        params={"sector_str": sector_str},
+        params={"sector_str": tuple(org_list["organizations_uid"].tolist())},
     )
     # Close connection
     conn.close()
@@ -602,22 +637,30 @@ def query_iscore_vs_data_vuln(org_list):
     # Open connection
     conn = connect()
     # Build query
-    sector_str = (
-        "UUID('" + "')), (UUID('".join(org_list["organizations_uid"].tolist()) + "')"
-    )
+    # sector_str = (
+    #     "UUID('" + "')), (UUID('".join(org_list["organizations_uid"].tolist()) + "')"
+    # )
+    # sql = """
+    # SELECT
+    #     sector.organizations_uid, vuln.parent_org_uid, vuln.cve_name, vuln.cvss_score
+    # FROM
+    #     (VALUES (%(sector_str)s)) AS sector(organizations_uid)
+    #     LEFT JOIN
+    #     vw_iscore_vs_vuln vuln
+    #     ON sector.organizations_uid = vuln.organizations_uid;"""
+
     sql = """
-    SELECT
-        sector.organizations_uid, vuln.parent_org_uid, vuln.cve_name, vuln.cvss_score
-    FROM
-        (VALUES (%(sector_str)s)) AS sector(organizations_uid)
-        LEFT JOIN
-        vw_iscore_vs_vuln vuln
-        ON sector.organizations_uid = vuln.organizations_uid;"""
+       SELECT  
+            vuln.organizations_uid, vuln.parent_org_uid, vuln.cve_name, vuln.cvss_score
+       FROM  
+            vw_iscore_vs_vuln vuln
+        Where vuln.organizations_uid in %(sector_str)s
+    """
     # Make query
     iscore_vs_vuln_data = pd.read_sql(
         sql,
         conn,
-        params={"sector_str": sector_str},
+        params={"sector_str": tuple(org_list["organizations_uid"].tolist())},
     )
     # Close connection
     conn.close()
@@ -658,25 +701,36 @@ def query_iscore_vs_data_vuln_prev(org_list, start_date, end_date):
     # Open connection
     conn = connect()
     # Build query
-    sector_str = (
-        "UUID('" + "')), (UUID('".join(org_list["organizations_uid"].tolist()) + "')"
-    )
+    # sector_str = (
+    #     "UUID('" + "')), (UUID('".join(org_list["organizations_uid"].tolist()) + "')"
+    # )
+    # sql = """
+    # SELECT
+    #     sector.organizations_uid, prev_vuln.parent_org_uid, prev_vuln.cve_name, prev_vuln.cvss_score, prev_vuln.time_closed
+    # FROM
+    #     (VALUES (%(sector_str)s)) AS sector(organizations_uid)
+    #     LEFT JOIN
+    #     vw_iscore_vs_vuln prev_vuln
+    #     ON sector.organizations_uid = prev_vuln.organizations_uid
+    # WHERE
+    #     time_closed BETWEEN %(start_date)s AND %(end_date)s;"""
+
     sql = """
-    SELECT
-        sector.organizations_uid, prev_vuln.parent_org_uid, prev_vuln.cve_name, prev_vuln.cvss_score, prev_vuln.time_closed
-    FROM
-        (VALUES (%(sector_str)s)) AS sector(organizations_uid)
-        LEFT JOIN
-        vw_iscore_vs_vuln prev_vuln
-        ON sector.organizations_uid = prev_vuln.organizations_uid
-    WHERE
-        time_closed BETWEEN '%(start_date)s' AND '%(end_date)s';"""
+        SELECT 
+            prev_vuln.organizations_uid, prev_vuln.parent_org_uid, prev_vuln.cve_name, prev_vuln.cvss_score, prev_vuln.time_closed
+        FROM 
+            vw_iscore_vs_vuln_prev prev_vuln
+        WHERE 
+            prev_vuln.organizations_uid in %(sector_str)s
+        AND 
+            prev_vuln.time_closed BETWEEN %(start_date)s AND %(end_date)s;
+    """
     # Make query
     iscore_vs_vuln_prev_data = pd.read_sql(
         sql,
         conn,
         params={
-            "sector_str": sector_str,
+            "sector_str": tuple(org_list["organizations_uid"].tolist()),
             "start_date": start_date,
             "end_date": end_date,
         },
@@ -721,25 +775,37 @@ def query_iscore_pe_data_vuln(org_list, start_date, end_date):
     # Open connection
     conn = connect()
     # Build query
-    sector_str = (
-        "UUID('" + "')), (UUID('".join(org_list["organizations_uid"].tolist()) + "')"
-    )
+    # sector_str = (
+    #     "UUID('" + "')), (UUID('".join(org_list["organizations_uid"].tolist()) + "')"
+    # )
+    # sql = """
+    # SELECT
+    #     sector.organizations_uid, vuln.parent_org_uid, vuln.date, vuln.cve_name, vuln.cvss_score
+    # FROM
+    #     (VALUES (%(sector_str)s)) AS sector(organizations_uid)
+    #     LEFT JOIN
+    #     vw_iscore_pe_vuln vuln
+    #     ON sector.organizations_uid = vuln.organizations_uid
+    # WHERE
+    #     date BETWEEN %(start_date)s AND %(end_date)s;"""
+
     sql = """
     SELECT
-        sector.organizations_uid, vuln.parent_org_uid, vuln.date, vuln.cve_name, vuln.cvss_score
+        vuln.organizations_uid, vuln.parent_org_uid, vuln.date, vuln.cve_name, vuln.cvss_score
     FROM
-        (VALUES (%(sector_str)s)) AS sector(organizations_uid)
-        LEFT JOIN
         vw_iscore_pe_vuln vuln
-        ON sector.organizations_uid = vuln.organizations_uid
     WHERE
-        date BETWEEN '%(start_date)s' AND '%(end_date)s';"""
+        vuln.organizations_uid in %(sector_str)s
+    AND 
+        vuln.date BETWEEN %(start_date)s AND %(end_date)s;
+    """
+
     # Make query
     iscore_pe_vuln_data = pd.read_sql(
         sql,
         conn,
         params={
-            "sector_str": sector_str,
+            "sector_str": tuple(org_list["organizations_uid"].tolist()),
             "start_date": start_date,
             "end_date": end_date,
         },
@@ -788,25 +854,36 @@ def query_iscore_pe_data_cred(org_list, start_date, end_date):
     # Open connection
     conn = connect()
     # Build query
-    sector_str = (
-        "UUID('" + "')), (UUID('".join(org_list["organizations_uid"].tolist()) + "')"
-    )
+    # sector_str = (
+    #     "UUID('" + "')), (UUID('".join(org_list["organizations_uid"].tolist()) + "')"
+    # )
+    # sql = """
+    # SELECT
+    #     sector.organizations_uid, cred.parent_org_uid, cred.date, cred.password_creds, cred.total_creds
+    # FROM
+    #     (VALUES (%(sector_str)s)) AS sector(organizations_uid)
+    #     LEFT JOIN
+    #     vw_iscore_pe_cred cred
+    #     ON sector.organizations_uid = cred.organizations_uid
+    # WHERE
+    #     date BETWEEN %(start_date)s AND %(end_date)s;"""
+
     sql = """
-    SELECT
-        sector.organizations_uid, cred.parent_org_uid, cred.date, cred.password_creds, cred.total_creds
-    FROM
-        (VALUES (%(sector_str)s)) AS sector(organizations_uid)
-        LEFT JOIN
-        vw_iscore_pe_cred cred
-        ON sector.organizations_uid = cred.organizations_uid
-    WHERE
-        date BETWEEN '%(start_date)s' AND '%(end_date)s';"""
+        SELECT
+            cred.organizations_uid, cred.parent_org_uid, cred.date, cred.password_creds, cred.total_creds
+        FROM
+            vw_iscore_pe_cred cred
+        WHERE 
+            cred.organizations_uid in %(sector_str)s
+        AND
+            date BETWEEN %(start_date)s AND %(end_date)s;
+    """
     # Make query
     iscore_pe_cred_data = pd.read_sql(
         sql,
         conn,
         params={
-            "sector_str": sector_str,
+            "sector_str": tuple(org_list["organizations_uid"].tolist()),
             "start_date": start_date,
             "end_date": end_date,
         },
@@ -851,25 +928,36 @@ def query_iscore_pe_data_breach(org_list, start_date, end_date):
     # Open connection
     conn = connect()
     # Build query
-    sector_str = (
-        "UUID('" + "')), (UUID('".join(org_list["organizations_uid"].tolist()) + "')"
-    )
+    # sector_str = (
+    #     "UUID('" + "')), (UUID('".join(org_list["organizations_uid"].tolist()) + "')"
+    # )
+    # sql = """
+    # SELECT
+    #     sector.organizations_uid, breach.parent_org_uid, breach.date, breach.breach_count
+    # FROM
+    #     (VALUES (%(sector_str)s)) AS sector(organizations_uid)
+    #     LEFT JOIN
+    #     vw_iscore_pe_breach breach
+    #     ON sector.organizations_uid = breach.organizations_uid
+    # WHERE
+    #     date BETWEEN %(start_date)s AND %(end_date)s;"""
+
     sql = """
-    SELECT
-        sector.organizations_uid, breach.parent_org_uid, breach.date, breach.breach_count
-    FROM
-        (VALUES (%(sector_str)s)) AS sector(organizations_uid)
-        LEFT JOIN
-        vw_iscore_pe_breach breach
-        ON sector.organizations_uid = breach.organizations_uid
-    WHERE
-        date BETWEEN '%(start_date)s' AND '%(end_date)s';"""
+        SELECT 
+            breach.organizations_uid, breach.parent_org_uid, breach.date, breach.breach_count
+        FROM
+            vw_iscore_pe_breach breach
+        WHERE 
+            breach.organizations_uid in %(sector_str)s
+        AND
+            date BETWEEN %(start_date)s AND %(end_date)s;"""
+
     # Make query
     iscore_pe_breach_data = pd.read_sql(
         sql,
         conn,
         params={
-            "sector_str": sector_str,
+            "sector_str": tuple(org_list["organizations_uid"].tolist()),
             "start_date": start_date,
             "end_date": end_date,
         },
@@ -925,13 +1013,24 @@ def query_iscore_pe_data_darkweb(org_list, start_date, end_date):
         vw_iscore_pe_darkweb darkweb
         ON sector.organizations_uid = darkweb.organizations_uid
     WHERE
-        date BETWEEN '%(start_date)s' AND '%(end_date)s' OR date = '0001-01-01';"""
+        date BETWEEN %(start_date)s AND %(end_date)s OR date = '0001-01-01';"""
+
+    sql = """
+        SELECT 
+            darkweb.organizations_uid, darkweb.parent_org_uid, darkweb.alert_type, darkweb.date, darkweb."Count"
+        FROM
+            vw_iscore_pe_darkweb darkweb
+        WHERE 
+            darkweb.organizations_uid in %(sector_str)s
+        AND
+        date BETWEEN %(start_date)s AND %(end_date)s OR date = '0001-01-01';"""
+
     # Make query
     iscore_pe_darkweb_data = pd.read_sql(
         sql,
         conn,
         params={
-            "sector_str": sector_str,
+            "sector_str": tuple(org_list["organizations_uid"].tolist()),
             "start_date": start_date,
             "end_date": end_date,
         },
@@ -976,25 +1075,36 @@ def query_iscore_pe_data_protocol(org_list, start_date, end_date):
     # Open connection
     conn = connect()
     # Build query
-    sector_str = (
-        "UUID('" + "')), (UUID('".join(org_list["organizations_uid"].tolist()) + "')"
-    )
+    # sector_str = (
+    #     "UUID('" + "')), (UUID('".join(org_list["organizations_uid"].tolist()) + "')"
+    # )
+    # sql = """
+    # SELECT
+    #     sector.organizations_uid, protocol.parent_org_uid, protocol.port, protocol.ip, protocol.protocol, protocol.protocol_type, protocol.date
+    # FROM
+    #     (VALUES (%(sector_str)s)) AS sector(organizations_uid)
+    #     LEFT JOIN
+    #     vw_iscore_pe_protocol protocol
+    #     ON sector.organizations_uid = protocol.organizations_uid
+    # WHERE
+    #     date BETWEEN %(start_date)s AND %(end_date)s;"""
+
     sql = """
-    SELECT
-        sector.organizations_uid, protocol.parent_org_uid, protocol.port, protocol.ip, protocol.protocol, protocol.protocol_type, protocol.date
-    FROM
-        (VALUES (%(sector_str)s)) AS sector(organizations_uid)
-        LEFT JOIN
-        vw_iscore_pe_protocol protocol
-        ON sector.organizations_uid = protocol.organizations_uid
-    WHERE
-        date BETWEEN '%(start_date)s' AND '%(end_date)s';"""
+        SELECT
+            protocol.organizations_uid, protocol.parent_org_uid, protocol.port, protocol.ip, protocol.protocol, protocol.protocol_type, protocol.date
+        FROM 
+            vw_iscore_pe_protocol protocol
+        WHERE 
+            protocol.organizations_uid in %(sector_str)s
+        AND
+            date BETWEEN %(start_date)s AND %(end_date)s;
+    """
     # Make query
     iscore_pe_protocol_data = pd.read_sql(
         sql,
         conn,
         params={
-            "sector_str": sector_str,
+            "sector_str": tuple(org_list["organizations_uid"].tolist()),
             "start_date": start_date,
             "end_date": end_date,
         },
@@ -1041,25 +1151,36 @@ def query_iscore_was_data_vuln(org_list, start_date, end_date):
     # Open connection
     conn = connect()
     # Build query
-    sector_str = (
-        "UUID('" + "')), (UUID('".join(org_list["organizations_uid"].tolist()) + "')"
-    )
+    # sector_str = (
+    #     "UUID('" + "')), (UUID('".join(org_list["organizations_uid"].tolist()) + "')"
+    # )
+    # sql = """
+    # SELECT
+    #     sector.organizations_uid, vuln.parent_org_uid, vuln.date, vuln.cve_name, vuln.cvss_score, vuln.owasp_category
+    # FROM
+    #     (VALUES (%(sector_str)s)) AS sector(organizations_uid)
+    #     LEFT JOIN
+    #     vw_iscore_was_vuln vuln
+    #     ON sector.organizations_uid = vuln.organizations_uid
+    # WHERE
+    #     date BETWEEN %(start_date)s AND %(end_date)s;"""
+
     sql = """
-    SELECT
-        sector.organizations_uid, vuln.parent_org_uid, vuln.date, vuln.cve_name, vuln.cvss_score, vuln.owasp_category
-    FROM
-        (VALUES (%(sector_str)s)) AS sector(organizations_uid)
-        LEFT JOIN
-        vw_iscore_was_vuln vuln
-        ON sector.organizations_uid = vuln.organizations_uid
-    WHERE
-        date BETWEEN '%(start_date)s' AND '%(end_date)s';"""
+        SELECT
+            vuln.organizations_uid, vuln.parent_org_uid, vuln.date, vuln.cve_name, vuln.cvss_score, vuln.owasp_category
+        FROM
+            vw_iscore_was_vuln vuln
+        WHERE
+            vuln.organizations_uid in %(sector_str)s
+        AND
+            date BETWEEN %(start_date)s AND %(end_date)s;
+    """
     # Make query
     iscore_was_vuln_data = pd.read_sql(
         sql,
         conn,
         params={
-            "sector_str": sector_str,
+            "sector_str":  tuple(org_list["organizations_uid"].tolist()),
             "start_date": start_date,
             "end_date": end_date,
         },
@@ -1105,25 +1226,36 @@ def query_iscore_was_data_vuln_prev(org_list, start_date, end_date):
     # Open connection
     conn = connect()
     # Build query
-    sector_str = (
-        "UUID('" + "')), (UUID('".join(org_list["organizations_uid"].tolist()) + "')"
-    )
+    # sector_str = (
+    #     "UUID('" + "')), (UUID('".join(org_list["organizations_uid"].tolist()) + "')"
+    # )
+    # sql = """
+    # SELECT
+    #     sector.organizations_uid, prev_vuln.parent_org_uid, prev_vuln.was_total_vulns_prev, prev_vuln.date
+    # FROM
+    #     (VALUES (%(sector_str)s)) AS sector(organizations_uid)
+    #     LEFT JOIN
+    #     vw_iscore_was_vuln_prev prev_vuln
+    #     ON sector.organizations_uid = prev_vuln.organizations_uid
+    # WHERE
+    #     date BETWEEN %(start_date)s AND %(end_date)s;"""
+
     sql = """
-    SELECT
-        sector.organizations_uid, prev_vuln.parent_org_uid, prev_vuln.was_total_vulns_prev, prev_vuln.date
-    FROM
-        (VALUES (%(sector_str)s)) AS sector(organizations_uid)
-        LEFT JOIN
-        vw_iscore_was_vuln_prev prev_vuln
-        ON sector.organizations_uid = prev_vuln.organizations_uid
-    WHERE
-        date BETWEEN '%(start_date)s' AND '%(end_date)s';"""
+        SELECT 
+            prev_vuln.organizations_uid, prev_vuln.parent_org_uid, prev_vuln.was_total_vulns_prev, prev_vuln.date
+        FROM 
+            vw_iscore_was_vuln_prev prev_vuln
+        WHERE 
+            prev_vuln.organizations_uid in %(sector_str)s
+        AND 
+            date BETWEEN %(start_date)s AND %(end_date)s;
+    """
     # Make query
     iscore_was_vuln_prev_data = pd.read_sql(
         sql,
         conn,
         params={
-            "sector_str": sector_str,
+            "sector_str": tuple(org_list["organizations_uid"].tolist()),
             "start_date": start_date,
             "end_date": end_date,
         },
@@ -1273,28 +1405,35 @@ def query_fceb_status(org_list):
     # Open connection
     conn = connect()
     # Build query
-    sector_str = (
-        "UUID('" + "')), (UUID('".join(org_list["organizations_uid"].tolist()) + "')"
-    )
+    # sector_str = (
+    #     "UUID('" + "')), (UUID('".join(org_list["organizations_uid"].tolist()) + "')"
+    # )
+    # sql = """
+    # SELECT
+    #     sector.organizations_uid, COALESCE(fceb_status.fceb, false) as fceb
+    # FROM
+    #     (VALUES (%(sector_str)s)) AS sector(organizations_uid)
+    #     LEFT JOIN
+    #     (
+    #         SELECT
+    #             organizations_uid,
+    #             fceb
+    #         FROM
+    #             organizations
+    #     ) fceb_status
+    #     ON sector.organizations_uid = fceb_status.organizations_uid;"""
+
     sql = """
-    SELECT
-        sector.organizations_uid, COALESCE(fceb_status.fceb, false) as fceb
-    FROM
-        (VALUES (%(sector_str)s)) AS sector(organizations_uid)
-        LEFT JOIN
-        (
-            SELECT
-                organizations_uid,
-                fceb
-            FROM
-                organizations
-        ) fceb_status
-        ON sector.organizations_uid = fceb_status.organizations_uid;"""
+        SELECT 
+            org.organizations_uid, COALESCE(org.fceb, false) as fceb
+        FROM organizations org
+        WHERE organizations_uid in %(sector_str)s;
+    """
     # Make query
     orgs_fceb_status = pd.read_sql(
         sql,
         conn,
-        params={"sector_str": sector_str},
+        params={"sector_str":  tuple(org_list["organizations_uid"].tolist())},
     )
     # Close connection
     conn.close()

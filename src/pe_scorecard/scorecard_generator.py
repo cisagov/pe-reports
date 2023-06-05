@@ -117,9 +117,9 @@ def generate_scorecards(
         # Query children sectors of a given sector that may link to orgs
         all_related_sectors = find_sub_sectors(sector)["id"].values.tolist()
         # Query orgs that can have scorecards delivered to them
-        recipient_sector_orgs = scorecard_orgs[
-            scorecard_orgs["sector_id"].isin(all_related_sectors)
-            and scorecard_orgs["receives_cyhy_report"] == True
+        filtered_values = np.where((scorecard_orgs["sector_id"].isin(all_related_sectors)) & (scorecard_orgs["receives_cyhy_report"] == True))
+        recipient_sector_orgs = scorecard_orgs.loc[
+            filtered_values
         ]
         # Query all orgs in the sector
         sector_orgs = scorecard_orgs[
@@ -211,14 +211,15 @@ def generate_scorecards(
 
         # Calculate scores
         sectors_df = sector_orgs[["organizations_uid", "cyhy_db_name"]]
+        end_datetime = datetime.datetime(end_date.year, end_date.month, end_date.day)
         discovery_scores = gen_discov_scores(
-            end_date - datetime.timedelta(days=1), sectors_df
+            end_datetime, sectors_df
         )
-        profiling_scores = get_profiling_score(sectors_df, year, month)
+        profiling_scores = get_profiling_score(sectors_df, int(year), int(month))
         identification_scores = gen_ident_scores(
-            end_date - datetime.timedelta(days=1), sectors_df
+            end_datetime, sectors_df
         )
-        tracking_scores = get_tracking_score(sectors_df, year, month)
+        tracking_scores = get_tracking_score(sectors_df, int(year), int(month))
 
         # Loop through orgs again to generate scorecards
         for i, org in recipient_orgs_df.iterrows():
