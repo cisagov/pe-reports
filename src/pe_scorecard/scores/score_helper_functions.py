@@ -157,7 +157,7 @@ def get_last_month(report_period_year, report_period_month):
 
 def average_list(list):
     if len(list) == 0:
-        return 0
+        return 0.0
     else:
         return round(sum(list)/len(list), 2)
 
