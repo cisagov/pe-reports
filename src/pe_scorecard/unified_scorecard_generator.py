@@ -176,7 +176,7 @@ def create_scorecard(
             7 * inch, PAGE_HEIGHT - 0.95 * inch, width=90, height=70, showBoundary=False
         )
         overall_score_frame.addFromList(
-            [Paragraph(data_dict["overall_score"], overall_score_style)], can
+            [Paragraph(data_dict["score"], overall_score_style)], can
         )
     else:
         can.drawImage(
@@ -293,10 +293,10 @@ def create_scorecard(
             showBoundary=False,
         )
         discover_score_frame.addFromList(
-            [Paragraph(data_dict["discovery_score"], style=score_style)], can
+            [Paragraph(data_dict["discovery_grade"], style=score_style)], can
         )
         if include_trending:
-            if data_dict["discovery_trend_dir"] == -1:
+            if data_dict["discovery_score"] - data_dict["discovery_trend"] < 0:
                 can.drawImage(
                     BASE_DIR + "/scorecard_assets/red_score_arrow.png",
                     6.3 * inch,
@@ -305,7 +305,7 @@ def create_scorecard(
                     height=0.3 * inch,
                     mask="auto",
                 )
-            elif data_dict["discovery_trend_dir"] == 1:
+            elif data_dict["discovery_score"] - data_dict["discovery_trend"] > 0:
                 can.drawImage(
                     BASE_DIR + "/scorecard_assets/green_score_arrow.png",
                     6.3 * inch,
@@ -587,93 +587,95 @@ def create_scorecard(
             height=22,
             mask="auto",
         )
-    # **** Generate Certificates Boxes ******
-    can.drawImage(
-        BASE_DIR + "/scorecard_assets/data_box.png",
-        col2_x_value,
-        row2_y_value,
-        width=box_width,
-        height=box_height,
-        mask="auto",
-    )
-    certs_header_frame = Frame(
-        col2_x_value,
-        row2_y_value + 1.3 * inch,
-        box_width,
-        0.42 * inch,
-        showBoundary=False,
-    )
-    certs_header_frame.addFromList(
-        [Paragraph("Certificates (ED 19-01)", style=header_style)], can
-    )
 
-    certs_reported_frame = Frame(
-        col2_x_value + 2,
-        row2_y_value + 0.54 * inch,
-        box_width / 2,
-        0.7 * inch,
-        showBoundary=False,
-    )
-    certs_reported_frame.addFromList(
-        [
-            Paragraph(
-                f'{data_dict["certs_self_reported"]:,}'
-                + "<br/><font size='14'> Self Reported</font>",
-                style=databox_style_left,
-            )
-        ],
-        can,
-    )
-
-    certs_discovered_frame = Frame(
-        col2_x_value + box_width / 2 - 2,
-        row2_y_value + 0.54 * inch,
-        box_width / 2,
-        0.7 * inch,
-        showBoundary=False,
-    )
-    certs_discovered_frame.addFromList(
-        [
-            Paragraph(
-                f'{data_dict["certs_discovered"]:,}'
-                + "<br/><font size='14'> Discovered</font>",
-                style=databox_style_right,
-            )
-        ],
-        can,
-    )
-
-    certs_monitored_frame = Frame(
-        col2_x_value, row2_y_value, box_width, 0.48 * inch, showBoundary=False
-    )
-    if not data_dict["certs_monitored"]:
-        certs_monitored_frame.addFromList(
-            [Paragraph("Zero Monitored", style=databox_style_center)], can
+    if data_dict["sector_name"] in ["FCEB", "EXECUTIVE", "FEDERAL"]:
+        # **** Generate Certificates Boxes ******
+        can.drawImage(
+            BASE_DIR + "/scorecard_assets/data_box.png",
+            col2_x_value,
+            row2_y_value,
+            width=box_width,
+            height=box_height,
+            mask="auto",
         )
-    else:
-        certs_monitored_frame.addFromList(
+        certs_header_frame = Frame(
+            col2_x_value,
+            row2_y_value + 1.3 * inch,
+            box_width,
+            0.42 * inch,
+            showBoundary=False,
+        )
+        certs_header_frame.addFromList(
+            [Paragraph("Certificates (ED 19-01)", style=header_style)], can
+        )
+
+        certs_reported_frame = Frame(
+            col2_x_value + 2,
+            row2_y_value + 0.54 * inch,
+            box_width / 2,
+            0.7 * inch,
+            showBoundary=False,
+        )
+        certs_reported_frame.addFromList(
             [
                 Paragraph(
-                    f'{data_dict["certs_monitored"]:,}' + " Monitored",
-                    style=databox_style_center,
+                    f'{data_dict["certs_self_reported"]:,}'
+                    + "<br/><font size='14'> Self Reported</font>",
+                    style=databox_style_left,
                 )
             ],
             can,
         )
 
-    if include_trending:
-        trend_image = determine_arrow(
-            data_dict["certs_monitored"],
-            data_dict["certs_monitored_trend"],
+        certs_discovered_frame = Frame(
+            col2_x_value + box_width / 2 - 2,
+            row2_y_value + 0.54 * inch,
+            box_width / 2,
+            0.7 * inch,
+            showBoundary=False,
         )
-        can.drawImage(
-            trend_image,
-            col2_x_value + 0.5 * inch,
-            row2_y_value + 0.13 * inch,
-            width=22,
-            height=22,
-            mask="auto",
+        certs_discovered_frame.addFromList(
+            [
+                Paragraph(
+                    f'{data_dict["certs_discovered"]:,}'
+                    + "<br/><font size='14'> Discovered</font>",
+                    style=databox_style_right,
+                )
+            ],
+            can,
         )
+
+        certs_monitored_frame = Frame(
+            col2_x_value, row2_y_value, box_width, 0.48 * inch, showBoundary=False
+        )
+        if not data_dict["certs_monitored"]:
+            certs_monitored_frame.addFromList(
+                [Paragraph("Zero Monitored", style=databox_style_center)], can
+            )
+        else:
+            certs_monitored_frame.addFromList(
+                [
+                    Paragraph(
+                        f'{data_dict["certs_monitored"]:,}' + " Monitored",
+                        style=databox_style_center,
+                    )
+                ],
+                can,
+            )
+
+        if include_trending:
+            trend_image = determine_arrow(
+                data_dict["certs_monitored"],
+                data_dict["certs_monitored_trend"],
+            )
+            can.drawImage(
+                trend_image,
+                col2_x_value + 0.5 * inch,
+                row2_y_value + 0.13 * inch,
+                width=22,
+                height=22,
+                mask="auto",
+            )
     # **** Generate Profiling Divider *****
     y_value = 4.3 * inch
     can.drawImage(
@@ -697,10 +699,10 @@ def create_scorecard(
             showBoundary=False,
         )
         profiling_score_frame.addFromList(
-            [Paragraph(data_dict["profiling_score"], style=score_style)], can
+            [Paragraph(data_dict["profiling_grade"], style=score_style)], can
         )
         if include_trending:
-            if data_dict["profiling_trend_dir"] == -1:
+            if data_dict["profiling_score"] - data_dict["profiling_trend"] < 0:
                 can.drawImage(
                     BASE_DIR + "/scorecard_assets/red_score_arrow.png",
                     6.3 * inch,
@@ -709,7 +711,7 @@ def create_scorecard(
                     height=0.3 * inch,
                     mask="auto",
                 )
-            elif data_dict["profiling_trend_dir"] == 1:
+            elif data_dict["profiling_score"] - data_dict["profiling_trend"] > 0:
                 can.drawImage(
                     BASE_DIR + "/scorecard_assets/green_score_arrow.png",
                     6.3 * inch,
@@ -738,29 +740,29 @@ def create_scorecard(
             ["", "Count", "", "Trending"],
             [
                 "Total",
-                data_dict["ports_total_count"],
+                data_dict["total_ports"],
                 Image(
                     determine_arrow(
-                        data_dict["ports_total_count"], data_dict["ports_total_trend"]
+                        data_dict["total_ports"], data_dict["ports_total_trend"]
                     ),
                     20,
                     20,
                 ),
-                abs(data_dict["ports_total_count"] - data_dict["ports_total_trend"]),
+                abs(data_dict["total_ports"] - data_dict["ports_total_trend"]),
             ],
             [
                 "Risky",
-                data_dict["ports_risky_count"],
+                data_dict["risky_ports"],
                 Image(
                     determine_arrow(
-                        data_dict["ports_risky_count"],
+                        data_dict["risky_ports"],
                         data_dict["ports_risky_trend"],
                         color=True,
                     ),
                     20,
                     20,
                 ),
-                abs(data_dict["ports_risky_count"] - data_dict["ports_risky_trend"]),
+                abs(data_dict["risky_ports"] - data_dict["ports_risky_trend"]),
             ],
         ]
         col_widths = [1 * inch, 1.35 * inch, 0.2 * inch, 1.3 * inch]
@@ -772,8 +774,8 @@ def create_scorecard(
     else:
         ports_data = [
             ["", "Count"],
-            ["Total", data_dict["ports_total_count"]],
-            ["Risky", data_dict["ports_risky_count"]],
+            ["Total", data_dict["total_ports"]],
+            ["Risky", data_dict["risky_ports"]],
         ]
         col_widths = [2 * inch, 1.85 * inch]
         ports_table = format_table(
@@ -795,26 +797,23 @@ def create_scorecard(
             ["", "Count", "", "Trending"],
             [
                 "Total",
-                data_dict["protocol_total_count"],
+                data_dict["protocols"],
                 Image(
                     determine_arrow(
-                        data_dict["protocol_total_count"],
+                        data_dict["protocols"],
                         data_dict["protocol_total_trend"],
                     ),
                     20,
                     20,
                 ),
-                abs(
-                    data_dict["protocol_total_count"]
-                    - data_dict["protocol_total_trend"]
-                ),
+                abs(data_dict["protocols"] - data_dict["protocol_total_trend"]),
             ],
             [
                 "Insecure",
-                data_dict["protocol_insecure_count"],
+                data_dict["insecure_protocols"],
                 Image(
                     determine_arrow(
-                        data_dict["protocol_insecure_count"],
+                        data_dict["insecure_protocols"],
                         data_dict["protocol_insecure_trend"],
                         color=True,
                     ),
@@ -822,7 +821,7 @@ def create_scorecard(
                     20,
                 ),
                 abs(
-                    data_dict["protocol_insecure_count"]
+                    data_dict["insecure_protocols"]
                     - data_dict["protocol_insecure_trend"]
                 ),
             ],
@@ -836,8 +835,8 @@ def create_scorecard(
     else:
         protocol_data = [
             ["", "Count"],
-            ["Total", data_dict["protocol_total_count"]],
-            ["Insecure", data_dict["protocol_insecure_count"]],
+            ["Total", data_dict["protocols"]],
+            ["Insecure", data_dict["insecure_protocols"]],
         ]
         col_widths = [2 * inch, 1.85 * inch]
         protocol_table = format_table(
@@ -861,20 +860,17 @@ def create_scorecard(
             ["", "Count", "", "Trending"],
             [
                 "Total",
-                data_dict["services_total_count"],
+                data_dict["total_services"],
                 Image(
                     determine_arrow(
-                        data_dict["services_total_count"],
+                        data_dict["total_services"],
                         data_dict["services_total_trend"],
                         color=True,
                     ),
                     20,
                     20,
                 ),
-                abs(
-                    data_dict["services_total_count"]
-                    - data_dict["services_total_trend"]
-                ),
+                abs(data_dict["total_services"] - data_dict["services_total_trend"]),
             ],
         ]
         col_widths = [1.5 * inch, 1 * inch, 0.2 * inch, 1.15 * inch]
@@ -901,10 +897,10 @@ def create_scorecard(
             ["", "Count", "", "Trending"],
             [
                 "Unsupported",
-                data_dict["software_unsupported_count"],
+                data_dict["unsupported_software"],
                 Image(
                     determine_arrow(
-                        data_dict["software_unsupported_count"],
+                        data_dict["unsupported_software"],
                         data_dict["software_unsupported_trend"],
                         color=True,
                     ),
@@ -912,7 +908,7 @@ def create_scorecard(
                     20,
                 ),
                 abs(
-                    data_dict["software_unsupported_count"]
+                    data_dict["unsupported_software"]
                     - data_dict["software_unsupported_trend"]
                 ),
             ],
@@ -922,7 +918,7 @@ def create_scorecard(
     else:
         software_data = [
             ["", "Count"],
-            ["Unsupported", data_dict["software_unsupported_count"]],
+            ["Unsupported", data_dict["unsupported_software"]],
         ]
         col_widths = [2 * inch, 1.85 * inch]
         software_table = format_table(
@@ -980,10 +976,13 @@ def create_scorecard(
             showBoundary=False,
         )
         identification_score_frame.addFromList(
-            [Paragraph(data_dict["identification_score"], style=score_style)], can
+            [Paragraph(data_dict["identification_grade"], style=score_style)], can
         )
         if include_trending:
-            if data_dict["identification_trend_dir"] == -1:
+            if (
+                data_dict["identification_score"] - data_dict["identification_trend"]
+                < 0
+            ):
                 can.drawImage(
                     BASE_DIR + "/scorecard_assets/red_score_arrow.png",
                     6.3 * inch,
@@ -992,7 +991,10 @@ def create_scorecard(
                     height=0.3 * inch,
                     mask="auto",
                 )
-            elif data_dict["identification_trend_dir"] == 1:
+            elif (
+                data_dict["identification_score"] - data_dict["identification_trend"]
+                > 0
+            ):
                 can.drawImage(
                     BASE_DIR + "/scorecard_assets/green_score_arrow.png",
                     6.3 * inch,
@@ -1027,21 +1029,21 @@ def create_scorecard(
         ["", "KEV", "Critical", "High"],
         [
             "External Host",
-            data_dict["external_host_kev"],
-            data_dict["external_host_critical"],
-            data_dict["external_host_high"],
+            data_dict["ext_host_kev"],
+            data_dict["ext_host_vuln_critical"],
+            data_dict["ext_host_vuln_high"],
         ],
         [
             "Web Applications",
-            data_dict["web_app_kev"],
-            data_dict["web_app_critical"],
-            data_dict["web_app_high"],
+            data_dict["web_apps_kev"],
+            data_dict["web_apps_vuln_critical"],
+            data_dict["web_apps_vuln_high"],
         ],
         [
             "TOTALS",
-            data_dict["external_host_kev"],
-            data_dict["external_host_critical"] + data_dict["web_app_critical"],
-            data_dict["external_host_high"] + data_dict["web_app_high"],
+            data_dict["ext_host_kev"],
+            data_dict["ext_host_vuln_critical"] + data_dict["web_apps_vuln_critical"],
+            data_dict["ext_host_vuln_high"] + data_dict["web_apps_vuln_high"],
         ],
     ]
     vulns_table = format_table(
@@ -1074,10 +1076,10 @@ def create_scorecard(
             showBoundary=False,
         )
         tracking_score_frame.addFromList(
-            [Paragraph(data_dict["tracking_score"], style=score_style)], can
+            [Paragraph(data_dict["tracking_grade"], style=score_style)], can
         )
         if include_trending:
-            if data_dict["tracking_trend_dir"] == -1:
+            if data_dict["tracking_score"] - data_dict["tracking_trend"] < 0:
                 can.drawImage(
                     BASE_DIR + "/scorecard_assets/red_score_arrow.png",
                     6.3 * inch,
@@ -1086,7 +1088,7 @@ def create_scorecard(
                     height=0.3 * inch,
                     mask="auto",
                 )
-            elif data_dict["tracking_trend_dir"] == 1:
+            elif data_dict["tracking_score"] - data_dict["tracking_trend"] > 0:
                 can.drawImage(
                     BASE_DIR + "/scorecard_assets/green_score_arrow.png",
                     6.3 * inch,
@@ -1124,17 +1126,25 @@ def create_scorecard(
     )
     vulns_data = [
         ["", data_dict["agency_id"], data_dict["sector_name"]],
-        ["KEV", data_dict["vuln_org_kev_ttr"], data_dict["vuln_sector_kev_ttr"]],
+        [
+            "KEV",
+            data_dict["org_avg_days_remediate_kev"],
+            data_dict["sect_avg_days_remediate_kev"],
+        ],
         [
             "Critical",
-            data_dict["vuln_org_critical_ttr"],
-            data_dict["vuln_sector_critical_ttr"],
+            data_dict["org_avg_days_remediate_critical"],
+            data_dict["sect_avg_days_remediate_critical"],
         ],
-        ["High", data_dict["vuln_org_high_ttr"], data_dict["vuln_sector_high_ttr"]],
+        [
+            "High",
+            data_dict["org_avg_days_remediate_high"],
+            data_dict["sect_avg_days_remediate_high"],
+        ],
     ]
     col_widths = [3.2 * inch, 2.1 * inch, 2.4 * inch]
     if not exclude_bods:
-        if data_dict["sector"] in ["FCEB", "EXECUTIVE"]:
+        if data_dict["sector_name"] in ["FCEB", "EXECUTIVE"]:
             header = "BOD Compliance"
         else:
             header = "BOD Compliance**"
@@ -1152,7 +1162,7 @@ def create_scorecard(
     if not exclude_bods:
         can.drawImage(
             BASE_DIR + "/scorecard_assets/green_check.png"
-            if data_dict["vuln_bod_22-01"]
+            if data_dict["bod_22_01-01"]
             else BASE_DIR + "/scorecard_assets/red_x.png",
             7.4 * inch,
             y_value + 81,
@@ -1162,7 +1172,7 @@ def create_scorecard(
         )
         can.drawImage(
             BASE_DIR + "/scorecard_assets/green_check.png"
-            if data_dict["vuln_critical_bod_19-02"]
+            if data_dict["bod_19_02_critical"]
             else BASE_DIR + "/scorecard_assets/red_x.png",
             7.4 * inch,
             y_value + 52,
@@ -1172,7 +1182,7 @@ def create_scorecard(
         )
         can.drawImage(
             BASE_DIR + "/scorecard_assets/green_check.png"
-            if data_dict["vuln_high_bod_19-02"]
+            if data_dict["bod_19_02_high"]
             else BASE_DIR + "/scorecard_assets/red_x.png",
             7.4 * inch,
             y_value + 22,
@@ -1202,13 +1212,13 @@ def create_scorecard(
         ["", data_dict["agency_id"], data_dict["sector_name"]],
         [
             "Critical",
-            data_dict["web_app_org_critical_ttr"],
-            data_dict["web_app_sector_critical_ttr"],
+            data_dict["org_web_avg_days_remediate_critical"],
+            data_dict["sect_web_avg_days_remediate_critical"],
         ],
         [
             "High",
-            data_dict["web_app_org_high_ttr"],
-            data_dict["web_app_sector_high_ttr"],
+            data_dict["org_web_avg_days_remediate_high"],
+            data_dict["sect_web_avg_days_remediate_high"],
         ],
     ]
     web_app_table = format_table(web_app_data, [3.2 * inch, 2.1 * inch, 2.4 * inch])
@@ -1226,71 +1236,71 @@ def create_scorecard(
         bod18_header_frame = Frame(
             col1_x_value, y_value + 2 * inch, box_width, 0.42 * inch, showBoundary=False
         )
-        if data_dict["sector"] in ["FCEB", "EXECUTIVE"]:
+        if data_dict["sector_name"] not in ["FCEB", "EXECUTIVE", "FEDERAL"]:
+            print("No BOD INFO")
+        else:
             title = "BOD 18-01"
-        else:
-            title = "BOD 18-01**"
-        bod18_header_frame.addFromList([Paragraph(title, style=header_style)], can)
-        if data_dict["email_compliance_pct"] is not None:
-            email_compliance = str(data_dict["email_compliance_pct"]) + "%"
-        else:
-            email_compliance = "N/A"
+            bod18_header_frame.addFromList([Paragraph(title, style=header_style)], can)
+            if data_dict["email_compliance_pct"] is not None:
+                email_compliance = str(data_dict["email_compliance_pct"]) + "%"
+            else:
+                email_compliance = "N/A"
 
-        if data_dict["https_compliance_pct"] is not None:
-            https_compliance = str(data_dict["https_compliance_pct"]) + "%"
-        else:
-            https_compliance = "N/A"
+            if data_dict["https_compliance_pct"] is not None:
+                https_compliance = str(data_dict["https_compliance_pct"]) + "%"
+            else:
+                https_compliance = "N/A"
 
-        if include_trending:
-            bod18_data = [
-                ["", "Percent", ""],
-                [
-                    "Email Compliance",
-                    email_compliance,
-                    Image(
-                        determine_arrow(
-                            data_dict["email_compliance_pct"],
-                            data_dict["email_compliance_last_period"],
-                            color=True,
-                            up_is_good=True,
+            if include_trending:
+                bod18_data = [
+                    ["", "Percent", ""],
+                    [
+                        "Email Compliance",
+                        email_compliance,
+                        Image(
+                            determine_arrow(
+                                data_dict["email_compliance_pct"],
+                                data_dict["email_compliance_last_period"],
+                                color=True,
+                                up_is_good=True,
+                            ),
+                            20,
+                            20,
                         ),
-                        20,
-                        20,
-                    ),
-                ],
-                [
-                    "https Compliance",
-                    https_compliance,
-                    Image(
-                        determine_arrow(
-                            data_dict["https_compliance_pct"],
-                            data_dict["https_compliance_last_period"],
-                            color=True,
-                            up_is_good=True,
+                    ],
+                    [
+                        "https Compliance",
+                        https_compliance,
+                        Image(
+                            determine_arrow(
+                                data_dict["https_compliance_pct"],
+                                data_dict["https_compliance_last_period"],
+                                color=True,
+                                up_is_good=True,
+                            ),
+                            20,
+                            20,
                         ),
-                        20,
-                        20,
-                    ),
-                ],
-            ]
-            col_widths = [2.4 * inch, 1.05 * inch, 0.4 * inch]
-            bod18_table = format_table(bod18_data, col_widths)
-        else:
-            bod18_data = [
-                [
-                    "",
-                    "Percent",
-                ],
-                ["Email Compliance", email_compliance],
-                ["https Compliance", https_compliance],
-            ]
-            col_widths = [2.5 * inch, 1.35 * inch]
-            bod18_table = format_table(bod18_data, col_widths)
+                    ],
+                ]
+                col_widths = [2.4 * inch, 1.05 * inch, 0.4 * inch]
+                bod18_table = format_table(bod18_data, col_widths)
+            else:
+                bod18_data = [
+                    [
+                        "",
+                        "Percent",
+                    ],
+                    ["Email Compliance", email_compliance],
+                    ["https Compliance", https_compliance],
+                ]
+                col_widths = [2.5 * inch, 1.35 * inch]
+                bod18_table = format_table(bod18_data, col_widths)
 
-        bod18_table_frame = Frame(
-            col1_x_value, y_value, box_width, 2 * inch, showBoundary=False
-        )
-        bod18_table_frame.addFromList([bod18_table], can)
+            bod18_table_frame = Frame(
+                col1_x_value, y_value, box_width, 2 * inch, showBoundary=False
+            )
+            bod18_table_frame.addFromList([bod18_table], can)
 
     fine_print_style = ParagraphStyle(
         "fine_print_style",
@@ -1309,7 +1319,7 @@ def create_scorecard(
         ),
     ]
 
-    if data_dict["sector"] not in ["FCEB", "EXECUTIVE"]:
+    if data_dict["sector_name"] not in ["FCEB", "EXECUTIVE"]:
         fine_print.append(
             Paragraph(
                 "**"

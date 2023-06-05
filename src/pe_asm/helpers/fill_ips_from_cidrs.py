@@ -1,28 +1,28 @@
 #!/usr/bin/env python
 """Fill IPs table from CIDR blocks."""
 # Standard Python Libraries
+import datetime
 import hashlib
 import ipaddress
 import logging
-import datetime
 
 # Third-Party Libraries
 import pandas as pd
 
 # cisagov Libraries
 from pe_asm.data.cyhy_db_query import (
-    query_cidrs,
     execute_ips,
     identify_ip_changes,
     pe_db_connect,
     pe_db_staging_connect,
+    query_cidrs,
 )
 
 LOGGER = logging.getLogger(__name__)
 DATE = datetime.datetime.today().date()
 
 
-def enumerate_ips(cidr, cidr_uid):
+def enumerate_ips(cidr, cidr_uid, org_uid):
     """Enumerate all ips for a provided cidr."""
     ips_from_cidrs = []
     print(cidr)
@@ -34,6 +34,7 @@ def enumerate_ips(cidr, cidr_uid):
             "origin_cidr": cidr_uid,
             "first_seen": DATE,
             "last_seen": DATE,
+            "organizations_uid": org_uid,
         }
         ips_from_cidrs.append(ip_obj)
     return ips_from_cidrs
@@ -41,7 +42,6 @@ def enumerate_ips(cidr, cidr_uid):
 
 def fill_ips_from_cidrs(staging):
     """For each CIDR, enumerate all IPs and add them to the ips table."""
-
     # Connect to database
     if staging:
         conn = pe_db_staging_connect()
@@ -63,7 +63,7 @@ def fill_ips_from_cidrs(staging):
 
         # Enumerate IPs
         ips_from_cidrs = ips_from_cidrs + enumerate_ips(
-            cidr["network"], cidr["cidr_uid"]
+            cidr["network"], cidr["cidr_uid"], cidr["organizations_uid"]
         )
         if cidr_count % 500 == 0 or cidr_count == num_of_cidrs:
             LOGGER.info("\t\t%d/%d complete.", cidr_count, num_of_cidrs)

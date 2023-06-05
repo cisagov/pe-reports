@@ -3,16 +3,13 @@
 
 # Standard Python Libraries
 import datetime
-import datetime
 import logging
 import sys
 
 # Third-Party Libraries
 import pandas as pd
-import pandas as pd
 import psycopg2
 from psycopg2 import OperationalError
-from psycopg2.extensions import AsIs
 from psycopg2.extensions import AsIs
 
 from .config import config, staging_config
@@ -433,8 +430,8 @@ def query_dscore_vs_data_cert(org_list):
         "UUID('" + "')), (UUID('".join(org_list["organizations_uid"].tolist()) + "')"
     )
     sql = """
-    SELECT 
-        sector.organizations_uid, cert.num_ident_cert, cert.num_monitor_cert
+    SELECT
+        sector.organizations_uid, cert.parent_org_uid, cert.num_ident_cert, cert.num_monitor_cert
     FROM
         (VALUES (%(sector_str)s)) AS sector(organizations_uid)
         LEFT JOIN
@@ -468,8 +465,8 @@ def query_dscore_vs_data_mail(org_list):
         "UUID('" + "')), (UUID('".join(org_list["organizations_uid"].tolist()) + "')"
     )
     sql = """
-    SELECT 
-        sector.organizations_uid, mail.num_valid_dmarc, mail.num_valid_spf, mail.num_valid_dmarc_or_spf, mail.total_mail_domains
+    SELECT
+        sector.organizations_uid, mail.parent_org_uid, mail.num_valid_dmarc, mail.num_valid_spf, mail.num_valid_dmarc_or_spf, mail.total_mail_domains
     FROM
         (VALUES (%(sector_str)s)) AS sector(organizations_uid)
         LEFT JOIN
@@ -503,8 +500,8 @@ def query_dscore_pe_data_ip(org_list):
         "UUID('" + "')), (UUID('".join(org_list["organizations_uid"].tolist()) + "')"
     )
     sql = """
-    SELECT 
-        sector.organizations_uid, ip.num_ident_ip, ip.num_monitor_ip
+    SELECT
+        sector.organizations_uid, ip.parent_org_uid, ip.num_ident_ip, ip.num_monitor_ip
     FROM
         (VALUES (%(sector_str)s)) AS sector(organizations_uid)
         LEFT JOIN
@@ -538,8 +535,8 @@ def query_dscore_pe_data_domain(org_list):
         "UUID('" + "')), (UUID('".join(org_list["organizations_uid"].tolist()) + "')"
     )
     sql = """
-    SELECT 
-        sector.organizations_uid, domain.num_ident_domain, domain.num_monitor_domain
+    SELECT
+        sector.organizations_uid, domain.parent_org_uid, domain.num_ident_domain, domain.num_monitor_domain
     FROM
         (VALUES (%(sector_str)s)) AS sector(organizations_uid)
         LEFT JOIN
@@ -573,8 +570,8 @@ def query_dscore_was_data_webapp(org_list):
         "UUID('" + "')), (UUID('".join(org_list["organizations_uid"].tolist()) + "')"
     )
     sql = """
-    SELECT 
-        sector.organizations_uid, webapp.num_ident_webapp, webapp.num_monitor_webapp
+    SELECT
+        sector.organizations_uid, webapp.parent_org_uid, webapp.num_ident_webapp, webapp.num_monitor_webapp
     FROM
         (VALUES (%(sector_str)s)) AS sector(organizations_uid)
         LEFT JOIN
@@ -609,8 +606,8 @@ def query_iscore_vs_data_vuln(org_list):
         "UUID('" + "')), (UUID('".join(org_list["organizations_uid"].tolist()) + "')"
     )
     sql = """
-    SELECT 
-        sector.organizations_uid, vuln.cve_name, vuln.cvss_score
+    SELECT
+        sector.organizations_uid, vuln.parent_org_uid, vuln.cve_name, vuln.cvss_score
     FROM
         (VALUES (%(sector_str)s)) AS sector(organizations_uid)
         LEFT JOIN
@@ -634,6 +631,7 @@ def query_iscore_vs_data_vuln(org_list):
                 pd.DataFrame(
                     {
                         "organizations_uid": "test_org",
+                        "parent_org_uid": "test_parent_org",
                         "cve_name": "test_cve",
                         "cvss_score": 1.0,
                     },
@@ -664,14 +662,14 @@ def query_iscore_vs_data_vuln_prev(org_list, start_date, end_date):
         "UUID('" + "')), (UUID('".join(org_list["organizations_uid"].tolist()) + "')"
     )
     sql = """
-    SELECT 
-        sector.organizations_uid, prev_vuln.cve_name, prev_vuln.cvss_score, prev_vuln.time_closed
+    SELECT
+        sector.organizations_uid, prev_vuln.parent_org_uid, prev_vuln.cve_name, prev_vuln.cvss_score, prev_vuln.time_closed
     FROM
         (VALUES (%(sector_str)s)) AS sector(organizations_uid)
         LEFT JOIN
         vw_iscore_vs_vuln prev_vuln
         ON sector.organizations_uid = prev_vuln.organizations_uid
-    WHERE 
+    WHERE
         time_closed BETWEEN '%(start_date)s' AND '%(end_date)s';"""
     # Make query
     iscore_vs_vuln_prev_data = pd.read_sql(
@@ -695,6 +693,7 @@ def query_iscore_vs_data_vuln_prev(org_list, start_date, end_date):
                 pd.DataFrame(
                     {
                         "organizations_uid": "test_org",
+                        "parent_org_uid": "test_parent_org",
                         "cve_name": "test_cve",
                         "cvss_score": 1.0,
                         "time_closed": datetime.date(1, 1, 1),
@@ -726,14 +725,14 @@ def query_iscore_pe_data_vuln(org_list, start_date, end_date):
         "UUID('" + "')), (UUID('".join(org_list["organizations_uid"].tolist()) + "')"
     )
     sql = """
-    SELECT 
-        sector.organizations_uid, vuln.date, vuln.cve_name, vuln.cvss_score
+    SELECT
+        sector.organizations_uid, vuln.parent_org_uid, vuln.date, vuln.cve_name, vuln.cvss_score
     FROM
         (VALUES (%(sector_str)s)) AS sector(organizations_uid)
         LEFT JOIN
         vw_iscore_pe_vuln vuln
         ON sector.organizations_uid = vuln.organizations_uid
-    WHERE 
+    WHERE
         date BETWEEN '%(start_date)s' AND '%(end_date)s';"""
     # Make query
     iscore_pe_vuln_data = pd.read_sql(
@@ -757,6 +756,7 @@ def query_iscore_pe_data_vuln(org_list, start_date, end_date):
                 pd.DataFrame(
                     {
                         "organizations_uid": "test_org",
+                        "parent_org_uid": "test_parent_org",
                         "date": datetime.date(1, 1, 1),
                         "cve_name": "test_cve",
                         "cvss_score": 1.0,
@@ -792,14 +792,14 @@ def query_iscore_pe_data_cred(org_list, start_date, end_date):
         "UUID('" + "')), (UUID('".join(org_list["organizations_uid"].tolist()) + "')"
     )
     sql = """
-    SELECT 
-        sector.organizations_uid, cred.date, cred.password_creds, cred.total_creds
+    SELECT
+        sector.organizations_uid, cred.parent_org_uid, cred.date, cred.password_creds, cred.total_creds
     FROM
         (VALUES (%(sector_str)s)) AS sector(organizations_uid)
         LEFT JOIN
         vw_iscore_pe_cred cred
         ON sector.organizations_uid = cred.organizations_uid
-    WHERE 
+    WHERE
         date BETWEEN '%(start_date)s' AND '%(end_date)s';"""
     # Make query
     iscore_pe_cred_data = pd.read_sql(
@@ -823,6 +823,7 @@ def query_iscore_pe_data_cred(org_list, start_date, end_date):
                 pd.DataFrame(
                     {
                         "organizations_uid": "test_org",
+                        "parent_org_uid": "test_parent_org",
                         "date": datetime.date(1, 1, 1),
                         "password_creds": 0,
                         "total_creds": 0,
@@ -854,14 +855,14 @@ def query_iscore_pe_data_breach(org_list, start_date, end_date):
         "UUID('" + "')), (UUID('".join(org_list["organizations_uid"].tolist()) + "')"
     )
     sql = """
-    SELECT 
-        sector.organizations_uid, breach.date, breach.breach_count
+    SELECT
+        sector.organizations_uid, breach.parent_org_uid, breach.date, breach.breach_count
     FROM
         (VALUES (%(sector_str)s)) AS sector(organizations_uid)
         LEFT JOIN
         vw_iscore_pe_breach breach
         ON sector.organizations_uid = breach.organizations_uid
-    WHERE 
+    WHERE
         date BETWEEN '%(start_date)s' AND '%(end_date)s';"""
     # Make query
     iscore_pe_breach_data = pd.read_sql(
@@ -885,6 +886,7 @@ def query_iscore_pe_data_breach(org_list, start_date, end_date):
                 pd.DataFrame(
                     {
                         "organizations_uid": "test_org",
+                        "parent_org_uid": "test_parent_org",
                         "date": datetime.date(1, 1, 1),
                         "breach_count": 0,
                     },
@@ -915,14 +917,14 @@ def query_iscore_pe_data_darkweb(org_list, start_date, end_date):
         "UUID('" + "')), (UUID('".join(org_list["organizations_uid"].tolist()) + "')"
     )
     sql = """
-    SELECT 
-        sector.organizations_uid, darkweb.alert_type, darkweb.date, darkweb."Count"
+    SELECT
+        sector.organizations_uid, darkweb.parent_org_uid, darkweb.alert_type, darkweb.date, darkweb."Count"
     FROM
         (VALUES (%(sector_str)s)) AS sector(organizations_uid)
         LEFT JOIN
         vw_iscore_pe_darkweb darkweb
         ON sector.organizations_uid = darkweb.organizations_uid
-    WHERE 
+    WHERE
         date BETWEEN '%(start_date)s' AND '%(end_date)s' OR date = '0001-01-01';"""
     # Make query
     iscore_pe_darkweb_data = pd.read_sql(
@@ -946,6 +948,7 @@ def query_iscore_pe_data_darkweb(org_list, start_date, end_date):
                 pd.DataFrame(
                     {
                         "organizations_uid": "test_org",
+                        "parent_org_uid": "test_parent_org",
                         "alert_type": "TEST_TYPE",
                         "date": datetime.date(1, 1, 1),
                         "Count": 0,
@@ -977,14 +980,14 @@ def query_iscore_pe_data_protocol(org_list, start_date, end_date):
         "UUID('" + "')), (UUID('".join(org_list["organizations_uid"].tolist()) + "')"
     )
     sql = """
-    SELECT 
-        sector.organizations_uid, protocol.port, protocol.ip, protocol.protocol, protocol.protocol_type, protocol.date
+    SELECT
+        sector.organizations_uid, protocol.parent_org_uid, protocol.port, protocol.ip, protocol.protocol, protocol.protocol_type, protocol.date
     FROM
         (VALUES (%(sector_str)s)) AS sector(organizations_uid)
         LEFT JOIN
         vw_iscore_pe_protocol protocol
         ON sector.organizations_uid = protocol.organizations_uid
-    WHERE 
+    WHERE
         date BETWEEN '%(start_date)s' AND '%(end_date)s';"""
     # Make query
     iscore_pe_protocol_data = pd.read_sql(
@@ -1008,6 +1011,7 @@ def query_iscore_pe_data_protocol(org_list, start_date, end_date):
                 pd.DataFrame(
                     {
                         "organizations_uid": "test_org",
+                        "parent_org_uid": "test_parent_org",
                         "port": "test_port",
                         "ip": "test_ip",
                         "protocol": "test_protocol",
@@ -1041,14 +1045,14 @@ def query_iscore_was_data_vuln(org_list, start_date, end_date):
         "UUID('" + "')), (UUID('".join(org_list["organizations_uid"].tolist()) + "')"
     )
     sql = """
-    SELECT 
-        sector.organizations_uid, vuln.date, vuln.cve_name, vuln.cvss_score, vuln.owasp_category
+    SELECT
+        sector.organizations_uid, vuln.parent_org_uid, vuln.date, vuln.cve_name, vuln.cvss_score, vuln.owasp_category
     FROM
         (VALUES (%(sector_str)s)) AS sector(organizations_uid)
         LEFT JOIN
         vw_iscore_was_vuln vuln
         ON sector.organizations_uid = vuln.organizations_uid
-    WHERE 
+    WHERE
         date BETWEEN '%(start_date)s' AND '%(end_date)s';"""
     # Make query
     iscore_was_vuln_data = pd.read_sql(
@@ -1072,6 +1076,7 @@ def query_iscore_was_data_vuln(org_list, start_date, end_date):
                 pd.DataFrame(
                     {
                         "organizations_uid": "test_org",
+                        "parent_org_uid": "test_parent_org",
                         "date": datetime.date(1, 1, 1),
                         "cve_name": "test_cve",
                         "cvss_score": 1.0,
@@ -1104,14 +1109,14 @@ def query_iscore_was_data_vuln_prev(org_list, start_date, end_date):
         "UUID('" + "')), (UUID('".join(org_list["organizations_uid"].tolist()) + "')"
     )
     sql = """
-    SELECT 
-        sector.organizations_uid, prev_vuln.was_total_vulns_prev, prev_vuln.date
+    SELECT
+        sector.organizations_uid, prev_vuln.parent_org_uid, prev_vuln.was_total_vulns_prev, prev_vuln.date
     FROM
         (VALUES (%(sector_str)s)) AS sector(organizations_uid)
         LEFT JOIN
         vw_iscore_was_vuln_prev prev_vuln
         ON sector.organizations_uid = prev_vuln.organizations_uid
-    WHERE 
+    WHERE
         date BETWEEN '%(start_date)s' AND '%(end_date)s';"""
     # Make query
     iscore_was_vuln_prev_data = pd.read_sql(
@@ -1135,6 +1140,7 @@ def query_iscore_was_data_vuln_prev(org_list, start_date, end_date):
                 pd.DataFrame(
                     {
                         "organizations_uid": "test_org",
+                        "parent_org_uid": "test_parent_org",
                         "was_total_vulns_prev": 0,
                         "date": datetime.date(1, 1, 1),
                     },
@@ -1271,7 +1277,7 @@ def query_fceb_status(org_list):
         "UUID('" + "')), (UUID('".join(org_list["organizations_uid"].tolist()) + "')"
     )
     sql = """
-    SELECT 
+    SELECT
         sector.organizations_uid, COALESCE(fceb_status.fceb, false) as fceb
     FROM
         (VALUES (%(sector_str)s)) AS sector(organizations_uid)
@@ -1522,23 +1528,23 @@ def query_open_vulns(org_id_list):
 def execute_scorecard_summary_data(summary_dict):
     """Save summary statistics for an organization to the database."""
     try:
-        if summary_dict["web_app_kev"] in ["N/A", None]:
-            summary_dict["web_app_kev"] = 0
+        if summary_dict["web_apps_kev"] in ["N/A", None]:
+            summary_dict["web_apps_kev"] = 0
 
-        if summary_dict["external_host_kev"] in ["N/A", None]:
-            summary_dict["external_host_kev"] = 0
+        if summary_dict["ext_host_kev"] in ["N/A", None]:
+            summary_dict["ext_host_kev"] = 0
 
-        if summary_dict["web_app_critical"] in ["N/A", None]:
-            summary_dict["web_app_critical"] = 0
+        if summary_dict["web_apps_vuln_critical"] in ["N/A", None]:
+            summary_dict["web_apps_vuln_critical"] = 0
 
-        if summary_dict["external_host_critical"] in ["N/A", None]:
-            summary_dict["external_host_critical"] = 0
+        if summary_dict["ext_host_vuln_critical"] in ["N/A", None]:
+            summary_dict["ext_host_vuln_critical"] = 0
 
-        if summary_dict["external_host_high"] in ["N/A", None]:
-            summary_dict["external_host_high"] = 0
+        if summary_dict["ext_host_vuln_high"] in ["N/A", None]:
+            summary_dict["ext_host_vuln_high"] = 0
 
-        if summary_dict["web_app_high"] in ["N/A", None]:
-            summary_dict["web_app_high"] = 0
+        if summary_dict["web_apps_vuln_high"] in ["N/A", None]:
+            summary_dict["web_apps_vuln_high"] = 0
         conn = connect()
         cur = conn.cursor()
         sql = """
@@ -1592,7 +1598,8 @@ def execute_scorecard_summary_data(summary_dict):
             sect_web_avg_days_remediate_critical,
             sect_web_avg_days_remediate_high,
             email_compliance_pct,
-            https_compliance_pct
+            https_compliance_pct,
+            sector_name
         )
         VALUES(
             %s,%s,%s,%s,%s,%s,%s,%s,%s,%s,
@@ -1601,7 +1608,7 @@ def execute_scorecard_summary_data(summary_dict):
             %s,%s,%s,%s,%s,%s,%s,%s,%s,%s,
             %s,%s,%s,%s,%s,%s,%s,%s,%s,%s
         )
-        ON CONFLICT(organizations_uid, start_date)
+        ON CONFLICT(organizations_uid, start_date, sector_name)
         DO
         UPDATE SET
             score = EXCLUDED.score,
@@ -1660,7 +1667,7 @@ def execute_scorecard_summary_data(summary_dict):
                 summary_dict["organizations_uid"],
                 summary_dict["start_date"],
                 summary_dict["end_date"],
-                AsIs(summary_dict["overall_score"]),
+                AsIs(summary_dict["score"]),
                 AsIs(summary_dict["discovery_score"]),
                 AsIs(summary_dict["profiling_score"]),
                 AsIs(summary_dict["identification_score"]),
@@ -1677,39 +1684,43 @@ def execute_scorecard_summary_data(summary_dict):
                 AsIs(summary_dict["certs_self_reported"]),
                 AsIs(summary_dict["certs_discovered"]),
                 AsIs(summary_dict["certs_monitored"]),
-                AsIs(summary_dict["ports_total_count"]),
-                AsIs(summary_dict["ports_risky_count"]),
-                AsIs(summary_dict["protocol_total_count"]),
-                AsIs(summary_dict["protocol_insecure_count"]),
-                AsIs(summary_dict["services_total_count"]),
-                AsIs(summary_dict["software_unsupported_count"]),
-                AsIs(summary_dict["external_host_kev"]),
-                AsIs(summary_dict["external_host_critical"]),
-                AsIs(summary_dict["external_host_high"]),
-                AsIs(summary_dict["web_app_kev"]),
-                AsIs(summary_dict["web_app_critical"]),
-                AsIs(summary_dict["web_app_high"]),
-                AsIs(summary_dict["web_app_kev"] + summary_dict["external_host_kev"]),
+                AsIs(summary_dict["total_ports"]),
+                AsIs(summary_dict["risky_ports"]),
+                AsIs(summary_dict["protocols"]),
+                AsIs(summary_dict["insecure_protocols"]),
+                AsIs(summary_dict["total_services"]),
+                AsIs(summary_dict["unsupported_software"]),
+                AsIs(summary_dict["ext_host_kev"]),
+                AsIs(summary_dict["ext_host_vuln_critical"]),
+                AsIs(summary_dict["ext_host_vuln_high"]),
+                AsIs(summary_dict["web_apps_kev"]),
+                AsIs(summary_dict["web_apps_vuln_critical"]),
+                AsIs(summary_dict["web_apps_vuln_high"]),
+                AsIs(summary_dict["web_apps_kev"] + summary_dict["ext_host_kev"]),
                 AsIs(
-                    summary_dict["web_app_critical"]
-                    + summary_dict["external_host_critical"]
+                    summary_dict["web_apps_vuln_critical"]
+                    + summary_dict["ext_host_vuln_critical"]
                 ),
-                AsIs(summary_dict["external_host_high"] + summary_dict["web_app_high"]),
-                AsIs(summary_dict["vuln_org_kev_ttr"]),
-                AsIs(summary_dict["vuln_org_critical_ttr"]),
-                AsIs(summary_dict["vuln_org_high_ttr"]),
-                AsIs(summary_dict["vuln_sector_kev_ttr"]),
-                AsIs(summary_dict["vuln_sector_critical_ttr"]),
-                AsIs(summary_dict["vuln_sector_high_ttr"]),
-                summary_dict["vuln_bod_22-01"],
-                summary_dict["vuln_critical_bod_19-02"],
-                summary_dict["vuln_high_bod_19-02"],
-                AsIs(summary_dict["web_app_org_critical_ttr"]),
-                AsIs(summary_dict["web_app_org_high_ttr"]),
-                AsIs(summary_dict["web_app_sector_critical_ttr"]),
-                AsIs(summary_dict["web_app_sector_high_ttr"]),
+                AsIs(
+                    summary_dict["ext_host_vuln_high"]
+                    + summary_dict["web_apps_vuln_high"]
+                ),
+                AsIs(summary_dict["org_avg_days_remediate_kev"]),
+                AsIs(summary_dict["org_avg_days_remediate_critical"]),
+                AsIs(summary_dict["org_avg_days_remediate_high"]),
+                AsIs(summary_dict["sect_avg_days_remediate_kev"]),
+                AsIs(summary_dict["sect_avg_days_remediate_critical"]),
+                AsIs(summary_dict["sect_avg_days_remediate_high"]),
+                summary_dict["bod_22_01-01"],
+                summary_dict["bod_19_02_critical"],
+                summary_dict["bod_19_02_high"],
+                AsIs(summary_dict["org_web_avg_days_remediate_critical"]),
+                AsIs(summary_dict["org_web_avg_days_remediate_high"]),
+                AsIs(summary_dict["sect_web_avg_days_remediate_critical"]),
+                AsIs(summary_dict["sect_web_avg_days_remediate_high"]),
                 AsIs(summary_dict["email_compliance_pct"]),
                 AsIs(summary_dict["https_compliance_pct"]),
+                AsIs(summary_dict("sector_name")),
             ),
         )
         conn.commit()
@@ -1719,15 +1730,98 @@ def execute_scorecard_summary_data(summary_dict):
         cur.close()
 
 
-def get_scorecard_metrics_past(org_uid, date):
+def get_scorecard_metrics_past(org_uid, date, sector):
     """Get the past Scorecard summary data for an organization."""
     conn = connect()
     sql = """select * from scorecard_summary_stats sss
                 where organizations_uid = %(org_id)s
-                and end_date = %(date)s;"""
-    df = pd.read_sql(sql, conn, params={"org_id": org_uid, "date": date})
+                and end_date = %(date)s
+                and sector_name = %(sector)s;"""
+    df = pd.read_sql(
+        sql, conn, params={"org_id": org_uid, "date": date, "sector": sector}
+    )
     conn.close()
     return df
+
+
+def get_scorecard_metrics_current(org_uid, date, sector):
+    """Get the current Scorecard summary data for an organization."""
+    conn = connect()
+    sql = """select * from scorecard_summary_stats sss
+                where organizations_uid = %(org_id)s
+                and start_date = %(date)s
+                and sector_name = %(sector)s;"""
+    df = pd.read_sql(
+        sql, conn, params={"org_id": org_uid, "date": date, "sector": sector}
+    )
+    conn.close()
+    return df
+
+
+def query_scorecard_data(org_uid, start_date, sector):
+    """Requery the data for a given org and date."""
+    this_period_data = get_scorecard_metrics_current(org_uid, start_date, sector)
+    scorecard_dict = this_period_data.to_dict("records")[0]
+    last_period_data = get_scorecard_metrics_past(org_uid, start_date, sector)
+    last_scorecard_dict = last_period_data.to_dict("records")[0]
+
+    if last_period_data.empty:
+        LOGGER.error("No Scorecard summary data for the last report period.")
+        ips_monitored_trend = scorecard_dict["ips_monitored"]
+        domains_monitored_trend = scorecard_dict["domains_monitored"]
+        web_apps_monitored_trend = scorecard_dict["web_apps_monitored"]
+        certs_monitored_trend = scorecard_dict["certs_monitored"]
+        ports_total_trend = scorecard_dict["total_ports"]
+        ports_risky_trend = scorecard_dict["risky_ports"]
+        protocol_total_trend = scorecard_dict["protocols"]
+        protocol_insecure_trend = scorecard_dict["insecure_protocols"]
+        services_total_trend = scorecard_dict["total_services"]
+        software_unsupported_trend = scorecard_dict["unsupported_software"]
+        email_compliance_last_period = scorecard_dict["email_compliance_pct"]
+        https_compliance_last_period = scorecard_dict["https_compliance_pct"]
+        discovery_trend = scorecard_dict.get("discovery_score", 0)
+        profiling_trend = scorecard_dict.get("profiling_score", 0)
+        identification_trend = scorecard_dict.get("identification_score", 0)
+        tracking_trend = scorecard_dict.get("tracking_score", 0)
+    else:
+        ips_monitored_trend = last_scorecard_dict["ips_monitored"]
+        domains_monitored_trend = last_scorecard_dict["domains_monitored"]
+        web_apps_monitored_trend = last_scorecard_dict["web_apps_monitored"]
+        certs_monitored_trend = last_scorecard_dict["certs_monitored"]
+        ports_total_trend = last_scorecard_dict["total_ports"]
+        ports_risky_trend = last_scorecard_dict["risky_ports"]
+        protocol_total_trend = last_scorecard_dict["protocols"]
+        protocol_insecure_trend = last_scorecard_dict["insecure_protocols"]
+        services_total_trend = last_scorecard_dict["total_services"]
+        software_unsupported_trend = last_scorecard_dict["unsupported_software"]
+        email_compliance_last_period = last_scorecard_dict["email_compliance_pct"]
+        https_compliance_last_period = last_scorecard_dict["https_compliance_pct"]
+        discovery_trend = last_scorecard_dict["discovery_score"]
+        profiling_trend = last_scorecard_dict["profiling_score"]
+        identification_trend = last_scorecard_dict["identification_score"]
+        tracking_trend = last_scorecard_dict["tracking_score"]
+
+    past_scorecard_metrics_dict = {
+        "ips_monitored_trend": ips_monitored_trend,
+        "domains_monitored_trend": domains_monitored_trend,
+        "web_apps_monitored_trend": web_apps_monitored_trend,
+        "certs_monitored_trend": certs_monitored_trend,
+        "ports_total_trend": ports_total_trend,
+        "ports_risky_trend": ports_risky_trend,
+        "protocol_total_trend": protocol_total_trend,
+        "protocol_insecure_trend": protocol_insecure_trend,
+        "services_total_trend": services_total_trend,
+        "software_unsupported_trend": software_unsupported_trend,
+        "email_compliance_last_period": email_compliance_last_period,
+        "https_compliance_last_period": https_compliance_last_period,
+        "discovery_trend": discovery_trend,
+        "profiling_trend": profiling_trend,
+        "identification_trend": identification_trend,
+        "tracking_trend": tracking_trend,
+    }
+    scorecard_dict.update(past_scorecard_metrics_dict)
+
+    return scorecard_dict
 
 
 def find_last_scan_date():
@@ -1877,11 +1971,14 @@ def query_profiling_views(start_date, org_uid_list):
 
 
 def get_stakeholders():
+    """Get stakeholders from the materialized view."""
     conn = connect()
     try:
-        sql = """select o.organizations_uid, o.report_on 
-	    from organizations o
-        where o.retired = False"""
+        sql = """
+            select o.organizations_uid, o.report_on
+            from organizations o
+            where o.retired = False
+        """
         pe_orgs_df = pd.read_sql(sql, conn)
         return pe_orgs_df
     except (Exception, psycopg2.DatabaseError) as error:
@@ -1892,9 +1989,10 @@ def get_stakeholders():
 
 
 def get_was_stakeholders():
+    """Query WAS stakeholders."""
     conn = connect()
     try:
-        sql = """select o.organizations_uid, o.cyhy_db_name, wm.was_org_id, o.fceb, o.fceb_child, o.parent_org_uid 
+        sql = """select o.organizations_uid, o.cyhy_db_name, wm.was_org_id, o.fceb, o.fceb_child, o.parent_org_uid
         from organizations o
         right join was_map wm on
         o.organizations_uid = wm.pe_org_id"""
@@ -1906,16 +2004,26 @@ def get_was_stakeholders():
         if conn is not None:
             close(conn)
 
+
 def get_hosts(start_date, end_date, df_orgs=[]):
+    """Get host data from cyhy snapshots table."""
     conn = connect()
     try:
         sql = """select o.organizations_uid, o.cyhy_db_name, cs.host_count, cs.vulnerable_host_count, o.parent_org_uid, max(cs.cyhy_last_change)
-        from organizations o 
+        from organizations o
         left join cyhy_snapshots cs on
-        o.organizations_uid = cs.organizations_uid 
+        o.organizations_uid = cs.organizations_uid
         where cs.cyhy_last_change >= %(start_date)s AND cs.cyhy_last_change < %(end_date)s and o.organizations_uid in %(df_orgs)s
         group by o.organizations_uid, o.cyhy_db_name, cs.host_count, cs.vulnerable_host_count, o.parent_org_uid"""
-        snapshots_df = pd.read_sql(sql, conn, params={"start_date": start_date, "end_date": end_date, "df_orgs": tuple(df_orgs)})
+        snapshots_df = pd.read_sql(
+            sql,
+            conn,
+            params={
+                "start_date": start_date,
+                "end_date": end_date,
+                "df_orgs": tuple(df_orgs),
+            },
+        )
         return snapshots_df
     except (Exception, psycopg2.DatabaseError) as error:
         LOGGER.error("There was a problem with your database query %s", error)
@@ -1923,23 +2031,33 @@ def get_hosts(start_date, end_date, df_orgs=[]):
         if conn is not None:
             close(conn)
 
+
 def get_port_scans(start_date, end_date, df_orgs=[]):
+    """Get port data from the materialized view."""
     conn = connect()
     try:
-        sql = """select mvcpc.organizations_uid, mvcpc.cyhy_db_name, mvcpc.report_period, mvcpc.ports, mvcpc.risky_ports, mvcpc2.protocols, mvcrpc.risky_protocols, mvcsc2.services, o.parent_org_uid 
-        from mat_vw_cyhy_port_counts mvcpc 
+        sql = """select mvcpc.organizations_uid, mvcpc.cyhy_db_name, mvcpc.report_period, mvcpc.ports, mvcpc.risky_ports, mvcpc2.protocols, mvcrpc.risky_protocols, mvcsc2.services, o.parent_org_uid
+        from mat_vw_cyhy_port_counts mvcpc
         inner join mat_vw_cyhy_protocol_counts mvcpc2 on
         mvcpc2.organizations_uid  = mvcpc.organizations_uid
         inner join mat_vw_cyhy_risky_protocol_counts mvcrpc on
         mvcrpc.organizations_uid  = mvcpc.organizations_uid
-        inner join organizations o on 
-        o.organizations_uid = mvcpc.organizations_uid 
+        inner join organizations o on
+        o.organizations_uid = mvcpc.organizations_uid
         inner join mat_vw_cyhy_services_counts mvcsc on
-        mvcsc.organizations_uid = mvcpc.organizations_uid 
-        inner join mat_vw_cyhy_services_counts mvcsc2 on 
+        mvcsc.organizations_uid = mvcpc.organizations_uid
+        inner join mat_vw_cyhy_services_counts mvcsc2 on
         mvcsc2.organizations_uid  = mvcpc.organizations_uid
         where mvcpc.report_period >= %(start_date)s and mvcpc.report_period < %(end_date)s and o.organizations_uid in %(df_orgs)s"""
-        df_port_scans = pd.read_sql(sql, conn, params={"start_date": start_date, "end_date": end_date, "df_orgs": tuple(df_orgs)})
+        df_port_scans = pd.read_sql(
+            sql,
+            conn,
+            params={
+                "start_date": start_date,
+                "end_date": end_date,
+                "df_orgs": tuple(df_orgs),
+            },
+        )
         return df_port_scans
     except (Exception, psycopg2.DatabaseError) as error:
         LOGGER.error("There was a problem with your database query %s", error)
@@ -1947,13 +2065,15 @@ def get_port_scans(start_date, end_date, df_orgs=[]):
         if conn is not None:
             close(conn)
 
+
 def get_was_summary(df_orgs=[]):
+    """Query the WAS summary data."""
     conn = connect()
     try:
         sql = """SELECT ws.was_org_id, wm.pe_org_id, ws.webapp_count, ws.webapp_with_vulns_count, max(ws.last_updated)
-        from was_summary ws 
+        from was_summary ws
         left join was_map wm on
-        ws.was_org_id = wm.was_org_id 
+        ws.was_org_id = wm.was_org_id
         where wm.pe_org_id notnull and text(wm.pe_org_id) in %(df_orgs)s
         group by ws.was_org_id, wm.pe_org_id, ws.webapp_count, ws.webapp_with_vulns_count"""
         was_data_df = pd.read_sql(sql, conn, params={"df_orgs": tuple(df_orgs)})
@@ -1964,16 +2084,26 @@ def get_was_summary(df_orgs=[]):
         if conn is not None:
             close(conn)
 
+
 def get_software(start_date, end_date, df_orgs=[]):
+    """Query software data from vuln_scans table."""
     conn = connect()
     try:
         sql = """select o.organizations_uid, o.cyhy_db_name, o.parent_org_uid, o.fceb, count(cvs.plugin_name)
-        from organizations o 
+        from organizations o
         left join cyhy_vuln_scans cvs on
-        o.organizations_uid = cvs.organizations_uid 
+        o.organizations_uid = cvs.organizations_uid
         where cvs.plugin_name = 'Unsupported Web Server Detection' and cvs.cyhy_time >= %(start_date)s AND cvs.cyhy_time <%(end_date)s and o.organizations_uid in %(df_orgs)s
         group by o.organizations_uid, o.cyhy_db_name, o.parent_org_uid, o.fceb"""
-        vuln_scans_df = pd.read_sql(sql, conn, params={"start_date": start_date, "end_date": end_date, "df_orgs": tuple(df_orgs)})
+        vuln_scans_df = pd.read_sql(
+            sql,
+            conn,
+            params={
+                "start_date": start_date,
+                "end_date": end_date,
+                "df_orgs": tuple(df_orgs),
+            },
+        )
         return vuln_scans_df
     except (Exception, psycopg2.DatabaseError) as error:
         LOGGER.error("There was a problem with your database query %s", error)
@@ -1983,11 +2113,12 @@ def get_software(start_date, end_date, df_orgs=[]):
 
 
 def get_bod_18():
+    """Query BOD 18-01 data necessary to calculate compliance."""
     conn = connect()
     try:
-        sql = """SELECT o.organizations_uid, o.cyhy_db_name, o.fceb, o.fceb_child, sss.email_compliance_pct, sss.https_compliance_pct 
-		FROM scorecard_summary_stats sss
-        left join organizations o on 
+        sql = """SELECT o.organizations_uid, o.cyhy_db_name, o.fceb, o.fceb_child, sss.email_compliance_pct, sss.https_compliance_pct
+        FROM scorecard_summary_stats sss
+        left join organizations o on
         sss.organizations_uid = o.organizations_uid
         where sss.email_compliance_pct notnull and sss.https_compliance_pct notnull"""
         bod_18_df = pd.read_sql(sql, conn)
@@ -2000,18 +2131,27 @@ def get_bod_18():
 
 
 def get_ports_protocols(start_date, end_date, df_orgs=[]):
+    """Query ports and protocols data."""
     conn = connect()
     try:
-        sql = """select mvcpc.organizations_uid, mvcpc.cyhy_db_name, mvcpc.report_period, mvcpc.ports, mvcpc.risky_ports, mvcpc2.protocols, mvcrpc.risky_protocols, o.parent_org_uid  
-        from mat_vw_cyhy_port_counts mvcpc 
+        sql = """select mvcpc.organizations_uid, mvcpc.cyhy_db_name, mvcpc.report_period, mvcpc.ports, mvcpc.risky_ports, mvcpc2.protocols, mvcrpc.risky_protocols, o.parent_org_uid
+        from mat_vw_cyhy_port_counts mvcpc
         inner join mat_vw_cyhy_protocol_counts mvcpc2 on
         mvcpc2.organizations_uid  = mvcpc.organizations_uid
         inner join mat_vw_cyhy_risky_protocol_counts mvcrpc on
         mvcrpc.organizations_uid  = mvcpc.organizations_uid
-        inner join organizations o on 
-        o.organizations_uid = mvcpc.organizations_uid 
+        inner join organizations o on
+        o.organizations_uid = mvcpc.organizations_uid
         where mvcpc.report_period >= %(start_date)s and mvcpc.report_period < %(end_date)s and o.organizations_uid in %(df_orgs)s"""
-        df_port_scans = pd.read_sql(sql, conn, params={"start_date": start_date, "end_date": end_date, "df_orgs": tuple(df_orgs)})
+        df_port_scans = pd.read_sql(
+            sql,
+            conn,
+            params={
+                "start_date": start_date,
+                "end_date": end_date,
+                "df_orgs": tuple(df_orgs),
+            },
+        )
         return df_port_scans
     except (Exception, psycopg2.DatabaseError) as error:
         print("There was a problem with your database query %s", error)
@@ -2021,14 +2161,23 @@ def get_ports_protocols(start_date, end_date, df_orgs=[]):
 
 
 def get_pe_vulns(start_date, end_date, df_orgs=[]):
+    """Query P&E identified vulnerabilities."""
     conn = connect()
     try:
         sql = """select o.cyhy_db_name, o.organizations_uid, o.parent_org_uid, vsv."timestamp", vsv.cve, vsv.cvss
-        from vw_shodanvulns_verified vsv 
+        from vw_shodanvulns_verified vsv
         left join organizations o on
         o.organizations_uid = vsv.organizations_uid
         where vsv."timestamp" >= %(start_date)s AND vsv."timestamp" < %(end_date)s and o.organizations_uid in %(df_orgs)s"""
-        pe_vulns_df = pd.read_sql(sql, conn, params={"start_date": start_date, "end_date": end_date, "df_orgs": tuple(df_orgs)})
+        pe_vulns_df = pd.read_sql(
+            sql,
+            conn,
+            params={
+                "start_date": start_date,
+                "end_date": end_date,
+                "df_orgs": tuple(df_orgs),
+            },
+        )
         return pe_vulns_df
     except (Exception, psycopg2.DatabaseError) as error:
         LOGGER.error("There was a problem with your database query %s", error)
@@ -2038,9 +2187,10 @@ def get_pe_vulns(start_date, end_date, df_orgs=[]):
 
 
 def get_kevs():
+    """Query all KEVs from database."""
     conn = connect()
     try:
-        sql = """select kev from cyhy_kevs"""
+        sql = """select KEV from cyhy_kevs"""
         kevs_df = pd.read_sql(sql, conn)
         return kevs_df
     except (Exception, psycopg2.DatabaseError) as error:
@@ -2051,11 +2201,12 @@ def get_kevs():
 
 
 def get_vs_open_vulns(df_orgs=[]):
+    """Query open vulnerabilities."""
     conn = connect()
     try:
-        sql = """select o.cyhy_db_name, o.organizations_uid, o.parent_org_uid, ct.cve, ct.cvss_base_score, ct.time_opened 
-        from cyhy_tickets ct 
-        left join organizations o on 
+        sql = """select o.cyhy_db_name, o.organizations_uid, o.parent_org_uid, ct.cve, ct.cvss_base_score, ct.time_opened
+        from cyhy_tickets ct
+        left join organizations o on
         ct.organizations_uid = o.organizations_uid
         where ct.false_positive = 'false' and ct.cvss_base_score != 'NaN' and ct.time_closed is null and o.organizations_uid in %(df_orgs)s"""
         vs_open_vulns_df = pd.read_sql(sql, conn, params={"df_orgs": tuple(df_orgs)})
@@ -2066,15 +2217,25 @@ def get_vs_open_vulns(df_orgs=[]):
         if conn is not None:
             close(conn)
 
+
 def get_vs_closed_vulns(start_date, end_date, df_orgs=[]):
+    """Query closed vulnerabilities."""
     conn = connect()
     try:
         sql = """select o.cyhy_db_name, o.organizations_uid, o.parent_org_uid, ct.cve, ct.cvss_base_score, ct.time_opened, ct.time_closed
-        from cyhy_tickets ct 
-        left join organizations o on 
+        from cyhy_tickets ct
+        left join organizations o on
         ct.organizations_uid = o.organizations_uid
         where ct.false_positive = 'false' and ct.cvss_base_score != 'NaN' and (ct.time_closed >= %(start_date)s and ct.time_closed < %(end_date)s) and o.organizations_uid in %(df_orgs)s"""
-        vs_open_vulns_df = pd.read_sql(sql, conn, params={"start_date": start_date, "end_date": end_date, "df_orgs": tuple(df_orgs)})
+        vs_open_vulns_df = pd.read_sql(
+            sql,
+            conn,
+            params={
+                "start_date": start_date,
+                "end_date": end_date,
+                "df_orgs": tuple(df_orgs),
+            },
+        )
         return vs_open_vulns_df
     except (Exception, psycopg2.DatabaseError) as error:
         LOGGER.error("There was a problem with your database query %s", error)
@@ -2082,15 +2243,25 @@ def get_vs_closed_vulns(start_date, end_date, df_orgs=[]):
         if conn is not None:
             close(conn)
 
+
 def get_was_open_vulns(start_date, end_date, df_orgs=[]):
+    """Query open WAS vulnerabilities."""
     conn = connect()
     try:
-        sql = """select wf.was_org_id, wm.pe_org_id, wf.base_score, wf.fstatus, wf.last_detected, wf.first_detected 
-        from was_findings wf 
+        sql = """select wf.was_org_id, wm.pe_org_id, wf.base_score, wf.fstatus, wf.last_detected, wf.first_detected
+        from was_findings wf
         left join was_map wm on
-        wf.was_org_id = wm.was_org_id 
+        wf.was_org_id = wm.was_org_id
         where (wf.last_detected >= %(start_date)s and wf.last_detected < %(end_date)s) and wf.fstatus != 'FIXED' and wm.pe_org_id notnull and text(wm.pe_org_id) in %(df_orgs)s"""
-        was_open_vulns_df = pd.read_sql(sql, conn, params={"start_date": start_date, "end_date": end_date, "df_orgs": tuple(df_orgs)})
+        was_open_vulns_df = pd.read_sql(
+            sql,
+            conn,
+            params={
+                "start_date": start_date,
+                "end_date": end_date,
+                "df_orgs": tuple(df_orgs),
+            },
+        )
         return was_open_vulns_df
     except (Exception, psycopg2.DatabaseError) as error:
         print("There was a problem with your database query %s", error)
@@ -2098,18 +2269,60 @@ def get_was_open_vulns(start_date, end_date, df_orgs=[]):
         if conn is not None:
             close(conn)
 
+
 def get_was_closed_vulns(start_date, end_date, df_orgs=[]):
+    """Query WAS closed vulnerabilities."""
     conn = connect()
     try:
-        sql = """select wf.was_org_id, wm.pe_org_id ,wf.base_score, wf.fstatus, wf.last_detected, wf.first_detected 
-        from was_findings wf 
+        sql = """select wf.was_org_id, wm.pe_org_id ,wf.base_score, wf.fstatus, wf.last_detected, wf.first_detected
+        from was_findings wf
         left join was_map wm on
-        wf.was_org_id = wm.was_org_id 
+        wf.was_org_id = wm.was_org_id
         where (wf.last_detected >= %(start_date)s and wf.last_detected < %(end_date)s) and wf.fstatus = 'FIXED' and wm.pe_org_id notnull and text(wm.pe_org_id) in %(df_orgs)s"""
-        was_open_vulns_df = pd.read_sql(sql, conn, params={"start_date": start_date, "end_date": end_date, "df_orgs": tuple(df_orgs)})
+        was_open_vulns_df = pd.read_sql(
+            sql,
+            conn,
+            params={
+                "start_date": start_date,
+                "end_date": end_date,
+                "df_orgs": tuple(df_orgs),
+            },
+        )
         return was_open_vulns_df
     except (Exception, psycopg2.DatabaseError) as error:
         LOGGER.error("There was a problem with your database query %s", error)
     finally:
+        if conn is not None:
+            close(conn)
+
+
+def insert_scores(start_date, org_uid, score, score_name, sector):
+    """Insert a score into the scorecard summary stats table."""
+    try:
+        conn = connect()
+
+        cursor = conn.cursor()
+        sql = """
+            UPDATE scorecard_summary_stats
+            set %(score_name)s = %(score)s
+            where start_date = %(start_date)s
+            and organizations_uid = %(org_uid)s
+            and sector_name = %(sector)s;
+            """
+
+        cursor.execute(
+            sql,
+            {
+                "score_name": score_name,
+                "score": score,
+                "start_date": start_date,
+                "org_uid": org_uid,
+                "sector": sector,
+            },
+        )
+        conn.commit()
+        cursor.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        LOGGER.error("There was a problem with your database query %s", error)
         if conn is not None:
             close(conn)

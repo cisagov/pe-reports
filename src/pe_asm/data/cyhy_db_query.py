@@ -459,7 +459,8 @@ def execute_ips(conn, df):
         ON CONFLICT (ip)
         DO UPDATE SET
             origin_cidr = UUID(EXCLUDED.origin_cidr),
-            last_seen = EXCLUDED.last_seen;
+            last_seen = EXCLUDED.last_seen,
+            organizations_uid = EXCLUDE.organizations_uid;
         """
         cursor = conn.cursor()
         extras.execute_values(cursor, sql.format(table, cols), tpls, page_size=100000)
@@ -550,7 +551,8 @@ def update_shodan_ips(conn, df):
         INSERT INTO {}({})
         VALUES %s
         ON CONFLICT (ip)
-            DO UPDATE SET shodan_results = EXCLUDED.shodan_results"""
+            DO UPDATE SET shodan_results = EXCLUDED.shodan_results,
+            current = EXCLUDED.current"""
     cursor = conn.cursor()
     try:
         extras.execute_values(cursor, sql.format(table, cols), tpls)

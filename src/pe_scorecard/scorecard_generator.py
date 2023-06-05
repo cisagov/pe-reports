@@ -1,7 +1,7 @@
 """A tool for creating CISA unified scorecard.
 
 Usage:
-  pe-scorecard REPORT_MONTH REPORT_YEAR OUTPUT_DIRECTORY [--log-level=LEVEL] [--orgs=ORG_LIST] [--email] [--cancel-refresh] [--exclude_bods]
+  pe-scorecard REPORT_MONTH REPORT_YEAR OUTPUT_DIRECTORY [--log-level=LEVEL] [--sectors=SECTOR_LIST] [--orgs=ORG_LIST] [--email] [--cancel-refresh] [--exclude_bods]
 
 Options:
   -h --help                         Show this message.
@@ -37,6 +37,7 @@ from typing import Any, Dict
 
 # Third-Party Libraries
 import docopt
+import numpy as np
 from schema import And, Schema, SchemaError, Use
 
 # cisagov Libraries
@@ -50,12 +51,20 @@ from .data.db_query import (
     find_sub_sectors,
     get_scorecard_orgs,
     get_scorecard_sectors,
+    insert_scores,
+    query_scorecard_data,
     query_sector_ttr,
     query_was_sector_ttr,
     refresh_views,
 )
-from .helpers.email_scorecard import email_scorecard_report
+
+# from .helpers.email_scorecard import email_scorecard_report
 from .metrics import Scorecard
+from .scores.generate_d_score import gen_discov_scores
+from .scores.generate_i_score import gen_ident_scores
+from .scores.profiling_score import get_profiling_score
+from .scores.tracking_score import get_tracking_score
+from .unified_scorecard_generator import create_scorecard
 
 LOGGER = logging.getLogger(__name__)
 ACCESSOR_AWS_PROFILE = os.getenv("ACCESSOR_PROFILE")
@@ -101,6 +110,7 @@ def generate_scorecards(
         refresh_views()
 
     start_date = datetime.date(int(year), int(month), 1)
+    end_date = (start_date + datetime.timedelta(days=32)).replace(day=1)
     failed = []
     # Loop through each selected sector
     for sector in sectors:
@@ -128,14 +138,13 @@ def generate_scorecards(
             LOGGER.info("No orgs were identified for %s", sector)
             continue
 
-        # TODO do all sector level calculations here
+        # Calculate sector level data
         (avg_time_to_remediate_df, vs_sector_results) = query_sector_ttr(
             int(month), int(year), sector
         )
-
         was_sector_ttr = query_was_sector_ttr(start_date, sector)
 
-        # was_fceb_ttr = query_was_fceb_ttr(start_date)
+        # Loop through orgs that will get scorecards
         for i, org in recipient_orgs_df.iterrows():
             try:
                 LOGGER.info(
@@ -143,6 +152,7 @@ def generate_scorecards(
                     org["cyhy_db_name"],
                     sector,
                 )
+                # If org is a parent grab the children to be included in rollup
                 if org["is_parent"]:
                     children_df = sector_orgs[
                         (sector_orgs["parent_org_uid"] == org["organizations_uid"])
@@ -157,6 +167,7 @@ def generate_scorecards(
                     org_uid_list = [org["organizations_uid"]]
                     cyhy_id_list = [org["cyhy_db_name"]]
 
+                # Calculate rollup level datapoints
                 vs_time_to_remediate = avg_time_to_remediate_df[
                     avg_time_to_remediate_df["cyhy_db_name"].isin(cyhy_id_list)
                 ]
@@ -176,6 +187,7 @@ def generate_scorecards(
                     vs_time_to_remediate["high_count"] / total_high
                 ) * vs_time_to_remediate["high_ttr"]
 
+                # Instantiate Scorecard Variable
                 scorecard = Scorecard(
                     month,
                     year,
@@ -188,18 +200,170 @@ def generate_scorecards(
                     was_sector_ttr,
                 )
                 scorecard.fill_scorecard_dict()
-                filename = scorecard.generate_scorecard(
-                    output_directory, exclude_bods=exclude_bods
-                )
-                # scorecard.calculate_ips_counts()
 
                 # Insert dictionary into the summary table
                 execute_scorecard_summary_data(scorecard.scorecard_dict)
 
+            except Exception as e:
+                LOGGER.error("Scorecard failed for %s: %s", org["cyhy_db_name"], e)
+                LOGGER.error(traceback.format_exc())
+                failed += org["cyhy_db_name"]
+
+        # Calculate scores
+        sectors_df = sector_orgs[["organizations_uid", "cyhy_db_name"]]
+        discovery_scores = gen_discov_scores(
+            end_date - datetime.timedelta(days=1), sectors_df
+        )
+        profiling_scores = get_profiling_score(sectors_df, year, month)
+        identification_scores = gen_ident_scores(
+            end_date - datetime.timedelta(days=1), sectors_df
+        )
+        tracking_scores = get_tracking_score(sectors_df, year, month)
+
+        # Loop through orgs again to generate scorecards
+        for i, org in recipient_orgs_df.iterrows():
+            try:
+                # Grab score and insert into database
+                discovery_score = discovery_scores.loc[
+                    discovery_scores["organizations_uid"] == org["organizations_uid"],
+                    "discov_score",
+                ].item()
+                discovery_grade = discovery_scores.loc[
+                    discovery_scores["organizations_uid"] == org["organizations_uid"],
+                    "letter_grade",
+                ].item()
+                insert_scores(
+                    start_date,
+                    org["organizations_uid"],
+                    discovery_score,
+                    "discovery_score",
+                    sector,
+                )
+                profiling_score = profiling_scores.loc[
+                    profiling_scores["organizations_uid"] == org["organizations_uid"],
+                    "profiling_score",
+                ].item()
+                profiling_grade = profiling_scores.loc[
+                    profiling_scores["organizations_uid"] == org["organizations_uid"],
+                    "letter_grade",
+                ].item()
+                insert_scores(
+                    start_date,
+                    org["organizations_uid"],
+                    profiling_score,
+                    "profiling_score",
+                    sector,
+                )
+                identification_score = identification_scores.loc[
+                    identification_scores["organizations_uid"]
+                    == org["organizations_uid"],
+                    "ident_score",
+                ].item()
+                identification_grade = identification_scores.loc[
+                    identification_scores["organizations_uid"]
+                    == org["organizations_uid"],
+                    "letter_grade",
+                ].item()
+                insert_scores(
+                    start_date,
+                    org["organizations_uid"],
+                    identification_score,
+                    "identification_score",
+                    sector,
+                )
+                tracking_score = tracking_scores.loc[
+                    tracking_scores["organizations_uid"] == org["organizations_uid"],
+                    "tracking_score",
+                ].item()
+                tracking_grade = tracking_scores.loc[
+                    tracking_scores["organizations_uid"] == org["organizations_uid"],
+                    "letter_grade",
+                ].item()
+                insert_scores(
+                    start_date,
+                    org["organizations_uid"],
+                    tracking_score,
+                    "tracking_score",
+                    sector,
+                )
+
+                # Calculate Overall Score
+                overall_score = (
+                    (discovery_score * 0.2)
+                    + (profiling_score * 0.2)
+                    + (identification_score * 0.3)
+                    + (tracking_score * 0.3)
+                )
+                insert_scores(
+                    start_date,
+                    org["organizations_uid"],
+                    overall_score,
+                    "score",
+                    sector,
+                )
+
+                letter_ranges = [
+                    overall_score < 65,  # F
+                    (overall_score >= 65) & (overall_score < 67),  # D
+                    (overall_score >= 67) & (overall_score < 70),  # D+
+                    (overall_score >= 70) & (overall_score < 73),  # C-
+                    (overall_score >= 73) & (overall_score < 77),  # C
+                    (overall_score >= 77) & (overall_score < 80),  # C+
+                    (overall_score >= 80) & (overall_score < 83),  # B-
+                    (overall_score >= 83) & (overall_score < 87),  # B
+                    (overall_score >= 87) & (overall_score < 90),  # B+
+                    (overall_score >= 90) & (overall_score < 93),  # A-
+                    (overall_score >= 93) & (overall_score < 97),  # A
+                    (overall_score >= 97) & (overall_score <= 100),  # A+
+                ]
+                letter_grades = [
+                    "F",
+                    "D",
+                    "D+",
+                    "C-",
+                    "C",
+                    "C+",
+                    "B-",
+                    "B",
+                    "B+",
+                    "A-",
+                    "A",
+                    "A+",
+                ]
+                # Query the data for the scorecard
+                scorecard_dict = query_scorecard_data(
+                    org["organizations_uid"], start_date, sector
+                )
+                scorecard_dict["score"] = np.select(letter_ranges, letter_grades)
+                # # Add scores to scorecard_dict
+                # scorecard_dict['discovery_score'] = discovery_score
+                scorecard_dict["discovery_grade"] = discovery_grade
+                # scorecard_dict['profiling_score'] = profiling_score
+                scorecard_dict["profiling_grade"] = profiling_grade
+                # scorecard_dict['identification_score'] = identification_score
+                scorecard_dict["identification_grade"] = identification_grade
+                # scorecard_dict['tracking_score'] = tracking_score
+                scorecard_dict["tracking_grade"] = tracking_grade
+
+                # Create filename
+                file_name = (
+                    output_directory
+                    + "/scorecard_"
+                    + scorecard_dict["agency_id"]
+                    + "_"
+                    + scorecard_dict["sector_name"]
+                    + "_"
+                    + start_date.strftime("%b-%Y")
+                    + ".pdf"
+                )
+
+                # Create Scorecard
+                create_scorecard(scorecard_dict, file_name, True, False, exclude_bods)
+
                 # If email, email the report out to customer
-                if email:
-                    # TODO: Encrypt the report
-                    email_scorecard_report(org["cyhy_db_name"], filename, month, year)
+                # if email:
+                #     # TODO: Encrypt the report
+                #     email_scorecard_report(org["cyhy_db_name"], filename, month, year)
 
             except Exception as e:
                 LOGGER.error("Scorecard failed for %s: %s", org["cyhy_db_name"], e)

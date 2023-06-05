@@ -1285,11 +1285,12 @@ class VwOrgsTotalIps(models.Model):
         managed = False  # Created from a view. Don't remove.
         db_table = 'vw_orgs_total_ips'
 
-class VwOrgsAllIps(models.Model):
+class MatVwOrgsAllIps(models.Model):
     organizations_uid = models.UUIDField(primary_key=True)
     cyhy_db_name = models.TextField(blank=True, null=True)
-    ip_addresses = ArrayField(models.CharField(max_length=255, blank=True, null=True), blank=True, null=True)
-
+    ip_addresses = ArrayField(
+        models.GenericIPAddressField(blank=True, null=True), blank=True,
+        null=True)
     class Meta:
         managed = False  # Created from a view. Don't remove.
         db_table = 'mat_vw_orgs_all_ips'
