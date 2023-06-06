@@ -24,6 +24,7 @@ from django.contrib.auth.models import User
 from django.urls import reverse_lazy
 from django.contrib.auth import logout
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.template.loader import render_to_string
 from docx import Document
 from docxtpl import DocxTemplate
 import io
