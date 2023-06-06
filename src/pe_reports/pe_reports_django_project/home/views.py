@@ -33,7 +33,7 @@ import io
 # from pe_source.data.sixgill.api import setOrganizationUsers, \
 #     setOrganizationDetails
 from .models import Organizations, WeeklyStatuses
-from .forms import GatherStakeholderForm, WeeklyStatusesForm
+from .forms import GatherStakeholderForm, WeeklyStatusesForm, UpdateWeeklyStatusesForm
 import requests
 
 # cisagov Libraries
