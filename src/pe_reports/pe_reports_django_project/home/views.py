@@ -24,6 +24,7 @@ from django.contrib.auth.models import User
 from django.urls import reverse_lazy
 from django.contrib.auth import logout
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.template.loader import render_to_string
 from docx import Document
 from docxtpl import DocxTemplate
 import io
@@ -31,7 +32,7 @@ import io
 from pe_source.data.sixgill.api import setOrganizationUsers, \
     setOrganizationDetails
 from .models import Organizations, WeeklyStatuses
-from .forms import GatherStakeholderForm, WeeklyStatusesForm
+from .forms import GatherStakeholderForm, WeeklyStatusesForm, UpdateWeeklyStatusesForm
 import requests
 
 # cisagov Libraries
@@ -54,11 +55,15 @@ def getUserKey():
     response = requests.post(urlIDs, headers=headers, data=payload).json()
 
     return response
+
+
 #
 #
 theCurrentUserKey = getUserKey()
 # print(f'The current key is {theCurrentUserKey}')
 theSavedUserKey = config("API_KEY")
+
+
 # # print(f'The saved key is {theSavedUserKey}')
 #
 #
@@ -82,6 +87,7 @@ def updateAPIKey(theSavedUserKey, theCurrentUserKey):
             return theCurrentUserKey
         except:
             print("Failed to open and write new file.")
+
 
 def getAgencies(org_name):
     """Get all agency names from P&E database."""
@@ -621,6 +627,7 @@ class FetchWeeklyStatusesView(View):
     """Fetch the weekly statuses from the API
      and pass to Weekly Statuses template"""
     updateAPIKey(theSavedUserKey, theCurrentUserKey)
+
     def get(self, request, *args, **kwargs):
 
         url = 'http://127.0.0.1:8000/apiv1/fetch_weekly_statuses'
@@ -660,6 +667,7 @@ class StatusView(TemplateView):
 class StatusForm(LoginRequiredMixin, FormView):
     form_class = WeeklyStatusesForm
     template_name = 'weeklyStatus.html'
+    form_only_template_name = 'weeklyStatusFormOnly.html'
 
     success_url = reverse_lazy('weekly_status')
 
@@ -667,6 +675,15 @@ class StatusForm(LoginRequiredMixin, FormView):
         kwargs = super(StatusForm, self).get_form_kwargs()
         kwargs['user'] = self.request.user
         return kwargs
+
+    def get(self, request, *args, **kwargs):
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            form = self.form_class()
+            form_html = render_to_string(self.form_only_template_name,
+                                         {'form': form}, request=request)
+            return JsonResponse({'form_html': form_html})
+        else:
+            return super().get(request, *args, **kwargs)
 
     def form_valid(self, form):
         the_current_user = ''
@@ -730,3 +747,133 @@ class StatusForm(LoginRequiredMixin, FormView):
         weeklyStatus.save()
 
         return super().form_valid(form)
+
+
+class updateStatusView(TemplateView):
+    template_name = 'weeklyStatusFormOnly.html'
+    LOGGER.info('Got to Status')
+
+
+class updateStatusForm(LoginRequiredMixin, FormView):
+    form_class = UpdateWeeklyStatusesForm
+    template_name = 'weeklyStatusFormOnly.html'
+    form_only_template_name = 'weeklyStatusFormOnly.html'
+
+    success_url = reverse_lazy('weekly_status')
+
+    def get_form_kwargs(self):
+        kwargs = super(StatusForm, self).get_form_kwargs()
+        kwargs['user'] = self.request.user
+        return kwargs
+
+    def get(self, request, *args, **kwargs):
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            form = self.form_class()
+            form_html = render_to_string(self.form_only_template_name,
+                                         {'form': form}, request=request)
+            return JsonResponse({'form_html': form_html})
+        else:
+            return super().get(request, *args, **kwargs)
+
+    def form_valid(self, form):
+        the_current_user = ''
+        statusComplete = 0
+        week_ending = 0
+        current_date = datetime.now()
+        days_to_week_end = (4 - current_date.weekday()) % 7
+        week_ending_date = current_date + timedelta(days=days_to_week_end)
+
+        weeklyInfo = WeeklyStatuses.objects. \
+            filter(week_ending=week_ending_date,
+                   user_status=self.request.user.first_name)
+
+        # Serialize the queryset to JSON
+        serialized_data = serializers.serialize('json', weeklyInfo)
+
+        # Load the serialized data into a JSON object
+        json_data = json.loads(serialized_data)
+
+        # Iterate through the JSON object and set variables from the fields
+        for status in json_data:
+            the_current_user = status['fields']['user_status']
+            statusComplete = status['fields']['statusComplete']
+            week_ending = status['fields']['week_ending']
+
+        if statusComplete == 1:
+            messages.warning(self.request,
+                             f"The weekly status for {the_current_user.title()}"
+                             f" for the weekending {week_ending} "
+                             f"has already been completed.")
+            return HttpResponseRedirect("/weekly-status-form-only/")
+
+        key_accomplishments = form.cleaned_data['updatekey_accomplishments'].upper()
+
+        ongoing_task = form.cleaned_data['updateongoing_task'].upper()
+
+        upcoming_task = form.cleaned_data['updateupcoming_task'].upper()
+
+        obstacles = form.cleaned_data['updateobstacles'].upper()
+
+        non_standard_meeting = form.cleaned_data['updatenon_standard_meeting'].upper()
+
+        deliverables = form.cleaned_data['updatedeliverables'].upper()
+
+        pto = form.cleaned_data['updatepto_time'].upper()
+
+        messages.success(self.request,
+                         f'The weekly status was saved successfully.')
+
+        weeklyStatus = WeeklyStatuses(
+            key_accomplishments=key_accomplishments,
+            user_status=self.request.user.first_name,
+            ongoing_task=ongoing_task,
+            upcoming_task=upcoming_task,
+            obstacles=obstacles,
+            non_standard_meeting=non_standard_meeting,
+            deliverables=deliverables,
+            pto=pto,
+        )
+
+        weeklyStatus.save()
+
+        return super().form_valid(form)
+
+
+class WeeklyStatusesFormOnlyView(updateStatusForm):
+    template_name = 'weeklyStatusFormOnly.html'
+
+    def get(self, request, *args, **kwargs):
+
+        # Fetch the most recent instance of the model for this user
+        weekly_status = WeeklyStatuses.objects.filter(
+            user_status=request.user.first_name).latest('week_ending')
+
+        # Initialize the form with the instance's data
+        form = self.form_class(initial={
+            'updatekey_accomplishments': weekly_status.key_accomplishments,
+            'updateuser_status': self.request.user.first_name,
+            'updateongoing_task': weekly_status.ongoing_task,
+            'updateupcoming_task': weekly_status.upcoming_task,
+            'updateobstacles': weekly_status.obstacles,
+            'updatenon_standard_meeting': weekly_status.non_standard_meeting,
+            'updatedeliverables': weekly_status.deliverables,
+            'updatepto_time': weekly_status.pto,
+        },user=request.user)
+
+        form_html = render_to_string(self.template_name,
+                                     self.get_context_data(form=form),
+                                     request=request)
+        return JsonResponse({'form_html': form_html})
+
+    def post(self, request, *args, **kwargs):
+        print('Getting to update post at WeeklyStatusesFormOnlyView')
+        form = self.form_class(request.POST, user=request.user)
+        if form.is_valid():
+            # save the form
+            form.save(user=request.user)
+
+            messages.success(request, 'The weekly status was updated successfully.')
+            return HttpResponseRedirect("/weekly_status/")
+        else:
+            messages.error(request, "Invalid form data.")
+            return render(request, self.template_name, {'form': form})

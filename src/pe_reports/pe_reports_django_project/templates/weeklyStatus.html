@@ -45,45 +45,72 @@
 
     </div>
     <br/>
-    <div class="row justify-content-lg-center">
-        <div class="row col-lg-4">
+    {% if user.is_superuser %}
+        <div class="row justify-content-lg-center">
+            <div class="row col-lg-4">
 
-            <button id='createDoc' type="button" class="btn btn-primary"
-                    onclick="">
-                Generate Weekly Status
-            </button>
+                <button id='createDoc' type="button" class="btn btn-primary"
+                        onclick="">
+                    Generate Weekly Status
+                </button>
+            </div>
+        </div>
+        <br/>
+
+        <br/>
+
+        <div class="row">
+            <div class="col-8 offset-2">
+                <table id="weekly-status-table"
+                       class="table table-striped table-hover custom-table-dark custom-table-bordered">
+                    <thead>
+                    <tr>
+                        <th>Select to edit</th>
+                        <th>Week Ending</th>
+                        <th>User Status</th>
+                        <th>Key Accomplishments</th>
+                        <th>Ongoing Task</th>
+                        <th>Upcoming Task</th>
+                        <th>Obstacles</th>
+                        <th>Non-standard Meeting</th>
+                        <th>Deliverables</th>
+                        <th>PTO</th>
+                        <th>Notes</th>
+                        <th>Status Complete</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    {% endif %}
+    <br/>
+
+    <!-- Edit Modal -->
+    <div id="editModal" class="modal fade" role="dialog">
+        <div class="modal-dialog">
+
+            <!-- Modal content-->
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close btn btn-primary" data-dismiss="modal">
+                        &times;
+                    </button>
+                    <h4 class="modal-title">Edit Status</h4>
+                </div>
+                <div class="modal-body">
+                    <!-- The form will be injected here -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary"
+                            data-dismiss="modal">Close
+                    </button>
+                </div>
+            </div>
+
         </div>
     </div>
-    <br/>
-
-    <br/>
-{% if user.is_superuser %}
-     <div class="row">
-        <div class="col-8 offset-2">
-            <table id="weekly-status-table"
-                   class="table table-striped table-hover custom-table-dark custom-table-bordered">
-                <thead>
-                <tr>
-                    <th>Week Ending</th>
-                    <th>User Status</th>
-                    <th>Key Accomplishments</th>
-                    <th>Ongoing Task</th>
-                    <th>Upcoming Task</th>
-                    <th>Obstacles</th>
-                    <th>Non-standard Meeting</th>
-                    <th>Deliverables</th>
-                    <th>PTO</th>
-                    <th>Notes</th>
-                    <th>Status Complete</th>
-                </tr>
-                </thead>
-                <tbody>
-                </tbody>
-            </table>
-        </div>
-    </div>
-{% endif %}
-    <br/>
 
 
     <script>
@@ -104,6 +131,8 @@
                     tableBody.empty();
                     data.forEach(function (status) {
                         let row = $('<tr>');
+                        let checkbox = $('<input>').attr('type', 'checkbox').attr('class', 'row-checkbox');
+                        row.append($('<td>').append(checkbox));
                         row.append($('<td>').text(status.week_ending));
                         row.append($('<td>').text(status.user_status));
                         row.append($('<td>').text(status.key_accomplishments));
@@ -157,13 +186,57 @@
                 });
             });
 
+            $(document).on('change', '.row-checkbox', function () {
+                if (this.checked) {
+                    // Fetch the form
+                    $.get('/weekly-status-form-only/', function (data) {
+                        // Inject the form into the modal
+                        $('#editModal .modal-body').html(data.form_html);
+
+                        // Open the modal
+                        $('#editModal').modal('show');
+                    });
+                }
+            });
+
+            $(document).on('change', '#editModal #updatetheuserIssues', function () {
+                console.log("Change event triggered"); // Debug line
+                const selectedIssue = $(this).val();
+                console.log("Selected issue: " + selectedIssue); // Debug line
+
+                const keyAccomplishmentsTextarea = document.getElementById("updatekey_accomplishments");
+                const currentText = keyAccomplishmentsTextarea.value;
+                console.log("Current text: " + currentText); // Debug line
+
+                // Append the selected issue to the current text, with a comma if there's already text.
+                const newText = currentText.length > 0 ? currentText + ", " + selectedIssue : selectedIssue;
+                keyAccomplishmentsTextarea.value = newText;
+                console.log("New text: " + newText); // Debug line
+
+                // Update key_accomplishments field with the new text
+                $('#weekly_status.key_accomplishments').val(newText);
+            });
+
+
+            $(document).ready(function () {
+                // Close modal when 'x' button is clicked
+                $('#editModal .close').on('click', function () {
+                    $('#editModal').modal('hide');
+                });
+
+                // Close modal when 'Close' button is clicked
+                $('#editModal .btn-default').on('click', function () {
+                    $('#editModal').modal('hide');
+                });
+            });
+
 
             showDiv();
 
             setTimeout(function () {
                 $("#messageDiv").fadeOut("fast");
             }, 5000);
-            $(window).load(function () {
+            $(window).on('load', function () {
                 $("#loading").hide();
             });
 
