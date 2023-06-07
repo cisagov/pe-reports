@@ -2,8 +2,8 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 11.16
--- Dumped by pg_dump version 12.14 (Ubuntu 12.14-0ubuntu0.20.04.1)
+-- Dumped from database version 14.4
+-- Dumped by pg_dump version 14.8 (Ubuntu 14.8-1.pgdg20.04+1)
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -553,7 +553,7 @@ begin
         -- Check if the cidr is contained in an existing cidr block
         if exists(select ct.network from cidrs ct where arg_net << ct.network) then
             for in_cidrs in select o.organizations_uid , tct.network, o.parent_org_uid, tct.cidr_uid from cidrs tct 
-            join organizations o on o.organizations_uid = tct.organizations_uid where arg_net << tct.network loop 
+            join organizations o on o.organizations_uid = tct.organizations_uid where arg_net << tct.network and tct."current" loop 
                 -- Our cidr is found in an existing cidr for the same org
                 --do nothing 
                 if (in_cidrs.organizations_uid = arg_org_uid) then 
@@ -752,20 +752,14 @@ declare
 	ds_uid uuid := null;
 	i_s_uid uuid := null;
 begin
-	
-		-- Try to fetch the ip
-		select ip_hash into ip_hash_return from ips i 
-		where i.ip_hash = arg_ip_hash;
-		
-		-- If IP not already in the database, add it
-		if (ip_hash_return is null) then
-			insert into ips (ip_hash, ip, first_seen, last_seen)
-			values (arg_ip_hash, arg_ip, arg_date, arg_date)
-			on conflict (ip)
-			do update set 
-				last_seen = excluded.last_seen;
-			raise notice 'ip added to database with no cidr: %', arg_ip_hash ;
-		end if;
+
+		-- Insert ip, if exists then update last_seen	
+		insert into ips (ip_hash, ip, first_seen, last_seen, organizations_uid)
+		values (arg_ip_hash, arg_ip, arg_date, arg_date, arg_org_uid)
+		on conflict (ip)
+		do update set 
+			last_seen = EXCLUDED.last_seen,
+			organizations_uid = EXCLUDED.organizations_uid;
 			
 	
 	
@@ -1342,7 +1336,26 @@ $$;
 
 ALTER FUNCTION public.query_emails(b_name text, org_id text) OWNER TO pe;
 
+--
+-- Name: set_status_completed_and_week_ending(); Type: FUNCTION; Schema: public; Owner: pe
+--
+
+CREATE FUNCTION public.set_status_completed_and_week_ending() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+    NEW."statusComplete" := 1;
+    NEW.week_ending := date_trunc('week', CURRENT_DATE) + interval '4 days';
+    RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION public.set_status_completed_and_week_ending() OWNER TO pe;
+
 SET default_tablespace = '';
+
+SET default_table_access_method = heap;
 
 --
 -- Name: Users; Type: TABLE; Schema: public; Owner: pe
@@ -1699,6 +1712,31 @@ COMMENT ON TABLE public.cve_info IS 'Table that holds all known CVEs and their a
 
 
 --
+-- Name: cyhy_certs; Type: TABLE; Schema: public; Owner: pe
+--
+
+CREATE TABLE public.cyhy_certs (
+    cyhy_certs_uid uuid DEFAULT public.uuid_generate_v1() NOT NULL,
+    cyhy_id text,
+    serial text,
+    issuer text,
+    not_before timestamp without time zone,
+    not_after timestamp without time zone,
+    sct_or_not_before timestamp without time zone,
+    sct_exists boolean,
+    pem text,
+    subjects text,
+    trimmed_subjects text,
+    sub_domain_uid uuid,
+    organizations_uid uuid NOT NULL,
+    first_seen date,
+    last_seen date
+);
+
+
+ALTER TABLE public.cyhy_certs OWNER TO pe;
+
+--
 -- Name: cyhy_contacts; Type: TABLE; Schema: public; Owner: pe
 --
 
@@ -1734,6 +1772,25 @@ CREATE TABLE public.cyhy_db_assets (
 
 
 ALTER TABLE public.cyhy_db_assets OWNER TO pe;
+
+--
+-- Name: cyhy_domains; Type: TABLE; Schema: public; Owner: pe
+--
+
+CREATE TABLE public.cyhy_domains (
+    cyhy_domains_uid uuid DEFAULT public.uuid_generate_v1() NOT NULL,
+    organizations_uid uuid NOT NULL,
+    domain text,
+    agency_id text,
+    agency_name text,
+    cyhy_stakeholder boolean,
+    scan_date timestamp without time zone,
+    first_seen date,
+    last_seen date
+);
+
+
+ALTER TABLE public.cyhy_domains OWNER TO pe;
 
 --
 -- Name: cyhy_https_scan; Type: TABLE; Schema: public; Owner: pe
@@ -1800,6 +1857,30 @@ CREATE TABLE public.cyhy_port_scans (
 ALTER TABLE public.cyhy_port_scans OWNER TO pe;
 
 --
+-- Name: cyhy_port_scans_new; Type: TABLE; Schema: public; Owner: pe
+--
+
+CREATE TABLE public.cyhy_port_scans_new (
+    cyhy_port_scans_uid uuid DEFAULT public.uuid_generate_v1() NOT NULL,
+    organizations_uid uuid NOT NULL,
+    cyhy_id text,
+    cyhy_time timestamp without time zone,
+    service_name text,
+    port text,
+    product text,
+    cpe text,
+    first_seen date,
+    last_seen date,
+    ip text,
+    state text,
+    agency_type text,
+    report_period timestamp without time zone
+);
+
+
+ALTER TABLE public.cyhy_port_scans_new OWNER TO pe;
+
+--
 -- Name: cyhy_snapshots; Type: TABLE; Schema: public; Owner: pe
 --
 
@@ -1853,12 +1934,14 @@ CREATE TABLE public.cyhy_tickets (
     organizations_uid uuid NOT NULL,
     cyhy_id text,
     false_positive boolean,
-    time_opened text,
-    time_closed text,
+    time_opened timestamp without time zone,
+    time_closed timestamp without time zone,
     cvss_base_score double precision,
     cve text,
     first_seen date,
-    last_seen date
+    last_seen date,
+    source text,
+    ip text
 );
 
 
@@ -1889,7 +1972,8 @@ CREATE TABLE public.cyhy_trustymail (
     domain_supports_smtp boolean,
     first_seen date,
     last_seen date,
-    dmarc_subdomain_policy text
+    dmarc_subdomain_policy text,
+    domain_supports_starttls boolean
 );
 
 
@@ -1908,7 +1992,8 @@ CREATE TABLE public.cyhy_vuln_scans (
     cvss_base_score double precision,
     cve text,
     first_seen date,
-    last_seen date
+    last_seen date,
+    ip text
 );
 
 
@@ -2236,7 +2321,9 @@ CREATE TABLE public.ips (
     last_reverse_lookup timestamp without time zone,
     first_seen date,
     last_seen date,
-    current boolean
+    current boolean,
+    from_cidr character varying DEFAULT false NOT NULL,
+    organizations_uid uuid
 );
 
 
@@ -2257,6 +2344,714 @@ CREATE TABLE public.ips_subs (
 
 
 ALTER TABLE public.ips_subs OWNER TO pe;
+
+--
+-- Name: mat_vw_breachcomp; Type: MATERIALIZED VIEW; Schema: public; Owner: pe
+--
+
+CREATE MATERIALIZED VIEW public.mat_vw_breachcomp AS
+ SELECT creds.credential_exposures_uid,
+    creds.email,
+    creds.breach_name,
+    creds.organizations_uid,
+    creds.root_domain,
+    creds.sub_domain,
+    creds.hash_type,
+    creds.name,
+    creds.login_id,
+    creds.password,
+    creds.phone,
+    creds.data_source_uid,
+    b.description,
+    b.breach_date,
+    b.added_date,
+    timezone('UTC'::text, ((b.modified_date)::date)::timestamp with time zone) AS modified_date,
+    b.data_classes,
+    b.password_included,
+    b.is_verified,
+    b.is_fabricated,
+    b.is_sensitive,
+    b.is_retired,
+    b.is_spam_list
+   FROM (public.credential_exposures creds
+     JOIN public.credential_breaches b ON ((creds.credential_breaches_uid = b.credential_breaches_uid)))
+  WHERE (timezone('UTC'::text, ((b.modified_date)::date)::timestamp with time zone) >= (CURRENT_DATE - '30 days'::interval))
+  WITH NO DATA;
+
+
+ALTER TABLE public.mat_vw_breachcomp OWNER TO pe;
+
+--
+-- Name: vw_breachcomp; Type: VIEW; Schema: public; Owner: pe
+--
+
+CREATE VIEW public.vw_breachcomp AS
+ SELECT creds.credential_exposures_uid,
+    creds.email,
+    creds.breach_name,
+    creds.organizations_uid,
+    creds.root_domain,
+    creds.sub_domain,
+    creds.hash_type,
+    creds.name,
+    creds.login_id,
+    creds.password,
+    creds.phone,
+    creds.data_source_uid,
+    b.description,
+    b.breach_date,
+    b.added_date,
+    timezone('UTC'::text, ((b.modified_date)::date)::timestamp with time zone) AS modified_date,
+    b.data_classes,
+    b.password_included,
+    b.is_verified,
+    b.is_fabricated,
+    b.is_sensitive,
+    b.is_retired,
+    b.is_spam_list
+   FROM (public.credential_exposures creds
+     JOIN public.credential_breaches b ON ((creds.credential_breaches_uid = b.credential_breaches_uid)));
+
+
+ALTER TABLE public.vw_breachcomp OWNER TO pe;
+
+--
+-- Name: mat_vw_breachcomp_breachdetails; Type: MATERIALIZED VIEW; Schema: public; Owner: pe
+--
+
+CREATE MATERIALIZED VIEW public.mat_vw_breachcomp_breachdetails AS
+ SELECT vb.organizations_uid,
+    vb.breach_name,
+    date(vb.modified_date) AS mod_date,
+    vb.description,
+    vb.breach_date,
+    vb.password_included,
+    count(vb.email) AS number_of_creds
+   FROM public.vw_breachcomp vb
+  GROUP BY vb.organizations_uid, vb.breach_name, (date(vb.modified_date)), vb.description, vb.breach_date, vb.password_included
+  ORDER BY (date(vb.modified_date)) DESC
+  WITH NO DATA;
+
+
+ALTER TABLE public.mat_vw_breachcomp_breachdetails OWNER TO pe;
+
+--
+-- Name: mat_vw_breachcomp_credsbydate; Type: MATERIALIZED VIEW; Schema: public; Owner: pe
+--
+
+CREATE MATERIALIZED VIEW public.mat_vw_breachcomp_credsbydate AS
+ SELECT vw_breachcomp.organizations_uid,
+    date(vw_breachcomp.modified_date) AS mod_date,
+    sum(
+        CASE vw_breachcomp.password_included
+            WHEN false THEN 1
+            ELSE 0
+        END) AS no_password,
+    sum(
+        CASE vw_breachcomp.password_included
+            WHEN true THEN 1
+            ELSE 0
+        END) AS password_included
+   FROM public.vw_breachcomp
+  GROUP BY vw_breachcomp.organizations_uid, (date(vw_breachcomp.modified_date))
+  ORDER BY (date(vw_breachcomp.modified_date)) DESC
+  WITH NO DATA;
+
+
+ALTER TABLE public.mat_vw_breachcomp_credsbydate OWNER TO pe;
+
+--
+-- Name: organizations; Type: TABLE; Schema: public; Owner: pe
+--
+
+CREATE TABLE public.organizations (
+    organizations_uid uuid DEFAULT public.uuid_generate_v1() NOT NULL,
+    name text NOT NULL,
+    cyhy_db_name text,
+    org_type_uid uuid,
+    report_on boolean DEFAULT false,
+    password text,
+    date_first_reported timestamp without time zone,
+    parent_org_uid uuid,
+    premium_report boolean,
+    agency_type text,
+    demo boolean DEFAULT false,
+    scorecard boolean DEFAULT false,
+    fceb boolean DEFAULT false,
+    receives_cyhy_report boolean DEFAULT false,
+    receives_bod_report boolean DEFAULT false,
+    receives_cybex_report boolean DEFAULT false,
+    run_scans boolean DEFAULT false,
+    is_parent boolean DEFAULT false,
+    ignore_roll_up boolean DEFAULT false,
+    retired boolean DEFAULT false,
+    cyhy_period_start timestamp without time zone,
+    fceb_child boolean DEFAULT false,
+    election boolean DEFAULT false,
+    scorecard_child boolean DEFAULT false
+);
+
+
+ALTER TABLE public.organizations OWNER TO pe;
+
+--
+-- Name: mat_vw_cyhy_port_counts; Type: MATERIALIZED VIEW; Schema: public; Owner: pe
+--
+
+CREATE MATERIALIZED VIEW public.mat_vw_cyhy_port_counts AS
+ SELECT p_i.report_period,
+    p_i.organizations_uid,
+    p_i.cyhy_db_name,
+    p_i.fceb,
+    p_i.fceb_child,
+    count(*) AS ports,
+    sum(
+        CASE
+            WHEN ((p_i.service_name = ANY (ARRAY['rdp'::text, 'telnet'::text, 'ftp'::text, 'rpc'::text, 'smb'::text, 'sql'::text, 'ldap'::text, 'irc'::text, 'netbios'::text, 'kerberos'::text])) AND (p_i.state = 'open'::text)) THEN 1
+            ELSE 0
+        END) AS risky_ports
+   FROM ( SELECT o.organizations_uid,
+            o.cyhy_db_name,
+            o.fceb,
+            o.fceb_child,
+            cps.report_period,
+            cps.port,
+            cps.ip,
+            cps.service_name,
+            cps.state
+           FROM (public.cyhy_port_scans_new cps
+             JOIN public.organizations o ON ((o.organizations_uid = cps.organizations_uid)))) p_i
+  GROUP BY p_i.report_period, p_i.organizations_uid, p_i.fceb, p_i.fceb_child, p_i.cyhy_db_name
+  WITH NO DATA;
+
+
+ALTER TABLE public.mat_vw_cyhy_port_counts OWNER TO pe;
+
+--
+-- Name: mat_vw_cyhy_protocol_counts; Type: MATERIALIZED VIEW; Schema: public; Owner: pe
+--
+
+CREATE MATERIALIZED VIEW public.mat_vw_cyhy_protocol_counts AS
+ SELECT p_i.report_period,
+    p_i.organizations_uid,
+    p_i.cyhy_db_name,
+    p_i.fceb,
+    p_i.fceb_child,
+    count(*) AS protocols
+   FROM ( SELECT DISTINCT o.organizations_uid,
+            o.cyhy_db_name,
+            o.fceb,
+            o.fceb_child,
+            cps.report_period,
+            cps.port,
+            cps.service_name
+           FROM (public.cyhy_port_scans_new cps
+             JOIN public.organizations o ON ((o.organizations_uid = cps.organizations_uid)))) p_i
+  GROUP BY p_i.report_period, p_i.organizations_uid, p_i.cyhy_db_name, p_i.fceb, p_i.fceb_child
+  WITH NO DATA;
+
+
+ALTER TABLE public.mat_vw_cyhy_protocol_counts OWNER TO pe;
+
+--
+-- Name: mat_vw_cyhy_risky_protocol_counts; Type: MATERIALIZED VIEW; Schema: public; Owner: pe
+--
+
+CREATE MATERIALIZED VIEW public.mat_vw_cyhy_risky_protocol_counts AS
+ SELECT p_i.report_period,
+    p_i.organizations_uid,
+    p_i.cyhy_db_name,
+    p_i.fceb,
+    p_i.fceb_child,
+    sum(
+        CASE
+            WHEN ((p_i.service_name = ANY (ARRAY['rdp'::text, 'telnet'::text, 'ftp'::text, 'rpc'::text, 'smb'::text, 'sql'::text, 'ldap'::text, 'irc'::text, 'netbios'::text, 'kerberos'::text])) AND (p_i.state = 'open'::text)) THEN 1
+            ELSE 0
+        END) AS risky_protocols
+   FROM ( SELECT DISTINCT o.organizations_uid,
+            o.cyhy_db_name,
+            o.fceb,
+            o.fceb_child,
+            cps.report_period,
+            cps.port,
+            cps.service_name,
+            cps.state
+           FROM (public.cyhy_port_scans_new cps
+             JOIN public.organizations o ON ((o.organizations_uid = cps.organizations_uid)))) p_i
+  GROUP BY p_i.report_period, p_i.organizations_uid, p_i.cyhy_db_name, p_i.fceb, p_i.fceb_child
+  WITH NO DATA;
+
+
+ALTER TABLE public.mat_vw_cyhy_risky_protocol_counts OWNER TO pe;
+
+--
+-- Name: mat_vw_cyhy_services_counts; Type: MATERIALIZED VIEW; Schema: public; Owner: pe
+--
+
+CREATE MATERIALIZED VIEW public.mat_vw_cyhy_services_counts AS
+ SELECT p_i.report_period,
+    p_i.organizations_uid,
+    p_i.cyhy_db_name,
+    p_i.fceb,
+    p_i.fceb_child,
+    sum(
+        CASE
+            WHEN (p_i.service_name = ANY (ARRAY['http'::text, 'https'::text, 'http-proxy'::text])) THEN 1
+            ELSE 0
+        END) AS services
+   FROM ( SELECT DISTINCT o.organizations_uid,
+            o.cyhy_db_name,
+            o.fceb,
+            o.fceb_child,
+            cps.report_period,
+            cps.port,
+            cps.service_name
+           FROM (public.cyhy_port_scans_new cps
+             JOIN public.organizations o ON ((o.organizations_uid = cps.organizations_uid)))) p_i
+  GROUP BY p_i.report_period, p_i.organizations_uid, p_i.cyhy_db_name, p_i.fceb, p_i.fceb_child
+  WITH NO DATA;
+
+
+ALTER TABLE public.mat_vw_cyhy_services_counts OWNER TO pe;
+
+--
+-- Name: root_domains; Type: TABLE; Schema: public; Owner: pe
+--
+
+CREATE TABLE public.root_domains (
+    root_domain_uid uuid DEFAULT public.uuid_generate_v1() NOT NULL,
+    organizations_uid uuid NOT NULL,
+    root_domain text NOT NULL,
+    ip_address text,
+    data_source_uid uuid NOT NULL,
+    enumerate_subs boolean DEFAULT true
+);
+
+
+ALTER TABLE public.root_domains OWNER TO pe;
+
+--
+-- Name: sub_domains; Type: TABLE; Schema: public; Owner: pe
+--
+
+CREATE TABLE public.sub_domains (
+    sub_domain_uid uuid DEFAULT public.uuid_generate_v1() NOT NULL,
+    sub_domain text NOT NULL,
+    root_domain_uid uuid NOT NULL,
+    data_source_uid uuid NOT NULL,
+    dns_record_uid uuid,
+    status boolean DEFAULT false,
+    first_seen date,
+    last_seen date,
+    current boolean,
+    identified boolean DEFAULT false
+);
+
+
+ALTER TABLE public.sub_domains OWNER TO pe;
+
+--
+-- Name: mat_vw_fceb_total_ips; Type: MATERIALIZED VIEW; Schema: public; Owner: pe
+--
+
+CREATE MATERIALIZED VIEW public.mat_vw_fceb_total_ips AS
+ SELECT fceb_orgs.organizations_uid,
+    fceb_orgs.cyhy_db_name,
+    COALESCE(count(all_ips.ip), (0)::bigint) AS total_ips,
+    COALESCE(count(
+        CASE
+            WHEN ((all_ips.origin_cidr IS NULL) AND (all_ips.ip IS NOT NULL)) THEN 1
+            ELSE NULL::integer
+        END), (0)::bigint) AS ip_discovered,
+    COALESCE(count(
+        CASE
+            WHEN (all_ips.origin_cidr IS NOT NULL) THEN 1
+            ELSE NULL::integer
+        END), (0)::bigint) AS cidr_reported
+   FROM (( SELECT organizations.organizations_uid,
+            organizations.cyhy_db_name
+           FROM public.organizations
+          WHERE (((organizations.fceb = true) OR (organizations.fceb_child = true)) AND (organizations.retired IS FALSE))) fceb_orgs
+     LEFT JOIN ( SELECT cidrs_table.organizations_uid,
+            ips_table.ip,
+            ips_table.origin_cidr
+           FROM (public.ips ips_table
+             JOIN public.cidrs cidrs_table ON ((ips_table.origin_cidr = cidrs_table.cidr_uid)))
+          WHERE (ips_table.current IS TRUE)
+        UNION
+         SELECT rd.organizations_uid,
+            i.ip,
+            i.origin_cidr
+           FROM (((public.root_domains rd
+             JOIN public.sub_domains sd ON ((rd.root_domain_uid = sd.root_domain_uid)))
+             JOIN public.ips_subs si ON ((sd.sub_domain_uid = si.sub_domain_uid)))
+             JOIN public.ips i ON ((si.ip_hash = i.ip_hash)))
+          WHERE (sd.current IS TRUE)) all_ips ON ((fceb_orgs.organizations_uid = all_ips.organizations_uid)))
+  GROUP BY fceb_orgs.organizations_uid, fceb_orgs.cyhy_db_name
+  ORDER BY COALESCE(count(all_ips.ip), (0)::bigint)
+  WITH NO DATA;
+
+
+ALTER TABLE public.mat_vw_fceb_total_ips OWNER TO pe;
+
+--
+-- Name: mat_vw_orgs_all_ips; Type: MATERIALIZED VIEW; Schema: public; Owner: pe
+--
+
+CREATE MATERIALIZED VIEW public.mat_vw_orgs_all_ips AS
+ SELECT reported_orgs.organizations_uid,
+    reported_orgs.cyhy_db_name,
+    array_agg(all_ips.ip) AS ip_addresses
+   FROM (( SELECT organizations.organizations_uid,
+            organizations.cyhy_db_name
+           FROM public.organizations
+          WHERE (organizations.report_on = true)) reported_orgs
+     LEFT JOIN ( SELECT cidrs_table.organizations_uid,
+            ips_table.ip
+           FROM (public.ips ips_table
+             JOIN public.cidrs cidrs_table ON ((ips_table.origin_cidr = cidrs_table.cidr_uid)))
+        UNION
+         SELECT rd.organizations_uid,
+            i.ip
+           FROM (((public.root_domains rd
+             JOIN public.sub_domains sd ON ((rd.root_domain_uid = sd.root_domain_uid)))
+             JOIN public.ips_subs si ON ((sd.sub_domain_uid = si.sub_domain_uid)))
+             JOIN public.ips i ON ((si.ip_hash = i.ip_hash)))) all_ips ON ((reported_orgs.organizations_uid = all_ips.organizations_uid)))
+  GROUP BY reported_orgs.organizations_uid, reported_orgs.cyhy_db_name
+  ORDER BY reported_orgs.organizations_uid, reported_orgs.cyhy_db_name
+  WITH NO DATA;
+
+
+ALTER TABLE public.mat_vw_orgs_all_ips OWNER TO pe;
+
+--
+-- Name: old_shodan_insecure_protocols_unverified_vulns; Type: TABLE; Schema: public; Owner: pe
+--
+
+CREATE TABLE public.old_shodan_insecure_protocols_unverified_vulns (
+    insecure_product_uid uuid DEFAULT public.uuid_generate_v1() NOT NULL,
+    organizations_uid uuid NOT NULL,
+    organization text,
+    ip text,
+    port integer,
+    protocol text,
+    type text,
+    name text,
+    potential_vulns text[],
+    mitigation text,
+    "timestamp" timestamp without time zone,
+    product text,
+    server text,
+    tags text[],
+    domains text[],
+    hostnames text[],
+    isn text,
+    asn integer,
+    data_source_uid uuid NOT NULL
+);
+
+
+ALTER TABLE public.old_shodan_insecure_protocols_unverified_vulns OWNER TO pe;
+
+--
+-- Name: shodan_assets; Type: TABLE; Schema: public; Owner: pe
+--
+
+CREATE TABLE public.shodan_assets (
+    shodan_asset_uid uuid DEFAULT public.uuid_generate_v1() NOT NULL,
+    organizations_uid uuid NOT NULL,
+    organization text,
+    ip text,
+    port integer,
+    protocol text,
+    "timestamp" timestamp without time zone,
+    product text,
+    server text,
+    tags text[],
+    domains text[],
+    hostnames text[],
+    isn text,
+    asn integer,
+    data_source_uid uuid NOT NULL,
+    country_code text,
+    location text
+);
+
+
+ALTER TABLE public.shodan_assets OWNER TO pe;
+
+--
+-- Name: shodan_vulns; Type: TABLE; Schema: public; Owner: pe
+--
+
+CREATE TABLE public.shodan_vulns (
+    shodan_vuln_uid uuid DEFAULT public.uuid_generate_v1() NOT NULL,
+    organizations_uid uuid NOT NULL,
+    organization text,
+    ip text,
+    port text,
+    protocol text,
+    "timestamp" timestamp without time zone,
+    cve text,
+    severity text,
+    cvss numeric,
+    summary text,
+    product text,
+    attack_vector text,
+    av_description text,
+    attack_complexity text,
+    ac_description text,
+    confidentiality_impact text,
+    ci_description text,
+    integrity_impact text,
+    ii_description text,
+    availability_impact text,
+    ai_description text,
+    tags text[],
+    domains text[],
+    hostnames text[],
+    isn text,
+    asn integer,
+    data_source_uid uuid NOT NULL,
+    type text,
+    name text,
+    potential_vulns text[],
+    mitigation text,
+    server text,
+    is_verified boolean DEFAULT true
+);
+
+
+ALTER TABLE public.shodan_vulns OWNER TO pe;
+
+--
+-- Name: vw_orgs_total_cidrs; Type: VIEW; Schema: public; Owner: pe
+--
+
+CREATE VIEW public.vw_orgs_total_cidrs AS
+ SELECT reported_orgs.organizations_uid,
+    COALESCE(cidr_counts.count, (0)::bigint) AS count
+   FROM (( SELECT organizations.organizations_uid
+           FROM public.organizations
+          WHERE (organizations.report_on = true)) reported_orgs
+     LEFT JOIN ( SELECT c.organizations_uid,
+            count(c.network) AS count
+           FROM public.cidrs c
+          WHERE c.current
+          GROUP BY c.organizations_uid) cidr_counts ON ((reported_orgs.organizations_uid = cidr_counts.organizations_uid)));
+
+
+ALTER TABLE public.vw_orgs_total_cidrs OWNER TO pe;
+
+--
+-- Name: vw_orgs_total_domains; Type: VIEW; Schema: public; Owner: pe
+--
+
+CREATE VIEW public.vw_orgs_total_domains AS
+ SELECT root_table.organizations_uid,
+    root_table.cyhy_db_name,
+    root_table.num_root_domain,
+    sub_table.num_sub_domain
+   FROM (( SELECT reported_orgs.organizations_uid,
+            reported_orgs.cyhy_db_name,
+            COALESCE(root_counts.num_root_domain, (0)::bigint) AS num_root_domain
+           FROM (( SELECT organizations.organizations_uid,
+                    organizations.cyhy_db_name
+                   FROM public.organizations
+                  WHERE (organizations.report_on = true)) reported_orgs
+             LEFT JOIN ( SELECT root_table_1.organizations_uid,
+                    count(DISTINCT root_table_1.root_domain) AS num_root_domain
+                   FROM public.root_domains root_table_1
+                  GROUP BY root_table_1.organizations_uid) root_counts ON ((reported_orgs.organizations_uid = root_counts.organizations_uid)))) root_table
+     JOIN ( SELECT reported_orgs.organizations_uid,
+            reported_orgs.cyhy_db_name,
+            COALESCE(sub_counts.num_sub_domain, (0)::bigint) AS num_sub_domain
+           FROM (( SELECT organizations.organizations_uid,
+                    organizations.cyhy_db_name
+                   FROM public.organizations
+                  WHERE (organizations.report_on = true)) reported_orgs
+             LEFT JOIN ( SELECT root_table_1.organizations_uid,
+                    count(DISTINCT sub_table_1.sub_domain) AS num_sub_domain
+                   FROM (public.sub_domains sub_table_1
+                     JOIN public.root_domains root_table_1 ON ((sub_table_1.root_domain_uid = root_table_1.root_domain_uid)))
+                  GROUP BY root_table_1.organizations_uid) sub_counts ON ((reported_orgs.organizations_uid = sub_counts.organizations_uid)))) sub_table ON ((root_table.organizations_uid = sub_table.organizations_uid)))
+  ORDER BY sub_table.num_sub_domain, root_table.num_root_domain;
+
+
+ALTER TABLE public.vw_orgs_total_domains OWNER TO pe;
+
+--
+-- Name: VIEW vw_orgs_total_domains; Type: COMMENT; Schema: public; Owner: pe
+--
+
+COMMENT ON VIEW public.vw_orgs_total_domains IS 'Gets the total number of root and sub domains for all orgs.';
+
+
+--
+-- Name: vw_orgs_total_foreign_ips; Type: VIEW; Schema: public; Owner: pe
+--
+
+CREATE VIEW public.vw_orgs_total_foreign_ips AS
+ SELECT reported_orgs.organizations_uid,
+    COALESCE(foreign_ips.num_foreign_ips, (0)::bigint) AS num_foreign_ips
+   FROM (( SELECT organizations.organizations_uid
+           FROM public.organizations
+          WHERE (organizations.report_on = true)) reported_orgs
+     LEFT JOIN ( SELECT sa.organizations_uid,
+            count(
+                CASE
+                    WHEN ((sa.country_code <> 'US'::text) AND (sa.country_code IS NOT NULL)) THEN 1
+                    ELSE NULL::integer
+                END) AS num_foreign_ips
+           FROM public.shodan_assets sa
+          GROUP BY sa.organizations_uid) foreign_ips ON ((reported_orgs.organizations_uid = foreign_ips.organizations_uid)));
+
+
+ALTER TABLE public.vw_orgs_total_foreign_ips OWNER TO pe;
+
+--
+-- Name: vw_orgs_total_ips; Type: VIEW; Schema: public; Owner: pe
+--
+
+CREATE VIEW public.vw_orgs_total_ips AS
+ SELECT reported_orgs.organizations_uid,
+    reported_orgs.cyhy_db_name,
+    COALESCE(count(all_ips.ip), (0)::bigint) AS num_ips
+   FROM (( SELECT organizations.organizations_uid,
+            organizations.cyhy_db_name
+           FROM public.organizations
+          WHERE (organizations.report_on = true)) reported_orgs
+     LEFT JOIN ( SELECT cidrs_table.organizations_uid,
+            ips_table.ip
+           FROM (public.ips ips_table
+             JOIN public.cidrs cidrs_table ON ((ips_table.origin_cidr = cidrs_table.cidr_uid)))
+        UNION
+         SELECT rd.organizations_uid,
+            i.ip
+           FROM (((public.root_domains rd
+             JOIN public.sub_domains sd ON ((rd.root_domain_uid = sd.root_domain_uid)))
+             JOIN public.ips_subs si ON ((sd.sub_domain_uid = si.sub_domain_uid)))
+             JOIN public.ips i ON ((si.ip_hash = i.ip_hash)))) all_ips ON ((reported_orgs.organizations_uid = all_ips.organizations_uid)))
+  GROUP BY reported_orgs.organizations_uid, reported_orgs.cyhy_db_name
+  ORDER BY COALESCE(count(all_ips.ip), (0)::bigint);
+
+
+ALTER TABLE public.vw_orgs_total_ips OWNER TO pe;
+
+--
+-- Name: VIEW vw_orgs_total_ips; Type: COMMENT; Schema: public; Owner: pe
+--
+
+COMMENT ON VIEW public.vw_orgs_total_ips IS 'Gets the total number of ips associated with each organization.';
+
+
+--
+-- Name: vw_orgs_total_ports; Type: VIEW; Schema: public; Owner: pe
+--
+
+CREATE VIEW public.vw_orgs_total_ports AS
+ SELECT reported_orgs.organizations_uid,
+    reported_orgs.cyhy_db_name,
+    COALESCE(count(all_ports.port), (0)::bigint) AS num_ports
+   FROM (( SELECT organizations.organizations_uid,
+            organizations.cyhy_db_name
+           FROM public.organizations
+          WHERE (organizations.report_on = true)) reported_orgs
+     LEFT JOIN ( SELECT DISTINCT assets.organizations_uid,
+            assets.ip,
+            assets.port
+           FROM public.shodan_assets assets
+        UNION
+         SELECT DISTINCT vulns.organizations_uid,
+            vulns.ip,
+            (vulns.port)::integer AS port
+           FROM public.shodan_vulns vulns
+        UNION
+         SELECT DISTINCT unverif_vulns.organizations_uid,
+            unverif_vulns.ip,
+            unverif_vulns.port
+           FROM public.old_shodan_insecure_protocols_unverified_vulns unverif_vulns) all_ports ON ((reported_orgs.organizations_uid = all_ports.organizations_uid)))
+  GROUP BY reported_orgs.organizations_uid, reported_orgs.cyhy_db_name
+  ORDER BY COALESCE(count(all_ports.port), (0)::bigint);
+
+
+ALTER TABLE public.vw_orgs_total_ports OWNER TO pe;
+
+--
+-- Name: VIEW vw_orgs_total_ports; Type: COMMENT; Schema: public; Owner: pe
+--
+
+COMMENT ON VIEW public.vw_orgs_total_ports IS 'Gets the total number of unique ports for every organization P&E reports on';
+
+
+--
+-- Name: vw_orgs_total_ports_protocols; Type: VIEW; Schema: public; Owner: pe
+--
+
+CREATE VIEW public.vw_orgs_total_ports_protocols AS
+ SELECT reported_orgs.organizations_uid,
+    COALESCE(protocols.port_protocol, (0)::bigint) AS port_protocol
+   FROM (( SELECT organizations.organizations_uid
+           FROM public.organizations
+          WHERE (organizations.report_on = true)) reported_orgs
+     LEFT JOIN ( SELECT t.organizations_uid,
+            count(*) AS port_protocol
+           FROM ( SELECT DISTINCT sa.port,
+                    sa.protocol,
+                    sa.organizations_uid
+                   FROM public.shodan_assets sa) t
+          GROUP BY t.organizations_uid) protocols ON ((reported_orgs.organizations_uid = protocols.organizations_uid)));
+
+
+ALTER TABLE public.vw_orgs_total_ports_protocols OWNER TO pe;
+
+--
+-- Name: vw_orgs_total_software; Type: VIEW; Schema: public; Owner: pe
+--
+
+CREATE VIEW public.vw_orgs_total_software AS
+ SELECT reported_orgs.organizations_uid,
+    COALESCE(software.num_software, (0)::bigint) AS num_software
+   FROM (( SELECT organizations.organizations_uid
+           FROM public.organizations
+          WHERE (organizations.report_on = true)) reported_orgs
+     LEFT JOIN ( SELECT t.organizations_uid,
+            count(*) AS num_software
+           FROM ( SELECT DISTINCT sa.product,
+                    sa.organizations_uid
+                   FROM public.shodan_assets sa) t
+          GROUP BY t.organizations_uid) software ON ((reported_orgs.organizations_uid = software.organizations_uid)));
+
+
+ALTER TABLE public.vw_orgs_total_software OWNER TO pe;
+
+--
+-- Name: mat_vw_orgs_attacksurface; Type: MATERIALIZED VIEW; Schema: public; Owner: pe
+--
+
+CREATE MATERIALIZED VIEW public.mat_vw_orgs_attacksurface AS
+ SELECT domains_view.organizations_uid,
+    domains_view.cyhy_db_name,
+    ports_view.num_ports,
+    domains_view.num_root_domain,
+    domains_view.num_sub_domain,
+    ips_view.num_ips,
+    cidrs_view.count AS num_cidrs,
+    port_prot_view.port_protocol AS num_ports_protocols,
+    soft_view.num_software,
+    for_ips_view.num_foreign_ips
+   FROM ((((((public.vw_orgs_total_domains domains_view
+     JOIN public.vw_orgs_total_ips ips_view ON ((domains_view.organizations_uid = ips_view.organizations_uid)))
+     JOIN public.vw_orgs_total_ports ports_view ON ((ips_view.organizations_uid = ports_view.organizations_uid)))
+     JOIN public.vw_orgs_total_cidrs cidrs_view ON ((cidrs_view.organizations_uid = ips_view.organizations_uid)))
+     JOIN public.vw_orgs_total_ports_protocols port_prot_view ON ((port_prot_view.organizations_uid = ports_view.organizations_uid)))
+     JOIN public.vw_orgs_total_software soft_view ON ((soft_view.organizations_uid = port_prot_view.organizations_uid)))
+     JOIN public.vw_orgs_total_foreign_ips for_ips_view ON ((for_ips_view.organizations_uid = soft_view.organizations_uid)))
+  ORDER BY ips_view.num_ips, domains_view.num_sub_domain, domains_view.num_root_domain, ports_view.num_ports
+  WITH NO DATA;
+
+
+ALTER TABLE public.mat_vw_orgs_attacksurface OWNER TO pe;
 
 --
 -- Name: mentions; Type: TABLE; Schema: public; Owner: pe
@@ -2292,35 +3087,6 @@ CREATE TABLE public.mentions (
 ALTER TABLE public.mentions OWNER TO pe;
 
 --
--- Name: old_shodan_insecure_protocols_unverified_vulns; Type: TABLE; Schema: public; Owner: pe
---
-
-CREATE TABLE public.old_shodan_insecure_protocols_unverified_vulns (
-    insecure_product_uid uuid DEFAULT public.uuid_generate_v1() NOT NULL,
-    organizations_uid uuid NOT NULL,
-    organization text,
-    ip text,
-    port integer,
-    protocol text,
-    type text,
-    name text,
-    potential_vulns text[],
-    mitigation text,
-    "timestamp" timestamp without time zone,
-    product text,
-    server text,
-    tags text[],
-    domains text[],
-    hostnames text[],
-    isn text,
-    asn integer,
-    data_source_uid uuid NOT NULL
-);
-
-
-ALTER TABLE public.old_shodan_insecure_protocols_unverified_vulns OWNER TO pe;
-
---
 -- Name: org_id_map; Type: TABLE; Schema: public; Owner: pe
 --
 
@@ -2344,36 +3110,6 @@ CREATE TABLE public.org_type (
 
 
 ALTER TABLE public.org_type OWNER TO pe;
-
---
--- Name: organizations; Type: TABLE; Schema: public; Owner: pe
---
-
-CREATE TABLE public.organizations (
-    organizations_uid uuid DEFAULT public.uuid_generate_v1() NOT NULL,
-    name text NOT NULL,
-    cyhy_db_name text,
-    org_type_uid uuid,
-    report_on boolean DEFAULT false,
-    password text,
-    date_first_reported timestamp without time zone,
-    parent_org_uid uuid,
-    premium_report boolean,
-    agency_type text,
-    demo boolean DEFAULT false,
-    scorecard boolean DEFAULT false,
-    fceb boolean DEFAULT false,
-    receives_cyhy_report boolean DEFAULT false,
-    receives_bod_report boolean DEFAULT false,
-    receives_cybex_report boolean DEFAULT false,
-    run_scans boolean DEFAULT false,
-    is_parent boolean DEFAULT false,
-    ignore_roll_up boolean DEFAULT false,
-    retired boolean DEFAULT false
-);
-
-
-ALTER TABLE public.organizations OWNER TO pe;
 
 --
 -- Name: outdated_vw_breach_complete; Type: VIEW; Schema: public; Owner: pe
@@ -2612,111 +3348,121 @@ CREATE TABLE public.report_summary_stats (
 ALTER TABLE public.report_summary_stats OWNER TO pe;
 
 --
--- Name: root_domains; Type: TABLE; Schema: public; Owner: pe
+-- Name: scorecard_summary_stats; Type: TABLE; Schema: public; Owner: pe
 --
 
-CREATE TABLE public.root_domains (
-    root_domain_uid uuid DEFAULT public.uuid_generate_v1() NOT NULL,
+CREATE TABLE public.scorecard_summary_stats (
+    scorecard_summary_uid uuid DEFAULT public.uuid_generate_v1() NOT NULL,
     organizations_uid uuid NOT NULL,
-    root_domain text NOT NULL,
-    ip_address text,
-    data_source_uid uuid NOT NULL,
-    enumerate_subs boolean DEFAULT true
+    start_date date NOT NULL,
+    end_date date,
+    score text,
+    discovery_score double precision,
+    profiling_score double precision,
+    identification_score double precision,
+    tracking_score double precision,
+    ips_self_reported integer,
+    ips_discovered integer,
+    ips_monitored integer,
+    domains_self_reported integer,
+    domains_discovered integer,
+    domains_monitored integer,
+    web_apps_self_reported integer,
+    web_apps_discovered integer,
+    web_apps_monitored integer,
+    certs_self_reported integer,
+    certs_discovered integer,
+    certs_monitored integer,
+    total_ports integer,
+    risky_ports integer,
+    protocols integer,
+    insecure_protocols integer,
+    total_services integer,
+    unsupported_software integer,
+    ext_host_kev integer,
+    ext_host_vuln_critical integer,
+    ext_host_vuln_high integer,
+    web_apps_kev integer,
+    web_apps_vuln_critical integer,
+    web_apps_vuln_high integer,
+    total_kev integer,
+    total_vuln_critical integer,
+    total_vuln_high integer,
+    org_avg_days_remediate_kev integer,
+    org_avg_days_remediate_critical integer,
+    org_avg_days_remediate_high integer,
+    sect_avg_days_remediate_kev integer,
+    sect_avg_days_remediate_critical integer,
+    sect_avg_days_remediate_high integer,
+    bod_22_01 boolean,
+    bod_19_02_critical boolean,
+    bod_19_02_high boolean,
+    org_web_avg_days_remediate_critical integer,
+    org_web_avg_days_remediate_high integer,
+    sect_web_avg_days_remediate_critical integer,
+    sect_web_avg_days_remediate_high integer,
+    email_compliance_pct double precision,
+    https_compliance_pct double precision,
+    sector_name text
 );
 
 
-ALTER TABLE public.root_domains OWNER TO pe;
+ALTER TABLE public.scorecard_summary_stats OWNER TO pe;
 
 --
--- Name: shodan_assets; Type: TABLE; Schema: public; Owner: pe
+-- Name: sectors; Type: TABLE; Schema: public; Owner: pe
 --
 
-CREATE TABLE public.shodan_assets (
-    shodan_asset_uid uuid DEFAULT public.uuid_generate_v1() NOT NULL,
-    organizations_uid uuid NOT NULL,
-    organization text,
-    ip text,
-    port integer,
-    protocol text,
-    "timestamp" timestamp without time zone,
-    product text,
-    server text,
-    tags text[],
-    domains text[],
-    hostnames text[],
-    isn text,
-    asn integer,
-    data_source_uid uuid NOT NULL,
-    country_code text,
-    location text
-);
-
-
-ALTER TABLE public.shodan_assets OWNER TO pe;
-
---
--- Name: shodan_vulns; Type: TABLE; Schema: public; Owner: pe
---
-
-CREATE TABLE public.shodan_vulns (
-    shodan_vuln_uid uuid DEFAULT public.uuid_generate_v1() NOT NULL,
-    organizations_uid uuid NOT NULL,
-    organization text,
-    ip text,
-    port text,
-    protocol text,
-    "timestamp" timestamp without time zone,
-    cve text,
-    severity text,
-    cvss numeric,
-    summary text,
-    product text,
-    attack_vector text,
-    av_description text,
-    attack_complexity text,
-    ac_description text,
-    confidentiality_impact text,
-    ci_description text,
-    integrity_impact text,
-    ii_description text,
-    availability_impact text,
-    ai_description text,
-    tags text[],
-    domains text[],
-    hostnames text[],
-    isn text,
-    asn integer,
-    data_source_uid uuid NOT NULL,
-    type text,
+CREATE TABLE public.sectors (
+    sector_uid uuid DEFAULT public.uuid_generate_v1() NOT NULL,
+    id text NOT NULL,
+    acronym text,
     name text,
-    potential_vulns text[],
-    mitigation text,
-    server text,
-    is_verified boolean DEFAULT true
-);
-
-
-ALTER TABLE public.shodan_vulns OWNER TO pe;
-
---
--- Name: sub_domains; Type: TABLE; Schema: public; Owner: pe
---
-
-CREATE TABLE public.sub_domains (
-    sub_domain_uid uuid DEFAULT public.uuid_generate_v1() NOT NULL,
-    sub_domain text NOT NULL,
-    root_domain_uid uuid NOT NULL,
-    data_source_uid uuid NOT NULL,
-    dns_record_uid uuid,
-    status boolean DEFAULT false,
+    email text,
+    contact_name text,
+    retired boolean DEFAULT false,
     first_seen date,
     last_seen date,
-    current boolean,
-    identified boolean DEFAULT false
+    run_scorecards boolean,
+    password text,
+    parent_sector_uid uuid
 );
 
 
-ALTER TABLE public.sub_domains OWNER TO pe;
+ALTER TABLE public.sectors OWNER TO pe;
+
+--
+-- Name: sectors_orgs; Type: TABLE; Schema: public; Owner: pe
+--
+
+CREATE TABLE public.sectors_orgs (
+    sector_org_uid uuid DEFAULT public.uuid_generate_v1() NOT NULL,
+    sector_uid uuid NOT NULL,
+    organizations_uid uuid NOT NULL,
+    first_seen date,
+    last_seen date
+);
+
+
+ALTER TABLE public.sectors_orgs OWNER TO pe;
+
+--
+-- Name: team_members; Type: TABLE; Schema: public; Owner: pe
+--
+
+CREATE TABLE public.team_members (
+    team_member_uid uuid DEFAULT public.uuid_generate_v1() NOT NULL,
+    team_member_fname text NOT NULL,
+    team_member_lname text NOT NULL,
+    team_member_email text NOT NULL,
+    "team_member_ghID" text NOT NULL,
+    team_member_phone text,
+    team_member_role text,
+    team_member_notes text
+);
+
+
+ALTER TABLE public.team_members OWNER TO pe;
 
 --
 -- Name: top_cves; Type: TABLE; Schema: public; Owner: pe
@@ -2760,40 +3506,6 @@ CREATE TABLE public.unique_software (
 
 
 ALTER TABLE public.unique_software OWNER TO pe;
-
---
--- Name: vw_breachcomp; Type: VIEW; Schema: public; Owner: pe
---
-
-CREATE VIEW public.vw_breachcomp AS
- SELECT creds.credential_exposures_uid,
-    creds.email,
-    creds.breach_name,
-    creds.organizations_uid,
-    creds.root_domain,
-    creds.sub_domain,
-    creds.hash_type,
-    creds.name,
-    creds.login_id,
-    creds.password,
-    creds.phone,
-    creds.data_source_uid,
-    b.description,
-    b.breach_date,
-    b.added_date,
-    b.modified_date,
-    b.data_classes,
-    b.password_included,
-    b.is_verified,
-    b.is_fabricated,
-    b.is_sensitive,
-    b.is_retired,
-    b.is_spam_list
-   FROM (public.credential_exposures creds
-     JOIN public.credential_breaches b ON ((creds.credential_breaches_uid = b.credential_breaches_uid)));
-
-
-ALTER TABLE public.vw_breachcomp OWNER TO pe;
 
 --
 -- Name: vw_breachcomp_breachdetails; Type: VIEW; Schema: public; Owner: pe
@@ -2852,6 +3564,122 @@ CREATE VIEW public.vw_cidrs AS
 
 
 ALTER TABLE public.vw_cidrs OWNER TO pe;
+
+--
+-- Name: vw_cyhy_port_counts; Type: VIEW; Schema: public; Owner: pe
+--
+
+CREATE VIEW public.vw_cyhy_port_counts AS
+ SELECT p_i.report_period,
+    p_i.organizations_uid,
+    p_i.cyhy_db_name,
+    p_i.fceb,
+    p_i.fceb_child,
+    count(*) AS ports,
+    sum(
+        CASE
+            WHEN ((p_i.service_name = ANY (ARRAY['rdp'::text, 'telnet'::text, 'ftp'::text, 'rpc'::text, 'smb'::text, 'sql'::text, 'ldap'::text, 'irc'::text, 'netbios'::text, 'kerberos'::text])) AND (p_i.state = 'open'::text)) THEN 1
+            ELSE 0
+        END) AS risky_ports
+   FROM ( SELECT o.organizations_uid,
+            o.cyhy_db_name,
+            o.fceb,
+            o.fceb_child,
+            cps.report_period,
+            cps.port,
+            cps.ip,
+            cps.service_name,
+            cps.state
+           FROM (public.cyhy_port_scans_new cps
+             JOIN public.organizations o ON ((o.organizations_uid = cps.organizations_uid)))) p_i
+  GROUP BY p_i.report_period, p_i.organizations_uid, p_i.fceb, p_i.fceb_child, p_i.cyhy_db_name;
+
+
+ALTER TABLE public.vw_cyhy_port_counts OWNER TO pe;
+
+--
+-- Name: vw_cyhy_protocol_counts; Type: VIEW; Schema: public; Owner: pe
+--
+
+CREATE VIEW public.vw_cyhy_protocol_counts AS
+ SELECT p_i.report_period,
+    p_i.organizations_uid,
+    p_i.cyhy_db_name,
+    p_i.fceb,
+    p_i.fceb_child,
+    count(*) AS protocols
+   FROM ( SELECT DISTINCT o.organizations_uid,
+            o.cyhy_db_name,
+            o.fceb,
+            o.fceb_child,
+            cps.report_period,
+            cps.port,
+            cps.service_name
+           FROM (public.cyhy_port_scans_new cps
+             JOIN public.organizations o ON ((o.organizations_uid = cps.organizations_uid)))) p_i
+  GROUP BY p_i.report_period, p_i.organizations_uid, p_i.cyhy_db_name, p_i.fceb, p_i.fceb_child;
+
+
+ALTER TABLE public.vw_cyhy_protocol_counts OWNER TO pe;
+
+--
+-- Name: vw_cyhy_risky_protocol_counts; Type: VIEW; Schema: public; Owner: pe
+--
+
+CREATE VIEW public.vw_cyhy_risky_protocol_counts AS
+ SELECT p_i.report_period,
+    p_i.organizations_uid,
+    p_i.cyhy_db_name,
+    p_i.fceb,
+    p_i.fceb_child,
+    sum(
+        CASE
+            WHEN ((p_i.service_name = ANY (ARRAY['rdp'::text, 'telnet'::text, 'ftp'::text, 'rpc'::text, 'smb'::text, 'sql'::text, 'ldap'::text, 'irc'::text, 'netbios'::text, 'kerberos'::text])) AND (p_i.state = 'open'::text)) THEN 1
+            ELSE 0
+        END) AS risky_protocols
+   FROM ( SELECT DISTINCT o.organizations_uid,
+            o.cyhy_db_name,
+            o.fceb,
+            o.fceb_child,
+            cps.report_period,
+            cps.port,
+            cps.service_name,
+            cps.state
+           FROM (public.cyhy_port_scans_new cps
+             JOIN public.organizations o ON ((o.organizations_uid = cps.organizations_uid)))) p_i
+  GROUP BY p_i.report_period, p_i.organizations_uid, p_i.cyhy_db_name, p_i.fceb, p_i.fceb_child;
+
+
+ALTER TABLE public.vw_cyhy_risky_protocol_counts OWNER TO pe;
+
+--
+-- Name: vw_cyhy_services_counts; Type: VIEW; Schema: public; Owner: pe
+--
+
+CREATE VIEW public.vw_cyhy_services_counts AS
+ SELECT p_i.report_period,
+    p_i.organizations_uid,
+    p_i.cyhy_db_name,
+    p_i.fceb,
+    p_i.fceb_child,
+    sum(
+        CASE
+            WHEN (p_i.service_name = ANY (ARRAY['http'::text, 'https'::text, 'http-proxy'::text])) THEN 1
+            ELSE 0
+        END) AS services
+   FROM ( SELECT DISTINCT o.organizations_uid,
+            o.cyhy_db_name,
+            o.fceb,
+            o.fceb_child,
+            cps.report_period,
+            cps.port,
+            cps.service_name
+           FROM (public.cyhy_port_scans_new cps
+             JOIN public.organizations o ON ((o.organizations_uid = cps.organizations_uid)))) p_i
+  GROUP BY p_i.report_period, p_i.organizations_uid, p_i.cyhy_db_name, p_i.fceb, p_i.fceb_child;
+
+
+ALTER TABLE public.vw_cyhy_services_counts OWNER TO pe;
 
 --
 -- Name: vw_darkweb_assetalerts; Type: VIEW; Schema: public; Owner: pe
@@ -3033,19 +3861,399 @@ CREATE VIEW public.vw_darkweb_topcves AS
 ALTER TABLE public.vw_darkweb_topcves OWNER TO pe;
 
 --
+-- Name: vw_domain_counts; Type: VIEW; Schema: public; Owner: pe
+--
+
+CREATE VIEW public.vw_domain_counts AS
+ SELECT o.organizations_uid,
+    o.cyhy_db_name,
+    o.fceb,
+    o.fceb_child,
+    COALESCE(cnts.identified, (0)::bigint) AS identified,
+    COALESCE(cnts.unidentified, (0)::bigint) AS unidentified
+   FROM (public.organizations o
+     LEFT JOIN ( SELECT rd.organizations_uid,
+            sum(
+                CASE sd.identified
+                    WHEN true THEN 1
+                    ELSE 0
+                END) AS identified,
+            sum(
+                CASE sd.identified
+                    WHEN false THEN 1
+                    ELSE 0
+                END) AS unidentified
+           FROM (public.root_domains rd
+             JOIN public.sub_domains sd ON ((sd.root_domain_uid = rd.root_domain_uid)))
+          GROUP BY rd.organizations_uid) cnts ON ((o.organizations_uid = cnts.organizations_uid)));
+
+
+ALTER TABLE public.vw_domain_counts OWNER TO pe;
+
+--
+-- Name: vw_dscore_pe_domain; Type: VIEW; Schema: public; Owner: pe
+--
+
+CREATE VIEW public.vw_dscore_pe_domain AS
+ SELECT domain_data.organizations_uid,
+    domain_data.parent_org_uid,
+    count(domain_data.sub_domain) FILTER (WHERE (domain_data.identified = false)) AS num_ident_domain,
+    count(domain_data.sub_domain) AS num_monitor_domain
+   FROM ( SELECT orgs.organizations_uid,
+            orgs.parent_org_uid,
+            all_domains.sub_domain,
+            all_domains.identified
+           FROM (( SELECT organizations.organizations_uid,
+                    organizations.parent_org_uid
+                   FROM public.organizations) orgs
+             LEFT JOIN ( SELECT root_domains.organizations_uid,
+                    sub_domains.sub_domain,
+                    sub_domains.identified
+                   FROM (public.root_domains
+                     JOIN public.sub_domains ON ((root_domains.root_domain_uid = sub_domains.root_domain_uid)))) all_domains ON ((orgs.organizations_uid = all_domains.organizations_uid)))) domain_data
+  GROUP BY domain_data.organizations_uid, domain_data.parent_org_uid;
+
+
+ALTER TABLE public.vw_dscore_pe_domain OWNER TO pe;
+
+--
+-- Name: VIEW vw_dscore_pe_domain; Type: COMMENT; Schema: public; Owner: pe
+--
+
+COMMENT ON VIEW public.vw_dscore_pe_domain IS 'Retrieves all the PE domain data needed to calculate the discovery score';
+
+
+--
+-- Name: vw_dscore_pe_ip; Type: VIEW; Schema: public; Owner: pe
+--
+
+CREATE VIEW public.vw_dscore_pe_ip AS
+ SELECT grouped_cidr_ips.organizations_uid,
+    grouped_cidr_ips.parent_org_uid,
+    grouped_cidr_ips.num_ident_ip,
+    grouped_all_ips.num_monitor_ip
+   FROM (( SELECT cidr_ips_data.organizations_uid,
+            cidr_ips_data.parent_org_uid,
+            COALESCE(count(cidr_ips_data.ip), (0)::bigint) AS num_ident_ip
+           FROM ( SELECT orgs.organizations_uid,
+                    orgs.parent_org_uid,
+                    cidr_ips.ip
+                   FROM (( SELECT organizations.organizations_uid,
+                            organizations.parent_org_uid
+                           FROM public.organizations) orgs
+                     LEFT JOIN ( SELECT cidrs.organizations_uid,
+                            ips.ip
+                           FROM (public.ips
+                             JOIN public.cidrs ON ((ips.origin_cidr = cidrs.cidr_uid)))) cidr_ips ON ((orgs.organizations_uid = cidr_ips.organizations_uid)))) cidr_ips_data
+          GROUP BY cidr_ips_data.organizations_uid, cidr_ips_data.parent_org_uid) grouped_cidr_ips
+     JOIN ( SELECT all_ips_data.organizations_uid,
+            all_ips_data.parent_org_uid,
+            COALESCE(count(all_ips_data.ip), (0)::bigint) AS num_monitor_ip
+           FROM ( SELECT orgs.organizations_uid,
+                    orgs.parent_org_uid,
+                    all_ips.ip
+                   FROM (( SELECT organizations.organizations_uid,
+                            organizations.parent_org_uid
+                           FROM public.organizations) orgs
+                     LEFT JOIN ( SELECT cidrs.organizations_uid,
+                            ips.ip
+                           FROM (public.ips
+                             JOIN public.cidrs ON ((ips.origin_cidr = cidrs.cidr_uid)))
+                        UNION
+                         SELECT rd.organizations_uid,
+                            i.ip
+                           FROM (((public.root_domains rd
+                             JOIN public.sub_domains sd ON ((rd.root_domain_uid = sd.root_domain_uid)))
+                             JOIN public.ips_subs si ON ((sd.sub_domain_uid = si.sub_domain_uid)))
+                             JOIN public.ips i ON ((si.ip_hash = i.ip_hash)))) all_ips ON ((orgs.organizations_uid = all_ips.organizations_uid)))) all_ips_data
+          GROUP BY all_ips_data.organizations_uid, all_ips_data.parent_org_uid) grouped_all_ips ON (((grouped_cidr_ips.organizations_uid = grouped_all_ips.organizations_uid) AND (grouped_cidr_ips.parent_org_uid = grouped_all_ips.parent_org_uid))))
+  ORDER BY grouped_cidr_ips.organizations_uid;
+
+
+ALTER TABLE public.vw_dscore_pe_ip OWNER TO pe;
+
+--
+-- Name: VIEW vw_dscore_pe_ip; Type: COMMENT; Schema: public; Owner: pe
+--
+
+COMMENT ON VIEW public.vw_dscore_pe_ip IS 'Retrieves all the PE IP data needed to calculate the discovery score';
+
+
+--
+-- Name: vw_dscore_vs_cert; Type: VIEW; Schema: public; Owner: pe
+--
+
+CREATE VIEW public.vw_dscore_vs_cert AS
+ SELECT cert_data.organizations_uid,
+    cert_data.parent_org_uid,
+    sum(cert_data.num_ident_cert) AS num_ident_cert,
+    sum(cert_data.num_monitor_cert) AS num_monitor_cert
+   FROM ( SELECT organizations.organizations_uid,
+            organizations.parent_org_uid,
+            0 AS num_ident_cert,
+            0 AS num_monitor_cert
+           FROM public.organizations) cert_data
+  GROUP BY cert_data.organizations_uid, cert_data.parent_org_uid;
+
+
+ALTER TABLE public.vw_dscore_vs_cert OWNER TO pe;
+
+--
+-- Name: VIEW vw_dscore_vs_cert; Type: COMMENT; Schema: public; Owner: pe
+--
+
+COMMENT ON VIEW public.vw_dscore_vs_cert IS 'Retrieves all VS certificate data needed for the calculation of the I-Score, currently not pulling any real data until VS fixes their certificate scan script';
+
+
+--
+-- Name: vw_dscore_vs_mail; Type: VIEW; Schema: public; Owner: pe
+--
+
+CREATE VIEW public.vw_dscore_vs_mail AS
+ SELECT mail_data.organizations_uid,
+    mail_data.parent_org_uid,
+    COALESCE(sum(mail_data.domain_counter) FILTER (WHERE ((mail_data.valid_dmarc_base_domain = true) OR (mail_data.valid_dmarc = true))), (0)::bigint) AS num_valid_dmarc,
+    COALESCE(sum(mail_data.domain_counter) FILTER (WHERE (mail_data.valid_spf = true)), (0)::bigint) AS num_valid_spf,
+    COALESCE(sum(mail_data.domain_counter) FILTER (WHERE ((mail_data.valid_dmarc_base_domain = true) OR (mail_data.valid_dmarc = true) OR (mail_data.valid_spf = true))), (0)::bigint) AS num_valid_dmarc_or_spf,
+    sum(mail_data.domain_counter) AS total_mail_domains
+   FROM ( SELECT orgs.organizations_uid,
+            orgs.parent_org_uid,
+            mail.domain,
+            mail.valid_dmarc_base_domain,
+            mail.valid_dmarc,
+            mail.valid_spf,
+            mail.domain_counter
+           FROM (( SELECT organizations.organizations_uid,
+                    organizations.parent_org_uid
+                   FROM public.organizations) orgs
+             LEFT JOIN ( SELECT cyhy_trustymail.cyhy_trustymail_uid,
+                    cyhy_trustymail.organizations_uid,
+                    cyhy_trustymail.cyhy_id,
+                    cyhy_trustymail.cyhy_latest,
+                    cyhy_trustymail.base_domain,
+                    cyhy_trustymail.is_base_domain,
+                    cyhy_trustymail.domain,
+                    cyhy_trustymail.dmarc_record,
+                    cyhy_trustymail.valid_spf,
+                    cyhy_trustymail.scan_date,
+                    cyhy_trustymail.live,
+                    cyhy_trustymail.spf_record,
+                    cyhy_trustymail.valid_dmarc,
+                    cyhy_trustymail.valid_dmarc_base_domain,
+                    cyhy_trustymail.dmarc_policy,
+                    cyhy_trustymail.dmarc_policy_percentage,
+                    cyhy_trustymail.aggregate_report_uris,
+                    cyhy_trustymail.domain_supports_smtp,
+                    cyhy_trustymail.first_seen,
+                    cyhy_trustymail.last_seen,
+                    cyhy_trustymail.dmarc_subdomain_policy,
+                    cyhy_trustymail.domain_supports_starttls,
+                    1 AS domain_counter
+                   FROM public.cyhy_trustymail
+                  WHERE (cyhy_trustymail.cyhy_latest = true)) mail ON ((orgs.organizations_uid = mail.organizations_uid)))) mail_data
+  GROUP BY mail_data.organizations_uid, mail_data.parent_org_uid;
+
+
+ALTER TABLE public.vw_dscore_vs_mail OWNER TO pe;
+
+--
+-- Name: VIEW vw_dscore_vs_mail; Type: COMMENT; Schema: public; Owner: pe
+--
+
+COMMENT ON VIEW public.vw_dscore_vs_mail IS 'Retrieves all the VS mail data needed to calculate the discovery score';
+
+
+--
+-- Name: was_summary; Type: TABLE; Schema: public; Owner: pe
+--
+
+CREATE TABLE public.was_summary (
+    customer_id uuid,
+    was_org_id text,
+    webapp_count integer,
+    active_vuln_count integer,
+    webapp_with_vulns_count integer,
+    last_updated date
+);
+
+
+ALTER TABLE public.was_summary OWNER TO pe;
+
+--
+-- Name: vw_dscore_was_webapp; Type: VIEW; Schema: public; Owner: pe
+--
+
+CREATE VIEW public.vw_dscore_was_webapp AS
+ SELECT webapp_data.organizations_uid,
+    webapp_data.parent_org_uid,
+    sum(webapp_data.num_ident_webapp) AS num_ident_webapp,
+    sum(webapp_data.num_monitor_webapp) AS num_monitor_webapp
+   FROM ( SELECT orgs.organizations_uid,
+            orgs.parent_org_uid,
+            COALESCE(webapps.num_ident_webapp, 0) AS num_ident_webapp,
+            COALESCE(webapps.num_monitor_webapp, 0) AS num_monitor_webapp
+           FROM (( SELECT organizations.organizations_uid,
+                    organizations.parent_org_uid,
+                    organizations.cyhy_db_name
+                   FROM public.organizations) orgs
+             LEFT JOIN ( SELECT was_summary.was_org_id,
+                    was_summary.webapp_count AS num_ident_webapp,
+                    was_summary.webapp_count AS num_monitor_webapp
+                   FROM public.was_summary) webapps ON ((orgs.cyhy_db_name = webapps.was_org_id)))) webapp_data
+  GROUP BY webapp_data.organizations_uid, webapp_data.parent_org_uid;
+
+
+ALTER TABLE public.vw_dscore_was_webapp OWNER TO pe;
+
+--
+-- Name: VIEW vw_dscore_was_webapp; Type: COMMENT; Schema: public; Owner: pe
+--
+
+COMMENT ON VIEW public.vw_dscore_was_webapp IS 'Retrieves all the WAS webapp data needed to calculate the discovery score. Currently just using number of webapps as both identified/monitored for now.';
+
+
+--
+-- Name: vw_fceb_time_to_remediate; Type: VIEW; Schema: public; Owner: pe
+--
+
+CREATE VIEW public.vw_fceb_time_to_remediate AS
+ SELECT summary.month_seen,
+    summary.year_seen,
+    summary.organizations_uid,
+    summary.cyhy_db_name,
+    avg(
+        CASE
+            WHEN summary.is_kev THEN summary.remediation_time
+            ELSE NULL::interval
+        END) AS kev_ttr,
+    sum(
+        CASE
+            WHEN summary.is_kev THEN 1
+            ELSE 0
+        END) AS kev_count,
+    avg(
+        CASE
+            WHEN summary.is_critical THEN summary.remediation_time
+            ELSE NULL::interval
+        END) AS critical_ttr,
+    sum(
+        CASE
+            WHEN summary.is_critical THEN 1
+            ELSE 0
+        END) AS critical_count,
+    avg(
+        CASE
+            WHEN summary.is_high THEN summary.remediation_time
+            ELSE NULL::interval
+        END) AS high_ttr,
+    sum(
+        CASE
+            WHEN summary.is_high THEN 1
+            ELSE 0
+        END) AS high_count
+   FROM ( SELECT date_part('month'::text, ct.time_closed) AS month_seen,
+            date_part('year'::text, ct.time_closed) AS year_seen,
+            o.organizations_uid,
+            o.cyhy_db_name,
+            o.fceb,
+                CASE
+                    WHEN ((ct.cvss_base_score >= (7)::double precision) AND (ct.cvss_base_score < (9)::double precision)) THEN true
+                    ELSE false
+                END AS is_high,
+                CASE
+                    WHEN ((ct.cvss_base_score >= (9)::double precision) AND (ct.cvss_base_score <= (10)::double precision)) THEN true
+                    ELSE false
+                END AS is_critical,
+                CASE
+                    WHEN (ct.cve IN ( SELECT cyhy_kevs.kev
+                       FROM public.cyhy_kevs)) THEN true
+                    ELSE false
+                END AS is_kev,
+            (ct.time_closed - ct.time_opened) AS remediation_time
+           FROM (public.cyhy_tickets ct
+             JOIN public.organizations o ON ((o.organizations_uid = ct.organizations_uid)))
+          WHERE (((o.fceb = true) OR (o.fceb_child = true)) AND (o.retired IS FALSE) AND (ct.false_positive IS FALSE) AND (ct.time_closed IS NOT NULL))) summary
+  GROUP BY summary.month_seen, summary.year_seen, summary.organizations_uid, summary.cyhy_db_name;
+
+
+ALTER TABLE public.vw_fceb_time_to_remediate OWNER TO pe;
+
+--
+-- Name: vw_fceb_total_ips; Type: VIEW; Schema: public; Owner: pe
+--
+
+CREATE VIEW public.vw_fceb_total_ips AS
+ SELECT fceb_orgs.organizations_uid,
+    fceb_orgs.cyhy_db_name,
+    COALESCE(count(all_ips.ip), (0)::bigint) AS total_ips,
+    COALESCE(count(
+        CASE
+            WHEN ((all_ips.origin_cidr IS NULL) AND (all_ips.ip IS NOT NULL)) THEN 1
+            ELSE NULL::integer
+        END), (0)::bigint) AS ip_discovered,
+    COALESCE(count(
+        CASE
+            WHEN (all_ips.origin_cidr IS NOT NULL) THEN 1
+            ELSE NULL::integer
+        END), (0)::bigint) AS cidr_reported
+   FROM (( SELECT organizations.organizations_uid,
+            organizations.cyhy_db_name
+           FROM public.organizations
+          WHERE (((organizations.fceb = true) OR (organizations.fceb_child = true)) AND (organizations.retired IS FALSE))) fceb_orgs
+     LEFT JOIN ( SELECT cidrs_table.organizations_uid,
+            ips_table.ip,
+            ips_table.origin_cidr
+           FROM (public.ips ips_table
+             JOIN public.cidrs cidrs_table ON ((ips_table.origin_cidr = cidrs_table.cidr_uid)))
+          WHERE (ips_table.current IS TRUE)
+        UNION
+         SELECT rd.organizations_uid,
+            i.ip,
+            i.origin_cidr
+           FROM (((public.root_domains rd
+             JOIN public.sub_domains sd ON ((rd.root_domain_uid = sd.root_domain_uid)))
+             JOIN public.ips_subs si ON ((sd.sub_domain_uid = si.sub_domain_uid)))
+             JOIN public.ips i ON ((si.ip_hash = i.ip_hash)))
+          WHERE (i.current IS TRUE)) all_ips ON ((fceb_orgs.organizations_uid = all_ips.organizations_uid)))
+  GROUP BY fceb_orgs.organizations_uid, fceb_orgs.cyhy_db_name
+  ORDER BY COALESCE(count(all_ips.ip), (0)::bigint);
+
+
+ALTER TABLE public.vw_fceb_total_ips OWNER TO pe;
+
+--
 -- Name: vw_iscore_orgs_ip_counts; Type: VIEW; Schema: public; Owner: pe
 --
 
 CREATE VIEW public.vw_iscore_orgs_ip_counts AS
- SELECT fceb.organizations_uid,
-    fceb.cyhy_db_name,
-    COALESCE(rss.ip_count, '-1'::integer) AS ip_count,
-    COALESCE(rss.end_date, '0001-01-01'::date) AS end_date
+ SELECT fceb_list.organizations_uid,
+    fceb_list.cyhy_db_name,
+    COALESCE(agg_ips.num_ips, ('-1'::integer)::bigint) AS ip_count
    FROM (( SELECT organizations.organizations_uid,
             organizations.cyhy_db_name
            FROM public.organizations
-          WHERE ((organizations.fceb = true) AND (organizations.retired = false))) fceb
-     LEFT JOIN public.report_summary_stats rss ON ((fceb.organizations_uid = rss.organizations_uid)));
+          WHERE ((organizations.fceb = true) AND (organizations.retired = false))) fceb_list
+     LEFT JOIN ( SELECT fceb_ips.organizations_uid,
+            COALESCE(count(fceb_ips.ip), (0)::bigint) AS num_ips
+           FROM ( SELECT COALESCE(fceb.parent_org_uid, fceb.organizations_uid) AS organizations_uid,
+                    all_ips.ip
+                   FROM (( SELECT organizations.organizations_uid,
+                            organizations.parent_org_uid
+                           FROM public.organizations
+                          WHERE (((organizations.fceb = true) OR (organizations.fceb_child = true)) AND (organizations.retired = false))) fceb
+                     LEFT JOIN ( SELECT cidrs_table.organizations_uid,
+                            ips_table.ip
+                           FROM (public.ips ips_table
+                             JOIN public.cidrs cidrs_table ON ((ips_table.origin_cidr = cidrs_table.cidr_uid)))
+                        UNION
+                         SELECT rd.organizations_uid,
+                            i.ip
+                           FROM (((public.root_domains rd
+                             JOIN public.sub_domains sd ON ((rd.root_domain_uid = sd.root_domain_uid)))
+                             JOIN public.ips_subs si ON ((sd.sub_domain_uid = si.sub_domain_uid)))
+                             JOIN public.ips i ON ((si.ip_hash = i.ip_hash)))) all_ips ON ((fceb.organizations_uid = all_ips.organizations_uid)))) fceb_ips
+          GROUP BY fceb_ips.organizations_uid) agg_ips ON ((fceb_list.organizations_uid = agg_ips.organizations_uid)))
+  ORDER BY agg_ips.num_ips;
 
 
 ALTER TABLE public.vw_iscore_orgs_ip_counts OWNER TO pe;
@@ -3062,17 +4270,18 @@ COMMENT ON VIEW public.vw_iscore_orgs_ip_counts IS 'Retrieve list of all stakeho
 --
 
 CREATE VIEW public.vw_iscore_pe_breach AS
- SELECT fceb.organizations_uid,
+ SELECT orgs.organizations_uid,
+    orgs.parent_org_uid,
     COALESCE(breach_data.date, '0001-01-01'::date) AS date,
     COALESCE(breach_data.breach_count, 0) AS breach_count
-   FROM (( SELECT organizations.organizations_uid
-           FROM public.organizations
-          WHERE ((organizations.fceb = true) AND (organizations.retired = false))) fceb
+   FROM (( SELECT organizations.organizations_uid,
+            organizations.parent_org_uid
+           FROM public.organizations) orgs
      LEFT JOIN ( SELECT DISTINCT vw_breachcomp.organizations_uid,
             vw_breachcomp.breach_name,
             date(vw_breachcomp.modified_date) AS date,
             1 AS breach_count
-           FROM public.vw_breachcomp) breach_data ON ((fceb.organizations_uid = breach_data.organizations_uid)));
+           FROM public.vw_breachcomp) breach_data ON ((orgs.organizations_uid = breach_data.organizations_uid)));
 
 
 ALTER TABLE public.vw_iscore_pe_breach OWNER TO pe;
@@ -3089,18 +4298,19 @@ COMMENT ON VIEW public.vw_iscore_pe_breach IS 'Retrieve all relevant PE breach d
 --
 
 CREATE VIEW public.vw_iscore_pe_cred AS
- SELECT fceb.organizations_uid,
+ SELECT orgs.organizations_uid,
+    orgs.parent_org_uid,
     COALESCE(cred_data.date, '0001-01-01'::date) AS date,
     COALESCE(cred_data.password_creds, (0)::bigint) AS password_creds,
     COALESCE(cred_data.total_creds, (0)::bigint) AS total_creds
-   FROM (( SELECT organizations.organizations_uid
-           FROM public.organizations
-          WHERE ((organizations.fceb = true) AND (organizations.retired = false))) fceb
+   FROM (( SELECT organizations.organizations_uid,
+            organizations.parent_org_uid
+           FROM public.organizations) orgs
      LEFT JOIN ( SELECT vw_breachcomp_credsbydate.organizations_uid,
             vw_breachcomp_credsbydate.password_included AS password_creds,
             (vw_breachcomp_credsbydate.no_password + vw_breachcomp_credsbydate.password_included) AS total_creds,
             vw_breachcomp_credsbydate.mod_date AS date
-           FROM public.vw_breachcomp_credsbydate) cred_data ON ((fceb.organizations_uid = cred_data.organizations_uid)));
+           FROM public.vw_breachcomp_credsbydate) cred_data ON ((orgs.organizations_uid = cred_data.organizations_uid)));
 
 
 ALTER TABLE public.vw_iscore_pe_cred OWNER TO pe;
@@ -3118,57 +4328,58 @@ COMMENT ON VIEW public.vw_iscore_pe_cred IS 'Retrieve all relevant PE credential
 
 CREATE VIEW public.vw_iscore_pe_darkweb AS
  SELECT dw_data.organizations_uid,
+    dw_data.parent_org_uid,
     dw_data.alert_type,
     dw_data.date,
     dw_data."Count"
-   FROM ( SELECT fceb.organizations_uid,
+   FROM ( SELECT orgs.organizations_uid,
+            orgs.parent_org_uid,
             'MENTION'::text AS alert_type,
             COALESCE(vw_darkweb_mentionsbydate.date, '0001-01-01'::date) AS date,
             COALESCE(vw_darkweb_mentionsbydate."Count", (0)::bigint) AS "Count"
            FROM (( SELECT organizations.organizations_uid,
-                    organizations.cyhy_db_name
-                   FROM public.organizations
-                  WHERE ((organizations.fceb = true) AND (organizations.retired = false))) fceb
-             LEFT JOIN public.vw_darkweb_mentionsbydate ON ((fceb.organizations_uid = vw_darkweb_mentionsbydate.organizations_uid)))
+                    organizations.parent_org_uid
+                   FROM public.organizations) orgs
+             LEFT JOIN public.vw_darkweb_mentionsbydate ON ((orgs.organizations_uid = vw_darkweb_mentionsbydate.organizations_uid)))
         UNION ALL
-         SELECT fceb.organizations_uid,
+         SELECT orgs.organizations_uid,
+            orgs.parent_org_uid,
             'POTENTIAL_THREAT'::text AS alert_type,
             COALESCE(threats.date, '0001-01-01'::date) AS date,
             COALESCE(threats."Count", 0) AS "Count"
            FROM (( SELECT organizations.organizations_uid,
-                    organizations.cyhy_db_name
-                   FROM public.organizations
-                  WHERE ((organizations.fceb = true) AND (organizations.retired = false))) fceb
+                    organizations.parent_org_uid
+                   FROM public.organizations) orgs
              LEFT JOIN ( SELECT vw_darkweb_potentialthreats.organizations_uid,
                     vw_darkweb_potentialthreats.date,
                     1 AS "Count"
-                   FROM public.vw_darkweb_potentialthreats) threats ON ((fceb.organizations_uid = threats.organizations_uid)))
+                   FROM public.vw_darkweb_potentialthreats) threats ON ((orgs.organizations_uid = threats.organizations_uid)))
         UNION ALL
-         SELECT fceb.organizations_uid,
+         SELECT orgs.organizations_uid,
+            orgs.parent_org_uid,
             'INVITE_ONLY'::text AS alert_type,
             COALESCE(invites.date, '0001-01-01'::date) AS date,
             COALESCE(invites."Count", 0) AS "Count"
            FROM (( SELECT organizations.organizations_uid,
-                    organizations.cyhy_db_name
-                   FROM public.organizations
-                  WHERE ((organizations.fceb = true) AND (organizations.retired = false))) fceb
+                    organizations.parent_org_uid
+                   FROM public.organizations) orgs
              LEFT JOIN ( SELECT vw_darkweb_inviteonlymarkets.organizations_uid,
                     vw_darkweb_inviteonlymarkets.date,
                     1 AS "Count"
-                   FROM public.vw_darkweb_inviteonlymarkets) invites ON ((fceb.organizations_uid = invites.organizations_uid)))
+                   FROM public.vw_darkweb_inviteonlymarkets) invites ON ((orgs.organizations_uid = invites.organizations_uid)))
         UNION ALL
-         SELECT fceb.organizations_uid,
+         SELECT orgs.organizations_uid,
+            orgs.parent_org_uid,
             'ASSET'::text AS alert_type,
             COALESCE(assets.date, '0001-01-01'::date) AS date,
             COALESCE(assets."Count", 0) AS "Count"
            FROM (( SELECT organizations.organizations_uid,
-                    organizations.cyhy_db_name
-                   FROM public.organizations
-                  WHERE ((organizations.fceb = true) AND (organizations.retired = false))) fceb
+                    organizations.parent_org_uid
+                   FROM public.organizations) orgs
              LEFT JOIN ( SELECT vw_darkweb_assetalerts.organizations_uid,
                     vw_darkweb_assetalerts.date,
                     1 AS "Count"
-                   FROM public.vw_darkweb_assetalerts) assets ON ((fceb.organizations_uid = assets.organizations_uid)))) dw_data;
+                   FROM public.vw_darkweb_assetalerts) assets ON ((orgs.organizations_uid = assets.organizations_uid)))) dw_data;
 
 
 ALTER TABLE public.vw_iscore_pe_darkweb OWNER TO pe;
@@ -3215,16 +4426,16 @@ ALTER TABLE public.vw_shodanvulns_suspected OWNER TO pe;
 --
 
 CREATE VIEW public.vw_iscore_pe_protocol AS
- SELECT fceb.organizations_uid,
+ SELECT orgs.organizations_uid,
+    orgs.parent_org_uid,
     protocol_data.port,
     protocol_data.ip,
     protocol_data.protocol,
     protocol_data.protocol_type,
     protocol_data.date
    FROM (( SELECT organizations.organizations_uid,
-            organizations.cyhy_db_name
-           FROM public.organizations
-          WHERE ((organizations.fceb = true) AND (organizations.retired = false))) fceb
+            organizations.parent_org_uid
+           FROM public.organizations) orgs
      JOIN ( SELECT vw_shodanvulns_suspected.organizations_uid,
             vw_shodanvulns_suspected.port,
             vw_shodanvulns_suspected.ip,
@@ -3243,7 +4454,7 @@ CREATE VIEW public.vw_iscore_pe_protocol AS
            FROM public.vw_shodanvulns_suspected
           WHERE (NOT (vw_shodanvulns_suspected.protocol IN ( SELECT DISTINCT vw_shodanvulns_suspected_1.protocol
                    FROM public.vw_shodanvulns_suspected vw_shodanvulns_suspected_1
-                  WHERE (vw_shodanvulns_suspected_1.type = 'Insecure Protocol'::text))))) protocol_data ON ((fceb.organizations_uid = protocol_data.organizations_uid)));
+                  WHERE (vw_shodanvulns_suspected_1.type = 'Insecure Protocol'::text))))) protocol_data ON ((orgs.organizations_uid = protocol_data.organizations_uid)));
 
 
 ALTER TABLE public.vw_iscore_pe_protocol OWNER TO pe;
@@ -3299,33 +4510,29 @@ ALTER TABLE public.vw_shodanvulns_verified OWNER TO pe;
 --
 
 CREATE VIEW public.vw_iscore_pe_vuln AS
- SELECT vuln_data.organizations_uid,
-    vuln_data.date,
-    vuln_data.cve_name,
-    COALESCE(cve_info.cvss_3_0, cve_info.cvss_2_0) AS cvss_score
-   FROM (( SELECT fceb.organizations_uid,
-            unverif_vulns.date,
-            unverif_vulns.unverif_cve AS cve_name
-           FROM (( SELECT organizations.organizations_uid
-                   FROM public.organizations
-                  WHERE ((organizations.fceb = true) AND (organizations.retired = false))) fceb
-             LEFT JOIN ( SELECT DISTINCT vw_shodanvulns_suspected.organizations_uid,
+ SELECT orgs.organizations_uid,
+    orgs.parent_org_uid,
+    all_vulns.date,
+    all_vulns.cve AS cve_name,
+    all_vulns.cvss_score
+   FROM (( SELECT organizations.organizations_uid,
+            organizations.parent_org_uid
+           FROM public.organizations) orgs
+     LEFT JOIN ( SELECT all_cves.organizations_uid,
+            all_cves.date,
+            all_cves.cve,
+            COALESCE(cve_info.cvss_3_0, cve_info.cvss_2_0) AS cvss_score
+           FROM (( SELECT DISTINCT vw_shodanvulns_suspected.organizations_uid,
                     date(vw_shodanvulns_suspected."timestamp") AS date,
-                    unnest(vw_shodanvulns_suspected.potential_vulns) AS unverif_cve
+                    unnest(vw_shodanvulns_suspected.potential_vulns) AS cve
                    FROM public.vw_shodanvulns_suspected
-                  WHERE (vw_shodanvulns_suspected.type <> 'Insecure Protocol'::text)) unverif_vulns ON ((fceb.organizations_uid = unverif_vulns.organizations_uid)))
-        UNION
-         SELECT fceb.organizations_uid,
-            (verif_vulns.date)::date AS date,
-            verif_vulns.verif_cve AS cve_name
-           FROM (( SELECT organizations.organizations_uid
-                   FROM public.organizations
-                  WHERE ((organizations.fceb = true) AND (organizations.retired = false))) fceb
-             LEFT JOIN ( SELECT DISTINCT vw_shodanvulns_verified.organizations_uid,
+                  WHERE (vw_shodanvulns_suspected.type <> 'Insecure Protocol'::text)
+                UNION
+                 SELECT DISTINCT vw_shodanvulns_verified.organizations_uid,
                     vw_shodanvulns_verified."timestamp" AS date,
-                    vw_shodanvulns_verified.cve AS verif_cve
-                   FROM public.vw_shodanvulns_verified) verif_vulns ON ((fceb.organizations_uid = verif_vulns.organizations_uid)))) vuln_data
-     JOIN public.cve_info ON ((vuln_data.cve_name = cve_info.cve_name)));
+                    vw_shodanvulns_verified.cve
+                   FROM public.vw_shodanvulns_verified) all_cves
+             JOIN public.cve_info ON ((all_cves.cve = cve_info.cve_name)))) all_vulns ON ((orgs.organizations_uid = all_vulns.organizations_uid)));
 
 
 ALTER TABLE public.vw_iscore_pe_vuln OWNER TO pe;
@@ -3342,11 +4549,18 @@ COMMENT ON VIEW public.vw_iscore_pe_vuln IS 'Retrieve all relevant PE vulnerabil
 --
 
 CREATE VIEW public.vw_iscore_vs_vuln AS
- SELECT cyhy_vuln_scans.organizations_uid,
-    cyhy_vuln_scans.last_seen AS date,
-    cyhy_vuln_scans.cve AS cve_name,
-    cyhy_vuln_scans.cvss_base_score AS cvss_score
-   FROM public.cyhy_vuln_scans;
+ SELECT orgs.organizations_uid,
+    orgs.parent_org_uid,
+    vs_vulns.cve_name,
+    vs_vulns.cvss_score
+   FROM (( SELECT organizations.organizations_uid,
+            organizations.parent_org_uid
+           FROM public.organizations) orgs
+     LEFT JOIN ( SELECT cyhy_tickets.organizations_uid,
+            cyhy_tickets.cve AS cve_name,
+            cyhy_tickets.cvss_base_score AS cvss_score
+           FROM public.cyhy_tickets
+          WHERE ((cyhy_tickets.false_positive = false) AND (cyhy_tickets.time_closed IS NULL))) vs_vulns ON ((orgs.organizations_uid = vs_vulns.organizations_uid)));
 
 
 ALTER TABLE public.vw_iscore_vs_vuln OWNER TO pe;
@@ -3356,6 +4570,36 @@ ALTER TABLE public.vw_iscore_vs_vuln OWNER TO pe;
 --
 
 COMMENT ON VIEW public.vw_iscore_vs_vuln IS 'Retrieve all VS vulnerability data needed for the calculation of the I-Score';
+
+
+--
+-- Name: vw_iscore_vs_vuln_prev; Type: VIEW; Schema: public; Owner: pe
+--
+
+CREATE VIEW public.vw_iscore_vs_vuln_prev AS
+ SELECT orgs.organizations_uid,
+    orgs.parent_org_uid,
+    vs_vulns.cve_name,
+    vs_vulns.cvss_score,
+    vs_vulns.time_closed
+   FROM (( SELECT organizations.organizations_uid,
+            organizations.parent_org_uid
+           FROM public.organizations) orgs
+     LEFT JOIN ( SELECT cyhy_tickets.organizations_uid,
+            cyhy_tickets.cve AS cve_name,
+            cyhy_tickets.cvss_base_score AS cvss_score,
+            cyhy_tickets.time_closed
+           FROM public.cyhy_tickets
+          WHERE ((cyhy_tickets.false_positive = false) AND (cyhy_tickets.time_closed IS NOT NULL))) vs_vulns ON ((orgs.organizations_uid = vs_vulns.organizations_uid)));
+
+
+ALTER TABLE public.vw_iscore_vs_vuln_prev OWNER TO pe;
+
+--
+-- Name: VIEW vw_iscore_vs_vuln_prev; Type: COMMENT; Schema: public; Owner: pe
+--
+
+COMMENT ON VIEW public.vw_iscore_vs_vuln_prev IS 'Retrieve all historical (previous period) VS vuln info for the calculation of the I-Score. Filter results for time_closed within previous report period.';
 
 
 --
@@ -3385,13 +4629,23 @@ ALTER TABLE public.was_findings OWNER TO pe;
 --
 
 CREATE VIEW public.vw_iscore_was_vuln AS
- SELECT was_findings.was_org_id AS org_id,
-    was_findings.last_detected AS date,
-    ''::text AS cve_name,
-    was_findings.base_score AS cvss_score,
-    was_findings.owasp_category
-   FROM public.was_findings
-  WHERE (((was_findings.finding_type)::text = 'VULNERABILITY'::text) AND ((was_findings.fstatus)::text = ANY (ARRAY[('NEW'::character varying)::text, ('ACTIVE'::character varying)::text, ('REOPENED'::character varying)::text])));
+ SELECT orgs.organizations_uid,
+    orgs.parent_org_uid,
+    was_vulns.date,
+    was_vulns.cve_name,
+    was_vulns.cvss_score,
+    was_vulns.owasp_category
+   FROM (( SELECT organizations.organizations_uid,
+            organizations.cyhy_db_name,
+            organizations.parent_org_uid
+           FROM public.organizations) orgs
+     LEFT JOIN ( SELECT was_findings.was_org_id AS org_id,
+            was_findings.last_detected AS date,
+            ''::text AS cve_name,
+            was_findings.base_score AS cvss_score,
+            was_findings.owasp_category
+           FROM public.was_findings
+          WHERE (((was_findings.finding_type)::text = 'VULNERABILITY'::text) AND ((was_findings.fstatus)::text = ANY (ARRAY[('NEW'::character varying)::text, ('ACTIVE'::character varying)::text, ('REOPENED'::character varying)::text])))) was_vulns ON ((orgs.cyhy_db_name = was_vulns.org_id)));
 
 
 ALTER TABLE public.vw_iscore_was_vuln OWNER TO pe;
@@ -3404,97 +4658,63 @@ COMMENT ON VIEW public.vw_iscore_was_vuln IS 'Retrieve all relevant WAS vulnerab
 
 
 --
--- Name: vw_orgs_total_cidrs; Type: VIEW; Schema: public; Owner: pe
+-- Name: was_history; Type: TABLE; Schema: public; Owner: pe
 --
 
-CREATE VIEW public.vw_orgs_total_cidrs AS
- SELECT reported_orgs.organizations_uid,
-    COALESCE(cidr_counts.count, (0)::bigint) AS count
-   FROM (( SELECT organizations.organizations_uid
-           FROM public.organizations
-          WHERE (organizations.report_on = true)) reported_orgs
-     LEFT JOIN ( SELECT c.organizations_uid,
-            count(c.network) AS count
-           FROM public.cidrs c
-          GROUP BY c.organizations_uid) cidr_counts ON ((reported_orgs.organizations_uid = cidr_counts.organizations_uid)));
+CREATE TABLE public.was_history (
+    was_org_id text NOT NULL,
+    date_scanned date NOT NULL,
+    vuln_cnt integer,
+    vuln_webapp_cnt integer,
+    web_app_cnt integer,
+    high_rem_time integer,
+    crit_rem_time integer,
+    crit_vuln_cnt integer,
+    high_vuln_cnt integer,
+    report_period date,
+    high_rem_cnt integer,
+    crit_rem_cnt integer
+);
 
 
-ALTER TABLE public.vw_orgs_total_cidrs OWNER TO pe;
-
---
--- Name: vw_orgs_total_domains; Type: VIEW; Schema: public; Owner: pe
---
-
-CREATE VIEW public.vw_orgs_total_domains AS
- SELECT root_table.organizations_uid,
-    root_table.cyhy_db_name,
-    root_table.num_root_domain,
-    sub_table.num_sub_domain
-   FROM (( SELECT reported_orgs.organizations_uid,
-            reported_orgs.cyhy_db_name,
-            COALESCE(root_counts.num_root_domain, (0)::bigint) AS num_root_domain
-           FROM (( SELECT organizations.organizations_uid,
-                    organizations.cyhy_db_name
-                   FROM public.organizations
-                  WHERE (organizations.report_on = true)) reported_orgs
-             LEFT JOIN ( SELECT root_table_1.organizations_uid,
-                    count(DISTINCT root_table_1.root_domain) AS num_root_domain
-                   FROM public.root_domains root_table_1
-                  GROUP BY root_table_1.organizations_uid) root_counts ON ((reported_orgs.organizations_uid = root_counts.organizations_uid)))) root_table
-     JOIN ( SELECT reported_orgs.organizations_uid,
-            reported_orgs.cyhy_db_name,
-            COALESCE(sub_counts.num_sub_domain, (0)::bigint) AS num_sub_domain
-           FROM (( SELECT organizations.organizations_uid,
-                    organizations.cyhy_db_name
-                   FROM public.organizations
-                  WHERE (organizations.report_on = true)) reported_orgs
-             LEFT JOIN ( SELECT root_table_1.organizations_uid,
-                    count(DISTINCT sub_table_1.sub_domain) AS num_sub_domain
-                   FROM (public.sub_domains sub_table_1
-                     JOIN public.root_domains root_table_1 ON ((sub_table_1.root_domain_uid = root_table_1.root_domain_uid)))
-                  GROUP BY root_table_1.organizations_uid) sub_counts ON ((reported_orgs.organizations_uid = sub_counts.organizations_uid)))) sub_table ON ((root_table.organizations_uid = sub_table.organizations_uid)))
-  ORDER BY sub_table.num_sub_domain, root_table.num_root_domain;
-
-
-ALTER TABLE public.vw_orgs_total_domains OWNER TO pe;
+ALTER TABLE public.was_history OWNER TO pe;
 
 --
--- Name: VIEW vw_orgs_total_domains; Type: COMMENT; Schema: public; Owner: pe
+-- Name: vw_iscore_was_vuln_prev; Type: VIEW; Schema: public; Owner: pe
 --
 
-COMMENT ON VIEW public.vw_orgs_total_domains IS 'Gets the total number of root and sub domains for all orgs.';
+CREATE VIEW public.vw_iscore_was_vuln_prev AS
+ SELECT orgs.organizations_uid,
+    orgs.parent_org_uid,
+    was_vulns_prev.vuln_cnt AS was_total_vulns_prev,
+    was_vulns_prev.date
+   FROM (( SELECT organizations.organizations_uid,
+            organizations.cyhy_db_name,
+            organizations.parent_org_uid
+           FROM public.organizations) orgs
+     LEFT JOIN ( SELECT was_history.was_org_id AS org_id,
+            was_history.vuln_cnt,
+            was_history.date_scanned AS date
+           FROM public.was_history) was_vulns_prev ON ((orgs.cyhy_db_name = was_vulns_prev.org_id)));
+
+
+ALTER TABLE public.vw_iscore_was_vuln_prev OWNER TO pe;
+
+--
+-- Name: VIEW vw_iscore_was_vuln_prev; Type: COMMENT; Schema: public; Owner: pe
+--
+
+COMMENT ON VIEW public.vw_iscore_was_vuln_prev IS 'Retrieve historical (previous report period) WAS vuln data for I-Score calculation. Filter results by previous report period range.';
 
 
 --
--- Name: vw_orgs_total_foreign_ips; Type: VIEW; Schema: public; Owner: pe
+-- Name: vw_orgs_all_ips; Type: VIEW; Schema: public; Owner: pe
 --
 
-CREATE VIEW public.vw_orgs_total_foreign_ips AS
- SELECT reported_orgs.organizations_uid,
-    COALESCE(foreign_ips.num_foreign_ips, (0)::bigint) AS num_foreign_ips
-   FROM (( SELECT organizations.organizations_uid
-           FROM public.organizations
-          WHERE (organizations.report_on = true)) reported_orgs
-     LEFT JOIN ( SELECT sa.organizations_uid,
-            count(
-                CASE
-                    WHEN ((sa.country_code <> 'US'::text) AND (sa.country_code IS NOT NULL)) THEN 1
-                    ELSE NULL::integer
-                END) AS num_foreign_ips
-           FROM public.shodan_assets sa
-          GROUP BY sa.organizations_uid) foreign_ips ON ((reported_orgs.organizations_uid = foreign_ips.organizations_uid)));
-
-
-ALTER TABLE public.vw_orgs_total_foreign_ips OWNER TO pe;
-
---
--- Name: vw_orgs_total_ips; Type: VIEW; Schema: public; Owner: pe
---
-
-CREATE VIEW public.vw_orgs_total_ips AS
+CREATE VIEW public.vw_orgs_all_ips AS
  SELECT reported_orgs.organizations_uid,
     reported_orgs.cyhy_db_name,
-    COALESCE(count(all_ips.ip), (0)::bigint) AS num_ips
+    array_agg(all_ips.ip) AS ip_addresses
    FROM (( SELECT organizations.organizations_uid,
             organizations.cyhy_db_name
            FROM public.organizations
@@ -3511,97 +4731,10 @@ CREATE VIEW public.vw_orgs_total_ips AS
              JOIN public.ips_subs si ON ((sd.sub_domain_uid = si.sub_domain_uid)))
              JOIN public.ips i ON ((si.ip_hash = i.ip_hash)))) all_ips ON ((reported_orgs.organizations_uid = all_ips.organizations_uid)))
   GROUP BY reported_orgs.organizations_uid, reported_orgs.cyhy_db_name
-  ORDER BY COALESCE(count(all_ips.ip), (0)::bigint);
+  ORDER BY reported_orgs.organizations_uid, reported_orgs.cyhy_db_name;
 
 
-ALTER TABLE public.vw_orgs_total_ips OWNER TO pe;
-
---
--- Name: VIEW vw_orgs_total_ips; Type: COMMENT; Schema: public; Owner: pe
---
-
-COMMENT ON VIEW public.vw_orgs_total_ips IS 'Gets the total number of ips associated with each organization.';
-
-
---
--- Name: vw_orgs_total_ports; Type: VIEW; Schema: public; Owner: pe
---
-
-CREATE VIEW public.vw_orgs_total_ports AS
- SELECT reported_orgs.organizations_uid,
-    reported_orgs.cyhy_db_name,
-    COALESCE(count(all_ports.port), (0)::bigint) AS num_ports
-   FROM (( SELECT organizations.organizations_uid,
-            organizations.cyhy_db_name
-           FROM public.organizations
-          WHERE (organizations.report_on = true)) reported_orgs
-     LEFT JOIN ( SELECT DISTINCT assets.organizations_uid,
-            assets.ip,
-            assets.port
-           FROM public.shodan_assets assets
-        UNION
-         SELECT DISTINCT vulns.organizations_uid,
-            vulns.ip,
-            (vulns.port)::integer AS port
-           FROM public.shodan_vulns vulns
-        UNION
-         SELECT DISTINCT unverif_vulns.organizations_uid,
-            unverif_vulns.ip,
-            unverif_vulns.port
-           FROM public.old_shodan_insecure_protocols_unverified_vulns unverif_vulns) all_ports ON ((reported_orgs.organizations_uid = all_ports.organizations_uid)))
-  GROUP BY reported_orgs.organizations_uid, reported_orgs.cyhy_db_name
-  ORDER BY COALESCE(count(all_ports.port), (0)::bigint);
-
-
-ALTER TABLE public.vw_orgs_total_ports OWNER TO pe;
-
---
--- Name: VIEW vw_orgs_total_ports; Type: COMMENT; Schema: public; Owner: pe
---
-
-COMMENT ON VIEW public.vw_orgs_total_ports IS 'Gets the total number of unique ports for every organization P&E reports on';
-
-
---
--- Name: vw_orgs_total_ports_protocols; Type: VIEW; Schema: public; Owner: pe
---
-
-CREATE VIEW public.vw_orgs_total_ports_protocols AS
- SELECT reported_orgs.organizations_uid,
-    COALESCE(protocols.port_protocol, (0)::bigint) AS port_protocol
-   FROM (( SELECT organizations.organizations_uid
-           FROM public.organizations
-          WHERE (organizations.report_on = true)) reported_orgs
-     LEFT JOIN ( SELECT t.organizations_uid,
-            count(*) AS port_protocol
-           FROM ( SELECT DISTINCT sa.port,
-                    sa.protocol,
-                    sa.organizations_uid
-                   FROM public.shodan_assets sa) t
-          GROUP BY t.organizations_uid) protocols ON ((reported_orgs.organizations_uid = protocols.organizations_uid)));
-
-
-ALTER TABLE public.vw_orgs_total_ports_protocols OWNER TO pe;
-
---
--- Name: vw_orgs_total_software; Type: VIEW; Schema: public; Owner: pe
---
-
-CREATE VIEW public.vw_orgs_total_software AS
- SELECT reported_orgs.organizations_uid,
-    COALESCE(software.num_software, (0)::bigint) AS num_software
-   FROM (( SELECT organizations.organizations_uid
-           FROM public.organizations
-          WHERE (organizations.report_on = true)) reported_orgs
-     LEFT JOIN ( SELECT t.organizations_uid,
-            count(*) AS num_software
-           FROM ( SELECT DISTINCT sa.product,
-                    sa.organizations_uid
-                   FROM public.shodan_assets sa) t
-          GROUP BY t.organizations_uid) software ON ((reported_orgs.organizations_uid = software.organizations_uid)));
-
-
-ALTER TABLE public.vw_orgs_total_software OWNER TO pe;
+ALTER TABLE public.vw_orgs_all_ips OWNER TO pe;
 
 --
 -- Name: vw_orgs_attacksurface; Type: VIEW; Schema: public; Owner: pe
@@ -3665,20 +4798,170 @@ COMMENT ON VIEW public.vw_orgs_contact_info IS 'Gets the contact info for all PE
 
 
 --
--- Name: was_summary; Type: TABLE; Schema: public; Owner: pe
+-- Name: vw_scorecard_orgs; Type: VIEW; Schema: public; Owner: pe
 --
 
-CREATE TABLE public.was_summary (
-    customer_id uuid,
-    was_org_id text,
-    webapp_count integer,
-    active_vuln_count integer,
-    webapp_with_vulns_count integer,
-    last_updated date
+CREATE VIEW public.vw_scorecard_orgs AS
+ WITH RECURSIVE org_queries AS (
+         WITH RECURSIVE sector_queries AS (
+                 SELECT s.sector_uid,
+                    s.id,
+                    s.acronym,
+                    s.name,
+                    s.email,
+                    s.contact_name,
+                    s.retired,
+                    s.first_seen,
+                    s.last_seen,
+                    s.run_scorecards,
+                    s.password,
+                    s.parent_sector_uid
+                   FROM public.sectors s
+                  WHERE (s.run_scorecards = true)
+                UNION ALL
+                 SELECT e.sector_uid,
+                    e.id,
+                    e.acronym,
+                    e.name,
+                    e.email,
+                    e.contact_name,
+                    e.retired,
+                    e.first_seen,
+                    e.last_seen,
+                    e.run_scorecards,
+                    e.password,
+                    e.parent_sector_uid
+                   FROM (public.sectors e
+                     JOIN sector_queries c ON ((e.parent_sector_uid = c.sector_uid)))
+                )
+         SELECT o.organizations_uid,
+            o.cyhy_db_name,
+            cq.id AS sector_id,
+            o.parent_org_uid,
+            o.retired,
+            o.receives_cyhy_report,
+            o.is_parent,
+            o.fceb,
+            o.fceb_child,
+            o.name,
+            o.cyhy_period_start
+           FROM ((sector_queries cq
+             JOIN public.sectors_orgs so ON ((so.sector_uid = cq.sector_uid)))
+             JOIN public.organizations o ON ((o.organizations_uid = so.organizations_uid)))
+        UNION ALL
+         SELECT co.organizations_uid,
+            co.cyhy_db_name,
+            oq_1.sector_id,
+            co.parent_org_uid,
+            co.retired,
+            co.receives_cyhy_report,
+            co.is_parent,
+            co.fceb,
+            co.fceb_child,
+            co.name,
+            co.cyhy_period_start
+           FROM (public.organizations co
+             JOIN org_queries oq_1 ON ((oq_1.organizations_uid = co.parent_org_uid)))
+        )
+ SELECT DISTINCT oq.organizations_uid,
+    oq.cyhy_db_name,
+    oq.sector_id,
+    oq.parent_org_uid,
+    oq.retired,
+    oq.receives_cyhy_report,
+    oq.is_parent,
+    oq.fceb,
+    oq.fceb_child,
+    oq.name,
+    oq.cyhy_period_start
+   FROM org_queries oq
+  WHERE (oq.retired <> true);
+
+
+ALTER TABLE public.vw_scorecard_orgs OWNER TO pe;
+
+--
+-- Name: vw_sector_time_to_remediate; Type: VIEW; Schema: public; Owner: pe
+--
+
+CREATE VIEW public.vw_sector_time_to_remediate AS
+ SELECT summary.month_seen,
+    summary.year_seen,
+    summary.sector_id,
+    summary.organizations_uid,
+    summary.cyhy_db_name,
+    avg(
+        CASE
+            WHEN summary.is_kev THEN summary.remediation_time
+            ELSE NULL::interval
+        END) AS kev_ttr,
+    sum(
+        CASE
+            WHEN summary.is_kev THEN 1
+            ELSE 0
+        END) AS kev_count,
+    avg(
+        CASE
+            WHEN summary.is_critical THEN summary.remediation_time
+            ELSE NULL::interval
+        END) AS critical_ttr,
+    sum(
+        CASE
+            WHEN summary.is_critical THEN 1
+            ELSE 0
+        END) AS critical_count,
+    avg(
+        CASE
+            WHEN summary.is_high THEN summary.remediation_time
+            ELSE NULL::interval
+        END) AS high_ttr,
+    sum(
+        CASE
+            WHEN summary.is_high THEN 1
+            ELSE 0
+        END) AS high_count
+   FROM ( SELECT date_part('month'::text, ct.time_closed) AS month_seen,
+            date_part('year'::text, ct.time_closed) AS year_seen,
+            o.organizations_uid,
+            o.cyhy_db_name,
+            vso.sector_id,
+            o.fceb,
+                CASE
+                    WHEN ((ct.cvss_base_score >= (7)::double precision) AND (ct.cvss_base_score < (9)::double precision)) THEN true
+                    ELSE false
+                END AS is_high,
+                CASE
+                    WHEN ((ct.cvss_base_score >= (9)::double precision) AND (ct.cvss_base_score <= (10)::double precision)) THEN true
+                    ELSE false
+                END AS is_critical,
+                CASE
+                    WHEN (ct.cve IN ( SELECT cyhy_kevs.kev
+                       FROM public.cyhy_kevs)) THEN true
+                    ELSE false
+                END AS is_kev,
+            (ct.time_closed - ct.time_opened) AS remediation_time
+           FROM ((public.cyhy_tickets ct
+             JOIN public.organizations o ON ((o.organizations_uid = ct.organizations_uid)))
+             JOIN public.vw_scorecard_orgs vso ON ((o.organizations_uid = vso.organizations_uid)))
+          WHERE ((o.retired IS FALSE) AND (ct.false_positive IS FALSE) AND (ct.time_closed IS NOT NULL))) summary
+  GROUP BY summary.month_seen, summary.year_seen, summary.sector_id, summary.organizations_uid, summary.cyhy_db_name;
+
+
+ALTER TABLE public.vw_sector_time_to_remediate OWNER TO pe;
+
+--
+-- Name: was_map; Type: TABLE; Schema: public; Owner: pe
+--
+
+CREATE TABLE public.was_map (
+    was_org_id text NOT NULL,
+    pe_org_id uuid,
+    report_on boolean,
+    last_scanned date
 );
 
 
-ALTER TABLE public.was_summary OWNER TO pe;
+ALTER TABLE public.was_map OWNER TO pe;
 
 --
 -- Name: was_tracker_customerdata; Type: TABLE; Schema: public; Owner: pe
@@ -3701,9 +4984,9 @@ CREATE TABLE public.was_tracker_customerdata (
     onboarding_date text NOT NULL,
     no_of_web_apps integer NOT NULL,
     no_web_apps_last_updated text,
-    elections text,
-    fceb text,
-    special_report text,
+    elections boolean,
+    fceb boolean,
+    special_report boolean,
     report_password text,
     child_tags text
 );
@@ -3731,6 +5014,28 @@ CREATE TABLE public.web_assets (
 
 
 ALTER TABLE public.web_assets OWNER TO pe;
+
+--
+-- Name: weekly_statuses; Type: TABLE; Schema: public; Owner: pe
+--
+
+CREATE TABLE public.weekly_statuses (
+    weekly_status_uid uuid DEFAULT public.uuid_generate_v1() NOT NULL,
+    user_status text NOT NULL,
+    key_accomplishments text,
+    ongoing_task text NOT NULL,
+    upcoming_task text NOT NULL,
+    obstacles text,
+    non_standard_meeting text,
+    deliverables text,
+    pto text,
+    week_ending date NOT NULL,
+    notes text,
+    "statusComplete" integer
+);
+
+
+ALTER TABLE public.weekly_statuses OWNER TO pe;
 
 --
 -- Name: Users Users_api_key_key; Type: CONSTRAINT; Schema: public; Owner: pe
@@ -3933,6 +5238,14 @@ ALTER TABLE ONLY public.cve_info
 
 
 --
+-- Name: cyhy_certs cyhy_certs_uid_pkey; Type: CONSTRAINT; Schema: public; Owner: pe
+--
+
+ALTER TABLE ONLY public.cyhy_certs
+    ADD CONSTRAINT cyhy_certs_uid_pkey PRIMARY KEY (cyhy_certs_uid);
+
+
+--
 -- Name: cyhy_contacts cyhy_contacts_org_id_contact_type_email_name_key; Type: CONSTRAINT; Schema: public; Owner: pe
 --
 
@@ -3965,6 +5278,14 @@ ALTER TABLE ONLY public.cyhy_db_assets
 
 
 --
+-- Name: cyhy_domains cyhy_domains_uid_pkey; Type: CONSTRAINT; Schema: public; Owner: pe
+--
+
+ALTER TABLE ONLY public.cyhy_domains
+    ADD CONSTRAINT cyhy_domains_uid_pkey PRIMARY KEY (cyhy_domains_uid);
+
+
+--
 -- Name: cyhy_https_scan cyhy_https_scan_uid_pkey; Type: CONSTRAINT; Schema: public; Owner: pe
 --
 
@@ -3978,6 +5299,14 @@ ALTER TABLE ONLY public.cyhy_https_scan
 
 ALTER TABLE ONLY public.cyhy_kevs
     ADD CONSTRAINT cyhy_kevd_uid_pkey PRIMARY KEY (cyhy_kevs_uid);
+
+
+--
+-- Name: cyhy_port_scans_new cyhy_port_scans_new_uid_pkey; Type: CONSTRAINT; Schema: public; Owner: pe
+--
+
+ALTER TABLE ONLY public.cyhy_port_scans_new
+    ADD CONSTRAINT cyhy_port_scans_new_uid_pkey PRIMARY KEY (cyhy_port_scans_uid);
 
 
 --
@@ -4205,6 +5534,14 @@ ALTER TABLE ONLY public.mentions
 
 
 --
+-- Name: cyhy_port_scans_new new_unique_cyhy_port_scans; Type: CONSTRAINT; Schema: public; Owner: pe
+--
+
+ALTER TABLE ONLY public.cyhy_port_scans_new
+    ADD CONSTRAINT new_unique_cyhy_port_scans UNIQUE (ip, port, service_name, report_period);
+
+
+--
 -- Name: org_type org_type_pkey; Type: CONSTRAINT; Schema: public; Owner: pe
 --
 
@@ -4258,6 +5595,30 @@ ALTER TABLE ONLY public.root_domains
 
 ALTER TABLE ONLY public.root_domains
     ADD CONSTRAINT root_domains_root_domain_organizations_uid_key UNIQUE (root_domain, organizations_uid);
+
+
+--
+-- Name: scorecard_summary_stats scorecard_summary_stats_pkey; Type: CONSTRAINT; Schema: public; Owner: pe
+--
+
+ALTER TABLE ONLY public.scorecard_summary_stats
+    ADD CONSTRAINT scorecard_summary_stats_pkey PRIMARY KEY (scorecard_summary_uid);
+
+
+--
+-- Name: sectors_orgs sectors_orgs_pkey; Type: CONSTRAINT; Schema: public; Owner: pe
+--
+
+ALTER TABLE ONLY public.sectors_orgs
+    ADD CONSTRAINT sectors_orgs_pkey PRIMARY KEY (sector_org_uid);
+
+
+--
+-- Name: sectors sectors_pkey; Type: CONSTRAINT; Schema: public; Owner: pe
+--
+
+ALTER TABLE ONLY public.sectors
+    ADD CONSTRAINT sectors_pkey PRIMARY KEY (sector_uid);
 
 
 --
@@ -4325,6 +5686,14 @@ ALTER TABLE ONLY public.sub_domains
 
 
 --
+-- Name: team_members team_members_pkey; Type: CONSTRAINT; Schema: public; Owner: pe
+--
+
+ALTER TABLE ONLY public.team_members
+    ADD CONSTRAINT team_members_pkey PRIMARY KEY (team_member_uid);
+
+
+--
 -- Name: top_cves top_cves_cve_id_date_key; Type: CONSTRAINT; Schema: public; Owner: pe
 --
 
@@ -4349,11 +5718,27 @@ ALTER TABLE ONLY public.topic_totals
 
 
 --
+-- Name: cyhy_certs unique_cyhy_cert; Type: CONSTRAINT; Schema: public; Owner: pe
+--
+
+ALTER TABLE ONLY public.cyhy_certs
+    ADD CONSTRAINT unique_cyhy_cert UNIQUE (cyhy_id, organizations_uid, sub_domain_uid);
+
+
+--
 -- Name: organizations unique_cyhy_db_name; Type: CONSTRAINT; Schema: public; Owner: pe
 --
 
 ALTER TABLE ONLY public.organizations
     ADD CONSTRAINT unique_cyhy_db_name UNIQUE (cyhy_db_name);
+
+
+--
+-- Name: cyhy_domains unique_cyhy_domain; Type: CONSTRAINT; Schema: public; Owner: pe
+--
+
+ALTER TABLE ONLY public.cyhy_domains
+    ADD CONSTRAINT unique_cyhy_domain UNIQUE (domain);
 
 
 --
@@ -4413,6 +5798,14 @@ ALTER TABLE ONLY public.dotgov_domains
 
 
 --
+-- Name: sectors unique_id; Type: CONSTRAINT; Schema: public; Owner: pe
+--
+
+ALTER TABLE ONLY public.sectors
+    ADD CONSTRAINT unique_id UNIQUE (id);
+
+
+--
 -- Name: org_id_map unique_id_map_unique; Type: CONSTRAINT; Schema: public; Owner: pe
 --
 
@@ -4442,6 +5835,22 @@ ALTER TABLE ONLY public.cidrs
 
 ALTER TABLE ONLY public.report_summary_stats
     ADD CONSTRAINT unique_report UNIQUE (organizations_uid, start_date);
+
+
+--
+-- Name: scorecard_summary_stats unique_scorecard; Type: CONSTRAINT; Schema: public; Owner: pe
+--
+
+ALTER TABLE ONLY public.scorecard_summary_stats
+    ADD CONSTRAINT unique_scorecard UNIQUE (organizations_uid, start_date, sector_name);
+
+
+--
+-- Name: sectors_orgs unique_sector_org; Type: CONSTRAINT; Schema: public; Owner: pe
+--
+
+ALTER TABLE ONLY public.sectors_orgs
+    ADD CONSTRAINT unique_sector_org UNIQUE (sector_uid, organizations_uid);
 
 
 --
@@ -4477,6 +5886,22 @@ ALTER TABLE ONLY public.was_findings
 
 
 --
+-- Name: was_history was_history_pkey; Type: CONSTRAINT; Schema: public; Owner: pe
+--
+
+ALTER TABLE ONLY public.was_history
+    ADD CONSTRAINT was_history_pkey PRIMARY KEY (was_org_id, date_scanned);
+
+
+--
+-- Name: was_map was_map_pkey; Type: CONSTRAINT; Schema: public; Owner: pe
+--
+
+ALTER TABLE ONLY public.was_map
+    ADD CONSTRAINT was_map_pkey PRIMARY KEY (was_org_id);
+
+
+--
 -- Name: was_summary was_summary_was_org_id_key; Type: CONSTRAINT; Schema: public; Owner: pe
 --
 
@@ -4506,6 +5931,14 @@ ALTER TABLE ONLY public.web_assets
 
 ALTER TABLE ONLY public.web_assets
     ADD CONSTRAINT web_assets_pkey PRIMARY KEY (asset_uid);
+
+
+--
+-- Name: weekly_statuses weekly_statuses_pkey; Type: CONSTRAINT; Schema: public; Owner: pe
+--
+
+ALTER TABLE ONLY public.weekly_statuses
+    ADD CONSTRAINT weekly_statuses_pkey PRIMARY KEY (weekly_status_uid);
 
 
 --
@@ -4611,6 +6044,13 @@ CREATE UNIQUE INDEX "ix_Users_email" ON public."Users" USING btree (email);
 --
 
 CREATE UNIQUE INDEX "ix_Users_username" ON public."Users" USING btree (username);
+
+
+--
+-- Name: weekly_statuses set_status_completed_and_week_ending_trigger; Type: TRIGGER; Schema: public; Owner: pe
+--
+
+CREATE TRIGGER set_status_completed_and_week_ending_trigger BEFORE INSERT ON public.weekly_statuses FOR EACH ROW EXECUTE FUNCTION public.set_status_completed_and_week_ending();
 
 
 --
@@ -4726,11 +6166,43 @@ ALTER TABLE ONLY public.credential_exposures
 
 
 --
+-- Name: cyhy_certs cyhy_certs_organizations_uid_fkey; Type: FK CONSTRAINT; Schema: public; Owner: pe
+--
+
+ALTER TABLE ONLY public.cyhy_certs
+    ADD CONSTRAINT cyhy_certs_organizations_uid_fkey FOREIGN KEY (organizations_uid) REFERENCES public.organizations(organizations_uid);
+
+
+--
+-- Name: cyhy_domains cyhy_domains_organizations_uid_fkey; Type: FK CONSTRAINT; Schema: public; Owner: pe
+--
+
+ALTER TABLE ONLY public.cyhy_domains
+    ADD CONSTRAINT cyhy_domains_organizations_uid_fkey FOREIGN KEY (organizations_uid) REFERENCES public.organizations(organizations_uid);
+
+
+--
+-- Name: cyhy_certs cyhy_domains_sub_domain_uid_fkey; Type: FK CONSTRAINT; Schema: public; Owner: pe
+--
+
+ALTER TABLE ONLY public.cyhy_certs
+    ADD CONSTRAINT cyhy_domains_sub_domain_uid_fkey FOREIGN KEY (sub_domain_uid) REFERENCES public.sub_domains(sub_domain_uid);
+
+
+--
 -- Name: cyhy_https_scan cyhy_https_scan_organizations_uid_fkey; Type: FK CONSTRAINT; Schema: public; Owner: pe
 --
 
 ALTER TABLE ONLY public.cyhy_https_scan
     ADD CONSTRAINT cyhy_https_scan_organizations_uid_fkey FOREIGN KEY (organizations_uid) REFERENCES public.organizations(organizations_uid);
+
+
+--
+-- Name: cyhy_port_scans_new cyhy_port_scans_new_organizations_uid_fkey; Type: FK CONSTRAINT; Schema: public; Owner: pe
+--
+
+ALTER TABLE ONLY public.cyhy_port_scans_new
+    ADD CONSTRAINT cyhy_port_scans_new_organizations_uid_fkey FOREIGN KEY (organizations_uid) REFERENCES public.organizations(organizations_uid);
 
 
 --
@@ -4854,6 +6326,14 @@ ALTER TABLE ONLY public.executives
 
 
 --
+-- Name: ips fk_org_uid; Type: FK CONSTRAINT; Schema: public; Owner: pe
+--
+
+ALTER TABLE ONLY public.ips
+    ADD CONSTRAINT fk_org_uid FOREIGN KEY (organizations_uid) REFERENCES public.organizations(organizations_uid);
+
+
+--
 -- Name: credential_exposures hibp_exposed_credentials_breach_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: pe
 --
 
@@ -4918,6 +6398,14 @@ ALTER TABLE ONLY public.organizations
 
 
 --
+-- Name: was_map pe_org_id_fk; Type: FK CONSTRAINT; Schema: public; Owner: pe
+--
+
+ALTER TABLE ONLY public.was_map
+    ADD CONSTRAINT pe_org_id_fk FOREIGN KEY (pe_org_id) REFERENCES public.organizations(organizations_uid);
+
+
+--
 -- Name: pshtt_results pshtt_results_organizations_uid_fkey; Type: FK CONSTRAINT; Schema: public; Owner: pe
 --
 
@@ -4955,6 +6443,30 @@ ALTER TABLE ONLY public.root_domains
 
 ALTER TABLE ONLY public.root_domains
     ADD CONSTRAINT root_domains_organizations_uid_fkey FOREIGN KEY (organizations_uid) REFERENCES public.organizations(organizations_uid) NOT VALID;
+
+
+--
+-- Name: scorecard_summary_stats scorecard_summary_stats_organizations_uid_fkey; Type: FK CONSTRAINT; Schema: public; Owner: pe
+--
+
+ALTER TABLE ONLY public.scorecard_summary_stats
+    ADD CONSTRAINT scorecard_summary_stats_organizations_uid_fkey FOREIGN KEY (organizations_uid) REFERENCES public.organizations(organizations_uid);
+
+
+--
+-- Name: sectors_orgs sectors_orgs_orgs_uid_fkey; Type: FK CONSTRAINT; Schema: public; Owner: pe
+--
+
+ALTER TABLE ONLY public.sectors_orgs
+    ADD CONSTRAINT sectors_orgs_orgs_uid_fkey FOREIGN KEY (organizations_uid) REFERENCES public.organizations(organizations_uid) ON DELETE CASCADE;
+
+
+--
+-- Name: sectors_orgs sectors_orgs_sector_uid_fkey; Type: FK CONSTRAINT; Schema: public; Owner: pe
+--
+
+ALTER TABLE ONLY public.sectors_orgs
+    ADD CONSTRAINT sectors_orgs_sector_uid_fkey FOREIGN KEY (sector_uid) REFERENCES public.sectors(sector_uid) ON DELETE CASCADE;
 
 
 --
@@ -5065,9 +6577,6 @@ ALTER TABLE ONLY public.web_assets
 -- Name: SCHEMA public; Type: ACL; Schema: -; Owner: crossfeed
 --
 
-REVOKE ALL ON SCHEMA public FROM rdsadmin;
-REVOKE ALL ON SCHEMA public FROM PUBLIC;
-GRANT ALL ON SCHEMA public TO crossfeed;
 GRANT ALL ON SCHEMA public TO PUBLIC;
 
 
