@@ -1,3 +1,8 @@
+#Need to increase vm.max_map_count
+
+#echo vm.max_map_count=262144 >> /etc/sysctl.conf 
+#sudo sysctl -p
+
 version: "3.5"
 
 services:
