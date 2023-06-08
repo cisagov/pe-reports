@@ -1,7 +1,10 @@
 from django.urls import path
 from . import views
 from django.contrib.auth.decorators import login_required
-from .views import StatusForm, FetchWeeklyStatusesView, WeeklyStatusesFormOnlyView
+from .views import StatusForm,\
+    FetchWeeklyStatusesView, \
+    WeeklyStatusesFormOnlyView,\
+    FetchUserWeeklyStatusesView
 
 urlpatterns = [
 
@@ -15,6 +18,9 @@ urlpatterns = [
     path('fetch_weekly_statuses/',
          FetchWeeklyStatusesView.as_view(),
          name='fetch_weekly_statuses'),
+    path('fetch_user_weekly_statuses/',
+         FetchUserWeeklyStatusesView.as_view(),
+         name='fetch_user_weekly_statuses'),
     path('weekly-status-form-only/', WeeklyStatusesFormOnlyView.as_view(),
          name='weekly-status-form-only'),
 
