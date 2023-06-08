@@ -7,6 +7,7 @@ import time
 # Third-Party Libraries
 import pandas as pd
 import requests
+from retry import retry
 
 # cisagov Libraries
 from pe_source.data.pe_db.config import cybersix_token
@@ -206,7 +207,6 @@ def setOrganizationUsers(org_id):
             or userrole == role2
             and user_id != id_role1
         ):
-
             url = (
                 f"https://api.cybersixgill.com/multi-tenant/organization/"
                 f"{org_id}/user/{user_id}?role_id={userrole}"
@@ -219,6 +219,7 @@ def setOrganizationUsers(org_id):
             }
 
             response = requests.post(url, headers=headers).json()
+            LOGGER.info("The response is %s", response)
 
 
 def setOrganizationDetails(org_id, orgAliases, orgDomain, orgIP, orgExecs):
@@ -260,3 +261,37 @@ def getUserInfo():
 
     userInfo = response[1]["assigned_users"]
     return userInfo
+
+
+@retry(tries=10, delay=1, logger=LOGGER)
+def get_bulk_cve_resp(cve_list):
+    """
+    Make API call to retrieve the corresponding info for a list of CVE names (10 max).
+
+    Args:
+        cve_list: list of cve names (i.e. ['CVE-2022-123', 'CVE-2022-456'...])
+
+    Returns:
+        Raw API response for CVE list
+
+    """
+    c6g_url = "https://api.cybersixgill.com/dve_enrich/enrich"
+    auth = cybersix_token()
+    headers = {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache",
+        "Authorization": "Bearer " + auth,
+    }
+    body = {
+        "filters": {"ids": cve_list},
+        "results_size": len(cve_list),
+        "from_index": 0,
+    }
+    # Make API call for specified CVE list
+    try:
+        # Attempt API call
+        resp = requests.post(c6g_url, headers=headers, json=body).json()
+        # Return response
+        return resp
+    except Exception as e:
+        LOGGER.error("Error making bulk CVE API call: %s", e)

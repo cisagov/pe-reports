@@ -6,6 +6,7 @@ from datetime import datetime
 import logging
 import socket
 import sys
+import os
 
 # Third-Party Libraries
 import pandas as pd
@@ -13,12 +14,7 @@ import psycopg2
 from psycopg2 import OperationalError
 import psycopg2.extras as extras
 
-# cisagov Libraries
-from pe_source.data.pe_db.config import config
-
 LOGGER = logging.getLogger(__name__)
-
-CONN_PARAMS_DIC = config()
 
 
 def show_psycopg2_exception(err):
@@ -32,7 +28,17 @@ def show_psycopg2_exception(err):
 def connect():
     """Connect to PostgreSQL database."""
     try:
-        conn = psycopg2.connect(**CONN_PARAMS_DIC)
+        db_name = os.environ.get("PE_DB_NAME")
+        if not db_name:
+            LOGGER.info("Database credentials have not been set in the environment.")
+            return None
+        conn = psycopg2.connect(
+            host=os.environ.get("DATABASE_HOST"),
+            user=os.environ.get("PE_DB_USERNAME"),
+            password=os.environ.get("DATABASE_PASSWORD"),
+            dbname=os.environ.get("PE_DB_NAME"),
+            port=5432,
+        )
     except OperationalError as err:
         show_psycopg2_exception(err)
         conn = None

@@ -9,6 +9,7 @@ import time
 import numpy as np
 import pandas as pd
 import requests
+import os
 
 from .data.pe_db.config import get_params
 from .data.pe_db.db_query import (
@@ -26,12 +27,11 @@ TODAY = datetime.date.today()
 DAYS_BACK = datetime.timedelta(days=16)
 START_DATE = (TODAY - DAYS_BACK).strftime("%Y-%m-%d %H:%M:%S")
 END_DATE = TODAY.strftime("%Y-%m-%d %H:%M:%S")
+
 # Get data source uid
 SOURCE_UID = get_data_source_uid("IntelX")
 
-section = "intelx"
-params = get_params(section)
-api_key = params[0][1]
+api_key = os.environ.get("INTELX_KEY")
 
 LOGGER = logging.getLogger(__name__)
 
@@ -151,7 +151,7 @@ class IntelX:
         """Find leaks for a domain between two dates."""
         all_results_list = []
         for domain in domain_list:
-            if not domain: 
+            if not domain:
                 continue
             LOGGER.info("Finding credentials leaked associated with " + domain)
             response = self.query_identity_api(domain, start_date, end_date)
