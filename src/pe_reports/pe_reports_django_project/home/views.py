@@ -878,7 +878,7 @@ class FetchUserWeeklyStatusesView(View):
 
     def get(self, request, *args, **kwargs):
 
-        url = 'http://127.0.0.1:8000/apiv1/fetch_user_weekly_statuses/'
+        url = 'http://127.0.0.1:8089/apiv1/fetch_user_weekly_statuses/'
         headers = {
             'Content-Type': 'application/json',
             'access_token': f'{config("API_KEY")}'
