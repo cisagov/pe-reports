@@ -134,7 +134,7 @@
                     <!-- The form will be injected here -->
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-primary"
+                    <button id="closeButtonFooter" type="button" class="btn btn-primary"
                             data-dismiss="modal">Close
                     </button>
                 </div>
@@ -263,6 +263,19 @@
                     });
                 }
             });
+
+
+            // Get the modal
+            var modal = new bootstrap.Modal(document.getElementById('editModal'));
+
+            // Get the button that closes the modal
+            var btnFooter = document.getElementById("closeButtonFooter");
+
+            // When the user clicks on the button, close the modal
+            btnFooter.onclick = function () {
+                modal.hide();
+            }
+
 
             $(document).on('change', '#editModal #updatetheuserIssues', function () {
                 console.log("Change event triggered"); // Debug line
