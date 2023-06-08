@@ -28,14 +28,15 @@ def show_psycopg2_exception(err):
 def connect():
     """Connect to PostgreSQL database."""
     try:
+        print(os.environ.get("PE_DB_NAME"))
         db_name = os.environ.get("PE_DB_NAME")
         if not db_name:
             LOGGER.info("Database credentials have not been set in the environment.")
             return None
         conn = psycopg2.connect(
-            host=os.environ.get("DATABASE_HOST"),
+            host=os.environ.get("DB_HOST"),
             user=os.environ.get("PE_DB_USERNAME"),
-            password=os.environ.get("DATABASE_PASSWORD"),
+            password=os.environ.get("PE_DB_PASSWORD"),
             dbname=os.environ.get("PE_DB_NAME"),
             port=5432,
         )
