@@ -104,6 +104,7 @@ setup(
         "importlib_resources == 5.4.0",
         "pandas == 1.5.1",
         "psycopg2-binary == 2.9.3",
+        "retry == 0.9.2",
         "schema == 0.7.5",
         "shodan == 1.27.0",
     ],
