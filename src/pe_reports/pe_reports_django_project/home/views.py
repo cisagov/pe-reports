@@ -877,3 +877,42 @@ class WeeklyStatusesFormOnlyView(updateStatusForm):
         else:
             messages.error(request, "Invalid form data.")
             return render(request, self.template_name, {'form': form})
+
+
+class FetchUserWeeklyStatusesView(View):
+    """Fetch the weekly statuses from the API
+     and pass to Weekly Statuses template"""
+    updateAPIKey(theSavedUserKey, theCurrentUserKey)
+
+    def get(self, request, *args, **kwargs):
+
+        url = 'http://127.0.0.1:8000/apiv1/fetch_user_weekly_statuses/'
+        headers = {
+            'Content-Type': 'application/json',
+            'access_token': f'{config("API_KEY")}'
+        }
+        payload = json.dumps({
+            "user_fname": request.user.first_name
+        })
+
+        try:
+
+            response = requests.post(url, headers=headers, data=payload)
+            response.raise_for_status()  # Raise an exception if the response contains an HTTP error status
+            data = response.json()
+            return JsonResponse(data, safe=False)
+
+        except requests.exceptions.HTTPError as errh:
+            LOGGER.error(errh)
+        except requests.exceptions.ConnectionError as errc:
+            LOGGER.error(errc)
+        except requests.exceptions.Timeout as errt:
+            LOGGER.error(errt)
+        except requests.exceptions.RequestException as err:
+            LOGGER.error(err)
+        except json.decoder.JSONDecodeError as err:
+            LOGGER.error(err)
+
+        # Return an error JsonResponse if an exception occurs
+        return JsonResponse({"error": "Failed to fetch weekly statuses"},
+                            status=400)

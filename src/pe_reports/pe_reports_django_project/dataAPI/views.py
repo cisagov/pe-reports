@@ -250,6 +250,26 @@ def read_weekly_statuses(tokens: dict = Depends(get_api_key)):
         LOGGER.info('API key expired please try again')
 
 
+@api_router.post("/fetch_user_weekly_statuses/", dependencies=[Depends(get_api_key)],
+                 # response_model=List[schemas.WeeklyStatuses],
+                 tags=["List of user Weekly Status"])
+def read_user_weekly_statuses(data: schemas.UserStatuses, tokens: dict = Depends(get_api_key)):
+    """API endpoint to get a user weekly statuses."""
+
+    current_date = datetime.now()
+    days_to_week_end = (4 - current_date.weekday()) % 7
+    week_ending_date = current_date + timedelta(days=days_to_week_end)
+    statuses = list(WeeklyStatuses.objects.filter(
+        week_ending=week_ending_date, user_status=data.user_fname))
+
+    # LOGGER.info(f"The api key submitted {tokens}")
+    try:
+        userapiTokenverify(theapiKey=tokens)
+        return statuses
+    except:
+        LOGGER.info('API key expired please try again')
+
+
 
 
 

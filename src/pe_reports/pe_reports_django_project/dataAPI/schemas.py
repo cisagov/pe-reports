@@ -193,6 +193,15 @@ class WeeklyStatuses(BaseModel):
         orm_mode = True
         validate_assignment = True
 
+class UserStatuses(BaseModel):
+
+    user_fname: str
+
+
+    class Config:
+        orm_mode = True
+        validate_assignment = True
+
 
 
 class CyhyPortScans(BaseModel):
