@@ -80,7 +80,7 @@ services:
       - ELASTIC_PASSWORD=${ELASTIC_PASSWORD} # Set the password for the "elastic" user
       - bootstrap.memory_lock=true # Lock the process address space into RAM to prevent swapping
       - xpack.security.enabled=true # Enable X-Pack security features
-      - xpack.security.http.ssl.enabled=false # Enable SSL for the HTTP API
+      - xpack.security.http.ssl.enabled=true # Enable SSL for the HTTP API
       - xpack.security.http.ssl.key=certs/es01/es01.key # Set the SSL key file
       - xpack.security.http.ssl.certificate=certs/es01/es01.crt # Set the SSL certificate file
       - xpack.security.http.ssl.certificate_authorities=certs/ca/ca.crt # Set the SSL certificate authority
