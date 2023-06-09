@@ -126,7 +126,7 @@ services:
     environment:
       # Environment variables for configuring Kibana
       - SERVERNAME=kibana # Set the server name
-      - ELASTICSEARCH_HOSTS=https://es01:9200 # Set the Elasticsearch hosts
+      - ELASTICSEARCH_HOSTS=https://10.0.2.109:9200 # Set the Elasticsearch hosts
       - ELASTICSEARCH_USERNAME=${KIBANA_USERNAME} # Set the Elasticsearch username
       - ELASTICSEARCH_PASSWORD=${KIBANA_PASSWORD} # Set the Elasticsearch password
       - ELASTICSEARCH_SSL_CERTIFICATEAUTHORITIES=config/certs/ca/ca.crt # Set the SSL certificate authority
