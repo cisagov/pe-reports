@@ -1,5 +1,5 @@
 # Set the Kibana server's HTTP host.
-http.host: "0.0.0.0"                              # Listen on all network interfaces (0.0.0.0).
+https.host: "0.0.0.0"                              # Listen on all network interfaces (0.0.0.0).
 
 
 
