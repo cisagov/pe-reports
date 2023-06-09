@@ -10,7 +10,7 @@ metricbeat.modules:
     - node                          # Collect Logstash node metrics.
     - node_stats                    # Collect Logstash node statistics.
   period: 10s                       # Set the period for fetching metrics to 10 seconds.
-  hosts: ["logstash:9600"]          # Specify the Logstash host and port.
+  hosts: ["https://logstash:9600"]          # Specify the Logstash host and port.
 
 # Configure the output destination for the collected metrics.
 output.elasticsearch:
@@ -18,4 +18,4 @@ output.elasticsearch:
 
 # Configure the Kibana settings for index pattern setup and dashboard loading.
 setup.kibana:
-  host: "kibana:5601"
+  host: "[https://kibana:5601]"
