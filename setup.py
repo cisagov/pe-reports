@@ -133,7 +133,7 @@ setup(
         "pytz",
         "pyyaml == 6.0",
         "reportlab == 3.6.6",
-        "requests == 2.26.0",
+        "requests == 2.31.0",
         "schema == 0.7.5",
         "setuptools == 58.1.0",
         "shodan ==1.27.0",
