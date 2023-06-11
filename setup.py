@@ -125,7 +125,7 @@ setup(
         "pdfkit",
         "psutil",
         "psycopg2-binary == 2.9.3",
-        "pymongo == 4.0.1",
+        "pymongo == 4.3.3",
         "pymupdf == 1.19.0",
         "python-dateutil >= 2.7.3",
         "pytest-cov",
