@@ -135,7 +135,7 @@ setup(
         "reportlab == 3.6.6",
         "requests == 2.26.0",
         "schema == 0.7.5",
-        "setuptools == 58.1.0",
+        "setuptools == 67.8.0",
         "shodan ==1.27.0",
         "sublist3r",
         "types-PyYAML == 6.0.4",
