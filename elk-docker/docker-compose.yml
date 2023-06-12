@@ -77,6 +77,7 @@ services:
       - cluster.name=${CLUSTER_NAME} # Set the cluster name
       - cluster.initial_master_nodes=es01 # Set the initial master node for the cluster
       - discovery.seed_hosts="" # Empty seed hosts (single-node cluster)
+      - "ES_JAVA_OPTS=-Xmx512m -Xms512m"
       - ELASTIC_PASSWORD=${ELASTIC_PASSWORD} # Set the password for the "elastic" user
       - bootstrap.memory_lock=true # Lock the process address space into RAM to prevent swapping
       - xpack.security.enabled=true # Enable X-Pack security features
