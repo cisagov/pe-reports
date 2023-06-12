@@ -11,6 +11,7 @@ import pandas as pd
 import psycopg2
 from psycopg2 import OperationalError
 from psycopg2.extensions import AsIs
+from psycopg2 import sql
 
 from .config import config, staging_config
 
@@ -509,28 +510,29 @@ def query_dscore_pe_data_ip(org_list):
     # Open connection
     conn = connect()
     # Build query
-    # sector_str = (
-    #     "UUID('" + "')), (UUID('".join(org_list["organizations_uid"].tolist()) + "')"
-    # )
-    # sql = """
-    # SELECT
-    #     sector.organizations_uid, ip.parent_org_uid, ip.num_ident_ip, ip.num_monitor_ip
-    # FROM
-    #     (VALUES (%(sector_str)s)) AS sector(organizations_uid)
-    #     LEFT JOIN
-    #     vw_dscore_pe_ip ip
-    #     ON sector.organizations_uid = ip.organizations_uid;"""
-
+    sector_str = (
+        "UUID('" + "')), (UUID('".join(org_list["organizations_uid"].tolist()) + "')"
+    )
     sql = """
-       SELECT  ip.organizations_uid, ip.parent_org_uid, ip.num_ident_ip, ip.num_monitor_ip
-        FROM  vw_dscore_pe_ip ip
-        Where ip.organizations_uid in %(sector_str)s
-    """
+    SELECT
+        sector.organizations_uid, ip.parent_org_uid, ip.num_ident_ip, ip.num_monitor_ip
+    FROM
+        (VALUES (%(sector_str)s)) AS sector(organizations_uid)
+        LEFT JOIN
+        vw_dscore_pe_ip ip
+        ON sector.organizations_uid = ip.organizations_uid;"""
+
+    # sql = """
+    #    SELECT  ip.organizations_uid, ip.parent_org_uid, ip.num_ident_ip, ip.num_monitor_ip
+    #     FROM  vw_dscore_pe_ip ip
+    #     Where ip.organizations_uid in %(sector_str)s
+    # """
     # Make query
+    # tuple(org_list["organizations_uid"].tolist())
     dscore_pe_data_ip = pd.read_sql(
         sql,
         conn,
-        params={"sector_str": tuple(org_list["organizations_uid"].tolist())},
+        params={"sector_str": AsIs(sector_str)},
     )
     # Close connection
     conn.close()
@@ -1745,7 +1747,8 @@ def execute_scorecard_summary_data(summary_dict):
             %s,%s,%s,%s,%s,%s,%s,%s,%s,%s,
             %s,%s,%s,%s,%s,%s,%s,%s,%s,%s,
             %s,%s,%s,%s,%s,%s,%s,%s,%s,%s,
-            %s,%s,%s,%s,%s,%s,%s,%s,%s,%s
+            %s,%s,%s,%s,%s,%s,%s,%s,%s,%s,
+            %s
         )
         ON CONFLICT(organizations_uid, start_date, sector_name)
         DO
@@ -1800,6 +1803,7 @@ def execute_scorecard_summary_data(summary_dict):
         """
         summary_dict = {k: None if v == "N/A" else v for k, v in summary_dict.items()}
         print(summary_dict)
+        print(summary_dict["sector_name"])
         cur.execute(
             sql,
             (
@@ -1859,7 +1863,7 @@ def execute_scorecard_summary_data(summary_dict):
                 AsIs(summary_dict["sect_web_avg_days_remediate_high"]),
                 AsIs(summary_dict["email_compliance_pct"]),
                 AsIs(summary_dict["https_compliance_pct"]),
-                AsIs(summary_dict("sector_name")),
+                summary_dict["sector_name"],
             ),
         )
         conn.commit()
@@ -1902,7 +1906,10 @@ def query_scorecard_data(org_uid, start_date, sector):
     this_period_data = get_scorecard_metrics_current(org_uid, start_date, sector)
     scorecard_dict = this_period_data.to_dict("records")[0]
     last_period_data = get_scorecard_metrics_past(org_uid, start_date, sector)
-    last_scorecard_dict = last_period_data.to_dict("records")[0]
+    print("test query_scorercard_data")
+    print(last_period_data)
+    print("test complete")
+    
 
     if last_period_data.empty:
         LOGGER.error("No Scorecard summary data for the last report period.")
@@ -1923,6 +1930,7 @@ def query_scorecard_data(org_uid, start_date, sector):
         identification_trend = scorecard_dict.get("identification_score", 0)
         tracking_trend = scorecard_dict.get("tracking_score", 0)
     else:
+        last_scorecard_dict = last_period_data.to_dict("records")[0]
         ips_monitored_trend = last_scorecard_dict["ips_monitored"]
         domains_monitored_trend = last_scorecard_dict["domains_monitored"]
         web_apps_monitored_trend = last_scorecard_dict["web_apps_monitored"]
@@ -2441,16 +2449,25 @@ def insert_scores(start_date, org_uid, score, score_name, sector):
         conn = connect()
 
         cursor = conn.cursor()
-        sql = """
+        query = sql.SQL("""
             UPDATE scorecard_summary_stats
-            set %(score_name)s = %(score)s
+            set {column_name} = %(score)s
             where start_date = %(start_date)s
             and organizations_uid = %(org_uid)s
             and sector_name = %(sector)s;
-            """
+            """).format(
+                column_name= sql.Identifier(score_name)
+            )
+        # sql = """
+        #     UPDATE scorecard_summary_stats
+        #     set {} = %(score)s
+        #     where start_date = %(start_date)s
+        #     and organizations_uid = %(org_uid)s
+        #     and sector_name = %(sector)s;
+        #     """
 
         cursor.execute(
-            sql,
+            query,
             {
                 "score_name": score_name,
                 "score": score,

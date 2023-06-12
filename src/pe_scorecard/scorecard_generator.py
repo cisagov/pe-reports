@@ -28,6 +28,7 @@ Options:
 """
 
 # Standard Python Libraries
+import calendar
 import datetime
 import logging
 import os
@@ -56,6 +57,8 @@ from .data.db_query import (
     query_sector_ttr,
     query_was_sector_ttr,
     refresh_views,
+    find_last_data_updated,
+    find_last_scan_date
 )
 
 # from .helpers.email_scorecard import email_scorecard_report
@@ -212,15 +215,16 @@ def generate_scorecards(
         # Calculate scores
         sectors_df = sector_orgs[["organizations_uid", "cyhy_db_name"]]
         end_datetime = datetime.datetime(end_date.year, end_date.month, end_date.day)
+        
         discovery_scores = gen_discov_scores(
             end_datetime, sectors_df
         )
         profiling_scores = get_profiling_score(sectors_df, int(year), int(month))
+        
         identification_scores = gen_ident_scores(
             end_datetime, sectors_df
         )
         tracking_scores = get_tracking_score(sectors_df, int(year), int(month))
-
         # Loop through orgs again to generate scorecards
         for i, org in recipient_orgs_df.iterrows():
             try:
@@ -331,10 +335,35 @@ def generate_scorecards(
                     "A",
                     "A+",
                 ]
+
                 # Query the data for the scorecard
                 scorecard_dict = query_scorecard_data(
                     org["organizations_uid"], start_date, sector
                 )
+                if org["is_parent"]:
+                    children_df = sector_orgs[
+                        (sector_orgs["parent_org_uid"] == org["organizations_uid"])
+                        & (sector_orgs["retired"] == False)
+                    ]
+                    cyhy_id_list = children_df["cyhy_db_name"].values.tolist()
+                    cyhy_id_list.append(org["cyhy_db_name"])
+
+                else:
+                    cyhy_id_list = [org["cyhy_db_name"]]
+                
+                last_updated = find_last_data_updated(cyhy_id_list)[0]
+
+                if not last_updated:
+                    last_updated = org["cyhy_period_start"].strftime("%b %d, %Y")
+                else:
+                    last_updated = last_updated.strftime("%b %d, %Y")
+
+                scorecard_dict["last_data_sent_date"] = last_updated
+                
+                scorecard_dict['agency_id'] = org['cyhy_db_name']
+                scorecard_dict['date'] = calendar.month_name[int(month)] + " " + year
+                scorecard_dict['agency_name'] = org["name"]
+                scorecard_dict['data_pulled_date'] = find_last_scan_date()[0].strftime("%b %d, %Y")
                 scorecard_dict["score"] = np.select(letter_ranges, letter_grades)
                 # # Add scores to scorecard_dict
                 # scorecard_dict['discovery_score'] = discovery_score
@@ -345,6 +374,7 @@ def generate_scorecards(
                 scorecard_dict["identification_grade"] = identification_grade
                 # scorecard_dict['tracking_score'] = tracking_score
                 scorecard_dict["tracking_grade"] = tracking_grade
+
 
                 # Create filename
                 file_name = (
@@ -358,8 +388,9 @@ def generate_scorecards(
                     + ".pdf"
                 )
 
+                print(scorecard_dict)
                 # Create Scorecard
-                create_scorecard(scorecard_dict, file_name, True, False, exclude_bods)
+                create_scorecard(scorecard_dict, file_name, True, True, exclude_bods)
 
                 # If email, email the report out to customer
                 # if email:

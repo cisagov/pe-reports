@@ -35,9 +35,9 @@ PAGE_WIDTH = defaultPageSize[0]
 
 def determine_arrow(value, last_value, color=False, up_is_good=False):
     """Determine the arrow color and direction based on current and previous values."""
-    if not last_value:
+    if last_value is None:
         return BASE_DIR + "/scorecard_assets/no_change.png"
-    if not value:
+    if value is None:
         return BASE_DIR + "/scorecard_assets/no_change.png"
     print(value)
     print(last_value)
@@ -175,8 +175,9 @@ def create_scorecard(
         overall_score_frame = Frame(
             7 * inch, PAGE_HEIGHT - 0.95 * inch, width=90, height=70, showBoundary=False
         )
+        print(data_dict["score"])
         overall_score_frame.addFromList(
-            [Paragraph(data_dict["score"], overall_score_style)], can
+            [Paragraph(str(data_dict["score"]), overall_score_style)], can
         )
     else:
         can.drawImage(
@@ -949,6 +950,9 @@ def create_scorecard(
         mask="auto",
     )
 
+
+    data_dict = {k: 'N/A' if v is None else v for k, v in data_dict.items() }
+
     # **** Generate new page ****
     can.showPage()
     # *** Generate Identification Divider ****
@@ -1152,7 +1156,7 @@ def create_scorecard(
         vulns_data[1].append("22-01:         ")
         vulns_data[2].append("19-02:         ")
         vulns_data[3].append("19-02:         ")
-        col_widths = [3.3 * inch, 1.3 * inch, 1.3 * inch, 1.8 * inch]
+        col_widths = [2.2 * inch, 1.4 * inch, 2.4 * inch, 1.8 * inch]
 
     vulns_table = format_table(vulns_data, col_widths)
     vulns_table_frame = Frame(
@@ -1162,7 +1166,7 @@ def create_scorecard(
     if not exclude_bods:
         can.drawImage(
             BASE_DIR + "/scorecard_assets/green_check.png"
-            if data_dict["bod_22_01-01"]
+            if data_dict["bod_22_01"]
             else BASE_DIR + "/scorecard_assets/red_x.png",
             7.4 * inch,
             y_value + 81,
