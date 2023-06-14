@@ -114,6 +114,8 @@ def checkBlocklist(dom, sub_domain_uid, source_uid, pe_org_uid, perm_list):
     else:
         perm_list.append(permutation)
 
+    if malicious:
+        LOGGER.info("%s was flagged by a blocklist.", dom["domain"])
     domain_dict = {
         "organizations_uid": pe_org_uid,
         "data_source_uid": source_uid,
@@ -170,7 +172,6 @@ def run_dnstwist(orgs_list):
     """ Get P&E Orgs """
     orgs = get_orgs()
     failures = []
-    print(orgs)
     for org in orgs:
         pe_org_uid = org["org_uid"]
         org_name = org["org_name"]
@@ -190,24 +191,23 @@ def run_dnstwist(orgs_list):
                     root_domain = root["root_domain"]
                     if root_domain == "Null_Root":
                         continue
-                    LOGGER.info("Running on %s", root["root_domain"])
+                    LOGGER.info("Running on root domain: %s", root["root_domain"])
 
                     finalorglist = execute_dnstwist(root_domain)
 
                     # Get subdomain uid
                     sub_domain = root_domain
                     try:
-                        sub_domain_uid = getSubdomain(sub_domain)[0]
+                        sub_domain_uid = getSubdomain(sub_domain)
                     except Exception:
                         # TODO: Create custom exceptions.
                         # Issue 265: https://github.com/cisagov/pe-reports/issues/265
                         LOGGER.info("Unable to get sub domain uid")
                         # Add and then get it
                         addSubdomain(PE_conn, sub_domain, pe_org_uid, True)
-                        LOGGER.info(sub_domain)
                         sub_domain_uid = getSubdomain(sub_domain)
-                        print(sub_domain_uid)
 
+                    # Check Blocklist
                     for dom in finalorglist:
                         domain_dict, perm_list = checkBlocklist(
                             dom, sub_domain_uid, source_uid, pe_org_uid, perm_list

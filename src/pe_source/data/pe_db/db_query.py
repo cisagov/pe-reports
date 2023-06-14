@@ -430,11 +430,8 @@ def getSubdomain(domain):
                 where sd.sub_domain = %s;"""
         cur.execute(sql, [domain])
         sub = cur.fetchall()
-        print("PRINTING SUB")
-        print(sub[0])
-        print(sub[0][0])
         cur.close()
-        return str(sub[0][0])
+        return sub[0][0]
     except (Exception, psycopg2.DatabaseError) as error:
         logging.error("There was a problem with your database query %s", error)
     finally:
@@ -474,8 +471,6 @@ def addSubdomain(conn, domain, pe_org_uid, root):
     else:
         root_domain = domain.split(".")[-2:]
         root_domain = ".".join(root_domain)
-
-    print(domain)
     cur = conn.cursor()
     date = datetime.today().strftime("%Y-%m-%d")
     cur.callproc(
@@ -497,7 +492,6 @@ def org_root_domains(conn, org_uid):
                 where rd.organizations_uid = %s;"""
         cur.execute(sql, [org_uid])
         roots = cur.fetchall()
-        print(roots)
         keys = (
             "root_uid",
             "org_uid",
@@ -507,7 +501,6 @@ def org_root_domains(conn, org_uid):
             "enumerate_subs",
         )
         roots = [dict(zip(keys, values)) for values in roots]
-        print(roots)
         cur.close()
         return roots
     except (Exception, psycopg2.DatabaseError) as error:
