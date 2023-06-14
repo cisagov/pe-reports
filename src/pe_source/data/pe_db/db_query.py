@@ -484,6 +484,17 @@ def addSubdomain(conn, domain, pe_org_uid, root):
     if closeConn:
         close(conn)
 
+    conn = connect()
+    cur = conn.cursor()
+    print(domain)
+    sql = """SELECT * FROM sub_domains sd"""
+    print(sql)
+    cur.execute(sql.format(domain))
+    sub = cur.fetchone()
+    cur.close()
+    print(sub)
+    return sub
+
 
 def org_root_domains(conn, org_uid):
     """Get root domains from database given the org_uid."""
