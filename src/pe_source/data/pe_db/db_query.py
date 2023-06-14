@@ -28,7 +28,6 @@ def show_psycopg2_exception(err):
 def connect():
     """Connect to PostgreSQL database."""
     try:
-        print(os.environ.get("PE_DB_NAME"))
         db_name = os.environ.get("PE_DB_NAME")
         if not db_name:
             LOGGER.info("Database credentials have not been set in the environment.")
@@ -430,7 +429,7 @@ def getSubdomain(domain):
         sql = """select * from sub_domains sd
                 where sd.sub_domain = %s;"""
         cur.execute(sql, [domain])
-        sub = cur.fetchone()
+        sub = cur.fetchall()
         print(sub)
         cur.close()
         return sub
@@ -467,10 +466,7 @@ def addRootdomain(root_domain, pe_org_uid, source_uid, org_name):
 
 def addSubdomain(conn, domain, pe_org_uid, root):
     """Add a subdomain into the database."""
-    closeConn = False
-    if conn is None:
-        conn = connect()
-        closeConn = True
+    conn = connect()
     if root:
         root_domain = domain
     else:
@@ -486,8 +482,8 @@ def addSubdomain(conn, domain, pe_org_uid, root):
     )
 
     LOGGER.info("Success adding domain %s to subdomains table.", domain)
-    if closeConn:
-        close(conn)
+    conn.commit()
+    close(conn)
 
 
 def org_root_domains(conn, org_uid):
