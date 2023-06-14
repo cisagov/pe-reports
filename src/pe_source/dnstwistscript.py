@@ -205,7 +205,8 @@ def run_dnstwist(orgs_list):
                         # Add and then get it
                         addSubdomain(PE_conn, sub_domain, pe_org_uid, True)
                         LOGGER.info(sub_domain)
-                        sub_domain_uid = getSubdomain(sub_domain)[0]
+                        sub_domain_uid = getSubdomain(sub_domain)
+                        print(sub_domain_uid)
 
                     for dom in finalorglist:
                         domain_dict, perm_list = checkBlocklist(

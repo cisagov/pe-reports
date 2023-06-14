@@ -432,7 +432,7 @@ def getSubdomain(domain):
         sub = cur.fetchall()
         print(sub)
         cur.close()
-        return sub
+        return sub[0][0]
     except (Exception, psycopg2.DatabaseError) as error:
         logging.error("There was a problem with your database query %s", error)
     finally:
