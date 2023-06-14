@@ -112,7 +112,6 @@ class MyDocTemplate(BaseDocTemplate):
     def afterFlowable(self, flowable):
         """Register TOC, TOT, and TOF entries."""
         if flowable.__class__.__name__ == "Paragraph":
-
             text = flowable.getPlainText()
             style = flowable.style.name
             if style == "Heading1":
@@ -167,7 +166,6 @@ def format_table(
         current_row = []
         for cell in row:
             if column_style_list[current_cell] is not None:
-
                 # Remove emojis from content because the report generator can't display them
                 cell = Paragraph(
                     demoji.replace(str(cell), ""), column_style_list[current_cell]
