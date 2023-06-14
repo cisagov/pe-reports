@@ -533,7 +533,7 @@ def org_root_domains(conn, org_uid):
             "data_source_uid",
             "enumerate_subs",
         )
-        roots = [dict(zip(keys, values)) for values in pe_orgs]
+        roots = [dict(zip(keys, values)) for values in roots]
         print(roots)
         cur.close()
         return roots
