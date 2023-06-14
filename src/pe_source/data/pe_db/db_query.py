@@ -460,6 +460,7 @@ def addRootdomain(root_domain, pe_org_uid, source_uid, org_name):
 
 def addSubdomain(conn, domain, pe_org_uid):
     """Add a subdomain into the database."""
+    closeConn = False
     if conn is None:
         conn = connect()
         closeConn = True
