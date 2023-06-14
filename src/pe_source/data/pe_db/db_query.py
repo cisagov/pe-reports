@@ -426,8 +426,10 @@ def getSubdomain(domain):
     """Get subdomain."""
     conn = connect()
     cur = conn.cursor()
+    print(domain)
     sql = """SELECT * FROM sub_domains sd
         WHERE sd.sub_domain = '{}'"""
+    print(sql)
     cur.execute(sql.format(domain))
     sub = cur.fetchone()
     cur.close()
