@@ -425,16 +425,20 @@ def execute_dnsmonitor_alert_data(dataframe, table):
 def getSubdomain(domain):
     """Get subdomain."""
     conn = connect()
-    cur = conn.cursor()
-    print(domain)
-    sql = """SELECT * FROM sub_domains sd
-        WHERE sd.sub_domain = %s"""
-    print(sql)
-    cur.execute(sql, [domain])
-    sub = cur.fetchone()
-    cur.close()
-    print(sub)
-    return sub
+    try:
+        cur = conn.cursor()
+        sql = """select * from sub_domains sd
+                where sd.sub_domain = %s;"""
+        cur.execute(sql, [domain])
+        sub = cur.fetchone()
+        print(sub)
+        cur.close()
+        return sub
+    except (Exception, psycopg2.DatabaseError) as error:
+        logging.error("There was a problem with your database query %s", error)
+    finally:
+        if conn is not None:
+            close(conn)
 
 
 def getRootdomain(domain):
@@ -480,39 +484,10 @@ def addSubdomain(conn, domain, pe_org_uid, root):
         "insert_sub_domain",
         (False, date, domain, pe_org_uid, "findomain", root_domain, None),
     )
-    sub_uid = cur.fetchall()
-    print(sub_uid)
-    # Fetch all notice messages
-    notices = conn.notices
 
-    # Print the notice messages
-    print("NOTICES")
-    for notice in notices:
-        print(notice)
     LOGGER.info("Success adding domain %s to subdomains table.", domain)
     if closeConn:
         close(conn)
-
-    conn = connect()
-    cur = conn.cursor()
-    print(domain)
-    sql = """SELECT * FROM sub_domains"""
-    print(sql)
-    cur.execute(sql)
-    sub = cur.fetchone()
-    cur.close()
-    print(sub)
-
-    conn = connect()
-    cur = conn.cursor()
-    print(domain)
-    sql = """SELECT * FROM root_domains"""
-    print(sql)
-    cur.execute(sql)
-    sub = cur.fetchone()
-    cur.close()
-    print(sub)
-    return sub_uid
 
 
 def org_root_domains(conn, org_uid):
