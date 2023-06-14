@@ -18,7 +18,7 @@ from .data.pe_db.db_query import (
     get_data_source_uid,
     getSubdomain,
     org_root_domains,
-    query_orgs_rev,
+    get_orgs,
 )
 
 date = datetime.datetime.now().strftime("%Y-%m-%d")
@@ -168,12 +168,13 @@ def run_dnstwist(orgs_list):
     source_uid = get_data_source_uid("DNSTwist")
 
     """ Get P&E Orgs """
-    orgs = query_orgs_rev()
+    orgs = get_orgs()
     failures = []
-    for org_index, org_row in orgs.iterrows():
-        pe_org_uid = org_row["organizations_uid"]
-        org_name = org_row["name"]
-        pe_org_id = org_row["cyhy_db_name"]
+    print(orgs)
+    for org in orgs:
+        pe_org_uid = org["org_uid"]
+        org_name = org["org_name"]
+        pe_org_id = org["cyhy_db_name"]
 
         # Only run on orgs in the org list
         if pe_org_id in orgs_list or orgs_list == "all":
@@ -182,14 +183,14 @@ def run_dnstwist(orgs_list):
             """Collect DNSTwist data from Crossfeed"""
             try:
                 # Get root domains
-                rd_df = org_root_domains(PE_conn, pe_org_uid)
+                root_dict = org_root_domains(PE_conn, pe_org_uid)
                 domain_list = []
                 perm_list = []
-                for i, row in rd_df.iterrows():
-                    root_domain = row["root_domain"]
+                for root in root_dict:
+                    root_domain = root["root_domain"]
                     if root_domain == "Null_Root":
                         continue
-                    LOGGER.info("Running on %s", row["root_domain"])
+                    LOGGER.info("Running on %s", root["root_domain"])
 
                     finalorglist = execute_dnstwist(root_domain)
 

@@ -517,12 +517,31 @@ def addSubdomain(conn, domain, pe_org_uid, root):
 
 def org_root_domains(conn, org_uid):
     """Get root domains from database given the org_uid."""
-    sql = """
-        select * from root_domains rd
-        where rd.organizations_uid = %(org_id)s;
-    """
-    df = pd.read_sql_query(sql, conn, params={"org_id": org_uid})
-    return df
+    conn = connect()
+    try:
+        cur = conn.cursor()
+        sql = """select * from root_domains rd
+                where rd.organizations_uid = %s;"""
+        cur.execute(sql, [org_uid])
+        roots = cur.fetchall()
+        print(roots)
+        keys = (
+            "root_uid",
+            "org_uid",
+            "root_domain",
+            "ip_address",
+            "data_source_uid",
+            "enumerate_subs",
+        )
+        roots = [dict(zip(keys, values)) for values in pe_orgs]
+        print(roots)
+        cur.close()
+        return roots
+    except (Exception, psycopg2.DatabaseError) as error:
+        logging.error("There was a problem with your database query %s", error)
+    finally:
+        if conn is not None:
+            close(conn)
 
 
 def query_orgs_rev():
