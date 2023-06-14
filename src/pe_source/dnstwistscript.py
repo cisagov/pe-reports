@@ -5,6 +5,7 @@ import json
 import logging
 import pathlib
 import traceback
+import contextlib
 
 # Third-Party Libraries
 import dnstwist
@@ -146,7 +147,6 @@ def execute_dnstwist(root_domain, test=0):
         format="json",
         threads=8,
         domain=root_domain,
-        silent=True,
     )
     if test == 1:
         return dnstwist_result
@@ -160,7 +160,6 @@ def execute_dnstwist(root_domain, test=0):
                 format="json",
                 threads=8,
                 domain=dom["domain"],
-                silent=True,
             )
             finalorglist += secondlist
     return finalorglist
@@ -195,7 +194,10 @@ def run_dnstwist(orgs_list):
                         continue
                     LOGGER.info("\t\tRunning on root domain: %s", root["root_domain"])
 
-                    finalorglist = execute_dnstwist(root_domain)
+                    with open(
+                        "dnstwist_output.txt", "w"
+                    ) as f, contextlib.redirect_stdout(f):
+                        finalorglist = execute_dnstwist(root_domain)
 
                     # Get subdomain uid
                     sub_domain = root_domain
