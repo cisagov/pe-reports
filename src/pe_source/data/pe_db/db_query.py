@@ -430,9 +430,11 @@ def getSubdomain(domain):
                 where sd.sub_domain = %s;"""
         cur.execute(sql, [domain])
         sub = cur.fetchall()
-        print(sub)
+        print("PRINTING SUB")
+        print(sub[0])
+        print(sub[0][0])
         cur.close()
-        return sub[0][0]
+        return str(sub[0][0])
     except (Exception, psycopg2.DatabaseError) as error:
         logging.error("There was a problem with your database query %s", error)
     finally:
