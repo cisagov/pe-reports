@@ -200,7 +200,7 @@ def run_dnstwist(orgs_list):
                     except Exception:
                         # TODO: Create custom exceptions.
                         # Issue 265: https://github.com/cisagov/pe-reports/issues/265
-                        LOGGER.info("Unable to get sub domain uid", "warning")
+                        LOGGER.info("Unable to get sub domain uid")
                         # Add and then get it
                         addSubdomain(PE_conn, sub_domain, pe_org_uid, True)
                         LOGGER.info(sub_domain)
@@ -215,7 +215,7 @@ def run_dnstwist(orgs_list):
             except Exception:
                 # TODO: Create custom exceptions.
                 # Issue 265: https://github.com/cisagov/pe-reports/issues/265
-                LOGGER.info("Failed selecting DNSTwist data.", "Warning")
+                LOGGER.info("Failed selecting DNSTwist data.")
                 failures.append(org_name)
                 LOGGER.info(traceback.format_exc())
 

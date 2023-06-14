@@ -480,6 +480,8 @@ def addSubdomain(conn, domain, pe_org_uid, root):
         "insert_sub_domain",
         (False, date, domain, pe_org_uid, "findomain", root_domain, None),
     )
+    sub_uid = cur.fetchall()
+    print(sub_uid)
     # Fetch all notice messages
     notices = conn.notices
 
@@ -494,13 +496,23 @@ def addSubdomain(conn, domain, pe_org_uid, root):
     conn = connect()
     cur = conn.cursor()
     print(domain)
-    sql = """SELECT * FROM sub_domains sd"""
+    sql = """SELECT * FROM sub_domains"""
     print(sql)
     cur.execute(sql)
     sub = cur.fetchone()
     cur.close()
     print(sub)
-    return sub
+
+    conn = connect()
+    cur = conn.cursor()
+    print(domain)
+    sql = """SELECT * FROM root_domains"""
+    print(sql)
+    cur.execute(sql)
+    sub = cur.fetchone()
+    cur.close()
+    print(sub)
+    return sub_uid
 
 
 def org_root_domains(conn, org_uid):
