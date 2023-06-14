@@ -164,109 +164,103 @@ def execute_dnstwist(root_domain, test=0):
 
 def run_dnstwist(orgs_list):
     """Run DNStwist on certain domains and upload findings to database."""
-    try:
-        PE_conn = connect()
-        source_uid = get_data_source_uid("DNSTwist")
+    PE_conn = connect()
+    source_uid = get_data_source_uid("DNSTwist")
 
-        """ Get P&E Orgs """
-        orgs = query_orgs_rev()
-        failures = []
-        for org_index, org_row in orgs.iterrows():
-            pe_org_uid = org_row["organizations_uid"]
-            org_name = org_row["name"]
-            pe_org_id = org_row["cyhy_db_name"]
+    """ Get P&E Orgs """
+    orgs = query_orgs_rev()
+    failures = []
+    for org_index, org_row in orgs.iterrows():
+        pe_org_uid = org_row["organizations_uid"]
+        org_name = org_row["name"]
+        pe_org_id = org_row["cyhy_db_name"]
 
-            # Only run on orgs in the org list
-            if pe_org_id in orgs_list or orgs_list == "all":
-                LOGGER.info("Running DNSTwist on %s", pe_org_id)
+        # Only run on orgs in the org list
+        if pe_org_id in orgs_list or orgs_list == "all":
+            LOGGER.info("Running DNSTwist on %s", pe_org_id)
 
-                """Collect DNSTwist data from Crossfeed"""
-                try:
-                    # Get root domains
-                    rd_df = org_root_domains(PE_conn, pe_org_uid)
-                    domain_list = []
-                    perm_list = []
-                    for i, row in rd_df.iterrows():
-                        root_domain = row["root_domain"]
-                        if root_domain == "Null_Root":
-                            continue
-                        LOGGER.info("Running on %s", row["root_domain"])
-
-                        finalorglist = execute_dnstwist(root_domain)
-
-                        # Get subdomain uid
-                        sub_domain = root_domain
-                        try:
-                            sub_domain_uid = getSubdomain(sub_domain)[0]
-                        except Exception:
-                            # TODO: Create custom exceptions.
-                            # Issue 265: https://github.com/cisagov/pe-reports/issues/265
-                            LOGGER.info("Unable to get sub domain uid", "warning")
-                            # Add and then get it
-                            addSubdomain(PE_conn, sub_domain, pe_org_uid)
-                            sub_domain_uid = getSubdomain(sub_domain)[0]
-
-                        for dom in finalorglist:
-                            domain_dict, perm_list = checkBlocklist(
-                                dom, sub_domain_uid, source_uid, pe_org_uid, perm_list
-                            )
-                            if domain_dict is not None:
-                                domain_list.append(domain_dict)
-                except Exception:
-                    # TODO: Create custom exceptions.
-                    # Issue 265: https://github.com/cisagov/pe-reports/issues/265
-                    LOGGER.info("Failed selecting DNSTwist data.", "Warning")
-                    failures.append(org_name)
-                    LOGGER.info(traceback.format_exc())
-
-                """Insert cleaned data into PE database."""
-                try:
-                    cursor = PE_conn.cursor()
-                    try:
-                        columns = domain_list[0].keys()
-                    except Exception:
-                        LOGGER.critical("No data in the domain list.")
-                        failures.append(org_name)
+            """Collect DNSTwist data from Crossfeed"""
+            try:
+                # Get root domains
+                rd_df = org_root_domains(PE_conn, pe_org_uid)
+                domain_list = []
+                perm_list = []
+                for i, row in rd_df.iterrows():
+                    root_domain = row["root_domain"]
+                    if root_domain == "Null_Root":
                         continue
-                    table = "domain_permutations"
-                    sql = """INSERT INTO {}({}) VALUES %s
-                    ON CONFLICT (domain_permutation,organizations_uid)
-                    DO UPDATE SET malicious = EXCLUDED.malicious,
-                        blocklist_attack_count = EXCLUDED.blocklist_attack_count,
-                        blocklist_report_count = EXCLUDED.blocklist_report_count,
-                        dshield_record_count = EXCLUDED.dshield_record_count,
-                        dshield_attack_count = EXCLUDED.dshield_attack_count,
-                        data_source_uid = EXCLUDED.data_source_uid,
-                        date_active = EXCLUDED.date_active;"""
+                    LOGGER.info("Running on %s", row["root_domain"])
 
-                    values = [
-                        [value for value in dict.values()] for dict in domain_list
-                    ]
-                    extras.execute_values(
-                        cursor,
-                        sql.format(
-                            table,
-                            ",".join(columns),
-                        ),
-                        values,
-                    )
-                    PE_conn.commit()
-                    LOGGER.info("Data inserted using execute_values() successfully..")
+                    finalorglist = execute_dnstwist(root_domain)
 
+                    # Get subdomain uid
+                    sub_domain = root_domain
+                    try:
+                        sub_domain_uid = getSubdomain(sub_domain)[0]
+                    except Exception:
+                        # TODO: Create custom exceptions.
+                        # Issue 265: https://github.com/cisagov/pe-reports/issues/265
+                        LOGGER.info("Unable to get sub domain uid", "warning")
+                        # Add and then get it
+                        addSubdomain(PE_conn, sub_domain, pe_org_uid)
+                        sub_domain_uid = getSubdomain(sub_domain)[0]
+
+                    for dom in finalorglist:
+                        domain_dict, perm_list = checkBlocklist(
+                            dom, sub_domain_uid, source_uid, pe_org_uid, perm_list
+                        )
+                        if domain_dict is not None:
+                            domain_list.append(domain_dict)
+            except Exception:
+                # TODO: Create custom exceptions.
+                # Issue 265: https://github.com/cisagov/pe-reports/issues/265
+                LOGGER.info("Failed selecting DNSTwist data.", "Warning")
+                failures.append(org_name)
+                LOGGER.info(traceback.format_exc())
+
+            """Insert cleaned data into PE database."""
+            try:
+                cursor = PE_conn.cursor()
+                try:
+                    columns = domain_list[0].keys()
                 except Exception:
-                    # TODO: Create custom exceptions.
-                    # Issue 265: https://github.com/cisagov/pe-reports/issues/265
-                    LOGGER.info("Failure inserting data into database.")
+                    LOGGER.critical("No data in the domain list.")
                     failures.append(org_name)
-                    LOGGER.info(traceback.format_exc())
+                    continue
+                table = "domain_permutations"
+                sql = """INSERT INTO {}({}) VALUES %s
+                ON CONFLICT (domain_permutation,organizations_uid)
+                DO UPDATE SET malicious = EXCLUDED.malicious,
+                    blocklist_attack_count = EXCLUDED.blocklist_attack_count,
+                    blocklist_report_count = EXCLUDED.blocklist_report_count,
+                    dshield_record_count = EXCLUDED.dshield_record_count,
+                    dshield_attack_count = EXCLUDED.dshield_attack_count,
+                    data_source_uid = EXCLUDED.data_source_uid,
+                    date_active = EXCLUDED.date_active;"""
 
-        PE_conn.close()
-        if failures != []:
-            LOGGER.error("These orgs failed:")
-            LOGGER.error(failures)
-    except Exception as e:
-        print(e)
-        print(traceback.format_exc())
+                values = [[value for value in dict.values()] for dict in domain_list]
+                extras.execute_values(
+                    cursor,
+                    sql.format(
+                        table,
+                        ",".join(columns),
+                    ),
+                    values,
+                )
+                PE_conn.commit()
+                LOGGER.info("Data inserted using execute_values() successfully..")
+
+            except Exception:
+                # TODO: Create custom exceptions.
+                # Issue 265: https://github.com/cisagov/pe-reports/issues/265
+                LOGGER.info("Failure inserting data into database.")
+                failures.append(org_name)
+                LOGGER.info(traceback.format_exc())
+
+    PE_conn.close()
+    if failures != []:
+        LOGGER.error("These orgs failed:")
+        LOGGER.error(failures)
 
 
 if __name__ == "__main__":

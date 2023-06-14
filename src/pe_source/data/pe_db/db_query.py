@@ -471,8 +471,10 @@ def addSubdomain(conn, domain, pe_org_uid):
 
     print(domain)
     cur = conn.cursor()
+    date = datetime.today().strftime("%Y-%m-%d")
     cur.callproc(
-        "insert_sub_domain", (domain, pe_org_uid, "findomain", root_domain, None)
+        "insert_sub_domain",
+        (False, date, domain, pe_org_uid, "findomain", root_domain, None),
     )
     LOGGER.info("Success adding domain %s to subdomains table.", domain)
     if closeConn:
