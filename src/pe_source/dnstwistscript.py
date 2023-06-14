@@ -115,7 +115,7 @@ def checkBlocklist(dom, sub_domain_uid, source_uid, pe_org_uid, perm_list):
         perm_list.append(permutation)
 
     if malicious:
-        LOGGER.info("%s was flagged by a blocklist.", dom["domain"])
+        LOGGER.info("\t\t%s was flagged by a blocklist", dom["domain"])
     domain_dict = {
         "organizations_uid": pe_org_uid,
         "data_source_uid": source_uid,
@@ -146,6 +146,7 @@ def execute_dnstwist(root_domain, test=0):
         format="json",
         threads=8,
         domain=root_domain,
+        silent=True,
     )
     if test == 1:
         return dnstwist_result
@@ -159,6 +160,7 @@ def execute_dnstwist(root_domain, test=0):
                 format="json",
                 threads=8,
                 domain=dom["domain"],
+                silent=True,
             )
             finalorglist += secondlist
     return finalorglist
@@ -191,7 +193,7 @@ def run_dnstwist(orgs_list):
                     root_domain = root["root_domain"]
                     if root_domain == "Null_Root":
                         continue
-                    LOGGER.info("Running on root domain: %s", root["root_domain"])
+                    LOGGER.info("\t\tRunning on root domain: %s", root["root_domain"])
 
                     finalorglist = execute_dnstwist(root_domain)
 
