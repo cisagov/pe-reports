@@ -428,9 +428,9 @@ def getSubdomain(domain):
     cur = conn.cursor()
     print(domain)
     sql = """SELECT * FROM sub_domains sd
-        WHERE sd.sub_domain = '{}'"""
+        WHERE sd.sub_domain = %s"""
     print(sql)
-    cur.execute(sql.format(domain))
+    cur.execute(sql, [domain])
     sub = cur.fetchone()
     cur.close()
     print(sub)
@@ -496,7 +496,7 @@ def addSubdomain(conn, domain, pe_org_uid, root):
     print(domain)
     sql = """SELECT * FROM sub_domains sd"""
     print(sql)
-    cur.execute(sql.format(domain))
+    cur.execute(sql)
     sub = cur.fetchone()
     cur.close()
     print(sub)
