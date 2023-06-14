@@ -480,6 +480,13 @@ def addSubdomain(conn, domain, pe_org_uid, root):
         "insert_sub_domain",
         (False, date, domain, pe_org_uid, "findomain", root_domain, None),
     )
+    # Fetch all notice messages
+    notices = conn.notices
+
+    # Print the notice messages
+    print("NOTICES")
+    for notice in notices:
+        print(notice)
     LOGGER.info("Success adding domain %s to subdomains table.", domain)
     if closeConn:
         close(conn)
