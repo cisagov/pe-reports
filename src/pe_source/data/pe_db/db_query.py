@@ -463,8 +463,13 @@ def addSubdomain(conn, domain, pe_org_uid):
     if conn is None:
         conn = connect()
         closeConn = True
-    root_domain = domain.split(".")[-2:]
-    root_domain = ".".join(root_domain)
+    if domain.count(".") == 1:
+        root_domain = domain
+    else:
+        root_domain = domain.split(".")[-2:]
+        root_domain = ".".join(root_domain)
+
+    print(domain)
     cur = conn.cursor()
     cur.callproc(
         "insert_sub_domain", (domain, pe_org_uid, "findomain", root_domain, None)
