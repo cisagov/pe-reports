@@ -431,6 +431,7 @@ def getSubdomain(domain):
     cur.execute(sql.format(domain))
     sub = cur.fetchone()
     cur.close()
+    print(sub)
     return sub
 
 
@@ -458,13 +459,13 @@ def addRootdomain(root_domain, pe_org_uid, source_uid, org_name):
     cur.close()
 
 
-def addSubdomain(conn, domain, pe_org_uid):
+def addSubdomain(conn, domain, pe_org_uid, root):
     """Add a subdomain into the database."""
     closeConn = False
     if conn is None:
         conn = connect()
         closeConn = True
-    if domain.count(".") == 1:
+    if root:
         root_domain = domain
     else:
         root_domain = domain.split(".")[-2:]
