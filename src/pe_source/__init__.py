@@ -21,7 +21,7 @@ else:
 # Logging will rotate at 2GB
 logging.basicConfig(
     filemode="a",
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    format="%(name)s - %(levelname)s - %(message)s",
     datefmt="%m/%d/%Y %I:%M:%S",
     level=level,
 )
