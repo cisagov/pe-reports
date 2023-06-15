@@ -433,7 +433,7 @@ def getSubdomain(domain):
         cur.close()
         return sub[0][0]
     except (Exception, psycopg2.DatabaseError) as error:
-        LOGGER.error("Domain needs to be added to sub-domain table")
+        print("Adding domain to the sub-domain table")
     finally:
         if conn is not None:
             close(conn)
