@@ -63,7 +63,7 @@ def get_orgs():
         cur.close()
         return pe_orgs
     except (Exception, psycopg2.DatabaseError) as error:
-        logging.error("There was a problem with your database query %s", error)
+        LOGGER.error("There was a problem with your database query %s", error)
     finally:
         if conn is not None:
             close(conn)
@@ -433,7 +433,7 @@ def getSubdomain(domain):
         cur.close()
         return sub[0][0]
     except (Exception, psycopg2.DatabaseError) as error:
-        logging.error("There was a problem with your database query %s", error)
+        LOGGER.error("Domain needs to be added to sub-domain table")
     finally:
         if conn is not None:
             close(conn)
@@ -477,7 +477,6 @@ def addSubdomain(conn, domain, pe_org_uid, root):
         "insert_sub_domain",
         (False, date, domain, pe_org_uid, "findomain", root_domain, None),
     )
-
     LOGGER.info("Success adding domain %s to subdomains table.", domain)
     conn.commit()
     close(conn)
@@ -504,7 +503,7 @@ def org_root_domains(conn, org_uid):
         cur.close()
         return roots
     except (Exception, psycopg2.DatabaseError) as error:
-        logging.error("There was a problem with your database query %s", error)
+        LOGGER.error("There was a problem with your database query %s", error)
     finally:
         if conn is not None:
             close(conn)

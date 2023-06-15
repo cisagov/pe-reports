@@ -203,7 +203,6 @@ def run_dnstwist(orgs_list):
                     except Exception:
                         # TODO: Create custom exceptions.
                         # Issue 265: https://github.com/cisagov/pe-reports/issues/265
-                        LOGGER.info("Unable to get sub domain uid")
                         # Add and then get it
                         addSubdomain(PE_conn, sub_domain, pe_org_uid, True)
                         sub_domain_uid = getSubdomain(sub_domain)
