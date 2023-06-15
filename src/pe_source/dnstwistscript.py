@@ -115,8 +115,6 @@ def checkBlocklist(dom, sub_domain_uid, source_uid, pe_org_uid, perm_list):
     else:
         perm_list.append(permutation)
 
-    if malicious:
-        LOGGER.info("\t%s was flagged by a blocklist", dom["domain"])
     domain_dict = {
         "organizations_uid": pe_org_uid,
         "data_source_uid": source_uid,
