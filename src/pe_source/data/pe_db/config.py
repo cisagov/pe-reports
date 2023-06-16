@@ -24,30 +24,28 @@ def shodan_api_init():
     """Connect to Shodan API."""
     section = "shodan"
     api_list = []
-    if os.path.isfile(REPORT_DB_CONFIG):
-        parser = ConfigParser()
-        parser.read(REPORT_DB_CONFIG, encoding="utf-8")
-        if parser.has_section(section):
-            params = parser.items(section)
-        else:
-            raise Exception(
-                "Section {} not found in the {} file".format(section, REPORT_DB_CONFIG)
-            )
-    else:
-        raise Exception(
-            "Database.ini file not found at this path: {}".format(REPORT_DB_CONFIG)
-        )
+    if not os.path.isfile(REPORT_DB_CONFIG):
+        raise Exception(f"Database.ini file not found at this path: {REPORT_DB_CONFIG}")
 
-    for key in params:
+    with open(REPORT_DB_CONFIG, encoding="utf-8") as config_file:
+        parser = ConfigParser()
+        parser.read_file(config_file)
+        if not parser.has_section(section):
+            raise Exception(
+                f"Section {section} not found in the {REPORT_DB_CONFIG} file"
+            )
+        params = parser.items(section)
+
+    for key, value in params:
         try:
-            api = shodan.Shodan(key[1])
+            api = shodan.Shodan(value)
             # Test api key
             api.info()
-        except Exception:
-            LOGGER.error("Invalid Shodan API key: {}".format(key))
-            continue
-        api_list.append(api)
-    LOGGER.info("Number of valid Shodan API keys: {}".format(len(api_list)))
+            api_list.append(api)
+        except shodan.APIError as e:
+            logging.error(f"Invalid Shodan API key: {key} ({e})")
+
+    logging.info(f"Number of valid Shodan API keys: {len(api_list)}")
     return api_list
 
 
