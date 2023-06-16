@@ -136,7 +136,6 @@ def setStakeholder(customer):
         conn = psycopg2.connect(**params)
 
         if conn:
-
             LOGGER.info(
                 "There was a connection made to "
                 "the database and the query was executed "
@@ -171,7 +170,6 @@ def setCustRootDomain(customer, rootdomain, orgUUID):
         conn = psycopg2.connect(**params)
 
         if conn:
-
             LOGGER.info(
                 "There was a connection made to "
                 "the database and the query was executed "
@@ -204,7 +202,6 @@ def setCustSubDomain(subdomain, rootUUID, rootname):
     global conn, cursor
 
     try:
-
         LOGGER.info("Starting insert into database...")
 
         params = config()
@@ -212,7 +209,6 @@ def setCustSubDomain(subdomain, rootUUID, rootname):
         conn = psycopg2.connect(**params)
 
         if conn:
-
             LOGGER.info(
                 "There was a connection made to "
                 "the database and the query to "
@@ -260,7 +256,6 @@ def setCustomerExternalCSG(
         conn = psycopg2.connect(**params)
 
         if conn:
-
             LOGGER.info(
                 "There was a connection made to"
                 " the database and the query was executed "
@@ -322,9 +317,7 @@ def getSubdomain(domain):
 
     subisolated = ""
     for sub in subdomains:
-
         if sub != f"www.{domain}":
-
             LOGGER.info(sub)
             subisolated = sub.rsplit(".")[:-2]
             LOGGER.info(
@@ -460,7 +453,6 @@ def setOrganizationUsers(org_id):
             or userrole == role2
             and user_id != id_role1
         ):
-
             url = (
                 f"https://api.cybersixgill.com/multi-tenant/organization/"
                 f"{org_id}/user/{user_id}?role_id={userrole}"
@@ -546,7 +538,6 @@ def stakeholder():
         allValidIP = getallsubdomainIPS(custRootDomainValue)
 
         try:
-
             if cust not in allDomain.values():
                 flash(f"You successfully submitted a new customer {cust} ", "success")
 
