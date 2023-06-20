@@ -63,8 +63,9 @@
             <div class="col-8 offset-2">
                 <table id="weekly-status-table"
                        class="table table-striped table-hover custom-table-dark custom-table-bordered">
-                    <thead>
                     <caption>Weekly Status</caption>
+                    <thead>
+
                     <tr>
                         <th>Select to edit</th>
                         <th>Week Ending</th>
@@ -269,10 +270,10 @@
             // Get the modal
             var modal = new bootstrap.Modal(document.getElementById('editModal'));
 
-// Get the button that closes the modal
+            // Get the button that closes the modal
             var btnFooter = document.getElementById("closeButtonFooter");
 
-// When the user clicks on the button, close the modal
+            // When the user clicks on the button, close the modal
             btnFooter.onclick = function () {
                 modal.hide();
             }
