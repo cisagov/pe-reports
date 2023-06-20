@@ -43,9 +43,9 @@ def shodan_api_init():
             api.info()
             api_list.append(api)
         except shodan.APIError as e:
-            logging.error(f"Invalid Shodan API key: {key} ({e})")
+            LOGGER.error(f"Invalid Shodan API key: {key} ({e})")
 
-    logging.info(f"Number of valid Shodan API keys: {len(api_list)}")
+    LOGGER.info(f"Number of valid Shodan API keys: {len(api_list)}")
     return api_list
 
 
