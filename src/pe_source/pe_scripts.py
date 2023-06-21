@@ -22,7 +22,6 @@ Options:
                                     If not specified, all will run. Valid values are "alerts",
                                     "credentials", "mentions", "topCVEs". E.g. alerts,mentions.
                                     [default: all]
-  -sc --soc_med_included            Include social media posts from cybersixgill in data collection.
 """
 
 # Standard Python Libraries
@@ -47,7 +46,7 @@ from .pe_shodan import Shodan
 LOGGER = logging.getLogger(__name__)
 
 
-def run_pe_script(source, orgs_list, cybersix_methods, soc_med_included):
+def run_pe_script(source, orgs_list, cybersix_methods):
     """Collect data from the source specified."""
     # If not "all", separate orgs string into a list of orgs
     if orgs_list != "all":
@@ -66,9 +65,6 @@ def run_pe_script(source, orgs_list, cybersix_methods, soc_med_included):
     elif source == "shodan":
         shodan = Shodan(orgs_list)
         shodan.run_shodan()
-    elif source == "dnsmonitor":
-        dnsMonitor = DNSMonitor(orgs_list)
-        dnsMonitor.run_dnsMonitor()
     elif source == "dnstwist":
         run_dnstwist(orgs_list)
     elif source == "intelx":
@@ -122,7 +118,6 @@ def main():
         validated_args["DATA_SOURCE"],
         validated_args["--orgs"],
         validated_args["--cybersix-methods"],
-        validated_args["--soc_med_included"],
     )
 
     # Stop logging and clean up
