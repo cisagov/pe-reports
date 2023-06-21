@@ -60,7 +60,7 @@ def run_pe_script(source, orgs_list, cybersix_methods):
     LOGGER.info("Running %s on these orgs: %s", source, orgs_list)
 
     if source == "cybersixgill":
-        cybersix = Cybersixgill(orgs_list, cybersix_methods, soc_med_included)
+        cybersix = Cybersixgill(orgs_list, cybersix_methods)
         cybersix.run_cybersixgill()
     elif source == "shodan":
         shodan = Shodan(orgs_list)
