@@ -7,6 +7,7 @@ RUN dpkg -i filebeat-8.6.0-amd64.deb
 
 # Copy over Filebeat configuration
 COPY filebeat.yml /etc/filebeat/filebeat.yml
+RUN chmod go-w /etc/filebeat/filebeat.yml
 
 # Command to run
 CMD ["filebeat", "-e"]
