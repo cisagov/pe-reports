@@ -24,7 +24,7 @@ class Shodan:
 
         # Get orgs from PE database
         pe_orgs = get_orgs()
-        
+
         # Filter orgs if specified
         if orgs_list == "all":
             pe_orgs_final = pe_orgs
