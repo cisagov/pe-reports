@@ -181,6 +181,7 @@ services:
     volumes:
       - ./metricbeat.yml:/usr/share/metricbeat/metricbeat.yml # Mount the Metricbeat configuration file
       - /var/run/docker.sock:/var/run/docker.sock # Mount the Docker socket for container metrics
+      - certs:/usr/share/metricbeat/config/certs
     depends_on:
       # Define dependencies for the service
       - logstash
