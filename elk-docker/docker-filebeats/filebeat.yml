@@ -2,8 +2,9 @@ filebeat.inputs:
 - type: log
   enabled: true
   paths:
-    - ${LOG_PATH1}/*.log
-    - ${LOG_PATH2}/*.log
+    - ${LOG_PATH1}/
+    - ${LOG_PATH2}/
+    - /var/log/syslog/*.log 
 
 #output.elasticsearch:
 #  hosts: ["${ELASTICSEARCH_URL}:9200"]
