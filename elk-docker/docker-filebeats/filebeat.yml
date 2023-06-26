@@ -4,5 +4,16 @@ filebeat.inputs:
   paths:
     - ${LOG_PATH1}/*.log
     - ${LOG_PATH2}/*.log
-output.elasticsearch:
-  hosts: ["${ELASTICSEARCH_URL}:9200"]
+
+#output.elasticsearch:
+#  hosts: ["${ELASTICSEARCH_URL}:9200"]
+#  username: "${ELASTIC_USERNAME}"             # The username used to connect to Elasticsearch.
+#  password: "${ELASTIC_PASSWORD}"        # The password used to connect to Elasticsearch.
+#  ssl.enabled: true               # This enables SSL for secure communication.
+
+output.logstash:
+  hosts: ["${ELASTICSEARCH_URL}:5044"]
+#  hosts: ["${ELASTICSEARCH_URL}:9200"]
+#  username: "${ELASTIC_USERNAME}"             # The username used to connect to Elasticsearch.
+#  password: "${ELASTIC_PASSWORD}"        # The password used to connect to Elasticsearch.
+#  ssl.enabled: true               # This enables SSL for secure communication.
