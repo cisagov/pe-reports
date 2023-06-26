@@ -5,4 +5,3 @@
 docker stop filebeat
 docker rm filebeat
 
-docker run -d --name=filebeat --user=root --volume="$(pwd)/filebeat.docker.yml:/usr/share/filebeat/filebeat.yml:ro" --volume="/var/lib/docker/containers:/var/lib/docker/containers:ro" --volume="/var/run/docker.sock:/var/run/docker.sock:ro" --volume="/var/log:/var/log:ro" docker.elastic.co/beats/filebeat:8.6.0 filebeat -e -strict.perms=false -E output.logstash.hosts=["${ELASTICSEARCH_URL}:5044"]
