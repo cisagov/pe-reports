@@ -339,8 +339,8 @@ class UserInDB(UserInDBBase):
 # ---------- D-Score View Schemas ----------
 # vw_dscore_vs_cert schema:
 class VwDscoreVSCert(BaseModel):
-    organizations_uid: UUID
-    parent_org_uid: UUID
+    organizations_uid: str
+    parent_org_uid: Optional[str] = None
     num_ident_cert: int
     num_monitor_cert: int
 
@@ -350,7 +350,7 @@ class VwDscoreVSCert(BaseModel):
 
 # vw_dscore_vs_cert input schema:
 class VwDscoreVSCertInput(BaseModel):
-    specified_orgs: list
+    specified_orgs: List[str]
 
     class Config:
         orm_mode = True
@@ -366,8 +366,8 @@ class VwDscoreVSCertTaskResp(BaseModel):
 
 # vw_dscore_vs_mail schema:
 class VwDscoreVSMail(BaseModel):
-    organizations_uid: UUID
-    parent_org_uid: UUID
+    organizations_uid: str
+    parent_org_uid: Optional[str] = None
     num_valid_dmarc: int
     num_valid_spf: int
     num_valid_dmarc_or_spf: int
@@ -379,7 +379,7 @@ class VwDscoreVSMail(BaseModel):
 
 # vw_dscore_vs_mail input schema:
 class VwDscoreVSMailInput(BaseModel):
-    specified_orgs: list
+    specified_orgs: List[str]
 
     class Config:
         orm_mode = True
@@ -395,8 +395,8 @@ class VwDscoreVSMailTaskResp(BaseModel):
 
 # vw_dscore_pe_ip schema:
 class VwDscorePEIp(BaseModel):
-    organizations_uid: UUID
-    parent_org_uid: UUID
+    organizations_uid: str
+    parent_org_uid: Optional[str] = None
     num_ident_ip: int
     num_monitor_ip: int
 
@@ -406,7 +406,7 @@ class VwDscorePEIp(BaseModel):
 
 # vw_dscore_pe_ip input schema:
 class VwDscorePEIpInput(BaseModel):
-    specified_orgs: list
+    specified_orgs: List[str]
 
     class Config:
         orm_mode = True
@@ -422,8 +422,8 @@ class VwDscorePEIpTaskResp(BaseModel):
 
 # vw_dscore_pe_domain schema:
 class VwDscorePEDomain(BaseModel):
-    organizations_uid: UUID
-    parent_org_uid: UUID
+    organizations_uid: str
+    parent_org_uid: Optional[str] = None
     num_ident_domain: int
     num_monitor_domain: int
 
@@ -433,7 +433,7 @@ class VwDscorePEDomain(BaseModel):
 
 # vw_dscore_pe_domain input schema:
 class VwDscorePEDomainInput(BaseModel):
-    specified_orgs: list
+    specified_orgs: List[str]
 
     class Config:
         orm_mode = True
@@ -449,8 +449,8 @@ class VwDscorePEDomainTaskResp(BaseModel):
 
 # vw_dscore_was_webapp schema:
 class VwDscoreWASWebapp(BaseModel):
-    organizations_uid: UUID
-    parent_org_uid: UUID
+    organizations_uid: str
+    parent_org_uid: Optional[str] = None
     num_ident_webapp: int
     num_monitor_webapp: int
 
@@ -460,7 +460,7 @@ class VwDscoreWASWebapp(BaseModel):
 
 # vw_dscore_was_webapp input schema:
 class VwDscoreWASWebappInput(BaseModel):
-    specified_orgs: list
+    specified_orgs: List[str]
 
     class Config:
         orm_mode = True
@@ -476,7 +476,7 @@ class VwDscoreWASWebappTaskResp(BaseModel):
 
 # FCEB status query schema (no view):
 class FCEBStatus(BaseModel):
-    organizations_uid: UUID
+    organizations_uid: str
     fceb: bool
 
     class Config:
@@ -485,7 +485,7 @@ class FCEBStatus(BaseModel):
 
 # FCEB status query input schema (no view):
 class FCEBStatusInput(BaseModel):
-    specified_orgs: list
+    specified_orgs: List[str]
 
     class Config:
         orm_mode = True
@@ -502,8 +502,8 @@ class FCEBStatusTaskResp(BaseModel):
 # ---------- I-Score View Schemas ----------
 # vw_iscore_vs_vuln schema:
 class VwIscoreVSVuln(BaseModel):
-    organizations_uid: UUID
-    parent_org_uid: UUID
+    organizations_uid: str
+    parent_org_uid: Optional[str] = None
     cve_name: str
     cvss_score: float
 
@@ -513,7 +513,7 @@ class VwIscoreVSVuln(BaseModel):
 
 # vw_iscore_vs_vuln input schema:
 class VwIscoreVSVulnInput(BaseModel):
-    specified_orgs: list
+    specified_orgs: List[str]
 
     class Config:
         orm_mode = True
@@ -529,8 +529,8 @@ class VwIscoreVSVulnTaskResp(BaseModel):
 
 # vw_iscore_vs_vuln_prev schema:
 class VwIscoreVSVulnPrev(BaseModel):
-    organizations_uid: UUID
-    parent_org_uid: UUID
+    organizations_uid: str
+    parent_org_uid: Optional[str] = None
     cve_name: str
     cvss_score: float
     time_closed: datetime
@@ -541,7 +541,7 @@ class VwIscoreVSVulnPrev(BaseModel):
 
 # vw_iscore_vs_vuln_prev input schema:
 class VwIscoreVSVulnPrevInput(BaseModel):
-    specified_orgs: list
+    specified_orgs: List[str]
     start_date: date
     end_date: date
 
@@ -559,8 +559,8 @@ class VwIscoreVSVulnPrevTaskResp(BaseModel):
 
 # vw_iscore_pe_vuln schema:
 class VwIscorePEVuln(BaseModel):
-    organizations_uid: UUID
-    parent_org_uid: UUID
+    organizations_uid: str
+    parent_org_uid: Optional[str] = None
     date: date
     cve_name: str
     cvss_score: float
@@ -571,7 +571,7 @@ class VwIscorePEVuln(BaseModel):
 
 # vw_iscore_pe_vuln input schema:
 class VwIscorePEVulnInput(BaseModel):
-    specified_orgs: list
+    specified_orgs: List[str]
     start_date: date
     end_date: date
 
@@ -589,8 +589,8 @@ class VwIscorePEVulnTaskResp(BaseModel):
 
 # vw_iscore_pe_cred schema:
 class VwIscorePECred(BaseModel):
-    organizations_uid: UUID
-    parent_org_uid: UUID
+    organizations_uid: str
+    parent_org_uid: Optional[str] = None
     date: date
     password_creds: int
     total_creds: int
@@ -601,7 +601,7 @@ class VwIscorePECred(BaseModel):
 
 # vw_iscore_pe_cred input schema:
 class VwIscorePECredInput(BaseModel):
-    specified_orgs: list
+    specified_orgs: List[str]
     start_date: date
     end_date: date
 
@@ -619,8 +619,8 @@ class VwIscorePECredTaskResp(BaseModel):
 
 # vw_iscore_pe_breach schema:
 class VwIscorePEBreach(BaseModel):
-    organizations_uid: UUID
-    parent_org_uid: UUID
+    organizations_uid: str
+    parent_org_uid: Optional[str] = None
     date: date
     breach_count: int
 
@@ -630,7 +630,7 @@ class VwIscorePEBreach(BaseModel):
 
 # vw_iscore_pe_breach input schema:
 class VwIscorePEBreachInput(BaseModel):
-    specified_orgs: list
+    specified_orgs: List[str]
     start_date: date
     end_date: date
 
@@ -648,8 +648,8 @@ class VwIscorePEBreachTaskResp(BaseModel):
 
 # vw_iscore_pe_darkweb schema:
 class VwIscorePEDarkweb(BaseModel):
-    organizations_uid: UUID
-    parent_org_uid: UUID
+    organizations_uid: str
+    parent_org_uid: Optional[str] = None
     alert_type: str
     date: date
     Count: int
@@ -660,7 +660,7 @@ class VwIscorePEDarkweb(BaseModel):
 
 # vw_iscore_pe_darkweb input schema:
 class VwIscorePEDarkwebInput(BaseModel):
-    specified_orgs: list
+    specified_orgs: List[str]
     start_date: date
     end_date: date
     # Don't forget 0001-01-01 dates
@@ -679,8 +679,8 @@ class VwIscorePEDarkwebTaskResp(BaseModel):
 
 # vw_iscore_pe_protocol schema:
 class VwIscorePEProtocol(BaseModel):
-    organizations_uid: UUID
-    parent_org_uid: UUID
+    organizations_uid: str
+    parent_org_uid: Optional[str] = None
     port: str
     ip: str
     protocol: str
@@ -693,7 +693,7 @@ class VwIscorePEProtocol(BaseModel):
 
 # vw_iscore_pe_protocol input schema:
 class VwIscorePEProtocolInput(BaseModel):
-    specified_orgs: list
+    specified_orgs: List[str]
     start_date: date
     end_date: date
 
@@ -711,8 +711,8 @@ class VwIscorePEProtocolTaskResp(BaseModel):
 
 # vw_iscore_was_vuln schema:
 class VwIscoreWASVuln(BaseModel):
-    organizations_uid: UUID
-    parent_org_uid: UUID
+    organizations_uid: str
+    parent_org_uid: Optional[str] = None
     date: date
     cve_name: str
     cvss_score: float
@@ -724,7 +724,7 @@ class VwIscoreWASVuln(BaseModel):
 
 # vw_iscore_was_vuln input schema:
 class VwIscoreWASVulnInput(BaseModel):
-    specified_orgs: list
+    specified_orgs: List[str]
     start_date: date
     end_date: date
 
@@ -742,8 +742,8 @@ class VwIscoreWASVulnTaskResp(BaseModel):
 
 # vw_iscore_was_vuln_prev schema:
 class VwIscoreWASVulnPrev(BaseModel):
-    organizations_uid: UUID
-    parent_org_uid: UUID
+    organizations_uid: str
+    parent_org_uid: Optional[str] = None
     was_total_vulns_prev: int
     date: date
 
@@ -753,7 +753,7 @@ class VwIscoreWASVulnPrev(BaseModel):
 
 # vw_iscore_was_vuln_prev input schema:
 class VwIscoreWASVulnPrevInput(BaseModel):
-    specified_orgs: list
+    specified_orgs: List[str]
     start_date: date
     end_date: date
 
@@ -790,7 +790,7 @@ class KEVListTaskResp(BaseModel):
 # vw_iscore_orgs_ip_counts schema:
 # vw_iscore_orgs_ip_counts does not use any input parameters
 class VwIscoreOrgsIpCounts(BaseModel):
-    organizations_uid: UUID
+    organizations_uid: str
     cyhy_db_name: str
     # ip_count: int
 

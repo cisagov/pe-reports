@@ -1,6 +1,6 @@
 from typing import List
 from celery import shared_task
-from home.models import MatVwOrgsAllIps
+from home.models import VwOrgsAllIps
 import datetime
 from django.db.models import Q
 
@@ -32,18 +32,31 @@ from home.models import (
 
 @shared_task(bind=True)
 def get_vs_info(self, cyhy_db_names: List[str]):
-    vs_data = list(MatVwOrgsAllIps.objects.filter(cyhy_db_name__in=cyhy_db_names))
+    vs_data = list(VwOrgsAllIps.objects.filter(cyhy_db_name__in=cyhy_db_names))
     return vs_data
+
+
+# ---------- Helper Functions ----------
+def convert_uuids_to_strings(list_of_dicts):
+    """Convert organizations_uid and parent_org_uid to strings."""
+    for row in list_of_dicts:
+        row["organizations_uid"] = str(row["organizations_uid"])
+        if row["parent_org_uid"] is not None:
+            row["parent_org_uid"] = str(row["parent_org_uid"])
+    return list_of_dicts
 
 
 # ---------- D-Score View Tasks ----------
 @shared_task(bind=True)
 def get_dscore_vs_cert_info(self, specified_orgs: List[str]):
     """Task function for the dscore_vs_cert API endpoint."""
-    # Make database query
+    # Make database query and convert to list of dictionaries
     dscore_vs_cert = list(
-        VwDscoreVSCert.objects.filter(organizations_uid__in=specified_orgs)
+        VwDscoreVSCert.objects.filter(organizations_uid__in=specified_orgs).values()
     )
+    # Convert uuids to strings
+    dscore_vs_cert = convert_uuids_to_strings(dscore_vs_cert)
+    # return dscore_vs_cert
     return dscore_vs_cert
 
 

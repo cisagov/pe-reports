@@ -862,14 +862,10 @@ def read_dscore_vs_cert(
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
-        try:
-            userapiTokenverify(theapiKey=tokens)
-            # If API key valid, create task for query
-            task = get_dscore_vs_cert_info.delay(data.specified_orgs)
-            # Return the new task id w/ "Processing" status
-            return {"task_id": task.id, "status": "Processing"}
-        except:
-            LOGGER.info("API key expired please try again")
+        # If API key valid, create task for query
+        task = get_dscore_vs_cert_info.delay(data.specified_orgs)
+        # Return the new task id w/ "Processing" status
+        return {"task_id": task.id, "status": "Processing"}
     else:
         return {"message": "No api key was submitted"}
 
