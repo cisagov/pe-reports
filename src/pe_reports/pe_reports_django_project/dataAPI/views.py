@@ -26,6 +26,9 @@ from fastapi import \
     UploadFile, \
     Request
 
+from fastapi_limiter import FastAPILimiter
+from fastapi_limiter.depends import RateLimiter
+
 from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder
 from fastapi.security import OAuth2PasswordBearer
@@ -34,6 +37,7 @@ from fastapi.security.api_key import \
     APIKeyCookie,\
     APIKeyHeader,\
     APIKey
+from redis import asyncio as aioredis
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
@@ -93,6 +97,17 @@ api_key_header = APIKeyHeader(name=API_KEY_NAME, auto_error=False)
 
 
 limiter = Limiter(key_func=get_remote_address, default_limits=["5 per minute"])
+
+async def default_identifier(request):
+    return request.headers.get("X-Real-IP", request.client.host)
+
+
+@api_router.on_event("startup")
+async def startup():
+    redis = aioredis.from_url(settings.CELERY_RESULT_BACKEND,
+                              encoding="utf-8",
+                              decode_responses=True)
+    await FastAPILimiter.init(redis, identifier=default_identifier)
 
 
 
@@ -262,7 +277,8 @@ def upload_was_data(dict):
 #         )
 
 
-@api_router.post("/orgs", dependencies=[Depends(get_api_key)],
+@api_router.post("/orgs", dependencies=[Depends(get_api_key),
+                 Depends(RateLimiter(times=200, seconds=60))],
                  response_model=List[schemas.Organization],
                  tags=["List of all Organizations"])
 def read_orgs(tokens: dict = Depends(get_api_key)):
