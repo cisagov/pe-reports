@@ -588,7 +588,8 @@ def org_root_domains(conn, org_uid):
     """Get root domains from database given the org_uid."""
     sql = """
         select * from root_domains rd
-        where rd.organizations_uid = %(org_id)s;
+        where rd.organizations_uid = %(org_id)s
+        and enumerate_subs is True;
     """
     df = pd.read_sql_query(sql, conn, params={"org_id": org_uid})
     return df

@@ -94,6 +94,9 @@ def import_discov_data(curr_start, curr_end, stakeholder_list):
     pe_data_domain = split_parent_child_records(pe_data_domain)
     was_data_webapp = split_parent_child_records(was_data_webapp)
 
+    # Replace Nones with 0s in vs_data_mail total_mail_domains column
+    vs_data_mail["total_mail_domains"].fillna(0, inplace=True)
+
     # Re-Groupby organizations_uid again to consolidate parent org data
     vs_data_cert = vs_data_cert.groupby("organizations_uid", as_index=False).sum()
     vs_data_mail = vs_data_mail.groupby("organizations_uid", as_index=False).sum()

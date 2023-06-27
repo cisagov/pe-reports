@@ -442,7 +442,7 @@ def import_ident_data(prev_start, prev_end, curr_start, curr_end, stakeholder_li
                 "num_unencrypt_protocol": 0,
                 "num_affected_sockets": 0,
                 "num_encrypt_protocol": 0,
-                "percent_protocol_encrypt": 0,
+                "percent_protocol_unencrypt": 0,
             },
             index=[0],
         )
@@ -743,7 +743,8 @@ def calc_ident_scores(ident_data, stakeholder_list):
         Dataframe containing I-Score/letter grade for each org in the specified stakeholder list
     """
     ident_data_df = ident_data
-
+    print(ident_data_df)
+    print(ident_data_df[['num_unencrypt_protocol','num_encrypt_protocol']])
     # Impute column means to use for filling in missing data later
     col_means = ident_data_df.mean()
 

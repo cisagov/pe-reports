@@ -44,6 +44,7 @@ LOGGER = logging.getLogger(__name__)
 
 # df_orgs_df is a datframe of stakeholders with two columns: organizations_uid and cyhy_db_name
 def get_tracking_score(df_orgs_df, report_period_year, report_period_month):
+    LOGGER.info("Calculating tracking score")
     last_month = get_last_month(report_period_year, report_period_month)
     this_month = datetime(report_period_year, report_period_month, 1)
     next_month = get_next_month(report_period_year, report_period_month)
@@ -56,13 +57,15 @@ def get_tracking_score(df_orgs_df, report_period_year, report_period_month):
     df_was_bod_19 = summarize_was_bod_19(df_orgs, this_month, next_month)
     df_vs_attr = summarize_vs_attr(df_orgs, this_month, next_month)
     df_was_atr = summarize_was_attr(df_orgs, this_month, next_month)
-    
+
+    LOGGER.info("Summarize counts")
     # Data before Normalization
     df_pe_vulns = summarize_pe_vuln_counts(df_orgs, last_month, this_month, next_month)
     df_vs_vulns = summarize_vs_vuln_counts(df_orgs, this_month)
     df_was_vulns = summarize_was_vuln_counts(df_orgs, last_month, this_month, next_month)
     df_ports_prot= summarize_port_scans(df_orgs, last_month, this_month, next_month)
 
+    LOGGER.info("Normalize data")
     # #Data after Normalization
     df_norm_vs_vulns = normalize_vulns(df_vs_vulns, "VS")
     df_norm_was_vulns = normalize_vulns(df_was_vulns, "WAS")
@@ -71,6 +74,8 @@ def get_tracking_score(df_orgs_df, report_period_year, report_period_month):
 
     tracking_score_list = []
     for index, org in df_orgs.iterrows():
+        LOGGER.info(index)
+        LOGGER.info(org['organizations_uid'])
         org_id = org['organizations_uid']
 
         df_bod_18_org = df_bod_18.loc[df_bod_18['organizations_uid'] == org_id]
@@ -164,7 +169,7 @@ def get_tracking_score(df_orgs_df, report_period_year, report_period_month):
         rescaled_tracking_score = round((tracking_score * .4) + 60.0, 2)
         tracking_score_list.append([org['organizations_uid'], org['cyhy_db_name'], rescaled_tracking_score, get_letter_grade(rescaled_tracking_score)])
     df_tracking_score = pd.DataFrame(tracking_score_list, columns= ["organizations_uid", "cyhy_db_name", "tracking_score", "letter_grade"])   
-    
+    LOGGER.info("Finished Calculating Tracking Score")
     return df_tracking_score
 
 def summarize_vs_attr(orgs_df, this_month, next_month):
@@ -190,6 +195,7 @@ def summarize_vs_attr(orgs_df, this_month, next_month):
         average_highs = average_list(org_highs)
         average_time_to_remediate_list.append([org['organizations_uid'], org['cyhy_db_name'], calculate_attr_compliance(average_kevs, "KEV"), calculate_attr_compliance(average_crits, "CRIT"), calculate_attr_compliance(average_highs, "HIGH")])
     df_attr = pd.DataFrame(average_time_to_remediate_list, columns= ["organizations_uid", "cyhy_db_name", "attr_kevs", "attr_crits", "attr_highs"])
+    
     return df_attr
 
 def calculate_attr_compliance(vuln_attr, type):

@@ -482,13 +482,46 @@ def refresh_asset_counts_vw():
     cur.execute(sql)
     conn.commit()
 
+    LOGGER.info("Refreshing breach comp")
+    conn = connect()
+    sql = """
+        REFRESH MATERIALIZED VIEW
+        public.mat_vw_breachcomp
+        WITH DATA
+    """
+    cur = conn.cursor()
+    cur.execute(sql)
+    conn.commit()
+
+    LOGGER.info("Refreshing breach details")
+    conn = connect()
+    sql = """
+        REFRESH MATERIALIZED VIEW
+        public.mat_vw_breachcomp_breachdetails
+        WITH DATA
+    """
+    cur = conn.cursor()
+    cur.execute(sql)
+    conn.commit()
+
+    LOGGER.info("Refreshing breach creds by date")
+    conn = connect()
+    sql = """
+        REFRESH MATERIALIZED VIEW
+        public.mat_vw_breachcomp_credsbydate
+        WITH DATA
+    """
+    cur = conn.cursor()
+    cur.execute(sql)
+    conn.commit()
+
 
 def query_cidrs_by_org(org_uid):
     """Query all CIDRs for a specific org."""
     conn = connect()
     sql = """select *
             from cidrs c
-            where c.organizations_uid  = %(org_uid)s;
+            where c.organizations_uid  = %(org_uid)s and c.current;
             """
     df = pd.read_sql(sql, conn, params={"org_uid": org_uid})
     conn.close()
@@ -575,7 +608,7 @@ def query_creds_view(org_uid, start_date, end_date):
     """Query credentials view ."""
     conn = connect()
     try:
-        sql = """SELECT * FROM vw_breachcomp
+        sql = """SELECT * FROM mat_vw_breachcomp
         WHERE organizations_uid = %(org_uid)s
         AND modified_date BETWEEN %(start_date)s AND %(end_date)s"""
         df = pd.read_sql(
@@ -595,7 +628,7 @@ def query_credsbyday_view(org_uid, start_date, end_date):
     """Query credentials by date view ."""
     conn = connect()
     try:
-        sql = """SELECT mod_date, no_password, password_included FROM vw_breachcomp_credsbydate
+        sql = """SELECT mod_date, no_password, password_included FROM mat_vw_breachcomp_credsbydate
         WHERE organizations_uid = %(org_uid)s
         AND mod_date BETWEEN %(start_date)s AND %(end_date)s"""
         df = pd.read_sql(
@@ -616,7 +649,7 @@ def query_breachdetails_view(org_uid, start_date, end_date):
     conn = connect()
     try:
         sql = """SELECT breach_name, mod_date modified_date, breach_date, password_included, number_of_creds
-        FROM vw_breachcomp_breachdetails
+        FROM mat_vw_breachcomp_breachdetails
         WHERE organizations_uid = %(org_uid)s
         AND mod_date BETWEEN %(start_date)s AND %(end_date)s"""
         df = pd.read_sql(

@@ -3928,46 +3928,17 @@ COMMENT ON VIEW public.vw_dscore_pe_domain IS 'Retrieves all the PE domain data 
 --
 
 CREATE VIEW public.vw_dscore_pe_ip AS
- SELECT grouped_cidr_ips.organizations_uid,
-    grouped_cidr_ips.parent_org_uid,
-    grouped_cidr_ips.num_ident_ip,
-    grouped_all_ips.num_monitor_ip
-   FROM (( SELECT cidr_ips_data.organizations_uid,
-            cidr_ips_data.parent_org_uid,
-            COALESCE(count(cidr_ips_data.ip), (0)::bigint) AS num_ident_ip
-           FROM ( SELECT orgs.organizations_uid,
-                    orgs.parent_org_uid,
-                    cidr_ips.ip
-                   FROM (( SELECT organizations.organizations_uid,
-                            organizations.parent_org_uid
-                           FROM public.organizations) orgs
-                     LEFT JOIN ( SELECT cidrs.organizations_uid,
-                            ips.ip
-                           FROM (public.ips
-                             JOIN public.cidrs ON ((ips.origin_cidr = cidrs.cidr_uid)))) cidr_ips ON ((orgs.organizations_uid = cidr_ips.organizations_uid)))) cidr_ips_data
-          GROUP BY cidr_ips_data.organizations_uid, cidr_ips_data.parent_org_uid) grouped_cidr_ips
-     JOIN ( SELECT all_ips_data.organizations_uid,
-            all_ips_data.parent_org_uid,
-            COALESCE(count(all_ips_data.ip), (0)::bigint) AS num_monitor_ip
-           FROM ( SELECT orgs.organizations_uid,
-                    orgs.parent_org_uid,
-                    all_ips.ip
-                   FROM (( SELECT organizations.organizations_uid,
-                            organizations.parent_org_uid
-                           FROM public.organizations) orgs
-                     LEFT JOIN ( SELECT cidrs.organizations_uid,
-                            ips.ip
-                           FROM (public.ips
-                             JOIN public.cidrs ON ((ips.origin_cidr = cidrs.cidr_uid)))
-                        UNION
-                         SELECT rd.organizations_uid,
-                            i.ip
-                           FROM (((public.root_domains rd
-                             JOIN public.sub_domains sd ON ((rd.root_domain_uid = sd.root_domain_uid)))
-                             JOIN public.ips_subs si ON ((sd.sub_domain_uid = si.sub_domain_uid)))
-                             JOIN public.ips i ON ((si.ip_hash = i.ip_hash)))) all_ips ON ((orgs.organizations_uid = all_ips.organizations_uid)))) all_ips_data
-          GROUP BY all_ips_data.organizations_uid, all_ips_data.parent_org_uid) grouped_all_ips ON (((grouped_cidr_ips.organizations_uid = grouped_all_ips.organizations_uid) AND (grouped_cidr_ips.parent_org_uid = grouped_all_ips.parent_org_uid))))
-  ORDER BY grouped_cidr_ips.organizations_uid;
+ SELECT ip_data.organizations_uid,
+    ip_data.parent_org_uid,
+    COALESCE(count(ip_data.ip) FILTER (WHERE (ip_data.origin_cidr IS NOT NULL)), (0)::bigint) AS num_ident_ip,
+    COALESCE(count(ip_data.ip), (0)::bigint) AS num_monitor_ip
+   FROM ( SELECT organizations.organizations_uid,
+            organizations.parent_org_uid,
+            ips.ip,
+            ips.origin_cidr
+           FROM (public.organizations
+             LEFT JOIN public.ips ON ((organizations.organizations_uid = ips.organizations_uid)))) ip_data
+  GROUP BY ip_data.organizations_uid, ip_data.parent_org_uid;
 
 
 ALTER TABLE public.vw_dscore_pe_ip OWNER TO pe;
@@ -4618,7 +4589,8 @@ CREATE TABLE public.was_findings (
     temporal_score double precision,
     fstatus character varying,
     last_detected date,
-    first_detected date
+    first_detected date,
+    is_remidiated boolean
 );
 
 
@@ -4879,6 +4851,60 @@ CREATE VIEW public.vw_scorecard_orgs AS
 
 
 ALTER TABLE public.vw_scorecard_orgs OWNER TO pe;
+
+--
+-- Name: vw_scorecard_top_orgs; Type: VIEW; Schema: public; Owner: pe
+--
+
+CREATE VIEW public.vw_scorecard_top_orgs AS
+ WITH RECURSIVE sector_queries AS (
+         SELECT s.sector_uid,
+            s.id,
+            s.acronym,
+            s.name,
+            s.email,
+            s.contact_name,
+            s.retired,
+            s.first_seen,
+            s.last_seen,
+            s.run_scorecards,
+            s.password,
+            s.parent_sector_uid
+           FROM public.sectors s
+          WHERE (s.run_scorecards = true)
+        UNION ALL
+         SELECT e.sector_uid,
+            e.id,
+            e.acronym,
+            e.name,
+            e.email,
+            e.contact_name,
+            e.retired,
+            e.first_seen,
+            e.last_seen,
+            e.run_scorecards,
+            e.password,
+            e.parent_sector_uid
+           FROM (public.sectors e
+             JOIN sector_queries c ON ((e.parent_sector_uid = c.sector_uid)))
+        )
+ SELECT o.organizations_uid,
+    o.cyhy_db_name,
+    cq.id AS sector_id,
+    o.parent_org_uid,
+    o.retired,
+    o.receives_cyhy_report,
+    o.is_parent,
+    o.fceb,
+    o.fceb_child,
+    o.name,
+    o.cyhy_period_start
+   FROM ((sector_queries cq
+     JOIN public.sectors_orgs so ON ((so.sector_uid = cq.sector_uid)))
+     JOIN public.organizations o ON ((o.organizations_uid = so.organizations_uid)));
+
+
+ALTER TABLE public.vw_scorecard_top_orgs OWNER TO pe;
 
 --
 -- Name: vw_sector_time_to_remediate; Type: VIEW; Schema: public; Owner: pe
