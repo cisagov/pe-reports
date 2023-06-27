@@ -97,6 +97,7 @@ setup(
     py_modules=[splitext(basename(path))[0] for path in glob("src/*.py")],
     include_package_data=True,
     install_requires=[
+        "aioredis",
         "boto3 == 1.21.10",
         "botocore == 1.24.10",
         "beautifulsoup4 ",
@@ -109,6 +110,7 @@ setup(
         "DShield",
         "glob2 == 0.7",
         "fastapi",
+        "fastapi-limiter",
         "flask",
         "flask",
         "flask_login",
@@ -139,6 +141,7 @@ setup(
         "schema == 0.7.5",
         "setuptools == 58.1.0",
         "shodan ==1.27.0",
+        "slowapi==0.1.8",
         "sublist3r",
         "sshtunnel",
         "types-PyYAML == 6.0.4",

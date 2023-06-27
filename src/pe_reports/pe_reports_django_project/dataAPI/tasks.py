@@ -35,3 +35,18 @@ def get_ve_info(ip_address: List[str]):
     result = [{'cyhy_db_name': value} for value in cyhy_db_name_values]
 
     return result
+
+
+@shared_task
+def get_rva_info(ip_address: List[str]):
+    rva_data = MatVwOrgsAllIps.objects.filter(ip_addresses__contains=ip_address)
+
+    print(rva_data)  # temporary print for debugging
+
+    # To get cyhy_db_name values:
+    cyhy_db_name_values = ve_data.values_list('cyhy_db_name', flat=True)
+
+    # Return the result as a list of dictionaries for JSON serialization
+    result = [{'cyhy_db_name': value} for value in cyhy_db_name_values]
+
+    return result
