@@ -55,6 +55,7 @@ from decouple import config
 
 # cisagov Libraries
 from home.models import CyhyDbAssets
+from home.models import DataSource
 from home.models import SubDomains
 from home.models import Organizations
 from home.models import VwBreachcomp
@@ -102,9 +103,10 @@ async def default_identifier(request):
     return request.headers.get("X-Real-IP", request.client.host)
 
 
+#todo import from settings, CELERY_RESULT_BACKEND = "redis://localhost:6379"
 @api_router.on_event("startup")
 async def startup():
-    redis = aioredis.from_url(settings.CELERY_RESULT_BACKEND,
+    redis = aioredis.from_url("redis://localhost:6379",
                               encoding="utf-8",
                               decode_responses=True)
     await FastAPILimiter.init(redis, identifier=default_identifier)
@@ -839,3 +841,54 @@ def cyhy_ports_scan_info_update(cyhy_id: str, org_scans: schemas.CyhyPortScans,
             LOGGER.info('API key expired please try again')
     else:
         return {'message': "No api key was submitted"}
+    
+        
+    
+    
+@api_router.post("/data_source/{source_name}",dependencies=[Depends(get_api_key),
+                 Depends(RateLimiter(times=200, seconds=60))],
+                response_model=List[schemas.DataSource],
+                tags = ["Get Data_source table"])
+
+def get_data_source(source_name: str, tokens: dict = Depends(get_api_key)):
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            try:
+                datas = list(DataSource.objects.filter(name=f'{source_name}'))
+                return datas[1:]
+            except ValidationError as e:
+                return {"message": "Data source does not exist"}
+                
+        except:
+            LOGGER.info('API key expired please try again')
+    else:
+        return {'message': "No api key was submitted"}
+    
+#data_source_uid: str,request: Request, tokens: dict = Depends(get_api_key)
+
+@api_router.put(
+    "/update_last_viewed/{data_source_uid}",
+    dependencies=[Depends(get_api_key),
+                 Depends(RateLimiter(times=200, seconds=60))],
+    tags=["Update last viewed data"]
+)
+@transaction.atomic
+def update_last_viewed(data_source_uid: str,request: Request, tokens: dict = Depends(get_api_key),):
+    if not tokens:
+        return {"message": "No api key was submitted"}
+    LOGGER.info(f"The api key submitted {tokens}")
+    try:
+        userapiTokenverify(theapiKey=tokens)
+        try:
+            data_source  = DataSource.objects.get(data_source_uid=data_source_uid)
+        except ValidationError as e:
+            return {"message": "Data source does not exist"}
+        data_source.last_run = datetime.today().strftime("%Y-%m-%d")
+        data_source.save()
+        return {"message": "Record updated successfully."}
+    except ObjectDoesNotExist:
+        LOGGER.info("API key expired please try agai")
+
+
