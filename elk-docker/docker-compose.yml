@@ -137,7 +137,7 @@ services:
       - XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY=${CRYPTO_PASSWORD} # Set the encryption key for encrypted saved objects
       - ES_ENFORCE_BOOTSTRAP_CHECKS=false # Disable enforcement of bootstrap checks
       - XPACK_REPORTING_ENCRYPTIONKEY=${CRYPTO_PASSWORD} # Set the encryption key for reporting
-      - XPACK_FLEET_AGENTS_ELASTICSEARCH_HOSTS: '["https://es01:9200"]'
+      - XPACK_FLEET_AGENTS_ELASTICSEARCH_HOSTS:'["https://es01:9200"]'
     mem_limit: ${MEM_LIMIT} # Set the memory limit for the container
     healthcheck:
       # Healthcheck for the Kibana servi
