@@ -1,0 +1,168 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <title>{% block title %} {% endblock %} - P&E Application</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css"
+          rel="stylesheet"
+          integrity="sha384-GLhlTQ8iRABdZLl6O3oVMWSktQOp6b7In1Zl3/Jr59b6EGGoI1aFkw7cmDA6j6gD" crossorigin="anonymous">
+    <link
+            rel="stylesheet" type="text/css"
+            href="{% static '/css/custom.css' %}"/>
+</head>
+
+<body>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-w76AqPfDkMBDXo30jS1Sgez6pr3x5MlQ1ZAGC+nuZB+EYdgRZgiwxhTBTkF7CXvN"
+        crossorigin="anonymous"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<script src="{% static 'js/htmx.js' %}"></script>
+
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="#">PE Reports</a>
+        <button
+                class="navbar-toggler"
+                type="button"
+                data-bs-toggle="collapse"
+                data-bs-target="#navbarNav"
+                aria-controls="navbarNav"
+                aria-expanded="false"
+                aria-label="Toggle navigation"
+        >
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav me-auto">
+            {% if user.is_authenticated %}
+                <li class="nav-item">
+                    {% url 'home' as url %}
+                    <a
+                            class="nav-link {% if request.path == url %}active{% endif %}"
+                            id="home"
+                            aria-current="page"
+                            href="{{ url }}"
+                    >Home</a
+                    >
+                </li>
+                <li class="nav-item">
+                    {% url 'stakeholder' as url %}
+                    <a
+                            class="nav-link {% if request.path == url %}active{% endif %}"
+                            id="add"
+                            href="{{ url }}"
+                    >Add Stakeholder</a
+                    >
+                </li>
+
+                <li class="nav-item">
+                    {% url 'report_gen' as url %}
+                    <a
+                            class="nav-link {% if request.path == url %}active{% endif %}"
+                            id="report"
+                            href="{{ url }}"
+                    >Report Generator</a
+                    >
+                </li>
+
+                <li class="nav-item">
+                    {% url 'stakeholder_lite' as url %}
+                    <a
+                            class="nav-link {% if request.path == url %}active{% endif %}"
+                            id="stake_lite"
+                            href="{{ url }}"
+                    >Stakeholder Lite</a
+                    >
+                </li>
+
+                <li class="nav-item">
+                    {% url 'bulkupload' as url %}
+                    <a
+                            class="nav-link {% if request.path == url %}active{% endif %}"
+                            id="stake_lite"
+                            href="{{ url }}"
+                    >Bulk File Upload</a
+                    >
+                </li>
+                {% if user.is_staff %}
+                <li class="nav-item">
+                    {% url 'weekly_status' as url %}
+                    <a
+                            class="nav-link {% if request.path == url %}active{% endif %}"
+                            id="week_status"
+                            href="{{ url }}"
+                    >Weekly Status</a
+                    >
+                </li>
+                    {% endif %}
+                </ul>
+                <ul class="navbar-nav ms-auto">
+                {% url 'logout' as url %}
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url }}"> <img src="{% static '/power.svg' %} ">
+                        Logout
+                    </a>
+                </li>
+
+                <li class="nav-item ml-auto"><a class="nav-link"> Welcome {{ user.first_name|capfirst }}</a>
+                </li>
+            {% endif %}
+                </ul>
+
+        </div>
+    </div>
+</nav>
+
+<div class="d-flex justify-content-center Jumbotron">
+    <h1>Welcome to P&E Reports</h1>
+
+    <!--<img src="../static/" alt="">-->
+</div>
+<div class="row"></div>
+
+<!-- Categories: success (green), info (blue), warning (yellow), danger (red) -->
+{% if messages %} {% for message in messages %}
+    <div
+            {% if message.tags %} class="alert {{ message.tags }} {% endif %} alert-dismissible fade show row"
+            style="justify-content: center"
+            id="messageDiv"
+            role="alert"
+    >
+    <button
+            type="button"
+            class="btn-close"
+            data-bs-dismiss="alert"
+            aria-label="Close"
+    >
+        <span aria-hidden="true">&times;</span>
+    </button>
+    <!-- <strong>Title</strong> -->
+    {{ message }}
+{% endfor %}
+</div>
+{% endif %}
+{% block content %}
+
+{% endblock content %}
+</body>
+{% block extra_js %}
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const userIssuesSelect = document.getElementById("theuserIssues");
+    const keyAccomplishmentsTextarea = document.getElementById("key_accomplishments");
+
+    userIssuesSelect.addEventListener("change", function() {
+        const selectedIssue = userIssuesSelect.value;
+        const currentText = keyAccomplishmentsTextarea.value;
+
+        // Append the selected issue to the current text, with a comma if there's already text.
+        const newText = currentText.length > 0 ? currentText + ", " + selectedIssue : selectedIssue;
+        keyAccomplishmentsTextarea.value = newText;
+    });
+});
+</script>
+{% endblock %}
+
+</html>

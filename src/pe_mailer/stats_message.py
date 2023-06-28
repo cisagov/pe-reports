@@ -33,9 +33,8 @@ class StatsMessage(Message):
     TextBody = """Greetings!
 
 Here is the pe-mailer summary from the run ending at {{date}}:
-{{#strings}}
-* {{string}}
-{{/strings}}
+
+{{string}}
 
 Please direct feedback and questions to vulnerability@cisa.dhs.gov and/or the pe-reports GitHub project.
 
@@ -52,12 +51,8 @@ vulnerability@cisa.dhs.gov
 <p>Greetings!</p>
 
 <p>
-Here is the pe-mailer summary from {{date}}:
-<ul>
-{{#strings}}
-<li>{{string}}</li>
-{{/strings}}
-</ul>
+Here is the pe-mailer summary from {{date}}:<br><br>
+{{string}}
 </p>
 
 <p> Please direct feedback and questions to <a
@@ -98,7 +93,7 @@ Cybersecurity and Infrastructure Security Agency<br>
         # This is the data mustache will use to render the templates
         mustache_data = {
             "date": now.isoformat(),
-            "strings": [{"string": s} for s in list_of_strings],
+            "string": list_of_strings,
         }
 
         # Render the templates

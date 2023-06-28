@@ -22,7 +22,7 @@
         style="margin-left: 0%"
         onclick="showBulletinDiv()"
       >
-        Generate Cybersixgill Bulletin
+        Generate Cyber Six Bulletin
       </button>
     </div>
   </div>
@@ -52,14 +52,16 @@
         </div>
         <div class="card-body">
           <form method="post">
-            {{ form_external.hidden_tag() }} {{
-            form_external.report_date.label(style='font-size: 24px') }} {{
-            form_external.report_date(class='form-control') }} {{
-            form_external.output_directory.label(style='font-size: 24px') }} {{
-            form_external.output_directory(class='form-control' ,
+            {{ formExternal.hidden_tag() }} {{
+            formExternal.report_date.label(style='font-size: 24px') }} {{
+            formExternal.report_date(class='form-control') }} {{
+            formExternal.output_directory.label(style='font-size: 24px') }} {{
+            formExternal.output_directory(class='form-control' ,
             value="/var/www/current_report_run" ) }}
+            formExternal.soc_media_included.label(style='font-size: 24px') }} {{
+            formExternal.soc_media_included(class='form-control') }}
             <br />
-            {{ form_external.submit(class='btn btn-primary') }}
+            {{ formExternal.submit(class='btn btn-primary') }}
           </form>
         </div>
       </div>
@@ -77,18 +79,18 @@
         </div>
         <div class="card-body">
           <form method="post">
-            {{ bulletin_form.hidden_tag() }} {{
-            bulletin_form.cybersix_id.label(style='font-size: 24px') }} {{
-            bulletin_form.cybersix_id(class='form-control') }} {{
-            bulletin_form.user_input.label(style='font-size: 24px') }} {{
-            bulletin_form.user_input(class='form-control') }} {{
-            bulletin_form.output_directory1.label(style='font-size: 24px') }} {{
-            bulletin_form.output_directory1(class='form-control' ,
+            {{ bulletinForm.hidden_tag() }} {{
+            bulletinForm.cybersix_id.label(style='font-size: 24px') }} {{
+            bulletinForm.cybersix_id(class='form-control') }} {{
+            bulletinForm.user_input.label(style='font-size: 24px') }} {{
+            bulletinForm.user_input(class='form-control') }} {{
+            bulletinForm.output_directory1.label(style='font-size: 24px') }} {{
+            bulletinForm.output_directory1(class='form-control' ,
             value="/var/www/cybersix_bulletins" ) }}{{
-            bulletin_form.file_name.label(style='font-size: 24px') }} {{
-            bulletin_form.file_name(class='form-control') }}
+            bulletinForm.file_name.label(style='font-size: 24px') }} {{
+            bulletinForm.file_name(class='form-control') }}
             <br />
-            {{ bulletin_form.submit1(class='btn btn-primary') }}
+            {{ bulletinForm.submit1(class='btn btn-primary') }}
           </form>
         </div>
       </div>
@@ -106,13 +108,13 @@
         </div>
         <div class="card-body">
           <form method="post">
-            {{ creds_form.hidden_tag() }} {{
-            creds_form.org_id.label(style='font-size: 24px') }} {{
-            creds_form.org_id(class='form-control') }} {{
-            creds_form.breach_name.label(style='font-size: 24px') }} {{
-            creds_form.breach_name(class='form-control' ) }}
+            {{ credsForm.hidden_tag() }} {{
+            credsForm.org_id.label(style='font-size: 24px') }} {{
+            credsForm.org_id(class='form-control') }} {{
+            credsForm.breach_name.label(style='font-size: 24px') }} {{
+            credsForm.breach_name(class='form-control' ) }}
             <br />
-            {{ creds_form.submit2(class='btn btn-primary') }}
+            {{ credsForm.submit2(class='btn btn-primary') }}
           </form>
         </div>
       </div>
@@ -123,7 +125,7 @@
 <div id="loading" class="justify-content-lg-center"></div>
 <div class="row justify-content-lg-center">
   <div class="row col-lg-6 offset-lg-3">
-    <input type="hidden" value="{% block title %} Stakeholder {% endblock %}" />
+    <input type="hidden" value="{% block title %} Stakeholder {% endblock%}" />
   </div>
   <br />
 

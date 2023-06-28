@@ -1,4 +1,4 @@
-"""Collect IntelX credential leak data."""
+"""Collect Intelx credential leak data."""
 # Standard Python Libraries
 import datetime
 import logging
@@ -11,7 +11,7 @@ import pandas as pd
 import requests
 
 from .data.pe_db.config import get_params
-from .data.pe_db.db_query_source import (
+from .data.pe_db.db_query import (
     connect,
     get_data_source_uid,
     get_intelx_breaches,
@@ -21,12 +21,13 @@ from .data.pe_db.db_query_source import (
     org_root_domains,
 )
 
-# Calculate datetimes for collection period
+# Calculate Datetimes for collection period
 TODAY = datetime.date.today()
 DAYS_BACK = datetime.timedelta(days=16)
 START_DATE = (TODAY - DAYS_BACK).strftime("%Y-%m-%d %H:%M:%S")
 END_DATE = TODAY.strftime("%Y-%m-%d %H:%M:%S")
-
+# Get data source uid
+SOURCE_UID = get_data_source_uid("IntelX")
 
 section = "intelx"
 params = get_params(section)
@@ -44,7 +45,7 @@ class IntelX:
         self.orgs_list = orgs_list
 
     def run_intelx(self):
-        """Run IntelX API calls."""
+        """Run IntelX api calls."""
         orgs_list = self.orgs_list
 
         pe_orgs = get_orgs()
@@ -60,11 +61,11 @@ class IntelX:
     def get_credentials(self, cyhy_org_id, pe_org_uid):
         """Get credentials for a provided org."""
         LOGGER.info("Fetching credential data for %s.", cyhy_org_id)
-        source_uid = get_data_source_uid("IntelX")
+
         try:
             conn = connect()
             roots_df = org_root_domains(conn, pe_org_uid)
-            LOGGER.info("Got roots for %s", cyhy_org_id)
+            LOGGER.info(f"Got roots for {cyhy_org_id}")
         except Exception as e:
             LOGGER.error("Failed fetching root domains for %s", cyhy_org_id)
             LOGGER.error(e)
@@ -74,18 +75,18 @@ class IntelX:
             roots_df["root_domain"].values.tolist(), START_DATE, END_DATE
         )
         if len(leaks_json) < 1:
-            LOGGER.info("No credentials found for %s", cyhy_org_id)
+            LOGGER.info(f"No credentials found for {cyhy_org_id}")
             return 0
         creds_df, breaches_df = self.process_leaks_results(leaks_json, pe_org_uid)
         # Insert breach data into the PE database
         try:
             insert_intelx_breaches(breaches_df)
         except Exception as e:
-            LOGGER.error("Failed inserting IntelX breaches for %s", cyhy_org_id)
+            LOGGER.error("Failed inserting breaches for %s", cyhy_org_id)
             LOGGER.error(e)
             return 1
 
-        breach_dict = get_intelx_breaches(source_uid)
+        breach_dict = get_intelx_breaches(SOURCE_UID)
         breach_dict = dict(breach_dict)
         for cred_index, cred_row in creds_df.iterrows():
             breach_uid = breach_dict[cred_row["breach_name"]]
@@ -93,7 +94,7 @@ class IntelX:
         try:
             insert_intelx_credentials(creds_df)
         except Exception as e:
-            LOGGER.error("Failed inserting IntelX credentials for %s", cyhy_org_id)
+            LOGGER.error("Failed inserting credentials for %s", cyhy_org_id)
             LOGGER.error(e)
             return 1
         return 0
@@ -104,19 +105,20 @@ class IntelX:
         payload = {}
         headers = {}
         attempts = 0
-        while True:
+        while attempts < 5:
             try:
                 response = requests.request("GET", url, headers=headers, data=payload)
+                response.raise_for_status()
                 break
             except requests.exceptions.Timeout:
                 time.sleep(5)
                 attempts += 1
                 if attempts == 5:
-                    LOGGER.error("IntelX Identity is not responding. Exiting program.")
+                    LOGGER.error("IntelX identity is not responding. Exiting program.")
                     sys.exit()
                 LOGGER.info("IntelX Identity API response timed out. Trying again.")
             except Exception as e:
-                LOGGER.error("Error occurred getting search id: %s", e)
+                LOGGER.error(f"Error occured geting search id: {e}")
                 return 0
         LOGGER.info("Acquired search id.")
         time.sleep(5)
@@ -129,20 +131,18 @@ class IntelX:
         payload = {}
         headers = {}
         attempts = 0
-        while True:
-            try:
-                response = requests.request("GET", url, headers=headers, data=payload)
-                break
-            except requests.exceptions.Timeout:
-                time.sleep(5)
-                attempts += 1
-                if attempts == 5:
-                    LOGGER.error("IntelX Identity is not responding. Exiting program.")
-                    sys.exit()
-                LOGGER.info("IntelX Identity API response timed out. Trying again.")
-            except Exception as e:
-                LOGGER.error(f"Error occurred getting search results: {e}")
-                return 0
+        try:
+            response = requests.request("GET", url, headers=headers, data=payload)
+        except requests.exceptions.Timeout:
+            time.sleep(5)
+            attempts += 1
+            if attempts == 5:
+                LOGGER.error("IntelX identity is not responding. Exiting program.")
+                sys.exit()
+            LOGGER.info("IntelX Identity API response timed out. Trying again.")
+        except Exception as e:
+            LOGGER.error(f"Error occured geting search results: {e}")
+            return 0
         response = response.json()
 
         return response
@@ -151,7 +151,9 @@ class IntelX:
         """Find leaks for a domain between two dates."""
         all_results_list = []
         for domain in domain_list:
-            LOGGER.info("Finding credentials leaked associated with %s", domain)
+            if not domain: 
+                continue
+            LOGGER.info("Finding credentials leaked associated with " + domain)
             response = self.query_identity_api(domain, start_date, end_date)
             if not response:
                 continue
@@ -165,9 +167,7 @@ class IntelX:
                     if current_results:
                         # Add the root_domain to each result object
                         LOGGER.info(
-                            "IntelX returned %s more credentials for %s",
-                            len(current_results),
-                            domain,
+                            f"Intelx returned {len(current_results)} more credentials for {domain}"
                         )
                         result = [
                             dict(item, **{"root_domain": domain})
@@ -177,7 +177,7 @@ class IntelX:
                     time.sleep(3)
                 # If still waiting on new results wait
                 elif results["status"] == 1:
-                    LOGGER.info("IntelX still searching for more credentials")
+                    LOGGER.info("Intelx still searching for more credentials")
                     time.sleep(7)
                 # if status is two collect the last remaining values and exit loop
                 elif results["status"] == 2:
@@ -185,9 +185,7 @@ class IntelX:
                     if current_results:
                         # Add the root_domain to each result object
                         LOGGER.info(
-                            "IntelX returned %s more credentials for %s",
-                            len(current_results),
-                            domain,
+                            f"Intelx returned {len(current_results)} more credentials for {domain}"
                         )
                         result = [
                             dict(item, **{"root_domain": domain})
@@ -198,7 +196,7 @@ class IntelX:
                 elif results["status"] == 3:
                     LOGGER.error("Search id not found")
                     break
-        LOGGER.info("Identified %s credential leak combos.", len(all_results_list))
+        LOGGER.info(f"Identified {len(all_results_list)} credential leak combos.")
         return all_results_list
 
     def process_leaks_results(self, leaks_json, org_uid):
@@ -208,12 +206,11 @@ class IntelX:
 
         # format email to all lowercase and remove duplicates
         all_df["user"] = all_df["user"].str.lower()
-        LOGGER.info("%s unique emails found", all_df["user"].nunique())
-        LOGGER.info("%s unique posts", all_df["sourceshort"].nunique())
+        LOGGER.info(f"{all_df['user'].nunique()} unique emails found")
+        LOGGER.info(f"{all_df['sourceshort'].nunique()} unique posts")
         all_df = all_df.drop_duplicates(subset=["user", "sourceshort"], keep="first")
         LOGGER.info(
-            "%s emails found after removing duplicates in the same post",
-            len(leaks_json),
+            f"{len(leaks_json)} emails found after removing duplicates in the same post"
         )
 
         # Format date
@@ -227,7 +224,7 @@ class IntelX:
         # Create new column for subdomain, organization uid, and data source uid
         all_df["sub_domain"] = all_df["user"].str.split("@").str[1]
         all_df["organizations_uid"] = org_uid
-        all_df["data_source_uid"] = get_data_source_uid("IntelX")
+        all_df["data_source_uid"] = SOURCE_UID
 
         # rename fields to match database
         all_df.rename(

@@ -2,7 +2,7 @@
 
 # Third-Party Libraries
 from flask_wtf import FlaskForm
-from wtforms import StringField, SubmitField, TextAreaField
+from wtforms import RadioField, StringField, SubmitField, TextAreaField
 
 
 class InfoFormExternal(FlaskForm):
@@ -15,7 +15,11 @@ class InfoFormExternal(FlaskForm):
     output_directory = StringField(
         "The directory where the final PDF reports should be saved. "
     )
-
+    soc_media_included = RadioField(
+        "Do you want to include social media mentions or alerts?",
+        choices=[(False, "Filter out Social Media"), (True, "Include Social Media")],
+        default=False,
+    )
     submit = SubmitField("Submit", render_kw={"onclick": "loading()"})
 
 
@@ -26,10 +30,9 @@ class BulletinFormExternal(FlaskForm):
     user_input = TextAreaField(
         "Please provide an explanation of what was found in the post/intel_item."
     )
-    # Using a distinct directory variable name to avoid validation errors when multiple forms are on the same page
     output_directory1 = StringField("Output Directory:")
     file_name = StringField("File Name?")
-    # Using a distinct submit variable name to avoid validation errors when multiple forms are on the same page
+
     submit1 = SubmitField("Submit", render_kw={"onclick": "loading()"})
 
 
@@ -38,5 +41,7 @@ class CredsFormExternal(FlaskForm):
 
     org_id = StringField("Organization Cyhy ID:")
     breach_name = StringField("Breach Name:")
-    # Using a distinct submit variable name to avoid validation errors when multiple forms are on the same page
+
     submit2 = SubmitField("Submit", render_kw={"onclick": "loading()"})
+
+

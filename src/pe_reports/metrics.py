@@ -14,8 +14,10 @@ from .data.db_query import (
     query_darkweb,
     query_darkweb_cves,
     query_domMasq,
+    query_domMasq_alerts,
     query_shodan,
 )
+from .data.translator import translate
 
 
 class Credentials:
@@ -38,9 +40,10 @@ class Credentials:
             org_uid, start_date, end_date
         )
 
-    def by_week(self):
-        """Return number of credentials by week."""
+    def by_days(self):
+        """Return number of credentials by day."""
         df = self.creds_by_day
+        # df = df[["mod_date", "no_password", "password_included"]].copy()
         idx = pd.date_range(self.trending_start_date, self.end_date)
         df = df.set_index("mod_date").reindex(idx).fillna(0.0).rename_axis("added_date")
         group_limit = self.end_date + datetime.timedelta(1)
@@ -48,7 +51,7 @@ class Credentials:
             pd.Grouper(level="added_date", freq="7d", origin=group_limit)
         ).sum()
         df["modified_date"] = df.index
-        df["modified_date"] = df["modified_date"].dt.strftime("%m/%d")
+        df["modified_date"] = df["modified_date"].dt.strftime("%b %d")
         df = df.set_index("modified_date")
         df = df.rename(
             columns={
@@ -71,6 +74,7 @@ class Credentials:
         view_df = view_df[["breach_name", "description"]]
 
         view_df = view_df.drop_duplicates()
+        view_df.sort_values("breach_name", inplace=True)
         return view_df[["breach_name", "description"]]
 
     def breach_details(self):
@@ -98,11 +102,13 @@ class Credentials:
 
     def password(self):
         """Return total number of credentials with passwords."""
-        return len(self.creds_view[self.creds_view["password_included"]])
+        pw_creds = len(self.creds_view[self.creds_view["password_included"]])
+        return pw_creds
 
     def total(self):
         """Return total number of credentials found in breaches."""
-        return self.creds_view.shape[0]
+        df_cred = self.creds_view.shape[0]
+        return df_cred
 
 
 class Domains_Masqs:
@@ -114,7 +120,8 @@ class Domains_Masqs:
         self.end_date = end_date
         self.org_uid = org_uid
         df = query_domMasq(org_uid, start_date, end_date)
-        self.df_mal = df[df["malicious"]]
+        self.df_mal = df[df["malicious"] == True]
+        self.dom_alerts_df = query_domMasq_alerts(org_uid, start_date, end_date)
 
     def count(self):
         """Return total count of malicious domains."""
@@ -133,7 +140,7 @@ class Domains_Masqs:
                     "name_server",
                 ]
             ]
-            domain_sum = domain_sum[:25]
+            domain_sum.loc[domain_sum["ipv6"] == "", "ipv6"] = "NA"
             domain_sum = domain_sum.rename(
                 columns={
                     "domain_permutation": "Domain",
@@ -155,23 +162,25 @@ class Domains_Masqs:
             )
         return domain_sum
 
-    def utlds(self):
-        """Return count of unique top level domains."""
-        mal_df = self.df_mal
+    def alert_count(self):
+        """Return number of alerts."""
+        dom_alert_count = len(self.dom_alerts_df)
+        return dom_alert_count
 
-        if len(mal_df.index) > 0:
-            mal_df["tld"] = (
-                mal_df["domain_permutation"]
-                .str.split(".")
-                .str[-1]
-                .str.split("/")
-                .str[0]
-            )
-            utlds = len(mal_df["tld"].unique())
-        else:
-            utlds = 0
+    def alerts(self):
+        """Return domain alerts."""
+        dom_alerts_df = self.dom_alerts_df[["message", "date"]]
+        dom_alerts_df = dom_alerts_df.rename(
+            columns={"message": "Alert", "date": "Date"}
+        )
+        return dom_alerts_df
 
-        return utlds
+    def alerts_sum(self):
+        """Return domain alerts summary."""
+        dom_alerts_sum = self.dom_alerts_df[
+            ["message", "date", "previous_value", "new_value"]
+        ]
+        return dom_alerts_sum
 
 
 class Malware_Vulns:
@@ -217,11 +226,9 @@ class Malware_Vulns:
             .agg(lambda x: "  ".join(set(x)))
             .reset_index()
         )
-        # Limit the IP column to 32 characters so the table isn't too big.
-        # 30 characters is the max length of 2 IPs, plus the 2 spaces.
         if len(risky_assets.index) > 0:
-            risky_assets["ip"] = risky_assets["ip"].str[:32]
-            risky_assets.loc[risky_assets["ip"].str.len() == 32, "ip"] = (
+            risky_assets["ip"] = risky_assets["ip"].str[:30]
+            risky_assets.loc[risky_assets["ip"].str.len() == 30, "ip"] = (
                 risky_assets["ip"] + "  ..."
             )
 
@@ -237,7 +244,7 @@ class Malware_Vulns:
         return pro_count
 
     def risky_ports_count(self):
-        """Return total count of insecure protocols."""
+        """Return total count of insecure ports."""
         risky_assets = self.isolate_risky_assets(self.insecure_df)
 
         pro_count = risky_assets.groupby(["protocol"], as_index=False)["protocol"].agg(
@@ -266,10 +273,19 @@ class Malware_Vulns:
 
         return verifVulns
 
-    def unverified_cve(self):
-        """Return top 15 unverified CVEs and their counts."""
-        insecure_df = self.insecure_df
-        unverif_df = insecure_df[insecure_df["type"] != "Insecure Protocol"]
+    def ip_count(self):
+        """Return the number of total ips with suspected and confirmed vulns."""
+        vulns_df = self.vulns_df
+        unverif_df = self.insecure_df
+
+        combined_ips = vulns_df["ip"].append(unverif_df["ip"], ignore_index=True)
+
+        return len(pd.unique(combined_ips))
+
+    @staticmethod
+    def unverified_cve(df):
+        """Subset insecure df to only potential vulnerabilities."""
+        unverif_df = df[df["type"] != "Insecure Protocol"]
         unverif_df = unverif_df.copy()
         unverif_df["potential_vulns"] = (
             unverif_df["potential_vulns"].sort_values().apply(lambda x: sorted(x))
@@ -280,11 +296,33 @@ class Malware_Vulns:
             .drop_duplicates(keep="first")
             .reset_index(drop=True)
         )
-        unverif_df["count"] = unverif_df["potential_vulns"].str.split(",").str.len()
+        unverif_df["potential_vulns_list"] = unverif_df["potential_vulns"].str.split(
+            ","
+        )
+        unverif_df["count"] = unverif_df["potential_vulns_list"].str.len()
+        return unverif_df
+
+    def unverified_cve_count(self):
+        """Return top 15 unverified CVEs and their counts."""
+        unverif_df = self.unverified_cve(self.insecure_df)
         unverif_df = unverif_df[["ip", "count"]]
         unverif_df = unverif_df.sort_values(by=["count"], ascending=False)
         unverif_df = unverif_df[:15].reset_index(drop=True)
         return unverif_df
+
+    def all_cves(self):
+        """Get all verified and unverified CVEs."""
+        unverif_df = self.unverified_cve(self.insecure_df)
+        vulns_df = self.vulns_df
+        verified_cves = vulns_df["cve"].tolist()
+        all_cves = []
+        for unverif_index, unverif_row in unverif_df.iterrows():
+            for cve in unverif_row["potential_vulns_list"]:
+                cve = cve.strip("[]' ")
+                all_cves.append(cve)
+        all_cves += verified_cves
+        all_cves = list(set(all_cves))
+        return all_cves
 
     def unverified_vuln_count(self):
         """Return the count of IP addresses with unverified vulnerabilities."""
@@ -338,25 +376,40 @@ class Malware_Vulns:
 class Cyber_Six:
     """Dark web and Cyber Six data class."""
 
-    def __init__(self, trending_start_date, start_date, end_date, org_uid):
+    def __init__(
+        self,
+        trending_start_date,
+        start_date,
+        end_date,
+        org_uid,
+        all_cves_df,
+        soc_med_included,
+    ):
         """Initialize Cybersixgill vulns and malware class."""
         self.trending_start_date = trending_start_date
         self.start_date = start_date
         self.end_date = end_date
         self.org_uid = org_uid
-
-        trending_dark_web_mentions = query_darkweb(
-            org_uid,
-            trending_start_date,
-            end_date,
-            "mentions",
-        )
-        trending_dark_web_mentions = trending_dark_web_mentions.drop(
-            columns=["organizations_uid", "mentions_uid"],
-            errors="ignore",
-        )
-        self.trending_dark_web_mentions = trending_dark_web_mentions
-
+        self.all_cves_df = all_cves_df
+        self.soc_med_included = soc_med_included
+        self.soc_med_platforms = [
+            "twitter",
+            "Twitter",
+            "reddit",
+            "Reddit",
+            "Parler",
+            "parler",
+            "linkedin",
+            "Linkedin",
+            "discord",
+            "forum_discord",
+            "raddle",
+            "telegram",
+            "jabber",
+            "ICQ",
+            "icq",
+            "mastodon",
+        ]
         dark_web_mentions = query_darkweb(
             org_uid,
             start_date,
@@ -367,6 +420,10 @@ class Cyber_Six:
             columns=["organizations_uid", "mentions_uid"],
             errors="ignore",
         )
+        if not soc_med_included:
+            dark_web_mentions = dark_web_mentions[
+                ~dark_web_mentions["site"].isin(self.soc_med_platforms)
+            ]
         self.dark_web_mentions = dark_web_mentions
 
         alerts = query_darkweb(
@@ -379,6 +436,8 @@ class Cyber_Six:
             columns=["organizations_uid", "alerts_uid"],
             errors="ignore",
         )
+        if not soc_med_included:
+            alerts = alerts[~alerts["site"].isin(self.soc_med_platforms)]
         self.alerts = alerts
 
         top_cves = query_darkweb_cves(
@@ -387,92 +446,33 @@ class Cyber_Six:
         top_cves = top_cves[top_cves["date"] == top_cves["date"].max()]
         self.top_cves = top_cves
 
-    def alerts_exec(self):
-        """Get top executive mentions."""
-        alerts = self.alerts
-        alerts_exec = alerts[["site", "title"]]
-        alerts_exec = alerts_exec[alerts_exec["site"] != "NaN"]
-        alerts_exec = alerts_exec[alerts_exec["site"] != ""]
-        alerts_exec = (
-            alerts_exec.groupby(["site", "title"])["title"]
-            .count()
-            .nlargest(10)
-            .reset_index(name="Events")
-        )
-        alerts_exec = alerts_exec.rename(columns={"site": "Site", "title": "Title"})
-        return alerts_exec
-
-    def alerts_threats(self):
-        """Get threat alerts."""
-        alerts = self.alerts
-        alerts_threats = alerts[["site", "threats"]]
-        alerts_threats = alerts_threats[alerts_threats["site"] != "NaN"]
-        alerts_threats = alerts_threats[alerts_threats["site"] != ""]
-        alerts_threats = (
-            alerts_threats.groupby(["site", "threats"])["threats"]
-            .count()
-            .nlargest(5)
-            .reset_index(name="Events")
-        )
-        alerts_threats["threats"] = alerts_threats["threats"].str.strip("{}")
-        alerts_threats["threats"] = alerts_threats["threats"].str[:50]
-        alerts_threats = alerts_threats.rename(
-            columns={"site": "Site", "threats": "Threats"}
-        )
-        return alerts_threats
-
-    def dark_web_bad_actors(self):
-        """Get dark web bad actors."""
-        dark_web_mentions = self.dark_web_mentions
-        dark_web_bad_actors = dark_web_mentions[["creator", "rep_grade"]]
-        dark_web_bad_actors = dark_web_bad_actors.groupby(
-            "creator", as_index=False
-        ).max()
-        dark_web_bad_actors = dark_web_bad_actors.sort_values(
-            by=["rep_grade"], ascending=False
-        )[:10]
-        dark_web_bad_actors["rep_grade"] = (
-            dark_web_bad_actors["rep_grade"].astype(float).round(decimals=3)
-        )
-        dark_web_bad_actors = dark_web_bad_actors.rename(
-            columns={"creator": "Creator", "rep_grade": "Grade"}
-        )
-        return dark_web_bad_actors
-
-    def dark_web_content(self):
-        """Get dark web categories."""
-        dark_web_mentions = self.dark_web_mentions
-        dark_web_content = dark_web_mentions[["category"]]
-        dark_web_content = (
-            dark_web_content.groupby(["category"])["category"]
-            .count()
-            .nlargest(10)
-            .reset_index(name="count")
-        )
-        return dark_web_content
-
     def dark_web_count(self):
+        """Get total number of dark web alerts."""
+        return len(self.alerts.index)
+
+    def dark_web_mentions_count(self):
         """Get total number of dark web mentions."""
-        return len(self.dark_web_mentions.index)
+        return len(self.dark_web_mentions)
 
     def dark_web_date(self):
         """Get dark web mentions by date."""
-        dark_web_mentions = self.trending_dark_web_mentions
-        dark_web_date = dark_web_mentions[["date"]]
-        dark_web_date = (
-            dark_web_date.groupby(["date"])["date"].count().reset_index(name="Count")
+        trending_dark_web_mentions = query_darkweb(
+            self.org_uid,
+            self.trending_start_date,
+            self.end_date,
+            "vw_darkweb_mentionsbydate",
         )
-        dark_web_date["date"] = pd.to_datetime(dark_web_date["date"])
+        dark_web_date = trending_dark_web_mentions.drop(
+            columns=["organizations_uid"],
+            errors="ignore",
+        )
         idx = pd.date_range(self.trending_start_date, self.end_date)
         dark_web_date = (
             dark_web_date.set_index("date").reindex(idx).fillna(0.0).rename_axis("date")
         )
-
         group_limit = self.end_date + datetime.timedelta(1)
         dark_web_date = dark_web_date.groupby(
-            pd.Grouper(  # lgtm [py/call/wrong-named-class-argument]
-                level="date", freq="7d", origin=group_limit
-            )
+            pd.Grouper(level="date", freq="7d", origin=group_limit)
         ).sum()
         dark_web_date["date"] = dark_web_date.index
         dark_web_date["date"] = dark_web_date["date"].dt.strftime("%m/%d")
@@ -480,82 +480,239 @@ class Cyber_Six:
         dark_web_date = dark_web_date[["Count"]]
         return dark_web_date
 
+    def create_count_df(self):
+        """Retrieve dataframe of counts by mention type."""
+        name = []
+        value = []
+        markets = query_darkweb(
+            self.org_uid,
+            self.start_date,
+            self.end_date,
+            "vw_darkweb_inviteonlymarkets",
+        )
+        if len(markets) > 0:
+            name.append("INVITE ONLY MARKET")
+            value.append(len(markets))
+
+        if self.soc_med_included:
+            soc_med = query_darkweb(
+                self.org_uid,
+                self.start_date,
+                self.end_date,
+                "vw_darkweb_socmedia_mostactposts",
+            )
+            if len(soc_med) > 0:
+                name.append("SOCIAL MEDIA")
+                value.append(len(soc_med))
+
+        dark_web_forum = query_darkweb(
+            self.org_uid,
+            self.start_date,
+            self.end_date,
+            "vw_darkweb_mostactposts",
+        )
+        if len(dark_web_forum) > 0:
+            name.append("DARK WEB FORUM")
+            value.append(len(dark_web_forum))
+
+        alerts_exec = query_darkweb(
+            self.org_uid,
+            self.start_date,
+            self.end_date,
+            "vw_darkweb_execalerts",
+        )
+        if len(alerts_exec) > 0:
+            name.append("EXECUTIVES")
+            value.append(len(alerts_exec))
+
+        if name:
+            circle_df = pd.DataFrame({"Name": name, "Value": value})
+
+            return circle_df
+        else:
+            return 0
+
+    def social_media_most_act(self):
+        """Get most active social media posts."""
+        soc_med_most_act = query_darkweb(
+            self.org_uid,
+            self.start_date,
+            self.end_date,
+            "vw_darkweb_socmedia_mostactposts",
+        )
+        soc_med_most_act = soc_med_most_act.drop(
+            columns=["organizations_uid", "date"],
+            errors="ignore",
+        )
+        soc_med_most_act = soc_med_most_act[:10]
+        # Translate title field to english
+        soc_med_most_act = translate(soc_med_most_act, ["Title"])
+        soc_med_most_act["Title"] = soc_med_most_act["Title"].str[:200]
+        soc_med_most_act = soc_med_most_act.replace(r"^\s*$", "Untitled", regex=True)
+        return soc_med_most_act
+
     def dark_web_most_act(self):
-        """Get most active posts."""
-        dark_web_mentions = self.dark_web_mentions
-        dark_web_most_act = dark_web_mentions[["title", "comments_count"]]
-        dark_web_most_act = dark_web_most_act[
-            dark_web_most_act["comments_count"] != "NaN"
-        ]
-        dark_web_most_act = dark_web_most_act.rename(
-            columns={"comments_count": "Comments Count"}
+        """Get most active dark web posts."""
+        dark_web_most_act = query_darkweb(
+            self.org_uid,
+            self.start_date,
+            self.end_date,
+            "vw_darkweb_mostactposts",
         )
-        dark_web_most_act["Comments Count"] = (
-            dark_web_most_act["Comments Count"].astype(float).astype(int)
+        dark_web_most_act = dark_web_most_act.drop(
+            columns=["organizations_uid", "date"],
+            errors="ignore",
         )
-        dark_web_most_act = dark_web_most_act.sort_values(
-            by="Comments Count", ascending=False
-        )
-        dark_web_most_act = dark_web_most_act[:5]
-        dark_web_most_act = dark_web_most_act.rename(columns={"title": "Title"})
-        dark_web_most_act["Title"] = dark_web_most_act["Title"].str[:100]
+        # Translate title field to english
+        dark_web_most_act = dark_web_most_act[:10]
+        dark_web_most_act = translate(dark_web_most_act, ["Title"])
+        dark_web_most_act["Title"] = dark_web_most_act["Title"].str[:200]
         dark_web_most_act = dark_web_most_act.replace(r"^\s*$", "Untitled", regex=True)
         return dark_web_most_act
 
+    def asset_alerts(self):
+        """Get top executive mentions."""
+        asset_alerts = query_darkweb(
+            self.org_uid,
+            self.start_date,
+            self.end_date,
+            "vw_darkweb_assetalerts",
+        )
+        asset_alerts = asset_alerts.drop(
+            columns=["organizations_uid", "date"],
+            errors="ignore",
+        )
+        if not self.soc_med_included:
+            asset_alerts = asset_alerts[
+                ~asset_alerts["Site"].isin(self.soc_med_platforms)
+            ]
+        asset_alerts["Title"] = asset_alerts["Title"].str[:200]
+        return asset_alerts
+
+    def alerts_exec(self):
+        """Get top executive alerts."""
+        alerts_exec = query_darkweb(
+            self.org_uid,
+            self.start_date,
+            self.end_date,
+            "vw_darkweb_execalerts",
+        )
+        alerts_exec = alerts_exec.drop(
+            columns=["organizations_uid", "date"],
+            errors="ignore",
+        )
+        if not self.soc_med_included:
+            alerts_exec = alerts_exec[~alerts_exec["Site"].isin(self.soc_med_platforms)]
+        alerts_exec["Title"] = alerts_exec["Title"].str[:200]
+        return alerts_exec
+
+    def dark_web_bad_actors(self):
+        """Get dark web bad actors."""
+        dark_web_bad_actors = query_darkweb(
+            self.org_uid,
+            self.start_date,
+            self.end_date,
+            "vw_darkweb_threatactors",
+        )
+        dark_web_bad_actors = dark_web_bad_actors.drop(
+            columns=["organizations_uid", "date"],
+            errors="ignore",
+        )
+        dark_web_bad_actors = dark_web_bad_actors.groupby(
+            "Creator", as_index=False
+        ).max()
+        dark_web_bad_actors = dark_web_bad_actors.sort_values(
+            by=["Grade"], ascending=False
+        )
+        dark_web_bad_actors = dark_web_bad_actors[:10]
+        dark_web_bad_actors = translate(dark_web_bad_actors, ["Creator"])
+        return dark_web_bad_actors
+
+    def alerts_threats(self):
+        """Get threat alerts."""
+        alerts_threats = query_darkweb(
+            self.org_uid,
+            self.start_date,
+            self.end_date,
+            "vw_darkweb_potentialthreats",
+        )
+        alerts_threats = alerts_threats.drop(
+            columns=["organizations_uid", "date"],
+            errors="ignore",
+        )
+        if not self.soc_med_included:
+            alerts_threats = alerts_threats[
+                ~alerts_threats["Site"].isin(self.soc_med_platforms)
+            ]
+        alerts_threats = (
+            alerts_threats.groupby(["Site", "Threats"])["Threats"]
+            .count()
+            .nlargest(10)
+            .reset_index(name="Events")
+        )
+        alerts_threats["Threats"] = alerts_threats["Threats"].str[:200]
+        return alerts_threats
+
     def dark_web_sites(self):
         """Get mentions by dark web sites (top 10)."""
-        dark_web_mentions = self.dark_web_mentions
-        dark_web_sites = dark_web_mentions[["site"]]
+        dark_web_sites = query_darkweb(
+            self.org_uid,
+            self.start_date,
+            self.end_date,
+            "vw_darkweb_sites",
+        )
+        dark_web_sites = dark_web_sites.drop(
+            columns=["organizations_uid", "date"],
+            errors="ignore",
+        )
+        if not self.soc_med_included:
+            dark_web_sites = dark_web_sites[
+                ~dark_web_sites["Site"].isin(self.soc_med_platforms)
+            ]
         dark_web_sites = (
-            dark_web_sites.groupby(["site"])["site"]
+            dark_web_sites.groupby(["Site"])["Site"]
             .count()
             .nlargest(10)
             .reset_index(name="count")
         )
-        dark_web_sites = dark_web_sites.rename(
-            columns={"site": "Site", "count": "Count"}
-        )
         return dark_web_sites
 
-    def dark_web_tags(self):
-        """Get dark web notable tags."""
-        dark_web_mentions = self.dark_web_mentions
-        dark_web_tags = dark_web_mentions[["tags"]]
-        dark_web_tags = dark_web_tags[dark_web_tags["tags"] != "NaN"]
-        dark_web_tags = (
-            dark_web_tags.groupby(["tags"])["tags"]
-            .count()
-            .nlargest(8)
-            .reset_index(name="Events")
-        )
-        dark_web_tags["tags"] = dark_web_tags["tags"].str.strip("{}")
-        dark_web_tags["tags"] = dark_web_tags["tags"].str.replace(
-            ",", ", ", regex=False
-        )
-        dark_web_tags = dark_web_tags.rename(columns={"tags": "Tags"})
-        return dark_web_tags
-
-    def alerts_site(self):
+    def invite_only_markets(self):
         """Get alerts in invite-only markets."""
-        alerts_site = self.alerts[["site"]]
-        alerts_site = alerts_site[alerts_site["site"] != "NaN"]
-        alerts_site = alerts_site[alerts_site["site"] != ""]
-        alerts_site = alerts_site[alerts_site["site"].str.startswith("market")]
-        alerts_site = (
-            alerts_site.groupby(["site"])["site"]
+        markets = query_darkweb(
+            self.org_uid,
+            self.start_date,
+            self.end_date,
+            "vw_darkweb_inviteonlymarkets",
+        )
+        markets = markets.drop(
+            columns=["organizations_uid", "date"],
+            errors="ignore",
+        )
+        markets = (
+            markets.groupby(["Site"])["Site"]
             .count()
             .nlargest(10)
             .reset_index(name="Alerts")
         )
-        alerts_site = alerts_site.rename(columns={"site": "Site"})
-        return alerts_site
+        return markets
 
     def top_cve_table(self):
         """Get top CVEs."""
         top_cves = self.top_cves
-        top_cves["summary_short"] = top_cves["summary"].str[:400]
+        top_cves["summary_short"] = top_cves["summary"].str[:500]
         top_cve_table = top_cves[["cve_id", "summary_short"]]
         top_cve_table = top_cve_table.rename(
             columns={"cve_id": "CVE", "summary_short": "Description"}
         )
+        top_cve_table["Identified By"] = "Cybersixgill"
+
+        # Get all CVEs found in shodan
+        shodan_cves = self.all_cves_df
+        for cve_index, cve_row in top_cve_table.iterrows():
+            if cve_row["CVE"] in shodan_cves:
+                print("we got a match")
+                print(cve_row["CVE"])
+                top_cve_table.at[cve_index, "Identified By"] += ",   Shodan"
+
         return top_cve_table

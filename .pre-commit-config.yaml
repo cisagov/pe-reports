@@ -128,6 +128,7 @@ repos:
           - types-PyYAML
           - types-requests
           - types-setuptools
+          - types-python-dateutil==2.8.19
   - repo: https://github.com/asottile/pyupgrade
     rev: v3.3.1
     hooks:

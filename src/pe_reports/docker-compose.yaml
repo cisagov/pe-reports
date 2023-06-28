@@ -1,0 +1,61 @@
+---
+version: "3.8"
+services:
+  pe_reports_rabbitmq:
+    container_name: pe_reports_rabbitmq
+    hostname: pe_reports_rabbitmq
+    image: rabbitmq:3.8.14-management
+    restart: always
+    ports:
+      - 15672:15672
+      - 5672:5672
+    env_file:
+      - ../../src/pe_reports/pe_reports_django_project/.env
+    environment:
+      - RABBITMQ_DEFAULT_USER=${RABBITMQ_USER}
+      - RABBITMQ_DEFAULT_PASS=${RABBITMQ_PASS}
+      - PATH=/opt/rabbitmq/sbin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+      - RABBITMQ_DATA_DIR=/var/lib/rabbitmq
+      - RABBITMQ_VERSION=3.8.14
+      - RABBITMQ_HOME=/opt/rabbitmq
+      - RABBITMQ_LOGS=-
+      - HOME=/var/lib/rabbitmq
+      - LANG=C.UTF-8
+      - LANGUAGE=C.UTF-8
+      - LC_ALL=C.UTF-8
+    volumes:
+      - /home/ubuntu/pe-reports/src/pe_reports/data/rabbitmq/data:/var/lib/rabbitmq/mnesia:rw
+      - /var/www/pe-reports/src/pe_reports/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf
+    networks:
+      - pe_reports_rabbitmq_network
+
+  pe_reports_redis:
+    container_name: pe_reports_redis
+    hostname: pe_reports_redis
+    image: redis:latest
+    restart: always
+    ports:
+      - 6379:6379
+    volumes:
+      - redis_data:/data
+    networks:
+      - pe_reports_redis_network
+
+  nginx:
+    image: nginx:1.25.0
+    ports:
+      - "8089:8089"
+    volumes:
+      - ./config/nginx_config_conf.d:/etc/nginx/conf.d
+      - ./pe_reports_django_project/static:/var/www/pe-reports/static
+      - ./pe-reports:/var/www/pe-reports
+    networks:
+      - pe_reports_nginx_network
+
+
+networks:
+  pe_reports_network:
+    driver: bridge
+
+volumes:
+  redis_data: {}

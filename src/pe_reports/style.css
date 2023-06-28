@@ -13,34 +13,48 @@
   margin-bottom: 0cm;
 
   @frame title {
-    left: 3.5cm;
+    left: 1in;
     width: 16.5cm;
     height: 2cm;
-    top: 1cm;
+    top: 1.5in;
   }
 
   @frame content {
-    left: 2.5cm;
-    width: 17cm;
-    top: 4cm;
+    left: 1in;
+    top: 2in;
     height: 25cm;
+    margin-right: 1in;
   }
 
   @frame footer {
     -pdf-frame-content: footerContent;
-    bottom: -0.4cm;
-    margin-left: 1cm;
-    margin-right: 1.5cm;
-    height: 1.7cm;
-    left: 1cm;
+    bottom: -0.375in;
+    margin-left: 1in;
+    margin-right: 1in;
+    height: 1in;
   }
 
   @frame header {
     -pdf-frame-content: headerContent;
-    top: 0.5cm;
-    left: 1cm;
-
-    height: 6cm;
+    top: 0.6in;
+    margin-left: 1in;
+    margin-right: 1in;
+    height: 1in;
+  }
+  @frame headerCont {
+    -pdf-frame-content: headerContentCont;
+    top: 0.625in;
+    margin-left: 2in;
+    margin-right: 1in;
+    height: 1in;
+    font-size: 10pt;
+  }
+  @frame headerCont2 {
+    -pdf-frame-content: headerContentCont2;
+    top: 0.625in;
+    margin-right: 1in;
+    height: 1in;
+    font-size: 12pt;
   }
   @frame headerCont {
     -pdf-frame-content: headerContentCont;
@@ -66,27 +80,26 @@
   background-image: url("assets/summary-background.png");
 
   @frame title {
-    left: 3.5cm;
+    left: 1in;
     width: 16.5cm;
     height: 2cm;
-    top: 1cm;
+    top: 1.5in;
   }
 
   @frame footer {
     -pdf-frame-content: footerContent;
-    bottom: -0.4cm;
-    margin-left: 1cm;
-    margin-right: 1.5cm;
-    height: 1.7cm;
-    left: 1cm;
+    bottom: -0.375in;
+    margin-left: 1in;
+    margin-right: 1in;
+    height: 1in;
   }
 
   @frame header {
     -pdf-frame-content: headerContent;
-    top: 0.5cm;
-    left: 1cm;
-
-    height: 6cm;
+    top: 0.6in;
+    margin-left: 1in;
+    margin-right: 1in;
+    height: 1in;
   }
   @frame headerCont {
     -pdf-frame-content: headerContentCont;
@@ -105,70 +118,45 @@
   }
 
   @frame kpi1 {
-    left: 12.6cm;
-    width: 7.5cm;
+    left: 12.5cm;
+    width: 6.8cm;
     height: 2.3cm;
-    top: 4.1cm;
+    top: 6.7cm;
   }
 
   @frame kpi2 {
-    left: 12.6cm;
-    width: 7.5cm;
+    left: 12.5cm;
+    width: 6.8cm;
     height: 2.3cm;
-    top: 8.2cm;
+    top: 10.3cm;
   }
 
   @frame kpi3 {
-    left: 12.6cm;
-    width: 7.5cm;
+    left: 12.5cm;
+    width: 6.8cm;
     height: 2.3cm;
-    top: 12.3cm;
+    top: 14.1cm;
   }
 
   @frame kpi4 {
-    left: 12.6cm;
-    width: 7.5cm;
+    left: 12.5cm;
+    width: 6.8cm;
     height: 2.3cm;
-    top: 16.3cm;
+    top: 18cm;
   }
 
   @frame infoBox1 {
-    left: 1.5cm;
-    width: 10cm;
-    height: 16cm;
-    top: 3.2cm;
+    left: 2.54cm;
+    width: 9cm;
+    height: 14.9cm;
+    top: 6cm;
   }
 
-  @frame linkHeader {
-    left: 1.6cm;
-    width: 6cm;
-    height: 1.5cm;
-    top: 23.6cm;
-  }
-  @frame linkCaption1 {
-    left: 3cm;
-    width: 6cm;
-    height: 1.5cm;
-    top: 25.45cm;
-  }
-
-  @frame linkCaption2 {
-    left: 7.5cm;
-    width: 6cm;
-    height: 1.5cm;
-    top: 25.45cm;
-  }
-  @frame linkCaption3 {
-    left: 12cm;
-    width: 6cm;
-    height: 1.5cm;
-    top: 25.45cm;
-  }
-  @frame linkCaption4 {
-    left: 17cm;
-    width: 6cm;
-    height: 1.5cm;
-    top: 25.45cm;
+  @frame links {
+    left: 2.54cm;
+    width: 15cm;
+    height: 5.5cm;
+    top: 21.5cm;
   }
 }
 
@@ -179,27 +167,26 @@
   background-image: url("assets/creds-background.png");
 
   @frame title {
-    left: 3.5cm;
+    left: 1in;
     width: 16.5cm;
     height: 2cm;
-    top: 1cm;
+    top: 1.5in;
   }
 
   @frame footer {
     -pdf-frame-content: footerContent;
-    bottom: -0.4cm;
-    margin-left: 1cm;
-    margin-right: 1.5cm;
-    height: 1.7cm;
-    left: 1cm;
+    bottom: -0.375in;
+    margin-left: 1in;
+    margin-right: 1in;
+    height: 1in;
   }
 
   @frame header {
     -pdf-frame-content: headerContent;
-    top: 0.5cm;
-    left: 1cm;
-
-    height: 6cm;
+    top: 0.6in;
+    margin-left: 1in;
+    margin-right: 1in;
+    height: 1in;
   }
   @frame headerCont {
     -pdf-frame-content: headerContentCont;
@@ -217,53 +204,127 @@
     font-size: 12pt;
   }
 
-  @frame kpi1 {
-    left: 2cm;
-    width: 5.45cm;
-    height: 3cm;
-    top: 3.2cm;
-  }
-
-  @frame kpi2 {
-    left: 8.2cm;
-    width: 5.45cm;
-    height: 2.3cm;
-    top: 3cm;
-  }
-
-  @frame kpi3 {
-    left: 14.4cm;
-    width: 5.45cm;
-    height: 2.3cm;
-    top: 3.2cm;
-  }
-
   @frame content1 {
-    left: 1.5cm;
-    width: 19cm;
-    height: 3cm;
+    -pdf-frame-content: credsDescription;
+    left: 2.54cm;
+    margin-right: 1in;
+    height: 4cm;
     top: 6cm;
   }
 
-  @frame graphbox1 {
-    left: 1.5cm;
-    width: 19cm;
-    height: 8cm;
-    top: 8cm;
+  @frame kpi1 {
+    -pdf-frame-content: credsKpi1;
+    left: 2.3cm;
+    width: 5.45cm;
+    height: 2.3cm;
+    top: 9.3cm;
   }
 
-  @frame tableName {
-    left: 1.5cm;
-    width: 11cm;
-    height: 0.75cm;
-    top: 15.2cm;
+  @frame kpi2 {
+    -pdf-frame-content: credsKpi2;
+    left: 7.5cm;
+    width: 6.2cm;
+    height: 2.3cm;
+    top: 9.3cm;
+  }
+
+  @frame kpi3 {
+    -pdf-frame-content: credsKpi3;
+    left: 13.2cm;
+    width: 5.85cm;
+    height: 2.3cm;
+    top: 9.3cm;
+  }
+
+  @frame graphCont {
+    -pdf-frame-content: graphCont;
+    left: 2.54cm;
+    margin-right: 1in;
+    height: 2cm;
+    top: 12.25cm;
+  }
+
+  @frame graphCont2 {
+    -pdf-frame-content: graphCont2;
+    left: 8cm;
+    margin-right: 1in;
+    height: 2cm;
+    top: 13.8cm;
+  }
+
+  @frame graphbox1 {
+    -pdf-frame-content: credsGraph;
+    left: 2.54cm;
+    width: 16.51cm;
+    height: 10cm;
+    top: 14.25cm;
+  }
+}
+
+@page credsContinued {
+  size: letter portrait;
+  margin: 1cm;
+  margin-bottom: 0cm;
+
+  @frame title {
+    left: 1in;
+    width: 16.5cm;
+    height: 2cm;
+    top: 1.5in;
+  }
+
+  @frame footer {
+    -pdf-frame-content: footerContent;
+    bottom: -0.375in;
+    margin-left: 1in;
+    margin-right: 1in;
+    height: 1in;
+  }
+
+  @frame header {
+    -pdf-frame-content: headerContent;
+    top: 0.6in;
+    margin-left: 1in;
+    margin-right: 1in;
+    height: 1in;
+  }
+  @frame headerCont {
+    -pdf-frame-content: headerContentCont;
+    top: 0.625in;
+    margin-left: 2in;
+    margin-right: 1in;
+    height: 1in;
+    font-size: 10pt;
+  }
+  @frame headerCont2 {
+    -pdf-frame-content: headerContentCont2;
+    top: 0.625in;
+    margin-right: 1in;
+    height: 1in;
+    font-size: 12pt;
+  }
+  @frame tableCont {
+    -pdf-frame-content: tableCont;
+    left: 2.54cm;
+    margin-right: 1in;
+    height: 2cm;
+    top: 4cm;
+  }
+
+  @frame tableCont2 {
+    -pdf-frame-content: tableCont2;
+    left: 8.5cm;
+    margin-right: 1in;
+    height: 2cm;
+    top: 4.8cm;
   }
 
   @frame table {
-    left: 1.5cm;
-    width: 19cm;
-    height: 10cm;
-    top: 15.9cm;
+    -pdf-frame-content: breachTable;
+    left: 2.54cm;
+    width: 16.51cm;
+    height: 17cm;
+    top: 5.64cm;
   }
 }
 
@@ -272,25 +333,28 @@
   margin: 1cm;
   margin-bottom: 0cm;
   background-image: url("assets/masq-background.png");
+
   @frame title {
-    left: 3.5cm;
+    left: 1in;
     width: 16.5cm;
     height: 2cm;
-    top: 1cm;
+    top: 1.5in;
   }
+
   @frame footer {
     -pdf-frame-content: footerContent;
-    bottom: -0.4cm;
-    margin-left: 1cm;
-    margin-right: 1.5cm;
-    height: 1.7cm;
-    left: 1cm;
+    bottom: -0.375in;
+    margin-left: 1in;
+    margin-right: 1in;
+    height: 1in;
   }
+
   @frame header {
     -pdf-frame-content: headerContent;
-    top: 0.5cm;
-    left: 1cm;
-    height: 6cm;
+    top: 0.6in;
+    margin-left: 1in;
+    margin-right: 1in;
+    height: 1in;
   }
   @frame headerCont {
     -pdf-frame-content: headerContentCont;
@@ -307,42 +371,89 @@
     height: 1in;
     font-size: 12pt;
   }
+
+  @frame content0 {
+    -pdf-frame-content: summaryDom;
+    left: 2.54cm;
+    width: 16.51cm;
+    height: 3cm;
+    top: 4.5cm;
+  }
+
   @frame kpi1 {
-    left: 4.3cm;
+    left: 5.3cm;
     width: 5.45cm;
     height: 3cm;
-    top: 2.7cm;
+    top: 6.5cm;
   }
+
   @frame kpi2 {
-    left: 11.9cm;
+    left: 11cm;
     width: 5.45cm;
     height: 2.3cm;
-    top: 2.7cm;
+    top: 6.5cm;
   }
-  @frame content1 {
-    left: 1.5cm;
-    width: 19cm;
+
+  @frame domAlertsTitle {
+    -pdf-frame-content: domAlertsTitle;
+    left: 2.54cm;
+    width: 16.51cm;
+    height: 2cm;
+    top: 8.7cm;
+  }
+  @frame domainAlertsContent {
+    -pdf-frame-content: domainAlertsContent;
+    left: 2.54cm;
+    width: 16.51cm;
     height: 3cm;
-    top: 5.3cm;
+    top: 9.3cm;
   }
-  /* @frame graphbox1 {
-    left: 1.3cm;
-    width: 9cm;
-    height: 4.5cm;
-    top: 7.8cm;
+
+  @frame domainAlertsContent2 {
+    -pdf-frame-content: domainAlertsContent2;
+    left: 6.75cm;
+    margin-right: 1in;
+    height: 2cm;
+    top: 10.1cm;
   }
-  @frame listbox {
-    left: 11.3cm;
-    width: 9cm;
-    height: 4.5cm;
-    top: 7.8cm;
-  } */
+
+  @frame table {
+    -pdf-frame-content: domainAlertsTable;
+    left: 2.54cm;
+    width: 16.51cm;
+    height: 5.7cm;
+    top: 10.9cm;
+  }
+
+  @frame domContTitle {
+    -pdf-frame-content: domContTitle;
+    left: 2.54cm;
+    width: 16.51cm;
+    height: 2cm;
+    top: 17.5cm;
+  }
+
+  @frame domainContent {
+    -pdf-frame-content: domainContent;
+    left: 2.54cm;
+    width: 16.51cm;
+    height: 3cm;
+    top: 18.1cm;
+  }
+  @frame domainContent2 {
+    -pdf-frame-content: domainContent2;
+    left: 6.5cm;
+    width: 16.51cm;
+    height: 3cm;
+    top: 18.9cm;
+  }
+
   @frame table {
     -pdf-frame-content: domainTable;
-    left: 1.5cm;
-    width: 19cm;
-    height: 18.6cm;
-    top: 7.8cm;
+    left: 2.54cm;
+    width: 16.51cm;
+    height: 9.3cm;
+    top: 19.7cm;
   }
 }
 
@@ -350,30 +461,29 @@
   size: letter portrait;
   margin: 1cm;
   margin-bottom: 0cm;
-  background-image: url("assets/creds-background.png");
+  background-image: url("assets/vulns-background.png");
 
   @frame title {
-    left: 3.5cm;
+    left: 1in;
     width: 16.5cm;
     height: 2cm;
-    top: 1cm;
+    top: 1.5in;
   }
 
   @frame footer {
     -pdf-frame-content: footerContent;
-    bottom: -0.4cm;
-    margin-left: 1cm;
-    margin-right: 1.5cm;
-    height: 1.7cm;
-    left: 1cm;
+    bottom: -0.375in;
+    margin-left: 1in;
+    margin-right: 1in;
+    height: 1in;
   }
 
   @frame header {
     -pdf-frame-content: headerContent;
-    top: 0.5cm;
-    left: 1cm;
-
-    height: 6cm;
+    top: 0.6in;
+    margin-left: 1in;
+    margin-right: 1in;
+    height: 1in;
   }
   @frame headerCont {
     -pdf-frame-content: headerContentCont;
@@ -391,109 +501,199 @@
     font-size: 12pt;
   }
 
+  @frame content0 {
+    -pdf-frame-content: summaryVuln;
+    left: 2.54cm;
+    width: 16.51cm;
+    height: 3cm;
+    top: 4.5cm;
+  }
   @frame kpi1 {
-    left: 2cm;
+    left: 2.4cm;
     width: 5.45cm;
     height: 3cm;
-    top: 3cm;
+    top: 5.7cm;
   }
 
   @frame kpi2 {
-    left: 8.2cm;
+    left: 8cm;
     width: 5.45cm;
     height: 2.3cm;
-    top: 3cm;
+    top: 5.7cm;
   }
 
   @frame kpi3 {
-    left: 14.4cm;
+    left: 13.6cm;
     width: 5.45cm;
     height: 2.3cm;
-    top: 3cm;
+    top: 5.75cm;
   }
-
-  @frame content1 {
-    left: 1.5cm;
-    width: 18.5cm;
+  @frame portsTitle {
+    -pdf-frame-content: portsTitle;
+    left: 2.54cm;
+    width: 16.51cm;
     height: 2cm;
-    top: 5.8cm;
+    top: 8.2cm;
+  }
+  @frame portsGraphSum {
+    -pdf-frame-content: portsGraphSum;
+    left: 2.54cm;
+    width: 16.51cm;
+    height: 4cm;
+    top: 8.8cm;
+  }
+  @frame portsGraphSum2 {
+    -pdf-frame-content: portsGraphSum2;
+    left: 8.2cm;
+    width: 16.51cm;
+    height: 2cm;
+    top: 10.9cm;
   }
 
   @frame graphbox1 {
     -pdf-frame-content: protocolCount;
-    left: 1.5cm;
-    width: 9cm;
-    height: 5cm;
-    top: 7.5cm;
+    left: 2.54cm;
+    width: 16.51cm;
+    height: 5.3cm;
+    top: 11.5cm;
   }
 
-  @frame graphbox2 {
-    -pdf-frame-content: riskyProTable;
-    left: 11cm;
-    width: 9cm;
-    height: 5cm;
-    top: 7.5cm;
+  @frame portsTableSum2 {
+    -pdf-frame-content: portsTableSum2;
+    left: 8.2cm;
+    width: 16.51cm;
+    height: 2cm;
+    top: 17.8cm;
   }
 
-  @frame content2 {
-    left: 1.5cm;
-    width: 9cm;
-    height: 2.2cm;
-    top: 13cm;
-  }
-
-  @frame content3 {
-    left: 11cm;
-    width: 9cm;
-    height: 3cm;
-    top: 13cm;
-  }
-
-  @frame graph3 {
-    -pdf-frame-content: unverifVulnGraph;
-    left: 11cm;
-    width: 9cm;
-    height: 9cm;
-    top: 15.2cm;
-  }
-
-  @frame table {
-    -pdf-frame-content: vulnsTable;
-    left: 1.5cm;
-    width: 9cm;
-    height: 9cm;
-    top: 15.2cm;
+  @frame protocolCountTable {
+    -pdf-frame-content: protocolCountTable;
+    left: 2.54cm;
+    width: 16.51cm;
+    height: 6.5cm;
+    top: 18.4cm;
   }
 }
-
-@page dark1 {
+@page vulns2 {
   size: letter portrait;
   margin: 1cm;
   margin-bottom: 0cm;
-  background-image: url("assets/dark1.png");
 
   @frame title {
-    left: 3.5cm;
+    left: 1in;
     width: 16.5cm;
     height: 2cm;
-    top: 1cm;
+    top: 1.5in;
   }
 
   @frame footer {
     -pdf-frame-content: footerContent;
-    bottom: -0.4cm;
-    margin-left: 1cm;
-    margin-right: 1.5cm;
-    height: 1.7cm;
-    left: 1cm;
+    bottom: -0.375in;
+    margin-left: 1in;
+    margin-right: 1in;
+    height: 1in;
   }
 
   @frame header {
     -pdf-frame-content: headerContent;
-    top: 0.5cm;
-    left: 1cm;
+    top: 0.6in;
+    margin-left: 1in;
+    margin-right: 1in;
+    height: 1in;
+  }
+  @frame headerCont {
+    -pdf-frame-content: headerContentCont;
+    top: 0.625in;
+    margin-left: 2in;
+    margin-right: 1in;
+    height: 1in;
+    font-size: 10pt;
+  }
+  @frame headerCont2 {
+    -pdf-frame-content: headerContentCont2;
+    top: 0.625in;
+    margin-right: 1in;
+    height: 1in;
+    font-size: 12pt;
+  }
+  @frame shodanTableSum {
+    -pdf-frame-content: shodanTableSum;
+    left: 2.54cm;
+    width: 16.51cm;
+    height: 3cm;
+    top: 4.5cm;
+  }
+  @frame shodanTableSum2 {
+    -pdf-frame-content: shodanTableSum2;
+    left: 7cm;
+    width: 16.51cm;
+    height: 3cm;
+    top: 5.6cm;
+  }
+  @frame shodanTable {
+    -pdf-frame-content: shodanTable;
+    /* -pdf-frame-border: 1; */
+    left: 2.54cm;
+    width: 16.51cm;
+    height: 5.3cm;
+    top: 6.2cm;
+  }
+  @frame susVulnTitle {
+    -pdf-frame-content: susVulnTitle;
+    left: 2.54cm;
+    width: 16.51cm;
+    height: 2cm;
+    top: 12.5cm;
+  }
+  @frame susVulnSum {
+    -pdf-frame-content: susVulnSum;
+    left: 2.54cm;
+    width: 16.51cm;
+    height: 3cm;
+    top: 13.1cm;
+  }
+  @frame susVulnSum2 {
+    -pdf-frame-content: susVulnSum2;
+    left: 7.5cm;
+    width: 16.51cm;
+    height: 2cm;
+    top: 14.3cm;
+  }
+  @frame susVulnGraph {
+    -pdf-frame-content: susVulnGraph;
+    left: 2.54cm;
+    width: 16.51cm;
+    height: 9cm;
+    top: 15.1cm;
+  }
+}
+@page dark1 {
+  size: letter portrait;
+  margin: 1cm;
+  margin-bottom: 0cm;
+  background-image: url("assets/dark1-background.png");
 
-    height: 6cm;
+  @frame title {
+    left: 1in;
+    width: 16.5cm;
+    height: 2cm;
+    top: 1.5in;
+  }
+
+  @frame footer {
+    -pdf-frame-content: footerContent;
+    bottom: -0.375in;
+    margin-left: 1in;
+    margin-right: 1in;
+    height: 1in;
+  }
+
+  @frame header {
+    -pdf-frame-content: headerContent;
+    top: 0.6in;
+    margin-left: 1in;
+    margin-right: 1in;
+    height: 1in;
   }
   @frame headerCont {
     -pdf-frame-content: headerContentCont;
@@ -512,55 +712,53 @@
   }
 
   @frame kpi1 {
-    left: 1.1cm;
+    left: 2.3cm;
     width: 5.45cm;
     height: 2.3cm;
-    top: 3cm;
+    top: 4.75cm;
   }
 
-  @frame content1 {
-    left: 6.2cm;
-    width: 14cm;
+  @frame darkWebSum {
+    -pdf-frame-content: darkWebSum;
+    left: 8.2cm;
+    margin-right: 1in;
+    height: 5cm;
+    top: 4.5cm;
+  }
+  @frame darkWebSum2 {
+    -pdf-frame-content: darkWebSum2;
+    left: 2.54cm;
+    margin-right: 1in;
+    height: 5cm;
+    top: 6.8cm;
+  }
+  @frame mentionsTitle {
+    -pdf-frame-content: mentionsTitle;
+    left: 2.54cm;
+    width: 16.51cm;
+    height: 2cm;
+    top: 8.6cm;
+  }
+  @frame mentionsSum {
+    -pdf-frame-content: mentionsSum;
+    left: 2.54cm;
+    width: 16.51cm;
     height: 3cm;
-    top: 3cm;
+    top: 9.2cm;
   }
-
+  @frame mentionsSum2 {
+    -pdf-frame-content: mentionsSum2;
+    left: 8cm;
+    width: 16.51cm;
+    height: 2cm;
+    top: 10cm;
+  }
   @frame graphbox1 {
     -pdf-frame-content: darkWebMentions;
-    left: 1.5cm;
-    width: 19cm;
-    height: 9cm;
-    top: 6.5cm;
-  }
-
-  @frame content2 {
-    left: 1.5cm;
-    width: 9cm;
-    height: 1.7cm;
-    top: 15.5cm;
-  }
-
-  @frame content3 {
-    left: 11.1cm;
-    width: 9cm;
-    height: 1.7cm;
-    top: 15.5cm;
-  }
-
-  @frame graph3 {
-    -pdf-frame-content: darkWebSitesTable;
-    left: 1.5cm;
-    width: 9cm;
-    height: 9cm;
-    top: 17.3cm;
-  }
-
-  @frame graph4 {
-    -pdf-frame-content: alertsThreatsTable;
-    left: 11.1cm;
-    width: 9cm;
-    height: 9cm;
-    top: 17.3cm;
+    left: 2.54cm;
+    width: 16.51cm;
+    height: 12cm;
+    top: 10.6cm;
   }
 }
 
@@ -570,27 +768,25 @@
   margin-bottom: 0cm;
 
   @frame title {
-    left: 3.5cm;
+    left: 1in;
     width: 16.5cm;
     height: 2cm;
-    top: 1cm;
+    top: 1.5in;
   }
-
   @frame footer {
     -pdf-frame-content: footerContent;
-    bottom: -0.4cm;
-    margin-left: 1cm;
-    margin-right: 1.5cm;
-    height: 1.7cm;
-    left: 1cm;
+    bottom: -0.375in;
+    margin-left: 1in;
+    margin-right: 1in;
+    height: 1in;
   }
 
   @frame header {
     -pdf-frame-content: headerContent;
-    top: 0.5cm;
-    left: 1cm;
-
-    height: 6cm;
+    top: 0.6in;
+    margin-left: 1in;
+    margin-right: 1in;
+    height: 1in;
   }
   @frame headerCont {
     -pdf-frame-content: headerContentCont;
@@ -607,50 +803,54 @@
     height: 1in;
     font-size: 12pt;
   }
-
-  @frame TableIntro1 {
-    left: 1.5cm;
-    width: 9.4cm;
-    height: 3.8cm;
-    top: 3cm;
+  @frame socMedSum {
+    -pdf-frame-content: socMedSum;
+    left: 2.54cm;
+    width: 16.51cm;
+    height: 3cm;
+    top: 4.5cm;
   }
-
-  @frame TableIntro2 {
-    left: 11.1cm;
-    width: 9.4cm;
-    height: 3.8cm;
-    top: 3cm;
+  @frame socMedSum2 {
+    -pdf-frame-content: socMedSum2;
+    left: 7cm;
+    width: 16.51cm;
+    height: 2cm;
+    top: 6.3cm;
   }
-
-  @frame Table1 {
-    -pdf-frame-content: darkWebActorsTable;
-    left: 1.5cm;
-    width: 9cm;
-    height: 9cm;
-    top: 6.9cm;
+  @frame socMedTable {
+    -pdf-frame-content: socMedTable;
+    left: 2.54cm;
+    width: 16.51cm;
+    height: 5.3cm;
+    top: 7cm;
   }
-
-  @frame Table2 {
-    -pdf-frame-content: darkWebTagsTable;
-    left: 11.1cm;
-    width: 9cm;
-    height: 9cm;
-    top: 6.9cm;
+  @frame darkWebActStart {
+    -pdf-frame-content: darkWebActStart;
+    left: 2.54cm;
+    width: 16.51cm;
+    height: 2cm;
+    top: 13cm;
   }
-
-  @frame PieChartIntro1 {
-    left: 1.5cm;
-    width: 19cm;
-    height: 1.2cm;
-    top: 15.2cm;
+  @frame darkWebActSum {
+    -pdf-frame-content: darkWebActSum;
+    left: 2.54cm;
+    width: 16.51cm;
+    height: 3cm;
+    top: 13.6cm;
   }
-
-  @frame graph3 {
-    -pdf-frame-content: darkWebPieChart;
-    left: 1cm;
-    width: 19cm;
-    height: 9.8cm;
-    top: 16.6cm;
+  @frame darkWebActSum2 {
+    -pdf-frame-content: darkWebActSum2;
+    left: 7.5cm;
+    width: 16.51cm;
+    height: 2cm;
+    top: 14.9cm;
+  }
+  @frame darkWebActTable {
+    -pdf-frame-content: darkWebActTable;
+    left: 2.54cm;
+    width: 16.51cm;
+    height: 10cm;
+    top: 15.5cm;
   }
 }
 
@@ -660,26 +860,26 @@
   margin-bottom: 0cm;
 
   @frame title {
-    left: 3.5cm;
+    left: 1in;
     width: 16.5cm;
     height: 2cm;
-    top: 1cm;
+    top: 1.5in;
   }
 
   @frame footer {
     -pdf-frame-content: footerContent;
-    bottom: -0.4cm;
-    margin-left: 1cm;
-    margin-right: 1.5cm;
-    height: 1.7cm;
-    left: 1cm;
+    bottom: -0.375in;
+    margin-left: 1in;
+    margin-right: 1in;
+    height: 1in;
   }
 
   @frame header {
     -pdf-frame-content: headerContent;
-    top: 0.5cm;
-    left: 1cm;
-    height: 6cm;
+    top: 0.6in;
+    margin-left: 1in;
+    margin-right: 1in;
+    height: 1in;
   }
   @frame headerCont {
     -pdf-frame-content: headerContentCont;
@@ -696,50 +896,55 @@
     height: 1in;
     font-size: 12pt;
   }
-
-  @frame TableIntro1 {
-    left: 1.5cm;
-    width: 19cm;
-    height: 1.5cm;
-    top: 3cm;
+  @frame assetAlertsSum {
+    -pdf-frame-content: assetAlertsSum;
+    left: 2.54cm;
+    width: 16.51cm;
+    height: 3cm;
+    top: 4.5cm;
+  }
+  @frame assetAlertsSum2 {
+    -pdf-frame-content: assetAlertsSum2;
+    left: 8.5cm;
+    width: 16.51cm;
+    height: 2cm;
+    top: 5.8cm;
+  }
+  @frame assetAlertsTable {
+    -pdf-frame-content: assetAlertsTable;
+    left: 2.54cm;
+    width: 16.51cm;
+    height: 7cm;
+    top: 6.4cm;
   }
 
-  @frame Table1 {
-    -pdf-frame-content: execAlertTable;
-    left: 1.5cm;
-    width: 19cm;
+  @frame execAlertsStart {
+    -pdf-frame-content: execAlertsStart;
+    left: 2.54cm;
+    width: 16.51cm;
+    height: 2cm;
+    top: 14.2cm;
+  }
+  @frame execAlertsSum {
+    -pdf-frame-content: execAlertsSum;
+    left: 2.54cm;
+    width: 16.51cm;
+    height: 3cm;
+    top: 14.8cm;
+  }
+  @frame execAlertsSum2 {
+    -pdf-frame-content: execAlertsSum2;
+    left: 8.5cm;
+    width: 16.51cm;
+    height: 2cm;
+    top: 16.1cm;
+  }
+  @frame execAlertsTable {
+    -pdf-frame-content: execAlertsTable;
+    left: 2.54cm;
+    width: 16.51cm;
     height: 9cm;
-    top: 4.6cm;
-  }
-
-  @frame TableIntro2 {
-    left: 1.5cm;
-    width: 9cm;
-    height: 2.2cm;
-    top: 14.2cm;
-  }
-
-  @frame Table2 {
-    -pdf-frame-content: darkWebActTable;
-    left: 1.5cm;
-    width: 9cm;
-    height: 9.6cm;
-    top: 16.5cm;
-  }
-
-  @frame TableIntro3 {
-    left: 11.1cm;
-    width: 9cm;
-    height: 2.2cm;
-    top: 14.2cm;
-  }
-
-  @frame Table3 {
-    -pdf-frame-content: alertSitesTable;
-    left: 11.1cm;
-    width: 9cm;
-    height: 9.6cm;
-    top: 16.5cm;
+    top: 16.7cm;
   }
 }
 
@@ -749,27 +954,26 @@
   margin-bottom: 0cm;
 
   @frame title {
-    left: 3.5cm;
+    left: 1in;
     width: 16.5cm;
     height: 2cm;
-    top: 1cm;
+    top: 1.5in;
   }
 
   @frame footer {
     -pdf-frame-content: footerContent;
-    bottom: -0.4cm;
-    margin-left: 1cm;
-    margin-right: 1.5cm;
-    height: 1.7cm;
-    left: 1cm;
+    bottom: -0.375in;
+    margin-left: 1in;
+    margin-right: 1in;
+    height: 1in;
   }
 
   @frame header {
     -pdf-frame-content: headerContent;
-    top: 0.5cm;
-    left: 1cm;
-
-    height: 6cm;
+    top: 0.6in;
+    margin-left: 1in;
+    margin-right: 1in;
+    height: 1in;
   }
   @frame headerCont {
     -pdf-frame-content: headerContentCont;
@@ -786,49 +990,84 @@
     height: 1in;
     font-size: 12pt;
   }
-
-  @frame TableIntro1 {
-    left: 1.5cm;
-    width: 19cm;
-    height: 1.7cm;
-    top: 3cm;
+  @frame threatActorsSum {
+    -pdf-frame-content: threatActorsSum;
+    left: 2.54cm;
+    width: 16.51cm;
+    height: 3cm;
+    top: 4.5cm;
+  }
+  @frame threatActorsSum2 {
+    -pdf-frame-content: threatActorsSum2;
+    left: 8.5cm;
+    width: 16.51cm;
+    height: 2cm;
+    top: 6.7cm;
+  }
+  @frame threatActorsTable {
+    -pdf-frame-content: threatActorsTable;
+    left: 2.54cm;
+    width: 16.51cm;
+    height: 5.3cm;
+    top: 7.3cm;
   }
 
-  @frame Table1 {
-    -pdf-frame-content: cveTable;
-    left: 1.5cm;
-    width: 19cm;
-    height: 21.5cm;
-    top: 4.9cm;
+  @frame potentialThreatsStart {
+    -pdf-frame-content: potentialThreatsStart;
+    left: 2.54cm;
+    width: 16.51cm;
+    height: 2cm;
+    top: 13.5cm;
+  }
+  @frame potentialThreatsSum {
+    -pdf-frame-content: potentialThreatsSum;
+    left: 2.54cm;
+    width: 16.51cm;
+    height: 3cm;
+    top: 14.1cm;
+  }
+  @frame potentialThreatsSum2 {
+    -pdf-frame-content: potentialThreatsSum2;
+    left: 8cm;
+    width: 16.51cm;
+    height: 2cm;
+    top: 15.4cm;
+  }
+  @frame potentialThreatsTable {
+    -pdf-frame-content: potentialThreatsTable;
+    left: 2.54cm;
+    width: 16.51cm;
+    height: 9cm;
+    top: 16cm;
   }
 }
-@page appendix1 {
+
+@page dark5 {
   size: letter portrait;
   margin: 1cm;
   margin-bottom: 0cm;
 
   @frame title {
-    left: 3.5cm;
+    left: 1in;
     width: 16.5cm;
     height: 2cm;
-    top: 1cm;
+    top: 1.5in;
   }
 
   @frame footer {
     -pdf-frame-content: footerContent;
-    bottom: -0.4cm;
-    margin-left: 1cm;
-    margin-right: 1.5cm;
-    height: 1.7cm;
-    left: 1cm;
+    bottom: -0.375in;
+    margin-left: 1in;
+    margin-right: 1in;
+    height: 1in;
   }
 
   @frame header {
     -pdf-frame-content: headerContent;
-    top: 0.5cm;
-    left: 1cm;
-
-    height: 6cm;
+    top: 0.6in;
+    margin-left: 1in;
+    margin-right: 1in;
+    height: 1in;
   }
   @frame headerCont {
     -pdf-frame-content: headerContentCont;
@@ -845,48 +1084,199 @@
     height: 1in;
     font-size: 12pt;
   }
-
-  @frame AppendixIntro {
-    left: 1.5cm;
-    width: 19cm;
-    height: 1.7cm;
-    top: 3cm;
+  @frame sitesSum {
+    -pdf-frame-content: sitesSum;
+    left: 2.54cm;
+    width: 16.51cm;
+    height: 3cm;
+    top: 4.5cm;
+  }
+  @frame sitesSum2 {
+    -pdf-frame-content: sitesSum2;
+    left: 8cm;
+    width: 16.51cm;
+    height: 2cm;
+    top: 6.3cm;
+  }
+  @frame sitesTable {
+    -pdf-frame-content: sitesTable;
+    left: 2.54cm;
+    width: 16.51cm;
+    height: 8cm;
+    top: 7cm;
   }
 
-  @frame Content {
-    left: 1.5cm;
-    width: 19cm;
-    height: 21.5cm;
-    top: 4.9cm;
+  @frame marketsStart {
+    -pdf-frame-content: marketsStart;
+    left: 2.54cm;
+    width: 16.51cm;
+    height: 2cm;
+    top: 16cm;
+  }
+  @frame marketsSum {
+    -pdf-frame-content: marketsSum;
+    left: 2.54cm;
+    width: 16.51cm;
+    height: 3cm;
+    top: 16.6cm;
+  }
+  @frame marketsSum2 {
+    -pdf-frame-content: marketsSum2;
+    left: 7.2cm;
+    width: 16.51cm;
+    height: 2cm;
+    top: 17.9cm;
+  }
+  @frame marketsTable {
+    -pdf-frame-content: marketsTable;
+    left: 2.54cm;
+    width: 16.51cm;
+    height: 5.3cm;
+    top: 18.5cm;
   }
 }
+
+@page dark6 {
+  size: letter portrait;
+  margin: 1cm;
+  margin-bottom: 0cm;
+
+  @frame title {
+    left: 1in;
+    width: 16.5cm;
+    height: 2cm;
+    top: 1.5in;
+  }
+
+  @frame footer {
+    -pdf-frame-content: footerContent;
+    bottom: -0.375in;
+    margin-left: 1in;
+    margin-right: 1in;
+    height: 1in;
+  }
+
+  @frame header {
+    -pdf-frame-content: headerContent;
+    top: 0.6in;
+    margin-left: 1in;
+    margin-right: 1in;
+    height: 1in;
+  }
+  @frame headerCont {
+    -pdf-frame-content: headerContentCont;
+    top: 0.625in;
+    margin-left: 2in;
+    margin-right: 1in;
+    height: 1in;
+    font-size: 10pt;
+  }
+  @frame headerCont2 {
+    -pdf-frame-content: headerContentCont2;
+    top: 0.625in;
+    margin-right: 1in;
+    height: 1in;
+    font-size: 12pt;
+  }
+  @frame topCvesSum {
+    -pdf-frame-content: topCvesSum;
+    left: 2.54cm;
+    width: 16.51cm;
+    height: 3cm;
+    top: 4.5cm;
+  }
+  @frame topCvesSum2 {
+    -pdf-frame-content: topCvesSum2;
+    left: 7cm;
+    width: 16.51cm;
+    height: 2cm;
+    top: 6.3cm;
+  }
+  @frame topCvesTable {
+    -pdf-frame-content: topCvesTable;
+    left: 2.54cm;
+    width: 16.51cm;
+    height: 18cm;
+    top: 7cm;
+  }
+}
+
+@page appendix1 {
+  size: letter portrait;
+  margin: 0cm;
+  margin-bottom: 0cm;
+
+  @frame title {
+    left: 1in;
+    width: 16.5cm;
+    height: 2cm;
+    top: 1.5in;
+  }
+
+  @frame footer {
+    -pdf-frame-content: footerContent;
+    bottom: -0.375in;
+    margin-left: 1in;
+    margin-right: 1in;
+    height: 1in;
+  }
+
+  @frame header {
+    -pdf-frame-content: headerContent;
+    top: 0.6in;
+    margin-left: 1in;
+    margin-right: 1in;
+    height: 1in;
+  }
+  @frame headerCont {
+    -pdf-frame-content: headerContentCont;
+    top: 0.625in;
+    margin-left: 2in;
+    margin-right: 1in;
+    height: 1in;
+    font-size: 10pt;
+  }
+  @frame headerCont2 {
+    -pdf-frame-content: headerContentCont2;
+    top: 0.625in;
+    margin-right: 1in;
+    height: 1in;
+    font-size: 12pt;
+  }
+  @frame content {
+    left: 1in;
+    top: 2in;
+    height: 25cm;
+    margin-right: 1in;
+  }
+}
+
 @page appendix2 {
   size: letter portrait;
   margin: 1cm;
   margin-bottom: 0cm;
 
   @frame title {
-    left: 3.5cm;
+    left: 1in;
     width: 16.5cm;
     height: 2cm;
-    top: 1cm;
+    top: 1.5in;
   }
 
   @frame footer {
     -pdf-frame-content: footerContent;
-    bottom: -0.4cm;
-    margin-left: 1cm;
-    margin-right: 1.5cm;
-    height: 1.7cm;
-    left: 1cm;
+    bottom: -0.375in;
+    margin-left: 1in;
+    margin-right: 1in;
+    height: 1in;
   }
 
   @frame header {
     -pdf-frame-content: headerContent;
-    top: 0.5cm;
-    left: 1cm;
-
-    height: 6cm;
+    top: 0.6in;
+    margin-left: 1in;
+    margin-right: 1in;
+    height: 1in;
   }
   @frame headerCont {
     -pdf-frame-content: headerContentCont;
@@ -913,11 +1303,67 @@
 
   @frame Table1 {
     -pdf-frame-content: verifVulnSumTable;
-    left: 1.5cm;
-    width: 19cm;
+    left: 2.54cm;
+    width: 16.51cm;
     height: 21.5cm;
-    top: 4.9cm;
+    top: 5.5cm;
   }
+}
+@page faq2 {
+  size: letter portrait;
+  margin: 0cm;
+  margin-bottom: 0cm;
+
+  @frame content {
+    left: 1in;
+    top: 1.5in;
+    height: 25cm;
+    margin-right: 1in;
+  }
+
+  @frame footer {
+    -pdf-frame-content: footerContent;
+    bottom: -0.375in;
+    margin-left: 1in;
+    margin-right: 1in;
+    height: 1in;
+  }
+
+  @frame header {
+    -pdf-frame-content: headerContent;
+    top: 0.6in;
+    margin-left: 1in;
+    margin-right: 1in;
+    height: 1in;
+  }
+  @frame headerCont {
+    -pdf-frame-content: headerContentCont;
+    top: 0.625in;
+    margin-left: 2in;
+    margin-right: 1in;
+    height: 1in;
+    font-size: 10pt;
+  }
+  @frame headerCont2 {
+    -pdf-frame-content: headerContentCont2;
+    top: 0.625in;
+    margin-right: 1in;
+    height: 1in;
+    font-size: 12pt;
+  }
+}
+
+a {
+  text-decoration: none;
+  color: black;
+  font-family: "Times New Roman, Times, Georgia, serif";
+}
+
+b {
+  font-size: 13pt;
+  color: #015288;
+  font-weight: bold;
+  font-family: "Times New Roman, Times, Georgia, serif";
 }
 
 h1 {
@@ -928,20 +1374,27 @@ h1 {
   margin-left: 0;
   margin-right: 0;
   font-weight: bold;
-  font-family: "Franklin Gothic Medium", "Arial Narrow", Arial, sans-serif;
+  font-family: "Times New Roman, Times, Georgia, serif";
 }
 
 h2 {
   display: block;
-  font-size: 2.5em;
-  margin-top: 0.6em;
-  margin-bottom: 0.4em;
-  margin-left: 0;
-  margin-right: 0;
   font-weight: bold;
+  font-size: 18.5pt;
+  font-family: "Times New Roman, Times, Georgia, serif";
 }
 
 h3 {
+  font-size: 14pt;
+  color: #015288;
+  border-bottom: 2px solid;
+  line-height: 20px;
+  margin-bottom: 5px;
+  font-family: "Times New Roman, Times, Georgia, serif";
+  font-weight: bold;
+}
+
+.date {
   display: block;
   font-size: 2em;
   margin-top: 1em;
@@ -949,26 +1402,28 @@ h3 {
   margin-left: 0;
   margin-right: 0;
   font-weight: bold;
+  font-family: "Times New Roman, Times, Georgia, serif";
 }
 
 table {
   font-size: 15px;
+  font-family: "Times New Roman, Times, Georgia, serif";
 }
 
-.foot {
-  font-size: 15px;
-}
-
-.infoBox {
-  font-size: 14px;
+.headFoot {
+  font-size: 10pt;
+  color: #a7a7a6;
+  font-family: "Times New Roman, Times, Georgia, serif";
 }
 
 .kpi {
-  font-size: 14px;
+  font-size: 11pt;
+  font-family: "Times New Roman, Times, Georgia, serif";
 }
 
 .content {
-  font-size: 13px;
+  font-size: 11pt;
+  font-family: "Times New Roman, Times, Georgia, serif";
 }
 
 .flex-item {
@@ -981,6 +1436,7 @@ table {
   min-height: 2.3cm;
   height: inherit;
   width: 3.5cm;
+  font-family: "Times New Roman, Times, Georgia, serif";
 }
 
 .sum-item {
@@ -988,23 +1444,30 @@ table {
   margin-top: 0.5cm;
   padding-top: 15px;
   padding-bottom: 0cm;
-  font-size: 14px;
+  font-size: 11pt;
   text-align: center;
   min-height: 2.3cm;
   height: inherit;
   width: 3.5cm;
+  line-height: 100%;
+  color: black;
+  font-family: "Times New Roman, Times, Georgia, serif";
 }
+
 .chart {
   padding: 0.5cm;
 }
+
 .table {
-  font-size: 8pt;
+  font-size: 11pt;
   text-align: center;
   padding-top: 0.1cm;
+  font-family: "Times New Roman, Times, Georgia, serif";
 }
 
 .table th {
   text-align: center;
+  font-size: 11pt;
   background-color: #4472c4;
   color: white;
   padding-top: 0.1cm;
@@ -1012,7 +1475,9 @@ table {
   border-top-color: white;
   border-right-color: white;
   border-left-color: white;
+  font-family: "Times New Roman, Times, Georgia, serif";
 }
+
 /* .table tr {
     text-align: center;
     color: black;
@@ -1034,6 +1499,7 @@ table {
 .even {
   background-color: #cfd5ea;
 }
+
 .odd {
   background-color: #e9ebf5;
 }

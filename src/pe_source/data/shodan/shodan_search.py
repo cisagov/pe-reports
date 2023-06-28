@@ -14,11 +14,13 @@ from pe_reports import app
 from pe_source.data.pe_db.db_query_source import (
     get_data_source_uid,
     get_ips,
+    get_ips_dhs,
+    get_ips_nasa,
+    get_ips_hhs,
     insert_shodan_data,
 )
 
-# Setup logging to central file
-LOGGER = app.config["LOGGER"]
+LOGGER = logging.getLogger(__name__)
 
 
 def run_shodan_thread(api, org_chunk, thread_name):
@@ -90,7 +92,7 @@ def search_shodan(thread_name, ips, api, start, end, org_uid, org_name, failed):
 
     # Break up IPs into chunks of 100
     tot_ips = len(ips)
-    ip_chunks = [ips[i : i + 100] for i in range(0, tot_ips, 100)]
+    ip_chunks = [ips[i : i + 10] for i in range(0, tot_ips, 10)]
     tot = len(ip_chunks)
     LOGGER.info(
         "{} Split {} IPs into {} chunks - {}".format(
@@ -98,13 +100,13 @@ def search_shodan(thread_name, ips, api, start, end, org_uid, org_name, failed):
         )
     )
 
-    # Loop through chunks and search Shodan
+    # Loop through chunks and query Shodan
     for i, ip_chunk in enumerate(ip_chunks):
         count = i + 1
         try_count = 1
         while try_count < 7:
             try:
-                results = api.host(ip_chunk, history=True)
+                results = api.host(ip_chunk)
                 for r in results:
                     for d in r["data"]:
                         # Convert Shodan date string to UTC datetime
@@ -118,6 +120,7 @@ def search_shodan(thread_name, ips, api, start, end, org_uid, org_name, failed):
                             serv = d.get("http", {}).get("server")
                             asn = d.get("ASN", None)
                             vulns = d.get("vulns", None)
+                            location = d.get("location", None)
                             if vulns is not None:
                                 unverified = []
                                 for cve in list(vulns.keys()):
@@ -159,6 +162,7 @@ def search_shodan(thread_name, ips, api, start, end, org_uid, org_name, failed):
                                             "tags": r["tags"],
                                             "timestamp": d["timestamp"],
                                             "type": ftype,
+                                            "is_verified": False,
                                         }
                                     )
                             elif d["_shodan"]["module"] in risky_ports:
@@ -168,9 +172,21 @@ def search_shodan(thread_name, ips, api, start, end, org_uid, org_name, failed):
                                 mitigation = "Confirm open port has a required business use for internet exposure and ensure necessary safeguards are in place through TCP wrapping, TLS encryption, or authentication requirements"
                                 risk_data.append(
                                     {
+                                        "ac_description": None,
+                                        "ai_description": None,
                                         "asn": asn,
+                                        "attack_complexity": None,
+                                        "attack_vector": None,
+                                        "av_description": None,
+                                        "availability_impact": None,
+                                        "ci_description": None,
+                                        "confidentiality_impact": None,
+                                        "cve": None,
+                                        "cvss": None,
                                         "domains": r["domains"],
                                         "hostnames": r["hostnames"],
+                                        "ii_Description": None,
+                                        "integrity_impact": None,
                                         "ip": r["ip_str"],
                                         "isn": r["isp"],
                                         "mitigation": mitigation,
@@ -182,9 +198,12 @@ def search_shodan(thread_name, ips, api, start, end, org_uid, org_name, failed):
                                         "product": prod,
                                         "protocol": d["_shodan"]["module"],
                                         "server": serv,
+                                        "severity": None,
+                                        "summary": None,
                                         "tags": r["tags"],
                                         "timestamp": d["timestamp"],
                                         "type": ftype,
+                                        "is_verified": False,
                                     }
                                 )
 
@@ -203,6 +222,8 @@ def search_shodan(thread_name, ips, api, start, end, org_uid, org_name, failed):
                                     "server": serv,
                                     "tags": r["tags"],
                                     "timestamp": d["timestamp"],
+                                    "country_code": location["country_code"],
+                                    "location": str(location),
                                 }
                             )
 
@@ -243,24 +264,18 @@ def search_shodan(thread_name, ips, api, start, end, org_uid, org_name, failed):
     df = pd.DataFrame(data)
     risk_df = pd.DataFrame(risk_data)
     vuln_df = pd.DataFrame(vuln_data)
-
+    all_vuln_df = vuln_df.append(risk_df, ignore_index=True)
     # Grab the data source uid and add to each dataframe
     source_uid = get_data_source_uid("Shodan")
     df["data_source_uid"] = source_uid
     risk_df["data_source_uid"] = source_uid
     vuln_df["data_source_uid"] = source_uid
+    all_vuln_df["data_source_uid"] = source_uid
 
     # Insert data into the PE database
     failed = insert_shodan_data(df, "shodan_assets", thread_name, org_name, failed)
     failed = insert_shodan_data(
-        risk_df,
-        "shodan_insecure_protocols_unverified_vulns",
-        thread_name,
-        org_name,
-        failed,
-    )
-    failed = insert_shodan_data(
-        vuln_df, "shodan_verified_vulns", thread_name, org_name, failed
+        all_vuln_df, "shodan_vulns", thread_name, org_name, failed
     )
 
     return failed
@@ -317,15 +332,21 @@ def is_verified(
                 "integrity_impact": int_imp or "",
                 "ip": r["ip_str"],
                 "isn": r["isp"],
+                "mitigation": None,
+                "name": None,
                 "organization": r["org"],
                 "organizations_uid": org_uid,
                 "port": d["port"],
+                "potential_vulns": None,
                 "product": product or "",
                 "protocol": d["_shodan"]["module"],
+                "server": None,
                 "severity": severity or "",
                 "summary": summary or "",
                 "tags": r["tags"],
                 "timestamp": d["timestamp"],
+                "type": None,
+                "is_verified": True,
             }
         )
     else:

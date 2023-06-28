@@ -43,7 +43,7 @@ def date_format(value, format="%m/%d/%Y"):
 
 
 def html_builder(text):
-    """Build out an HTML string for command line usage."""
+    """Build out an html string for command line usage."""
     input_type = input(
         "Which of the following would you like to insert:\n [P]aragraph\n [B]ulleted List \n [N]umbered List\n Please provide a selection:"
     )
@@ -81,6 +81,8 @@ def html_builder(text):
     if cont == "Y":
         text = html_builder(text)
 
+    LOGGER.info(text)
+
     return text
 
 
@@ -94,17 +96,19 @@ def generate_cybersix_bulletin(
     filename="_Bulletin.pdf",
 ):
     """Generate a bulletin based on a provided cybersix id."""
+
     if not filename.endswith(".pdf"):
         filename = filename + ".pdf"
 
-    template_loader = jinja2.FileSystemLoader(searchpath=bulletin_path)
-    template_env = jinja2.Environment(loader=template_loader, autoescape=True)
-    template_env.filters["date_format"] = date_format
+    templateLoader = jinja2.FileSystemLoader(searchpath=bulletin_path)
+    templateEnv = jinja2.Environment(loader=templateLoader, autoescape=True)
+    templateEnv.filters["date_format"] = date_format
     TEMPLATE_FILE = "bulletin_template.html"
-    template = template_env.get_template(TEMPLATE_FILE)
+    template = templateEnv.get_template(TEMPLATE_FILE)
     resp = get_post(id)
 
     for post in resp["intel_items"]:
+
         outputText = template.render(
             post,
             user_provided_content=user_text,
@@ -139,6 +143,7 @@ def generate_cybersix_bulletin(
             "disable-smart-shrinking": True,
         }
         out_path = output_directory + "/" + filename
+        LOGGER.info(out_path)
 
         pdfkit.from_file(
             [bulletin_path + "/bulletin_template_filled.html"],
@@ -157,11 +162,11 @@ def generate_creds_bulletin(
 ):
     """Generate a credential breach bulletin."""
     LOGGER.info("generating creds bulletin")
-    template_loader = jinja2.FileSystemLoader(searchpath=bulletin_path)
-    template_env = jinja2.Environment(loader=template_loader, autoescape=True)
-    template_env.filters["date_format"] = date_format
+    templateLoader = jinja2.FileSystemLoader(searchpath=bulletin_path)
+    templateEnv = jinja2.Environment(loader=templateLoader, autoescape=True)
+    templateEnv.filters["date_format"] = date_format
     TEMPLATE_FILE = "creds_bulletin_template.html"
-    template = template_env.get_template(TEMPLATE_FILE)
+    template = templateEnv.get_template(TEMPLATE_FILE)
 
     conn = connect()
     cur = conn.cursor()
@@ -190,11 +195,13 @@ def generate_creds_bulletin(
 
     # Replace Blank values with DataFrame.replace() methods.
     emails_df = emails_df.replace(r"^\s*$", "-", regex=True)
+    LOGGER.info(emails_df)
     df_table = emails_df[
         ["Email", "Name", "Login ID", "Phone", "Password", "Hash Type"]
     ].to_html(index=False, classes="table table-striped")
     emails_list = emails_df["Email"].values.tolist()
 
+    # emails_list = list(set(emails_list))
     emails_list.sort()
     email_count = len(emails_list)
     n = 2
@@ -202,6 +209,8 @@ def generate_creds_bulletin(
         emails_list[i * n : (i + 1) * n] for i in range((len(emails_list) + n - 1) // n)
     ]
 
+    LOGGER.info(hibp_rows)
+    LOGGER.info(df_table)
     results = []
     for row in breaches:
         row_dict = {}
@@ -209,7 +218,8 @@ def generate_creds_bulletin(
             row_dict[col] = row[i]
         results.append(row_dict)
 
-        output_text = template.render(
+        LOGGER.info(row_dict)
+        outputText = template.render(
             row_dict,
             user_provided_content=user_text,
             email_count=email_count,
@@ -217,7 +227,7 @@ def generate_creds_bulletin(
             hibp_rows=hibp_rows,
         )
         html_file = open(bulletin_path + "/creds_bulletin_template_filled.html", "w")
-        html_file.write(output_text)
+        html_file.write(outputText)
         html_file.close()
 
         options = {
@@ -244,7 +254,7 @@ def generate_creds_bulletin(
             "disable-smart-shrinking": True,
         }
         out_path = output_directory + "/" + filename
-
+        LOGGER.info(out_path)
         pdfkit.from_file(
             [bulletin_path + "/creds_bulletin_template_filled.html"],
             out_path,
@@ -261,12 +271,13 @@ def main():
 
     user_text = html_builder("")
 
-    LOGGER.info("Running on %s", id)
+    LOGGER.info(id)
 
     generate_cybersix_bulletin(
         id,
         user_text,
     )
+    # LOGGER.info(resp)
 
 
 if __name__ == "__main__":

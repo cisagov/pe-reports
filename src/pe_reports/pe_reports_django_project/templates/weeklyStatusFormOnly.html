@@ -1,0 +1,29 @@
+{% load crispy_forms_tags %}
+
+<form id="weeklyStatusForm" action="{% url 'weekly-status-form-only' %}" method="post">
+    {% csrf_token %}
+    <label for="{{ form.theuserIssues.auto_id }}">
+        Github Issues
+        for {{ user.first_name | capfirst }}
+    </label>
+    {{ form|crispy }}
+    <input type="submit" value="Update">
+</form>
+
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    console.log('change event selected')
+    const userIssuesSelect = document.getElementById("updatetheuserIssues");
+    const keyAccomplishmentsTextarea = document.getElementById("updatekey_accomplishments");
+
+    userIssuesSelect.addEventListener("change", function() {
+        const selectedIssue = userIssuesSelect.value;
+        const currentText = keyAccomplishmentsTextarea.value;
+
+        // Append the selected issue to the current text, with a comma if there's already text.
+        const newText = currentText.length > 0 ? currentText + ", " + selectedIssue : selectedIssue;
+        keyAccomplishmentsTextarea.value = newText;
+    });
+});
+</script>

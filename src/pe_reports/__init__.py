@@ -6,11 +6,12 @@
 
 # Standard Python Libraries
 import logging
+from logging.handlers import RotatingFileHandler
 import os
 
 # Third-Party Libraries
-import celery
-from flask import Flask
+from celery import Celery
+from flask import Flask, render_template
 from flask_login import LoginManager
 from flask_migrate import Migrate
 from flask_sqlalchemy import SQLAlchemy
@@ -22,15 +23,13 @@ from pe_reports.data.config import config
 from pe_reports.home.views import home_blueprint
 from pe_reports.report_gen.views import report_gen_blueprint
 from pe_reports.stakeholder.views import stakeholder_blueprint
+from pe_reports.stakeholder_bulk_upload.views import stakeholder_bulk_upload_blueprint
+from pe_reports.stakeholder_full.views import stakeholder_full_blueprint
+from pe_reports.stakeholder_lite.views import stakeholder_lite_blueprint
 
 from ._version import __version__  # noqa: F401
 
 params = config()
-# Initialize port if empty.
-if params["port"] == "":
-    logging.info("Empty port. Setting to 5443")
-    params["port"] = 5443
-
 login_manager = LoginManager()
 # Flask implementation
 app = Flask(__name__)
@@ -38,12 +37,14 @@ app.config["SECRET_KEY"] = os.getenv("FLASK_SECRET_KEY", "dev")
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.config[
     "SQLALCHEMY_DATABASE_URI"
-] = f'postgresql+psycopg2://{params["user"]}:{params["password"]}@{params["host"]}{params["port"]}/{params["database"]}'
+] = f'postgresql+psycopg2://{params["user"]}:{params["password"]}@{params["host"]}:{params["port"]}/{params["database"]}'
 
 
 # Configure the redis server
-app.config["CELERY_BROKER_URL"] = "redis://localhost:6379/0"
-app.config["CELERY_RESULT_BACKEND"] = "redis://localhost:6379/0"
+# app.config["CELERY_BROKER_URL"] = "redis://localhost:6379/0"
+# app.config["CELERY_RESULT_BACKEND"] = "redis://localhost:6379/0"
+app.config["UPLOAD_FOLDER"] = "src/pe_reports/uploads/"
+app.config["ALLOWED_EXTENSIONS"] = {"txt", "csv"}
 
 CENTRAL_LOGGING_FILE = "pe_reports_logging.log"
 DEBUG = False
@@ -54,19 +55,21 @@ if DEBUG is True:
 else:
     level = "INFO"
 
+# Logging will rotate at 2GB
 logging.basicConfig(
-    filename=CENTRAL_LOGGING_FILE,
-    filemode="a",
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     datefmt="%m/%d/%Y %I:%M:%S",
     level=level,
+    handlers=[
+        RotatingFileHandler(CENTRAL_LOGGING_FILE, maxBytes=2000000, backupCount=10)
+    ],
 )
 
 app.config["LOGGER"] = logging.getLogger(__name__)
 
 # Creates a Celery object
-celery_obj = celery.Celery(app.name, broker=app.config["CELERY_BROKER_URL"])
-celery_obj.conf.update(app.config)
+# celery = Celery(app.name, broker=app.config["CELERY_BROKER_URL"])
+# celery.conf.update(app.config)
 
 # Config DB
 db = SQLAlchemy(app)
@@ -81,10 +84,18 @@ __all__ = ["app", "pages", "report_generator", "stylesheet"]
 
 # Register the flask apps
 app.register_blueprint(stakeholder_blueprint)
+app.register_blueprint(stakeholder_lite_blueprint)
+app.register_blueprint(stakeholder_full_blueprint)
+app.register_blueprint(stakeholder_bulk_upload_blueprint)
 app.register_blueprint(report_gen_blueprint)
 # TODO: Add login blueprint. Issue #207 contains details
 # app.register_blueprint(manage_login_blueprint)
 app.register_blueprint(home_blueprint)
+
+
+@app.errorhandler(404)
+def page_not_found(e):
+    return render_template("404.html")
 
 
 if __name__ == "__main__":

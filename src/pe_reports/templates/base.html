@@ -1,4 +1,4 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -53,13 +53,28 @@
             </li>
             <li class="nav-item">
               <a
+                class="nav-link {% if request.endpoint=='stakeholder_full.stakeholder_full' %}active{%endif %}"
+                id="add"
+                href="{{ url_for('stakeholder_full.stakeholder_full') }}"
+                >Add Stakeholder Full</a
+              >
+            </li>
+            <li class="nav-item">
+              <a
                 class="nav-link {% if request.endpoint=='stakeholder.stakeholder' %}active{%endif %}"
                 id="add"
                 href="{{ url_for('stakeholder.stakeholder') }}"
                 >Add Stakeholder</a
               >
             </li>
-
+            <li class="nav-item">
+              <a
+                class="nav-link {% if request.endpoint=='stakeholder_lite.stakeholder_lite' %}active{%endif %}"
+                id="add"
+                href="{{ url_for('stakeholder_lite.stakeholder_lite') }}"
+                >Add Stakeholder Lite</a
+              >
+            </li>
             <li class="nav-item">
               <a
                 class="nav-link {% if request.endpoint=='report_gen.report_gen' %}active{%endif %}"
@@ -68,36 +83,66 @@
                 >Report Generator</a
               >
             </li>
+            <li class="nav-item">
+              <a
+                class="nav-link {% if request.endpoint=='stakeholder.upload_file' %}active{%endif %}"
+                id="upload"
+                href="{{ url_for('stakeholder_bulk_upload.stakeholder_bulk_upload') }}"
+                >Upload File</a
+              >
+            </li>
           </ul>
         </div>
       </div>
     </nav>
 
-    <div class="d-flex justify-content-center Jumbotron">
-      <h1>Welcome to P&E Reports</h1>
-
-      <!--<img src="../static/" alt="">-->
-    </div>
-    <div class="row"></div>
+    <div class="row" style="padding-top: 50px"></div>
     {% with messages = get_flashed_messages(with_categories=true) %}
     <!-- Categories: success (green), info (blue), warning (yellow), danger (red) -->
     {% if messages %} {% for category, message in messages %}
     <div
-      class="alert alert-{{ category }} alert-dismissible fade show row"
+      class="alert alert-{{ category }} alert-dismissible row col-lg-4 offset-lg-4 text-center"
       id="messageDiv"
       role="alert"
     >
-      <button
-        type="button"
-        class="btn-close"
-        data-bs-dismiss="alert"
-        aria-label="Close"
-      >
-        <span aria-hidden="true">&times;</span>
-      </button>
       <!-- <strong>Title</strong> -->
       {{ message }}
     </div>
     {% endfor %} {% endif %} {% endwith %} {%block content%} {% endblock%}
+    <script type="text/javascript">
+      function showDiv() {
+        let T = document.getElementById("TestsDiv"),
+          displayValue = "";
+        if (T.style.display == "") displayValue = "none";
+        T.style.display = displayValue;
+      }
+
+      function loading() {
+        $("#loading").show();
+        $("#content").hide();
+      }
+
+      window.setTimeout(function () {
+        $("#messageDiv")
+          .fadeTo(500, 0)
+          .slideUp(500, function () {
+            $(this).remove();
+          });
+      }, 2000);
+
+      $(document).ready(function () {
+        console.log("Im ready ");
+
+        showDiv();
+
+        // setTimeout(function () {
+        //   $("#messageDiv").fadeOut("fast");
+        // }, 3000);
+
+        $(window).load(function () {
+          $("#loading").hide();
+        });
+      });
+    </script>
   </body>
 </html>

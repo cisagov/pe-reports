@@ -1,0 +1,1380 @@
+<html>
+
+<head>
+    <link rel="stylesheet" type="text/css" href="{{base_dir}}/style.css" />
+</head>
+
+<body>
+    <!-- Here we declare the Header image for the top of the document -->
+    <div id="headerContent">
+        <img src="{{base_dir}}/assets/cisa.png" alt="Italian Trulli" style="width:65px;height:65px;">
+    </div>
+    <div id="headerContentCont" class=headFoot style="border-bottom: 1px solid;">
+        <p>Posture and Exposure Report<br>
+            Reporting Period: {{dateRange}}</p>
+    </div>
+    <table style="border-top: 1px solid white;">
+        <tr>
+            <td align='right' class=headFoot>
+                <div id="headerContentCont2" class=headFoot" style="color:#FFC000;font-size: 12pt;">
+                    <p>TLP:AMBER</p>
+                </div>
+            </td>
+        </tr>
+    </table>
+
+    <!-- Here we declare the footer content for every page but the cover -->
+    <div id="footerContent">
+        <table style="border-top: 1px solid white;">
+            <tr>
+                <td class=headFoot>
+                    {{endDate}}
+                </td>
+                <td align='right' class=headFoot>
+                    <pdf:pagenumber>
+                </td>
+
+            </tr>
+        </table>
+    </div>
+    <!-- Cover page Content -->
+    <div>
+        <div>
+            <h1>Posture & Exposure Report</h1>
+            <h2> Prepared for: {{department}}</h2>
+            <p class="date">Reporting period: {{dateRange}}</p>
+        </div>
+        <!-- This div uploads the main template for parts of the report with just text content -->
+        <div>
+            <pdf:nexttemplate name="maintmpl">
+        </div>
+        <!-- This div goes to the next page in the report  -->
+        <div>
+            <pdf:nextpage />
+        </div>
+    </div>
+
+    <!-- Table of Contents Content -->
+    <div>
+        <h2 style="border-bottom: 1px solid;line-height:25px;margin-bottom: 10px;">Contents</h2>
+        <br>
+        <div>
+            <table style="width: 50cm;">
+                <tr>
+                    <td style="font-size:12pt;font-weight:bold;"> <a
+                            href="#Introduction">1.&nbsp;&nbsp;&nbsp;&nbsp;Introduction</a>............................................................................................................................
+                    </td>
+                    <td align='right' style="font-size:12pt;font-weight:bold;">3</td>
+                </tr>
+                <tr>
+                    <td style="font-size:11pt;text-indent: 30px;"> <a
+                            href="#Overview">1.1&nbsp;&nbsp;&nbsp;&nbsp;Overview</a>......................................................................................................................................
+                    </td>
+                    <td align='right' style="font-size:11pt;">3</td>
+                </tr>
+                <tr>
+                    <td style="font-size:11pt;text-indent: 30px;"> <a
+                            href="#HowToUseReport">1.2&nbsp;&nbsp;&nbsp;&nbsp;How to
+                            Use this
+                            Report</a>................................................................................................................
+                    </td>
+                    <td align='right' style="font-size:11pt;">3</td>
+                </tr>
+                <tr>
+                    <td style=" font-size:11pt;text-indent: 30px;"> <a
+                            href="#ContactInfo">1.3&nbsp;&nbsp;&nbsp;&nbsp;Contact
+                            Information</a>......................................................................................................................
+                    </td>
+                    <td align='right' style="font-size:11pt;">3</td>
+                </tr>
+                <tr>
+                    <td style="font-size:12pt;font-weight:bold;"> <a
+                            href="#SumOfFindings">2.&nbsp;&nbsp;&nbsp;&nbsp;Summary of
+                            Findings</a>.............................................................................................................
+                    </td>
+                    <td align='right' style="font-size:12pt;font-weight:bold;">3</td>
+                </tr>
+                <tr>
+                    <td style="font-size:11pt;text-indent: 30px;"> <a
+                            href="#SumOfTrackedData">2.1&nbsp;&nbsp;&nbsp;&nbsp;Summary
+                            of Tracked
+                            Data</a>...........................................................................................................
+                    </td>
+                    <td align='right' style="font-size:11pt;">4</td>
+                </tr>
+                <tr>
+                    <td style="font-size:11pt;text-indent: 30px;"> <a
+                            href="#RawDataLinks">2.2&nbsp;&nbsp;&nbsp;&nbsp;Raw Data
+                            Links</a>............................................................................................................................
+                    </td>
+                    <td align='right' style="font-size:11pt;">4</td>
+                </tr>
+                <tr>
+                    <td style="font-size:12pt;font-weight:bold;"> <a
+                            href="#DetailedResults">3.&nbsp;&nbsp;&nbsp;&nbsp;Detailed
+                            Results</a>......................................................................................................................
+                    </td>
+                    <td align='right' style="font-size:12pt;font-weight:bold;">5</td>
+                </tr>
+                <tr>
+                    <td style="font-size:11pt;text-indent: 30px;"> <a
+                            href="#CredPubandAbuse">3.1&nbsp;&nbsp;&nbsp;&nbsp;Credential Publication and
+                            Abuse</a>.................................................................................................
+                    </td>
+                    <td align='right' style="font-size:11pt;">5</td>
+                </tr>
+                <tr>
+                    <td style="font-size:11pt;text-indent: 30px;width: 25cm;"> <a
+                            href="#DomAlertsandSusMasq">3.2&nbsp;&nbsp;&nbsp;&nbsp;Domain
+                            Alerts and Suspected
+                            Masquerading</a>...............................................................................
+                    </td>
+                    <td align='right' style="font-size:11pt;">7</td>
+                </tr>
+                <tr>
+                    <td style="font-size:11pt;text-indent: 67.5px;"> <a
+                            href="#DomMonAlerts">3.2.1&nbsp;&nbsp;&nbsp;&nbsp;Domain
+                            Monitoring
+                            Alerts</a>...............................................................................................
+                    </td>
+                    <td align='right' style="font-size:11pt;">7</td>
+                </tr>
+                <tr>
+                    <td style="font-size:11pt;text-indent: 67.5px;"> <a
+                            href="#SusDomMasq">3.2.2&nbsp;&nbsp;&nbsp;&nbsp;Suspected Domain
+                            Masquerading</a>...................................................................................
+                    </td>
+                    <td align='right' style="font-size:11pt;">7</td>
+                </tr>
+                <tr>
+                    <td style="font-size:11pt;text-indent: 30px;"> <a
+                            href="#InsDevandSusVuln">3.3&nbsp;&nbsp;&nbsp;&nbsp;Insecure
+                            Devices and Suspected
+                            Vulnerabilities</a>..........................................................................
+                    </td>
+                    <td align='right' style="font-size:11pt;">8</td>
+                </tr>
+                <tr>
+                    <td style="font-size:11pt;text-indent: 67.5px;"> <a
+                            href="#InsPortsProtServ">3.3.1&nbsp;&nbsp;&nbsp;&nbsp;Insecure Ports,
+                            Protocols, and
+                            Services</a>...........................................................................
+                    </td>
+                    <td align='right' style="font-size:11pt;">8</td>
+                </tr>
+                <tr>
+                    <td style="font-size:11pt;text-indent: 67.5px;"> <a
+                            href="#ShodanVerVulns">3.3.2&nbsp;&nbsp;&nbsp;&nbsp;Shodan-Verified
+                            Vulnerabilities</a>......................................................................................
+                    </td>
+                    <td align='right' style="font-size:11pt;">9</td>
+                </tr>
+                <tr>
+                    <td style="font-size:11pt;text-indent: 67.5px;"> <a
+                            href="#SuspectedVulns">3.3.3&nbsp;&nbsp;&nbsp;&nbsp;Suspected
+                            Vulnerabilities</a>................................................................................................
+                    </td>
+                    <td align='right' style="font-size:11pt;">9</td>
+                </tr>
+                <tr>
+                    <td style="font-size:11pt;text-indent: 30px;"> <a
+                            href="#DarkWebActivity">3.4&nbsp;&nbsp;&nbsp;&nbsp;Dark Web
+                            Activity</a>........................................................................................................................
+                    </td>
+                    <td align='right' style="font-size:11pt;">10</td>
+                </tr>
+                <tr>
+                    <td style="font-size:11pt;text-indent: 67.5px;"> <a
+                            href="#DarkWebMentions">3.4.1&nbsp;&nbsp;&nbsp;&nbsp;Dark
+                            Web
+                            Mentions</a>........................................................................................................
+                    </td>
+                    <td align='right' style="font-size:11pt;">10</td>
+                </tr>
+                <tr>
+                    <td style="font-size:11pt;text-indent: 67.5px;"> <a
+                            href="#MostActiveSocMed">3.4.2&nbsp;&nbsp;&nbsp;&nbsp;Most
+                            Active Social Media
+                            Posts</a>.....................................................................................
+                    </td>
+                    <td align='right' style="font-size:11pt;">11</td>
+                </tr>
+                <tr>
+                    <td style="font-size:11pt;text-indent: 67.5px;"> <a
+                            href="#MostActiveDarkWeb">3.4.3&nbsp;&nbsp;&nbsp;&nbsp;Most
+                            Active Dark Web
+                            Posts</a>..........................................................................................
+                    </td>
+                    <td align='right' style="font-size:11pt;">11</td>
+                </tr>
+                <tr>
+                    <td style="font-size:11pt;text-indent: 67.5px;"> <a
+                            href="#AssetAlerts">3.4.4&nbsp;&nbsp;&nbsp;&nbsp;Asset
+                            Alerts</a>.....................................................................................................................
+                    </td>
+                    <td align='right' style="font-size:11pt;">12</td>
+                </tr>
+                <tr>
+                    <td style="font-size:11pt;text-indent: 67.5px;"> <a
+                            href="#ExecAlerts">3.4.5&nbsp;&nbsp;&nbsp;&nbsp;Executive
+                            Alerts</a>.............................................................................................................
+                    </td>
+                    <td align='right' style="font-size:11pt;">12</td>
+                </tr>
+                <tr>
+                    <td style="font-size:11pt;text-indent: 67.5px;"> <a
+                            href="#ThreatAlerts">3.4.6&nbsp;&nbsp;&nbsp;&nbsp;Threat
+                            Actors</a>..................................................................................................................
+                    </td>
+                    <td align='right' style="font-size:11pt;">13</td>
+                </tr>
+                <tr>
+                    <td style="font-size:11pt;text-indent: 67.5px;"> <a
+                            href="#AlertsofPotThreats">3.4.7&nbsp;&nbsp;&nbsp;&nbsp;Alerts of Potential
+                            Threats</a>..............................................................................................
+                    </td>
+                    <td align='right' style="font-size:11pt;">13</td>
+                </tr>
+                <tr>
+                    <td style="font-size:11pt;text-indent: 67.5px;"> <a
+                            href="#MostActiveSites">3.4.8&nbsp;&nbsp;&nbsp;&nbsp;Most
+                            Active
+                            Sites</a>...........................................................................................................
+                    </td>
+                    <td align='right' style="font-size:11pt;">14</td>
+                </tr>
+                <tr>
+                    <td style="font-size:11pt;text-indent: 67.5px;"> <a
+                            href="#InviteOnlyMarkets">3.4.9&nbsp;&nbsp;&nbsp;&nbsp;Invite-Only Market
+                            Alerts</a>..............................................................................................
+                    </td>
+                    <td align='right' style="font-size:11pt;">14</td>
+                </tr>
+                <tr>
+                    <td style="font-size:11pt;text-indent: 67.5px;"> <a
+                            href="#MostActiveCVEs">3.4.10&nbsp;&nbsp;&nbsp;Most
+                            Active CVEs on the Dark
+                            Web</a>.............................................................................
+                    </td>
+                    <td align='right' style="font-size:11pt;">15</td>
+                </tr>
+
+                <tr>
+                    <td style="font-size:12pt;font-weight:bold;"> <a
+                            href="#Methodology">4.&nbsp;&nbsp;&nbsp;&nbsp;Methodology</a>..........................................................................................................................
+                    </td>
+                    <td align='right' style="font-size:12pt;font-weight:bold;">16</td>
+                </tr>
+                <tr>
+                    <td style="font-size:12pt;font-weight:bold;"> <a
+                            href="#Conclusion">5.&nbsp;&nbsp;&nbsp;&nbsp;Conclusion</a>.............................................................................................................................
+                    </td>
+                    <td align='right' style="font-size:12pt;font-weight:bold;">17</td>
+                </tr>
+                <tr>
+                    <td style="font-size:12pt;font-weight:bold;"> <a href="#AppendixA">Appendix
+                            A:&nbsp;&nbsp;&nbsp;&nbsp;Additional
+                            Information</a>...................................................................................
+                    </td>
+                    <td align='right' style="font-size:12pt;font-weight:bold;">A-1</td>
+                </tr>
+                <tr>
+                    <td style="font-size:12pt;font-weight:bold;"> <a href="#AppendixB">Appendix
+                            B:&nbsp;&nbsp;&nbsp;&nbsp;Frequently Asked
+                            Questions</a>...........................................................................
+                    </td>
+                    <td align='right' style="font-size:12pt;font-weight:bold;">B-2</td>
+                </tr>
+                <tr>
+                    <td style="font-size:12pt;font-weight:bold;"> <a href="#AppendixC">Appendix
+                            C:&nbsp;&nbsp;&nbsp;&nbsp;Acronyms</a>..........................................................................................................
+                    </td>
+                    <td align='right' style="font-size:12pt;font-weight:bold;">C-4</td>
+                </tr>
+        </div>
+        </table>
+        <!-- This div uploads the main template for parts of the report with just text content -->
+        <div>
+            <pdf:nexttemplate name="maintmpl">
+        </div>
+        <div>
+            <pdf:nextpage />
+        </div>
+    </div>
+
+    <!-- Table of Figures/Tables -->
+    <div>
+        <h2 style="border-bottom: 1px solid;line-height:25px;margin-bottom: 10px;">Table of Figures</h2>
+        <br>
+        <div>
+            <table style="width: 75cm;">
+                <tr>
+                    <td style="font-size:12pt;font-weight:bold;width:75cm"> <a href="#Figure1">Figure
+                            1:&nbsp;&nbsp;&nbsp;&nbsp;Credentials
+                            Exposed</a>...................................................................................................
+                    </td>
+                    <td align='right' style="font-size:12pt;font-weight:bold;">6</td>
+                </tr>
+                <tr>
+                    <td style="font-size:12pt;font-weight:bold;width:75cm"> <a href="#Figure2">Figure
+                            2:&nbsp;&nbsp;&nbsp;&nbsp;Insecure
+                            Protocols</a>......................................................................................................
+                    </td>
+                    <td align='right' style="font-size:12pt;font-weight:bold;">9</td>
+                </tr>
+                <tr>
+                    <td style="font-size:12pt;font-weight:bold;width:75cm"> <a href="#Figure3">Figure
+                            3:&nbsp;&nbsp;&nbsp;&nbsp;Suspected
+                            Vulnerabilities</a>..........................................................................................
+                    </td>
+                    <td align='right' style="font-size:12pt;font-weight:bold;">10</td>
+                </tr>
+                <tr>
+                    <td style="font-size:12pt;font-weight:bold;width:75cm"> <a href="#Figure4">Figure
+                            4:&nbsp;&nbsp;&nbsp;&nbsp;Dark Web
+                            Mentions</a>...................................................................................................
+                    </td>
+                    <td align='right' style="font-size:12pt;font-weight:bold;">11</td>
+                </tr>
+            </table>
+        </div>
+        <h2 style="border-bottom: 1px solid;line-height:25px;margin-bottom: 10px;">Table of Tables</h2>
+        <br>
+        <div>
+            <table style="width: 75cm;">
+                <tr>
+                    <td style="font-size:12pt;font-weight:bold;width:75cm"> <a href="#Table1">Table
+                            1:&nbsp;&nbsp;&nbsp;&nbsp;Breach
+                            Details</a>..............................................................................................................
+                    </td>
+                    <td align='right' style="font-size:12pt;font-weight:bold;">7</td>
+                </tr>
+                <tr>
+                    <td style="font-size:12pt;font-weight:bold;width:75cm"> <a href="#Table2">Table
+                            2:&nbsp;&nbsp;&nbsp;&nbsp;Domain Monitoring Alerts
+                            Results</a>............................................................................
+                    </td>
+                    <td align='right' style="font-size:12pt;font-weight:bold;">8</td>
+                </tr>
+                <tr>
+                    <td style="font-size:12pt;font-weight:bold;width:75cm"> <a href="#Table3">Table
+                            3:&nbsp;&nbsp;&nbsp;&nbsp;Suspected Domain Masquerading
+                            Results</a>................................................................
+                    </td>
+                    <td align='right' style="font-size:12pt;font-weight:bold;">8</td>
+                </tr>
+                <tr>
+                    <td style="font-size:12pt;font-weight:bold;width:75cm"> <a href="#Table4">Table
+                            4:&nbsp;&nbsp;&nbsp;&nbsp;Insecure
+                            Protocols</a>.......................................................................................................
+                    </td>
+                    <td align='right' style="font-size:12pt;font-weight:bold;">9</td>
+                </tr>
+                <tr>
+                    <td style="font-size:12pt;font-weight:bold;width:75cm"> <a href="#Table5">Table
+                            5:&nbsp;&nbsp;&nbsp;&nbsp;Shodan-Verified
+                            Vulnerabilities</a>................................................................................
+                    </td>
+                    <td align='right' style="font-size:12pt;font-weight:bold;">10</td>
+                </tr>
+                <tr>
+                    <td style="font-size:12pt;font-weight:bold;width:75cm"> <a href="#Table6">Table
+                            6:&nbsp;&nbsp;&nbsp;&nbsp;Social Media Comments
+                            Count</a>..................................................................................
+                    </td>
+                    <td align='right' style="font-size:12pt;font-weight:bold;">12</td>
+                </tr>
+                <tr>
+                    <td style="font-size:12pt;font-weight:bold;width:75cm"> <a href="#Table7">Table
+                            7:&nbsp;&nbsp;&nbsp;&nbsp;Dark Web Comments
+                            Count</a>......................................................................................
+                    </td>
+                    <td align='right' style="font-size:12pt;font-weight:bold;">12</td>
+                </tr>
+                <tr>
+                    <td style="font-size:12pt;font-weight:bold;width:75cm"> <a href="#Table8">Table
+                            8:&nbsp;&nbsp;&nbsp;&nbsp;Asset
+                            Alerts</a>..................................................................................................................
+                    </td>
+                    <td align='right' style="font-size:12pt;font-weight:bold;">13</td>
+                </tr>
+                <tr>
+                    <td style="font-size:12pt;font-weight:bold;width:75cm"> <a href="#Table9">Table
+                            9:&nbsp;&nbsp;&nbsp;&nbsp;Executive
+                            Alerts</a>...........................................................................................................
+                    </td>
+                    <td align='right' style="font-size:12pt;font-weight:bold;">13</td>
+                </tr>
+                <tr>
+                    <td style="font-size:12pt;font-weight:bold;width:75cm"> <a href="#Table10">Table
+                            10:&nbsp;&nbsp;Threat
+                            Actors</a>...............................................................................................................
+                    </td>
+                    <td align='right' style="font-size:12pt;font-weight:bold;">14</td>
+                </tr>
+                <tr>
+                    <td style="font-size:12pt;font-weight:bold;width:75cm"> <a href="#Table11">Table
+                            11:&nbsp;&nbsp;Alerts of Potential
+                            Threats</a>.........................................................................................
+                    </td>
+                    <td align='right' style="font-size:12pt;font-weight:bold;">14</td>
+                </tr>
+                <tr>
+                    <td style="font-size:12pt;font-weight:bold;width:75cm"> <a href="#Table12">Table
+                            12:&nbsp;&nbsp;Most Active
+                            Sites</a>.........................................................................................................
+                    </td>
+                    <td align='right' style="font-size:12pt;font-weight:bold;">15</td>
+                </tr>
+                <tr>
+                    <td style="font-size:12pt;font-weight:bold;width:75cm"> <a href="#Table13">Table
+                            13:&nbsp;&nbsp;Invite-Only Market
+                            Alerts</a>.........................................................................................
+                    </td>
+                    <td align='right' style="font-size:12pt;font-weight:bold;">15</td>
+                </tr>
+                <tr>
+                    <td style="font-size:12pt;font-weight:bold;width:75cm"> <a href="#Table14">Table
+                            14:&nbsp;&nbsp;Most Active CVEs on the Dark
+                            Web</a>.........................................................................
+                    </td>
+                    <td align='right' style="font-size:12pt;font-weight:bold;">16</td>
+                </tr>
+            </table>
+        </div>
+        <div>
+            <pdf:nextpage />
+        </div>
+    </div>
+
+    <!-- About P&E Report Content -->
+    <div>
+        <a name="Introduction"></a>
+        <div style="border-bottom: 1px solid;">
+            <h3>1.&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Introduction</h2>
+        </div>
+        <br>
+        <a name="Overview"></a>
+        <div>
+            <b>1.1&nbsp;&nbsp;&nbsp;&nbsp;Overview</b>
+        </div>
+        <br>
+        <div style="font-size: 11pt;">
+            <p>
+                Posture and Exposure (P&E) offers stakeholders an opportunity to view their
+                organizational risk from the viewpoint of the adversary. We utilize passive
+                reconnaissance services, dark web analysis, and open-source tools to identify spoofing in
+                order to generate a risk profile report that is delivered on a regular basis.
+            </p>
+            <p>
+                As a customer of P&E you are receiving our regularly scheduled report which contains
+                a summary of the activity we have been tracking on your behalf for the following services:
+            <ul>
+                <li>Credentials Leaked/Exposed</li>
+                <li>Domain Masquerading and Monitoring</li>
+                <li>Vulnerabilities & Malware Associations</li>
+                <li>Dark Web Monitoring</li>
+                <li>Hidden Assets and Risky Services</li>
+            </ul>
+            </p>
+            <p>
+                It is important to note that these findings have not been verified; everything is gathered
+                via passive analysis of publicly available sources. As such there may be false positive
+                findings, however, these findings should be treated as information that your organization
+                is leaking out to the internet for adversaries to notice.
+            </p>
+            <a name="HowToUseReport"></a>
+            <p>
+                <b>1.2&nbsp;&nbsp;&nbsp;&nbsp;How to Use this Report</b>
+                <br>
+            </p>
+            <p>
+                While it is not our intent to prescribe to you a particular process for remediating vulnerabilities, we
+                hope you will use this report to strengthen your security posture. Here is a basic flow:
+            </p>
+            <ol type="1">
+                <li>Review the Summary of Findings on page 5. This section gives a quick overview of key results
+                    including the number of credential exposures, domain masquerading alerts, Shodan verified
+                    vulnerabilites, and dark web alerts.</li>
+                <li>Dive deeper into those key findings by investigating the detailed results starting on page 6.</li>
+                <li>Want to see our raw data? Navigate to page 5 where you can open the embedded Excel files. If you are
+                    having trouble opening these files, make sure to use Adobe Acrobat.</li>
+                <li>More questions? Please refer to the Frequently Asked Questions found on page 19. Please feel free to
+                    contact us at vulnerability@cisa.gov with any further questions or concerns.</li>
+            </ol>
+            <a name="ContactInfo"></a>
+            <p>
+                <b>1.3&nbsp;&nbsp;&nbsp;&nbsp;Contact Information</b>
+                <br>
+                Posture and Exposure Team Email: vulnerability@cisa.dhs.gov
+            </p>
+        </div>
+        <div>
+            <pdf:nexttemplate name="sum">
+        </div>
+        <div>
+            <pdf:nextpage />
+        </div>
+    </div>
+
+    <!-- Summary Page Content -->
+    <div>
+        <a name="sum"></a>
+        <a name="SumOfFindings"></a>
+        <div style="border-bottom: 1px solid;">
+            <h3>2.&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Summary of Findings</h2>
+        </div>
+        <br>
+        <a name="SumOfTrackedData"></a>
+        <div>
+            <b>2.1&nbsp;&nbsp;&nbsp;&nbsp;Summary of Tracked Data</b>
+        </div>
+
+        <div class="sum-item" style="height:2.3cm">
+
+            <p><b style="color:black; font-size: 11pt;">{{creds}}</b><br>Total Credential Publications</p>
+
+        </div>
+        <div style="height:2.3cm" class="sum-item">
+
+            <p><b style="color:black; font-size: 11pt;">{{suspectedDomains}}</b>
+                <br>Suspected Domain Masquerading
+            </p>
+
+        </div>
+        <div class="sum-item">
+
+            <p><b style="color:black; font-size: 11pt;">{{verifVulns}}</b><br>Shodan Verified Vulnerabilities Found</p>
+
+        </div>
+        <div class="sum-item">
+
+            <p><b style="color:black; font-size: 11pt;">{{darkWeb}}</b><br>Dark Web Alerts</p>
+
+        </div>
+        <div id="infoBox1" style="background-color:#1d5288 ; display:inline; color:white; margin:5px;font-size: 11pt;">
+
+            <p style="padding: 0.15in;">
+                <b style="color:white;font-size: 11pt;">Credential Publication & Abuse:</b><br>
+                User credentials, often including passwords, are stolen or exposed via data breaches. They are then
+                listed for sale on forums and the dark web, which provides attackers easy access to a stakeholders'
+                network.
+                <br>
+                <br>
+                <b style="color:white;font-size: 11pt;">Suspected Domain Masquerading
+                    Attempt:</b><br>
+                Registered domain names that are similar to legitimate domains which attempt to trick users into
+                navigating to illegitimate domains.
+                <br>
+                <br>
+                <br>
+                <b style="color:white;font-size: 11pt;">Insecure Devices & Vulnerabilities:</b><br>
+                Open ports, risky protocols, insecure products, and externally observable vulnerabilities are potential
+                targets for exploit.
+                <br>
+                <br>
+                <br>
+                <b style="color:white;font-size: 11pt;">Dark Web Activity:</b><br>
+                Heightened public attention can indicate increased targeting and attack coordination, especially when
+                attention is found on the dark web.
+                <br>
+            </p>
+        </div>
+        <a name="RawDataLinks"></a>
+        <div>
+            <b>2.2&nbsp;&nbsp;&nbsp;&nbsp;Raw Data Links</b>
+        </div>
+        <br>
+        <ul style="font-size:11pt;line-height: 200%;">
+            <li style="margin-bottom: 5px;">&nbsp;&nbsp;Exposed Credentials</li>
+            <li style="margin-bottom: 5px;">&nbsp;&nbsp;Domain Masquerading and Monitoring</li>
+            <li style="margin-bottom: 5px;">&nbsp;&nbsp;Vulnerabilities and Malware Associations</li>
+            <li style="margin-bottom: 5px;">&nbsp;&nbsp;Dark Web Activity</li>
+        </ul>
+        <div>
+            <pdf:nexttemplate name="creds">
+        </div>
+        <div>
+            <pdf:nextpage />
+        </div>
+    </div>
+
+    <!-- Credential Exposure and Abuse Content -->
+    <div>
+        <a name="DetailedResults"></a>
+        <div style="border-bottom: 1px solid;">
+            <h3>3.&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Detailed Results</h2>
+        </div>
+        <br>
+        <a name="CredPubandAbuse"></a>
+        <div>
+            <b>3.1&nbsp;&nbsp;&nbsp;&nbsp;Credential Publication and Abuse</b>
+        </div>
+        <div id="credsDescription">
+            <p class="content">Credential leakage occurs when user credentials, often including passwords, are stolen
+                via phishing campaigns, network compromise, or database misconfigurations leading to public exposure.
+                This leaked data is then listed for sale on numerous forums and sites on the dark web which provides
+                attackers easy access to a stakeholder’s networks. Detailed results are presented below.
+            </p>
+        </div>
+        <div id="credsKpi1" style="height:2.3cm" class="flex-item">
+
+            <p class="kpi"><b style="color:black; font-size: 11pt;">{{breach}}</b>
+                <br>Distinct Breaches
+            </p>
+
+        </div>
+        <div id="credsKpi2" class="flex-item" style="height:2.3cm">
+
+            <p class="kpi" style:"padding-bottom:-1em;"><b style="color:black; font-size: 11pt;">{{creds}}</b><br>Total
+                Credentials Exposed</p>
+
+        </div>
+        <div id="credsKpi3" style="height:2.3cm" class="flex-item">
+
+            <p class="kpi"><b style="color:black; font-size: 11pt;">{{pw_creds}}</b>
+                <br>Credentials with Password
+            </p>
+
+        </div>
+
+        <div id="graphCont">
+            <p class="content"><b style="color:black; font-size: 11pt;">Figure 1</b> shows the credentials exposed
+                during each week of
+                the reporting
+                period, including those with no
+                passwords as well as those with passwords included.</p>
+        </div>
+        <a name="Figure1"></a>
+        <div id="graphCont2">
+            <p class="content"><b style="color:black; font-size: 11pt;">Figure 1. Credentials Exposed.</b></p>
+        </div>
+
+        <div id=credsGraph><img src="{{base_dir}}/assets/inc_date_df.png"></div>
+
+        <div>
+            <pdf:nexttemplate name="credsContinued">
+        </div>
+        <div>
+            <pdf:nextpage />
+        </div>
+    </div>
+
+    <!-- Credential Exposure and Abuse Content Continued -->
+    <div>
+        <a name="CredsCont"></a>
+        <div id="tableCont">
+            <p class="content"><b style="color:black; font-size: 11pt;">Table 1</b> provides breach details. Breach
+                descriptions can be
+                found in Appendix A.</p>
+        </div>
+        <a name="Table1"></a>
+        <div id="tableCont2">
+            <p class="content"><b style="color:black; font-size: 11pt;">Table 1. Breach Details.</b></p>
+        </div>
+        <div id="breachTable" class="table">
+            {{{breach_table}}}
+
+        </div>
+        <div>
+            <pdf:nexttemplate name="masq">
+        </div>
+        <div>
+            <pdf:nextpage />
+        </div>
+    </div>
+
+
+    <!-- Domain Masquerading Content -->
+    <div>
+        <a name="DomAlertsandSusMasq"></a>
+        <div>
+            <b>3.2&nbsp;&nbsp;&nbsp;&nbsp;Domain Alerts and Suspected Masquerading</b>
+        </div>
+        <div>
+            <p class="content" id="summaryDom">
+                Spoofed or typo-squatting domains can be used to host fake web pages for malicious purposes, such as
+                imitating landing pages for spear phishing campaigns. Below are alerts of domains that appear to mimic
+                a stakeholder’s actual domain.
+            </p>
+        </div>
+        <div style=" height:2.3cm" class="flex-item">
+            <p class="kpi"><b style="color:black; font-size: 11pt;">{{domain_alerts}}</b>
+                <br>Domain Alert(s)
+            </p>
+        </div>
+        <div class=" flex-item" style="height:2.3cm">
+            <p class="kpi" style:"padding-bottom:-1em;"><b
+                    style="color:black; font-size: 11pt;">{{suspectedDomains}}</b><br>Suspected Domain(s)</p>
+        </div>
+        <a name="DomMonAlerts"></a>
+        <div id="domAlertsTitle">
+            <b style="font-size: 12pt;">3.2.1&nbsp;&nbsp;&nbsp;&nbsp;Domain Monitoring Alerts</b>
+        </div>
+        <a name="Table2"></a>
+        <div id="domainAlertsContent">
+            <p class="content"><b style="color:black; font-size: 11pt;">Table 2</b> shows alerts of newly registered or
+                updated domains
+                that appear to mimic a stakeholder’s actual domain.</p>
+        </div>
+        <div id="domainAlertsContent2">
+            <p class="content"><b style="color:black; font-size: 11pt;">Table 2. Domain Monitoring Alerts Results.</b>
+            </p>
+        </div>
+        <div id="domainAlertsTable" class="table">
+            {{{domain_alerts_table}}}
+        </div>
+
+        <a name="SusDomMasq"></a>
+        <div id="domContTitle">
+            <b style="font-size: 12pt;">3.2.2&nbsp;&nbsp;&nbsp;&nbsp;Suspected Domain Masquerading</b>
+        </div>
+        <div id="domainContent">
+            <p class="content"><b style="color:black; font-size: 11pt;">Table 3</b> shows registered or updated domains
+                that were flagged
+                by a blocklist service.</p>
+        </div>
+        <a name="Table3"></a>
+        <div id="domainContent2">
+            <p class="content"><b style="color:black; font-size: 11pt;">Table 3. Suspected Domain Masquerading
+                    Results.</b></p>
+        </div>
+        <div id="domainTable" class="table">
+            {{{domain_table}}}
+        </div>
+        <div>
+            <pdf:nexttemplate name="vulns">
+        </div>
+        <div>
+            <pdf:nextpage />
+        </div>
+    </div>
+
+    <!-- Insecure Devices & Suspected Vulnerabilities Content -->
+    <div>
+        <a name="InsDevandSusVuln"></a>
+        <div>
+            <b>3.3&nbsp;&nbsp;&nbsp;&nbsp;Insecure Devices & Suspected Vulnerabilities</b>
+        </div>
+        <div>
+            <p class="content" id="summaryVuln">
+                This category includes insecure ports, protocols, and services; Shodan-verified vulnerabilities; and
+                suspected vulnerabilities. Detailed results are presented below and discussed in the sections that
+                follow.
+            </p>
+        </div>
+        <div class="flex-item" style="height:2.3cm">
+            <p class="kpi" style:"padding-bottom:-1em;"><b
+                    style="color:black; font-size: 11pt;">{{riskyPorts}}</b><br>Total Open Ports with Insecure
+                protocols</p>
+        </div>
+        <div style="height:2.3cm" class="flex-item">
+            <p class="kpi"><b style="color:black; font-size: 11pt;">{{verifVulns}}</b>
+                <br>Total Shodan-Verified Vulnerabilities
+            </p>
+        </div>
+        <div style="height:2.3cm" class="flex-item">
+            <p class="kpi"><b style="color:black; font-size: 11pt;">{{unverifVulns}}</b>
+                <br>Assets with Suspected Vulnerabilities
+            </p>
+        </div>
+        <a name="InsPortsProtServ"></a>
+        <div id="portsTitle">
+            <b style="font-size: 12pt;">3.3.1&nbsp;&nbsp;&nbsp;&nbsp;Insecure Ports, Protocols, and Services</b>
+        </div>
+
+        <div id="portsGraphSum">
+            <p class="content">Insecure protocols are those
+                protocols which lack proper encryption allowing threat actors to access data that is being transmitted
+                and even to potentially, to control systems. <b style="color:black; font-size: 11pt;">Figure 2</b> and
+                <b style="color:black; font-size: 11pt;">Table 4</b> provide detailed information for the
+                Remote Desktop Protocol (RDP), Server Message Block (SMB) protocol, and the Telnet application protocol.
+            </p>
+        </div>
+        <a name="Figure2"></a>
+        <div id="portsGraphSum2">
+            <p class="content"><b style="color:black; font-size: 11pt;">Figure 2. Insecure Protocols.</b></p>
+        </div>
+
+        <div id="protocolCount"><img src="{{base_dir}}/assets/pro_count.png"></div>
+        <a name="Table4"></a>
+        <div id="portsTableSum2">
+            <p class="content"><b style="color:black; font-size: 11pt;">Table 4. Insecure Protocols.</b></p>
+        </div>
+        <div id="protocolCountTable" class="table">
+            {{{risky_assets}}}
+        </div>
+
+        <div>
+            <a name="Mal&Vuln"></a>
+            <div>
+                <pdf:nexttemplate name="vulns2">
+            </div>
+            <div>
+                <pdf:nextpage />
+            </div>
+        </div>
+    </div>
+
+
+
+    <!-- Vulns page 2 -->
+    <div>
+        <a name="ShodanVerVulns"></a>
+        <div>
+            <b style="font-size: 12pt;">3.3.2&nbsp;&nbsp;&nbsp;&nbsp;Shodan-Verified Vulnerabilities</b>
+        </div>
+        <div id="shodanTableSum">
+            <p class="content">Verified vulnerabilities, shown in <b style="color:black; font-size: 11pt;">Table 5</b>,
+                are those that are flagged by P&E vendors
+                that have gone through extra checks to validate the finding. Refer to Appendix A for summary data.
+            </p>
+        </div>
+        <a name="Table5"></a>
+        <div id="shodanTableSum2">
+            <p class="content"><b style="color:black; font-size: 11pt;">Table 5. Shodan-Verified Vulnerabilities.</b>
+            </p>
+        </div>
+        <div id="shodanTable" class="table">
+            {{{verif_vulns}}}
+        </div>
+
+        <a name="SuspectedVulns"></a>
+        <div id="susVulnTitle">
+            <b style="font-size: 12pt;">3.3.3&nbsp;&nbsp;&nbsp;&nbsp;Suspected Vulnerabilities</b>
+        </div>
+        <a name="Figure3"></a>
+        <div id="susVulnSum">
+            <p class="content">Suspected vulnerabilities are determined by the software and version an asset is running
+                and can be used to understand what vulnerabilities an asset may be exposed to. <b
+                    style="color:black; font-size: 11pt;">Figure 3</b> identifies
+                suspected vulnerabilities.
+            </p>
+        </div>
+        <div id="susVulnSum2">
+            <p class="content"><b style="color:black; font-size: 11pt;">Figure 3. Suspected Vulnerabilities.</b>
+            </p>
+        </div>
+        <div id="susVulnGraph"><img src="{{base_dir}}/assets/unverif_vuln_count.png"></div>
+        <div>
+            <pdf:nexttemplate name="dark1">
+        </div>
+        <div>
+            <pdf:nextpage />
+        </div>
+    </div>
+    </div>
+    <!-- Dark Web Page 1 Content -->
+    <div>
+        <a name="DarkWebActivity"></a>
+        <div>
+            <b>3.4&nbsp;&nbsp;&nbsp;&nbsp;Dark Web Activity</b>
+        </div>
+        <div class="flex-item" style="height:2.3cm">
+
+            <p class="kpi" style:"padding-bottom:-1em;"><b style="color:black; font-size: 11pt;">{{darkWeb}}</b><br>Dark
+                Web Alerts</p>
+
+        </div>
+        <div>
+            <p id="darkWebSum" class="content">
+                Stakeholders and vulnerabilities are often discussed in various ways on the Dark Web. P&E monitors this
+                activity, as well as the source (forums, websites, tutorials), and threat actors involved. A spike in
+                activity can indicate a greater likelihood of an attack, vulnerability,
+            </p>
+        </div>
+        <div>
+            <p id="darkWebSum2" class="content">
+                or data leakage. This information along with a list of the most active CVEs on the Dark Web may assist
+                in
+                prioritizing remediation activities.
+            </p>
+        </div>
+
+        <a name="DarkWebMentions"></a>
+        <div id="mentionsTitle">
+            <b style="font-size: 12pt;">3.4.1&nbsp;&nbsp;&nbsp;&nbsp;Dark Web Mentions</b>
+        </div>
+        <a name="Figure4"></a>
+        <div id="mentionsSum">
+            <p class="content"><b style="color:black; font-size: 11pt;">Figure 4</b> provides details on the number of
+                mentions on the dark web during the reporting period.
+            </p>
+        </div>
+        <div id="mentionsSum2">
+            <p class="content"><b style="color:black; font-size: 11pt;">Figure 4. Dark Web Mentions.</b>
+            </p>
+        </div>
+
+        <div id="darkWebMentions"><img src="{{base_dir}}/assets/web_only_df_2.png"></div>
+    </div>
+
+    <div>
+        <pdf:nexttemplate name="dark2">
+    </div>
+    <div>
+        <pdf:nextpage />
+    </div>
+    </div>
+
+    <!-- Dark Web Page 2 Content -->
+    <div>
+        <a name="MostActiveSocMed"></a>
+        <div>
+            <b style="font-size: 12pt;">3.4.2&nbsp;&nbsp;&nbsp;&nbsp;Most Active Social Media Posts</b>
+        </div>
+        <div id="socMedSum">
+            <p class="content">
+                This result includes a list of the most active social media posts associated with a stakeholder, and
+                tallies the count of “post” or “reply” actions on sites such as Telegram, Twitter, and Github. <b
+                    style="color:black; font-size: 11pt;">Table 6</b>
+                identifies the social media comments count by organization.
+            </p>
+        </div>
+        <a name="Table6"></a>
+        <div id="socMedSum2">
+            <p class="content"><b style="color:black; font-size: 11pt;">Table 6. Social Media Comments Count.</b>
+            </p>
+        </div>
+        <div id="socMedTable" class="table">
+            {{{social_med_act}}}
+        </div>
+
+        <a name="MostActiveDarkWeb"></a>
+        <div id="darkWebActStart">
+            <b style="font-size: 12pt;">3.4.3&nbsp;&nbsp;&nbsp;&nbsp;Most Active Dark Web Posts</b>
+        </div>
+        <div id="darkWebActSum">
+            <p class="content">
+                This result includes a list of the most active posts associated with a stakeholder found on the dark
+                web, and includes forum sites and invite-only marketplaces. <b
+                    style="color:black; font-size: 11pt;">Table 7</b> identifies the dark web comments
+                count by organization.
+            </p>
+        </div>
+        <a name="Table7"></a>
+        <div id="darkWebActSum2">
+            <p class="content"><b style="color:black; font-size: 11pt;">Table 7. Dark Web Comments Count.</b>
+            </p>
+        </div>
+        <div id="darkWebActTable" class="table">
+            {{{dark_web_act}}}
+        </div>
+
+        <div>
+            <pdf:nexttemplate name="dark3">
+        </div>
+        <div>
+            <pdf:nextpage />
+        </div>
+    </div>
+
+    <!-- Dark Web Page 3 Content -->
+    <div>
+        <a name="AssetAlerts"></a>
+        <div>
+            <b style="font-size: 12pt;">3.4.4&nbsp;&nbsp;&nbsp;&nbsp;Asset Alerts</b>
+        </div>
+        <a name="Table8"></a>
+        <div id="assetAlertsSum">
+            <p class="content">
+                <b style="color:black; font-size: 11pt;">Table 8</b>
+                includes discussions involving stakeholder assets such as domain names and IP's.
+            </p>
+        </div>
+        <div id="assetAlertsSum2">
+            <p class="content"><b style="color:black; font-size: 11pt;">Table 8. Asset Alerts.</b>
+            </p>
+        </div>
+        <div id="assetAlertsTable" class="table">
+            {{{asset_alerts}}}
+        </div>
+        <a name="ExecAlerts"></a>
+        <div id="execAlertsStart">
+            <b style="font-size: 12pt;">3.4.5&nbsp;&nbsp;&nbsp;&nbsp;Executive Alerts</b>
+        </div>
+        <a name="Table9"></a>
+        <div id="execAlertsSum">
+            <p class="content">
+                <b style="color:black; font-size: 11pt;">Table 9</b> includes discussions involving stakeholder
+                executives and upper management.
+            </p>
+        </div>
+        <div id="execAlertsSum2">
+            <p class="content"><b style="color:black; font-size: 11pt;">Table 9. Executive Alerts.</b>
+            </p>
+        </div>
+        <div id="execAlertsTable" class="table">
+            {{{alerts_exec}}}
+        </div>
+
+        <div>
+            <pdf:nexttemplate name="dark4">
+        </div>
+        <div>
+            <pdf:nextpage />
+        </div>
+    </div>
+
+    <!-- Dark Web Page 4 Content -->
+    <div>
+        <a name="ThreatAlerts"></a>
+        <div>
+            <b style="font-size: 12pt;">3.4.6&nbsp;&nbsp;&nbsp;&nbsp;Threat Actors</b>
+        </div>
+        <div id="threatActorsSum">
+            <p class="content">
+                A threat actor's score is based on the amount of activity that person has on the dark web, the types of
+                content posted, how prominent their account is on a forum, and if there is a larger circle of
+                connections to other bad actors. Threat Actors are ranked 1 to 10, with 10 being the most severe. <b
+                    style="color:black; font-size: 11pt;">Table 10</b> identifies the top actors that have mentioned
+                stakeholder assets.
+            </p>
+        </div>
+        <a name="Table10"></a>
+        <div id="threatActorsSum2">
+            <p class="content"><b style="color:black; font-size: 11pt;">Table 10. Threat Actors.</b>
+            </p>
+        </div>
+        <div id="threatActorsTable" class="table">
+            {{{dark_web_actors}}}
+        </div>
+
+        <a name="AlertsofPotThreats"></a>
+        <div id="potentialThreatsStart">
+            <b style="font-size: 12pt;">3.4.7&nbsp;&nbsp;&nbsp;&nbsp;Alerts of Potential Threats</b>
+        </div>
+        <a name="Table11"></a>
+        <div id="potentialThreatsSum">
+            <p class="content">
+                Threats are derived by scanning suspicious chatter on the dark web that may have terms related to
+                vulnerabilities. <b style="color:black; font-size: 11pt;">Table 11</b> identifies the most common
+                threats.
+            </p>
+        </div>
+        <div id="potentialThreatsSum2">
+            <p class="content"><b style="color:black; font-size: 11pt;">Table 11. Alerts of Potential Threats.</b>
+            </p>
+        </div>
+        <div id="potentialThreatsTable" class="table">
+            {{{alerts_threats}}}
+        </div>
+
+        <div>
+            <pdf:nexttemplate name="dark5">
+        </div>
+        <div>
+            <pdf:nextpage />
+        </div>
+    </div>
+
+    <!-- Dark Web Page 5 Content -->
+    <div>
+        <a name="MostActiveSites"></a>
+        <div>
+            <b style="font-size: 12pt;">3.4.8&nbsp;&nbsp;&nbsp;&nbsp;Most Active Sites</b>
+        </div>
+        <a name="Table12"></a>
+        <div id="sitesSum">
+            <p class="content">
+                <b style="color:black; font-size: 11pt;">Table 12</b> includes the most active discussion forums where
+                the organization is the topic of
+                discussion.
+            </p>
+        </div>
+        <div id="sitesSum2">
+            <p class="content"><b style="color:black; font-size: 11pt;">Table 12. Most Active Sites.</b>
+            </p>
+        </div>
+        <div id="sitesTable" class="table">
+            {{{dark_web_sites}}}
+        </div>
+
+        <a name="InviteOnlyMarkets"></a>
+        <div id="marketsStart">
+            <b style="font-size: 12pt;">3.4.9&nbsp;&nbsp;&nbsp;&nbsp;Invite-Only Market Alerts</b>
+        </div>
+        <a name="Table13"></a>
+        <div id="marketsSum">
+            <p class="content">
+                <b style="color:black; font-size: 11pt;">Table 13</b> includes the number of alerts on each invite-only
+                market where compromised credentials were
+                offered for sale.
+            </p>
+        </div>
+        <div id="marketsSum2">
+            <p class="content"><b style="color:black; font-size: 11pt;">Table 13. Invite-Only Market Alerts.</b>
+            </p>
+        </div>
+        <div id="marketsTable" class="table">
+            {{{markets_table}}}
+        </div>
+        <div>
+            <pdf:nexttemplate name="dark6">
+        </div>
+        <div>
+            <pdf:nextpage />
+        </div>
+    </div>
+
+    <!-- Dark Web Page 6 Content -->
+    <div>
+        <a name="MostActiveCVEs"></a>
+        <div>
+            <b style="font-size: 12pt;">3.4.10&nbsp;&nbsp;&nbsp;&nbsp;Most Active CVEs on the Dark Web</b>
+        </div>
+        <a name="Table14"></a>
+        <div id="topCvesSum">
+            <p class="content">
+                Rated by CyberSixGill’s Dynamic Vulnerability Exploit (DVE) Score, this state-of-the-art machine
+                learning model automatically predicts the probability of a CVE being exploited. <b
+                    style="color:black; font-size: 11pt;">Table 14</b> identifies the top 10 CVEs this report period.
+            </p>
+        </div>
+        <div id="topCvesSum2">
+            <p class="content"><b style="color:black; font-size: 11pt;">Table 14. Most Active CVEs on the Dark Web.</b>
+            </p>
+        </div>
+        <div id="topCvesTable" class="table">
+            {{{top_cves}}}
+        </div>
+        <div>
+            <pdf:nexttemplate name="maintmpl">
+        </div>
+        <div>
+            <pdf:nextpage />
+        </div>
+    </div>
+
+    <!-- Methodology -->
+    <div>
+        <a name="Methodology"></a>
+        <div style="border-bottom: 1px solid;">
+            <h3>4.&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Methodology</h2>
+        </div>
+        <br>
+        <div>
+            <b>4.1&nbsp;&nbsp;&nbsp;&nbsp;Background</b>
+        </div>
+        <br>
+        <div>
+            <p style="font-size: 11pt;">
+                Cyber Hygiene's Posture and Exposure is a service provided by the Cybersecurity and Infrastructure
+                Security Agency (CISA).<br><br>
+                Cyber Hygiene started providing Posture and Exposure reports in October 2020 to assess, on a recurring
+                basis, the security posture of your organization by tracking dark web activity, domain alerts,
+                vulnerabilites, and credential exposures.
+
+            </p>
+        </div>
+        <div>
+            <b>4.2&nbsp;&nbsp;&nbsp;&nbsp;Process</b>
+        </div>
+        <div>
+            <p style="font-size: 11pt;">
+                Upon submission of an Acceptance Letter, DHS provided CISA with their public
+                network address information.<br><br>
+                The Posture and Exposure team uses this information to conduct investigations
+                with
+                various open-source tools. Resulting data is then parsed for key-findings and alerts. Summary data and
+                detailed overviews are organized into this report and packaged into an encrypted file for
+                delivery.
+            </p>
+        </div>
+        <a name="Conclusion"></a>
+        <div style="border-bottom: 1px solid;">
+            <h3>5.&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Conclusion</h2>
+        </div>
+        <div>
+            <p style="font-size: 11pt;">
+                Your organization should use the data provided in this report to correct any identified vulnerabilities,
+                exposures, or posture concerns. If you have any questions, comments, or
+                concerns about the findings or data contained in this report, please work with your designated technical
+                point of contact when requesting assistance from CISA at vulnerability@cisa.dhs.gov.
+            </p>
+        </div>
+
+        <div>
+            <pdf:nexttemplate name="appendix1">
+        </div>
+        <div>
+            <pdf:nextpage />
+        </div>
+    </div>
+
+    <!-- Appendix -->
+    <a name="AppendixA"></a>
+    <div style="border-bottom: 1px solid;">
+        <h3>Appendix A:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Additional Information</h2>
+    </div>
+    <!-- Additional Information -->
+
+    <!-- FAQ Content -->
+    <div>
+        <div>
+            <pdf:nexttemplate name="maintmpl">
+        </div>
+        <div>
+            <pdf:nextpage />
+        </div>
+        <a name="AppendixB"></a>
+        <div style="border-bottom: 1px solid;">
+            <h3>Appendix B:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Frequently Asked Questions</h2>
+        </div>
+        <div style="font-size: 11pt;">
+            <p>
+                <b style="color:black; font-size: 11pt;">How are P&E data and reports different from other reports I
+                    receive from CISA?</b>
+                <br>
+                The Cybersecurity and Infrastructure Security Agency’s (CISA) Cyber Hygiene Posture and Exposure (P&E)
+                analysis is a cost-free service that helps stakeholders monitor and evaluate their cyber posture for
+                weaknesses found in public source information, which is readily available to an attacker to view.
+                P&E utilizes passive reconnaissance services, dark web analysis, and other public information sources
+                to identify suspected domain masquerading, credentials that have been leaked or exposed, insecure
+                devices, suspected vulnerabilities, and increased dark web activity related to their organization.
+            </p>
+
+            <p>
+                <b style="color:black; font-size: 11pt;">What should I expect in terms of P&E’s Findings:</b>
+                <br>
+                The Posture and Exposure team uses numerous tools and open-source intelligence (OSINT) gathering
+                tactics to identify the potential weaknesses listed below. The data is then analyzed and complied
+                into a Posture and Exposure Report which provides both executive level information and detailed
+                information for analysts that includes the raw findings.
+            </p>
+
+            <p style="margin-left: 30px">
+                <b style="color:black; font-size: 11pt;">Suspected Domain Masquerading:</b>
+                <br>
+                Spoofed or typo-squatting domains can be used to host fake web pages for malicious purposes, such as
+                imitating landing pages for spear phishing campaigns. This report shows newly registered or reactivated
+                domains that appear to mimic a stakeholder’s actual domain.
+            </p>
+
+            <p style="margin-left: 30px">
+                <b style="color:black; font-size: 11pt;">Credentials Leaked/Exposed: </b>
+                <br>
+                Credential leakage occurs when user credentials, often including passwords, are stolen via phishing
+                campaigns, network compromise or misconfiguration of databases leading to public exposure. This leaked
+                data is then listed for sale on numerous forums and sites on the dark web, which provides attackers
+                easy access to a stakeholders' networks.
+            </p>
+
+            <p style="margin-left: 30px">
+                <b style="color:black; font-size: 11pt;">Insecure Devices & Suspected Vulnerabilities:</b>
+                <br>
+                When looking at Open-Source information gathered from tools that search the web for Internet of Things
+                (IoT) devices and other external facing assets. It can then be inferred that certain systems, ports,
+                and protocols associated with these assets are likely to have vulnerabilities, based on the OS or
+                application version information reported when queried. When possible, our analysis also reports on
+                potential malware infections for stakeholders.
+            </p>
+
+        </div>
+        <div>
+            <pdf:nexttemplate name="faq2">
+        </div>
+        <div>
+            <pdf:nextpage />
+        </div>
+    </div>
+    <!-- FAQ Content Cont. -->
+    <div>
+        <div style="font-size: 11pt;">
+            <p style="margin-left: 30px">
+                <b style="color:black; font-size: 11pt;">Increased Dark Web Activity:</b>
+                <br>
+                Stakeholders and vulnerabilities are often discussed in various ways on the dark web. P&E monitors this
+                activity, as well as the source (forums, websites, tutorials), and threat actors involved. A spike in
+                activity can indicate a greater likelihood of an attack, vulnerability, or data leakage. Additionally,
+                the urgency of the threat can be evaluated based on the threat actors involved along with other
+                thresholds. Evaluating this content may also indicate if a stakeholder has been involved in a hacking
+                incident as that data will often be published or offered ‘for sale’. This information along with a list
+                of the most active CVE's on the Dark Web may assist in prioritizing remediation activities.
+            </p>
+            <p>
+                <b style="color:black; font-size: 11pt;">Do you perform scans of our networks?</b>
+                <br>
+                P&E does not perform active scanning. The information we gather is through passive collection from
+                numerous public and vendor data sources. As such, we collect data on a continual basis,
+                and provide summary reports twice a month.
+            </p>
+            <p>
+                <b style="color:black; font-size: 11pt;">How will the results be provided to me?</b>
+                <br>
+                P&E will provide twice monthly P&E reports as password-protected attachments to emails from
+                vulnerability@cisa.dhs.gov.
+                The attachments will contain a PDF—providing a summary of the findings, tables, graphs, as charts—as
+                well as a CSV file
+                containing the raw data used to generate the PDF report to facilitate your agencies own analysis.
+            </p>
+            <p>
+                <b style="color:black; font-size: 11pt;">Do you offer ad-hoc analysis of source data?</b>
+                <br>
+                If you have any questions about a particular vulnerability that you believe you have mitigated,
+                but which continues to show up in the reports, we can perform a detailed analysis to determine
+                why your organization continues to show that vulnerability. In many cases, the issue can be tracked
+                back to the fact that the mitigation has made it impossible for the reconnaissance service or tool
+                to identify the configuration, and as such they may default to displaying the last collected
+                information.
+            </p>
+            <p>
+                <b style="color:black; font-size: 11pt;">Who do I contact if there are any issues or updates that need
+                    to be addressed for my reports? </b>
+                <br>
+                The general notification process is the same as all of the CyHy components.  Simply send an email to
+                 vulnerability@cisa.dhs.gov identifying the requested changes.  In this instance, make sure to identify
+                “P&E Report Delivery” in the subject  to ensure the issue is routed to our team. 
+            </p>
+
+        </div>
+
+    </div>
+
+    <!-- Acronyms -->
+    <div>
+        <div>
+            <pdf:nextpage />
+        </div>
+        <a name="AppendixC"></a>
+        <div style="border-bottom: 1px solid;">
+            <h3>Appendix C:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Acronyms</h2>
+        </div>
+        <div>
+            <p style="font-size: 11pt;">
+                <b style="color:black; font-size: 11pt;">CISA </b>&nbsp;&nbsp;&nbsp;Cybersecurity and
+                Infrastructure Security Agency. 4, 17<br>
+                <b style="color:black; font-size: 11pt;">CVE</b>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Common Vulnerabilities and
+                Exposures. 2, 3, 10, 11, 16, 19<br>
+                <b style="color:black; font-size: 11pt;">DHS</b>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Department of Homeland
+                Security.
+                4, 17<br>
+                <b style="color:black; font-size: 11pt;">DVE</b>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Dynamic Vulnerability
+                Exploit.
+                16<br>
+                <b style="color:black; font-size: 11pt;">FTP</b>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;File Transfer
+                Protocol. 9<br>
+                <b style="color:black; font-size: 11pt;">HTTP</b>&nbsp;&nbsp;&nbsp;Hypertext Transfer Protocol.
+                9<br>
+                <b
+                    style="color:black; font-size: 11pt;">IP</b>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Internet
+                Protocol. 8, 9, 10,
+                13, 19<br>
+                <b style="color:black; font-size: 11pt;">P&E</b>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Posture and
+                Exposure. 4, 11<br>
+                <b style="color:black; font-size: 11pt;">RDP</b>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Remote Desktop
+                Protocol. 9<br>
+                <b style="color:black; font-size: 11pt;">SIP</b>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Session
+                Initiation
+                Protocol.
+                9<br>
+                <b style="color:black; font-size: 11pt;">SMB</b>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Server Message
+                Block. 9<br>
+
+
+
+
+
+            </p>
+        </div>
+    </div>
