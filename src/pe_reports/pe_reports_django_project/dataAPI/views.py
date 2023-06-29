@@ -43,6 +43,7 @@ from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.contrib.auth.models import User
+from django.conf import settings
 from django.db.models import Q
 from django.db import transaction
 from django.contrib import messages
