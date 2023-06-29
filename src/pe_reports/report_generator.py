@@ -31,6 +31,9 @@ import pandas as pd
 # cisagov Libraries
 import pe_reports
 
+# cisagov Libraries
+import pe_reports
+
 from ._version import __version__
 from .asm_generator import create_summary
 from .data.db_query import connect, get_orgs, refresh_asset_counts_vw, set_from_cidr
@@ -62,6 +65,8 @@ def upload_file_to_s3(file_name, datestring, bucket, excel_org):
             LOGGER.info(response)
     except ClientError as e:
         LOGGER.error(e)
+
+LOGGER = logging.getLogger(__name__)
 
 
 def embed(
@@ -364,11 +369,13 @@ def main():
         LOGGER.info(f"Social media should not included: {e}")
         soc_med = False
     # Generate reports
-    generate_reports(
+    generated_reports = generate_reports(
         validated_args["REPORT_DATE"],
         validated_args["OUTPUT_DIRECTORY"],
         soc_med,
     )
+
+    LOGGER.info("%s reports generated", generated_reports)
 
     # Stop logging and clean up
     logging.shutdown()

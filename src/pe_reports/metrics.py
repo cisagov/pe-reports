@@ -89,7 +89,6 @@ class Credentials:
             breach_det_df["breach_date"] = pd.to_datetime(
                 breach_det_df["breach_date"]
             ).dt.strftime("%m/%d/%y")
-
         breach_det_df = breach_det_df.rename(
             columns={
                 "breach_name": "Breach Name",

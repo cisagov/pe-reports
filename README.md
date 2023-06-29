@@ -1,9 +1,8 @@
 # Posture & Exposure Reports (P&E Reports) #
 
 [![GitHub Build Status](https://github.com/cisagov/pe-reports/workflows/build/badge.svg)](https://github.com/cisagov/pe-reports/actions)
+[![CodeQL](https://github.com/cisagov/pe-reports/workflows/CodeQL/badge.svg)](https://github.com/cisagov/pe-reports/actions/workflows/codeql-analysis.yml)
 [![Coverage Status](https://coveralls.io/repos/github/cisagov/pe-reports/badge.svg?branch=develop)](https://coveralls.io/github/cisagov/pe-reports?branch=develop)
-[![Total alerts](https://img.shields.io/lgtm/alerts/g/cisagov/pe-reports.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/cisagov/pe-reports/alerts/)
-[![Language grade: Python](https://img.shields.io/lgtm/grade/python/g/cisagov/pe-reports.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/cisagov/pe-reports/context:python)
 [![Known Vulnerabilities](https://snyk.io/test/github/cisagov/pe-reports/develop/badge.svg)](https://snyk.io/test/github/cisagov/pe-reports)
 
 This package is used to generate and deliver CISA Posture & Exposure Reports
@@ -79,6 +78,28 @@ Options:
                                 the specified value.  Valid values are "debug", "info",
                                 "warning", "error", and "critical". [default: info]
 ```
+
+## Database backup/restore ##
+
+Follow the instructions below to backup the P&E database instance and restore locally.
+
+In the P&E database environment:
+
+- Pull the latest repository
+- If necessary, edit ./src/pe_reports/pe_db/pg_backup.sh and replace the
+default output path ($PWD) with your preferred output path.
+- Open terminal and run:
+`bash ./src/pe_reports/pe_db/pg_backup.sh`
+- Export resulting .zip file
+
+In your local environment:
+
+- Pull the latest repository
+- If necessary, edit ./src/pe_reports/pe_db/pg_restore.sh and replace
+the default path to the backup files ($PWD) with your preferred path.
+- Start local postgres
+- Open terminal and run:
+`bash ./src/pe_reports/pe_db/pg_restore.sh`
 
 ## Collect P&E Source Data ##
 

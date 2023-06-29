@@ -25,7 +25,7 @@ from .config import config, staging_config
 LOGGER = logging.getLogger(__name__)
 
 CONN_PARAMS_DIC = config()
-CONN_PARAMS_DIC_STAGING = staging_config()
+# CONN_PARAMS_DIC_STAGING = staging_config()
 
 
 def show_psycopg2_exception(err):
@@ -2259,7 +2259,7 @@ def get_software(start_date, end_date, df_orgs=[]):
             close(conn)
 
 
-def get_bod_18():
+def get_bod_18(start_date):
     """Query BOD 18-01 data necessary to calculate compliance."""
     conn = connect()
     try:
@@ -2267,8 +2267,8 @@ def get_bod_18():
         FROM scorecard_summary_stats sss
         left join organizations o on
         sss.organizations_uid = o.organizations_uid
-        where sss.email_compliance_pct notnull and sss.https_compliance_pct notnull"""
-        bod_18_df = pd.read_sql(sql, conn)
+        where sss.email_compliance_pct notnull and sss.https_compliance_pct notnull and start_date = %(start_date)s"""
+        bod_18_df = pd.read_sql(sql, conn, params={"start_date": start_date})
         return bod_18_df
     except (Exception, psycopg2.DatabaseError) as error:
         LOGGER.error("There was a problem with your database query %s", error)
@@ -2297,7 +2297,7 @@ def get_ports_protocols(start_date, end_date, df_orgs=[]):
                 "start_date": start_date,
                 "end_date": end_date,
                 "df_orgs": tuple(df_orgs),
-            },
+            }
         )
         return df_port_scans
     except (Exception, psycopg2.DatabaseError) as error:

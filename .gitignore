@@ -5,6 +5,14 @@
 ## macOS ##
 .DS_Store
 
+## Project Specific ##
+*.html
+*.log
+build/
+output/
+src/pe_reports/*.html
+src/pe_reports/assets/
+
 ## Python ##
 __pycache__
 .coverage

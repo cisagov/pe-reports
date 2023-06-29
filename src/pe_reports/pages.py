@@ -47,7 +47,7 @@ def credential(
     x_label = "Week Reported"
     y_label = "Creds Exposed"
     cred_date_chart = Charts(
-        Credential.by_days(),
+        Credential.by_week(),
         width,
         height,
         name,

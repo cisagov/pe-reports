@@ -2,11 +2,10 @@
 
 # Standard Python Libraries
 from datetime import date, datetime, timedelta
-import logging
 import sys
 import traceback
 
-from .data.pe_db.db_query import (
+from .data.pe_db.db_query_source import (
     get_breaches,
     get_data_source_uid,
     get_orgs,
@@ -28,6 +27,8 @@ from .data.sixgill.source import (
     root_domains,
     top_cves,
 )
+
+LOGGER = app.config["LOGGER"]
 
 # Set todays date formatted YYYY-MM-DD and the start_date 30 days prior
 TODAY = date.today()

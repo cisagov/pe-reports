@@ -56,6 +56,21 @@
     height: 1in;
     font-size: 12pt;
   }
+  @frame headerCont {
+    -pdf-frame-content: headerContentCont;
+    top: 0.625in;
+    margin-left: 2in;
+    margin-right: 1in;
+    height: 1in;
+    font-size: 10pt;
+  }
+  @frame headerCont2 {
+    -pdf-frame-content: headerContentCont2;
+    top: 0.625in;
+    margin-right: 1in;
+    height: 1in;
+    font-size: 12pt;
+  }
 }
 
 @page sum {

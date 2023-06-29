@@ -42,46 +42,50 @@ from pe_scorecard.scores.score_helper_functions import (
 
 LOGGER = logging.getLogger(__name__)
 
-# df_orgs_df is a datframe of stakeholders with two columns: organizations_uid and cyhy_db_name
+# df_orgs_df is a dataframe of stakeholders with two columns: organizations_uid and cyhy_db_name
 def get_tracking_score(df_orgs_df, report_period_year, report_period_month):
-    LOGGER.info("Calculating tracking score")
+    LOGGER.info("Staring Tracking Score calculations...")
     last_month = get_last_month(report_period_year, report_period_month)
     this_month = datetime(report_period_year, report_period_month, 1)
     next_month = get_next_month(report_period_year, report_period_month)
 
+    LOGGER.info("Retrieving additional stakeholder info...")
     df_org_info = get_stakeholders()
     df_orgs = df_orgs_df.merge(df_org_info, on='organizations_uid', how='left')
-
-    df_bod_18 = summarize_bod_18(df_orgs)
+    
+    LOGGER.info("Retrieving BOD info...")
+    df_bod_18 = summarize_bod_18(df_orgs, this_month)
     df_bod_19_22 = get_bod_19_22(df_orgs)
     df_was_bod_19 = summarize_was_bod_19(df_orgs, this_month, next_month)
+    
+    LOGGER.info("Retrieving ATTR info...")
     df_vs_attr = summarize_vs_attr(df_orgs, this_month, next_month)
     df_was_atr = summarize_was_attr(df_orgs, this_month, next_month)
-
-    LOGGER.info("Summarize counts")
+    
     # Data before Normalization
+    LOGGER.info("Retrieving Vulnerability info...")
     df_pe_vulns = summarize_pe_vuln_counts(df_orgs, last_month, this_month, next_month)
     df_vs_vulns = summarize_vs_vuln_counts(df_orgs, this_month)
     df_was_vulns = summarize_was_vuln_counts(df_orgs, last_month, this_month, next_month)
+    LOGGER.info("Retrieving Port Scans info...")
     df_ports_prot= summarize_port_scans(df_orgs, last_month, this_month, next_month)
 
-    LOGGER.info("Normalize data")
-    # #Data after Normalization
+    # Data after Normalization
+    LOGGER.info("Normalizing Data...")
     df_norm_vs_vulns = normalize_vulns(df_vs_vulns, "VS")
     df_norm_was_vulns = normalize_vulns(df_was_vulns, "WAS")
     df_norm_pe_vulns = normalize_vulns(df_pe_vulns, "PE")
     df_norm_ports_prot = normalize_port_scans(df_ports_prot)
 
     tracking_score_list = []
+    LOGGER.info("Calculaing Tracking Score...")
     for index, org in df_orgs.iterrows():
-        LOGGER.info(index)
-        LOGGER.info(org['organizations_uid'])
         org_id = org['organizations_uid']
 
         df_bod_18_org = df_bod_18.loc[df_bod_18['organizations_uid'] == org_id]
         # Multiplying by predetermined weights for base metrics (see tracking score documentation)
-        bod_18_email = (100.0 - df_bod_18_org['email_bod_compliance']) * .125
-        bod_18_web = (100.0 - df_bod_18_org['web_bod_compliance']) * .125
+        bod_18_email = (100.0 - df_bod_18_org['email_compliance_pct']) * .125
+        bod_18_web = (100.0 - df_bod_18_org['https_compliance_pct']) * .125
 
         vs_df_bod_19_22_org = df_bod_19_22.loc[df_bod_19_22['organizations_uid'] == org_id]
         # Multiplying by predetermined weights for base metrics (see tracking score documentation)
@@ -169,7 +173,8 @@ def get_tracking_score(df_orgs_df, report_period_year, report_period_month):
         rescaled_tracking_score = round((tracking_score * .4) + 60.0, 2)
         tracking_score_list.append([org['organizations_uid'], org['cyhy_db_name'], rescaled_tracking_score, get_letter_grade(rescaled_tracking_score)])
     df_tracking_score = pd.DataFrame(tracking_score_list, columns= ["organizations_uid", "cyhy_db_name", "tracking_score", "letter_grade"])   
-    LOGGER.info("Finished Calculating Tracking Score")
+    
+    LOGGER.info("Finishing Tracking Score...")
     return df_tracking_score
 
 def summarize_vs_attr(orgs_df, this_month, next_month):
@@ -178,10 +183,12 @@ def summarize_vs_attr(orgs_df, this_month, next_month):
     kevs_df = get_kevs()
     average_time_to_remediate_list = []
     for index, org in orgs_df.iterrows():
+        org_id = org['organizations_uid']
         org_kevs = []
         org_crits = []
         org_highs = []
-        for index2, vuln in df_closed_vulns.iterrows():
+        org_df_closed_vulns = df_closed_vulns.loc[((df_closed_vulns['organizations_uid'] == org_id) | (df_closed_vulns['parent_org_uid'] == org_id))] 
+        for index2, vuln in org_df_closed_vulns.iterrows():
             if org['organizations_uid'] == vuln['organizations_uid'] or org['organizations_uid'] == vuln['parent_org_uid']:
                 time_to_remediate = get_age(vuln['time_opened'], vuln['time_closed'])
                 if vuln['cve'] in kevs_df['kev'].values:
@@ -195,7 +202,6 @@ def summarize_vs_attr(orgs_df, this_month, next_month):
         average_highs = average_list(org_highs)
         average_time_to_remediate_list.append([org['organizations_uid'], org['cyhy_db_name'], calculate_attr_compliance(average_kevs, "KEV"), calculate_attr_compliance(average_crits, "CRIT"), calculate_attr_compliance(average_highs, "HIGH")])
     df_attr = pd.DataFrame(average_time_to_remediate_list, columns= ["organizations_uid", "cyhy_db_name", "attr_kevs", "attr_crits", "attr_highs"])
-    
     return df_attr
 
 def calculate_attr_compliance(vuln_attr, type):
@@ -226,6 +232,7 @@ def get_bod_19_22(orgs_df):
 
     bod_19_22_list = []
     for index, org in orgs_df.iterrows():
+        org_id = org['organizations_uid']
         total_kevs = 0.0
         overdue_kevs = 0.0
         total_crits = 0.0
@@ -236,31 +243,31 @@ def get_bod_19_22(orgs_df):
         overdue_medium = 0.0
         total_low = 0.0
         overdue_low = 0.0
-        for index2, ticket in open_tickets_df.iterrows():
-            if org['cyhy_db_name'] == ticket['cyhy_db_name'] or org['organizations_uid'] == ticket['parent_org_uid']:
-                time_opened = ticket['time_opened']
-                now = datetime.now()
-                age = get_age(time_opened, now)   
-                if ticket['cve'] in kevs_df['kev'].values:
-                    total_kevs = total_kevs + 1.0
-                    if age > 14.0:
-                        overdue_kevs = overdue_kevs + 1.0
-                if ticket['cvss_base_score'] >= 9.0:
-                    total_crits = total_crits + 1.0
-                    if age > 15.0:
-                        overdue_crits = overdue_crits + 1.0
-                elif ticket['cvss_base_score'] >= 7.0 and ticket['cvss_base_score'] < 9.0:
-                    total_highs = total_highs + 1.0
-                    if age > 30.0:
-                        overdue_highs = overdue_highs + 1.0
-                elif ticket['cvss_base_score'] >= 4.0 and ticket['cvss_base_score'] < 7.0:
-                    total_medium = total_medium + 1.0
-                    if age > 90.0:
-                        overdue_medium = overdue_medium + 1.0
-                else:
-                    total_low = total_low + 1.0
-                    if age > 180.0:
-                        overdue_low = overdue_low + 1.0
+        org_open_tickets_df = open_tickets_df.loc[((open_tickets_df['organizations_uid'] == org_id) | (open_tickets_df['parent_org_uid'] == org_id))] 
+        for index2, ticket in org_open_tickets_df.iterrows():
+            time_opened = ticket['time_opened']
+            now = datetime.now()
+            age = get_age(time_opened, now)   
+            if ticket['cve'] in kevs_df['kev'].values:
+                total_kevs = total_kevs + 1.0
+                if age > 14.0:
+                    overdue_kevs = overdue_kevs + 1.0
+            if ticket['cvss_base_score'] >= 9.0:
+                total_crits = total_crits + 1.0
+                if age > 15.0:
+                    overdue_crits = overdue_crits + 1.0
+            elif ticket['cvss_base_score'] >= 7.0 and ticket['cvss_base_score'] < 9.0:
+                total_highs = total_highs + 1.0
+                if age > 30.0:
+                    overdue_highs = overdue_highs + 1.0
+            elif ticket['cvss_base_score'] >= 4.0 and ticket['cvss_base_score'] < 7.0:
+                total_medium = total_medium + 1.0
+                if age > 90.0:
+                    overdue_medium = overdue_medium + 1.0
+            else:
+                total_low = total_low + 1.0
+                if age > 180.0:
+                    overdue_low = overdue_low + 1.0
         percent_compliance_kevs = get_percent_compliance(total_kevs, overdue_kevs)
         percent_compliance_crits = get_percent_compliance(total_crits, overdue_crits)
         percent_compliance_highs = get_percent_compliance(total_highs, overdue_highs)
@@ -311,7 +318,9 @@ def summarize_vs_vuln_counts(orgs_df, this_month):
         this_month_highs = 0.0
         this_month_meds = 0.0
         this_month_lows = 0.0
-        for index2, vulns in df_vulns.iterrows():
+        org_id = org['organizations_uid']
+        org_df_vulns = df_vulns.loc[((df_vulns['organizations_uid'] == org_id) | (df_vulns['parent_org_uid'] == org_id))] 
+        for index2, vulns in org_df_vulns.iterrows():
             if org['organizations_uid'] == vulns['organizations_uid'] or org['organizations_uid'] == vulns['parent_org_uid']:
                 if vulns['time_opened'] >= this_month:
                     if vulns['cvss_base_score'] >= 9.0:
@@ -362,30 +371,31 @@ def summarize_pe_vuln_counts(orgs_df, last_month, this_month, next_month):
         this_month_highs = 0.0
         this_month_meds = 0.0
         this_month_lows = 0.0
-        for index2, vulns in df_vulns.iterrows():
-            if org['cyhy_db_name'] == vulns['cyhy_db_name'] or org['organizations_uid'] == vulns['parent_org_uid']:
-                if vulns['timestamp'] >= this_month:
-                    if vulns['cvss'] >= 9.0:
-                        this_month_crits = this_month_crits + 1.0
-                    elif vulns['cvss'] >= 7.0:
-                        this_month_highs = this_month_highs + 1.0
-                    elif vulns['cvss'] >= 4.0:
-                        this_month_meds = this_month_meds + 1.0
-                    else:
-                        this_month_lows = this_month_lows + 1.0
-                    if vulns['cve'] in df_kevs['kev'].values:
-                        this_month_kevs = this_month_kevs + 1.0
+        org_id = org['organizations_uid']
+        org_df_vulns = df_vulns.loc[((df_vulns['organizations_uid'] == org_id) | (df_vulns['parent_org_uid'] == org_id))] 
+        for index2, vulns in org_df_vulns.iterrows():
+            if vulns['timestamp'] >= this_month:
+                if vulns['cvss'] >= 9.0:
+                    this_month_crits = this_month_crits + 1.0
+                elif vulns['cvss'] >= 7.0:
+                    this_month_highs = this_month_highs + 1.0
+                elif vulns['cvss'] >= 4.0:
+                    this_month_meds = this_month_meds + 1.0
                 else:
-                    if vulns['cvss'] >= 9.0:
-                        last_month_crits = last_month_crits + 1.0
-                    elif vulns['cvss'] >= 7.0:
-                        last_month_highs = last_month_highs + 1.0
-                    elif vulns['cvss'] >= 4.0:
-                        last_month_meds = last_month_meds + 1.0
-                    else:
-                        last_month_lows = last_month_lows + 1.0
-                    if vulns['cve'] in df_kevs['kev'].values:
-                        last_month_kevs = last_month_kevs + 1.0
+                    this_month_lows = this_month_lows + 1.0
+                if vulns['cve'] in df_kevs['kev'].values:
+                    this_month_kevs = this_month_kevs + 1.0
+            else:
+                if vulns['cvss'] >= 9.0:
+                    last_month_crits = last_month_crits + 1.0
+                elif vulns['cvss'] >= 7.0:
+                    last_month_highs = last_month_highs + 1.0
+                elif vulns['cvss'] >= 4.0:
+                    last_month_meds = last_month_meds + 1.0
+                else:
+                    last_month_lows = last_month_lows + 1.0
+                if vulns['cve'] in df_kevs['kev'].values:
+                    last_month_kevs = last_month_kevs + 1.0
         change_in_kevs =  this_month_kevs - last_month_kevs
         change_in_crits = this_month_crits - last_month_crits
         change_in_highs = this_month_highs - last_month_highs
@@ -462,21 +472,12 @@ def summarize_was_vuln_counts(orgs_df, last_month, this_month, next_month):
     df_vulns = pd.DataFrame(vulns_list, columns= ["organizations_uid", "cyhy_db_name", "change_in_crits", "change_in_highs", "change_in_meds", "change_in_lows"])
     return df_vulns
 
-def summarize_bod_18(orgs_df):
-    df_bod_18 = get_bod_18()
-    bod_18_list = []
-    for index, org in orgs_df.iterrows():
-        #Giving 100% compliance to stakeholders whose data is not attainable for BOD 18-01
-        email_bod_compliance = 100.0
-        web_bod_compliance = 100.0
-        for index2, bod in df_bod_18.iterrows():
-            if org['organizations_uid'] == bod['organizations_uid']:
-                if bod['email_compliance_pct'] is not None:
-                    email_bod_compliance = bod['email_compliance_pct']
-                if bod['https_compliance_pct'] is not None:
-                    web_bod_compliance = bod['https_compliance_pct']
-        bod_18_list.append([org['organizations_uid'], email_bod_compliance, web_bod_compliance])
-        df_vulns = pd.DataFrame(bod_18_list, columns= ["organizations_uid", "email_bod_compliance", "web_bod_compliance"])
+def summarize_bod_18(orgs_df, start_date):
+    df_bod_18 = get_bod_18(start_date)
+    df_vulns = orgs_df.merge(df_bod_18, on='organizations_uid', how='left')
+    #Non-Federal sakeholders automatically get 100% for BOD 18-01 since data is not available
+    df_vulns['email_compliance_pct'] = df_vulns['email_compliance_pct'].fillna(100.0)
+    df_vulns['https_compliance_pct'] =  df_vulns['https_compliance_pct'].fillna(100.0)
     return df_vulns
 
 def summarize_was_bod_19(orgs_df, this_month, next_month):
@@ -611,18 +612,19 @@ def summarize_port_scans(orgs_df, last_month, this_month, next_month):
         this_month_vuln_ports = 0.0
         this_month_total_protocols = 0.0
         this_month_vuln_protocols = 0.0
-        for index2, ports in df_port_scans.iterrows():
-            if org['organizations_uid'] == ports['organizations_uid'] or org['organizations_uid'] == ports['parent_org_uid']:
-                if ports['report_period'] < this_month:
-                    last_month_total_ports = last_month_total_ports + ports['ports']
-                    last_month_vuln_ports = last_month_vuln_ports + ports['risky_ports']
-                    last_month_total_protocols = last_month_total_protocols + ports['protocols']
-                    last_month_vuln_protocols = last_month_vuln_protocols + ports['risky_protocols']
-                else:
-                    this_month_total_ports = this_month_total_ports + ports['ports']
-                    this_month_vuln_ports = this_month_vuln_ports + ports['risky_ports']
-                    this_month_total_protocols = this_month_total_protocols + ports['protocols']
-                    this_month_vuln_protocols = this_month_vuln_protocols + ports['risky_protocols']
+        org_id = org['organizations_uid']
+        org_df_ports = df_port_scans.loc[((df_port_scans['organizations_uid'] == org_id) | (df_port_scans['parent_org_uid'] == org_id))] 
+        for index2, ports in org_df_ports.iterrows():
+            if ports['report_period'] < this_month:
+                last_month_total_ports = last_month_total_ports + ports['ports']
+                last_month_vuln_ports = last_month_vuln_ports + ports['risky_ports']
+                last_month_total_protocols = last_month_total_protocols + ports['protocols']
+                last_month_vuln_protocols = last_month_vuln_protocols + ports['risky_protocols']
+            else:
+                this_month_total_ports = this_month_total_ports + ports['ports']
+                this_month_vuln_ports = this_month_vuln_ports + ports['risky_ports']
+                this_month_total_protocols = this_month_total_protocols + ports['protocols']
+                this_month_vuln_protocols = this_month_vuln_protocols + ports['risky_protocols']
 
         change_in_ports = average_numbers(this_month_vuln_ports, this_month_total_ports) - average_numbers(last_month_vuln_ports, last_month_total_ports)
         change_in_protocols = average_numbers(this_month_vuln_protocols, this_month_total_protocols) - average_numbers(last_month_vuln_protocols, last_month_total_protocols)
@@ -686,3 +688,4 @@ def normalize_vulns(df_vulns, team):
     df_vulns = pd.DataFrame(vulns_list, columns= ["organizations_uid", "norm_kevs", "norm_crits", "norm_highs", "norm_meds", "norm_lows"])   
     return df_vulns
 
+    get_tracking_score()

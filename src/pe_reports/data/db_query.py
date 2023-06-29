@@ -103,7 +103,7 @@ def execute_values(conn, dataframe, table, except_condition=";"):
 
 
 def get_orgs(conn):
-    """Query organizations table."""
+    """Query organizations table for orgs we report on."""
     try:
         cur = conn.cursor()
         sql = """SELECT * FROM organizations
