@@ -4,6 +4,7 @@
 import datetime
 import logging
 import os
+import re
 
 # Third-Party Libraries
 import chevron
@@ -64,10 +65,12 @@ def buildAppendixList(df):
     html += "\n</div>"
     return html
 
+def sanitize_uid(string):
+    return re.sub(r"[^a-zA-Z0-9\-]", "", string)
 
 def credential(chevron_dict, trending_start_date, start_date, end_date, org_uid):
     """Build exposed credential page."""
-    Credential = Credentials(trending_start_date, start_date, end_date, org_uid)
+    Credential = Credentials(trending_start_date, start_date, end_date, sanitize_uid(org_uid))
     # Build exposed credential stacked bar chart
     width = 24
     height = 9.5
@@ -101,7 +104,7 @@ def credential(chevron_dict, trending_start_date, start_date, end_date, org_uid)
 
 def masquerading(chevron_dict, start_date, end_date, org_uid):
     """Build masquerading page."""
-    Domain_Masq = Domains_Masqs(start_date, end_date, org_uid)
+    Domain_Masq = Domains_Masqs(start_date, end_date, sanitize_uid(org_uid))
     chevron_dict.update(
         {
             "domain_table": buildTable(Domain_Masq.summary(), ["table"], []),
