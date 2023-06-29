@@ -43,11 +43,14 @@ def close(conn):
     """Close connection to PostgreSQL."""
     conn.close()
 
+
 def sanitize_uid(string):
     return re.sub(r"[^a-zA-Z0-9\-]", "", string)
 
+
 def sanatize_string(string):
     return re.sub(r"[^a-zA-Z0-9]", "", string)
+
 
 def get_orgs():
     """Query organizations that receive reports and demo organizations."""
@@ -58,13 +61,12 @@ def get_orgs():
         cur.execute(sql)
         pe_orgs = cur.fetchall()
         keys = ("org_uid", "org_name", "cyhy_db_name")
-        
+
         for value in pe_orgs:
-            value[0] = sanitize_uid(value[0]) # org_uid
+            value[0] = sanitize_uid(value[0])  # org_uid
             value[1] = value[1]
-            value[2] = sanatize_string(value[2]) # cyhy_db_name
-            
-        
+            value[2] = sanatize_string(value[2])  # cyhy_db_name
+
         pe_orgs = [dict(zip(keys, values)) for values in pe_orgs]
         cur.close()
         return pe_orgs
@@ -96,6 +98,11 @@ def get_data_source_uid(source):
     sql = """SELECT * FROM data_source WHERE name = '{}'"""
     cur.execute(sql.format(source))
     source = cur.fetchone()[0]
+
+    # Sanitize the data returned by fetchone()[0],
+    # returned data is data_source_uid (a uuid string)
+    source = sanitize_uid(source)
+
     cur.close()
     cur = conn.cursor()
     # Update last_run in data_source table
