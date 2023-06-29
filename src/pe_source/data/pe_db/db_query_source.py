@@ -3,6 +3,7 @@
 # Standard Python Libraries
 from datetime import datetime
 import sys
+import re
 
 # Third-Party Libraries
 import pandas as pd
@@ -42,6 +43,11 @@ def close(conn):
     """Close connection to PostgreSQL."""
     conn.close()
 
+def sanitize_uid(string):
+    return re.sub(r"[^a-zA-Z0-9\-]", "", string)
+
+def sanatize_string(string):
+    return re.sub(r"[^a-zA-Z0-9]", "", string)
 
 def get_orgs():
     """Query organizations that receive reports and demo organizations."""
@@ -52,6 +58,13 @@ def get_orgs():
         cur.execute(sql)
         pe_orgs = cur.fetchall()
         keys = ("org_uid", "org_name", "cyhy_db_name")
+        
+        for value in pe_orgs:
+            value[0] = sanitize_uid(value[0]) # org_uid
+            value[1] = value[1]
+            value[2] = sanatize_string(value[2]) # cyhy_db_name
+            
+        
         pe_orgs = [dict(zip(keys, values)) for values in pe_orgs]
         cur.close()
         return pe_orgs
