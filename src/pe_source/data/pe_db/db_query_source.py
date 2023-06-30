@@ -2,8 +2,8 @@
 
 # Standard Python Libraries
 from datetime import datetime
-import sys
 import re
+import sys
 
 # Third-Party Libraries
 import pandas as pd
@@ -45,14 +45,15 @@ def close(conn):
 
 
 def sanitize_uid(string):
+    """Remove special characters from uids."""
     return re.sub(r"[^a-zA-Z0-9\-]", "", string)
 
 
 def sanitize_string(string):
+    """Remove special characters from string."""
     pattern = re.compile(r"[^\w\s]+")
     sanitized_text = pattern.sub("", string())
     return sanitized_text
-
 
 
 def get_orgs():
@@ -470,7 +471,7 @@ def get_intelx_breaches(source_uid):
         cur.execute(sql, [source_uid])
         all_breaches = cur.fetchall()
         for breach in all_breaches:
-            breach[0] = santize_string([0])
+            breach[0] = sanitize_string([0])
             breach[1] = sanitize_uid(breach[1])
         cur.close()
         return all_breaches
