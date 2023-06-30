@@ -21,7 +21,7 @@ LOGGER = logging.getLogger(__name__)
 
 CONN_PARAMS_DIC = config()
 
-def sanatize_string(string):
+def sanitize_string(string):
     return re.sub(r"[^a-zA-Z0-9]", "", string)
 
 def sanitize_uid(string):
@@ -213,7 +213,7 @@ def query_darkweb(org_uid, start_date, end_date, table):
             sql,
             conn,
             params={
-                "table": sanatize_string(table),
+                "table": sanitize_string(table),
                 "org_uid": sanitize_uid(org_uid),
                 "start_date": start_date,
                 "end_date": end_date,
