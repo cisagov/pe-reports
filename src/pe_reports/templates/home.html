@@ -3,12 +3,7 @@
 <div class="container">
   <div class="row">
     <div class="col-lg-3">
-      <img
-        src="{{ url_for('static', filename='CISAImage.png') }}"
-        alt="CISA seal image"
-        width="200"
-        height="200"
-      />
+      <img src="{{ url_for('static', filename='CISAImage.png') }}" alt="CISA seal image" width="200" height="200" />
     </div>
     <input type="hidden" value="{% block title %} Home {% endblock%}" />
 
@@ -32,11 +27,6 @@
       T.style.display = displayValue;
     }
 
-    function loading() {
-      $("#loading").show();
-      $("#content").hide();
-    }
-
     $(document).ready(function () {
       console.log("Im ready ");
 
@@ -45,9 +35,6 @@
       setTimeout(function () {
         $("#messageDiv").fadeOut("fast");
       }, 5000);
-      $(window).load(function () {
-        $("#loading").hide();
-      });
     });
   </script>
 
