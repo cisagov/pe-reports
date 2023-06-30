@@ -11,6 +11,7 @@ Options:
 
 # Standard Python Libraries
 import datetime
+import html
 import logging
 import os
 
@@ -50,6 +51,7 @@ def html_builder(text):
     if input_type == "P":
         LOGGER.info("Paragraph Selected")
         paragraph = input("Please enter paragraph text:")
+        paragraph = html.escape(paragraph)
         paragraph = f"<p> {paragraph} </p>"
         text = text + f"\n {paragraph}"
 
@@ -58,6 +60,7 @@ def html_builder(text):
         bullets = "<ul>\n"
         while True:
             item = input("Enter line item: ")
+            item = html.escape(item)
             if item == "D":
                 bullets = bullets + "</ul>"
                 break
@@ -69,6 +72,7 @@ def html_builder(text):
         bullets = "<ol>\n"
         while True:
             item = input("Enter line item: ")
+            item = html.escape(item)
             if item == "D":
                 bullets = bullets + "</ol>"
                 break
@@ -78,6 +82,7 @@ def html_builder(text):
         LOGGER.info("Invalid Selection")
 
     cont = input("Would you like to add more content (Y/N): ")
+    cont = html.escape(cont)
     if cont == "Y":
         text = html_builder(text)
 

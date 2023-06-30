@@ -120,7 +120,6 @@
   </div>
 </div>
 
-<div id="loading" class="justify-content-lg-center"></div>
 <div class="row justify-content-lg-center">
   <div class="row col-lg-6 offset-lg-3">
     <input type="hidden" value="{% block title %} Stakeholder {% endblock %}" />
@@ -169,20 +168,12 @@
       if (C.style.display == "" && B.style.display == "") showBulletinDiv();
     }
 
-    function loading() {
-      $("#loading").show();
-      $("#content").hide();
-    }
-
     $(document).ready(function () {
       console.log("Im ready ");
 
       setTimeout(function () {
         $("#messageDiv").fadeOut("fast");
       }, 5000);
-      $(window).load(function () {
-        $("#loading").hide();
-      });
     });
   </script>
 

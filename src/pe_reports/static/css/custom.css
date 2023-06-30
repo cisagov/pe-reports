@@ -2,9 +2,6 @@ body {
   background-color: #324ca8;
 }
 
-.htmx-settling img {
-  opacity: 0;
-}
 img {
   transition: opacity 300ms ease-in;
 }
@@ -77,15 +74,6 @@ img {
 div#myDiv {
   display: none;
   text-align: center;
-}
-
-div#loading {
-  width: 50%;
-  height: 350px;
-  /*justify-content: center;*/
-  align-items: center;
-  background: url("../SVG-Loaders/svg-loaders/bars.svg") no-repeat;
-  cursor: wait;
 }
 
 homeBG {
