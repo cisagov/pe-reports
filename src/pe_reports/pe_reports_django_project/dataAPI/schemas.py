@@ -504,8 +504,8 @@ class FCEBStatusTaskResp(BaseModel):
 class VwIscoreVSVuln(BaseModel):
     organizations_uid: str
     parent_org_uid: Optional[str] = None
-    cve_name: str
-    cvss_score: float
+    cve_name: Optional[str] = None
+    cvss_score: Optional[float] = None
 
     class Config:
         orm_mode = True
@@ -531,9 +531,9 @@ class VwIscoreVSVulnTaskResp(BaseModel):
 class VwIscoreVSVulnPrev(BaseModel):
     organizations_uid: str
     parent_org_uid: Optional[str] = None
-    cve_name: str
-    cvss_score: float
-    time_closed: datetime
+    cve_name: Optional[str] = None
+    cvss_score: Optional[float] = None
+    time_closed: str
 
     class Config:
         orm_mode = True
@@ -542,8 +542,8 @@ class VwIscoreVSVulnPrev(BaseModel):
 # vw_iscore_vs_vuln_prev input schema:
 class VwIscoreVSVulnPrevInput(BaseModel):
     specified_orgs: List[str]
-    start_date: date
-    end_date: date
+    start_date: str
+    end_date: str
 
     class Config:
         orm_mode = True
@@ -561,9 +561,9 @@ class VwIscoreVSVulnPrevTaskResp(BaseModel):
 class VwIscorePEVuln(BaseModel):
     organizations_uid: str
     parent_org_uid: Optional[str] = None
-    date: date
+    date: str
     cve_name: str
-    cvss_score: float
+    cvss_score: Optional[float] = None
 
     class Config:
         orm_mode = True
@@ -572,8 +572,8 @@ class VwIscorePEVuln(BaseModel):
 # vw_iscore_pe_vuln input schema:
 class VwIscorePEVulnInput(BaseModel):
     specified_orgs: List[str]
-    start_date: date
-    end_date: date
+    start_date: str
+    end_date: str
 
     class Config:
         orm_mode = True
@@ -591,7 +591,7 @@ class VwIscorePEVulnTaskResp(BaseModel):
 class VwIscorePECred(BaseModel):
     organizations_uid: str
     parent_org_uid: Optional[str] = None
-    date: date
+    date: str
     password_creds: int
     total_creds: int
 
@@ -602,8 +602,8 @@ class VwIscorePECred(BaseModel):
 # vw_iscore_pe_cred input schema:
 class VwIscorePECredInput(BaseModel):
     specified_orgs: List[str]
-    start_date: date
-    end_date: date
+    start_date: str
+    end_date: str
 
     class Config:
         orm_mode = True
@@ -621,7 +621,7 @@ class VwIscorePECredTaskResp(BaseModel):
 class VwIscorePEBreach(BaseModel):
     organizations_uid: str
     parent_org_uid: Optional[str] = None
-    date: date
+    date: str
     breach_count: int
 
     class Config:
@@ -631,8 +631,8 @@ class VwIscorePEBreach(BaseModel):
 # vw_iscore_pe_breach input schema:
 class VwIscorePEBreachInput(BaseModel):
     specified_orgs: List[str]
-    start_date: date
-    end_date: date
+    start_date: str
+    end_date: str
 
     class Config:
         orm_mode = True
@@ -651,7 +651,7 @@ class VwIscorePEDarkweb(BaseModel):
     organizations_uid: str
     parent_org_uid: Optional[str] = None
     alert_type: str
-    date: date
+    date: str
     Count: int
 
     class Config:
@@ -661,8 +661,8 @@ class VwIscorePEDarkweb(BaseModel):
 # vw_iscore_pe_darkweb input schema:
 class VwIscorePEDarkwebInput(BaseModel):
     specified_orgs: List[str]
-    start_date: date
-    end_date: date
+    start_date: str
+    end_date: str
     # Don't forget 0001-01-01 dates
 
     class Config:
@@ -685,7 +685,7 @@ class VwIscorePEProtocol(BaseModel):
     ip: str
     protocol: str
     protocol_type: str
-    date: date
+    date: str
 
     class Config:
         orm_mode = True
@@ -694,8 +694,8 @@ class VwIscorePEProtocol(BaseModel):
 # vw_iscore_pe_protocol input schema:
 class VwIscorePEProtocolInput(BaseModel):
     specified_orgs: List[str]
-    start_date: date
-    end_date: date
+    start_date: str
+    end_date: str
 
     class Config:
         orm_mode = True
@@ -713,7 +713,7 @@ class VwIscorePEProtocolTaskResp(BaseModel):
 class VwIscoreWASVuln(BaseModel):
     organizations_uid: str
     parent_org_uid: Optional[str] = None
-    date: date
+    date: str
     cve_name: str
     cvss_score: float
     owasp_category: str
@@ -725,8 +725,8 @@ class VwIscoreWASVuln(BaseModel):
 # vw_iscore_was_vuln input schema:
 class VwIscoreWASVulnInput(BaseModel):
     specified_orgs: List[str]
-    start_date: date
-    end_date: date
+    start_date: str
+    end_date: str
 
     class Config:
         orm_mode = True
@@ -745,7 +745,7 @@ class VwIscoreWASVulnPrev(BaseModel):
     organizations_uid: str
     parent_org_uid: Optional[str] = None
     was_total_vulns_prev: int
-    date: date
+    date: str
 
     class Config:
         orm_mode = True
@@ -754,8 +754,8 @@ class VwIscoreWASVulnPrev(BaseModel):
 # vw_iscore_was_vuln_prev input schema:
 class VwIscoreWASVulnPrevInput(BaseModel):
     specified_orgs: List[str]
-    start_date: date
-    end_date: date
+    start_date: str
+    end_date: str
 
     class Config:
         orm_mode = True
@@ -792,7 +792,6 @@ class KEVListTaskResp(BaseModel):
 class VwIscoreOrgsIpCounts(BaseModel):
     organizations_uid: str
     cyhy_db_name: str
-    # ip_count: int
 
     class Config:
         orm_mode = True

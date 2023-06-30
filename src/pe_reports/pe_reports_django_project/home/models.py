@@ -649,30 +649,65 @@ class OrgType(models.Model):
         db_table = "org_type"
 
 
+# class Organizations(models.Model):
+#    organizations_uid = models.UUIDField(primary_key=True)
+#    name = models.TextField()
+#    cyhy_db_name = models.TextField(unique=True, blank=True, null=True)
+#    org_type_uid = models.ForeignKey(
+#        OrgType,
+#        on_delete=models.CASCADE,
+#        db_column="org_type_uid",
+#        blank=True,
+#        null=True,
+#    )
+#    report_on = models.BooleanField(blank=True, null=True)
+#    password = models.TextField(blank=True, null=True)
+#    date_first_reported = models.DateTimeField(blank=True, null=True)
+#    parent_org_uid = models.ForeignKey(
+#        "self",
+#        on_delete=models.CASCADE,
+#        db_column="parent_org_uid",
+#        blank=True,
+#        null=True,
+#    )
+#    premium_report = models.BooleanField(blank=True, null=True)
+#    agency_type = models.TextField(blank=True, null=True)
+#    demo = models.BooleanField(blank=True, null=True)
+#
+#    class Meta:
+#        managed = False
+#        db_table = "organizations"
+
+
 class Organizations(models.Model):
     organizations_uid = models.UUIDField(primary_key=True)
     name = models.TextField()
     cyhy_db_name = models.TextField(unique=True, blank=True, null=True)
     org_type_uid = models.ForeignKey(
-        OrgType,
-        on_delete=models.CASCADE,
-        db_column="org_type_uid",
-        blank=True,
-        null=True,
+        OrgType, models.DO_NOTHING, db_column="org_type_uid", blank=True, null=True
     )
     report_on = models.BooleanField(blank=True, null=True)
     password = models.TextField(blank=True, null=True)
     date_first_reported = models.DateTimeField(blank=True, null=True)
     parent_org_uid = models.ForeignKey(
-        "self",
-        on_delete=models.CASCADE,
-        db_column="parent_org_uid",
-        blank=True,
-        null=True,
+        "self", models.DO_NOTHING, db_column="parent_org_uid", blank=True, null=True
     )
     premium_report = models.BooleanField(blank=True, null=True)
     agency_type = models.TextField(blank=True, null=True)
     demo = models.BooleanField(blank=True, null=True)
+    scorecard = models.BooleanField(blank=True, null=True)
+    fceb = models.BooleanField(blank=True, null=True)
+    receives_cyhy_report = models.BooleanField(blank=True, null=True)
+    receives_bod_report = models.BooleanField(blank=True, null=True)
+    receives_cybex_report = models.BooleanField(blank=True, null=True)
+    run_scans = models.BooleanField(blank=True, null=True)
+    is_parent = models.BooleanField(blank=True, null=True)
+    ignore_roll_up = models.BooleanField(blank=True, null=True)
+    retired = models.BooleanField(blank=True, null=True)
+    cyhy_period_start = models.DateTimeField(blank=True, null=True)
+    fceb_child = models.BooleanField(blank=True, null=True)
+    election = models.BooleanField(blank=True, null=True)
+    scorecard_child = models.BooleanField(blank=True, null=True)
 
     class Meta:
         managed = False
@@ -1751,7 +1786,7 @@ class VwIscoreWASVuln(models.Model):
 class VwIscoreWASVulnPrev(models.Model):
     organizations_uid = models.UUIDField(primary_key=True)
     parent_org_uid = models.UUIDField(blank=True, null=True)
-    was_total_vuln_prev = models.BigIntegerField(blank=True, null=True)
+    was_total_vulns_prev = models.BigIntegerField(blank=True, null=True)
     date = models.DateField(blank=True, null=True)
 
     class Meta:
@@ -1759,8 +1794,7 @@ class VwIscoreWASVulnPrev(models.Model):
         db_table = "vw_iscore_was_vuln_prev"
 
 
-# ---------- Misc. Score Related Models ----------
-# cyhy_kevs table model (needed for I-Score)
+# cyhy_kevs table model (needed for kev_list endpoint)
 class CyhyKevs(models.Model):
     cyhy_kevs_uid = models.UUIDField(primary_key=True)
     kev = models.CharField(blank=True, null=True)
@@ -1772,8 +1806,8 @@ class CyhyKevs(models.Model):
         db_table = "cyhy_kevs"
 
 
-# vw_iscore_orgs_ip_counts view model
-# (can be used for any score, not just I-Score)
+# ---------- Misc. Score Related Models ----------
+# vw_iscore_orgs_ip_counts view model (used for XS/S/M/L/XL orgs endpoints)
 class VwIscoreOrgsIpCounts(models.Model):
     organizations_uid = models.UUIDField(primary_key=True)
     cyhy_db_name = models.CharField(blank=True, null=True)

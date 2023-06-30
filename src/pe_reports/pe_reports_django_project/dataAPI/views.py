@@ -906,14 +906,10 @@ def read_dscore_vs_mail(
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
-        try:
-            userapiTokenverify(theapiKey=tokens)
-            # If API key valid, create task for query
-            task = get_dscore_vs_mail_info.delay(data.specified_orgs)
-            # Return the new task id w/ "Processing" status
-            return {"task_id": task.id, "status": "Processing"}
-        except:
-            LOGGER.info("API key expired please try again")
+        # If API key valid, create task for query
+        task = get_dscore_vs_mail_info.delay(data.specified_orgs)
+        # Return the new task id w/ "Processing" status
+        return {"task_id": task.id, "status": "Processing"}
     else:
         return {"message": "No api key was submitted"}
 
@@ -954,14 +950,10 @@ def read_dscore_pe_ip(
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
-        try:
-            userapiTokenverify(theapiKey=tokens)
-            # If API key valid, create task for query
-            task = get_dscore_pe_ip_info.delay(data.specified_orgs)
-            # Return the new task id w/ "Processing" status
-            return {"task_id": task.id, "status": "Processing"}
-        except:
-            LOGGER.info("API key expired please try again")
+        # If API key valid, create task for query
+        task = get_dscore_pe_ip_info.delay(data.specified_orgs)
+        # Return the new task id w/ "Processing" status
+        return {"task_id": task.id, "status": "Processing"}
     else:
         return {"message": "No api key was submitted"}
 
@@ -1002,14 +994,10 @@ def read_dscore_pe_domain(
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
-        try:
-            userapiTokenverify(theapiKey=tokens)
-            # If API key valid, create task for query
-            task = get_dscore_pe_domain_info.delay(data.specified_orgs)
-            # Return the new task id w/ "Processing" status
-            return {"task_id": task.id, "status": "Processing"}
-        except:
-            LOGGER.info("API key expired please try again")
+        # If API key valid, create task for query
+        task = get_dscore_pe_domain_info.delay(data.specified_orgs)
+        # Return the new task id w/ "Processing" status
+        return {"task_id": task.id, "status": "Processing"}
     else:
         return {"message": "No api key was submitted"}
 
@@ -1050,14 +1038,10 @@ def read_dscore_was_webapp(
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
-        try:
-            userapiTokenverify(theapiKey=tokens)
-            # If API key valid, create task for query
-            task = get_dscore_was_webapp_info.delay(data.specified_orgs)
-            # Return the new task id w/ "Processing" status
-            return {"task_id": task.id, "status": "Processing"}
-        except:
-            LOGGER.info("API key expired please try again")
+        # If API key valid, create task for query
+        task = get_dscore_was_webapp_info.delay(data.specified_orgs)
+        # Return the new task id w/ "Processing" status
+        return {"task_id": task.id, "status": "Processing"}
     else:
         return {"message": "No api key was submitted"}
 
@@ -1098,14 +1082,10 @@ def read_fceb_status(
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
-        try:
-            userapiTokenverify(theapiKey=tokens)
-            # If API key valid, create task for query
-            task = get_fceb_status_info.delay(data.specified_orgs)
-            # Return the new task id w/ "Processing" status
-            return {"task_id": task.id, "status": "Processing"}
-        except:
-            LOGGER.info("API key expired please try again")
+        # If API key valid, create task for query
+        task = get_fceb_status_info.delay(data.specified_orgs)
+        # Return the new task id w/ "Processing" status
+        return {"task_id": task.id, "status": "Processing"}
     else:
         return {"message": "No api key was submitted"}
 
@@ -1147,14 +1127,10 @@ def read_iscore_vs_vuln(
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
-        try:
-            userapiTokenverify(theapiKey=tokens)
-            # If API key valid, create task for query
-            task = get_iscore_vs_vuln_info.delay(data.specified_orgs)
-            # Return the new task id w/ "Processing" status
-            return {"task_id": task.id, "status": "Processing"}
-        except:
-            LOGGER.info("API key expired please try again")
+        # If API key valid, create task for query
+        task = get_iscore_vs_vuln_info.delay(data.specified_orgs)
+        # Return the new task id w/ "Processing" status
+        return {"task_id": task.id, "status": "Processing"}
     else:
         return {"message": "No api key was submitted"}
 
@@ -1195,16 +1171,12 @@ def read_iscore_vs_vuln_prev(
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
-        try:
-            userapiTokenverify(theapiKey=tokens)
-            # If API key valid, create task for query
-            task = get_iscore_vs_vuln_prev_info.delay(
-                data.specified_orgs, data.start_date, data.end_date
-            )
-            # Return the new task id w/ "Processing" status
-            return {"task_id": task.id, "status": "Processing"}
-        except:
-            LOGGER.info("API key expired please try again")
+        # If API key valid, create task for query
+        task = get_iscore_vs_vuln_prev_info.delay(
+            data.specified_orgs, data.start_date, data.end_date
+        )
+        # Return the new task id w/ "Processing" status
+        return {"task_id": task.id, "status": "Processing"}
     else:
         return {"message": "No api key was submitted"}
 
@@ -1245,16 +1217,12 @@ def read_iscore_pe_vuln(
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
-        try:
-            userapiTokenverify(theapiKey=tokens)
-            # If API key valid, create task for query
-            task = get_iscore_pe_vuln_info.delay(
-                data.specified_orgs, data.start_date, data.end_date
-            )
-            # Return the new task id w/ "Processing" status
-            return {"task_id": task.id, "status": "Processing"}
-        except:
-            LOGGER.info("API key expired please try again")
+        # If API key valid, create task for query
+        task = get_iscore_pe_vuln_info.delay(
+            data.specified_orgs, data.start_date, data.end_date
+        )
+        # Return the new task id w/ "Processing" status
+        return {"task_id": task.id, "status": "Processing"}
     else:
         return {"message": "No api key was submitted"}
 
@@ -1295,16 +1263,12 @@ def read_iscore_pe_cred(
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
-        try:
-            userapiTokenverify(theapiKey=tokens)
-            # If API key valid, create task for query
-            task = get_iscore_pe_cred_info.delay(
-                data.specified_orgs, data.start_date, data.end_date
-            )
-            # Return the new task id w/ "Processing" status
-            return {"task_id": task.id, "status": "Processing"}
-        except:
-            LOGGER.info("API key expired please try again")
+        # If API key valid, create task for query
+        task = get_iscore_pe_cred_info.delay(
+            data.specified_orgs, data.start_date, data.end_date
+        )
+        # Return the new task id w/ "Processing" status
+        return {"task_id": task.id, "status": "Processing"}
     else:
         return {"message": "No api key was submitted"}
 
@@ -1345,16 +1309,12 @@ def read_iscore_pe_breach(
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
-        try:
-            userapiTokenverify(theapiKey=tokens)
-            # If API key valid, create task for query
-            task = get_iscore_pe_breach_info.delay(
-                data.specified_orgs, data.start_date, data.end_date
-            )
-            # Return the new task id w/ "Processing" status
-            return {"task_id": task.id, "status": "Processing"}
-        except:
-            LOGGER.info("API key expired please try again")
+        # If API key valid, create task for query
+        task = get_iscore_pe_breach_info.delay(
+            data.specified_orgs, data.start_date, data.end_date
+        )
+        # Return the new task id w/ "Processing" status
+        return {"task_id": task.id, "status": "Processing"}
     else:
         return {"message": "No api key was submitted"}
 
@@ -1395,16 +1355,12 @@ def read_iscore_pe_darkweb(
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
-        try:
-            userapiTokenverify(theapiKey=tokens)
-            # If API key valid, create task for query
-            task = get_iscore_pe_darkweb_info.delay(
-                data.specified_orgs, data.start_date, data.end_date
-            )
-            # Return the new task id w/ "Processing" status
-            return {"task_id": task.id, "status": "Processing"}
-        except:
-            LOGGER.info("API key expired please try again")
+        # If API key valid, create task for query
+        task = get_iscore_pe_darkweb_info.delay(
+            data.specified_orgs, data.start_date, data.end_date
+        )
+        # Return the new task id w/ "Processing" status
+        return {"task_id": task.id, "status": "Processing"}
     else:
         return {"message": "No api key was submitted"}
 
@@ -1445,16 +1401,12 @@ def read_iscore_pe_protocol(
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
-        try:
-            userapiTokenverify(theapiKey=tokens)
-            # If API key valid, create task for query
-            task = get_iscore_pe_protocol_info.delay(
-                data.specified_orgs, data.start_date, data.end_date
-            )
-            # Return the new task id w/ "Processing" status
-            return {"task_id": task.id, "status": "Processing"}
-        except:
-            LOGGER.info("API key expired please try again")
+        # If API key valid, create task for query
+        task = get_iscore_pe_protocol_info.delay(
+            data.specified_orgs, data.start_date, data.end_date
+        )
+        # Return the new task id w/ "Processing" status
+        return {"task_id": task.id, "status": "Processing"}
     else:
         return {"message": "No api key was submitted"}
 
@@ -1495,16 +1447,12 @@ def read_iscore_was_vuln(
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
-        try:
-            userapiTokenverify(theapiKey=tokens)
-            # If API key valid, create task for query
-            task = get_iscore_was_vuln_info.delay(
-                data.specified_orgs, data.start_date, data.end_date
-            )
-            # Return the new task id w/ "Processing" status
-            return {"task_id": task.id, "status": "Processing"}
-        except:
-            LOGGER.info("API key expired please try again")
+        # If API key valid, create task for query
+        task = get_iscore_was_vuln_info.delay(
+            data.specified_orgs, data.start_date, data.end_date
+        )
+        # Return the new task id w/ "Processing" status
+        return {"task_id": task.id, "status": "Processing"}
     else:
         return {"message": "No api key was submitted"}
 
@@ -1545,16 +1493,12 @@ def read_iscore_was_vuln_prev(
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
-        try:
-            userapiTokenverify(theapiKey=tokens)
-            # If API key valid, create task for query
-            task = get_iscore_was_vuln_prev_info.delay(
-                data.specified_orgs, data.start_date, data.end_date
-            )
-            # Return the new task id w/ "Processing" status
-            return {"task_id": task.id, "status": "Processing"}
-        except:
-            LOGGER.info("API key expired please try again")
+        # If API key valid, create task for query
+        task = get_iscore_was_vuln_prev_info.delay(
+            data.specified_orgs, data.start_date, data.end_date
+        )
+        # Return the new task id w/ "Processing" status
+        return {"task_id": task.id, "status": "Processing"}
     else:
         return {"message": "No api key was submitted"}
 
@@ -1593,14 +1537,10 @@ def read_fceb_status(tokens: dict = Depends(get_api_key)):
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
-        try:
-            userapiTokenverify(theapiKey=tokens)
-            # If API key valid, create task for query
-            task = get_kev_list_info.delay()
-            # Return the new task id w/ "Processing" status
-            return {"task_id": task.id, "status": "Processing"}
-        except:
-            LOGGER.info("API key expired please try again")
+        # If API key valid, create task for query
+        task = get_kev_list_info.delay()
+        # Return the new task id w/ "Processing" status
+        return {"task_id": task.id, "status": "Processing"}
     else:
         return {"message": "No api key was submitted"}
 
@@ -1638,14 +1578,10 @@ def read_xs_stakeholders(tokens: dict = Depends(get_api_key)):
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
-        try:
-            userapiTokenverify(theapiKey=tokens)
-            # If API key valid, create task for query
-            task = get_xs_stakeholders_info.delay()
-            # Return the new task id w/ "Processing" status
-            return {"task_id": task.id, "status": "Processing"}
-        except:
-            LOGGER.info("API key expired please try again")
+        # If API key valid, create task for query
+        task = get_xs_stakeholders_info.delay()
+        # Return the new task id w/ "Processing" status
+        return {"task_id": task.id, "status": "Processing"}
     else:
         return {"message": "No api key was submitted"}
 
@@ -1684,14 +1620,10 @@ def read_s_stakeholders(tokens: dict = Depends(get_api_key)):
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
-        try:
-            userapiTokenverify(theapiKey=tokens)
-            # If API key valid, create task for query
-            task = get_s_stakeholders_info.delay()
-            # Return the new task id w/ "Processing" status
-            return {"task_id": task.id, "status": "Processing"}
-        except:
-            LOGGER.info("API key expired please try again")
+        # If API key valid, create task for query
+        task = get_s_stakeholders_info.delay()
+        # Return the new task id w/ "Processing" status
+        return {"task_id": task.id, "status": "Processing"}
     else:
         return {"message": "No api key was submitted"}
 
@@ -1730,14 +1662,10 @@ def read_m_stakeholders(tokens: dict = Depends(get_api_key)):
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
-        try:
-            userapiTokenverify(theapiKey=tokens)
-            # If API key valid, create task for query
-            task = get_m_stakeholders_info.delay()
-            # Return the new task id w/ "Processing" status
-            return {"task_id": task.id, "status": "Processing"}
-        except:
-            LOGGER.info("API key expired please try again")
+        # If API key valid, create task for query
+        task = get_m_stakeholders_info.delay()
+        # Return the new task id w/ "Processing" status
+        return {"task_id": task.id, "status": "Processing"}
     else:
         return {"message": "No api key was submitted"}
 
@@ -1776,14 +1704,10 @@ def read_l_stakeholders(tokens: dict = Depends(get_api_key)):
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
-        try:
-            userapiTokenverify(theapiKey=tokens)
-            # If API key valid, create task for query
-            task = get_l_stakeholders_info.delay()
-            # Return the new task id w/ "Processing" status
-            return {"task_id": task.id, "status": "Processing"}
-        except:
-            LOGGER.info("API key expired please try again")
+        # If API key valid, create task for query
+        task = get_l_stakeholders_info.delay()
+        # Return the new task id w/ "Processing" status
+        return {"task_id": task.id, "status": "Processing"}
     else:
         return {"message": "No api key was submitted"}
 
@@ -1822,14 +1746,10 @@ def read_xl_stakeholders(tokens: dict = Depends(get_api_key)):
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
-        try:
-            userapiTokenverify(theapiKey=tokens)
-            # If API key valid, create task for query
-            task = get_xl_stakeholders_info.delay()
-            # Return the new task id w/ "Processing" status
-            return {"task_id": task.id, "status": "Processing"}
-        except:
-            LOGGER.info("API key expired please try again")
+        # If API key valid, create task for query
+        task = get_xl_stakeholders_info.delay()
+        # Return the new task id w/ "Processing" status
+        return {"task_id": task.id, "status": "Processing"}
     else:
         return {"message": "No api key was submitted"}
 
