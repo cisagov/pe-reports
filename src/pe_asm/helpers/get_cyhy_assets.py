@@ -165,7 +165,7 @@ def get_cyhy_assets(staging=False):
                 "retired": cyhy_request.get("retired", False),
             }
             # if only one contact is available add it to the dictionary
-            if len(cyhy_request["agency"]["contacts"]) == 1:
+            if cyhy_request["agency"]["contacts"][0]["email"]:
                 sector_dict["email"] = cyhy_request["agency"]["contacts"][0]["email"]
                 sector_dict["contact_name"] = cyhy_request["agency"]["contacts"][0][
                     "name"
@@ -199,20 +199,23 @@ def get_cyhy_assets(staging=False):
     contacts_df = pd.DataFrame(contact_list)
 
     # insert all sectors into the pe_database
+    print(sector_info_list)
     insert_sectors(pe_db_conn, sector_info_list)
     # query back all pe_sectors
     pe_sectors = query_pe_sectors(pe_db_conn)
     # create a list of sector ids for orgs that are flagged to run_scorecards
-    # scorecard_sectors = pe_sectors[pe_sectors['run_scorecards'] == True]['id'].values.tolist()
+    scorecard_sectors = pe_sectors[pe_sectors["run_scorecards"] == True][
+        "id"
+    ].values.tolist()
 
     # fill a list of all the children orgs or sectors of sectors flagged to run_scorecards
-    # scorecard_orgs = []
-    # for sector in sector_info_list:
-    #     if sector['id'] in scorecard_sectors:
-    #         scorecard_orgs += sector['children']
+    scorecard_orgs = []
+    for sector in sector_info_list:
+        if sector["id"] in scorecard_sectors:
+            scorecard_orgs += sector["children"]
 
     # # mark orgs that are directly related to
-    # cyhy_agency_df['scorecard'] = cyhy_agency_df['cyhy_db_name'].isin(scorecard_orgs)
+    cyhy_agency_df["scorecard"] = cyhy_agency_df["cyhy_db_name"].isin(scorecard_orgs)
 
     # Insert CyHy assets into the P&E database
     insert_assets(pe_db_conn, assets_df, "cyhy_db_assets")
@@ -301,6 +304,7 @@ def get_cyhy_assets(staging=False):
         ].item()
         parent_fceb = pe_orgs.loc[pe_orgs["cyhy_db_name"] == parent_name, "fceb"].item()
         if parent_report_on:
+            print(child_name)
             update_scan_status(pe_db_conn, child_name)
 
         # Set fceb_child
