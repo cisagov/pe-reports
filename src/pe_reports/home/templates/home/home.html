@@ -1,21 +1,8 @@
 {% extends "base.html" %} {% block content %} {#
 <div class="container">
   #} {#
-  <img#}
-    {#
-    src="{{ url_for('static', filename='CISAImage.png') }}"
-    #}
-    {#
-    alt="Cinque Terre"
-    #}
-    {#
-    width="200"
-    #}
-    {#
-    height="200"
-    #}
-    {#
-  />#} {#{% if current_user.is_authenticated %}#} {#
+  <img#} {# src="{{ url_for('static', filename='CISAImage.png') }}" #} {# alt="Cinque Terre" #} {# width="200" #} {#
+    height="200" #} {# />#} {#{% if current_user.is_authenticated %}#} {#
   <p>Welcome {{ current_user.username }}</p>
   #} {# {% else %}#} {#
   <p>Please Login</p>
@@ -31,11 +18,6 @@
     T.style.display = displayValue;
   }
 
-  function loading() {
-    $("#loading").show();
-    $("#content").hide();
-  }
-
   $(document).ready(function () {
     console.log("Im ready ");
 
@@ -44,9 +26,6 @@
     setTimeout(function () {
       $("#messageDiv").fadeOut("fast");
     }, 5000);
-    $(window).load(function () {
-      $("#loading").hide();
-    });
   });
 </script>
 
