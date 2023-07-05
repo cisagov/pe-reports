@@ -341,8 +341,8 @@ class UserInDB(UserInDBBase):
 class VwDscoreVSCert(BaseModel):
     organizations_uid: str
     parent_org_uid: Optional[str] = None
-    num_ident_cert: int
-    num_monitor_cert: int
+    num_ident_cert: Optional[int] = None
+    num_monitor_cert: Optional[int] = None
 
     class Config:
         orm_mode = True
@@ -368,10 +368,10 @@ class VwDscoreVSCertTaskResp(BaseModel):
 class VwDscoreVSMail(BaseModel):
     organizations_uid: str
     parent_org_uid: Optional[str] = None
-    num_valid_dmarc: int
-    num_valid_spf: int
-    num_valid_dmarc_or_spf: int
-    total_mail_domains: int
+    num_valid_dmarc: Optional[int] = None
+    num_valid_spf: Optional[int] = None
+    num_valid_dmarc_or_spf: Optional[int] = None
+    total_mail_domains: Optional[int] = None
 
     class Config:
         orm_mode = True
@@ -397,8 +397,8 @@ class VwDscoreVSMailTaskResp(BaseModel):
 class VwDscorePEIp(BaseModel):
     organizations_uid: str
     parent_org_uid: Optional[str] = None
-    num_ident_ip: int
-    num_monitor_ip: int
+    num_ident_ip: Optional[int] = None
+    num_monitor_ip: Optional[int] = None
 
     class Config:
         orm_mode = True
@@ -424,8 +424,8 @@ class VwDscorePEIpTaskResp(BaseModel):
 class VwDscorePEDomain(BaseModel):
     organizations_uid: str
     parent_org_uid: Optional[str] = None
-    num_ident_domain: int
-    num_monitor_domain: int
+    num_ident_domain: Optional[int] = None
+    num_monitor_domain: Optional[int] = None
 
     class Config:
         orm_mode = True
@@ -451,8 +451,8 @@ class VwDscorePEDomainTaskResp(BaseModel):
 class VwDscoreWASWebapp(BaseModel):
     organizations_uid: str
     parent_org_uid: Optional[str] = None
-    num_ident_webapp: int
-    num_monitor_webapp: int
+    num_ident_webapp: Optional[int] = None
+    num_monitor_webapp: Optional[int] = None
 
     class Config:
         orm_mode = True
@@ -477,7 +477,7 @@ class VwDscoreWASWebappTaskResp(BaseModel):
 # FCEB status query schema (no view):
 class FCEBStatus(BaseModel):
     organizations_uid: str
-    fceb: bool
+    fceb: Optional[bool] = None
 
     class Config:
         orm_mode = True
@@ -533,7 +533,7 @@ class VwIscoreVSVulnPrev(BaseModel):
     parent_org_uid: Optional[str] = None
     cve_name: Optional[str] = None
     cvss_score: Optional[float] = None
-    time_closed: str
+    time_closed: Optional[str] = None
 
     class Config:
         orm_mode = True
@@ -561,8 +561,8 @@ class VwIscoreVSVulnPrevTaskResp(BaseModel):
 class VwIscorePEVuln(BaseModel):
     organizations_uid: str
     parent_org_uid: Optional[str] = None
-    date: str
-    cve_name: str
+    date: Optional[str] = None
+    cve_name: Optional[str] = None
     cvss_score: Optional[float] = None
 
     class Config:
@@ -591,9 +591,9 @@ class VwIscorePEVulnTaskResp(BaseModel):
 class VwIscorePECred(BaseModel):
     organizations_uid: str
     parent_org_uid: Optional[str] = None
-    date: str
-    password_creds: int
-    total_creds: int
+    date: Optional[str] = None
+    password_creds: Optional[int] = None
+    total_creds: Optional[int] = None
 
     class Config:
         orm_mode = True
@@ -621,8 +621,8 @@ class VwIscorePECredTaskResp(BaseModel):
 class VwIscorePEBreach(BaseModel):
     organizations_uid: str
     parent_org_uid: Optional[str] = None
-    date: str
-    breach_count: int
+    date: Optional[str] = None
+    breach_count: Optional[int] = None
 
     class Config:
         orm_mode = True
@@ -650,9 +650,9 @@ class VwIscorePEBreachTaskResp(BaseModel):
 class VwIscorePEDarkweb(BaseModel):
     organizations_uid: str
     parent_org_uid: Optional[str] = None
-    alert_type: str
-    date: str
-    Count: int
+    alert_type: Optional[str] = None
+    date: Optional[str] = None
+    Count: Optional[int] = None
 
     class Config:
         orm_mode = True
@@ -681,11 +681,11 @@ class VwIscorePEDarkwebTaskResp(BaseModel):
 class VwIscorePEProtocol(BaseModel):
     organizations_uid: str
     parent_org_uid: Optional[str] = None
-    port: str
-    ip: str
-    protocol: str
-    protocol_type: str
-    date: str
+    port: Optional[str] = None
+    ip: Optional[str] = None
+    protocol: Optional[str] = None
+    protocol_type: Optional[str] = None
+    date: Optional[str] = None
 
     class Config:
         orm_mode = True
@@ -713,10 +713,10 @@ class VwIscorePEProtocolTaskResp(BaseModel):
 class VwIscoreWASVuln(BaseModel):
     organizations_uid: str
     parent_org_uid: Optional[str] = None
-    date: str
-    cve_name: str
-    cvss_score: float
-    owasp_category: str
+    date: Optional[str] = None
+    cve_name: Optional[str] = None
+    cvss_score: Optional[float] = None
+    owasp_category: Optional[str] = None
 
     class Config:
         orm_mode = True
@@ -744,8 +744,8 @@ class VwIscoreWASVulnTaskResp(BaseModel):
 class VwIscoreWASVulnPrev(BaseModel):
     organizations_uid: str
     parent_org_uid: Optional[str] = None
-    was_total_vulns_prev: int
-    date: str
+    was_total_vulns_prev: Optional[int] = None
+    date: Optional[str] = None
 
     class Config:
         orm_mode = True

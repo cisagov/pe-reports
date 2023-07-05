@@ -19,25 +19,25 @@ from score_helper_functions import (
 )
 from pe_scorecard.data.db_query import (
     # VS queries
-    query_iscore_vs_data_vuln,
-    query_iscore_vs_data_vuln_prev,
+    api_iscore_vs_vuln,
+    api_iscore_vs_vuln_prev,
     # PE queries
-    query_iscore_pe_data_vuln,
-    query_iscore_pe_data_cred,
-    query_iscore_pe_data_breach,
-    query_iscore_pe_data_darkweb,
-    query_iscore_pe_data_protocol,
+    api_iscore_pe_vuln,
+    api_iscore_pe_cred,
+    api_iscore_pe_breach,
+    api_iscore_pe_darkweb,
+    api_iscore_pe_protocol,
     # WAS queries
-    query_iscore_was_data_vuln,
-    query_iscore_was_data_vuln_prev,
+    api_iscore_was_vuln,
+    api_iscore_was_vuln_prev,
     # KEV list
-    query_kev_list,
+    api_kev_list,
     # FCEB Stakeholder sectors by size
-    query_xs_stakeholder_list,
-    query_s_stakeholder_list,
-    query_m_stakeholder_list,
-    query_l_stakeholder_list,
-    query_xl_stakeholder_list,
+    api_xs_stakeholders,
+    api_s_stakeholders,
+    api_m_stakeholders,
+    api_l_stakeholders,
+    api_xl_stakeholders,
 )
 
 # Setup logging to central file
@@ -70,44 +70,38 @@ def import_ident_data(prev_start, prev_end, curr_start, curr_end, stakeholder_li
     # Retrieve all the data needed from the database
     # ----- Retrieve VS data: -----
     LOGGER.info("Retrieving VS vuln data for I-Score...")
-    vs_data_vuln = query_iscore_vs_data_vuln(stakeholder_list)
+    vs_data_vuln = api_iscore_vs_vuln(stakeholder_list)
     LOGGER.info("\tDone!")
     # ----- Retrieve PE data: -----
     LOGGER.info("Retrieving PE vuln data for I-Score...")
-    pe_data_vuln = query_iscore_pe_data_vuln(stakeholder_list, curr_start, curr_end)
+    pe_data_vuln = api_iscore_pe_vuln(stakeholder_list, curr_start, curr_end)
     LOGGER.info("\tDone!")
     LOGGER.info("Retrieving PE cred data for I-Score...")
-    pe_data_cred = query_iscore_pe_data_cred(stakeholder_list, curr_start, curr_end)
+    pe_data_cred = api_iscore_pe_cred(stakeholder_list, curr_start, curr_end)
     LOGGER.info("\tDone!")
     LOGGER.info("Retrieving PE breach data for I-Score...")
-    pe_data_breach = query_iscore_pe_data_breach(stakeholder_list, curr_start, curr_end)
+    pe_data_breach = api_iscore_pe_breach(stakeholder_list, curr_start, curr_end)
     LOGGER.info("\tDone!")
     LOGGER.info("Retrieving PE dark web data for I-Score...")
-    pe_data_dw = query_iscore_pe_data_darkweb(stakeholder_list, curr_start, curr_end)
+    pe_data_dw = api_iscore_pe_darkweb(stakeholder_list, curr_start, curr_end)
     LOGGER.info("\tDone!")
     LOGGER.info("Retrieving PE protocol data for I-Score...")
-    pe_data_proto = query_iscore_pe_data_protocol(
-        stakeholder_list, curr_start, curr_end
-    )
+    pe_data_proto = api_iscore_pe_protocol(stakeholder_list, curr_start, curr_end)
     LOGGER.info("\tDone!")
     # ----- Retrieve WAS data: -----
     LOGGER.info("Retrieving WAS vuln data for I-Score...")
-    was_data_vuln = query_iscore_was_data_vuln(stakeholder_list, curr_start, curr_end)
+    was_data_vuln = api_iscore_was_vuln(stakeholder_list, curr_start, curr_end)
     LOGGER.info("\tDone!")
 
     # --------------- Import Historical Data: ---------------
     LOGGER.info("Retrieving previous VS vuln data for I-Score...")
-    vs_data_vuln_prev = query_iscore_vs_data_vuln_prev(
-        stakeholder_list, prev_start, prev_end
-    )
+    vs_data_vuln_prev = api_iscore_vs_vuln_prev(stakeholder_list, prev_start, prev_end)
     LOGGER.info("\tDone!")
     LOGGER.info("Retrieving previous PE vuln data for I-Score...")
-    pe_data_vuln_prev = query_iscore_pe_data_vuln(
-        stakeholder_list, prev_start, prev_end
-    )
+    pe_data_vuln_prev = api_iscore_pe_vuln(stakeholder_list, prev_start, prev_end)
     LOGGER.info("\tDone!")
     LOGGER.info("Retrieving previous WAS vuln data for I-Score...")
-    was_data_vuln_prev = query_iscore_was_data_vuln_prev(
+    was_data_vuln_prev = api_iscore_was_vuln_prev(
         stakeholder_list, prev_start, prev_end
     )
     LOGGER.info("\tDone!")
@@ -116,7 +110,7 @@ def import_ident_data(prev_start, prev_end, curr_start, curr_end, stakeholder_li
     # ----- Retrieve KEV list: -----
     # List of all CVE-IDs that are considered KEVs
     LOGGER.info("Retrieving KEV list...")
-    kev_list = query_kev_list()
+    kev_list = api_kev_list()
     LOGGER.info("\tDone!")
     # ----- List of orgs for this sector: -----
     org_list = stakeholder_list
