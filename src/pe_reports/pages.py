@@ -12,7 +12,13 @@ import pandas as pd
 from .charts import Charts
 
 # Import Classes
-from .metrics import Credentials, Cyber_Six, Domains_Masqs, Malware_Vulns
+from .metrics import (
+    Core_Cyber_Six,
+    Credentials,
+    Cyber_Six,
+    Domains_Masqs,
+    Malware_Vulns,
+)
 
 # Setup logging to central
 LOGGER = logging.getLogger(__name__)
@@ -276,7 +282,13 @@ def dark_web(
 
 
 def init(
-    datestring, org_name, org_code, org_uid, output_directory, soc_med_included=False
+    datestring,
+    org_name,
+    org_code,
+    org_uid,
+    premium,
+    output_directory,
+    soc_med_included=False,
 ):
     """Call each page of the report."""
     # Format start_date and end_date for the bi-monthly reporting period.
@@ -335,17 +347,23 @@ def init(
     )
 
     # Dark web mentions and alerts
-    report_dict, mi_json, mi_xlsx = dark_web(
-        report_dict,
-        trending_start_date,
-        start_date,
-        end_date,
-        org_uid,
-        all_cves_df,
-        soc_med_included,
-        org_code,
-        output_directory,
-    )
+    if premium:
+        report_dict, mi_json, mi_xlsx = dark_web(
+            report_dict,
+            trending_start_date,
+            start_date,
+            end_date,
+            org_uid,
+            all_cves_df,
+            soc_med_included,
+            org_code,
+            output_directory,
+        )
+    else:
+        Core_Cyber = Core_Cyber_Six(all_cves_df)
+        report_dict["top_cves"] = Core_Cyber.top_cve_table()
+        mi_json = None
+        mi_xlsx = None
 
     return (
         report_dict,

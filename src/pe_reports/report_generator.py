@@ -31,6 +31,7 @@ import pe_reports
 from ._version import __version__
 from .data.db_query import connect, get_orgs
 from .pages import init
+from .reportlab_core_generator import core_report_gen
 from .reportlab_generator import report_gen
 
 LOGGER = logging.getLogger(__name__)
@@ -60,13 +61,15 @@ def embed(
     cc = open(cred_json, "rb").read()
     da = open(da_json, "rb").read()
     ma = open(vuln_json, "rb").read()
-    mi = open(mi_json, "rb").read()
+    if mi_json:
+        mi = open(mi_json, "rb").read()
 
     # Open CSV data as binary
     cc_xl = open(cred_xlsx, "rb").read()
     da_xl = open(da_xlsx, "rb").read()
     ma_xl = open(vuln_xlsx, "rb").read()
-    mi_xl = open(mi_xlsx, "rb").read()
+    if mi_xlsx:
+        mi_xl = open(mi_xlsx, "rb").read()
 
     # Insert link to CSV data in summary page of PDF.
     # Use coordinates to position them on the bottom.
@@ -87,9 +90,10 @@ def embed(
         p2, da, "domain_alerts.json", desc="Open JSON", icon="Paperclip"
     )
     page.add_file_annot(p3, ma, "vuln_alerts.json", desc="Open JSON", icon="Paperclip")
-    page.add_file_annot(
-        p4, mi, "mention_incidents.json", desc="Open JSON", icon="Paperclip"
-    )
+    if mi_json:
+        page.add_file_annot(
+            p4, mi, "mention_incidents.json", desc="Open JSON", icon="Paperclip"
+        )
     page.add_file_annot(
         p5, cc_xl, "compromised_credentials.xlsx", desc="Open Excel", icon="Graph"
     )
@@ -97,9 +101,10 @@ def embed(
         p6, da_xl, "domain_alerts.xlsx", desc="Open Excel", icon="Graph"
     )
     page.add_file_annot(p7, ma_xl, "vuln_alerts.xlsx", desc="Open Excel", icon="Graph")
-    page.add_file_annot(
-        p8, mi_xl, "mention_incidents.xlsx", desc="Open Excel", icon="Graph"
-    )
+    if mi_xlsx:
+        page.add_file_annot(
+            p8, mi_xl, "mention_incidents.xlsx", desc="Open Excel", icon="Graph"
+        )
 
     # Save doc and set garbage=4 to reduce PDF size using all 4 methods:
     # Remove unused objects, compact xref table, merge duplicate objects,
@@ -136,6 +141,7 @@ def generate_reports(datestring, output_directory, soc_med_included=False):
             org_uid = org[0]
             org_name = org[1]
             org_code = org[2]
+            premium = org[8]
 
             LOGGER.info("Running on %s", org_code)
 
@@ -160,6 +166,7 @@ def generate_reports(datestring, output_directory, soc_med_included=False):
                 org_name,
                 org_code,
                 org_uid,
+                premium,
                 output_directory,
                 soc_med_included,
             )
@@ -168,7 +175,10 @@ def generate_reports(datestring, output_directory, soc_med_included=False):
             output_filename = f"{output_directory}/Posture_and_Exposure_Report-{org_code}-{datestring}.pdf"
             # convert_html_to_pdf(source_html, output_filename)#TODO possibly generate report here
             report_dict["filename"] = output_filename
-            report_gen(report_dict, soc_med_included)
+            if premium:
+                report_gen(report_dict, soc_med_included)
+            else:
+                core_report_gen(report_dict)
 
             # Grab the PDF
             pdf = f"{output_directory}/Posture_and_Exposure_Report-{org_code}-{datestring}.pdf"
