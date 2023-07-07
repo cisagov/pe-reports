@@ -24,7 +24,7 @@ CONN_PARAMS_DIC = config()
 
 def sanitize_string(string):
     """Remove special characters from string."""
-    return re.sub(r"[^a-zA-Z0-9]", "", string)
+    return re.sub(r"[^a-zA-Z0-9\s]", "", string)
 
 
 def sanitize_uid(string):
