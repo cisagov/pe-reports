@@ -4,10 +4,10 @@
 import datetime
 import logging
 import os
-import re
 
 # Third-Party Libraries
 import chevron
+from data.db_query import sanitize_uid
 
 from .charts import Charts
 
@@ -64,11 +64,6 @@ def buildAppendixList(df):
         )
     html += "\n</div>"
     return html
-
-
-def sanitize_uid(string):
-    """Remove special characters from uids."""
-    return re.sub(r"[^a-zA-Z0-9\-]", "", string)
 
 
 def credential(chevron_dict, trending_start_date, start_date, end_date, org_uid):
