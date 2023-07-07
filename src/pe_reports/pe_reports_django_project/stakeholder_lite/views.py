@@ -1,9 +1,10 @@
+# Standard Python Libraries
 import logging
+
+# Third-Party Libraries
+from django.urls import reverse_lazy
 from django.views.generic import TemplateView
 from django.views.generic.edit import FormView
-from django.urls import reverse_lazy
-
-
 
 # cisagov Libraries
 from pe_reports.data.db_query import get_new_orgs
@@ -33,22 +34,23 @@ def getAgenciesByCount(orgCount):
 
 class StakeholderLiteView(TemplateView):
     """Stakeholder lite template"""
-    template_name = 'stakeholder_lite/stakeholder_lite.html'
-    LOGGER.info('Got to Stakeholder')
+
+    template_name = "stakeholder_lite/stakeholder_lite.html"
+    LOGGER.info("Got to Stakeholder")
 
 
 class StakeholderLiteForm(FormView):
     """Stahkeholder lite from"""
 
     form_class = GatherStakeholderLiteForm
-    template_name = 'stakeholder_lite/stakeholder_lite.html'
+    template_name = "stakeholder_lite/stakeholder_lite.html"
 
-    success_url = reverse_lazy('stakeholder_lite')
+    success_url = reverse_lazy("stakeholder_lite")
 
     def form_valid(self, form):
 
-        theorgCount = form.cleaned_data['orgCount'].upper()
-        LOGGER.info(f'The org count was {theorgCount}')
+        theorgCount = form.cleaned_data["orgCount"].upper()
+        LOGGER.info(f"The org count was {theorgCount}")
 
         orgs = getAgenciesByCount(theorgCount)
 

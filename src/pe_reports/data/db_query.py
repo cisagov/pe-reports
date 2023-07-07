@@ -6,10 +6,8 @@ import datetime
 from ipaddress import ip_address, ip_network
 import json
 import logging
-import requests
 import socket
 import sys
-
 
 # Third-Party Libraries
 from decouple import config as api_config
@@ -19,6 +17,7 @@ import psycopg2
 from psycopg2 import OperationalError
 from psycopg2.extensions import AsIs
 import psycopg2.extras as extras
+import requests
 from sshtunnel import SSHTunnelForwarder
 
 from .config import config, staging_config
@@ -107,10 +106,10 @@ def execute_values(conn, dataframe, table, except_condition=";"):
 
 def get_orgs():
     """Query organizations table."""
-    urlOrgs = 'http://127.0.0.1:8000/apiv1/orgs'
+    urlOrgs = "http://127.0.0.1:8000/apiv1/orgs"
     headers = {
-        'Content-Type': 'application/json',
-        'access_token': f'{api_config("API_KEY")}'
+        "Content-Type": "application/json",
+        "access_token": f'{api_config("API_KEY")}',
     }
 
     try:
@@ -196,11 +195,11 @@ def get_org_assets_count(uid):
 
 def get_orgs_df():
     """Query organizations table for new orgs."""
-    urlOrgs = 'http://127.0.0.1:8000/apiv1/orgs'
+    urlOrgs = "http://127.0.0.1:8000/apiv1/orgs"
 
     headers = {
-        'Content-Type': 'application/json',
-        'access_token': f'{api_config("API_KEY")}'
+        "Content-Type": "application/json",
+        "access_token": f'{api_config("API_KEY")}',
     }
 
     try:

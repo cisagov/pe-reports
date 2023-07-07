@@ -1,16 +1,7 @@
-{% extends 'base.html' %}
-{% load static %}
-{% block title %}
-Index
-{% endblock title %}
+{% extends 'base.html' %} {% load static %} {% block title %} Index {% endblock
+title %} {% block content %} {% for u in user %}
 
-{% block content %}
-{% for u in user %}
+<p>The name of the agency {{ u.name }}</p>
+<p>The cyhyName from the DB {{ u.cyhy_db_name }}</p>
 
-    <p>The name of the agency {{ u.name }}</p>
-    <p>The cyhyName from the DB {{ u.cyhy_db_name }}</p>
-
-{% endfor %}
-    This is the home route.
-
-{% endblock content %}
+{% endfor %} This is the home route. {% endblock content %}

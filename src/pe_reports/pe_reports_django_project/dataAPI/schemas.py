@@ -1,28 +1,32 @@
 """Pydantic models used by FastAPI"""
-import uuid
-
-from pydantic import BaseModel, Field, EmailStr
-from pydantic.schema import Optional
-# from pydantic.types import UUID1, UUID
-from typing import Any, Optional, List
-from uuid import UUID, uuid4, uuid1
+# Standard Python Libraries
 from datetime import date, datetime
 
+# from pydantic.types import UUID1, UUID
+from typing import Any, List, Optional
+import uuid
+from uuid import UUID, uuid1, uuid4
 
-'''
+# Third-Party Libraries
+from pydantic import BaseModel, EmailStr, Field
+from pydantic.schema import Optional
+
+"""
 Developer Note: If there comes an instance as in class Cidrs where there are
 foreign keys. The data type will not be what is stated in the database. What is
 happening is the data base is making a query back to the foreign key table and
-returning it as the column in its entirety i.e. select * from <table>, so it 
+returning it as the column in its entirety i.e. select * from <table>, so it
 will error and not be able to report on its data type. In these scenario's use
 the data type "Any" to see what the return is.
-'''
+"""
+
 
 class OrgType(BaseModel):
     org_type_uid: UUID
 
     class Config:
         orm_mode = True
+
 
 class OrganizationBase(BaseModel):
     organizations_uid: UUID
@@ -48,6 +52,7 @@ class Organization(OrganizationBase):
     class Config:
         orm_mode = True
 
+
 class SubDomainBase(BaseModel):
     sub_domain_uid: UUID
     sub_domain: str
@@ -56,10 +61,10 @@ class SubDomainBase(BaseModel):
     dns_record_uid: Optional[Any] = None
     status: bool = False
 
-
     class Config:
         orm_mode = True
         validate_assignment = True
+
 
 class VwBreachcomp(BaseModel):
     credential_exposures_uid: str
@@ -122,6 +127,7 @@ class VwOrgsAttacksurfaceInput(BaseModel):
     class Config:
         orm_mode = True
 
+
 class MatVwOrgsAllIps(BaseModel):
     organizations_uid: Any
     cyhy_db_name: str
@@ -130,17 +136,20 @@ class MatVwOrgsAllIps(BaseModel):
     class Config:
         orm_mode = True
 
+
 class TaskResponse(BaseModel):
     task_id: str
     status: str
     result: List[MatVwOrgsAllIps] = None
     error: str = None
 
+
 class veMatVwOrgsAllIps(BaseModel):
     cyhy_db_name: Optional[str]
 
     class Config:
         orm_mode = True
+
 
 class veTaskResponse(BaseModel):
     task_id: str
@@ -151,30 +160,31 @@ class veTaskResponse(BaseModel):
 
 class WASDataBase(BaseModel):
     # customer_id: UUID
-    tag: Optional[str] = 'test'
-    customer_name: Optional[str] = 'test'
-    testing_sector: Optional[str] = 'test'
-    ci_type: Optional[str] = 'test'
-    jira_ticket: Optional[str] = 'test'
-    ticket: Optional[str] = 'test'
-    next_scheduled: Optional[str] = 'test'
-    last_scanned: Optional[str] = 'test'
-    frequency: Optional[str] = 'test'
-    comments_notes: Optional[str] = 'test'
-    was_report_poc: Optional[str] = 'test'
-    was_report_email: Optional[str] = 'test'
-    onboarding_date: Optional[str] = 'test'
+    tag: Optional[str] = "test"
+    customer_name: Optional[str] = "test"
+    testing_sector: Optional[str] = "test"
+    ci_type: Optional[str] = "test"
+    jira_ticket: Optional[str] = "test"
+    ticket: Optional[str] = "test"
+    next_scheduled: Optional[str] = "test"
+    last_scanned: Optional[str] = "test"
+    frequency: Optional[str] = "test"
+    comments_notes: Optional[str] = "test"
+    was_report_poc: Optional[str] = "test"
+    was_report_email: Optional[str] = "test"
+    onboarding_date: Optional[str] = "test"
     no_of_web_apps: Optional[int]
-    no_web_apps_last_updated: Optional[str] = 'test'
-    elections: Optional[str] = 'test'
-    fceb: Optional[str] = 'test'
-    special_report: Optional[str] = 'test'
-    report_password: Optional[str] = 'test'
-    child_tags: Optional[str] = 'test'
+    no_web_apps_last_updated: Optional[str] = "test"
+    elections: Optional[str] = "test"
+    fceb: Optional[str] = "test"
+    special_report: Optional[str] = "test"
+    report_password: Optional[str] = "test"
+    child_tags: Optional[str] = "test"
 
     class Config:
         orm_mode = True
         validate_assignment = True
+
 
 class WeeklyStatuses(BaseModel):
 
@@ -193,15 +203,14 @@ class WeeklyStatuses(BaseModel):
         orm_mode = True
         validate_assignment = True
 
+
 class UserStatuses(BaseModel):
 
     user_fname: str
 
-
     class Config:
         orm_mode = True
         validate_assignment = True
-
 
 
 class CyhyPortScans(BaseModel):
@@ -253,10 +262,8 @@ class Cidrs(BaseModel):
     data_source_uid: Any
     insert_alert: Optional[str] = None
 
-
     class Config:
         orm_mode = True
-
 
 
 class VwCidrs(BaseModel):
@@ -278,18 +285,16 @@ class DataSource(BaseModel):
         orm_mode = True
 
 
-
 class UserAPIBase(BaseModel):
     # user_id: int
     refresh_token: str
 
+
 class UserAPI(UserAPIBase):
     pass
 
-    class Config():
+    class Config:
         orm_mode = True
-
-
 
 
 class TokenSchema(BaseModel):
@@ -308,6 +313,7 @@ class UserAuth(BaseModel):
     username: str = Field(..., description="user name")
     # password: str = Field(..., min_length=5, max_length=24,
     #                       description="user password")
+
 
 class UserOut(BaseModel):
     id: UUID
@@ -352,4 +358,3 @@ class User(UserInDBBase):
 # Additional properties stored in DB
 class UserInDB(UserInDBBase):
     hashed_password: str
-

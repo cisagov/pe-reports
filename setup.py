@@ -130,7 +130,7 @@ setup(
         "pymongo == 4.0.1",
         "pymupdf",
         "python-dateutil >= 2.7.3",
-        'python-decouple',
+        "python-decouple",
         "pytest-cov",
         "python-jose",
         "python-pptx == 0.6.21",

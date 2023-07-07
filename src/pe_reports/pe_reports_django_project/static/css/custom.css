@@ -79,15 +79,6 @@ div#myDiv {
   text-align: center;
 }
 
-div#loading {
-  width: 50%;
-  height: 350px;
-  /*justify-content: center;*/
-  align-items: center;
-  background: url("../SVG-Loaders/svg-loaders/bars.svg") no-repeat;
-  cursor: wait;
-}
-
 homeBG {
   background-color: white;
 }
@@ -105,4 +96,3 @@ homeBG {
 .custom-table-bordered td {
   border: 1px solid #000000; /* Black border */
 }
-

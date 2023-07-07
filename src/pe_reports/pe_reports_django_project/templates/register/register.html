@@ -1,39 +1,33 @@
-{% extends "../base.html" %}
+{% extends "../base.html" %} {% block content %} {% load crispy_forms_tags %}
 
-{% block content %}
-
-    {% load crispy_forms_tags %}
-
-    <!--Register-->
-    <div class="container">
-        <div class="row justify-content-center">
-            <div class="  w-50  ">
-                <h1>Register</h1>
-                <form method="POST">
-                    {% csrf_token %}
-                    {{ register_form|crispy }}
-                    <button class="btn btn-primary" type="submit">Register
-                    </button>
-                </form>
-                <p class="text-center">If you already have an account, <a
-                        href="/login">login</a> instead.</p>
-                <p class="text-center">If you forgot password, <a
-                        href="/accounts/password_reset">forgot password</a> instead.</p>
-            </div>
-        </div>
+<!--Register-->
+<div class="container">
+  <div class="row justify-content-center">
+    <div class="w-50">
+      <h1>Register</h1>
+      <form method="POST">
+        {% csrf_token %} {{ register_form|crispy }}
+        <button class="btn btn-primary" type="submit">Register</button>
+      </form>
+      <p class="text-center">
+        If you already have an account, <a href="/login">login</a> instead.
+      </p>
+      <p class="text-center">
+        If you forgot password,
+        <a href="/accounts/password_reset">forgot password</a> instead.
+      </p>
     </div>
+  </div>
+</div>
 
-    <script>
-    $(document).ready(function () {
-      console.log("Im ready ");
+<script>
+  $(document).ready(function () {
+    console.log("Im ready ");
 
-
-
-      setTimeout(function () {
-        $("#messageDiv").fadeOut("fast");
-      }, 5000);
-
-    });
-  </script>
+    setTimeout(function () {
+      $("#messageDiv").fadeOut("fast");
+    }, 5000);
+  });
+</script>
 
 {% endblock %}

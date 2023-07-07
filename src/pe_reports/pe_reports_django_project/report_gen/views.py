@@ -1,14 +1,18 @@
 """Classes and associated functions that render the UI app pages."""
+# Standard Python Libraries
+import datetime
 import logging
 import os
-import datetime
 
-# Third party packages
-from django.shortcuts import render, redirect
-from django.http import HttpResponseNotFound
+# Third-Party Libraries
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from .forms import InfoFormExternal, BulletinFormExternal, CredsFormExternal
+from django.http import HttpResponseNotFound
+
+# Third party packages
+from django.shortcuts import redirect, render
+
+# cisagov Libraries
 #
 # # cisagov Libraries
 from pe_reports.data.db_query import get_orgs_df
@@ -16,14 +20,14 @@ from pe_reports.helpers.bulletin.bulletin_generator import (
     generate_creds_bulletin,
     generate_cybersix_bulletin,
 )
+from pe_reports.report_generator import generate_reports
+
 from .forms import (
     BulletinFormExternal,
     CredsFormExternal,
     InfoFormExternal,
     ScoreCardGenFormExternal,
 )
-from pe_reports.report_generator import generate_reports
-
 
 # from .models import Usersapi, Organizations
 # from .forms import GatherStakeholderForm
@@ -31,7 +35,6 @@ from pe_reports.report_generator import generate_reports
 # import psycopg2.extras.   .
 # import requests
 
-# cisagov Libraries
 
 LOGGER = logging.getLogger(__name__)
 
@@ -103,15 +106,12 @@ def report_gen(request):
 
     form_external = InfoFormExternal()
 
-    if form_external.is_valid() and request.method == 'POST':
+    if form_external.is_valid() and request.method == "POST":
         report_date = form_external.cleaned_data["report_date"].data
         output_directory = form_external.output_directory.data
 
-
         if not validate_date(report_date):
-            messages.error(request,
-                           "Incorrect date format, should be YYYY-MM-DD"
-            )
+            messages.error(request, "Incorrect date format, should be YYYY-MM-DD")
             return redirect("/report_gen/")
 
         if not os.path.exists(output_directory):
@@ -130,11 +130,11 @@ def report_gen(request):
         output_dir = bulletin_form.cleaned_data["output_directory1"]
         file_name = bulletin_form.cleaned_data["file_name"]
 
-
         file_name = file_name.replace(" ", "")
         if not validate_filename(file_name):
-            messages.warning(request,
-                "Invalid filename entered, please enter a different filename")
+            messages.warning(
+                request, "Invalid filename entered, please enter a different filename"
+            )
             return redirect("/report_gen/")
 
         if not os.path.exists(output_dir):
@@ -147,8 +147,8 @@ def report_gen(request):
 
     creds_form = CredsFormExternal(request.POST)
     if creds_form.is_valid():
-        breach_name = creds_form.cleaned_data['breach_name']
-        org_id = creds_form.cleaned_data['org_id']
+        breach_name = creds_form.cleaned_data["breach_name"]
+        org_id = creds_form.cleaned_data["org_id"]
         all_orgs = get_orgs_df()
         print(get_orgs_df())
         # Pandas does not support "cond is True" syntax for dataframe filters,
@@ -160,8 +160,9 @@ def report_gen(request):
             all_orgs = all_orgs[all_orgs["cyhy_db_name"].str.upper() == org_id]
 
         if len(all_orgs) < 1:
-            messages.warning(request,
-                "The provided org_id does not exist in the database, try another."
+            messages.warning(
+                request,
+                "The provided org_id does not exist in the database, try another.",
             )
             return redirect("/report_gen/")
 
@@ -178,9 +179,9 @@ def report_gen(request):
     score_card_form = ScoreCardGenFormExternal(request.POST)
     if score_card_form.is_valid():
 
-        org_id = score_card_form.cleaned_data['org_id']
-        month = score_card_form.cleaned_data['month']
-        year = score_card_form.cleaned_data['year']
+        org_id = score_card_form.cleaned_data["org_id"]
+        month = score_card_form.cleaned_data["month"]
+        year = score_card_form.cleaned_data["year"]
         all_orgs = get_orgs_df()
         print(get_orgs_df())
         # Pandas does not support "cond is True" syntax for dataframe filters,
@@ -192,9 +193,10 @@ def report_gen(request):
             all_orgs = all_orgs[all_orgs["cyhy_db_name"].str.upper() == org_id]
 
         if len(all_orgs) < 1:
-            messages.warning(request,
-                             "The provided org_id does not exist in the database, try another."
-                             )
+            messages.warning(
+                request,
+                "The provided org_id does not exist in the database, try another.",
+            )
             return redirect("/report_gen/")
 
         for org_index, org in all_orgs.iterrows():
@@ -204,15 +206,16 @@ def report_gen(request):
                 org_id,
                 "user_text",
                 output_directory="/var/www/cred_bulletins",
-                filename=org_id + "_" + breach_name.replace(" ",
-                                                            "") + "_Bulletin.pdf",
+                filename=org_id + "_" + breach_name.replace(" ", "") + "_Bulletin.pdf",
             )
 
-    return render(request,
+    return render(
+        request,
         "report_gen/report_gen.html",
-                  {'form_external': form_external,
-                   'bulletin_form': bulletin_form,
-                   'creds_form': creds_form,
-                    'score_card_form': score_card_form
-                   }
+        {
+            "form_external": form_external,
+            "bulletin_form": bulletin_form,
+            "creds_form": creds_form,
+            "score_card_form": score_card_form,
+        },
     )

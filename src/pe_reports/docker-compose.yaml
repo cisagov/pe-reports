@@ -23,8 +23,7 @@ services:
       - LANGUAGE=C.UTF-8
       - LC_ALL=C.UTF-8
     volumes:
-      - /Users/duhnc/Desktop/allInfo/pe-reports-apiextended/src/pe_reports/data/rabbitmq/data:/var/lib/rabbitmq/mnesia:rw
-#      - /Users/duhnc/Desktop/allInfo/pe-reports-apiextended/src/pe_reports/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf
+      - /Users/duhnc/Desktop/allInfo/pe-reports-apiextended/src/pe_reports/data/rabbitmq/data:/var/lib/rabbitmq/mnesia:rw #modify this path for where your data is stored
     networks:
       - pe_reports_network
 
