@@ -9,11 +9,10 @@ import os
 import chevron
 
 from .charts import Charts
+from .data.db_query import sanitize_uid
 
 # Import Classes
 from .metrics import Credentials, Cyber_Six, Domains_Masqs, Malware_Vulns
-from .data.db_query import sanitize_uid
-
 
 
 # Style and build tables
