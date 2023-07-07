@@ -151,7 +151,8 @@ class IntelX:
         """Find leaks for a domain between two dates."""
         all_results_list = []
         for domain in domain_list:
-            LOGGER.info("Finding credentials leaked associated with %s", domain)
+            if not domain:
+                continue
             response = self.query_identity_api(domain, start_date, end_date)
             if not response:
                 continue
@@ -160,45 +161,30 @@ class IntelX:
                 results = self.get_search_results(search_id)
                 if not results:
                     break
-                if results["status"] == 0:
-                    current_results = results["records"]
-                    if current_results:
-                        # Add the root_domain to each result object
-                        LOGGER.info(
-                            "IntelX returned %s more credentials for %s",
-                            len(current_results),
-                            domain,
-                        )
-                        result = [
-                            dict(item, **{"root_domain": domain})
-                            for item in current_results
-                        ]
-                        all_results_list = all_results_list + result
+                status = results["status"]
+                current_results = results.get("records", [])
+                if current_results:
+                    # Add the root_domain to each result object
+                    LOGGER.info(
+                        f"Intelx returned {len(current_results)} more credentials for {domain}"
+                    )
+                    result = [
+                        {**item, "root_domain": domain}
+                        for item in current_results
+                    ]
+                    all_results_list.extend(result)
+                if status == 0:
                     time.sleep(3)
-                # If still waiting on new results wait
-                elif results["status"] == 1:
-                    LOGGER.info("IntelX still searching for more credentials")
-                    time.sleep(7)
-                # if status is two collect the last remaining values and exit loop
-                elif results["status"] == 2:
-                    current_results = results["records"]
-                    if current_results:
-                        # Add the root_domain to each result object
-                        LOGGER.info(
-                            "IntelX returned %s more credentials for %s",
-                            len(current_results),
-                            domain,
-                        )
-                        result = [
-                            dict(item, **{"root_domain": domain})
-                            for item in current_results
-                        ]
-                        all_results_list = all_results_list + result
+                elif status == 1:
+                    LOGGER.info("Intelx still searching for more credentials")
+                    time.sleep(5)
+                elif status == 2:
                     break
-                elif results["status"] == 3:
+                elif status == 3:
                     LOGGER.error("Search id not found")
                     break
-        LOGGER.info("Identified %s credential leak combos.", len(all_results_list))
+
+        LOGGER.info(f"Identified {len(all_results_list)} credential leak combos.")
         return all_results_list
 
     def process_leaks_results(self, leaks_json, org_uid):
