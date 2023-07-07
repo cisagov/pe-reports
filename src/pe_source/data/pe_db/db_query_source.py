@@ -14,6 +14,7 @@ import psycopg2.extras as extras
 # cisagov Libraries
 from pe_reports import app
 from pe_reports.data.config import config
+from pe_reports.data.db_query import sanitize_uid
 
 # Setup logging to central file
 LOGGER = app.config["LOGGER"]
@@ -44,12 +45,7 @@ def close(conn):
     conn.close()
 
 
-def sanitize_uid(string):
-    """Remove special characters from uids."""
-    return re.sub(r"[^a-zA-Z0-9\-]", "", string)
-
-
-def sanitize_string(string):
+def sanitize_text(string):
     """Remove special characters from string."""
     pattern = re.compile(r"[^\w\s]+")
     sanitized_text = pattern.sub("", string())
@@ -69,7 +65,7 @@ def get_orgs():
         for value in pe_orgs:
             value[0] = sanitize_uid(value[0])  # org_uid
             value[1] = value[1]
-            value[2] = sanitize_string(value[2])  # cyhy_db_name
+            value[2] = sanitize_text(value[2])  # cyhy_db_name
 
         pe_orgs = [dict(zip(keys, values)) for values in pe_orgs]
         cur.close()
@@ -277,7 +273,7 @@ def get_breaches():
         pe_orgs = cur.fetchall()
         cur.close()
         for breach in pe_orgs:
-            breach[0] = sanitize_string([0])
+            breach[0] = sanitize_text([0])
             breach[1] = sanitize_uid(breach[1])
         return pe_orgs
     except (Exception, psycopg2.DatabaseError) as error:
@@ -471,7 +467,7 @@ def get_intelx_breaches(source_uid):
         cur.execute(sql, [source_uid])
         all_breaches = cur.fetchall()
         for breach in all_breaches:
-            breach[0] = sanitize_string([0])
+            breach[0] = sanitize_text([0])
             breach[1] = sanitize_uid(breach[1])
         cur.close()
         return all_breaches

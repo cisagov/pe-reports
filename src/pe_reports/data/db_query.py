@@ -29,7 +29,7 @@ def sanitize_string(string):
 
 def sanitize_uid(string):
     """Remove special characters from uids."""
-    return re.sub(r"[^a-zA-Z0-9\-]", "", string)
+    return re.sub(r"[^a-zA-Z0-9\-\s]", "", string)
 
 
 def show_psycopg2_exception(err):
