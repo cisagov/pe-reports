@@ -49,7 +49,7 @@ def get_orgs():
     conn = connect()
     try:
         cur = conn.cursor()
-        sql = """SELECT * FROM organizations where report_on or demo or run_scans"""
+        sql = """SELECT * FROM organizations where report_on or demo"""
         cur.execute(sql)
         pe_orgs = cur.fetchall()
         keys = ("org_uid", "org_name", "cyhy_db_name")
@@ -57,7 +57,7 @@ def get_orgs():
         cur.close()
         return pe_orgs
     except (Exception, psycopg2.DatabaseError) as error:
-        logging.error("There was a problem with your database query %s", error)
+        LOGGER.error("There was a problem with your database query %s", error)
     finally:
         if conn is not None:
             close(conn)
@@ -97,6 +97,7 @@ def get_ips(org_uid):
     conn.close()
 
     return ips
+
 
 def get_ips_dhs(org_uid):
     """Get IP data. Pull in IPs for DHS_UNKNOWN, DHS_OIG, and DHS_HQ also."""
@@ -139,6 +140,7 @@ def get_ips_dhs(org_uid):
 
     return ips
 
+
 def get_ips_nasa(org_uid):
     """Get IP data. Pull in IPs for NASA_HQ too."""
     conn = connect()
@@ -175,6 +177,7 @@ def get_ips_nasa(org_uid):
     conn.close()
 
     return ips
+
 
 def get_ips_hhs(org_uid):
     """Get IP data. Pull in IPs for HHS_UNKNOWN too"""
@@ -556,23 +559,54 @@ def addRootdomain(root_domain, pe_org_uid, source_uid, org_name):
     cur.close()
 
 
-def addSubdomain(conn, domain, pe_org_uid):
+def addSubdomain(conn, domain, pe_org_uid, root):
     """Add a subdomain into the database."""
-    if conn is None:
-        conn = connect()
-        closeConn = True
-    root_domain = domain.split(".")[-2:]
-    root_domain = ".".join(root_domain)
+    conn = connect()
+    if root:
+        root_domain = domain
+    else:
+        root_domain = domain.split(".")[-2:]
+        root_domain = ".".join(root_domain)
     cur = conn.cursor()
+    date = datetime.today().strftime("%Y-%m-%d")
     cur.callproc(
-        "insert_sub_domain", (domain, pe_org_uid, "findomain", root_domain, None)
+        "insert_sub_domain",
+        (False, date, domain, pe_org_uid, "findomain", root_domain, None),
     )
     LOGGER.info("Success adding domain %s to subdomains table.", domain)
-    if closeConn:
-        close(conn)
+    conn.commit()
+    close(conn)
 
 
 def org_root_domains(conn, org_uid):
+    """Get root domains from database given the org_uid."""
+    conn = connect()
+    try:
+        cur = conn.cursor()
+        sql = """select * from root_domains rd
+                where rd.organizations_uid = %s
+                and enumerate_subs is True;"""
+        cur.execute(sql, [org_uid])
+        roots = cur.fetchall()
+        keys = (
+            "root_uid",
+            "org_uid",
+            "root_domain",
+            "ip_address",
+            "data_source_uid",
+            "enumerate_subs",
+        )
+        roots = [dict(zip(keys, values)) for values in roots]
+        cur.close()
+        return roots
+    except (Exception, psycopg2.DatabaseError) as error:
+        LOGGER.error("There was a problem with your database query %s", error)
+    finally:
+        if conn is not None:
+            close(conn)
+
+
+def get_root_domains(conn, org_uid):
     """Get root domains from database given the org_uid."""
     sql = """
         select * from root_domains rd
@@ -670,16 +704,22 @@ def insert_intelx_credentials(df):
     cursor.close()
 
 
-
-def getSubdomain(conn, domain):
-    """Get subdomains given a domain from the databases."""
-    cur = conn.cursor()
-    sql = """SELECT * FROM sub_domains sd
-        WHERE sd.sub_domain = %(domain)s"""
-    cur.execute(sql, {"domain": domain})
-    sub = cur.fetchone()
-    cur.close()
-    return sub
+def getSubdomain(domain):
+    """Get subdomain."""
+    conn = connect()
+    try:
+        cur = conn.cursor()
+        sql = """select * from sub_domains sd
+                where sd.sub_domain = %s;"""
+        cur.execute(sql, [domain])
+        sub = cur.fetchall()
+        cur.close()
+        return sub[0][0]
+    except (Exception, psycopg2.DatabaseError) as error:
+        print("Adding domain to the sub-domain table")
+    finally:
+        if conn is not None:
+            close(conn)
 
 
 def getDataSource(conn, source):

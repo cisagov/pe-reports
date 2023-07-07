@@ -48,3 +48,5 @@ src/pe_asm/port_scans/config.json
 =*
 src/pe_reports/pe_reports_django_project/*.bak
 src/pe_reports/pe_reports_django_project/*.dir
+src/pe_reports/pe_reports_django_project/*.dat
+dnstwist_output.txt

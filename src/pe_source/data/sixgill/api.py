@@ -143,6 +143,7 @@ def dve_top_cves(size):
     }
     payload = {"size": size}
     resp = requests.get(url, headers=headers, params=payload).json()
+    print(resp)
     return resp
 
 

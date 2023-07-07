@@ -2,8 +2,10 @@
 # Standard Python Libraries
 import datetime
 import json
+import logging
 import pathlib
 import traceback
+import contextlib
 
 # Third-Party Libraries
 import dnstwist
@@ -11,20 +13,17 @@ import dshield
 import psycopg2.extras as extras
 import requests
 
-# cisagov Libraries
-from pe_reports import app
-
-from .data.pe_db.db_query import (
+from .data.pe_db.db_query_source import (
     addSubdomain,
     connect,
     get_data_source_uid,
     getSubdomain,
     org_root_domains,
-    query_orgs_rev,
+    get_orgs,
 )
 
 date = datetime.datetime.now().strftime("%Y-%m-%d")
-LOGGER = app.config["LOGGER"]
+LOGGER = logging.getLogger(__name__)
 
 
 def checkBlocklist(dom, sub_domain_uid, source_uid, pe_org_uid, perm_list):
@@ -151,7 +150,15 @@ def execute_dnstwist(root_domain, test=0):
         return dnstwist_result
     finalorglist = dnstwist_result + []
     for dom in dnstwist_result:
-        if ("tld-swap" not in dom["fuzzer"]) and ("original" not in dom["fuzzer"]):
+        if (
+            ("tld-swap" not in dom["fuzzer"])
+            and ("original" not in dom["fuzzer"])
+            and ("replacement" not in dom["fuzzer"])
+            and ("repetition" not in dom["fuzzer"])
+            and ("omission" not in dom["fuzzer"])
+            and ("insertion" not in dom["fuzzer"])
+            and ("transposition" not in dom["fuzzer"])
+        ):
             LOGGER.info("Running again on %s", dom["domain"])
             secondlist = dnstwist.run(
                 registered=True,
@@ -170,44 +177,46 @@ def run_dnstwist(orgs_list):
     source_uid = get_data_source_uid("DNSTwist")
 
     """ Get P&E Orgs """
-    orgs = query_orgs_rev()
+    orgs = get_orgs()
     failures = []
-    for org_index, org_row in orgs.iterrows():
-        pe_org_uid = org_row["organizations_uid"]
-        org_name = org_row["name"]
-        pe_org_id = org_row["cyhy_db_name"]
+    for org in orgs:
+        pe_org_uid = org["org_uid"]
+        org_name = org["org_name"]
+        pe_org_id = org["cyhy_db_name"]
 
         # Only run on orgs in the org list
         if pe_org_id in orgs_list or orgs_list == "all":
-
             LOGGER.info("Running DNSTwist on %s", pe_org_id)
 
             """Collect DNSTwist data from Crossfeed"""
             try:
                 # Get root domains
-                rd_df = org_root_domains(PE_conn, pe_org_uid)
+                root_dict = org_root_domains(PE_conn, pe_org_uid)
                 domain_list = []
                 perm_list = []
-                for i, row in rd_df.iterrows():
-                    root_domain = row["root_domain"]
+                for root in root_dict:
+                    root_domain = root["root_domain"]
                     if root_domain == "Null_Root":
                         continue
-                    LOGGER.info("Running on %s", row["root_domain"])
+                    LOGGER.info("\tRunning on root domain: %s", root["root_domain"])
 
-                    finalorglist = execute_dnstwist(root_domain)
+                    with open(
+                        "dnstwist_output.txt", "w"
+                    ) as f, contextlib.redirect_stdout(f):
+                        finalorglist = execute_dnstwist(root_domain)
 
                     # Get subdomain uid
                     sub_domain = root_domain
                     try:
-                        sub_domain_uid = getSubdomain(sub_domain)[0]
+                        sub_domain_uid = getSubdomain(sub_domain)
                     except Exception:
                         # TODO: Create custom exceptions.
                         # Issue 265: https://github.com/cisagov/pe-reports/issues/265
-                        LOGGER.info("Unable to get sub domain uid", "warning")
                         # Add and then get it
-                        addSubdomain(PE_conn, sub_domain, pe_org_uid)
-                        sub_domain_uid = getSubdomain(sub_domain)[0]
+                        addSubdomain(PE_conn, sub_domain, pe_org_uid, True)
+                        sub_domain_uid = getSubdomain(sub_domain)
 
+                    # Check Blocklist
                     for dom in finalorglist:
                         domain_dict, perm_list = checkBlocklist(
                             dom, sub_domain_uid, source_uid, pe_org_uid, perm_list
@@ -217,7 +226,7 @@ def run_dnstwist(orgs_list):
             except Exception:
                 # TODO: Create custom exceptions.
                 # Issue 265: https://github.com/cisagov/pe-reports/issues/265
-                LOGGER.info("Failed selecting DNSTwist data.", "Warning")
+                LOGGER.info("Failed selecting DNSTwist data.")
                 failures.append(org_name)
                 LOGGER.info(traceback.format_exc())
 
