@@ -25,11 +25,8 @@ import boto3
 from botocore.exceptions import ClientError
 import docopt
 import fitz
-from schema import And, Schema, SchemaError, Use
 import pandas as pd
-
-# cisagov Libraries
-import pe_reports
+from schema import And, Schema, SchemaError, Use
 
 # cisagov Libraries
 import pe_reports
@@ -37,10 +34,13 @@ import pe_reports
 from ._version import __version__
 from .asm_generator import create_summary
 from .data.db_query import connect, get_orgs, refresh_asset_counts_vw, set_from_cidr
-from .helpers.generate_score import get_pe_scores
+
+# from .helpers.generate_score import get_pe_scores
 from .pages import init
+from .reportlab_core_generator import core_report_gen
 from .reportlab_generator import report_gen
-from .scorecard_generator import create_scorecard
+
+# from .scorecard_generator import create_scorecard
 
 LOGGER = logging.getLogger(__name__)
 ACCESSOR_AWS_PROFILE = os.getenv("ACCESSOR_PROFILE")
@@ -66,6 +66,7 @@ def upload_file_to_s3(file_name, datestring, bucket, excel_org):
     except ClientError as e:
         LOGGER.error(e)
 
+
 LOGGER = logging.getLogger(__name__)
 
 
@@ -81,7 +82,7 @@ def embed(
     cred_xlsx,
     da_xlsx,
     vuln_xlsx,
-    mi_xlsx
+    mi_xlsx,
 ):
     """Embeds raw data into PDF and encrypts file."""
     doc = fitz.open(file)
@@ -93,13 +94,15 @@ def embed(
     cc = open(cred_json, "rb").read()
     da = open(da_json, "rb").read()
     ma = open(vuln_json, "rb").read()
-    mi = open(mi_json, "rb").read()
+    if mi_json:
+        mi = open(mi_json, "rb").read()
 
     # Open CSV data as binary
     cc_xl = open(cred_xlsx, "rb").read()
     da_xl = open(da_xlsx, "rb").read()
     ma_xl = open(vuln_xlsx, "rb").read()
-    mi_xl = open(mi_xlsx, "rb").read()
+    if mi_xlsx:
+        mi_xl = open(mi_xlsx, "rb").read()
 
     # Insert link to CSV data in summary page of PDF.
     # Use coordinates to position them on the bottom.
@@ -120,9 +123,10 @@ def embed(
         p2, da, "domain_alerts.json", desc="Open JSON", icon="Paperclip"
     )
     page.add_file_annot(p3, ma, "vuln_alerts.json", desc="Open JSON", icon="Paperclip")
-    page.add_file_annot(
-        p4, mi, "mention_incidents.json", desc="Open JSON", icon="Paperclip"
-    )
+    if mi_json:
+        page.add_file_annot(
+            p4, mi, "mention_incidents.json", desc="Open JSON", icon="Paperclip"
+        )
     page.add_file_annot(
         p5, cc_xl, "compromised_credentials.xlsx", desc="Open Excel", icon="Graph"
     )
@@ -130,9 +134,10 @@ def embed(
         p6, da_xl, "domain_alerts.xlsx", desc="Open Excel", icon="Graph"
     )
     page.add_file_annot(p7, ma_xl, "vuln_alerts.xlsx", desc="Open Excel", icon="Graph")
-    page.add_file_annot(
-        p8, mi_xl, "mention_incidents.xlsx", desc="Open Excel", icon="Graph"
-    )
+    if mi_xlsx:
+        page.add_file_annot(
+            p8, mi_xl, "mention_incidents.xlsx", desc="Open Excel", icon="Graph"
+        )
 
     # Save doc and set garbage=4 to reduce PDF size using all 4 methods:
     # Remove unused objects, compact xref table, merge duplicate objects,
@@ -162,10 +167,10 @@ def generate_reports(datestring, output_directory, soc_med_included=False):
     generated_reports = 0
 
     # Resfresh ASM counts view
-    # LOGGER.info("Refreshing ASM count view and IPs from cidrs")
-    # refresh_asset_counts_vw()
-    # set_from_cidr()
-    # LOGGER.info("Finished refreshing ASM count view and IPs from Cidrs")
+    LOGGER.info("Refreshing ASM count view and IPs from cidrs")
+    refresh_asset_counts_vw()
+    set_from_cidr()
+    LOGGER.info("Finished refreshing ASM count view and IPs from Cidrs")
 
     # Iterate over organizations
 
@@ -174,26 +179,26 @@ def generate_reports(datestring, output_directory, soc_med_included=False):
         # Generate PE scores for all stakeholders.
         LOGGER.info("Calculating P&E Scores")
         # pe_scores_df = get_pe_scores(datestring, 12)
-        go = 0
+        # go = 0
         # pe_orgs.reverse()
         for org in pe_orgs:
             # Assign organization values
             org_uid = org[0]
             org_name = org[1]
             org_code = org[2]
+            premium = org[8]
 
             # if org_code not in ["DOL","USDA"]:
             #     continue
 
             # DOL, USDA
 
-
             # if org_code == "HHS_FDA":
             #     go = 1
             #     continue
             # if go != 1:
             #     continue
-            #Rapidgator%20 DOI_BIA
+            # Rapidgator%20 DOI_BIA
 
             LOGGER.info("Running on %s", org_code)
 
@@ -201,7 +206,7 @@ def generate_reports(datestring, output_directory, soc_med_included=False):
             for dir_name in ("ppt", org_code):
                 if not os.path.exists(f"{output_directory}/{dir_name}"):
                     os.mkdir(f"{output_directory}/{dir_name}")
-            
+
             pe_scores_df = pd.DataFrame()
             if not pe_scores_df.empty:
                 score = pe_scores_df.loc[
@@ -226,12 +231,13 @@ def generate_reports(datestring, output_directory, soc_med_included=False):
                 cred_xlsx,
                 da_xlsx,
                 vuln_xlsx,
-                mi_xlsx
+                mi_xlsx,
             ) = init(
                 datestring,
                 org_name,
                 org_code,
                 org_uid,
+                premium,
                 score,
                 grade,
                 output_directory,
@@ -250,7 +256,7 @@ def generate_reports(datestring, output_directory, soc_med_included=False):
                 summary_dict,
                 summary_filename,
                 summary_json_filename,
-                summary_excel_filename
+                summary_excel_filename,
             )
             LOGGER.info("Done")
 
@@ -264,7 +270,10 @@ def generate_reports(datestring, output_directory, soc_med_included=False):
             output_filename = f"{output_directory}/Posture_and_Exposure_Report-{org_code}-{datestring}.pdf"
             # convert_html_to_pdf(source_html, output_filename)#TODO possibly generate report here
             chevron_dict["filename"] = output_filename
-            report_gen(chevron_dict, soc_med_included)
+            if premium:
+                report_gen(chevron_dict, soc_med_included)
+            else:
+                core_report_gen(chevron_dict)
 
             # Grab the PDF
             pdf = f"{output_directory}/Posture_and_Exposure_Report-{org_code}-{datestring}.pdf"
@@ -282,7 +291,7 @@ def generate_reports(datestring, output_directory, soc_med_included=False):
                 cred_xlsx,
                 da_xlsx,
                 vuln_xlsx,
-                mi_xlsx
+                mi_xlsx,
             )
 
             # Log a message if the report is too large.  Our current mailer
@@ -298,7 +307,8 @@ def generate_reports(datestring, output_directory, soc_med_included=False):
             upload_file_to_s3(cred_xlsx, datestring, bucket_name, org_code)
             upload_file_to_s3(da_xlsx, datestring, bucket_name, org_code)
             upload_file_to_s3(vuln_xlsx, datestring, bucket_name, org_code)
-            upload_file_to_s3(mi_xlsx, datestring, bucket_name, org_code)
+            if premium:
+                upload_file_to_s3(mi_xlsx, datestring, bucket_name, org_code)
             upload_file_to_s3(asm_xlsx, datestring, bucket_name, org_code)
 
             # Upload report
@@ -310,7 +320,6 @@ def generate_reports(datestring, output_directory, soc_med_included=False):
             # Upload ASM Summary
             # upload_file_to_s3(scorecard_filename, datestring, bucket_name, None)
             generated_reports += 1
-
 
     else:
         LOGGER.error(

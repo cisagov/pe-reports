@@ -36,26 +36,12 @@ from reportlab.platypus.tableofcontents import TableOfContents
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 
-pdfmetrics.registerFont(
-    TTFont(
-        "Franklin_Gothic_Book_Italic", BASE_DIR + "/fonts/FranklinGothicBookItalic.ttf"
-    )
-)
+
 pdfmetrics.registerFont(
     TTFont("Franklin_Gothic_Book", BASE_DIR + "/fonts/FranklinGothicBook.ttf")
 )
-pdfmetrics.registerFont(
-    TTFont(
-        "Franklin_Gothic_Demi_Regular",
-        BASE_DIR + "/fonts/FranklinGothicDemiRegular.ttf",
-    )
-)
-pdfmetrics.registerFont(
-    TTFont(
-        "Franklin_Gothic_Medium_Italic",
-        BASE_DIR + "/fonts/FranklinGothicMediumItalic.ttf",
-    )
-)
+
+
 pdfmetrics.registerFont(
     TTFont(
         "Franklin_Gothic_Medium_Regular",
@@ -137,10 +123,10 @@ class MyDocTemplate(BaseDocTemplate):
 
 
 class ConditionalSpacer(Spacer):
-    """Extend spacer to conditionaly shrink if near the end of the page."""
+    """Create a Conditional Spacer class."""
 
     def wrap(self, availWidth, availHeight):
-        """Change hight of spacer based on available height."""
+        """Create a spacer if there is space on the page to do so."""
         height = min(self.height, availHeight - 1e-8)
         return (availWidth, height)
 
@@ -258,7 +244,7 @@ def build_kpi(data, width):
     return table
 
 
-def report_gen(data_dict, soc_med_included=False):
+def core_report_gen(data_dict):
     """Generate a P&E report with data passed in the data dictionry."""
 
     def titlePage(canvas, doc):
@@ -274,7 +260,7 @@ def report_gen(data_dict, soc_med_included=False):
         canvas.saveState()
         canvas.setFont("Franklin_Gothic_Book", 13)
         canvas.drawImage(
-            BASE_DIR + "/assets/summary-background.png",
+            BASE_DIR + "/assets/core-summary-background.png",
             0,
             0,
             width=PAGE_WIDTH,
@@ -282,7 +268,7 @@ def report_gen(data_dict, soc_med_included=False):
         )
         canvas.setFillColor(HexColor("#1d5288"))
         canvas.setStrokeColor("#1d5288")
-        canvas.rect(inch, 210, 3.5 * inch, 5.7 * inch, fill=1)
+        canvas.rect(inch, 210 + 1 * inch, 3.5 * inch, 4.7 * inch, fill=1)
         canvas.restoreState()
         summary_frame = Frame(
             1.1 * inch, 224, 3.3 * inch, 5.5 * inch, id=None, showBoundary=0
@@ -304,9 +290,6 @@ def report_gen(data_dict, soc_med_included=False):
         <br/><br/><br/><br/><br/><br/>
         <font face="Franklin_Gothic_Medium_Regular">Insecure Devices & Vulnerabilities:</font><br/>
         Open ports, risky protocols, insecure products, and externally observable vulnerabilities are potential targets for exploit.
-        <br/><br/><br/><br/><br/>
-        <font face="Franklin_Gothic_Medium_Regular">Dark Web Activity:</font><br/>
-        Heightened public attention can indicate increased targeting and attack coordination, especially when attention is found on the dark web.
         """,
             style=summary_1_style,
         )
@@ -341,16 +324,6 @@ def report_gen(data_dict, soc_med_included=False):
             style=kpi,
         )
         summary_frame_4.addFromList([summary_4], canvas)
-
-        summary_frame_5 = Frame(
-            5.1 * inch, 230, 2.4 * inch, 0.7 * inch, id=None, showBoundary=0
-        )
-        summary_5 = Paragraph(
-            str(data_dict["darkWeb"])
-            + """<br/> <font face="Franklin_Gothic_Book" size='10'>Dark Web Alerts</font>""",
-            style=kpi,
-        )
-        summary_frame_5.addFromList([summary_5], canvas)
 
         json_title_frame = Frame(
             3.85 * inch, 175, 1.5 * inch, 0.5 * inch, id=None, showBoundary=0
@@ -617,8 +590,8 @@ def report_gen(data_dict, soc_med_included=False):
         Paragraph(
             """Posture and Exposure (P&E) offers stakeholders an opportunity to view their organizational
                 risk from the viewpoint of the adversary. We utilize passive reconnaissance services,
-                dark web analysis, and open-source tools to identify spoofing in order to generate a risk
-                    profile report that is delivered on a regular basis.<br/><br/>
+                and open-source tools to identify spoofing in order to generate a risk
+                profile report that is delivered on a regular basis.<br/><br/>
                 As a customer of P&E you are receiving our regularly scheduled report which contains a
                 summary of the activity we have been tracking on your behalf for the following services:
                 <br/><br/>""",
@@ -626,9 +599,15 @@ def report_gen(data_dict, soc_med_included=False):
         )
     )
 
+    # dark web analysis, romoved this from line 606
     Story.append(
         ListFlowable(
             [
+                ListItem(
+                    Paragraph("Credentials Leaked/Exposed", body),
+                    leftIndent=35,
+                    value="bulletchar",
+                ),
                 ListItem(
                     Paragraph("Domain Masquerading and Monitoring", body),
                     leftIndent=35,
@@ -636,11 +615,6 @@ def report_gen(data_dict, soc_med_included=False):
                 ),
                 ListItem(
                     Paragraph("Vulnerabilities & Malware Associations", body),
-                    leftIndent=35,
-                    value="bulletchar",
-                ),
-                ListItem(
-                    Paragraph("Dark Web Monitoring", body),
                     leftIndent=35,
                     value="bulletchar",
                 ),
@@ -660,7 +634,7 @@ def report_gen(data_dict, soc_med_included=False):
         Paragraph(
             """<br/>It is important to note that these findings have not been verified; everything is
                             gathered via passive analysis of publicly available sources. As such there may be false
-                            positive findings, however, these findings should be treated as information that your
+                            positive findings; however, these findings should be treated as information that your
                             organization is leaking out to the internet for adversaries to notice.<br/><br/>""",
             body,
         )
@@ -736,7 +710,7 @@ def report_gen(data_dict, soc_med_included=False):
     Story.append(doHeading("2.2 Raw Data Links", h2))
     Story.append(
         Paragraph(
-            "Exposed Credentials<br/><br/>Domain Masquerading and Monitoring<br/><br/>Vulnerabilities and Malware Associations<br/><br/>Dark Web Activity",
+            "Exposed Credentials<br/><br/>Domain Masquerading and Monitoring<br/><br/>Vulnerabilities and Malware Associations",
             body,
         )
     )
@@ -1157,403 +1131,7 @@ def report_gen(data_dict, soc_med_included=False):
             ]
         )
     )
-    # Story.append(NextPageTemplate('ContentPage'))
-    Story.append(PageBreak())
 
-    # ***Start Generating Dark Web Page***#
-    Story.append(KeepTogether([doHeading("3.4 Dark Web Activity", h2), Spacer(1, 6)]))
-
-    row = [
-        build_kpi(
-            Paragraph(
-                str(data_dict["mentions_count"])
-                + """<br/> <font face="Franklin_Gothic_Book" size='10'>Dark Web Mentions</font>""",
-                style=kpi,
-            ),
-            2,
-        ),
-        build_kpi(
-            Paragraph(
-                str(data_dict["darkWeb"])
-                + """<br/> <font face="Franklin_Gothic_Book" size='10'>Dark Web Alerts</font>""",
-                style=kpi,
-            ),
-            2,
-        ),
-    ]
-
-    Story.append(
-        BalancedColumns(
-            row,  # the flowables we are balancing
-            nCols=2,  # the number of columns
-            needed=55,  # the minimum space needed by the flowable
-            spaceBefore=0,
-            spaceAfter=12,
-            showBoundary=False,  # optional boundary showing
-            leftPadding=65,  # these override the created frame
-            rightPadding=0,  # paddings if specified else the
-            topPadding=None,  # default frame paddings
-            bottomPadding=None,  # are used
-            innerPadding=35,  # the gap between frames if specified else
-            # use max(leftPadding,rightPadding)
-            name="dark_web_kpis",  # for identification purposes when stuff goes awry
-            endSlack=0.1,  # height disparity allowance ie 10% of available height
-        )
-    )
-
-    Story.append(
-        Paragraph(
-            """Stakeholders and vulnerabilities are often discussed in various ways on the Dark Web. P&E monitors this
-                activity, as well as the source (forums, websites, tutorials), and threat actors involved. A spike in activity can
-                indicate a greater likelihood of an attack, vulnerability, or data leakage. This information along with a list of the
-                most active CVEs on the Dark Web may assist in prioritizing remediation activities.""",
-            style=body,
-        )
-    )
-
-    Story.append(point12_spacer)
-
-    Story.append(Paragraph("3.4.1 Dark Web Mentions", h3))
-    Story.append(
-        Paragraph(
-            """
-            <font face="Franklin_Gothic_Medium_Regular">Figure 4</font> provides details on the number of mentions on the
-            dark web during the reporting period.
-        """,
-            body,
-        )
-    )
-    Story.append(point12_spacer)
-    Story.append(
-        KeepTogether(
-            [
-                doHeading(
-                    """
-                        Figure 4. Dark Web Mentions.
-                    """,
-                    figure,
-                ),
-                get_image(BASE_DIR + "/assets/web_only_df_2.png", width=6.5 * inch),
-            ]
-        )
-    )
-    sub_section = 2
-    table_num = 6
-    if soc_med_included:
-        Story.append(
-            KeepTogether(
-                [
-                    Paragraph("3.4.2 Most Active Social Media Posts", h3),
-                    Paragraph(
-                        """
-                        This result includes a list of the most active social media posts associated with a stakeholder, and tallies
-                        the count of “post” or “reply” actions on sites such as Telegram, Twitter, and Github.
-                        <font face="Franklin_Gothic_Medium_Regular">Table 6</font> identifies the social media comments count
-                        by organization.
-                    """,
-                        body,
-                    ),
-                    point12_spacer,
-                    doHeading(
-                        """
-                        Table 6. Social Media Comments Count.
-                    """,
-                        table,
-                    ),
-                ]
-            )
-        )
-
-        Story.append(
-            format_table(
-                data_dict["social_med_act"],
-                table_header,
-                [5 * inch, 1.5 * inch],
-                [
-                    body,
-                    None,
-                ],
-            )
-        )
-
-        Story.append(point12_spacer)
-        sub_section = 3
-        table_num = 7
-
-    Story.append(
-        KeepTogether(
-            [
-                Paragraph(
-                    "3.4." + str(sub_section) + " Most Active Dark Web Posts", h3
-                ),
-                Paragraph(
-                    """
-                    This result includes a list of the most active posts associated with a stakeholder found on the dark web,
-                    and includes forum sites and invite-only marketplaces. <font face="Franklin_Gothic_Medium_Regular">Table """
-                    + str(table_num)
-                    + """</font>
-                    identifies the dark web comments count by organization.
-                """,
-                    body,
-                ),
-                point12_spacer,
-                doHeading(
-                    "Table " + str(table_num) + ". Dark Web Comments Count.", table
-                ),
-            ]
-        )
-    )
-    sub_section += 1
-    table_num += 1
-    Story.append(
-        format_table(
-            data_dict["dark_web_act"],
-            table_header,
-            [5 * inch, 1.5 * inch],
-            [
-                body,
-                None,
-            ],
-        )
-    )
-
-    Story.append(point12_spacer)
-
-    Story.append(
-        KeepTogether(
-            [
-                Paragraph("3.4." + str(sub_section) + " Asset Alerts", h3),
-                Paragraph(
-                    """
-                    <font face="Franklin_Gothic_Medium_Regular">Table """
-                    + str(table_num)
-                    + """</font> includes discussions involving stakeholder
-                    assets such as domain names and IP's.
-                """,
-                    body,
-                ),
-                point12_spacer,
-                doHeading("Table " + str(table_num) + ". Asset Alerts.", table),
-            ]
-        )
-    )
-    sub_section += 1
-    table_num += 1
-    Story.append(
-        format_table(
-            data_dict["asset_alerts"],
-            table_header,
-            [2 * inch, 3.5 * inch, 1 * inch],
-            [None, body, None],
-        )
-    )
-
-    Story.append(point12_spacer)
-    Story.append(
-        KeepTogether(
-            [
-                Paragraph("3.4." + str(sub_section) + " Executive Alerts", h3),
-                Paragraph(
-                    """
-                    <font face="Franklin_Gothic_Medium_Regular">Table """
-                    + str(table_num)
-                    + """</font> includes discussions involving stakeholder
-                    executives and upper management.
-                """,
-                    body,
-                ),
-                point12_spacer,
-                doHeading("Table " + str(table_num) + ". Executive Alerts.", table),
-            ]
-        )
-    )
-    sub_section += 1
-    table_num += 1
-    Story.append(
-        format_table(
-            data_dict["alerts_exec"],
-            table_header,
-            [2 * inch, 3.5 * inch, 1 * inch],
-            [None, body, None],
-        )
-    )
-
-    Story.append(point12_spacer)
-
-    Story.append(
-        KeepTogether(
-            [
-                Paragraph("3.4." + str(sub_section) + " Threat Actors", h3),
-                Paragraph(
-                    """
-                    A threat actor's score is based on the amount of activity that person has on the dark web, the types of
-                    content posted, how prominent their account is on a forum, and if there is a larger circle of connections to
-                    other bad actors. Threat Actors are ranked 1 to 10, with 10 being the most severe.
-                    <font face="Franklin_Gothic_Medium_Regular">Table """
-                    + str(table_num)
-                    + """</font>
-                    identifies the top actors that have mentioned stakeholder assets.
-                """,
-                    body,
-                ),
-                point12_spacer,
-                doHeading("Table " + str(table_num) + ". Threat Actors.", table),
-            ]
-        )
-    )
-    sub_section += 1
-    table_num += 1
-    Story.append(
-        format_table(
-            data_dict["dark_web_actors"],
-            table_header,
-            [5.5 * inch, 1 * inch],
-            [body, None],
-        )
-    )
-
-    Story.append(point12_spacer)
-
-    Story.append(
-        KeepTogether(
-            [
-                Paragraph(
-                    "3.4." + str(sub_section) + " Alerts of Potential Threats", h3
-                ),
-                Paragraph(
-                    """
-                    Threats are derived by scanning suspicious chatter on the dark web that may have terms related to
-                    vulnerabilities. <font face="Franklin_Gothic_Medium_Regular">Table """
-                    + str(table_num)
-                    + """</font> identifies the most
-                    common threats.
-                """,
-                    body,
-                ),
-                point12_spacer,
-                doHeading(
-                    "Table " + str(table_num) + ". Alerts of Potential Threats.", table
-                ),
-            ]
-        )
-    )
-    sub_section += 1
-    table_num += 1
-    Story.append(
-        format_table(
-            data_dict["alerts_threats"],
-            table_header,
-            [2 * inch, 3.5 * inch, 1 * inch],
-            [None, body, None],
-        )
-    )
-
-    Story.append(point12_spacer)
-
-    Story.append(
-        KeepTogether(
-            [
-                Paragraph("3.4." + str(sub_section) + " Most Active Sites", h3),
-                Paragraph(
-                    """
-                    <font face="Franklin_Gothic_Medium_Regular">Table """
-                    + str(table_num)
-                    + """</font> includes the most active discussion forums where the organization is the topic of discussion.
-                """,
-                    body,
-                ),
-                point12_spacer,
-                doHeading("Table " + str(table_num) + ". Most Active Sites.", table),
-            ]
-        )
-    )
-    sub_section += 1
-    table_num += 1
-    Story.append(
-        format_table(
-            data_dict["dark_web_sites"],
-            table_header,
-            [5 * inch, 1.5 * inch],
-            [body, None],
-        )
-    )
-
-    Story.append(point12_spacer)
-
-    Story.append(
-        KeepTogether(
-            [
-                Paragraph("3.4." + str(sub_section) + " Invite-Only Market Alerts", h3),
-                Paragraph(
-                    """
-                    <font face="Franklin_Gothic_Medium_Regular">Table """
-                    + str(table_num)
-                    + """</font> includes the number of alerts on each invite-only
-                    market where compromised credentials were offered for sale.
-                """,
-                    body,
-                ),
-                point12_spacer,
-                doHeading(
-                    "Table " + str(table_num) + ". Invite-Only Market Alerts.", table
-                ),
-            ]
-        )
-    )
-    sub_section += 1
-    table_num += 1
-    Story.append(
-        format_table(
-            data_dict["markets_table"],
-            table_header,
-            [4 * inch, 2.5 * inch],
-            [None, None],
-        )
-    )
-
-    Story.append(point12_spacer)
-    Story.append(
-        KeepTogether(
-            [
-                Paragraph(
-                    "3.4." + str(sub_section) + " Most Active CVEs on the Dark Web", h3
-                ),
-                Paragraph(
-                    """
-                    Rated by CyberSixGill's Dynamic Vulnerability Exploit (DVE) Score, this state-of-the-art machine
-                    learning model automatically predicts the probability of a CVE being exploited.
-                    <font face="Franklin_Gothic_Medium_Regular">Table """
-                    + str(table_num)
-                    + """</font> identifies the top 10 CVEs this report period.
-                """,
-                    body,
-                ),
-                point12_spacer,
-                doHeading(
-                    "Table " + str(table_num) + ". Most Active CVEs on the Dark Web.",
-                    table,
-                ),
-            ]
-        )
-    )
-    sub_section += 1
-    table_num += 1
-    Story.append(
-        format_table(
-            data_dict["top_cves"],
-            table_header,
-            [1.5 * inch, 3.5 * inch, 1.5 * inch],
-            [
-                None,
-                body,
-                None,
-            ],
-        )
-    )
-
-    Story.append(point12_spacer)
-
-    Story.append(NextPageTemplate("ContentPage"))
     Story.append(PageBreak())
 
     # ***Start Generating Methodology Page***#
@@ -1603,9 +1181,45 @@ def report_gen(data_dict, soc_med_included=False):
     Story.append(doHeading("Appendix A: Additional Information", h1))
     Story.append(horizontal_line)
     Story.append(point12_spacer)
+    Story.append(
+        KeepTogether(
+            [
+                doHeading(" Most Active CVEs", h2),
+                Paragraph(
+                    """
+                    <font face="Franklin_Gothic_Medium_Regular">Table 6</font> ranks the top 10 CVEs based on their
+                    criticality and potential for exploitation. These vulnerabilities have been carefully evaluated
+                    to assess their risk levels and the likelihood of being targeted by malicious actors.
+
+                """,
+                    body,
+                ),
+                point12_spacer,
+                doHeading(
+                    "Table 6. Most Active CVEs.",
+                    table,
+                ),
+            ]
+        )
+    )
+
+    Story.append(
+        format_table(
+            data_dict["top_cves"],
+            table_header,
+            [1.5 * inch, 3.5 * inch, 1.5 * inch],
+            [
+                None,
+                body,
+                None,
+            ],
+        )
+    )
+    Story.append(point12_spacer)
+
     # If there are breaches print breach descriptions
     if len(data_dict["breach_appendix"]) > 0:
-        Story.append(Paragraph("Credential Breach Details: ", h2))
+        Story.append(doHeading("Credential Breach Details: ", h2))
         Story.append(Spacer(1, 6))
         for row in data_dict["breach_appendix"].itertuples(index=False):
             # Add anchor points for breach links
@@ -1626,19 +1240,19 @@ def report_gen(data_dict, soc_med_included=False):
 
     # If there are verified vulns print summary info table
     if len(data_dict["verif_vulns_summary"]) > 0:
-        Story.append(Paragraph("Verified Vulnerability Summaries:", h2))
+        Story.append(doHeading("Verified Vulnerability Summaries:", h2))
 
         Story.append(
             Paragraph(
                 """Verified vulnerabilities are determined by the Shodan scanner and identify assets with active, known vulnerabilities. More information
-                about CVE's can be found <link href="https://nvd.nist.gov/">here</link>.""",
+                about CVEs can be found <link href="https://nvd.nist.gov/">here</link>.""",
                 body,
             )
         )
         Story.append(point12_spacer)
         Story.append(
             doHeading(
-                "Table " + str(table_num) + ". Verified Vulnerabilities Summaries.",
+                "Table 7. Verified Vulnerabilities Summaries.",
                 table,
             )
         )
@@ -1672,7 +1286,7 @@ def report_gen(data_dict, soc_med_included=False):
             weaknesses found in public source information, which is readily available to an attacker to view.
             P&E utilizes passive reconnaissance services, dark web analysis, and other public information
             sources to identify suspected domain masquerading, credentials that have been leaked or exposed,
-            insecure devices, suspected vulnerabilities, and increased dark web activity related to their organization.
+            insecure devices, and suspected vulnerabilities.
             """,
                     body,
                 ),
@@ -1708,7 +1322,7 @@ def report_gen(data_dict, soc_med_included=False):
             """
             <font face="Franklin_Gothic_Medium_Regular">Credentials Leaked/Exposed:</font><br/>
             Credential leakage occurs when user credentials, often including passwords, are stolen via phishing campaigns,
-            network compromise or misconfiguration of databases leading to public exposure. This leaked data is then listed
+            network compromise, or misconfiguration of databases leading to public exposure. This leaked data is then listed
             for sale on numerous forums and sites on the dark web, which provides attackers easy access to a stakeholders'
             networks.
         """,
@@ -1727,25 +1341,6 @@ def report_gen(data_dict, soc_med_included=False):
             infections for stakeholders.
         """,
             indented,
-        )
-    )
-
-    Story.append(
-        KeepTogether(
-            Paragraph(
-                """
-                    <font face="Franklin_Gothic_Medium_Regular">Increased Dark Web Activity:</font><br/>
-                    Stakeholders and vulnerabilities are often discussed in various ways on the dark web. P&E monitors this
-                    activity, as well as the source (forums, websites, tutorials), and threat actors involved. A spike in
-                    activity can indicate a greater likelihood of an attack, vulnerability, or data leakage. Additionally,
-                    the urgency of the threat can be evaluated based on the threat actors involved along with other thresholds.
-                    Evaluating this content may also indicate if a stakeholder has been involved in a hacking incident as that data
-                    will often be published or offered 'for sale'. This information along with a list of the most active CVE's on the
-                    Dark Web may assist in prioritizing remediation activities.
-
-                """,
-                indented,
-            )
         )
     )
 
