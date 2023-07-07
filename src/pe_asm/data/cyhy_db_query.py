@@ -462,7 +462,7 @@ def execute_ips(conn, df):
         DO UPDATE SET
             origin_cidr = UUID(EXCLUDED.origin_cidr),
             last_seen = EXCLUDED.last_seen,
-            organizations_uid = EXCLUDE.organizations_uid;
+            organizations_uid = EXCLUDED.organizations_uid;
         """
         cursor = conn.cursor()
         extras.execute_values(cursor, sql.format(table, cols), tpls, page_size=100000)

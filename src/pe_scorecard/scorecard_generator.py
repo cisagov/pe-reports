@@ -141,76 +141,76 @@ def generate_scorecards(
             LOGGER.info("No orgs were identified for %s", sector)
             continue
 
-        # Calculate sector level data
-        (avg_time_to_remediate_df, vs_sector_results) = query_sector_ttr(
-            int(month), int(year), sector
-        )
-        was_sector_ttr = query_was_sector_ttr(start_date, sector)
+        # # Calculate sector level data
+        # (avg_time_to_remediate_df, vs_sector_results) = query_sector_ttr(
+        #     int(month), int(year), sector
+        # )
+        # was_sector_ttr = query_was_sector_ttr(start_date, sector)
 
-        # Loop through orgs that will get scorecards
-        for i, org in recipient_orgs_df.iterrows():
-            try:
-                LOGGER.info(
-                    "RUNNING SCORECARD ON %s in the %s sector",
-                    org["cyhy_db_name"],
-                    sector,
-                )
-                # If org is a parent grab the children to be included in rollup
-                if org["is_parent"]:
-                    children_df = sector_orgs[
-                        (sector_orgs["parent_org_uid"] == org["organizations_uid"])
-                        & (sector_orgs["retired"] == False)
-                    ]
-                    org_uid_list = children_df["organizations_uid"].values.tolist()
-                    org_uid_list.append(org["organizations_uid"])
-                    cyhy_id_list = children_df["cyhy_db_name"].values.tolist()
-                    cyhy_id_list.append(org["cyhy_db_name"])
+        # # Loop through orgs that will get scorecards
+        # for i, org in recipient_orgs_df.iterrows():
+        #     try:
+        #         LOGGER.info(
+        #             "RUNNING SCORECARD ON %s in the %s sector",
+        #             org["cyhy_db_name"],
+        #             sector,
+        #         )
+        #         # If org is a parent grab the children to be included in rollup
+        #         if org["is_parent"]:
+        #             children_df = sector_orgs[
+        #                 (sector_orgs["parent_org_uid"] == org["organizations_uid"])
+        #                 & (sector_orgs["retired"] == False)
+        #             ]
+        #             org_uid_list = children_df["organizations_uid"].values.tolist()
+        #             org_uid_list.append(org["organizations_uid"])
+        #             cyhy_id_list = children_df["cyhy_db_name"].values.tolist()
+        #             cyhy_id_list.append(org["cyhy_db_name"])
 
-                else:
-                    org_uid_list = [org["organizations_uid"]]
-                    cyhy_id_list = [org["cyhy_db_name"]]
+        #         else:
+        #             org_uid_list = [org["organizations_uid"]]
+        #             cyhy_id_list = [org["cyhy_db_name"]]
 
-                # Calculate rollup level datapoints
-                vs_time_to_remediate = avg_time_to_remediate_df[
-                    avg_time_to_remediate_df["cyhy_db_name"].isin(cyhy_id_list)
-                ]
+        #         # Calculate rollup level datapoints
+        #         vs_time_to_remediate = avg_time_to_remediate_df[
+        #             avg_time_to_remediate_df["cyhy_db_name"].isin(cyhy_id_list)
+        #         ]
 
-                total_kevs = vs_time_to_remediate["kev_count"].sum()
-                vs_time_to_remediate["weighted_kev"] = (
-                    vs_time_to_remediate["kev_count"] / total_kevs
-                ) * vs_time_to_remediate["kev_ttr"]
+        #         total_kevs = vs_time_to_remediate["kev_count"].sum()
+        #         vs_time_to_remediate["weighted_kev"] = (
+        #             vs_time_to_remediate["kev_count"] / total_kevs
+        #         ) * vs_time_to_remediate["kev_ttr"]
 
-                total_critical = vs_time_to_remediate["critical_count"].sum()
-                vs_time_to_remediate["weighted_critical"] = (
-                    vs_time_to_remediate["critical_count"] / total_critical
-                ) * vs_time_to_remediate["critical_ttr"]
+        #         total_critical = vs_time_to_remediate["critical_count"].sum()
+        #         vs_time_to_remediate["weighted_critical"] = (
+        #             vs_time_to_remediate["critical_count"] / total_critical
+        #         ) * vs_time_to_remediate["critical_ttr"]
 
-                total_high = vs_time_to_remediate["high_count"].sum()
-                vs_time_to_remediate["weighted_high"] = (
-                    vs_time_to_remediate["high_count"] / total_high
-                ) * vs_time_to_remediate["high_ttr"]
+        #         total_high = vs_time_to_remediate["high_count"].sum()
+        #         vs_time_to_remediate["weighted_high"] = (
+        #             vs_time_to_remediate["high_count"] / total_high
+        #         ) * vs_time_to_remediate["high_ttr"]
 
-                # Instantiate Scorecard Variable
-                scorecard = Scorecard(
-                    month,
-                    year,
-                    sector,
-                    org,
-                    org_uid_list,
-                    cyhy_id_list,
-                    vs_time_to_remediate,
-                    vs_sector_results,
-                    was_sector_ttr,
-                )
-                scorecard.fill_scorecard_dict()
+        #         # Instantiate Scorecard Variable
+        #         scorecard = Scorecard(
+        #             month,
+        #             year,
+        #             sector,
+        #             org,
+        #             org_uid_list,
+        #             cyhy_id_list,
+        #             vs_time_to_remediate,
+        #             vs_sector_results,
+        #             was_sector_ttr,
+        #         )
+        #         scorecard.fill_scorecard_dict()
 
-                # Insert dictionary into the summary table
-                execute_scorecard_summary_data(scorecard.scorecard_dict)
+        #         # Insert dictionary into the summary table
+        #         execute_scorecard_summary_data(scorecard.scorecard_dict)
 
-            except Exception as e:
-                LOGGER.error("Scorecard failed for %s: %s", org["cyhy_db_name"], e)
-                LOGGER.error(traceback.format_exc())
-                failed += org["cyhy_db_name"]
+        #     except Exception as e:
+        #         LOGGER.error("Scorecard failed for %s: %s", org["cyhy_db_name"], e)
+        #         LOGGER.error(traceback.format_exc())
+        #         failed += org["cyhy_db_name"]
 
         # Calculate scores
         sectors_df = sector_orgs[["organizations_uid", "cyhy_db_name"]]
@@ -388,7 +388,6 @@ def generate_scorecards(
                     + ".pdf"
                 )
 
-                print(scorecard_dict)
                 # Create Scorecard
                 create_scorecard(scorecard_dict, file_name, True, True, exclude_bods)
 
