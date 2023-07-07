@@ -7,12 +7,13 @@ import os
 
 # Third-Party Libraries
 import chevron
-from data.db_query import sanitize_uid
 
 from .charts import Charts
 
 # Import Classes
 from .metrics import Credentials, Cyber_Six, Domains_Masqs, Malware_Vulns
+from .data.db_query import sanitize_uid
+
 
 
 # Style and build tables
