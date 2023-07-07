@@ -8,6 +8,7 @@ import json
 import logging
 import socket
 import sys
+import time
 
 # Third-Party Libraries
 from decouple import config as api_config
@@ -928,3 +929,1470 @@ def upsert_new_cves(new_cves):
     finally:
         if conn is not None:
             close(conn)
+
+
+# v ---------- D-Score API Queries ---------- v
+# This needs to be filled in with an API key:
+pe_api_key = CONN_PARAMS_DIC_STAGING.get("pe_api_key")
+
+
+def api_dscore_vs_cert(org_list):
+    """
+    Query API for all VS certificate data needed for D-Score calculation.
+
+    Args:
+        org_list: The specified list of organizations to retrieve data for
+    Return:
+        All VS certificate data of the specified orgs needed for the D-Score
+    """
+    # Endpoint info
+    create_task_url = (
+        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/dscore_vs_cert"
+    )
+    check_task_url = (
+        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/dscore_vs_cert/task/"
+    )
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": pe_api_key,
+    }
+    data = json.dumps({"specified_orgs": org_list})
+    try:
+        # Create task for query
+        create_task_result = requests.post(
+            create_task_url, headers=headers, data=data
+        ).json()
+        task_id = create_task_result.get("task_id")
+        LOGGER.info(
+            "Created task for dscore_vs_cert endpoint query, task_id: ", task_id
+        )
+        # Once task has been started, keep pinging task status until finished
+        check_task_url += task_id
+        task_status = "Pending"
+        while task_status != "Completed" and task_status != "Failed":
+            # Ping task status endpoint and get status
+            check_task_resp = requests.get(check_task_url, headers=headers).json()
+            task_status = check_task_resp.get("status")
+            LOGGER.info("\tPinged dscore_vs_cert status endpoint, status:", task_status)
+            time.sleep(3)
+    except requests.exceptions.HTTPError as errh:
+        LOGGER.error(errh)
+    except requests.exceptions.ConnectionError as errc:
+        LOGGER.error(errc)
+    except requests.exceptions.Timeout as errt:
+        LOGGER.error(errt)
+    except requests.exceptions.RequestException as err:
+        LOGGER.error(err)
+    except json.decoder.JSONDecodeError as err:
+        LOGGER.error(err)
+
+    # Once task finishes, return result
+    if task_status == "Completed":
+        result_df = pd.DataFrame.from_dict(check_task_resp.get("result"))
+        return result_df
+    else:
+        raise Exception("dscore_vs_cert query task failed, details: ", check_task_resp)
+
+
+def api_dscore_vs_mail(org_list):
+    """
+    Query API for all VS mail data needed for D-Score calculation.
+
+    Args:
+        org_list: The specified list of organizations to retrieve data for
+    Return:
+        All VS mail data of the specified orgs needed for the D-Score
+    """
+    # Endpoint info
+    create_task_url = (
+        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/dscore_vs_mail"
+    )
+    check_task_url = (
+        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/dscore_vs_mail/task/"
+    )
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": pe_api_key,
+    }
+    data = json.dumps({"specified_orgs": org_list})
+    try:
+        # Create task for query
+        create_task_result = requests.post(
+            create_task_url, headers=headers, data=data
+        ).json()
+        task_id = create_task_result.get("task_id")
+        LOGGER.info(
+            "Created task for dscore_vs_mail endpoint query, task_id: ", task_id
+        )
+        # Once task has been started, keep pinging task status until finished
+        check_task_url += task_id
+        task_status = "Pending"
+        while task_status != "Completed" and task_status != "Failed":
+            # Ping task status endpoint and get status
+            check_task_resp = requests.get(check_task_url, headers=headers).json()
+            task_status = check_task_resp.get("status")
+            LOGGER.info("\tPinged dscore_vs_mail status endpoint, status:", task_status)
+            time.sleep(3)
+    except requests.exceptions.HTTPError as errh:
+        LOGGER.error(errh)
+    except requests.exceptions.ConnectionError as errc:
+        LOGGER.error(errc)
+    except requests.exceptions.Timeout as errt:
+        LOGGER.error(errt)
+    except requests.exceptions.RequestException as err:
+        LOGGER.error(err)
+    except json.decoder.JSONDecodeError as err:
+        LOGGER.error(err)
+
+    # Once task finishes, return result
+    if task_status == "Completed":
+        result_df = pd.DataFrame.from_dict(check_task_resp.get("result"))
+        return result_df
+    else:
+        raise Exception("dscore_vs_mail query task failed, details: ", check_task_resp)
+
+
+def api_dscore_pe_ip(org_list):
+    """
+    Query API for all PE IP data needed for D-Score calculation.
+
+    Args:
+        org_list: The specified list of organizations to retrieve data for
+    Return:
+        All PE IP data of the specified orgs needed for the D-Score
+    """
+    # Endpoint info
+    create_task_url = (
+        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/dscore_pe_ip"
+    )
+    check_task_url = (
+        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/dscore_pe_ip/task/"
+    )
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": pe_api_key,
+    }
+    data = json.dumps({"specified_orgs": org_list})
+    try:
+        # Create task for query
+        create_task_result = requests.post(
+            create_task_url, headers=headers, data=data
+        ).json()
+        task_id = create_task_result.get("task_id")
+        LOGGER.info("Created task for dscore_pe_ip endpoint query, task_id: ", task_id)
+        # Once task has been started, keep pinging task status until finished
+        check_task_url += task_id
+        task_status = "Pending"
+        while task_status != "Completed" and task_status != "Failed":
+            # Ping task status endpoint and get status
+            check_task_resp = requests.get(check_task_url, headers=headers).json()
+            task_status = check_task_resp.get("status")
+            LOGGER.info("\tPinged dscore_pe_ip status endpoint, status:", task_status)
+            time.sleep(3)
+    except requests.exceptions.HTTPError as errh:
+        LOGGER.error(errh)
+    except requests.exceptions.ConnectionError as errc:
+        LOGGER.error(errc)
+    except requests.exceptions.Timeout as errt:
+        LOGGER.error(errt)
+    except requests.exceptions.RequestException as err:
+        LOGGER.error(err)
+    except json.decoder.JSONDecodeError as err:
+        LOGGER.error(err)
+
+    # Once task finishes, return result
+    if task_status == "Completed":
+        result_df = pd.DataFrame.from_dict(check_task_resp.get("result"))
+        return result_df
+    else:
+        raise Exception("dscore_pe_ip query task failed, details: ", check_task_resp)
+
+
+def api_dscore_pe_domain(org_list):
+    """
+    Query API for all PE domain data needed for D-Score calculation.
+
+    Args:
+        org_list: The specified list of organizations to retrieve data for
+    Return:
+        All PE domain data of the specified orgs needed for the D-Score
+    """
+    # Endpoint info
+    create_task_url = (
+        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/dscore_pe_domain"
+    )
+    check_task_url = (
+        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/dscore_pe_domain/task/"
+    )
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": pe_api_key,
+    }
+    data = json.dumps({"specified_orgs": org_list})
+    try:
+        # Create task for query
+        create_task_result = requests.post(
+            create_task_url, headers=headers, data=data
+        ).json()
+        task_id = create_task_result.get("task_id")
+        LOGGER.info(
+            "Created task for dscore_pe_domain endpoint query, task_id: ", task_id
+        )
+        # Once task has been started, keep pinging task status until finished
+        check_task_url += task_id
+        task_status = "Pending"
+        while task_status != "Completed" and task_status != "Failed":
+            # Ping task status endpoint and get status
+            check_task_resp = requests.get(check_task_url, headers=headers).json()
+            task_status = check_task_resp.get("status")
+            LOGGER.info(
+                "\tPinged dscore_pe_domain status endpoint, status:", task_status
+            )
+            time.sleep(3)
+    except requests.exceptions.HTTPError as errh:
+        LOGGER.error(errh)
+    except requests.exceptions.ConnectionError as errc:
+        LOGGER.error(errc)
+    except requests.exceptions.Timeout as errt:
+        LOGGER.error(errt)
+    except requests.exceptions.RequestException as err:
+        LOGGER.error(err)
+    except json.decoder.JSONDecodeError as err:
+        LOGGER.error(err)
+
+    # Once task finishes, return result
+    if task_status == "Completed":
+        result_df = pd.DataFrame.from_dict(check_task_resp.get("result"))
+        return result_df
+    else:
+        raise Exception(
+            "dscore_pe_domain query task failed, details: ", check_task_resp
+        )
+
+
+def api_dscore_was_webapp(org_list):
+    """
+    Query API for all WAS webapp data needed for D-Score calculation.
+
+    Args:
+        org_list: The specified list of organizations to retrieve data for
+    Return:
+        All WAS webapp data of the specified orgs needed for the D-Score
+    """
+    # Endpoint info
+    create_task_url = (
+        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/dscore_was_webapp"
+    )
+    check_task_url = (
+        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/dscore_was_webapp/task/"
+    )
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": pe_api_key,
+    }
+    data = json.dumps({"specified_orgs": org_list})
+    try:
+        # Create task for query
+        create_task_result = requests.post(
+            create_task_url, headers=headers, data=data
+        ).json()
+        task_id = create_task_result.get("task_id")
+        LOGGER.info(
+            "Created task for dscore_was_webapp endpoint query, task_id: ", task_id
+        )
+        # Once task has been started, keep pinging task status until finished
+        check_task_url += task_id
+        task_status = "Pending"
+        while task_status != "Completed" and task_status != "Failed":
+            # Ping task status endpoint and get status
+            check_task_resp = requests.get(check_task_url, headers=headers).json()
+            task_status = check_task_resp.get("status")
+            LOGGER.info(
+                "\tPinged dscore_was_webapp status endpoint, status:", task_status
+            )
+            time.sleep(3)
+    except requests.exceptions.HTTPError as errh:
+        LOGGER.error(errh)
+    except requests.exceptions.ConnectionError as errc:
+        LOGGER.error(errc)
+    except requests.exceptions.Timeout as errt:
+        LOGGER.error(errt)
+    except requests.exceptions.RequestException as err:
+        LOGGER.error(err)
+    except json.decoder.JSONDecodeError as err:
+        LOGGER.error(err)
+
+    # Once task finishes, return result
+    if task_status == "Completed":
+        result_df = pd.DataFrame.from_dict(check_task_resp.get("result"))
+        return result_df
+    else:
+        raise Exception(
+            "dscore_was_webapp query task failed, details: ", check_task_resp
+        )
+
+
+def api_fceb_status(org_list):
+    """
+    Query API for the FCEB status of a list of organizations.
+
+    Args:
+        org_list: The specified list of organizations to retrieve data for
+    Return:
+        The FCEB status of the specified list of organizations
+    """
+    # Endpoint info
+    create_task_url = "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/fceb_status"
+    check_task_url = (
+        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/fceb_status/task/"
+    )
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": pe_api_key,
+    }
+    data = json.dumps({"specified_orgs": org_list})
+    try:
+        # Create task for query
+        create_task_result = requests.post(
+            create_task_url, headers=headers, data=data
+        ).json()
+        task_id = create_task_result.get("task_id")
+        LOGGER.info("Created task for fceb_status endpoint query, task_id: ", task_id)
+        # Once task has been started, keep pinging task status until finished
+        check_task_url += task_id
+        task_status = "Pending"
+        while task_status != "Completed" and task_status != "Failed":
+            # Ping task status endpoint and get status
+            check_task_resp = requests.get(check_task_url, headers=headers).json()
+            task_status = check_task_resp.get("status")
+            LOGGER.info("\tPinged fceb_status status endpoint, status:", task_status)
+            time.sleep(3)
+    except requests.exceptions.HTTPError as errh:
+        LOGGER.error(errh)
+    except requests.exceptions.ConnectionError as errc:
+        LOGGER.error(errc)
+    except requests.exceptions.Timeout as errt:
+        LOGGER.error(errt)
+    except requests.exceptions.RequestException as err:
+        LOGGER.error(err)
+    except json.decoder.JSONDecodeError as err:
+        LOGGER.error(err)
+
+    # Once task finishes, return result
+    if task_status == "Completed":
+        result_df = pd.DataFrame.from_dict(check_task_resp.get("result"))
+        return result_df
+    else:
+        raise Exception("fceb_status query task failed, details: ", check_task_resp)
+
+
+# v ---------- I-Score API Queries ---------- v
+def api_iscore_vs_vuln(org_list):
+    """
+    Query API for all VS vuln data needed for I-Score calculation.
+
+    Args:
+        org_list: The specified list of organizations to retrieve data for
+    Return:
+        All VS vuln data of the specified orgs needed for the I-Score
+    """
+    # Endpoint info
+    create_task_url = (
+        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/iscore_vs_vuln"
+    )
+    check_task_url = (
+        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/iscore_vs_vuln/task/"
+    )
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": pe_api_key,
+    }
+    data = json.dumps({"specified_orgs": org_list})
+    try:
+        # Create task for query
+        create_task_result = requests.post(
+            create_task_url, headers=headers, data=data
+        ).json()
+        task_id = create_task_result.get("task_id")
+        LOGGER.info(
+            "Created task for iscore_vs_vuln endpoint query, task_id: ", task_id
+        )
+        # Once task has been started, keep pinging task status until finished
+        check_task_url += task_id
+        task_status = "Pending"
+        while task_status != "Completed" and task_status != "Failed":
+            # Ping task status endpoint and get status
+            check_task_resp = requests.get(check_task_url, headers=headers).json()
+            task_status = check_task_resp.get("status")
+            LOGGER.info("\tPinged iscore_vs_vuln status endpoint, status:", task_status)
+            time.sleep(3)
+    except requests.exceptions.HTTPError as errh:
+        LOGGER.error(errh)
+    except requests.exceptions.ConnectionError as errc:
+        LOGGER.error(errc)
+    except requests.exceptions.Timeout as errt:
+        LOGGER.error(errt)
+    except requests.exceptions.RequestException as err:
+        LOGGER.error(err)
+    except json.decoder.JSONDecodeError as err:
+        LOGGER.error(err)
+
+    # Once task finishes, return result
+    if task_status == "Completed":
+        result_df = pd.DataFrame.from_dict(check_task_resp.get("result"))
+        # If empty dataframe comes back, insert placeholder data
+        if result_df.empty:
+            result_df = pd.concat(
+                [
+                    result_df,
+                    pd.DataFrame(
+                        {
+                            "organizations_uid": "test_org",
+                            "parent_org_uid": "test_parent_org",
+                            "cve_name": "test_cve",
+                            "cvss_score": 1.0,
+                        },
+                        index=[0],
+                    ),
+                ],
+                ignore_index=True,
+            )
+        return result_df
+    else:
+        raise Exception("iscore_vs_vuln query task failed, details: ", check_task_resp)
+
+
+def api_iscore_vs_vuln_prev(org_list, start_date, end_date):
+    """
+    Query API for all previous VS vuln data needed for I-Score calculation.
+
+    Args:
+        org_list: The specified list of organizations to retrieve data for
+        start_date: the start date (datetime.date object) of the report period
+        end_date: the end date (datetime.date object) of the report period
+    Return:
+        All previous VS vuln data of the specified orgs needed for the I-Score
+    """
+    # Convert datetime.date objects to string
+    if isinstance(start_date, datetime.date):
+        start_date = start_date.strftime("%Y-%m-%d")
+    if isinstance(end_date, datetime.date):
+        end_date = end_date.strftime("%Y-%m-%d")
+    # Endpoint info
+    create_task_url = (
+        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/iscore_vs_vuln_prev"
+    )
+    check_task_url = (
+        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/iscore_vs_vuln_prev/task/"
+    )
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": pe_api_key,
+    }
+    data = json.dumps(
+        {"specified_orgs": org_list, "start_date": start_date, "end_date": end_date}
+    )
+    try:
+        # Create task for query
+        create_task_result = requests.post(
+            create_task_url, headers=headers, data=data
+        ).json()
+        task_id = create_task_result.get("task_id")
+        LOGGER.info(
+            "Created task for iscore_vs_vuln_prev endpoint query, task_id: ", task_id
+        )
+        # Once task has been started, keep pinging task status until finished
+        check_task_url += task_id
+        task_status = "Pending"
+        while task_status != "Completed" and task_status != "Failed":
+            # Ping task status endpoint and get status
+            check_task_resp = requests.get(check_task_url, headers=headers).json()
+            task_status = check_task_resp.get("status")
+            LOGGER.info(
+                "\tPinged iscore_vs_vuln_prev status endpoint, status:", task_status
+            )
+            time.sleep(3)
+    except requests.exceptions.HTTPError as errh:
+        LOGGER.error(errh)
+    except requests.exceptions.ConnectionError as errc:
+        LOGGER.error(errc)
+    except requests.exceptions.Timeout as errt:
+        LOGGER.error(errt)
+    except requests.exceptions.RequestException as err:
+        LOGGER.error(err)
+    except json.decoder.JSONDecodeError as err:
+        LOGGER.error(err)
+
+    # Once task finishes, return result
+    if task_status == "Completed":
+        result_df = pd.DataFrame.from_dict(check_task_resp.get("result"))
+        # If empty dataframe comes back, insert placeholder data
+        if result_df.empty:
+            result_df = pd.concat(
+                [
+                    result_df,
+                    pd.DataFrame(
+                        {
+                            "organizations_uid": "test_org",
+                            "parent_org_uid": "test_parent_org",
+                            "cve_name": "test_cve",
+                            "cvss_score": 1.0,
+                            "time_closed": datetime.date(1, 1, 1),
+                        },
+                        index=[0],
+                    ),
+                ],
+                ignore_index=True,
+            )
+        else:
+            result_df["time_closed"] = pd.to_datetime(result_df["time_closed"]).dt.date
+        return result_df
+    else:
+        raise Exception(
+            "iscore_vs_vuln_prev query task failed, details: ", check_task_resp
+        )
+
+
+def api_iscore_pe_vuln(org_list, start_date, end_date):
+    """
+    Query API for all PE vuln data needed for I-Score calculation.
+
+    Args:
+        org_list: The specified list of organizations to retrieve data for
+        start_date: the start date (datetime.date object) of the report period
+        end_date: the end date (datetime.date object) of the report period
+    Return:
+        All PE vuln data of the specified orgs needed for the I-Score
+    """
+    # Convert datetime.date objects to string
+    if isinstance(start_date, datetime.date):
+        start_date = start_date.strftime("%Y-%m-%d")
+    if isinstance(end_date, datetime.date):
+        end_date = end_date.strftime("%Y-%m-%d")
+    # Endpoint info
+    create_task_url = (
+        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/iscore_pe_vuln"
+    )
+    check_task_url = (
+        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/iscore_pe_vuln/task/"
+    )
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": pe_api_key,
+    }
+    data = json.dumps(
+        {"specified_orgs": org_list, "start_date": start_date, "end_date": end_date}
+    )
+    try:
+        # Create task for query
+        create_task_result = requests.post(
+            create_task_url, headers=headers, data=data
+        ).json()
+        task_id = create_task_result.get("task_id")
+        LOGGER.info(
+            "Created task for iscore_pe_vuln endpoint query, task_id: ", task_id
+        )
+        # Once task has been started, keep pinging task status until finished
+        check_task_url += task_id
+        task_status = "Pending"
+        while task_status != "Completed" and task_status != "Failed":
+            # Ping task status endpoint and get status
+            check_task_resp = requests.get(check_task_url, headers=headers).json()
+            task_status = check_task_resp.get("status")
+            LOGGER.info("\tPinged iscore_pe_vuln status endpoint, status:", task_status)
+            time.sleep(3)
+    except requests.exceptions.HTTPError as errh:
+        LOGGER.error(errh)
+    except requests.exceptions.ConnectionError as errc:
+        LOGGER.error(errc)
+    except requests.exceptions.Timeout as errt:
+        LOGGER.error(errt)
+    except requests.exceptions.RequestException as err:
+        LOGGER.error(err)
+    except json.decoder.JSONDecodeError as err:
+        LOGGER.error(err)
+
+    # Once task finishes, return result
+    if task_status == "Completed":
+        result_df = pd.DataFrame.from_dict(check_task_resp.get("result"))
+        # If empty dataframe comes back, insert placeholder data
+        if result_df.empty:
+            result_df = pd.concat(
+                [
+                    result_df,
+                    pd.DataFrame(
+                        {
+                            "organizations_uid": "test_org",
+                            "parent_org_uid": "test_parent_org",
+                            "date": datetime.date(1, 1, 1),
+                            "cve_name": "test_cve",
+                            "cvss_score": 1.0,
+                        },
+                        index=[0],
+                    ),
+                ],
+                ignore_index=True,
+            )
+        else:
+            result_df["date"] = pd.to_datetime(result_df["date"]).dt.date
+        return result_df
+    else:
+        raise Exception("iscore_pe_vuln query task failed, details: ", check_task_resp)
+
+
+def api_iscore_pe_cred(org_list, start_date, end_date):
+    """
+    Query API for all PE cred data needed for I-Score calculation.
+
+    Args:
+        org_list: The specified list of organizations to retrieve data for
+        start_date: the start date (datetime.date object) of the report period
+        end_date: the end date (datetime.date object) of the report period
+    Return:
+        All PE cred data of the specified orgs needed for the I-Score
+    """
+    # Convert datetime.date objects to string
+    if isinstance(start_date, datetime.date):
+        start_date = start_date.strftime("%Y-%m-%d")
+    if isinstance(end_date, datetime.date):
+        end_date = end_date.strftime("%Y-%m-%d")
+    # Endpoint info
+    create_task_url = (
+        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/iscore_pe_cred"
+    )
+    check_task_url = (
+        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/iscore_pe_cred/task/"
+    )
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": pe_api_key,
+    }
+    data = json.dumps(
+        {"specified_orgs": org_list, "start_date": start_date, "end_date": end_date}
+    )
+    try:
+        # Create task for query
+        create_task_result = requests.post(
+            create_task_url, headers=headers, data=data
+        ).json()
+        task_id = create_task_result.get("task_id")
+        LOGGER.info(
+            "Created task for iscore_pe_cred endpoint query, task_id: ", task_id
+        )
+        # Once task has been started, keep pinging task status until finished
+        check_task_url += task_id
+        task_status = "Pending"
+        while task_status != "Completed" and task_status != "Failed":
+            # Ping task status endpoint and get status
+            check_task_resp = requests.get(check_task_url, headers=headers).json()
+            task_status = check_task_resp.get("status")
+            LOGGER.info("\tPinged iscore_pe_cred status endpoint, status:", task_status)
+            time.sleep(3)
+    except requests.exceptions.HTTPError as errh:
+        LOGGER.error(errh)
+    except requests.exceptions.ConnectionError as errc:
+        LOGGER.error(errc)
+    except requests.exceptions.Timeout as errt:
+        LOGGER.error(errt)
+    except requests.exceptions.RequestException as err:
+        LOGGER.error(err)
+    except json.decoder.JSONDecodeError as err:
+        LOGGER.error(err)
+
+    # Once task finishes, return result
+    if task_status == "Completed":
+        result_df = pd.DataFrame.from_dict(check_task_resp.get("result"))
+        # If empty dataframe comes back, insert placeholder data
+        if result_df.empty:
+            result_df = pd.concat(
+                [
+                    result_df,
+                    pd.DataFrame(
+                        {
+                            "organizations_uid": "test_org",
+                            "parent_org_uid": "test_parent_org",
+                            "date": datetime.date(1, 1, 1),
+                            "password_creds": 0,
+                            "total_creds": 0,
+                        },
+                        index=[0],
+                    ),
+                ],
+                ignore_index=True,
+            )
+        else:
+            result_df["date"] = pd.to_datetime(result_df["date"]).dt.date
+        return result_df
+    else:
+        raise Exception("iscore_pe_cred query task failed, details: ", check_task_resp)
+
+
+def api_iscore_pe_breach(org_list, start_date, end_date):
+    """
+    Query API for all PE breach data needed for I-Score calculation.
+
+    Args:
+        org_list: The specified list of organizations to retrieve data for
+        start_date: the start date (datetime.date object) of the report period
+        end_date: the end date (datetime.date object) of the report period
+    Return:
+        All PE breach data of the specified orgs needed for the I-Score
+    """
+    # Convert datetime.date objects to string
+    if isinstance(start_date, datetime.date):
+        start_date = start_date.strftime("%Y-%m-%d")
+    if isinstance(end_date, datetime.date):
+        end_date = end_date.strftime("%Y-%m-%d")
+    # Endpoint info
+    create_task_url = (
+        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/iscore_pe_breach"
+    )
+    check_task_url = (
+        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/iscore_pe_breach/task/"
+    )
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": pe_api_key,
+    }
+    data = json.dumps(
+        {"specified_orgs": org_list, "start_date": start_date, "end_date": end_date}
+    )
+    try:
+        # Create task for query
+        create_task_result = requests.post(
+            create_task_url, headers=headers, data=data
+        ).json()
+        task_id = create_task_result.get("task_id")
+        LOGGER.info(
+            "Created task for iscore_pe_breach endpoint query, task_id: ", task_id
+        )
+        # Once task has been started, keep pinging task status until finished
+        check_task_url += task_id
+        task_status = "Pending"
+        while task_status != "Completed" and task_status != "Failed":
+            # Ping task status endpoint and get status
+            check_task_resp = requests.get(check_task_url, headers=headers).json()
+            task_status = check_task_resp.get("status")
+            LOGGER.info(
+                "\tPinged iscore_pe_breach status endpoint, status:", task_status
+            )
+            time.sleep(3)
+    except requests.exceptions.HTTPError as errh:
+        LOGGER.error(errh)
+    except requests.exceptions.ConnectionError as errc:
+        LOGGER.error(errc)
+    except requests.exceptions.Timeout as errt:
+        LOGGER.error(errt)
+    except requests.exceptions.RequestException as err:
+        LOGGER.error(err)
+    except json.decoder.JSONDecodeError as err:
+        LOGGER.error(err)
+
+    # Once task finishes, return result
+    if task_status == "Completed":
+        result_df = pd.DataFrame.from_dict(check_task_resp.get("result"))
+        # If empty dataframe comes back, insert placeholder data
+        if result_df.empty:
+            result_df = pd.concat(
+                [
+                    result_df,
+                    pd.DataFrame(
+                        {
+                            "organizations_uid": "test_org",
+                            "parent_org_uid": "test_parent_org",
+                            "date": datetime.date(1, 1, 1),
+                            "breach_count": 0,
+                        },
+                        index=[0],
+                    ),
+                ],
+                ignore_index=True,
+            )
+        else:
+            result_df["date"] = pd.to_datetime(result_df["date"]).dt.date
+        return result_df
+    else:
+        raise Exception(
+            "iscore_pe_breach query task failed, details: ", check_task_resp
+        )
+
+
+def api_iscore_pe_darkweb(org_list, start_date, end_date):
+    """
+    Query API for all PE darkweb data needed for I-Score calculation.
+
+    Args:
+        org_list: The specified list of organizations to retrieve data for
+        start_date: the start date (datetime.date object) of the report period
+        end_date: the end date (datetime.date object) of the report period
+    Return:
+        All PE darkweb data of the specified orgs needed for the I-Score
+    """
+    # Convert datetime.date objects to string
+    if isinstance(start_date, datetime.date):
+        start_date = start_date.strftime("%Y-%m-%d")
+    if isinstance(end_date, datetime.date):
+        end_date = end_date.strftime("%Y-%m-%d")
+    # Endpoint info
+    create_task_url = (
+        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/iscore_pe_darkweb"
+    )
+    check_task_url = (
+        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/iscore_pe_darkweb/task/"
+    )
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": pe_api_key,
+    }
+    data = json.dumps(
+        {"specified_orgs": org_list, "start_date": start_date, "end_date": end_date}
+    )
+    try:
+        # Create task for query
+        create_task_result = requests.post(
+            create_task_url, headers=headers, data=data
+        ).json()
+        task_id = create_task_result.get("task_id")
+        LOGGER.info(
+            "Created task for iscore_pe_darkweb endpoint query, task_id: ", task_id
+        )
+        # Once task has been started, keep pinging task status until finished
+        check_task_url += task_id
+        task_status = "Pending"
+        while task_status != "Completed" and task_status != "Failed":
+            # Ping task status endpoint and get status
+            check_task_resp = requests.get(check_task_url, headers=headers).json()
+            task_status = check_task_resp.get("status")
+            LOGGER.info(
+                "\tPinged iscore_pe_darkweb status endpoint, status:", task_status
+            )
+            time.sleep(3)
+    except requests.exceptions.HTTPError as errh:
+        LOGGER.error(errh)
+    except requests.exceptions.ConnectionError as errc:
+        LOGGER.error(errc)
+    except requests.exceptions.Timeout as errt:
+        LOGGER.error(errt)
+    except requests.exceptions.RequestException as err:
+        LOGGER.error(err)
+    except json.decoder.JSONDecodeError as err:
+        LOGGER.error(err)
+
+    # Once task finishes, return result
+    if task_status == "Completed":
+        result_df = pd.DataFrame.from_dict(check_task_resp.get("result"))
+        # If empty dataframe comes back, insert placeholder data
+        if result_df.empty:
+            result_df = pd.concat(
+                [
+                    result_df,
+                    pd.DataFrame(
+                        {
+                            "organizations_uid": "test_org",
+                            "parent_org_uid": "test_parent_org",
+                            "alert_type": "TEST_TYPE",
+                            "date": datetime.date(1, 1, 1),
+                            "Count": 0,
+                        },
+                        index=[0],
+                    ),
+                ],
+                ignore_index=True,
+            )
+        else:
+            result_df["date"] = pd.to_datetime(result_df["date"]).dt.date
+        return result_df
+    else:
+        raise Exception(
+            "iscore_pe_darkweb query task failed, details: ", check_task_resp
+        )
+
+
+def api_iscore_pe_protocol(org_list, start_date, end_date):
+    """
+    Query API for all PE protocol data needed for I-Score calculation.
+
+    Args:
+        org_list: The specified list of organizations to retrieve data for
+        start_date: the start date (datetime.date object) of the report period
+        end_date: the end date (datetime.date object) of the report period
+    Return:
+        All PE protocol data of the specified orgs needed for the I-Score
+    """
+    # Convert datetime.date objects to string
+    if isinstance(start_date, datetime.date):
+        start_date = start_date.strftime("%Y-%m-%d")
+    if isinstance(end_date, datetime.date):
+        end_date = end_date.strftime("%Y-%m-%d")
+    # Endpoint info
+    create_task_url = (
+        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/iscore_pe_protocol"
+    )
+    check_task_url = (
+        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/iscore_pe_protocol/task/"
+    )
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": pe_api_key,
+    }
+    data = json.dumps(
+        {"specified_orgs": org_list, "start_date": start_date, "end_date": end_date}
+    )
+    try:
+        # Create task for query
+        create_task_result = requests.post(
+            create_task_url, headers=headers, data=data
+        ).json()
+        task_id = create_task_result.get("task_id")
+        LOGGER.info(
+            "Created task for iscore_pe_protocol endpoint query, task_id: ", task_id
+        )
+        # Once task has been started, keep pinging task status until finished
+        check_task_url += task_id
+        task_status = "Pending"
+        while task_status != "Completed" and task_status != "Failed":
+            # Ping task status endpoint and get status
+            check_task_resp = requests.get(check_task_url, headers=headers).json()
+            task_status = check_task_resp.get("status")
+            LOGGER.info(
+                "\tPinged iscore_pe_protocol status endpoint, status:", task_status
+            )
+            time.sleep(3)
+    except requests.exceptions.HTTPError as errh:
+        LOGGER.error(errh)
+    except requests.exceptions.ConnectionError as errc:
+        LOGGER.error(errc)
+    except requests.exceptions.Timeout as errt:
+        LOGGER.error(errt)
+    except requests.exceptions.RequestException as err:
+        LOGGER.error(err)
+    except json.decoder.JSONDecodeError as err:
+        LOGGER.error(err)
+
+    # Once task finishes, return result
+    if task_status == "Completed":
+        result_df = pd.DataFrame.from_dict(check_task_resp.get("result"))
+        # If empty dataframe comes back, insert placeholder data
+        if result_df.empty:
+            result_df = pd.concat(
+                [
+                    result_df,
+                    pd.DataFrame(
+                        {
+                            "organizations_uid": "test_org",
+                            "parent_org_uid": "test_parent_org",
+                            "port": "test_port",
+                            "ip": "test_ip",
+                            "protocol": "test_protocol",
+                            "protocol_type": "test_type",
+                            "date": datetime.date(1, 1, 1),
+                        },
+                        index=[0],
+                    ),
+                ],
+                ignore_index=True,
+            )
+        else:
+            result_df["date"] = pd.to_datetime(result_df["date"]).dt.date
+        return result_df
+    else:
+        raise Exception(
+            "iscore_pe_protocol query task failed, details: ", check_task_resp
+        )
+
+
+def api_iscore_was_vuln(org_list, start_date, end_date):
+    """
+    Query API for all WAS vuln data needed for I-Score calculation.
+
+    Args:
+        org_list: The specified list of organizations to retrieve data for
+        start_date: the start date (datetime.date object) of the report period
+        end_date: the end date (datetime.date object) of the report period
+    Return:
+        All WAS vuln data of the specified orgs needed for the I-Score
+    """
+    # Convert datetime.date objects to string
+    if isinstance(start_date, datetime.date):
+        start_date = start_date.strftime("%Y-%m-%d")
+    if isinstance(end_date, datetime.date):
+        end_date = end_date.strftime("%Y-%m-%d")
+    # Endpoint info
+    create_task_url = (
+        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/iscore_was_vuln"
+    )
+    check_task_url = (
+        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/iscore_was_vuln/task/"
+    )
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": pe_api_key,
+    }
+    data = json.dumps(
+        {"specified_orgs": org_list, "start_date": start_date, "end_date": end_date}
+    )
+    try:
+        # Create task for query
+        create_task_result = requests.post(
+            create_task_url, headers=headers, data=data
+        ).json()
+        task_id = create_task_result.get("task_id")
+        LOGGER.info(
+            "Created task for iscore_was_vuln endpoint query, task_id: ", task_id
+        )
+        # Once task has been started, keep pinging task status until finished
+        check_task_url += task_id
+        task_status = "Pending"
+        while task_status != "Completed" and task_status != "Failed":
+            # Ping task status endpoint and get status
+            check_task_resp = requests.get(check_task_url, headers=headers).json()
+            task_status = check_task_resp.get("status")
+            LOGGER.info(
+                "\tPinged iscore_was_vuln status endpoint, status:", task_status
+            )
+            time.sleep(3)
+    except requests.exceptions.HTTPError as errh:
+        LOGGER.error(errh)
+    except requests.exceptions.ConnectionError as errc:
+        LOGGER.error(errc)
+    except requests.exceptions.Timeout as errt:
+        LOGGER.error(errt)
+    except requests.exceptions.RequestException as err:
+        LOGGER.error(err)
+    except json.decoder.JSONDecodeError as err:
+        LOGGER.error(err)
+
+    # Once task finishes, return result
+    if task_status == "Completed":
+        result_df = pd.DataFrame.from_dict(check_task_resp.get("result"))
+        # If empty dataframe comes back, insert placeholder data
+        if result_df.empty:
+            result_df = pd.concat(
+                [
+                    result_df,
+                    pd.DataFrame(
+                        {
+                            "organizations_uid": "test_org",
+                            "parent_org_uid": "test_parent_org",
+                            "date": datetime.date(1, 1, 1),
+                            "cve_name": "test_cve",
+                            "cvss_score": 1.0,
+                            "owasp_category": "test_category",
+                        },
+                        index=[0],
+                    ),
+                ],
+                ignore_index=True,
+            )
+        else:
+            result_df["date"] = pd.to_datetime(result_df["date"]).dt.date
+        return result_df
+    else:
+        raise Exception("iscore_was_vuln query task failed, details: ", check_task_resp)
+
+
+def api_iscore_was_vuln_prev(org_list, start_date, end_date):
+    """
+    Query API for all previous WAS vuln data needed for I-Score calculation.
+
+    Args:
+        org_list: The specified list of organizations to retrieve data for
+        start_date: the start date (datetime.date object) of the report period
+        end_date: the end date (datetime.date object) of the report period
+    Return:
+        All previous WAS vuln data of the specified orgs needed for the I-Score
+    """
+    # Convert datetime.date objects to string
+    if isinstance(start_date, datetime.date):
+        start_date = start_date.strftime("%Y-%m-%d")
+    if isinstance(end_date, datetime.date):
+        end_date = end_date.strftime("%Y-%m-%d")
+    # Endpoint info
+    create_task_url = (
+        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/iscore_was_vuln_prev"
+    )
+    check_task_url = "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/iscore_was_vuln_prev/task/"
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": pe_api_key,
+    }
+    data = json.dumps(
+        {"specified_orgs": org_list, "start_date": start_date, "end_date": end_date}
+    )
+    try:
+        # Create task for query
+        create_task_result = requests.post(
+            create_task_url, headers=headers, data=data
+        ).json()
+        task_id = create_task_result.get("task_id")
+        LOGGER.info(
+            "Created task for iscore_was_vuln_prev endpoint query, task_id: ", task_id
+        )
+        # Once task has been started, keep pinging task status until finished
+        check_task_url += task_id
+        task_status = "Pending"
+        while task_status != "Completed" and task_status != "Failed":
+            # Ping task status endpoint and get status
+            check_task_resp = requests.get(check_task_url, headers=headers).json()
+            task_status = check_task_resp.get("status")
+            LOGGER.info(
+                "\tPinged iscore_was_vuln_prev status endpoint, status:", task_status
+            )
+            time.sleep(3)
+    except requests.exceptions.HTTPError as errh:
+        LOGGER.error(errh)
+    except requests.exceptions.ConnectionError as errc:
+        LOGGER.error(errc)
+    except requests.exceptions.Timeout as errt:
+        LOGGER.error(errt)
+    except requests.exceptions.RequestException as err:
+        LOGGER.error(err)
+    except json.decoder.JSONDecodeError as err:
+        LOGGER.error(err)
+
+    # Once task finishes, return result
+    if task_status == "Completed":
+        result_df = pd.DataFrame.from_dict(check_task_resp.get("result"))
+        # If empty dataframe comes back, insert placeholder data
+        if result_df.empty:
+            result_df = pd.concat(
+                [
+                    result_df,
+                    pd.DataFrame(
+                        {
+                            "organizations_uid": "test_org",
+                            "parent_org_uid": "test_parent_org",
+                            "was_total_vulns_prev": 0,
+                            "date": datetime.date(1, 1, 1),
+                        },
+                        index=[0],
+                    ),
+                ],
+                ignore_index=True,
+            )
+        else:
+            result_df["date"] = pd.to_datetime(result_df["date"]).dt.date
+        return result_df
+    else:
+        raise Exception(
+            "iscore_was_vuln_prev query task failed, details: ", check_task_resp
+        )
+
+
+def api_kev_list():
+    """
+    Query API for list of all KEVs.
+
+    Return:
+        List of all KEVs
+    """
+    # Endpoint info
+    create_task_url = "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/kev_list"
+    check_task_url = (
+        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/kev_list/task/"
+    )
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": pe_api_key,
+    }
+    try:
+        # Create task for query
+        create_task_result = requests.post(create_task_url, headers=headers).json()
+        task_id = create_task_result.get("task_id")
+        LOGGER.info("Created task for kev_list endpoint query, task_id: ", task_id)
+        # Once task has been started, keep pinging task status until finished
+        check_task_url += task_id
+        task_status = "Pending"
+        while task_status != "Completed" and task_status != "Failed":
+            # Ping task status endpoint and get status
+            check_task_resp = requests.get(check_task_url, headers=headers).json()
+            task_status = check_task_resp.get("status")
+            LOGGER.info("\tPinged kev_list status endpoint, status:", task_status)
+            time.sleep(3)
+    except requests.exceptions.HTTPError as errh:
+        LOGGER.error(errh)
+    except requests.exceptions.ConnectionError as errc:
+        LOGGER.error(errc)
+    except requests.exceptions.Timeout as errt:
+        LOGGER.error(errt)
+    except requests.exceptions.RequestException as err:
+        LOGGER.error(err)
+    except json.decoder.JSONDecodeError as err:
+        LOGGER.error(err)
+
+    # Once task finishes, return result
+    if task_status == "Completed":
+        result_df = pd.DataFrame.from_dict(check_task_resp.get("result"))
+        return result_df
+    else:
+        raise Exception("kev_list query task failed, details: ", check_task_resp)
+
+
+# ---------- Misc. Score Related API Queries ----------
+def api_xs_stakeholders():
+    """
+    Query API for list of all XS stakeholders.
+
+    Return:
+        List of all XS stakeholders
+    """
+    # Endpoint info
+    create_task_url = (
+        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/xs_stakeholders"
+    )
+    check_task_url = (
+        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/xs_stakeholders/task/"
+    )
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": pe_api_key,
+    }
+    try:
+        # Create task for query
+        create_task_result = requests.post(create_task_url, headers=headers).json()
+        task_id = create_task_result.get("task_id")
+        LOGGER.info(
+            "Created task for xs_stakeholders endpoint query, task_id: ", task_id
+        )
+        # Once task has been started, keep pinging task status until finished
+        check_task_url += task_id
+        task_status = "Pending"
+        while task_status != "Completed" and task_status != "Failed":
+            # Ping task status endpoint and get status
+            check_task_resp = requests.get(check_task_url, headers=headers).json()
+            task_status = check_task_resp.get("status")
+            LOGGER.info(
+                "\tPinged xs_stakeholders status endpoint, status:", task_status
+            )
+            time.sleep(3)
+    except requests.exceptions.HTTPError as errh:
+        LOGGER.error(errh)
+    except requests.exceptions.ConnectionError as errc:
+        LOGGER.error(errc)
+    except requests.exceptions.Timeout as errt:
+        LOGGER.error(errt)
+    except requests.exceptions.RequestException as err:
+        LOGGER.error(err)
+    except json.decoder.JSONDecodeError as err:
+        LOGGER.error(err)
+
+    # Once task finishes, return result
+    if task_status == "Completed":
+        result_df = pd.DataFrame.from_dict(check_task_resp.get("result"))
+        return result_df
+    else:
+        raise Exception("xs_stakeholders query task failed, details: ", check_task_resp)
+
+
+def api_s_stakeholders():
+    """
+    Query API for list of all S stakeholders.
+
+    Return:
+        List of all S stakeholders
+    """
+    # Endpoint info
+    create_task_url = (
+        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/s_stakeholders"
+    )
+    check_task_url = (
+        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/s_stakeholders/task/"
+    )
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": pe_api_key,
+    }
+    try:
+        # Create task for query
+        create_task_result = requests.post(create_task_url, headers=headers).json()
+        task_id = create_task_result.get("task_id")
+        LOGGER.info(
+            "Created task for s_stakeholders endpoint query, task_id: ", task_id
+        )
+        # Once task has been started, keep pinging task status until finished
+        check_task_url += task_id
+        task_status = "Pending"
+        while task_status != "Completed" and task_status != "Failed":
+            # Ping task status endpoint and get status
+            check_task_resp = requests.get(check_task_url, headers=headers).json()
+            task_status = check_task_resp.get("status")
+            LOGGER.info("\tPinged s_stakeholders status endpoint, status:", task_status)
+            time.sleep(3)
+    except requests.exceptions.HTTPError as errh:
+        LOGGER.error(errh)
+    except requests.exceptions.ConnectionError as errc:
+        LOGGER.error(errc)
+    except requests.exceptions.Timeout as errt:
+        LOGGER.error(errt)
+    except requests.exceptions.RequestException as err:
+        LOGGER.error(err)
+    except json.decoder.JSONDecodeError as err:
+        LOGGER.error(err)
+
+    # Once task finishes, return result
+    if task_status == "Completed":
+        result_df = pd.DataFrame.from_dict(check_task_resp.get("result"))
+        return result_df
+    else:
+        raise Exception("s_stakeholders query task failed, details: ", check_task_resp)
+
+
+def api_m_stakeholders():
+    """
+    Query API for list of all M stakeholders.
+
+    Return:
+        List of all M stakeholders
+    """
+    # Endpoint info
+    create_task_url = (
+        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/m_stakeholders"
+    )
+    check_task_url = (
+        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/m_stakeholders/task/"
+    )
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": pe_api_key,
+    }
+    try:
+        # Create task for query
+        create_task_result = requests.post(create_task_url, headers=headers).json()
+        task_id = create_task_result.get("task_id")
+        LOGGER.info(
+            "Created task for m_stakeholders endpoint query, task_id: ", task_id
+        )
+        # Once task has been started, keep pinging task status until finished
+        check_task_url += task_id
+        task_status = "Pending"
+        while task_status != "Completed" and task_status != "Failed":
+            # Ping task status endpoint and get status
+            check_task_resp = requests.get(check_task_url, headers=headers).json()
+            task_status = check_task_resp.get("status")
+            LOGGER.info("\tPinged m_stakeholders status endpoint, status:", task_status)
+            time.sleep(3)
+    except requests.exceptions.HTTPError as errh:
+        LOGGER.error(errh)
+    except requests.exceptions.ConnectionError as errc:
+        LOGGER.error(errc)
+    except requests.exceptions.Timeout as errt:
+        LOGGER.error(errt)
+    except requests.exceptions.RequestException as err:
+        LOGGER.error(err)
+    except json.decoder.JSONDecodeError as err:
+        LOGGER.error(err)
+
+    # Once task finishes, return result
+    if task_status == "Completed":
+        result_df = pd.DataFrame.from_dict(check_task_resp.get("result"))
+        return result_df
+    else:
+        raise Exception("m_stakeholders query task failed, details: ", check_task_resp)
+
+
+def api_l_stakeholders():
+    """
+    Query API for list of all L stakeholders.
+
+    Return:
+        List of all L stakeholders
+    """
+    # Endpoint info
+    create_task_url = (
+        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/l_stakeholders"
+    )
+    check_task_url = (
+        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/l_stakeholders/task/"
+    )
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": pe_api_key,
+    }
+    try:
+        # Create task for query
+        create_task_result = requests.post(create_task_url, headers=headers).json()
+        task_id = create_task_result.get("task_id")
+        LOGGER.info(
+            "Created task for l_stakeholders endpoint query, task_id: ", task_id
+        )
+        # Once task has been started, keep pinging task status until finished
+        check_task_url += task_id
+        task_status = "Pending"
+        while task_status != "Completed" and task_status != "Failed":
+            # Ping task status endpoint and get status
+            check_task_resp = requests.get(check_task_url, headers=headers).json()
+            task_status = check_task_resp.get("status")
+            LOGGER.info("\tPinged l_stakeholders status endpoint, status:", task_status)
+            time.sleep(3)
+    except requests.exceptions.HTTPError as errh:
+        LOGGER.error(errh)
+    except requests.exceptions.ConnectionError as errc:
+        LOGGER.error(errc)
+    except requests.exceptions.Timeout as errt:
+        LOGGER.error(errt)
+    except requests.exceptions.RequestException as err:
+        LOGGER.error(err)
+    except json.decoder.JSONDecodeError as err:
+        LOGGER.error(err)
+
+    # Once task finishes, return result
+    if task_status == "Completed":
+        result_df = pd.DataFrame.from_dict(check_task_resp.get("result"))
+        return result_df
+    else:
+        raise Exception("l_stakeholders query task failed, details: ", check_task_resp)
+
+
+def api_xl_stakeholders():
+    """
+    Query API for list of all XL stakeholders.
+
+    Return:
+        List of all XL stakeholders
+    """
+    # Endpoint info
+    create_task_url = (
+        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/xl_stakeholders"
+    )
+    check_task_url = (
+        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/xl_stakeholders/task/"
+    )
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": pe_api_key,
+    }
+    try:
+        # Create task for query
+        create_task_result = requests.post(create_task_url, headers=headers).json()
+        task_id = create_task_result.get("task_id")
+        LOGGER.info(
+            "Created task for xl_stakeholders endpoint query, task_id: ", task_id
+        )
+        # Once task has been started, keep pinging task status until finished
+        check_task_url += task_id
+        task_status = "Pending"
+        while task_status != "Completed" and task_status != "Failed":
+            # Ping task status endpoint and get status
+            check_task_resp = requests.get(check_task_url, headers=headers).json()
+            task_status = check_task_resp.get("status")
+            LOGGER.info(
+                "\tPinged xl_stakeholders status endpoint, status:", task_status
+            )
+            time.sleep(3)
+    except requests.exceptions.HTTPError as errh:
+        LOGGER.error(errh)
+    except requests.exceptions.ConnectionError as errc:
+        LOGGER.error(errc)
+    except requests.exceptions.Timeout as errt:
+        LOGGER.error(errt)
+    except requests.exceptions.RequestException as err:
+        LOGGER.error(err)
+    except json.decoder.JSONDecodeError as err:
+        LOGGER.error(err)
+
+    # Once task finishes, return result
+    if task_status == "Completed":
+        result_df = pd.DataFrame.from_dict(check_task_resp.get("result"))
+        return result_df
+    else:
+        raise Exception("xl_stakeholders query task failed, details: ", check_task_resp)
