@@ -135,7 +135,7 @@ repos:
 
   # Ansible hooks
   - repo: https://github.com/ansible-community/ansible-lint
-    rev: v5.4.0
+    rev: v6.17.2
     hooks:
       - id: ansible-lint
       # files: molecule/default/playbook.yml

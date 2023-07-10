@@ -55,11 +55,6 @@
       T.style.display = displayValue;
     }
 
-    function loading() {
-      $("#loading").show();
-      $("#content").hide();
-    }
-
     $(document).ready(function () {
       console.log("Im ready ");
 
@@ -68,9 +63,6 @@
       setTimeout(function () {
         $("#messageDiv").fadeOut("fast");
       }, 5000);
-      $(window).load(function () {
-        $("#loading").hide();
-      });
     });
   </script>
 
