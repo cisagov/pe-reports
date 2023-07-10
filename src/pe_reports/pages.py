@@ -9,6 +9,7 @@ import os
 import chevron
 
 from .charts import Charts
+from .data.db_query import sanitize_uid
 
 # Import Classes
 from .metrics import Credentials, Cyber_Six, Domains_Masqs, Malware_Vulns
@@ -67,7 +68,9 @@ def buildAppendixList(df):
 
 def credential(chevron_dict, trending_start_date, start_date, end_date, org_uid):
     """Build exposed credential page."""
-    Credential = Credentials(trending_start_date, start_date, end_date, org_uid)
+    Credential = Credentials(
+        trending_start_date, start_date, end_date, sanitize_uid(org_uid)
+    )
     # Build exposed credential stacked bar chart
     width = 24
     height = 9.5
@@ -101,7 +104,7 @@ def credential(chevron_dict, trending_start_date, start_date, end_date, org_uid)
 
 def masquerading(chevron_dict, start_date, end_date, org_uid):
     """Build masquerading page."""
-    Domain_Masq = Domains_Masqs(start_date, end_date, org_uid)
+    Domain_Masq = Domains_Masqs(start_date, end_date, sanitize_uid(org_uid))
     chevron_dict.update(
         {
             "domain_table": buildTable(Domain_Masq.summary(), ["table"], []),
