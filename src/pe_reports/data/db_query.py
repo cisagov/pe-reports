@@ -29,7 +29,10 @@ LOGGER = logging.getLogger(__name__)
 CONN_PARAMS_DIC = config()
 CONN_PARAMS_DIC_STAGING = staging_config()
 
-
+# v ---------- D-Score API Queries ---------- v
+# This needs to be filled in with an API key:
+pe_api_key = CONN_PARAMS_DIC_STAGING.get("pe_api_key")
+pe_api_url = CONN_PARAMS_DIC_STAGING.get("pe_api_url")
 def show_psycopg2_exception(err):
     """Handle errors for PostgreSQL issues."""
     err_type, err_obj, traceback = sys.exc_info()
@@ -330,6 +333,33 @@ def get_data_source_uid(source):
     cur.close()
     conn.close()
     return source
+
+
+def api_get_data_source_uid(source):
+    """Query organizations table."""
+    urlOrgs = pe_api_url
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": f'{api_config("API_KEY")}',
+    }
+    try:
+
+        response = requests.post(urlOrgs + "data_source/" + source, headers=headers).json()
+        #Change last viewed
+        uid = response[0]["data_source_uid"]
+        r = requests.put(urlOrgs + "update_last_viewed/" + uid, headers=headers)
+        LOGGER.info('Updated last viewed for %s', source)
+        return response
+    except requests.exceptions.HTTPError as errh:
+        print(errh)
+    except requests.exceptions.ConnectionError as errc:
+        print(errc)
+    except requests.exceptions.Timeout as errt:
+        print(errt)
+    except requests.exceptions.RequestException as err:
+        print(err)
+    except json.decoder.JSONDecodeError as err:
+        print(err)
 
 
 def verifyIPv4(custIP):
@@ -929,11 +959,6 @@ def upsert_new_cves(new_cves):
     finally:
         if conn is not None:
             close(conn)
-
-
-# v ---------- D-Score API Queries ---------- v
-# This needs to be filled in with an API key:
-pe_api_key = CONN_PARAMS_DIC_STAGING.get("pe_api_key")
 
 
 def api_dscore_vs_cert(org_list):

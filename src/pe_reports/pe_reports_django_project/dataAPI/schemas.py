@@ -276,10 +276,10 @@ class VwCidrs(BaseModel):
 
 class DataSource(BaseModel):
 
-    data_source_uid: str
-    name: str
-    description: str
-    last_run: str
+    data_source_uid: Optional[UUID]
+    name: Optional[str]
+    description: Optional[str]
+    last_run: Optional[str]
 
     class Config:
         orm_mode = True

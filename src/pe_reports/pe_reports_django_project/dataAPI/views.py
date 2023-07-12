@@ -39,9 +39,11 @@ from fastapi.security import OAuth2PasswordBearer
 from fastapi.security.api_key import APIKey, APIKeyCookie, APIKeyHeader, APIKeyQuery
 from fastapi_limiter import FastAPILimiter
 from fastapi_limiter.depends import RateLimiter
+
 from home.models import (
     CyhyDbAssets,
     CyhyPortScans,
+    DataSource,
     MatVwOrgsAllIps,
     Organizations,
     SubDomains,
@@ -264,7 +266,7 @@ def process_item(item):
 def read_orgs(tokens: dict = Depends(get_api_key)):
     """API endpoint to get all organizations."""
     orgs = list(Organizations.objects.all())
-
+    
     if tokens:
 
         # LOGGER.info(f"The api key submitted {tokens}")
@@ -1837,3 +1839,52 @@ async def get_xl_stakeholders_task_status(
         return {"task_id": task_id, "status": "Failed", "error": str(task.result)}
     else:
         return {"task_id": task_id, "status": task.state}
+    
+@api_router.post("/data_source/{source_name}",dependencies=[Depends(get_api_key),
+                 Depends(RateLimiter(times=200, seconds=60))],
+                #response_model=schemas.DataSource,
+                tags = ["Get Data_source table"])
+
+def get_data_source(source_name: str, tokens: dict = Depends(get_api_key)):
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            try:
+                datas = list(DataSource.objects.filter(name=f'{source_name}'))
+                print(datas)
+                return datas[0]
+            except ValidationError as e:
+                return {"message": "Data source does not exist"}
+                
+        except:
+            LOGGER.info('API key expired please try again')
+    else:
+        return {'message': "No api key was submitted"}
+    
+#data_source_uid: str,request: Request, tokens: dict = Depends(get_api_key)
+
+@api_router.put(
+    "/update_last_viewed/{data_source_uid}",
+    dependencies=[Depends(get_api_key),
+                 Depends(RateLimiter(times=200, seconds=60))],
+    tags=["Update last viewed data"]
+)
+@transaction.atomic
+def update_last_viewed(data_source_uid: str, tokens: dict = Depends(get_api_key)):
+    if not tokens:
+        return {"message": "No api key was submitted"}
+    LOGGER.info(f"The api key submitted {tokens}")
+    try:
+        userapiTokenverify(theapiKey=tokens)
+        try:
+            data_source  = DataSource.objects.get(data_source_uid=data_source_uid)
+        except ValidationError as e:
+            return {"message": "Data source does not exist"}
+        data_source.last_run = datetime.today().strftime("%Y-%m-%d")
+        data_source.save()
+        return {"message": "Record updated successfully."}
+    except ObjectDoesNotExist:
+        LOGGER.info("API key expired please try again")
+
+
