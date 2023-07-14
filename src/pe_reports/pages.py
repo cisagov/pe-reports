@@ -10,6 +10,7 @@ import os
 import pandas as pd
 
 from .charts import Charts
+from .data.db_query import sanitize_uid
 
 # Import Classes
 from .metrics import (
@@ -34,7 +35,9 @@ def credential(
     output_directory,
 ):
     """Build exposed credential page."""
-    Credential = Credentials(trending_start_date, start_date, end_date, org_uid)
+    Credential = Credentials(
+        trending_start_date, start_date, end_date, sanitize_uid(org_uid)
+    )
     # Build exposed credential stacked bar chart
     width = 16.51
     height = 10
@@ -82,7 +85,7 @@ def masquerading(
     report_dict, start_date, end_date, org_uid, org_code, output_directory
 ):
     """Build masquerading page."""
-    Domain_Masq = Domains_Masqs(start_date, end_date, org_uid)
+    Domain_Masq = Domains_Masqs(start_date, end_date, sanitize_uid(org_uid))
     report_dict.update(
         {
             "domain_table": Domain_Masq.summary()[:10],

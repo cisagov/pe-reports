@@ -2,6 +2,7 @@
 
 # Standard Python Libraries
 import logging
+import re
 import sys
 
 # Third-Party Libraries
@@ -19,6 +20,16 @@ from .config import config
 LOGGER = logging.getLogger(__name__)
 
 CONN_PARAMS_DIC = config()
+
+
+def sanitize_string(string):
+    """Remove special characters from string."""
+    return re.sub(r"[^a-zA-Z0-9\s]", "", string)
+
+
+def sanitize_uid(string):
+    """Remove special characters from uids."""
+    return re.sub(r"[^a-zA-Z0-9\-\s]", "", string)
 
 
 def show_psycopg2_exception(err):
@@ -86,7 +97,11 @@ def query_creds_view(org_uid, start_date, end_date):
         df = pd.read_sql(
             sql,
             conn,
-            params={"org_uid": org_uid, "start_date": start_date, "end_date": end_date},
+            params={
+                "org_uid": sanitize_uid(org_uid),
+                "start_date": start_date,
+                "end_date": end_date,
+            },
         )
         return df
     except (Exception, psycopg2.DatabaseError) as error:
@@ -106,7 +121,11 @@ def query_credsbyday_view(org_uid, start_date, end_date):
         df = pd.read_sql(
             sql,
             conn,
-            params={"org_uid": org_uid, "start_date": start_date, "end_date": end_date},
+            params={
+                "org_uid": sanitize_uid(org_uid),
+                "start_date": start_date,
+                "end_date": end_date,
+            },
         )
         return df
     except (Exception, psycopg2.DatabaseError) as error:
@@ -127,7 +146,11 @@ def query_breachdetails_view(org_uid, start_date, end_date):
         df = pd.read_sql(
             sql,
             conn,
-            params={"org_uid": org_uid, "start_date": start_date, "end_date": end_date},
+            params={
+                "org_uid": sanitize_uid(org_uid),
+                "start_date": start_date,
+                "end_date": end_date,
+            },
         )
         return df
     except (Exception, psycopg2.DatabaseError) as error:
@@ -172,7 +195,7 @@ def query_domMasq_alerts(org_uid, start_date, end_date):
             sql,
             conn,
             params={
-                "org_uid": org_uid,
+                "org_uid": sanitize_uid(org_uid),
                 "start_date": start_date,
                 "end_date": end_date,
             },
@@ -210,7 +233,7 @@ def query_shodan(org_uid, start_date, end_date, table):
             conn,
             params={
                 "table": AsIs(table),
-                "org_uid": org_uid,
+                "org_uid": sanitize_uid(org_uid),
                 "start_date": start_date,
                 "end_date": end_date,
             },
@@ -247,12 +270,13 @@ def query_darkweb(org_uid, start_date, end_date, table):
         sql = """SELECT * FROM %(table)s
         WHERE organizations_uid = %(org_uid)s
         AND date BETWEEN %(start_date)s AND %(end_date)s"""
+
         df = pd.read_sql(
             sql,
             conn,
             params={
-                "table": AsIs(table),
-                "org_uid": org_uid,
+                "table": sanitize_string(table),
+                "org_uid": sanitize_uid(org_uid),
                 "start_date": start_date,
                 "end_date": end_date,
             },
@@ -293,7 +317,11 @@ def query_cyberSix_creds(org_uid, start_date, end_date):
         df = pd.read_sql(
             sql,
             conn,
-            params={"org_uid": org_uid, "start": start_date, "end": end_date},
+            params={
+                "org_uid": sanitize_uid(org_uid),
+                "start": start_date,
+                "end": end_date,
+            },
         )
         df["breach_date_str"] = pd.to_datetime(df["breach_date"]).dt.strftime(
             "%m/%d/%Y"
