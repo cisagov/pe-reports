@@ -615,11 +615,11 @@ def report_gen(data_dict, soc_med_included=False):
     Story.append(doHeading("1.1 Overview", h2))
     Story.append(
         Paragraph(
-            """Posture and Exposure (P&E) offers stakeholders an opportunity to view their organizational
+            """Posture and Exposure (P&amp;E) offers stakeholders an opportunity to view their organizational
                 risk from the viewpoint of the adversary. We utilize passive reconnaissance services,
                 dark web analysis, and open-source tools to identify spoofing in order to generate a risk
                     profile report that is delivered on a regular basis.<br/><br/>
-                As a customer of P&E you are receiving our regularly scheduled report which contains a
+                As a customer of P&amp;E you are receiving our regularly scheduled report which contains a
                 summary of the activity we have been tracking on your behalf for the following services:
                 <br/><br/>""",
             body,
@@ -1098,7 +1098,7 @@ def report_gen(data_dict, soc_med_included=False):
                 Paragraph("3.3.2 Shodan-Verified Vulnerabilities", h3),
                 Paragraph(
                     """
-                    Verified vulnerabilities, shown in <font face="Franklin_Gothic_Medium_Regular">Table 5</font>, are those that are flagged by P&E vendors that have gone
+                    Verified vulnerabilities, shown in <font face="Franklin_Gothic_Medium_Regular">Table 5</font>, are those that are flagged by P&amp;E vendors that have gone
                     through extra checks to validate the finding. Refer to Appendix A for summary data.
                 """,
                     body,
@@ -1203,7 +1203,7 @@ def report_gen(data_dict, soc_med_included=False):
 
     Story.append(
         Paragraph(
-            """Stakeholders and vulnerabilities are often discussed in various ways on the Dark Web. P&E monitors this
+            """Stakeholders and vulnerabilities are often discussed in various ways on the Dark Web. P&amp;E monitors this
                 activity, as well as the source (forums, websites, tutorials), and threat actors involved. A spike in activity can
                 indicate a greater likelihood of an attack, vulnerability, or data leakage. This information along with a list of the
                 most active CVEs on the Dark Web may assist in prioritizing remediation activities.""",
@@ -1666,11 +1666,11 @@ def report_gen(data_dict, soc_med_included=False):
                 horizontal_line,
                 point12_spacer,
                 Paragraph(
-                    """<font face="Franklin_Gothic_Medium_Regular">How are P&E data and reports different from other reports I receive from CISA?</font><br/>
-            The Cybersecurity and Infrastructure Security Agency's (CISA) Cyber Hygiene Posture and Exposure (P&E)
+                    """<font face="Franklin_Gothic_Medium_Regular">How are P&amp;E data and reports different from other reports I receive from CISA?</font><br/>
+            The Cybersecurity and Infrastructure Security Agency's (CISA) Cyber Hygiene Posture and Exposure (P&amp;E)
             analysis is a cost-free service that helps stakeholders monitor and evaluate their cyber posture for
             weaknesses found in public source information, which is readily available to an attacker to view.
-            P&E utilizes passive reconnaissance services, dark web analysis, and other public information
+            P&amp;E utilizes passive reconnaissance services, dark web analysis, and other public information
             sources to identify suspected domain masquerading, credentials that have been leaked or exposed,
             insecure devices, suspected vulnerabilities, and increased dark web activity related to their organization.
             """,
@@ -1682,7 +1682,7 @@ def report_gen(data_dict, soc_med_included=False):
     Story.append(point12_spacer)
     Story.append(
         Paragraph(
-            """<font face="Franklin_Gothic_Medium_Regular">What should I expect in terms of P&E's Findings? </font><br/>
+            """<font face="Franklin_Gothic_Medium_Regular">What should I expect in terms of P&amp;E's Findings? </font><br/>
             The Posture and Exposure team uses numerous tools and open-source intelligence (OSINT) gathering tactics to
             identify the potential weaknesses listed below. The data is then analyzed and complied into a Posture and
             Exposure Report which provides both executive level information and detailed information for analysts that
@@ -1735,7 +1735,7 @@ def report_gen(data_dict, soc_med_included=False):
             Paragraph(
                 """
                     <font face="Franklin_Gothic_Medium_Regular">Increased Dark Web Activity:</font><br/>
-                    Stakeholders and vulnerabilities are often discussed in various ways on the dark web. P&E monitors this
+                    Stakeholders and vulnerabilities are often discussed in various ways on the dark web. P&amp;E monitors this
                     activity, as well as the source (forums, websites, tutorials), and threat actors involved. A spike in
                     activity can indicate a greater likelihood of an attack, vulnerability, or data leakage. Additionally,
                     the urgency of the threat can be evaluated based on the threat actors involved along with other thresholds.
@@ -1752,7 +1752,7 @@ def report_gen(data_dict, soc_med_included=False):
     Story.append(
         Paragraph(
             """<font face="Franklin_Gothic_Medium_Regular">Do you perform scans of our networks?</font><br/>
-            P&E does not perform active scanning. The information we gather is through passive collection from numerous
+            P&amp;E does not perform active scanning. The information we gather is through passive collection from numerous
             public and vendor data sources. As such, we collect data on a continual basis, and provide summary reports
             twice a month.
         """,
@@ -1764,7 +1764,7 @@ def report_gen(data_dict, soc_med_included=False):
     Story.append(
         Paragraph(
             """<font face="Franklin_Gothic_Medium_Regular">Do you perform scans of our networks?</font><br/>
-            P&E does not perform active scanning. The information we gather is through passive collection from numerous
+            P&amp;E does not perform active scanning. The information we gather is through passive collection from numerous
             public and vendor data sources. As such, we collect data on a continual basis, and provide summary reports
             twice a month.
 
@@ -1777,7 +1777,7 @@ def report_gen(data_dict, soc_med_included=False):
     Story.append(
         Paragraph(
             """<font face="Franklin_Gothic_Medium_Regular">How will the results be provided to me?</font><br/>
-            P&E will provide twice monthly P&E reports as password-protected attachments to emails from
+            P&amp;E will provide twice monthly P&amp;E reports as password-protected attachments to emails from
             vulnerability@cisa.dhs.gov. The attachments will contain a PDF—providing a summary of the findings,
             tables, graphs, as charts—as well as a JSON file containing the raw data used to generate the PDF
             report to facilitate your agencies own analysis.
@@ -1806,7 +1806,7 @@ def report_gen(data_dict, soc_med_included=False):
             """<font face="Franklin_Gothic_Medium_Regular">Who do I contact if there are any issues or updates that need to be addressed for my reports?</font><br/>
             The general notification process is the same as all of the CyHy components. Simply send an email to
             vulnerability@cisa.dhs.gov identifying the requested changes. In this instance, make sure to identify
-            “P&E Report Delivery” in the subject to ensure the issue is routed to our team.
+            “P&amp;E Report Delivery” in the subject to ensure the issue is routed to our team.
         """,
             body,
         )

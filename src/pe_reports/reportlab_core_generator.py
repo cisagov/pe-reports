@@ -588,11 +588,11 @@ def core_report_gen(data_dict):
     Story.append(doHeading("1.1 Overview", h2))
     Story.append(
         Paragraph(
-            """Posture and Exposure (P&E) offers stakeholders an opportunity to view their organizational
+            """Posture and Exposure (P&amp;E) offers stakeholders an opportunity to view their organizational
                 risk from the viewpoint of the adversary. We utilize passive reconnaissance services,
                 and open-source tools to identify spoofing in order to generate a risk
                 profile report that is delivered on a regular basis.<br/><br/>
-                As a customer of P&E you are receiving our regularly scheduled report which contains a
+                As a customer of P&amp;E you are receiving our regularly scheduled report which contains a
                 summary of the activity we have been tracking on your behalf for the following services:
                 <br/><br/>""",
             body,
@@ -1072,7 +1072,7 @@ def core_report_gen(data_dict):
                 Paragraph("3.3.2 Shodan-Verified Vulnerabilities", h3),
                 Paragraph(
                     """
-                    Verified vulnerabilities, shown in <font face="Franklin_Gothic_Medium_Regular">Table 5</font>, are those that are flagged by P&E vendors that have gone
+                    Verified vulnerabilities, shown in <font face="Franklin_Gothic_Medium_Regular">Table 5</font>, are those that are flagged by P&amp;E vendors that have gone
                     through extra checks to validate the finding. Refer to Appendix A for summary data.
                 """,
                     body,
@@ -1280,11 +1280,11 @@ def core_report_gen(data_dict):
                 horizontal_line,
                 point12_spacer,
                 Paragraph(
-                    """<font face="Franklin_Gothic_Medium_Regular">How are P&E data and reports different from other reports I receive from CISA?</font><br/>
-            The Cybersecurity and Infrastructure Security Agency's (CISA) Cyber Hygiene Posture and Exposure (P&E)
+                    """<font face="Franklin_Gothic_Medium_Regular">How are P&amp;E data and reports different from other reports I receive from CISA?</font><br/>
+            The Cybersecurity and Infrastructure Security Agency's (CISA) Cyber Hygiene Posture and Exposure (P&amp;E)
             analysis is a cost-free service that helps stakeholders monitor and evaluate their cyber posture for
             weaknesses found in public source information, which is readily available to an attacker to view.
-            P&E utilizes passive reconnaissance services, dark web analysis, and other public information
+            P&amp;E utilizes passive reconnaissance services, dark web analysis, and other public information
             sources to identify suspected domain masquerading, credentials that have been leaked or exposed,
             insecure devices, and suspected vulnerabilities.
             """,
@@ -1296,7 +1296,7 @@ def core_report_gen(data_dict):
     Story.append(point12_spacer)
     Story.append(
         Paragraph(
-            """<font face="Franklin_Gothic_Medium_Regular">What should I expect in terms of P&E's Findings? </font><br/>
+            """<font face="Franklin_Gothic_Medium_Regular">What should I expect in terms of P&amp;E's Findings? </font><br/>
             The Posture and Exposure team uses numerous tools and open-source intelligence (OSINT) gathering tactics to
             identify the potential weaknesses listed below. The data is then analyzed and complied into a Posture and
             Exposure Report which provides both executive level information and detailed information for analysts that
@@ -1347,7 +1347,7 @@ def core_report_gen(data_dict):
     Story.append(
         Paragraph(
             """<font face="Franklin_Gothic_Medium_Regular">Do you perform scans of our networks?</font><br/>
-            P&E does not perform active scanning. The information we gather is through passive collection from numerous
+            P&amp;E does not perform active scanning. The information we gather is through passive collection from numerous
             public and vendor data sources. As such, we collect data on a continual basis, and provide summary reports
             twice a month.
         """,
@@ -1359,7 +1359,7 @@ def core_report_gen(data_dict):
     Story.append(
         Paragraph(
             """<font face="Franklin_Gothic_Medium_Regular">Do you perform scans of our networks?</font><br/>
-            P&E does not perform active scanning. The information we gather is through passive collection from numerous
+            P&amp;E does not perform active scanning. The information we gather is through passive collection from numerous
             public and vendor data sources. As such, we collect data on a continual basis, and provide summary reports
             twice a month.
 

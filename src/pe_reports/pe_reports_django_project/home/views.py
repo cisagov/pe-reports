@@ -12,10 +12,12 @@ from django.views.generic import TemplateView
 from django.views.generic.edit import FormView
 from django.views import View
 from django.shortcuts import render
-from django.http import HttpResponseNotFound, \
-    HttpResponseRedirect, \
-    HttpResponse, \
-    JsonResponse
+from django.http import (
+    HttpResponseNotFound,
+    HttpResponseRedirect,
+    HttpResponse,
+    JsonResponse,
+)
 from django.core.exceptions import ObjectDoesNotExist
 from django.core import serializers
 from django.contrib import messages
@@ -43,19 +45,19 @@ LOGGER = logging.getLogger(__name__)
 
 # Create your views here.
 
-def getUserKey():
-    urlIDs = 'http://127.0.0.1:8089/apiv1/get_key'
-    payload = json.dumps({
-        "refresh_token": f'{config("USER_REFRESH_TOKEN")}'
-    })
-    headers = {
-        'Content-Tpye': 'application/json',
 
+def getUserKey():
+    urlIDs = "http://127.0.0.1:8089/apiv1/get_key"
+    payload = json.dumps({"refresh_token": f'{config("USER_REFRESH_TOKEN")}'})
+    headers = {
+        "Content-Tpye": "application/json",
     }
 
     response = requests.post(urlIDs, headers=headers, data=payload).json()
 
     return response
+
+
 #
 #
 theCurrentUserKey = getUserKey()
@@ -66,24 +68,25 @@ theSavedUserKey = config("API_KEY")
 #
 def updateAPIKey(theSavedUserKey, theCurrentUserKey):
     if theSavedUserKey == theCurrentUserKey:
-        print('The keys match and nothing happened. ')
+        print("The keys match and nothing happened. ")
     else:
         try:
             script_directory = os.path.dirname(os.path.realpath(__name__))
             print(script_directory)
             env_file_path = os.path.join(script_directory, ".env")
-            with open(env_file_path, 'r') as f:
+            with open(env_file_path, "r") as f:
                 f.seek(0)
                 data = f.read()
                 dataReplaced = data.replace(theSavedUserKey, theCurrentUserKey)
                 print("Reading and replacing api key.")
-            with open(env_file_path, 'w') as f:
+            with open(env_file_path, "w") as f:
                 if theSavedUserKey in data:
                     print("The apiKey has been updated.")
                     f.write(dataReplaced)
             return theCurrentUserKey
         except:
             print("Failed to open and write new file.")
+
 
 def getAgencies(org_name):
     """Get all agency names from P&E database."""
@@ -118,8 +121,7 @@ def getAgencies(org_name):
         return resultDict
 
     except (Exception, ObjectDoesNotExist) as err:
-        LOGGER.error("There was a problem logging into the psycopg database %s",
-                     err)
+        LOGGER.error("There was a problem logging into the psycopg database %s", err)
     finally:
         # if conn is not None:
         #     cursor.close()
@@ -155,8 +157,7 @@ def getSubdomain(domain):
             LOGGER.info(sub)
             subisolated = sub.rsplit(".")[:-2]
             LOGGER.info(
-                "The whole sub is %s and the isolated sub is %s", sub,
-                subisolated
+                "The whole sub is %s and the isolated sub is %s", sub, subisolated
             )
         allsubs.append(subisolated)
 
@@ -204,14 +205,12 @@ def setStakeholder(customer):
 
             cursor = conn.cursor()
 
-            cursor.execute(
-                f"insert into organizations(name)" f"values('{customer}')")
+            cursor.execute(f"insert into organizations(name)" f"values('{customer}')")
 
             return True
 
     except (Exception, psycopg2.DatabaseError) as err:
-        LOGGER.error("There was a problem logging into the psycopg database %s",
-                     err)
+        LOGGER.error("There was a problem logging into the psycopg database %s", err)
         return False
     finally:
         if conn is not None:
@@ -250,8 +249,7 @@ def setCustRootDomain(customer, rootdomain, orgUUID):
             return True
 
     except (Exception, psycopg2.DatabaseError) as err:
-        LOGGER.error("There was a problem logging into the psycopg database %s",
-                     err)
+        LOGGER.error("There was a problem logging into the psycopg database %s", err)
         return False
     finally:
         if conn is not None:
@@ -296,8 +294,7 @@ def setCustSubDomain(subdomain, rootUUID, rootname):
             return True
 
     except (Exception, psycopg2.DatabaseError) as err:
-        LOGGER.error("There was a problem logging into the psycopg database %s",
-                     err)
+        LOGGER.error("There was a problem logging into the psycopg database %s", err)
         return False
     finally:
         if conn is not None:
@@ -308,8 +305,7 @@ def setCustSubDomain(subdomain, rootUUID, rootname):
 
 
 def setCustomerExternalCSG(
-        customer, customerIP, customerRootDomain, customerSubDomain,
-        customerExecutives
+    customer, customerIP, customerRootDomain, customerSubDomain, customerExecutives
 ):
     """Insert customer not in cyhyDB into the PE-Reports database."""
     global conn, cursor
@@ -354,8 +350,7 @@ def setCustomerExternalCSG(
                 )
 
     except (Exception, psycopg2.DatabaseError) as err:
-        LOGGER.error("There was a problem logging into the psycopg database %s",
-                     err)
+        LOGGER.error("There was a problem logging into the psycopg database %s", err)
     finally:
         if conn is not None:
             conn.commit()
@@ -392,41 +387,36 @@ def setNewCSGOrg(newOrgName, orgAliases, orgdomainNames, orgIP, orgExecs):
         LOGGER.info("A new org_id was created: %s", newOrgID)
 
         setOrganizationUsers(newOrgID)
-        setOrganizationDetails(newOrgID, orgAliases, orgdomainNames, orgIP,
-                               orgExecs)
+        setOrganizationDetails(newOrgID, orgAliases, orgdomainNames, orgIP, orgExecs)
 
     return response
 
 
 @login_required
 def index(request):
-    allUsers = Organizations.objects.filter(name='EAC')
+    allUsers = Organizations.objects.filter(name="EAC")
     # output = '<br>'.join([c.username for c in customers])
-    users = {
-        "user": allUsers
-    }
-    return render(request, 'index.html', users)
+    users = {"user": allUsers}
+    return render(request, "index.html", users)
 
 
 @login_required
 def home(request):
     try:
-        return render(request, 'home.html')
+        return render(request, "home.html")
     except:
-        return HttpResponseNotFound('Nothing found')
+        return HttpResponseNotFound("Nothing found")
 
 
 @login_required
 def stakeholder(request):
     try:
-        if request.method == 'POST':
-            LOGGER.info('Got to the stakeholder form')
+        if request.method == "POST":
+            LOGGER.info("Got to the stakeholder form")
             form = GatherStakeholderForm(request.POST)
             if form.is_valid():
-                cust = form.cleaned_data['cust'].upper()
-                custDomainAliases = form.cleaned_data[
-                    'custDomainAliases'].split(
-                    ",")
+                cust = form.cleaned_data["cust"].upper()
+                custDomainAliases = form.cleaned_data["custDomainAliases"].split(",")
                 custRootDomain = form.cleaned_data["custRootDomain"].split(",")
                 custRootDomainValue = custRootDomain[0]
                 custExecutives = form.cleaned_data["custExecutives"].split(",")
@@ -438,17 +428,16 @@ def stakeholder(request):
                 try:
 
                     if cust not in allDomain.values():
-                        messages.success(request,
-
-                                         f"You successfully submitted a new"
-                                         f" customer {cust}")
+                        messages.success(
+                            request,
+                            f"You successfully submitted a new" f" customer {cust}",
+                        )
 
                         if setStakeholder(cust):
                             LOGGER.info("The customer %s was entered.", cust)
                             allDomain = list(getAgencies(cust).keys())[0]
 
-                            if setCustRootDomain(cust, custRootDomainValue,
-                                                 allDomain):
+                            if setCustRootDomain(cust, custRootDomainValue, allDomain):
                                 rootUUID = getRootID(allDomain)[cust]
 
                                 LOGGER.info(
@@ -457,10 +446,10 @@ def stakeholder(request):
                                 )
                                 if allSubDomain:
                                     for subdomain in allSubDomain:
-                                        if setCustSubDomain(subdomain, rootUUID,
-                                                            cust):
+                                        if setCustSubDomain(subdomain, rootUUID, cust):
                                             LOGGER.info(
-                                                "The subdomains have been entered.")
+                                                "The subdomains have been entered."
+                                            )
                                             setNewCSGOrg(
                                                 cust,
                                                 custDomainAliases,
@@ -470,27 +459,27 @@ def stakeholder(request):
                                             )
 
                     else:
-                        messages.warning(request, f"The customer"
-                                                  f" {cust} already exists.")
+                        messages.warning(
+                            request, f"The customer" f" {cust} already exists."
+                        )
 
                 except ValueError as e:
-                    messages.warning(request,
-                                     "The customer IP %s is not a valid IP, please try again.",
-                                     "danger", e)
+                    messages.warning(
+                        request,
+                        "The customer IP %s is not a valid IP, please try again.",
+                        "danger",
+                        e,
+                    )
                     return HttpResponseRedirect("/stakeholder/")
-                messages.success(request,
-                                 "The new stakeholder has been inserted.d")
+                messages.success(request, "The new stakeholder has been inserted.d")
                 return HttpResponseRedirect("/stakeholder/")
-
-
 
         else:
             form = GatherStakeholderForm()
-        return render(request, 'stakeholder/stakeholder.html', {'form': form})
-
+        return render(request, "stakeholder/stakeholder.html", {"form": form})
 
     except:
-        return HttpResponseNotFound('Nothing found')
+        return HttpResponseNotFound("Nothing found")
 
 
 def create_word_document(request):
@@ -516,7 +505,7 @@ def create_word_document(request):
     weeklyInfo = WeeklyStatuses.objects.filter(week_ending=week_ending_date)
 
     # Serialize the queryset to JSON
-    serialized_data = serializers.serialize('json', weeklyInfo)
+    serialized_data = serializers.serialize("json", weeklyInfo)
 
     # Load the serialized data into a JSON object
     json_data = json.loads(serialized_data)
@@ -524,90 +513,93 @@ def create_word_document(request):
     # print(json_data)
     # Iterate through the JSON object and set variables from the fields
     for status in json_data:
-        accomplishments = status['fields']['key_accomplishments']
-        ongoing_tasks = status['fields']['ongoing_task']
-        upcoming_tasks = status['fields']['upcoming_task']
-        obstacles = status['fields']['obstacles']
-        non_standard_meeting = status['fields']['non_standard_meeting']
-        deliverables = status['fields']['deliverables']
-        pto = status['fields']['pto']
-        week_ending = status['fields']['week_ending']
-        the_current_user = status['fields']['user_status']
-        statusComplete = status['fields']['statusComplete']
+        accomplishments = status["fields"]["key_accomplishments"]
+        ongoing_tasks = status["fields"]["ongoing_task"]
+        upcoming_tasks = status["fields"]["upcoming_task"]
+        obstacles = status["fields"]["obstacles"]
+        non_standard_meeting = status["fields"]["non_standard_meeting"]
+        deliverables = status["fields"]["deliverables"]
+        pto = status["fields"]["pto"]
+        week_ending = status["fields"]["week_ending"]
+        the_current_user = status["fields"]["user_status"]
+        statusComplete = status["fields"]["statusComplete"]
 
         # Append each status to their respective list
         if accomplishments not in accomplishments_list:
-            split_data = re.split(r',\s+(?=ISSUE\s*-\s*\d+:)', accomplishments)
+            split_data = re.split(r",\s+(?=ISSUE\s*-\s*\d+:)", accomplishments)
 
             for item in split_data:
                 if item:
                     accomplishments_list.append(item)
 
         if ongoing_tasks not in ongoing_tasks_list:
-            split_data = re.split(r',\s+(?=ISSUE\s*-\s*\d+:)', ongoing_tasks)
+            split_data = re.split(r",\s+(?=ISSUE\s*-\s*\d+:)", ongoing_tasks)
 
             for item in split_data:
                 if item:
                     ongoing_tasks_list.append(ongoing_tasks)
         if upcoming_tasks not in upcoming_tasks_list:
-            split_data = re.split(r',\s+(?=ISSUE\s*-\s*\d+:)', upcoming_tasks)
+            split_data = re.split(r",\s+(?=ISSUE\s*-\s*\d+:)", upcoming_tasks)
 
             for item in split_data:
                 if item:
                     upcoming_tasks_list.append(upcoming_tasks)
         if obstacles not in obstacles_list:
-            split_data = re.split(r',\s+(?=ISSUE\s*-\s*\d+:)', obstacles)
+            split_data = re.split(r",\s+(?=ISSUE\s*-\s*\d+:)", obstacles)
 
             for item in split_data:
                 if item:
                     obstacles_list.append(obstacles)
         if non_standard_meeting not in non_standard_meeting_list:
-            split_data = re.split(r',\s+(?=ISSUE\s*-\s*\d+:)',
-                                  non_standard_meeting)
+            split_data = re.split(r",\s+(?=ISSUE\s*-\s*\d+:)", non_standard_meeting)
 
             for item in split_data:
                 if item:
                     non_standard_meeting_list.append(non_standard_meeting)
         if deliverables not in deliverables_list:
-            split_data = re.split(r',\s+(?=ISSUE\s*-\s*\d+:)', deliverables)
+            split_data = re.split(r",\s+(?=ISSUE\s*-\s*\d+:)", deliverables)
 
             for item in split_data:
                 if item:
                     deliverables_list.append(deliverables)
         if pto not in pto_list:
-            split_data = re.split(r',\s+(?=ISSUE\s*-\s*\d+:)', pto)
+            split_data = re.split(r",\s+(?=ISSUE\s*-\s*\d+:)", pto)
 
             for item in split_data:
                 if item:
                     pto_list.append(pto)
 
         # Load the template
-        template = DocxTemplate("/Users/duhnc/Desktop/allInfo/"
-                                "pe-reports-apiextended/src/pe_reports/"
-                                "pe_reports_django_project/home/"
-                                "PEWeeklyStatusReportTemplate.docx")
+        template = DocxTemplate(
+            "/Users/duhnc/Desktop/allInfo/"
+            "pe-reports-apiextended/src/pe_reports/"
+            "pe_reports_django_project/home/"
+            "PEWeeklyStatusReportTemplate.docx"
+        )
 
         # Define the values to insert into the template, including a list of tasks
         context = {
-            'user': the_current_user.capitalize(),
-            'week_ending': reformatted_week_ending_date,
+            "user": the_current_user.capitalize(),
+            "week_ending": reformatted_week_ending_date,
             "accomplishments_list": accomplishments_list,
             "ongoing_tasks_list": ongoing_tasks_list,
             "upcoming_task_list": upcoming_tasks_list,
             "obstacles_list": obstacles_list,
             "non_standard_meeting_list": non_standard_meeting_list,
             "deliverables_list": deliverables_list,
-            "pto_list": pto_list
+            "pto_list": pto_list,
         }
 
         # Render the template with the context
         template.render(context)
 
         # Save the rendered document as a new Word file
-        template.save("/Users/duhnc/Desktop/allInfo/pe-reports-apiextended/"
-                      "src/pe_reports/pe_reports_django_project/home/"
-                      "statusReportArchive/"
-                      "weeklyStatus_%s.docx" % week_ending_date)
+        template.save(
+            "/Users/duhnc/Desktop/allInfo/pe-reports-apiextended/"
+            "src/pe_reports/pe_reports_django_project/home/"
+            "statusReportArchive/"
+            "weeklyStatus_%s.docx" % week_ending_date
+        )
 
     messages.success(request, "The weekly status report has been created.")
     return HttpResponse("Word document created successfully.")
@@ -621,14 +613,16 @@ def email_notification(request):
 
 class FetchWeeklyStatusesView(View):
     """Fetch the weekly statuses from the API
-     and pass to Weekly Statuses template"""
+    and pass to Weekly Statuses template"""
+
     updateAPIKey(theSavedUserKey, theCurrentUserKey)
+
     def get(self, request, *args, **kwargs):
 
-        url = 'http://127.0.0.1:8089/apiv1/fetch_weekly_statuses'
+        url = "http://127.0.0.1:8089/apiv1/fetch_weekly_statuses"
         headers = {
-            'Content-Type': 'application/json',
-            'access_token': f'{config("API_KEY")}'
+            "Content-Type": "application/json",
+            "access_token": f'{config("API_KEY")}',
         }
 
         try:
@@ -650,83 +644,85 @@ class FetchWeeklyStatusesView(View):
             LOGGER.error(err)
 
         # Return an error JsonResponse if an exception occurs
-        return JsonResponse({"error": "Failed to fetch weekly statuses"},
-                            status=400)
+        return JsonResponse({"error": "Failed to fetch weekly statuses"}, status=400)
 
 
 class StatusView(TemplateView):
-    template_name = 'weeklyStatus.html'
-    LOGGER.info('Got to Status')
+    template_name = "weeklyStatus.html"
+    LOGGER.info("Got to Status")
 
 
 class StatusForm(LoginRequiredMixin, FormView):
     form_class = WeeklyStatusesForm
-    template_name = 'weeklyStatus.html'
+    template_name = "weeklyStatus.html"
 
-    success_url = reverse_lazy('weekly_status')
+    success_url = reverse_lazy("weekly_status")
 
     def get_form_kwargs(self):
         kwargs = super(StatusForm, self).get_form_kwargs()
-        kwargs['user'] = self.request.user
+        kwargs["user"] = self.request.user
         return kwargs
 
     def get(self, request, *args, **kwargs):
-        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        if request.headers.get("X-Requested-With") == "XMLHttpRequest":
             form = self.form_class()
-            form_html = render_to_string(self.form_only_template_name,
-                                         {'form': form}, request=request)
-            return JsonResponse({'form_html': form_html})
+            form_html = render_to_string(
+                self.form_only_template_name, {"form": form}, request=request
+            )
+            return JsonResponse({"form_html": form_html})
         else:
             return super().get(request, *args, **kwargs)
 
     def form_valid(self, form):
-        the_current_user = ''
+        the_current_user = ""
         statusComplete = 0
         week_ending = 0
         current_date = datetime.now()
         days_to_week_end = (4 - current_date.weekday()) % 7
         week_ending_date = current_date + timedelta(days=days_to_week_end)
 
-        weeklyInfo = WeeklyStatuses.objects. \
-            filter(week_ending=week_ending_date,
-                   user_status=self.request.user.first_name)
+        weeklyInfo = WeeklyStatuses.objects.filter(
+            week_ending=week_ending_date, user_status=self.request.user.first_name
+        )
 
         # Serialize the queryset to JSON
-        serialized_data = serializers.serialize('json', weeklyInfo)
+        serialized_data = serializers.serialize("json", weeklyInfo)
 
         # Load the serialized data into a JSON object
         json_data = json.loads(serialized_data)
 
         # Iterate through the JSON object and set variables from the fields
         for status in json_data:
-            the_current_user = status['fields']['user_status']
-            statusComplete = status['fields']['statusComplete']
-            week_ending = status['fields']['week_ending']
+            the_current_user = status["fields"]["user_status"]
+            statusComplete = status["fields"]["statusComplete"]
+            week_ending = status["fields"]["week_ending"]
 
         if statusComplete == 1:
-            messages.warning(self.request,
-                             f"The weekly status for {the_current_user.title()}"
-                             f" for the weekending {week_ending} "
-                             f"has already been completed.")
+            messages.warning(
+                self.request,
+                f"The weekly status for {the_current_user.title()}"
+                f" for the weekending {week_ending} "
+                f"has already been completed.",
+            )
             return HttpResponseRedirect("/weekly_status/")
 
-        key_accomplishments = form.cleaned_data['key_accomplishments'].upper()
+        key_accomplishments = form.cleaned_data["key_accomplishments"].upper()
 
-        ongoing_task = form.cleaned_data['ongoing_task'].upper()
+        ongoing_task = form.cleaned_data["ongoing_task"].upper()
 
-        upcoming_task = form.cleaned_data['upcoming_task'].upper()
+        upcoming_task = form.cleaned_data["upcoming_task"].upper()
 
-        obstacles = form.cleaned_data['obstacles'].upper()
+        obstacles = form.cleaned_data["obstacles"].upper()
 
-        non_standard_meeting = form.cleaned_data['non_standard_meeting'].upper()
+        non_standard_meeting = form.cleaned_data["non_standard_meeting"].upper()
 
-        deliverables = form.cleaned_data['deliverables'].upper()
+        deliverables = form.cleaned_data["deliverables"].upper()
 
-        pto = form.cleaned_data['pto_time'].upper()
+        pto = form.cleaned_data["pto_time"].upper()
 
-        messages.success(self.request,
-                         f'The weekly status was saved successfully.')
+        messages.success(self.request, f"The weekly status was saved successfully.")
 
+        print(self.request.user.first_name)
         weeklyStatus = WeeklyStatuses(
             key_accomplishments=key_accomplishments,
             user_status=self.request.user.first_name,
@@ -742,150 +738,133 @@ class StatusForm(LoginRequiredMixin, FormView):
 
         return super().form_valid(form)
 
+
 class updateStatusView(TemplateView):
-    template_name = 'weeklyStatusFormOnly.html'
-    LOGGER.info('Got to Status')
+    template_name = "weeklyStatusFormOnly.html"
+    LOGGER.info("Got to Status")
 
 
 class updateStatusForm(LoginRequiredMixin, FormView):
     form_class = UpdateWeeklyStatusesForm
-    template_name = 'weeklyStatusFormOnly.html'
-    form_only_template_name = 'weeklyStatusFormOnly.html'
+    template_name = "weeklyStatusFormOnly.html"
+    form_only_template_name = "weeklyStatusFormOnly.html"
 
-    success_url = reverse_lazy('weekly_status')
+    success_url = reverse_lazy("weekly_status")
 
     def get_form_kwargs(self):
         kwargs = super(StatusForm, self).get_form_kwargs()
-        kwargs['user'] = self.request.user
+        kwargs["user"] = self.request.user
         return kwargs
 
     def get(self, request, *args, **kwargs):
-        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        if request.headers.get("X-Requested-With") == "XMLHttpRequest":
             form = self.form_class()
-            form_html = render_to_string(self.form_only_template_name,
-                                         {'form': form}, request=request)
-            return JsonResponse({'form_html': form_html})
+            form_html = render_to_string(
+                self.form_only_template_name, {"form": form}, request=request
+            )
+            return JsonResponse({"form_html": form_html})
         else:
             return super().get(request, *args, **kwargs)
 
     def form_valid(self, form):
-        the_current_user = ''
-        statusComplete = 0
-        week_ending = 0
         current_date = datetime.now()
         days_to_week_end = (4 - current_date.weekday()) % 7
         week_ending_date = current_date + timedelta(days=days_to_week_end)
 
-        weeklyInfo = WeeklyStatuses.objects. \
-            filter(week_ending=week_ending_date,
-                   user_status=self.request.user.first_name)
+        key_accomplishments = form.cleaned_data["key_accomplishments"].upper()
+        ongoing_task = form.cleaned_data["ongoing_task"].upper()
+        upcoming_task = form.cleaned_data["upcoming_task"].upper()
+        obstacles = form.cleaned_data["obstacles"].upper()
+        non_standard_meeting = form.cleaned_data["non_standard_meeting"].upper()
+        deliverables = form.cleaned_data["deliverables"].upper()
+        pto = form.cleaned_data["pto_time"].upper()
 
-        # Serialize the queryset to JSON
-        serialized_data = serializers.serialize('json', weeklyInfo)
-
-        # Load the serialized data into a JSON object
-        json_data = json.loads(serialized_data)
-
-        # Iterate through the JSON object and set variables from the fields
-        for status in json_data:
-            the_current_user = status['fields']['user_status']
-            statusComplete = status['fields']['statusComplete']
-            week_ending = status['fields']['week_ending']
-
-        if statusComplete == 1:
-            messages.warning(self.request,
-                             f"The weekly status for {the_current_user.title()}"
-                             f" for the weekending {week_ending} "
-                             f"has already been completed.")
-            return HttpResponseRedirect("/weekly-status-form-only/")
-
-        key_accomplishments = form.cleaned_data['updatekey_accomplishments'].upper()
-
-        ongoing_task = form.cleaned_data['updateongoing_task'].upper()
-
-        upcoming_task = form.cleaned_data['updateupcoming_task'].upper()
-
-        obstacles = form.cleaned_data['updateobstacles'].upper()
-
-        non_standard_meeting = form.cleaned_data['updatenon_standard_meeting'].upper()
-
-        deliverables = form.cleaned_data['updatedeliverables'].upper()
-
-        pto = form.cleaned_data['updatepto_time'].upper()
-
-        messages.success(self.request,
-                         f'The weekly status was saved successfully.')
-
-        weeklyStatus = WeeklyStatuses(
-            key_accomplishments=key_accomplishments,
+        weeklyStatus, created = WeeklyStatuses.objects.get_or_create(
+            week_ending=week_ending_date,
             user_status=self.request.user.first_name,
-            ongoing_task=ongoing_task,
-            upcoming_task=upcoming_task,
-            obstacles=obstacles,
-            non_standard_meeting=non_standard_meeting,
-            deliverables=deliverables,
-            pto=pto,
+            defaults={
+                "key_accomplishments": key_accomplishments,
+                "ongoing_task": ongoing_task,
+                "upcoming_task": upcoming_task,
+                "obstacles": obstacles,
+                "non_standard_meeting": non_standard_meeting,
+                "deliverables": deliverables,
+                "pto": pto,
+            },
         )
 
-        weeklyStatus.save()
+        if not created:
+            weeklyStatus.key_accomplishments = key_accomplishments
+            weeklyStatus.ongoing_task = ongoing_task
+            weeklyStatus.upcoming_task = upcoming_task
+            weeklyStatus.obstacles = obstacles
+            weeklyStatus.non_standard_meeting = non_standard_meeting
+            weeklyStatus.deliverables = deliverables
+            weeklyStatus.pto = pto
+            weeklyStatus.save()
 
+        messages.success(self.request, f"The weekly status was saved successfully.")
         return super().form_valid(form)
 
 
 class WeeklyStatusesFormOnlyView(updateStatusForm):
-    template_name = 'weeklyStatusFormOnly.html'
+    template_name = "weeklyStatusFormOnly.html"
 
     def get(self, request, *args, **kwargs):
 
         # Fetch the most recent instance of the model for this user
         weekly_status = WeeklyStatuses.objects.filter(
-            user_status=request.user.first_name).latest('week_ending')
+            user_status=request.user.first_name
+        ).latest("week_ending")
 
         # Initialize the form with the instance's data
-        form = self.form_class(initial={
-            'updatekey_accomplishments': weekly_status.key_accomplishments,
-            'updateuser_status': self.request.user.first_name,
-            'updateongoing_task': weekly_status.ongoing_task,
-            'updateupcoming_task': weekly_status.upcoming_task,
-            'updateobstacles': weekly_status.obstacles,
-            'updatenon_standard_meeting': weekly_status.non_standard_meeting,
-            'updatedeliverables': weekly_status.deliverables,
-            'updatepto_time': weekly_status.pto,
-        },user=request.user)
+        form = self.form_class(
+            initial={
+                "updatekey_accomplishments": weekly_status.key_accomplishments,
+                "updateuser_status": self.request.user.first_name,
+                "updateongoing_task": weekly_status.ongoing_task,
+                "updateupcoming_task": weekly_status.upcoming_task,
+                "updateobstacles": weekly_status.obstacles,
+                "updatenon_standard_meeting": weekly_status.non_standard_meeting,
+                "updatedeliverables": weekly_status.deliverables,
+                "updatepto_time": weekly_status.pto,
+            },
+            user=request.user,
+        )
 
-        form_html = render_to_string(self.template_name,
-                                     self.get_context_data(form=form),
-                                     request=request)
-        return JsonResponse({'form_html': form_html})
+        form_html = render_to_string(
+            self.template_name, self.get_context_data(form=form), request=request
+        )
+        return JsonResponse({"form_html": form_html})
 
     def post(self, request, *args, **kwargs):
-        print('Getting to update post at WeeklyStatusesFormOnlyView')
+        print("Getting to update post at WeeklyStatusesFormOnlyView")
         form = self.form_class(request.POST, user=request.user)
         if form.is_valid():
             # save the form
             form.save(user=request.user)
 
-            messages.success(request, 'The weekly status was updated successfully.')
+            messages.success(request, "The weekly status was updated successfully.")
             return HttpResponseRedirect("/weekly_status/")
         else:
             messages.error(request, "Invalid form data.")
-            return render(request, self.template_name, {'form': form})
+            return render(request, self.template_name, {"form": form})
+
 
 class FetchUserWeeklyStatusesView(View):
     """Fetch the weekly statuses from the API
-     and pass to Weekly Statuses template"""
+    and pass to Weekly Statuses template"""
+
     updateAPIKey(theSavedUserKey, theCurrentUserKey)
 
     def get(self, request, *args, **kwargs):
 
-        url = 'http://127.0.0.1:8089/apiv1/fetch_user_weekly_statuses/'
+        url = "http://127.0.0.1:8089/apiv1/fetch_user_weekly_statuses/"
         headers = {
-            'Content-Type': 'application/json',
-            'access_token': f'{config("API_KEY")}'
+            "Content-Type": "application/json",
+            "access_token": f'{config("API_KEY")}',
         }
-        payload = json.dumps({
-            "user_fname": request.user.first_name
-        })
+        payload = json.dumps({"user_fname": request.user.first_name})
 
         try:
 
@@ -906,5 +885,4 @@ class FetchUserWeeklyStatusesView(View):
             LOGGER.error(err)
 
         # Return an error JsonResponse if an exception occurs
-        return JsonResponse({"error": "Failed to fetch weekly statuses"},
-                            status=400)
+        return JsonResponse({"error": "Failed to fetch weekly statuses"}, status=400)
