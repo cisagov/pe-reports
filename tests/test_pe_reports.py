@@ -164,7 +164,9 @@ def test_stakeholder_page(client):
 def test_report_generator(mock_db_connect, mock_get_orgs, mock_init, mock_embed):
     """Test report is generated."""
     mock_db_connect.return_value = "connection"
-    mock_get_orgs.return_value = [("pe_org_uid", "Test Org", "TestOrg")]
+    mock_get_orgs.return_value = [
+        ("pe_org_uid", "Test Org", "TestOrg", None, None, None, None, None, True)
+    ]
     report_dict = {
         "department": "Test Org",
         "dateRange": "Start - Stop",
