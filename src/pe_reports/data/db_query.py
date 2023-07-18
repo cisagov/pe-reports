@@ -6,6 +6,8 @@ import re
 import sys
 
 # Third-Party Libraries
+import requests
+import json
 import numpy as np
 import pandas as pd
 import psycopg2
@@ -21,6 +23,8 @@ LOGGER = logging.getLogger(__name__)
 
 CONN_PARAMS_DIC = config()
 
+pe_api_key = CONN_PARAMS_DIC.get("pe_api_key")
+pe_api_url = CONN_PARAMS_DIC.get("pe_api_url")
 
 def sanitize_string(string):
     """Remove special characters from string."""
@@ -30,6 +34,9 @@ def sanitize_string(string):
 def sanitize_uid(string):
     """Remove special characters from uids."""
     return re.sub(r"[^a-zA-Z0-9\-\s]", "", string)
+
+
+
 
 
 def show_psycopg2_exception(err):
@@ -56,21 +63,33 @@ def close(conn):
     conn.close()
     return
 
+def get_orgs():
+    """Query organizations table."""
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": f'{pe_api_key}',
+    }
 
-def get_orgs(conn):
-    """Query organizations table for orgs we report on."""
     try:
-        cur = conn.cursor()
-        sql = """SELECT * FROM organizations WHERE report_on"""
-        cur.execute(sql)
-        pe_orgs = cur.fetchall()
-        cur.close()
-        return pe_orgs
-    except (Exception, psycopg2.DatabaseError) as error:
-        LOGGER.error("There was a problem with your database query %s", error)
-    finally:
-        if conn is not None:
-            close(conn)
+
+        response = requests.post(pe_api_url, headers=headers).json()
+        return response
+
+    except requests.exceptions.HTTPError as errh:
+
+        print(errh)
+    except requests.exceptions.ConnectionError as errc:
+
+        print(errc)
+    except requests.exceptions.Timeout as errt:
+
+        print(errt)
+    except requests.exceptions.RequestException as err:
+
+        print(err)
+    except json.decoder.JSONDecodeError as err:
+        # print('its 5')
+        print(err)
 
 
 def get_orgs_df():
