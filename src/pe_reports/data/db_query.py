@@ -22,9 +22,8 @@ from .config import config
 LOGGER = logging.getLogger(__name__)
 
 CONN_PARAMS_DIC = config()
-
-pe_api_key = CONN_PARAMS_DIC.get("pe_api_key")
-pe_api_url = CONN_PARAMS_DIC.get("pe_api_url")
+PE_API_KEY = config(section='peapi').get('api_key') 
+PE_API_URL = config(section='peapi').get('api_url')
 
 def sanitize_string(string):
     """Remove special characters from string."""
@@ -67,28 +66,20 @@ def get_orgs():
     """Query organizations table."""
     headers = {
         "Content-Type": "application/json",
-        "access_token": f'{pe_api_key}',
+        "access_token": f'{PE_API_KEY}',
     }
-
     try:
-
-        response = requests.post(pe_api_url, headers=headers).json()
+        response = requests.post(PE_API_URL, headers=headers).json()
         return response
-
     except requests.exceptions.HTTPError as errh:
-
         print(errh)
     except requests.exceptions.ConnectionError as errc:
-
         print(errc)
     except requests.exceptions.Timeout as errt:
-
         print(errt)
     except requests.exceptions.RequestException as err:
-
         print(err)
     except json.decoder.JSONDecodeError as err:
-        # print('its 5')
         print(err)
 
 

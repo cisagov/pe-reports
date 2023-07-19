@@ -3,7 +3,9 @@
 # Standard Python Libraries
 from datetime import datetime
 import re
+import requests
 import sys
+import json
 
 # Third-Party Libraries
 import pandas as pd
@@ -20,7 +22,8 @@ from pe_reports.data.db_query import sanitize_uid
 LOGGER = app.config["LOGGER"]
 
 CONN_PARAMS_DIC = config()
-
+PE_API_KEY = config(section='peapi').get('api_key') 
+PE_API_URL = config(section='peapi').get('api_url')
 
 def show_psycopg2_exception(err):
     """Handle errors for PostgreSQL issues."""
@@ -53,28 +56,24 @@ def sanitize_text(string):
 
 
 def get_orgs():
-    """Query organizations that receive reports and demo organizations."""
-    conn = connect()
+    """Query organizations table."""
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": f'{PE_API_KEY}',
+    }
     try:
-        cur = conn.cursor()
-        sql = """SELECT * FROM organizations where report_on or demo"""
-        cur.execute(sql)
-        pe_orgs = cur.fetchall()
-        keys = ("org_uid", "org_name", "cyhy_db_name")
-
-        for value in pe_orgs:
-            value[0] = sanitize_uid(value[0])  # org_uid
-            value[1] = value[1]
-            value[2] = sanitize_text(value[2])  # cyhy_db_name
-
-        pe_orgs = [dict(zip(keys, values)) for values in pe_orgs]
-        cur.close()
-        return pe_orgs
-    except (Exception, psycopg2.DatabaseError) as error:
-        LOGGER.error("There was a problem with your database query %s", error)
-    finally:
-        if conn is not None:
-            close(conn)
+        response = requests.post(PE_API_URL, headers=headers).json()
+        return response
+    except requests.exceptions.HTTPError as errh:
+        print(errh)
+    except requests.exceptions.ConnectionError as errc:
+        print(errc)
+    except requests.exceptions.Timeout as errt:
+        print(errt)
+    except requests.exceptions.RequestException as err:
+        print(err)
+    except json.decoder.JSONDecodeError as err:
+        print(err)
 
 
 def get_ips(org_uid):
@@ -92,27 +91,29 @@ def get_ips(org_uid):
 
 
 def get_data_source_uid(source):
-    """Get data source uid."""
-    conn = connect()
-    cur = conn.cursor()
-    sql = """SELECT * FROM data_source WHERE name = '{}'"""
-    cur.execute(sql.format(source))
-    source = cur.fetchone()[0]
-
-    # Sanitize the data returned by fetchone()[0],
-    # returned data is data_source_uid (a uuid string)
-    source = sanitize_uid(source)
-
-    cur.close()
-    cur = conn.cursor()
-    # Update last_run in data_source table
-    date = datetime.today().strftime("%Y-%m-%d")
-    sql = """update data_source set last_run = '{}'
-            where name = '{}';"""
-    cur.execute(sql.format(date, source))
-    cur.close()
-    close(conn)
-    return source
+    """Query organizations table."""
+    urlOrgs = PE_API_URL
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": f'{PE_API_KEY}',
+    }
+    try:
+        response = requests.post(urlOrgs + "data_source/" + source, headers=headers).json()
+        #Change last viewed
+        uid = response[0]["data_source_uid"]
+        r = requests.put(urlOrgs + "update_last_viewed/" + uid, headers=headers)
+        LOGGER.info('Updated last viewed for %s', source)
+        return response
+    except requests.exceptions.HTTPError as errh:
+        print(errh)
+    except requests.exceptions.ConnectionError as errc:
+        print(errc)
+    except requests.exceptions.Timeout as errt:
+        print(errt)
+    except requests.exceptions.RequestException as err:
+        print(err)
+    except json.decoder.JSONDecodeError as err:
+        print(err)
 
 
 def insert_sixgill_alerts(df):
