@@ -50,7 +50,7 @@ def getUserKey():
     urlIDs = "http://127.0.0.1:8089/apiv1/get_key"
     payload = json.dumps({"refresh_token": f'{config("USER_REFRESH_TOKEN")}'})
     headers = {
-        "Content-Tpye": "application/json",
+        "Content-Type": "application/json",
     }
 
     response = requests.post(urlIDs, headers=headers, data=payload).json()
