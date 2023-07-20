@@ -2396,3 +2396,392 @@ def api_xl_stakeholders():
         return result_df
     else:
         raise Exception("xl_stakeholders query task failed, details: ", check_task_resp)
+
+
+# --- Issue 559 (formerly execute_ips() function) ---
+def api_ips_insert(new_ips):
+    """
+    Query API to insert new IP record into ips table.
+    On ip conflict, update the old record with the new data
+
+    Args:
+        new_cves: Dataframe containing the new IPs and their ip_hash/ip/origin_cidr data
+
+    Return:
+        Status on if the records were inserted successfully
+    """
+    # Endpoint info
+    create_task_url = "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/ips_insert"
+    check_task_url = (
+        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/ips_insert/task/"
+    )
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": pe_api_key,
+    }
+    # Convert dataframe to list of dictionaries
+    new_ips = new_ips[["ip_hash", "ip", "origin_cidr"]]
+    new_ips = new_ips.to_dict("records")
+    data = json.dumps({"new_ips": new_ips})
+    try:
+        # Create task for query
+        create_task_result = requests.post(
+            create_task_url, headers=headers, data=data
+        ).json()
+        task_id = create_task_result.get("task_id")
+        LOGGER.info("Created task for ips_insert endpoint query, task_id: ", task_id)
+        # Once task has been started, keep pinging task status until finished
+        check_task_url += task_id
+        task_status = "Pending"
+        while task_status != "Completed" and task_status != "Failed":
+            # Ping task status endpoint and get status
+            check_task_resp = requests.get(check_task_url, headers=headers).json()
+            task_status = check_task_resp.get("status")
+            LOGGER.info("\tPinged ips_insert status endpoint, status:", task_status)
+            time.sleep(3)
+    except requests.exceptions.HTTPError as errh:
+        LOGGER.error(errh)
+    except requests.exceptions.ConnectionError as errc:
+        LOGGER.error(errc)
+    except requests.exceptions.Timeout as errt:
+        LOGGER.error(errt)
+    except requests.exceptions.RequestException as err:
+        LOGGER.error(err)
+    except json.decoder.JSONDecodeError as err:
+        LOGGER.error(err)
+
+    # Once task finishes, return result
+    if task_status == "Completed":
+        return check_task_resp.get("result")
+    else:
+        raise Exception("ips_insert query task failed, details: ", check_task_resp)
+
+
+# --- Issue 560 (formerly query_all_subs() function) ---
+def api_sub_domains_table():
+    """
+    Query API for the entire sub_domains table.
+
+    Return:
+        The sub_domains table as a dataframe
+    """
+    # Endpoint info
+    create_task_url = (
+        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/sub_domains_table"
+    )
+    check_task_url = (
+        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/sub_domains_table/task/"
+    )
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": pe_api_key,
+    }
+    try:
+        # Create task for query
+        create_task_result = requests.post(create_task_url, headers=headers).json()
+        task_id = create_task_result.get("task_id")
+        LOGGER.info(
+            "Created task for sub_domains_table endpoint query, task_id: ", task_id
+        )
+        # Once task has been started, keep pinging task status until finished
+        check_task_url += task_id
+        task_status = "Pending"
+        while task_status != "Completed" and task_status != "Failed":
+            # Ping task status endpoint and get status
+            check_task_resp = requests.get(check_task_url, headers=headers).json()
+            task_status = check_task_resp.get("status")
+            LOGGER.info(
+                "\tPinged sub_domains_table status endpoint, status:", task_status
+            )
+            time.sleep(3)
+    except requests.exceptions.HTTPError as errh:
+        LOGGER.error(errh)
+    except requests.exceptions.ConnectionError as errc:
+        LOGGER.error(errc)
+    except requests.exceptions.Timeout as errt:
+        LOGGER.error(errt)
+    except requests.exceptions.RequestException as err:
+        LOGGER.error(err)
+    except json.decoder.JSONDecodeError as err:
+        LOGGER.error(err)
+
+    # Once task finishes, return result
+    if task_status == "Completed":
+        result_df = pd.DataFrame.from_dict(check_task_resp.get("result"))
+        return result_df
+    else:
+        raise Exception(
+            "sub_domains_table query task failed, details: ", check_task_resp
+        )
+
+
+# --- Issue 632 (formerly execute_scorecard() function) ---
+def api_rss_insert(summary_dict):
+    """
+    Insert a record for an organization into the report_summary_stats table.
+    On org_uid/star_date conflict, update the old record with the new data
+
+    Args:
+        summary_dict: Dictionary of column names and values to be inserted
+
+    Return:
+        Status on if the record was inserted successfully
+    """
+    # Endpoint info
+    create_task_url = "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/rss_insert"
+    check_task_url = (
+        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/rss_insert/task/"
+    )
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": pe_api_key,
+    }
+    data = json.dumps(summary_dict)
+    try:
+        # Create task for query
+        create_task_result = requests.post(
+            create_task_url, headers=headers, data=data
+        ).json()
+        task_id = create_task_result.get("task_id")
+        LOGGER.info("Created task for rss_insert endpoint query, task_id: ", task_id)
+        # Once task has been started, keep pinging task status until finished
+        check_task_url += task_id
+        task_status = "Pending"
+        while task_status != "Completed" and task_status != "Failed":
+            # Ping task status endpoint and get status
+            check_task_resp = requests.get(check_task_url, headers=headers).json()
+            task_status = check_task_resp.get("status")
+            LOGGER.info("\tPinged rss_insert status endpoint, status:", task_status)
+            time.sleep(3)
+    except requests.exceptions.HTTPError as errh:
+        LOGGER.error(errh)
+    except requests.exceptions.ConnectionError as errc:
+        LOGGER.error(errc)
+    except requests.exceptions.Timeout as errt:
+        LOGGER.error(errt)
+    except requests.exceptions.RequestException as err:
+        LOGGER.error(err)
+    except json.decoder.JSONDecodeError as err:
+        LOGGER.error(err)
+
+    # Once task finishes, return result
+    if task_status == "Completed":
+        return check_task_resp.get("result")
+    else:
+        raise Exception("rss_insert query task failed, details: ", check_task_resp)
+
+
+# --- Issue 634 (formerly query_previous_period() function) ---
+def api_rss_prev_period(org_uid, prev_end_date):
+    """
+    Query API for previous period report_summary_stats data for a specific org.
+
+    Args:
+        org_uid: The organizations_uid of the specified organization
+        prev_end_date: The end_date of the previous report period
+
+    Return:
+        Report_summary_stats data from the previous report period for a specific org as a dataframe
+    """
+    # Endpoint info
+    create_task_url = (
+        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/rss_prev_period"
+    )
+    check_task_url = (
+        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/rss_prev_period/task/"
+    )
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": pe_api_key,
+    }
+    data = json.dumps({"org_uid": org_uid, "prev_end_date": prev_end_date})
+    try:
+        # Create task for query
+        create_task_result = requests.post(
+            create_task_url, headers=headers, data=data
+        ).json()
+        task_id = create_task_result.get("task_id")
+        LOGGER.info(
+            "Created task for rss_prev_period endpoint query, task_id: ", task_id
+        )
+        # Once task has been started, keep pinging task status until finished
+        check_task_url += task_id
+        task_status = "Pending"
+        while task_status != "Completed" and task_status != "Failed":
+            # Ping task status endpoint and get status
+            check_task_resp = requests.get(check_task_url, headers=headers).json()
+            task_status = check_task_resp.get("status")
+            LOGGER.info(
+                "\tPinged rss_prev_period status endpoint, status:", task_status
+            )
+            time.sleep(3)
+    except requests.exceptions.HTTPError as errh:
+        LOGGER.error(errh)
+    except requests.exceptions.ConnectionError as errc:
+        LOGGER.error(errc)
+    except requests.exceptions.Timeout as errt:
+        LOGGER.error(errt)
+    except requests.exceptions.RequestException as err:
+        LOGGER.error(err)
+    except json.decoder.JSONDecodeError as err:
+        LOGGER.error(err)
+
+    # Once task finishes, return result
+    if task_status == "Completed":
+        result_df = pd.DataFrame.from_dict(check_task_resp.get("result"))
+
+        # if source:
+        #    assets_dict = {
+        #        "last_ip_count": source[0],
+        #        "last_root_domain_count": source[1],
+        #        "last_sub_domain_count": source[2],
+        #        "last_cred_password_count": source[3],
+        #        "last_sus_vuln_addrs_count": source[4],
+        #        "last_suspected_vuln_count": source[5],
+        #        "last_insecure_port_count": source[6],
+        #        "last_actor_activity_count": source[7],
+        #    }
+        # else:
+        #    assets_dict = {
+        #        "last_ip_count": 0,
+        #        "last_root_domain_count": 0,
+        #        "last_sub_domain_count": 0,
+        #        "last_cred_password_count": 0,
+        #        "last_sus_vuln_addrs_count": 0,
+        #        "last_suspected_vuln_count": 0,
+        #        "last_insecure_port_count": 0,
+        #        "last_actor_activity_count": 0,
+        #    }
+
+        return result_df
+    else:
+        raise Exception("rss_prev_period query task failed, details: ", check_task_resp)
+
+
+# --- Issue 637 (formerly upsert_new_cves() function) ---
+def api_cve_info_insert(new_cves):
+    """
+    Query API to upsert new CVE records into cve_info.
+    On cve_name conflict, update the old record with the new data
+
+    Args:
+        new_cves: Dataframe containing the new CVEs and their CVSS2.0/3.1/DVE data
+
+    Return:
+        Status on if the records were inserted successfully
+    """
+    # Endpoint info
+    create_task_url = (
+        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/cve_info_insert"
+    )
+    check_task_url = (
+        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/cve_info_insert/task/"
+    )
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": pe_api_key,
+    }
+    # Convert dataframe to list of dictionaries
+    new_cves = new_cves.to_dict("records")
+    data = json.dumps({"new_cves": new_cves})
+    try:
+        # Create task for query
+        create_task_result = requests.post(
+            create_task_url, headers=headers, data=data
+        ).json()
+        task_id = create_task_result.get("task_id")
+        LOGGER.info(
+            "Created task for cve_info_insert endpoint query, task_id: ", task_id
+        )
+        # Once task has been started, keep pinging task status until finished
+        check_task_url += task_id
+        task_status = "Pending"
+        while task_status != "Completed" and task_status != "Failed":
+            # Ping task status endpoint and get status
+            check_task_resp = requests.get(check_task_url, headers=headers).json()
+            task_status = check_task_resp.get("status")
+            LOGGER.info(
+                "\tPinged cve_info_insert status endpoint, status:", task_status
+            )
+            time.sleep(3)
+    except requests.exceptions.HTTPError as errh:
+        LOGGER.error(errh)
+    except requests.exceptions.ConnectionError as errc:
+        LOGGER.error(errc)
+    except requests.exceptions.Timeout as errt:
+        LOGGER.error(errt)
+    except requests.exceptions.RequestException as err:
+        LOGGER.error(err)
+    except json.decoder.JSONDecodeError as err:
+        LOGGER.error(err)
+
+    # Once task finishes, return result
+    if task_status == "Completed":
+        return check_task_resp.get("result")
+    else:
+        raise Exception("cve_info_insert query task failed, details: ", check_task_resp)
+
+
+# --- Issue 641 (formerly get_intelx_breaches() function) ---
+def get_intelx_breaches(source_uid):
+    """
+    Query API for all IntelX credential breaches.
+
+    Args:
+        source_uid: The data source uid to filter credential breaches by
+
+    Return:
+        Credential breach data that have the specified data_source_uid as a dataframe
+    """
+    # Endpoint info
+    create_task_url = (
+        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/cred_breach_intelx"
+    )
+    check_task_url = (
+        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/cred_breach_intelx/task/"
+    )
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": pe_api_key,
+    }
+    data = json.dumps({"source_uid": source_uid})
+    try:
+        # Create task for query
+        create_task_result = requests.post(
+            create_task_url, headers=headers, data=data
+        ).json()
+        task_id = create_task_result.get("task_id")
+        LOGGER.info(
+            "Created task for cred_breach_intelx endpoint query, task_id: ", task_id
+        )
+        # Once task has been started, keep pinging task status until finished
+        check_task_url += task_id
+        task_status = "Pending"
+        while task_status != "Completed" and task_status != "Failed":
+            # Ping task status endpoint and get status
+            check_task_resp = requests.get(check_task_url, headers=headers).json()
+            task_status = check_task_resp.get("status")
+            LOGGER.info(
+                "\tPinged cred_breach_intelx status endpoint, status:", task_status
+            )
+            time.sleep(3)
+    except requests.exceptions.HTTPError as errh:
+        LOGGER.error(errh)
+    except requests.exceptions.ConnectionError as errc:
+        LOGGER.error(errc)
+    except requests.exceptions.Timeout as errt:
+        LOGGER.error(errt)
+    except requests.exceptions.RequestException as err:
+        LOGGER.error(err)
+    except json.decoder.JSONDecodeError as err:
+        LOGGER.error(err)
+
+    # Once task finishes, return result
+    if task_status == "Completed":
+        # Convert result to list of tuples to match original function
+        result = [tuple(row.values()) for row in check_task_resp.get("result")]
+        return result
+    else:
+        raise Exception(
+            "cred_breach_intelx query task failed, details: ", check_task_resp
+        )

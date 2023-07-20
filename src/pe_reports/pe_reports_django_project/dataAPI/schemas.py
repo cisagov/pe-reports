@@ -8,7 +8,7 @@ import uuid
 from uuid import UUID, uuid1, uuid4
 
 # Third-Party Libraries
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, validator
 from pydantic.schema import Optional
 
 """
@@ -53,17 +53,48 @@ class Organization(OrganizationBase):
         orm_mode = True
 
 
+# sub_domains table schema: OLD
+# class SubDomainBase(BaseModel):
+#    sub_domain_uid: UUID
+#    sub_domain: str
+#    root_domain_uid: Optional[Any]
+#    data_source_uid: Optional[Any]
+#    dns_record_uid: Optional[Any] = None
+#    status: bool = False
+#    first_seen: Optional[str] = None
+#    last_seen: Optional[str] = None
+#    current: Optional[bool] = None
+#    identified: Optional[bool] = None
+#
+#    class Config:
+#        orm_mode = True
+#        validate_assignment = True
+
+
+# --- Issue 560 ---
 class SubDomainBase(BaseModel):
-    sub_domain_uid: UUID
-    sub_domain: str
-    root_domain_uid: Optional[Any]
-    data_source_uid: Optional[Any]
-    dns_record_uid: Optional[Any] = None
+    sub_domain_uid: str
+    sub_domain: Optional[str] = None
+    root_domain_uid_id: Optional[str] = None
+    data_source_uid_id: Optional[str] = None
+    dns_record_uid_id: Optional[str] = None
     status: bool = False
+    first_seen: Optional[str] = None
+    last_seen: Optional[str] = None
+    current: Optional[bool] = None
+    identified: Optional[bool] = None
 
     class Config:
         orm_mode = True
         validate_assignment = True
+
+
+# --- Issue 560 ---
+class SubDomainTableTaskResp(BaseModel):
+    task_id: str
+    status: str
+    result: List[SubDomainBase] = None
+    error: str = None
 
 
 class VwBreachcomp(BaseModel):
@@ -358,6 +389,172 @@ class User(UserInDBBase):
 # Additional properties stored in DB
 class UserInDB(UserInDBBase):
     hashed_password: str
+
+
+# --- Issue 559 ---
+# Insert record into Ips
+class IpsInsert(BaseModel):
+    ip_hash: str
+    ip: str
+    origin_cidr: str
+
+    class Config:
+        orm_mode = True
+
+
+# --- Issue 559 ---
+# Insert record into Ips
+class IpsInsertInput(BaseModel):
+    new_ips: List[IpsInsert]
+
+    class Config:
+        orm_mode = True
+
+
+# --- Issue 559 ---
+# Insert record into Ips, task response
+class IpsInsertTaskResp(BaseModel):
+    task_id: str
+    status: str
+    result: str = None
+    error: str = None
+
+
+# --- Issue 632 ---
+# Insert record into report_summary_stats
+class RSSInsertInput(BaseModel):
+    organizations_uid: str
+    start_date: str
+    end_date: str
+    ip_count: int
+    root_count: int
+    sub_count: int
+    ports_count: int
+    creds_count: int
+    breach_count: int
+    cred_password_count: int
+    domain_alert_count: int
+    suspected_domain_count: int
+    insecure_port_count: int
+    verified_vuln_count: int
+    suspected_vuln_count: int
+    suspected_vuln_addrs_count: int
+    threat_actor_count: int
+    dark_web_alerts_count: int
+    dark_web_mentions_count: int
+    dark_web_executive_alerts_count: int
+    dark_web_asset_alerts_count: int
+    pe_number_score: int
+    pe_letter_grade: str
+
+    class Config:
+        orm_mode = True
+
+
+# --- Issue 632 ---
+# Insert record into report_summary_stats, task response
+class RSSInsertTaskResp(BaseModel):
+    task_id: str
+    status: str
+    result: str = None
+    error: str = None
+
+
+# --- Issue 634 ---
+# Get prev. report period data from report_summary_stats
+class RSSPrevPeriod(BaseModel):
+    ip_count: Optional[int] = None
+    root_count: Optional[int] = None
+    sub_count: Optional[int] = None
+    cred_password_count: Optional[int] = None
+    suspected_vuln_addrs_count: Optional[int] = None
+    suspected_vuln_count: Optional[int] = None
+    insecure_port_count: Optional[int] = None
+    threat_actor_count: Optional[int] = None
+
+    class Config:
+        orm_mode = True
+
+
+# --- Issue 634 ---
+# Get prev. report period data from report_summary_stats, input
+class RSSPrevPeriodInput(BaseModel):
+    org_uid: str
+    prev_end_date: str
+
+    class Config:
+        orm_mode = True
+
+
+# --- Issue 634 ---
+# Get prev. report period data from report_summary_stats, task response
+class RSSPrevPeriodTaskResp(BaseModel):
+    task_id: str
+    status: str
+    result: List[RSSPrevPeriod] = None
+    error: str = None
+
+
+# --- Issue 637 ---
+# Upsert new CVE into cve_info
+class CVEInfoInsert(BaseModel):
+    cve_name: str
+    cvss_2_0: float
+    cvss_2_0_severity: str
+    cvss_2_0_vector: str
+    cvss_3_0: float
+    cvss_3_0_severity: str
+    cvss_3_0_vector: str
+    dve_score: float
+
+    class Config:
+        orm_mode = True
+
+
+# --- Issue 637 ---
+# Upsert new CVE into cve_info, input
+class CVEInfoInsertInput(BaseModel):
+    new_cves: List[CVEInfoInsert]
+
+    class Config:
+        orm_mode = True
+
+
+# --- Issue 637 ---
+# Upsert new CVE into cve_info, task response
+class CVEInfoInsertTaskResp(BaseModel):
+    task_id: str
+    status: str
+    result: str = None
+    error: str = None
+
+
+# --- Issue 641 ---
+# Get IntelX breaches
+class CredBreachIntelX(BaseModel):
+    breach_name: str
+    credential_breaches_uid: str
+
+    class Config:
+        orm_mode = True
+
+
+# --- Issue 641 ---
+# Get IntelX breaches, input
+class CredBreachIntelXInput(BaseModel):
+    source_uid: str
+
+    class Config:
+        orm_mode = True
+
+
+# --- Issue 641 ---
+# Get IntelX breaches, task response
+class CredBreachIntelXTaskResp(BaseModel):
+    task_id: str
+    status: str
+    result: List[CredBreachIntelX] = None
+    error: str = None
 
 
 # ---------- D-Score View Schemas ----------

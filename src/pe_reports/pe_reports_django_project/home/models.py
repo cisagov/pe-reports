@@ -193,6 +193,8 @@ class Cidrs(models.Model):
         unique_together = (("organizations_uid", "network"),)
 
 
+# Github issues connected to this model:
+# - Issue 641
 class CredentialBreaches(models.Model):
     credential_breaches_uid = models.UUIDField(primary_key=True)
     breach_name = models.TextField(unique=True)
@@ -249,6 +251,8 @@ class CredentialExposures(models.Model):
         unique_together = (("breach_name", "email"),)
 
 
+# Github issues connected to this model:
+# - Issue 637
 class CveInfo(models.Model):
     cve_uuid = models.UUIDField(primary_key=True, default=uuid.uuid1())
     cve_name = models.TextField(unique=True, blank=True, null=True)
@@ -571,6 +575,8 @@ class Executives(models.Model):
         db_table = "executives"
 
 
+# Github issues connected to this model:
+# - Issue 559
 class Ips(models.Model):
     ip_hash = models.TextField(primary_key=True)
     ip = models.GenericIPAddressField(unique=True)
@@ -911,6 +917,9 @@ class PshttResults(models.Model):
         unique_together = (("organizations_uid", "sub_domain_uid"),)
 
 
+# Github issues connected to this model:
+# - Issue 634
+# - Issue 632
 class ReportSummaryStats(models.Model):
     report_uid = models.UUIDField(primary_key=True, default=uuid.uuid1())
     organizations_uid = models.ForeignKey(
@@ -1097,6 +1106,8 @@ class ShodanVulns(models.Model):
         )
 
 
+# Github issues connected to this model:
+# - Issue 560
 class SubDomains(models.Model):
     sub_domain_uid = models.UUIDField(primary_key=True, default=uuid.uuid1())
     sub_domain = models.TextField()
@@ -1114,6 +1125,10 @@ class SubDomains(models.Model):
         null=True,
     )
     status = models.BooleanField(blank=True, null=True)
+    first_seen = models.DateField(blank=True, null=True)
+    last_seen = models.DateField(blank=True, null=True)
+    current = models.BooleanField(blank=True, null=True)
+    identified = models.BooleanField(blank=True, null=True)
 
     class Meta:
         managed = False

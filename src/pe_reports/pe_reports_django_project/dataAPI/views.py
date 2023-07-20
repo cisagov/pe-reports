@@ -93,6 +93,15 @@ from dataAPI.tasks import (
     get_xl_stakeholders_info,
 )
 
+from dataAPI.tasks import (
+    ips_insert_task,  # Issue 559
+    sub_domains_table_task,  # Issue 560
+    rss_insert_task,  # Issue 632
+    rss_prev_period_task,  # Issue 634
+    cve_info_insert_task,  # Issue 637
+    cred_breach_intelx_task,  # Issue 641
+)
+
 LOGGER = logging.getLogger(__name__)
 
 
@@ -908,6 +917,288 @@ def cyhy_ports_scan_info_update(
             LOGGER.info("API key expired please try again")
     else:
         return {"message": "No api key was submitted"}
+
+
+# --- Issue 559 ---
+@api_router.post(
+    "/ips_insert",
+    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.IpsInsertTaskResp,
+    tags=["Insert new ip records into the ips table"],
+)
+def ips_insert(data: schemas.IpsInsertInput, tokens: dict = Depends(get_api_key)):
+    """API endpoint to insert new ip records into the ips table."""
+    # Convert list of input models to list of dictionaries
+    data.new_ips = [dict(input_dict) for input_dict in data.new_ips]
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        # If API key valid, create task for query
+        task = ips_insert_task.delay(data.new_ips)
+        # Return the new task id w/ "Processing" status
+        return {"task_id": task.id, "status": "Processing"}
+    else:
+        return {"message": "No api key was submitted"}
+
+
+@api_router.get(
+    "/ips_insert/task/{task_id}",
+    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.IpsInsertTaskResp,
+    tags=["Check task status for ips_insert endpoint task."],
+)
+async def ips_insert_status(task_id: str, tokens: dict = Depends(get_api_key)):
+    """API endpoint to check status of ips_insert endpoint task."""
+    # Retrieve task status
+    task = ips_insert_task.AsyncResult(task_id)
+    # Return appropriate message for status
+    if task.state == "SUCCESS":
+        return {"task_id": task_id, "status": "Completed", "result": task.result}
+    elif task.state == "PENDING":
+        return {"task_id": task_id, "status": "Pending"}
+    elif task.state == "FAILURE":
+        return {"task_id": task_id, "status": "Failed", "error": str(task.result)}
+    else:
+        return {"task_id": task_id, "status": task.state}
+
+
+# --- Issue 560 ---
+@api_router.post(
+    "/sub_domains_table",
+    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.SubDomainTableTaskResp,
+    tags=["Get all data from the sub_domains table"],
+)
+def sub_domains_table(tokens: dict = Depends(get_api_key)):
+    """API endpoint to get all data from the sub_domains table."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        # If API key valid, create task for query
+        task = sub_domains_table_task.delay()
+        # Return the new task id w/ "Processing" status
+        return {"task_id": task.id, "status": "Processing"}
+    else:
+        return {"message": "No api key was submitted"}
+
+
+@api_router.get(
+    "/sub_domains_table/task/{task_id}",
+    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.SubDomainTableTaskResp,
+    tags=["Check task status for sub_domains_table endpoint task."],
+)
+async def sub_domains_table_status(task_id: str, tokens: dict = Depends(get_api_key)):
+    """API endpoint to check status of sub_domains_table endpoint task."""
+    # Retrieve task status
+    task = sub_domains_table_task.AsyncResult(task_id)
+    # Return appropriate message for status
+    if task.state == "SUCCESS":
+        return {"task_id": task_id, "status": "Completed", "result": task.result}
+    elif task.state == "PENDING":
+        return {"task_id": task_id, "status": "Pending"}
+    elif task.state == "FAILURE":
+        return {"task_id": task_id, "status": "Failed", "error": str(task.result)}
+    else:
+        return {"task_id": task_id, "status": task.state}
+
+
+# --- Issue 632 ---
+@api_router.post(
+    "/rss_insert",
+    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.RSSInsertTaskResp,
+    tags=["Insert an organization's record into the report_summary_stats table"],
+)
+def rss_insert(data: schemas.RSSInsertInput, tokens: dict = Depends(get_api_key)):
+    """API endpoint to insert an organization's record into the report_summary_stats table."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        # If API key valid, create task for query
+        task = rss_insert_task.delay(
+            data.organizations_uid,
+            data.start_date,
+            data.end_date,
+            data.ip_count,
+            data.root_count,
+            data.sub_count,
+            data.ports_count,
+            data.creds_count,
+            data.breach_count,
+            data.cred_password_count,
+            data.domain_alert_count,
+            data.suspected_domain_count,
+            data.insecure_port_count,
+            data.verified_vuln_count,
+            data.suspected_vuln_count,
+            data.suspected_vuln_addrs_count,
+            data.threat_actor_count,
+            data.dark_web_alerts_count,
+            data.dark_web_mentions_count,
+            data.dark_web_executive_alerts_count,
+            data.dark_web_asset_alerts_count,
+            data.pe_number_score,
+            data.pe_letter_grade,
+        )
+        # Return the new task id w/ "Processing" status
+        return {"task_id": task.id, "status": "Processing"}
+    else:
+        return {"message": "No api key was submitted"}
+
+
+@api_router.get(
+    "/rss_insert/task/{task_id}",
+    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.RSSInsertTaskResp,
+    tags=["Check task status for rss_insert endpoint task."],
+)
+async def rss_insert_status(task_id: str, tokens: dict = Depends(get_api_key)):
+    """API endpoint to check status of rss_insert endpoint task."""
+    # Retrieve task status
+    task = rss_insert_task.AsyncResult(task_id)
+    # Return appropriate message for status
+    if task.state == "SUCCESS":
+        return {"task_id": task_id, "status": "Completed", "result": task.result}
+    elif task.state == "PENDING":
+        return {"task_id": task_id, "status": "Pending"}
+    elif task.state == "FAILURE":
+        return {"task_id": task_id, "status": "Failed", "error": str(task.result)}
+    else:
+        return {"task_id": task_id, "status": task.state}
+
+
+# --- Issue 634 ---
+@api_router.post(
+    "/rss_prev_period",
+    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.RSSPrevPeriodTaskResp,
+    tags=[
+        "Get previous report period report_summary_stats data for the specified organization"
+    ],
+)
+def rss_prev_period(
+    data: schemas.RSSPrevPeriodInput, tokens: dict = Depends(get_api_key)
+):
+    """API endpoint to get previous period report_summary_stats data for the specified organization."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        # If API key valid, create task for query
+        task = rss_prev_period_task.delay(data.org_uid, data.prev_end_date)
+        # Return the new task id w/ "Processing" status
+        return {"task_id": task.id, "status": "Processing"}
+    else:
+        return {"message": "No api key was submitted"}
+
+
+@api_router.get(
+    "/rss_prev_period/task/{task_id}",
+    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.RSSPrevPeriodTaskResp,
+    tags=["Check task status for rss_prev_period endpoint task."],
+)
+async def rss_prev_period_status(task_id: str, tokens: dict = Depends(get_api_key)):
+    """API endpoint to check status of rss_prev_period endpoint task."""
+    # Retrieve task status
+    task = rss_prev_period_task.AsyncResult(task_id)
+    # Return appropriate message for status
+    if task.state == "SUCCESS":
+        return {"task_id": task_id, "status": "Completed", "result": task.result}
+    elif task.state == "PENDING":
+        return {"task_id": task_id, "status": "Pending"}
+    elif task.state == "FAILURE":
+        return {"task_id": task_id, "status": "Failed", "error": str(task.result)}
+    else:
+        return {"task_id": task_id, "status": task.state}
+
+
+# --- Issue 637 ---
+@api_router.post(
+    "/cve_info_insert",
+    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.CVEInfoInsertTaskResp,
+    tags=["Upsert new CVEs into the cve_info table"],
+)
+def cve_info_insert(
+    data: schemas.CVEInfoInsertInput, tokens: dict = Depends(get_api_key)
+):
+    """API endpoint to insert new CVEs into the cve_info table."""
+    # Convert list of input models to list of dictionaries
+    data.new_cves = [dict(input_dict) for input_dict in data.new_cves]
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        # If API key valid, create task for query
+        task = cve_info_insert_task.delay(data.new_cves)
+        # Return the new task id w/ "Processing" status
+        return {"task_id": task.id, "status": "Processing"}
+    else:
+        return {"message": "No api key was submitted"}
+
+
+@api_router.get(
+    "/cve_info_insert/task/{task_id}",
+    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.CVEInfoInsertTaskResp,
+    tags=["Check task status for cve_info_insert endpoint task."],
+)
+async def cve_info_insert_status(task_id: str, tokens: dict = Depends(get_api_key)):
+    """API endpoint to check status of cve_info_insert endpoint task."""
+    # Retrieve task status
+    task = cve_info_insert_task.AsyncResult(task_id)
+    # Return appropriate message for status
+    if task.state == "SUCCESS":
+        return {"task_id": task_id, "status": "Completed", "result": task.result}
+    elif task.state == "PENDING":
+        return {"task_id": task_id, "status": "Pending"}
+    elif task.state == "FAILURE":
+        return {"task_id": task_id, "status": "Failed", "error": str(task.result)}
+    else:
+        return {"task_id": task_id, "status": task.state}
+
+
+# --- Issue 641 ---
+@api_router.post(
+    "/cred_breach_intelx",
+    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.CredBreachIntelXTaskResp,
+    tags=["Get IntelX credential breaches"],
+)
+def cred_breach_intelx(
+    data: schemas.CredBreachIntelXInput, tokens: dict = Depends(get_api_key)
+):
+    """API endpoint to get IntelX credential breaches"""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        # If API key valid, create task for query
+        task = cred_breach_intelx_task.delay(data.source_uid)
+        # Return the new task id w/ "Processing" status
+        return {"task_id": task.id, "status": "Processing"}
+    else:
+        return {"message": "No api key was submitted"}
+
+
+@api_router.get(
+    "/cred_breach_intelx/task/{task_id}",
+    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.CredBreachIntelXTaskResp,
+    tags=["Check task status for cred_breach_intelx endpoint task."],
+)
+async def cred_breach_intelx_status(task_id: str, tokens: dict = Depends(get_api_key)):
+    """API endpoint to check status of cred_breach_intelx endpoint task."""
+    # Retrieve task status
+    task = cred_breach_intelx_task.AsyncResult(task_id)
+    # Return appropriate message for status
+    if task.state == "SUCCESS":
+        return {"task_id": task_id, "status": "Completed", "result": task.result}
+    elif task.state == "PENDING":
+        return {"task_id": task_id, "status": "Pending"}
+    elif task.state == "FAILURE":
+        return {"task_id": task_id, "status": "Failed", "error": str(task.result)}
+    else:
+        return {"task_id": task_id, "status": task.state}
 
 
 # ---------- D-Score View Endpoints ----------
