@@ -174,22 +174,22 @@ services:
     mem_limit: ${MEM_LIMIT} # Set the memory limit for the container
     networks:
       - elk
-
-  metricbeat:
-    # Metricbeat service
-    image: docker.elastic.co/beats/metricbeat:${STACK_VERSION} # Metricbeat image to use
-    container_name: metricbeat # Name for the container
-    volumes:
-      - ./metricbeat.yml:/usr/share/metricbeat/metricbeat.yml # Mount the Metricbeat configuration file
-      - /var/run/docker.sock:/var/run/docker.sock # Mount the Docker socket for container metrics
-      - certs:/usr/share/metricbeat/config/certs
-    depends_on:
+      #metricbeat:
+      ##Curretnly not working on EC2 and may not need to be used in favor of Fleet Agent##
+      # Metricbeat service
+      #image: docker.elastic.co/beats/metricbeat:${STACK_VERSION} # Metricbeat image to use
+      #container_name: metricbeat # Name for the container
+      #volumes:
+      #- ./metricbeat.yml:/usr/share/metricbeat/metricbeat.yml # Mount the Metricbeat configuration file
+      #- /var/run/docker.sock:/var/run/docker.sock # Mount the Docker socket for container metrics
+      #- certs:/usr/share/metricbeat/config/certs
+      #depends_on:
       # Define dependencies for the service
-      - logstash
-      - es01
-    command: metricbeat -e -strict.perms=false # Start Metricbeat with error logging and disabled strict permission checks
-    networks:
-      - elk
+      #- logstash
+      #- es01
+      #command: metricbeat -e -strict.perms=false # Start Metricbeat with error logging and disabled strict permission checks
+      #networks:
+      #- elk
 
   filebeat:
     # Filebeat Service
