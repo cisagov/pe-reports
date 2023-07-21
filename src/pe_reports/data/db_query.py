@@ -1,18 +1,18 @@
 """Query the PE PostgreSQL database."""
 
 # Standard Python Libraries
+import json
 import logging
 import re
 import sys
 
 # Third-Party Libraries
-import requests
-import json
 import numpy as np
 import pandas as pd
 import psycopg2
 from psycopg2 import OperationalError
 from psycopg2.extensions import AsIs
+import requests
 
 from .config import config
 
@@ -22,8 +22,9 @@ from .config import config
 LOGGER = logging.getLogger(__name__)
 
 CONN_PARAMS_DIC = config()
-PE_API_KEY = config(section='peapi').get('api_key') 
-PE_API_URL = config(section='peapi').get('api_url')
+PE_API_KEY = config(section="peapi").get("api_key")
+PE_API_URL = config(section="peapi").get("api_url")
+
 
 def sanitize_string(string):
     """Remove special characters from string."""
@@ -33,9 +34,6 @@ def sanitize_string(string):
 def sanitize_uid(string):
     """Remove special characters from uids."""
     return re.sub(r"[^a-zA-Z0-9\-\s]", "", string)
-
-
-
 
 
 def show_psycopg2_exception(err):
@@ -62,11 +60,12 @@ def close(conn):
     conn.close()
     return
 
+
 def get_orgs():
     """Query organizations table."""
     headers = {
         "Content-Type": "application/json",
-        "access_token": f'{PE_API_KEY}',
+        "access_token": f"{PE_API_KEY}",
     }
     try:
         response = requests.post(PE_API_URL, headers=headers).json()

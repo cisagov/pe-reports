@@ -1,11 +1,9 @@
 """Query the PE PostgreSQL database."""
 
 # Standard Python Libraries
-from datetime import datetime
-import re
-import requests
-import sys
 import json
+import re
+import sys
 import time
 
 # Third-Party Libraries
@@ -13,6 +11,7 @@ import pandas as pd
 import psycopg2
 from psycopg2 import OperationalError
 import psycopg2.extras as extras
+import requests
 
 # cisagov Libraries
 from pe_reports import app
@@ -64,7 +63,7 @@ def get_orgs():
         "access_token": f"{PE_API_KEY}",
     }
     try:
-        response = requests.post(PE_API_URL +  "get_orgs/", headers=headers).json()
+        response = requests.post(PE_API_URL + "get_orgs/", headers=headers).json()
         return response
     except requests.exceptions.HTTPError as errh:
         print(errh)
@@ -93,7 +92,7 @@ def get_ips(org_uid):
 
 
 def get_data_source_uid(source):
-    """Query organizations table."""
+    """Query data_source table and update the last viewed time."""
     urlOrgs = PE_API_URL
     headers = {
         "Content-Type": "application/json",
@@ -105,7 +104,7 @@ def get_data_source_uid(source):
         ).json()
         # Change last viewed
         uid = response[0]["data_source_uid"]
-        r = requests.put(urlOrgs + "update_last_viewed/" + uid, headers=headers)
+        requests.put(urlOrgs + "update_last_viewed/" + uid, headers=headers)
         LOGGER.info("Updated last viewed for %s", source)
         return response
     except requests.exceptions.HTTPError as errh:
