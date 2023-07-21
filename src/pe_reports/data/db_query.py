@@ -4,20 +4,17 @@
 # Standard Python Libraries
 import datetime
 from ipaddress import ip_address, ip_network
-import json
 import logging
 import socket
 import sys
 
 # Third-Party Libraries
-from decouple import config as api_config
 import numpy as np
 import pandas as pd
 import psycopg2
 from psycopg2 import OperationalError
 from psycopg2.extensions import AsIs
 import psycopg2.extras as extras
-import requests
 from sshtunnel import SSHTunnelForwarder
 
 from .config import config, staging_config
@@ -68,6 +65,7 @@ def connect_to_staging():
             port=theport,
         )
         return conn
+        LOGGER.info("Success connecting to the staging db.")
     except OperationalError as err:
         show_psycopg2_exception(err)
         conn = None
@@ -104,34 +102,21 @@ def execute_values(conn, dataframe, table, except_condition=";"):
         cursor.close()
 
 
-def get_orgs():
-    """Query organizations table."""
-    urlOrgs = "http://127.0.0.1:8000/apiv1/orgs"
-    headers = {
-        "Content-Type": "application/json",
-        "access_token": f'{api_config("API_KEY")}',
-    }
-
+def get_orgs(conn):
+    """Query organizations table for orgs we report on."""
     try:
-
-        response = requests.post(urlOrgs, headers=headers).json()
-        return response
-
-    except requests.exceptions.HTTPError as errh:
-
-        print(errh)
-    except requests.exceptions.ConnectionError as errc:
-
-        print(errc)
-    except requests.exceptions.Timeout as errt:
-
-        print(errt)
-    except requests.exceptions.RequestException as err:
-
-        print(err)
-    except json.decoder.JSONDecodeError as err:
-        # print('its 5')
-        print(err)
+        cur = conn.cursor()
+        sql = """SELECT * FROM organizations
+        WHERE report_on is True"""
+        cur.execute(sql)
+        pe_orgs = cur.fetchall()
+        cur.close()
+        return pe_orgs
+    except (Exception, psycopg2.DatabaseError) as error:
+        LOGGER.error("There was a problem with your database query %s", error)
+    finally:
+        if conn is not None:
+            close(conn)
 
 
 def get_orgs_pass(conn, password):
@@ -171,53 +156,76 @@ def get_orgs_contacts(conn):
             close(conn)
 
 
+def get_org_assets_count_past(org_uid, date):
+    """Get asset counts for an organization."""
+    conn = connect()
+    sql = """select * from report_summary_stats rss 
+                where organizations_uid = %(org_id)s
+                and end_date = %(date)s;"""
+    df = pd.read_sql(sql, conn, params={"org_id": org_uid, "date": date})
+    conn.close()
+    return df
+
+
 def get_org_assets_count(uid):
     """Get asset counts for an organization."""
     conn = connect()
     cur = conn.cursor()
-    sql = """select sur.cyhy_db_name, sur.num_root_domain, sur.num_sub_domain, sur.num_ips, sur.num_ports  from
-            vw_orgs_attacksurface sur
+    sql = """select sur.cyhy_db_name, sur.num_root_domain, sur.num_sub_domain, sur.num_ips, sur.num_ports, sur.num_cidrs, sur.num_ports_protocols , sur.num_software, sur.num_foreign_ips
+            from mat_vw_orgs_attacksurface sur
             where sur.organizations_uid = %s"""
     cur.execute(sql, [uid])
-    source = cur.fetchone()
-    cur.close()
-    conn.close()
-    assets_dict = {
-        "org_uid": uid,
-        "cyhy_db_name": source[0],
-        "num_root_domain": source[1],
-        "num_sub_domain": source[2],
-        "num_ips": source[3],
-        "num_ports": source[4],
-    }
+    try:
+        source = cur.fetchone()
+        cur.close()
+        conn.close()
+        assets_dict = {
+            "org_uid": uid,
+            "cyhy_db_name": source[0],
+            "num_root_domain": source[1],
+            "num_sub_domain": source[2],
+            "num_ips": source[3],
+            "num_ports": source[4],
+            "num_cidrs": source[5],
+            "num_ports_protocols": source[6],
+            "num_software": source[7]
+            - 1,  # Subtract 1 to remove the automatic null entry
+            "num_foreign_ips": source[8],
+        }
+    except:
+        assets_dict = {
+            "org_uid": uid,
+            "cyhy_db_name": "N/A",
+            "num_root_domain": 0,
+            "num_sub_domain": 0,
+            "num_ips": 0,
+            "num_ports": 0,
+            "num_cidrs": 0,
+            "num_ports_protocols": 0,
+            "num_software": 0,
+            "num_foreign_ips": 0,
+        }
     return assets_dict
 
 
-def get_orgs_df():
+def get_orgs_df(staging=False):
     """Query organizations table for new orgs."""
-    urlOrgs = "http://127.0.0.1:8000/apiv1/orgs"
-
-    headers = {
-        "Content-Type": "application/json",
-        "access_token": f'{api_config("API_KEY")}',
-    }
-
+    if staging:
+        conn = connect_to_staging()
+    else:
+        conn = connect()
     try:
-
-        response = requests.post(urlOrgs, headers=headers).json()
-
-        return pd.DataFrame(response)
-
-    except requests.exceptions.HTTPError as errh:
-        LOGGER.error(errh)
-    except requests.exceptions.ConnectionError as errc:
-        LOGGER.error(errc)
-    except requests.exceptions.Timeout as errt:
-        LOGGER.error(errt)
-    except requests.exceptions.RequestException as err:
-        LOGGER.error(err)
-    except json.decoder.JSONDecodeError as err:
-        LOGGER.error(err)
+        sql = """
+        SELECT * FROM organizations 
+        WHERE report_on is True
+        """
+        pe_orgs_df = pd.read_sql(sql, conn)
+        return pe_orgs_df
+    except (Exception, psycopg2.DatabaseError) as error:
+        LOGGER.error("There was a problem with your database query %s", error)
+    finally:
+        if conn is not None:
+            close(conn)
 
 
 def get_new_orgs():
@@ -303,7 +311,8 @@ def query_cyhy_assets(cyhy_db_id, conn):
     sql = """
     SELECT *
     FROM cyhy_db_assets ca
-    where ca.org_id = %(org_id)s;
+    where ca.org_id = %(org_id)s
+    and currently_in_cyhy;
     """
 
     df = pd.read_sql_query(sql, conn, params={"org_id": cyhy_db_id})
@@ -399,7 +408,6 @@ def get_cidrs_and_ips(org_uid):
     LOGGER.info(cidrs_ips)
     return cidrs_ips
 
-
 def query_cidrs():
     """Query all cidrs ordered by length."""
     conn = connect()
@@ -408,6 +416,162 @@ def query_cidrs():
             ORDER BY masklen(tc.network)
             """
     df = pd.read_sql(sql, conn)
+    conn.close()
+    return df
+
+def query_ips(org_uid):
+    """Get IP data."""
+    conn = connect()
+    sql1 = """SELECT i.ip_hash, i.ip, ct.network FROM ips i
+    JOIN cidrs ct on ct.cidr_uid = i.origin_cidr
+    JOIN organizations o on o.organizations_uid = ct.organizations_uid
+    where o.organizations_uid = %(org_uid)s
+    and i.origin_cidr is not null;"""
+    df1 = pd.read_sql(sql1, conn, params={"org_uid": org_uid})
+    ips1 = list(df1["ip"].values)
+
+    sql2 = """select i.ip_hash, i.ip
+    from ips i
+    join ips_subs is2 ON i.ip_hash = is2.ip_hash
+    join sub_domains sd on sd.sub_domain_uid = is2.sub_domain_uid
+    join root_domains rd on rd.root_domain_uid = sd.root_domain_uid
+    JOIN organizations o on o.organizations_uid = rd.organizations_uid
+    where o.organizations_uid = %(org_uid)s;"""
+    df2 = pd.read_sql(sql2, conn, params={"org_uid": org_uid})
+    ips2 = list(df2["ip"].values)
+
+    in_first = set(ips1)
+    in_second = set(ips2)
+
+    in_second_but_not_in_first = in_second - in_first
+
+    ips = ips1 + list(in_second_but_not_in_first)
+    conn.close()
+
+    return ips
+
+
+def query_extra_ips(org_uid):
+    """Get IP data."""
+    conn = connect()
+
+    sql2 = """select i.ip_hash, i.ip
+    from ips i
+    join ips_subs is2 ON i.ip_hash = is2.ip_hash
+    join sub_domains sd on sd.sub_domain_uid = is2.sub_domain_uid
+    join root_domains rd on rd.root_domain_uid = sd.root_domain_uid
+    JOIN organizations o on o.organizations_uid = rd.organizations_uid
+    where o.organizations_uid = %(org_uid)s and i.origin_cidr is null;"""
+    df = pd.read_sql(sql2, conn, params={"org_uid": org_uid})
+    ips = list(set(list(df["ip"].values)))
+
+    conn.close()
+
+    return ips
+
+
+def set_from_cidr():
+    conn = connect()
+    sql = """
+        update ips
+        set from_cidr = True 
+        where origin_cidr is not null;
+    """
+    cur = conn.cursor()
+    cur.execute(sql)
+    conn.commit()
+
+def refresh_asset_counts_vw():
+    conn = connect()
+    sql = """
+        REFRESH MATERIALIZED VIEW
+        public.mat_vw_orgs_attacksurface
+        WITH DATA
+    """
+    cur = conn.cursor()
+    cur.execute(sql)
+    conn.commit()
+
+    LOGGER.info("Refreshing breach comp")
+    conn = connect()
+    sql = """
+        REFRESH MATERIALIZED VIEW
+        public.mat_vw_breachcomp
+        WITH DATA
+    """
+    cur = conn.cursor()
+    cur.execute(sql)
+    conn.commit()
+
+    LOGGER.info("Refreshing breach details")
+    conn = connect()
+    sql = """
+        REFRESH MATERIALIZED VIEW
+        public.mat_vw_breachcomp_breachdetails
+        WITH DATA
+    """
+    cur = conn.cursor()
+    cur.execute(sql)
+    conn.commit()
+
+    LOGGER.info("Refreshing breach creds by date")
+    conn = connect()
+    sql = """
+        REFRESH MATERIALIZED VIEW
+        public.mat_vw_breachcomp_credsbydate
+        WITH DATA
+    """
+    cur = conn.cursor()
+    cur.execute(sql)
+    conn.commit()
+
+
+def query_cidrs_by_org(org_uid):
+    """Query all CIDRs for a specific org."""
+    conn = connect()
+    sql = """select *
+            from cidrs c
+            where c.organizations_uid  = %(org_uid)s and c.current;
+            """
+    df = pd.read_sql(sql, conn, params={"org_uid": org_uid})
+    conn.close()
+    return df
+
+
+def query_ports_protocols(org_uid):
+    """Query distinct ports and protocols by org."""
+    conn = connect()
+    sql = """select distinct sa.port,sa.protocol 
+            from shodan_assets sa 
+            where sa.organizations_uid  = %(org_uid)s;
+            """
+    df = pd.read_sql(sql, conn, params={"org_uid": org_uid})
+    conn.close()
+    return df
+
+
+def query_software(org_uid):
+    """Query distinct software by org."""
+    conn = connect()
+    sql = """select distinct sa.product 
+            from shodan_assets sa 
+            where sa.organizations_uid  = %(org_uid)s
+            and sa.product notnull;
+            """
+    df = pd.read_sql(sql, conn, params={"org_uid": org_uid})
+    conn.close()
+    return df
+
+
+def query_foreign_IPs(org_uid):
+    """Query distinct software by org."""
+    conn = connect()
+    sql = """select * from
+            shodan_assets sa 
+            where (sa.country_code != 'US' and sa.country_code notnull)
+            and sa.organizations_uid  = %(org_uid)s;
+            """
+    df = pd.read_sql(sql, conn, params={"org_uid": org_uid})
     conn.close()
     return df
 
@@ -454,7 +618,7 @@ def query_creds_view(org_uid, start_date, end_date):
     """Query credentials view ."""
     conn = connect()
     try:
-        sql = """SELECT * FROM vw_breachcomp
+        sql = """SELECT * FROM mat_vw_breachcomp
         WHERE organizations_uid = %(org_uid)s
         AND modified_date BETWEEN %(start_date)s AND %(end_date)s"""
         df = pd.read_sql(
@@ -474,7 +638,7 @@ def query_credsbyday_view(org_uid, start_date, end_date):
     """Query credentials by date view ."""
     conn = connect()
     try:
-        sql = """SELECT mod_date, no_password, password_included FROM vw_breachcomp_credsbydate
+        sql = """SELECT mod_date, no_password, password_included FROM mat_vw_breachcomp_credsbydate
         WHERE organizations_uid = %(org_uid)s
         AND mod_date BETWEEN %(start_date)s AND %(end_date)s"""
         df = pd.read_sql(
@@ -495,7 +659,7 @@ def query_breachdetails_view(org_uid, start_date, end_date):
     conn = connect()
     try:
         sql = """SELECT breach_name, mod_date modified_date, breach_date, password_included, number_of_creds
-        FROM vw_breachcomp_breachdetails
+        FROM mat_vw_breachcomp_breachdetails
         WHERE organizations_uid = %(org_uid)s
         AND mod_date BETWEEN %(start_date)s AND %(end_date)s"""
         df = pd.read_sql(
@@ -571,10 +735,15 @@ def query_shodan(org_uid, start_date, end_date, table):
     """Query Shodan table."""
     conn = connect()
     try:
+        df = pd.DataFrame()
+        df_list = []
+        chunk_size = 1000
         sql = """SELECT * FROM %(table)s
         WHERE organizations_uid = %(org_uid)s
         AND timestamp BETWEEN %(start_date)s AND %(end_date)s"""
-        df = pd.read_sql(
+        count = 0
+        # Batch SQL call to reduce memory (https://pythonspeed.com/articles/pandas-sql-chunking/)
+        for chunk_df in pd.read_sql(
             sql,
             conn,
             params={
@@ -583,7 +752,24 @@ def query_shodan(org_uid, start_date, end_date, table):
                 "start_date": start_date,
                 "end_date": end_date,
             },
-        )
+            chunksize=chunk_size,
+        ):
+            count += 1
+            df_list.append(chunk_df)
+
+        if len(df_list) == 0:
+            df = pd.read_sql(
+                sql,
+                conn,
+                params={
+                    "table": AsIs(table),
+                    "org_uid": org_uid,
+                    "start_date": start_date,
+                    "end_date": end_date,
+                },
+            )
+        else:
+            df = pd.concat(df_list, ignore_index=True)
         return df
     except (Exception, psycopg2.DatabaseError) as error:
         LOGGER.error("There was a problem with your database query %s", error)
@@ -692,7 +878,6 @@ def query_subs(org_uid):
     conn.close()
     return df
 
-
 def execute_ips(conn, dataframe):
     """Insert the ips into the ips table in the database and link them to the associated cidr."""
     for i, row in dataframe.iterrows():
@@ -724,9 +909,9 @@ def execute_scorecard(summary_dict):
             suspected_domain_count, insecure_port_count, verified_vuln_count,
             suspected_vuln_count, suspected_vuln_addrs_count, threat_actor_count, dark_web_alerts_count,
             dark_web_mentions_count, dark_web_executive_alerts_count, dark_web_asset_alerts_count,
-            pe_number_score, pe_letter_grade
+            pe_number_score, pe_letter_grade, cidr_count, port_protocol_count, software_count, foreign_ips_count
         )
-        VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+        VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
         ON CONFLICT(organizations_uid, start_date)
         DO
         UPDATE SET
@@ -748,8 +933,12 @@ def execute_scorecard(summary_dict):
             dark_web_mentions_count = EXCLUDED.dark_web_mentions_count,
             dark_web_executive_alerts_count = EXCLUDED.dark_web_executive_alerts_count,
             dark_web_asset_alerts_count = EXCLUDED.dark_web_asset_alerts_count,
-            pe_numeric_score = EXCLUDED.pe_numeric_score,
-            pe_letter_grade = EXCLUDED.pe_letter_grade;
+            pe_number_score = EXCLUDED.pe_number_score,
+            pe_letter_grade = EXCLUDED.pe_letter_grade,
+            cidr_count = EXCLUDED.cidr_count,
+            port_protocol_count = EXCLUDED.port_protocol_count,
+            software_count = EXCLUDED.software_count,
+            foreign_ips_count = EXCLUDED.foreign_ips_count;
         """
         cur.execute(
             sql,
@@ -775,8 +964,12 @@ def execute_scorecard(summary_dict):
                 AsIs(summary_dict["dark_web_mentions_count"]),
                 AsIs(summary_dict["dark_web_executive_alerts_count"]),
                 AsIs(summary_dict["dark_web_asset_alerts_count"]),
-                AsIs(summary_dict["pe_number_score"]),
-                AsIs(summary_dict["pe_letter_grade"]),
+                summary_dict["pe_number_score"],
+                summary_dict["pe_letter_grade"],
+                AsIs(summary_dict["cidr_count"]),
+                AsIs(summary_dict["port_protocol_count"]),
+                AsIs(summary_dict["software_count"]),
+                AsIs(summary_dict["foreign_ips_count"]),
             ),
         )
         conn.commit()
@@ -876,29 +1069,18 @@ def upsert_new_cves(new_cves):
     Args:
         new_cves: Dataframe containing the new CVEs and their CVSS2.0/3.1/DVE data
     """
-    # Building SQL query
-    upsert_query = """
-        INSERT INTO
-            public.cve_info(cve_name, cvss_2_0, cvss_2_0_severity, cvss_2_0_vector,
-            cvss_3_0, cvss_3_0_severity, cvss_3_0_vector, dve_score)
-        VALUES
-        """
-    # Replace None-type in dataframe with string "None"
-    new_cves = new_cves.fillna(value="None")
-    # Iterate over dataframe rows
-    for idx, row in new_cves.iterrows():
-        # Add each row of CVE data to the SQL query
-        upsert_query += (
-            f"\t('{row['cve_name']}', {row['cvss_2_0']}, '{row['cvss_2_0_severity']}', '{row['cvss_2_0_vector']}',"
-            f" {row['cvss_3_0']}, '{row['cvss_3_0_severity']}', '{row['cvss_3_0_vector']}', {row['dve_score']})"
-        )
-        # Add trailing comma if needed
-        if idx != len(new_cves) - 1:
-            upsert_query += ",\n"
-    # Add the rest of the SQL query
-    upsert_query += """
-        ON CONFLICT (cve_name) DO UPDATE
-        SET
+    try:
+        # Drop duplicates in dataframe
+        new_cves = new_cves.drop_duplicates()
+
+        # Execute insert query
+        conn = connect()
+        tpls = [tuple(x) for x in new_cves.to_numpy()]
+        cols = ",".join(list(new_cves.columns))
+        table = "cve_info"
+        sql = """INSERT INTO {}({}) VALUES %s
+        ON CONFLICT (cve_name) 
+        DO UPDATE SET
             cve_name=EXCLUDED.cve_name,
             cvss_2_0=EXCLUDED.cvss_2_0,
             cvss_2_0_severity=EXCLUDED.cvss_2_0_severity,
@@ -906,20 +1088,17 @@ def upsert_new_cves(new_cves):
             cvss_3_0=EXCLUDED.cvss_3_0,
             cvss_3_0_severity=EXCLUDED.cvss_3_0_severity,
             cvss_3_0_vector=EXCLUDED.cvss_3_0_vector,
-            dve_score=EXCLUDED.dve_score
+            dve_score=EXCLUDED.dve_score;
         """
-
-    # Use finished SQL query to make call to database
-    conn = connect()
-    cursor = conn.cursor()
-    try:
-        # Execute SQL query
-        cursor.execute(upsert_query)
-        # Commit/Save insertion changes
+        cursor = conn.cursor()
+        extras.execute_values(
+            cursor,
+            sql.format(table, cols),
+            tpls,
+        )
         conn.commit()
-        # Confirmation message
         LOGGER.info(
-            len(new_cves), " new CVEs successfully upserted into cve_info table..."
+            "%s new CVEs successfully upserted into cve_info table...", len(new_cves)
         )
     except (Exception, psycopg2.DatabaseError) as err:
         # Show error and close connection if failed

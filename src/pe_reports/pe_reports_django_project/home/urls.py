@@ -8,6 +8,7 @@ from .views import (
     FetchWeeklyStatusesView,
     StatusForm,
     WeeklyStatusesFormOnlyView,
+
 )
 
 urlpatterns = [
@@ -31,4 +32,5 @@ urlpatterns = [
         WeeklyStatusesFormOnlyView.as_view(),
         name="weekly-status-form-only",
     ),
+
 ]

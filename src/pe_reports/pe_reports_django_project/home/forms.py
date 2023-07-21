@@ -4,6 +4,7 @@ from django import forms
 from django.contrib import messages
 from django.contrib.auth.models import User
 import requests
+import datetime
 
 from .models import TeamMembers, WeeklyStatuses
 
@@ -216,3 +217,22 @@ def getGHUsers(url, user):
             usersIssues[issueAssignee] = issueNames
 
     return usersIssues
+
+
+class GenerateWeeklyStatusReportingForm(forms.Form):
+    """Create web form to take user input on weekly report to be generated."""
+
+    date = forms.DateField(widget=forms.DateInput(attrs={'type': 'date'}))
+    # date = forms.DateField(widget=forms.SelectDateWidget(
+    #     years=range(datetime.date.today().year - 5,
+    #                 datetime.date.today().year + 5),
+    #     empty_label=("Choose Year", "Choose Month", "Choose Day"),
+    # ))
+
+
+
+    def __init__(self, *args, **kwargs):
+        super(GenerateWeeklyStatusReportingForm, self).__init__(*args, **kwargs)
+        for visible in self.visible_fields():
+            visible.field.widget.attrs["class"] = "form-control"
+
