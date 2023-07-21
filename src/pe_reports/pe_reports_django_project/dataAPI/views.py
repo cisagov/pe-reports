@@ -39,9 +39,11 @@ from fastapi.security import OAuth2PasswordBearer
 from fastapi.security.api_key import APIKey, APIKeyCookie, APIKeyHeader, APIKeyQuery
 from fastapi_limiter import FastAPILimiter
 from fastapi_limiter.depends import RateLimiter
+
 from home.models import (
     CyhyDbAssets,
     CyhyPortScans,
+    DataSource,
     MatVwOrgsAllIps,
     Organizations,
     SubDomains,
@@ -65,6 +67,33 @@ from starlette.status import HTTP_403_FORBIDDEN
 
 from . import schemas
 from .models import apiUser
+
+from dataAPI.tasks import (
+    # D-Score Task Functions:
+    get_dscore_vs_cert_info,
+    get_dscore_vs_mail_info,
+    get_dscore_pe_ip_info,
+    get_dscore_pe_domain_info,
+    get_dscore_was_webapp_info,
+    get_fceb_status_info,
+    # I-Score Task Functions:
+    get_iscore_vs_vuln_info,
+    get_iscore_vs_vuln_prev_info,
+    get_iscore_pe_vuln_info,
+    get_iscore_pe_cred_info,
+    get_iscore_pe_breach_info,
+    get_iscore_pe_darkweb_info,
+    get_iscore_pe_protocol_info,
+    get_iscore_was_vuln_info,
+    get_iscore_was_vuln_prev_info,
+    get_kev_list_info,
+    # Misc. Score-Related Task Functions:
+    get_xs_stakeholders_info,
+    get_s_stakeholders_info,
+    get_m_stakeholders_info,
+    get_l_stakeholders_info,
+    get_xl_stakeholders_info,
+)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -237,7 +266,7 @@ def process_item(item):
 def read_orgs(tokens: dict = Depends(get_api_key)):
     """API endpoint to get all organizations."""
     orgs = list(Organizations.objects.all())
-
+    
     if tokens:
 
         # LOGGER.info(f"The api key submitted {tokens}")
@@ -881,3 +910,981 @@ def cyhy_ports_scan_info_update(
             LOGGER.info("API key expired please try again")
     else:
         return {"message": "No api key was submitted"}
+
+
+# ---------- D-Score View Endpoints ----------
+# --- Endpoint functions for vw_dscore_vs_cert view ---
+@api_router.post(
+    "/dscore_vs_cert",
+    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.VwDscoreVSCertTaskResp,
+    tags=["Get all VS cert data needed for D-Score"],
+)
+def read_dscore_vs_cert(
+    data: schemas.VwDscoreVSCertInput, tokens: dict = Depends(get_api_key)
+):
+    """API endpoint to get all VS cert data needed for D-Score."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        # If API key valid, create task for query
+        task = get_dscore_vs_cert_info.delay(data.specified_orgs)
+        # Return the new task id w/ "Processing" status
+        return {"task_id": task.id, "status": "Processing"}
+    else:
+        return {"message": "No api key was submitted"}
+
+
+@api_router.get(
+    "/dscore_vs_cert/task/{task_id}",
+    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.VwDscoreVSCertTaskResp,
+    tags=["Check task status for D-Score VS cert view."],
+)
+async def get_dscore_vs_cert_task_status(
+    task_id: str, tokens: dict = Depends(get_api_key)
+):
+    # Retrieve task status
+    task = get_dscore_vs_cert_info.AsyncResult(task_id)
+    # Return appropriate message for status
+    if task.state == "SUCCESS":
+        return {"task_id": task_id, "status": "Completed", "result": task.result}
+    elif task.state == "PENDING":
+        return {"task_id": task_id, "status": "Pending"}
+    elif task.state == "FAILURE":
+        return {"task_id": task_id, "status": "Failed", "error": str(task.result)}
+    else:
+        return {"task_id": task_id, "status": task.state}
+
+
+# --- Endpoint functions for vw_dscore_vs_mail view ---
+@api_router.post(
+    "/dscore_vs_mail",
+    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.VwDscoreVSMailTaskResp,
+    tags=["Get all VS mail data needed for D-Score"],
+)
+def read_dscore_vs_mail(
+    data: schemas.VwDscoreVSMailInput, tokens: dict = Depends(get_api_key)
+):
+    """API endpoint to get all VS mail data needed for D-Score."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        # If API key valid, create task for query
+        task = get_dscore_vs_mail_info.delay(data.specified_orgs)
+        # Return the new task id w/ "Processing" status
+        return {"task_id": task.id, "status": "Processing"}
+    else:
+        return {"message": "No api key was submitted"}
+
+
+@api_router.get(
+    "/dscore_vs_mail/task/{task_id}",
+    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.VwDscoreVSMailTaskResp,
+    tags=["Check task status for D-Score VS mail view."],
+)
+async def get_dscore_vs_mail_task_status(
+    task_id: str, tokens: dict = Depends(get_api_key)
+):
+    # Retrieve task status
+    task = get_dscore_vs_mail_info.AsyncResult(task_id)
+    # Return appropriate message for status
+    if task.state == "SUCCESS":
+        return {"task_id": task_id, "status": "Completed", "result": task.result}
+    elif task.state == "PENDING":
+        return {"task_id": task_id, "status": "Pending"}
+    elif task.state == "FAILURE":
+        return {"task_id": task_id, "status": "Failed", "error": str(task.result)}
+    else:
+        return {"task_id": task_id, "status": task.state}
+
+
+# --- Endpoint functions for vw_dscore_pe_ip view ---
+@api_router.post(
+    "/dscore_pe_ip",
+    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.VwDscorePEIpTaskResp,
+    tags=["Get all PE IP data needed for D-Score"],
+)
+def read_dscore_pe_ip(
+    data: schemas.VwDscorePEIpInput, tokens: dict = Depends(get_api_key)
+):
+    """API endpoint to get all PE IP data needed for D-Score."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        # If API key valid, create task for query
+        task = get_dscore_pe_ip_info.delay(data.specified_orgs)
+        # Return the new task id w/ "Processing" status
+        return {"task_id": task.id, "status": "Processing"}
+    else:
+        return {"message": "No api key was submitted"}
+
+
+@api_router.get(
+    "/dscore_pe_ip/task/{task_id}",
+    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.VwDscorePEIpTaskResp,
+    tags=["Check task status for D-Score PE IP view."],
+)
+async def get_dscore_pe_ip_task_status(
+    task_id: str, tokens: dict = Depends(get_api_key)
+):
+    # Retrieve task status
+    task = get_dscore_pe_ip_info.AsyncResult(task_id)
+    # Return appropriate message for status
+    if task.state == "SUCCESS":
+        return {"task_id": task_id, "status": "Completed", "result": task.result}
+    elif task.state == "PENDING":
+        return {"task_id": task_id, "status": "Pending"}
+    elif task.state == "FAILURE":
+        return {"task_id": task_id, "status": "Failed", "error": str(task.result)}
+    else:
+        return {"task_id": task_id, "status": task.state}
+
+
+# --- Endpoint functions for vw_dscore_pe_domain view ---
+@api_router.post(
+    "/dscore_pe_domain",
+    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.VwDscorePEDomainTaskResp,
+    tags=["Get all PE domain data needed for D-Score"],
+)
+def read_dscore_pe_domain(
+    data: schemas.VwDscorePEDomainInput, tokens: dict = Depends(get_api_key)
+):
+    """API endpoint to get all PE domain data needed for D-Score."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        # If API key valid, create task for query
+        task = get_dscore_pe_domain_info.delay(data.specified_orgs)
+        # Return the new task id w/ "Processing" status
+        return {"task_id": task.id, "status": "Processing"}
+    else:
+        return {"message": "No api key was submitted"}
+
+
+@api_router.get(
+    "/dscore_pe_domain/task/{task_id}",
+    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.VwDscorePEDomainTaskResp,
+    tags=["Check task status for D-Score PE domain view."],
+)
+async def get_dscore_pe_domain_task_status(
+    task_id: str, tokens: dict = Depends(get_api_key)
+):
+    # Retrieve task status
+    task = get_dscore_pe_domain_info.AsyncResult(task_id)
+    # Return appropriate message for status
+    if task.state == "SUCCESS":
+        return {"task_id": task_id, "status": "Completed", "result": task.result}
+    elif task.state == "PENDING":
+        return {"task_id": task_id, "status": "Pending"}
+    elif task.state == "FAILURE":
+        return {"task_id": task_id, "status": "Failed", "error": str(task.result)}
+    else:
+        return {"task_id": task_id, "status": task.state}
+
+
+# --- Endpoint functions for vw_dscore_was_webapp view ---
+@api_router.post(
+    "/dscore_was_webapp",
+    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.VwDscoreWASWebappTaskResp,
+    tags=["Get all WAS webapp data needed for D-Score"],
+)
+def read_dscore_was_webapp(
+    data: schemas.VwDscoreWASWebappInput, tokens: dict = Depends(get_api_key)
+):
+    """API endpoint to get all WAS webapp data needed for D-Score."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        # If API key valid, create task for query
+        task = get_dscore_was_webapp_info.delay(data.specified_orgs)
+        # Return the new task id w/ "Processing" status
+        return {"task_id": task.id, "status": "Processing"}
+    else:
+        return {"message": "No api key was submitted"}
+
+
+@api_router.get(
+    "/dscore_was_webapp/task/{task_id}",
+    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.VwDscoreWASWebappTaskResp,
+    tags=["Check task status for D-Score WAS webapp view."],
+)
+async def get_dscore_was_webapp_task_status(
+    task_id: str, tokens: dict = Depends(get_api_key)
+):
+    # Retrieve task status
+    task = get_dscore_was_webapp_info.AsyncResult(task_id)
+    # Return appropriate message for status
+    if task.state == "SUCCESS":
+        return {"task_id": task_id, "status": "Completed", "result": task.result}
+    elif task.state == "PENDING":
+        return {"task_id": task_id, "status": "Pending"}
+    elif task.state == "FAILURE":
+        return {"task_id": task_id, "status": "Failed", "error": str(task.result)}
+    else:
+        return {"task_id": task_id, "status": task.state}
+
+
+# --- Endpoint function for FCEB status query (no view) ---
+@api_router.post(
+    "/fceb_status",
+    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.FCEBStatusTaskResp,
+    tags=["Get the FCEB status of a specified list of organizations."],
+)
+def read_fceb_status(
+    data: schemas.FCEBStatusInput, tokens: dict = Depends(get_api_key)
+):
+    """API endpoint to get the FCEB status of a specified list of organizations."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        # If API key valid, create task for query
+        task = get_fceb_status_info.delay(data.specified_orgs)
+        # Return the new task id w/ "Processing" status
+        return {"task_id": task.id, "status": "Processing"}
+    else:
+        return {"message": "No api key was submitted"}
+
+
+@api_router.get(
+    "/fceb_status/task/{task_id}",
+    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.FCEBStatusTaskResp,
+    tags=["Check task status for FCEB status query."],
+)
+async def get_fceb_status_task_status(
+    task_id: str, tokens: dict = Depends(get_api_key)
+):
+    # Retrieve task status
+    task = get_fceb_status_info.AsyncResult(task_id)
+    # Return appropriate message for status
+    if task.state == "SUCCESS":
+        return {"task_id": task_id, "status": "Completed", "result": task.result}
+    elif task.state == "PENDING":
+        return {"task_id": task_id, "status": "Pending"}
+    elif task.state == "FAILURE":
+        return {"task_id": task_id, "status": "Failed", "error": str(task.result)}
+    else:
+        return {"task_id": task_id, "status": task.state}
+
+
+# ---------- I-Score View Endpoints ----------
+# --- Endpoint functions for vw_iscore_vs_vuln view ---
+@api_router.post(
+    "/iscore_vs_vuln",
+    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.VwIscoreVSVulnTaskResp,
+    tags=["Get all VS vuln data needed for I-Score"],
+)
+def read_iscore_vs_vuln(
+    data: schemas.VwIscoreVSVulnInput, tokens: dict = Depends(get_api_key)
+):
+    """API endpoint to get all VS vuln data needed for I-Score."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        # If API key valid, create task for query
+        task = get_iscore_vs_vuln_info.delay(data.specified_orgs)
+        # Return the new task id w/ "Processing" status
+        return {"task_id": task.id, "status": "Processing"}
+    else:
+        return {"message": "No api key was submitted"}
+
+
+@api_router.get(
+    "/iscore_vs_vuln/task/{task_id}",
+    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.VwIscoreVSVulnTaskResp,
+    tags=["Check task status for I-Score VS vuln view."],
+)
+async def get_iscore_vs_vuln_task_status(
+    task_id: str, tokens: dict = Depends(get_api_key)
+):
+    # Retrieve task status
+    task = get_iscore_vs_vuln_info.AsyncResult(task_id)
+    # Return appropriate message for status
+    if task.state == "SUCCESS":
+        return {"task_id": task_id, "status": "Completed", "result": task.result}
+    elif task.state == "PENDING":
+        return {"task_id": task_id, "status": "Pending"}
+    elif task.state == "FAILURE":
+        return {"task_id": task_id, "status": "Failed", "error": str(task.result)}
+    else:
+        return {"task_id": task_id, "status": task.state}
+
+
+# --- Endpoint functions for vw_iscore_vs_vuln_prev view ---
+@api_router.post(
+    "/iscore_vs_vuln_prev",
+    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.VwIscoreVSVulnPrevTaskResp,
+    tags=["Get all previous VS vuln data needed for I-Score"],
+)
+def read_iscore_vs_vuln_prev(
+    data: schemas.VwIscoreVSVulnPrevInput, tokens: dict = Depends(get_api_key)
+):
+    """API endpoint to get all previous VS vuln data needed for I-Score."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        # If API key valid, create task for query
+        task = get_iscore_vs_vuln_prev_info.delay(
+            data.specified_orgs, data.start_date, data.end_date
+        )
+        # Return the new task id w/ "Processing" status
+        return {"task_id": task.id, "status": "Processing"}
+    else:
+        return {"message": "No api key was submitted"}
+
+
+@api_router.get(
+    "/iscore_vs_vuln_prev/task/{task_id}",
+    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.VwIscoreVSVulnPrevTaskResp,
+    tags=["Check task status for I-Score previous VS vuln view."],
+)
+async def get_iscore_vs_vuln_prev_task_status(
+    task_id: str, tokens: dict = Depends(get_api_key)
+):
+    # Retrieve task status
+    task = get_iscore_vs_vuln_prev_info.AsyncResult(task_id)
+    # Return appropriate message for status
+    if task.state == "SUCCESS":
+        return {"task_id": task_id, "status": "Completed", "result": task.result}
+    elif task.state == "PENDING":
+        return {"task_id": task_id, "status": "Pending"}
+    elif task.state == "FAILURE":
+        return {"task_id": task_id, "status": "Failed", "error": str(task.result)}
+    else:
+        return {"task_id": task_id, "status": task.state}
+
+
+# --- Endpoint functions for vw_iscore_pe_vuln view ---
+@api_router.post(
+    "/iscore_pe_vuln",
+    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.VwIscorePEVulnTaskResp,
+    tags=["Get all PE vuln data needed for I-Score"],
+)
+def read_iscore_pe_vuln(
+    data: schemas.VwIscorePEVulnInput, tokens: dict = Depends(get_api_key)
+):
+    """API endpoint to get all PE vuln data needed for I-Score."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        # If API key valid, create task for query
+        task = get_iscore_pe_vuln_info.delay(
+            data.specified_orgs, data.start_date, data.end_date
+        )
+        # Return the new task id w/ "Processing" status
+        return {"task_id": task.id, "status": "Processing"}
+    else:
+        return {"message": "No api key was submitted"}
+
+
+@api_router.get(
+    "/iscore_pe_vuln/task/{task_id}",
+    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.VwIscorePEVulnTaskResp,
+    tags=["Check task status for I-Score PE vuln view."],
+)
+async def get_iscore_pe_vuln_task_status(
+    task_id: str, tokens: dict = Depends(get_api_key)
+):
+    # Retrieve task status
+    task = get_iscore_pe_vuln_info.AsyncResult(task_id)
+    # Return appropriate message for status
+    if task.state == "SUCCESS":
+        return {"task_id": task_id, "status": "Completed", "result": task.result}
+    elif task.state == "PENDING":
+        return {"task_id": task_id, "status": "Pending"}
+    elif task.state == "FAILURE":
+        return {"task_id": task_id, "status": "Failed", "error": str(task.result)}
+    else:
+        return {"task_id": task_id, "status": task.state}
+
+
+# --- Endpoint functions for vw_iscore_pe_cred view ---
+@api_router.post(
+    "/iscore_pe_cred",
+    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.VwIscorePECredTaskResp,
+    tags=["Get all PE cred data needed for I-Score"],
+)
+def read_iscore_pe_cred(
+    data: schemas.VwIscorePECredInput, tokens: dict = Depends(get_api_key)
+):
+    """API endpoint to get all PE cred data needed for I-Score."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        # If API key valid, create task for query
+        task = get_iscore_pe_cred_info.delay(
+            data.specified_orgs, data.start_date, data.end_date
+        )
+        # Return the new task id w/ "Processing" status
+        return {"task_id": task.id, "status": "Processing"}
+    else:
+        return {"message": "No api key was submitted"}
+
+
+@api_router.get(
+    "/iscore_pe_cred/task/{task_id}",
+    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.VwIscorePECredTaskResp,
+    tags=["Check task status for I-Score PE cred view."],
+)
+async def get_iscore_pe_cred_task_status(
+    task_id: str, tokens: dict = Depends(get_api_key)
+):
+    # Retrieve task status
+    task = get_iscore_pe_cred_info.AsyncResult(task_id)
+    # Return appropriate message for status
+    if task.state == "SUCCESS":
+        return {"task_id": task_id, "status": "Completed", "result": task.result}
+    elif task.state == "PENDING":
+        return {"task_id": task_id, "status": "Pending"}
+    elif task.state == "FAILURE":
+        return {"task_id": task_id, "status": "Failed", "error": str(task.result)}
+    else:
+        return {"task_id": task_id, "status": task.state}
+
+
+# --- Endpoint functions for vw_iscore_pe_breach view ---
+@api_router.post(
+    "/iscore_pe_breach",
+    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.VwIscorePEBreachTaskResp,
+    tags=["Get all PE breach data needed for I-Score"],
+)
+def read_iscore_pe_breach(
+    data: schemas.VwIscorePEBreachInput, tokens: dict = Depends(get_api_key)
+):
+    """API endpoint to get all PE breach data needed for I-Score."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        # If API key valid, create task for query
+        task = get_iscore_pe_breach_info.delay(
+            data.specified_orgs, data.start_date, data.end_date
+        )
+        # Return the new task id w/ "Processing" status
+        return {"task_id": task.id, "status": "Processing"}
+    else:
+        return {"message": "No api key was submitted"}
+
+
+@api_router.get(
+    "/iscore_pe_breach/task/{task_id}",
+    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.VwIscorePEBreachTaskResp,
+    tags=["Check task status for I-Score PE breach view."],
+)
+async def get_iscore_pe_breach_task_status(
+    task_id: str, tokens: dict = Depends(get_api_key)
+):
+    # Retrieve task status
+    task = get_iscore_pe_breach_info.AsyncResult(task_id)
+    # Return appropriate message for status
+    if task.state == "SUCCESS":
+        return {"task_id": task_id, "status": "Completed", "result": task.result}
+    elif task.state == "PENDING":
+        return {"task_id": task_id, "status": "Pending"}
+    elif task.state == "FAILURE":
+        return {"task_id": task_id, "status": "Failed", "error": str(task.result)}
+    else:
+        return {"task_id": task_id, "status": task.state}
+
+
+# --- Endpoint functions for vw_iscore_pe_darkweb view ---
+@api_router.post(
+    "/iscore_pe_darkweb",
+    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.VwIscorePEDarkwebTaskResp,
+    tags=["Get all PE darkweb data needed for I-Score"],
+)
+def read_iscore_pe_darkweb(
+    data: schemas.VwIscorePEDarkwebInput, tokens: dict = Depends(get_api_key)
+):
+    """API endpoint to get all PE darkweb data needed for I-Score."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        # If API key valid, create task for query
+        task = get_iscore_pe_darkweb_info.delay(
+            data.specified_orgs, data.start_date, data.end_date
+        )
+        # Return the new task id w/ "Processing" status
+        return {"task_id": task.id, "status": "Processing"}
+    else:
+        return {"message": "No api key was submitted"}
+
+
+@api_router.get(
+    "/iscore_pe_darkweb/task/{task_id}",
+    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.VwIscorePEDarkwebTaskResp,
+    tags=["Check task status for I-Score PE darkweb view."],
+)
+async def get_iscore_pe_darkweb_task_status(
+    task_id: str, tokens: dict = Depends(get_api_key)
+):
+    # Retrieve task status
+    task = get_iscore_pe_darkweb_info.AsyncResult(task_id)
+    # Return appropriate message for status
+    if task.state == "SUCCESS":
+        return {"task_id": task_id, "status": "Completed", "result": task.result}
+    elif task.state == "PENDING":
+        return {"task_id": task_id, "status": "Pending"}
+    elif task.state == "FAILURE":
+        return {"task_id": task_id, "status": "Failed", "error": str(task.result)}
+    else:
+        return {"task_id": task_id, "status": task.state}
+
+
+# --- Endpoint functions for vw_iscore_pe_protocol view ---
+@api_router.post(
+    "/iscore_pe_protocol",
+    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.VwIscorePEProtocolTaskResp,
+    tags=["Get all PE protocol data needed for I-Score"],
+)
+def read_iscore_pe_protocol(
+    data: schemas.VwIscorePEProtocolInput, tokens: dict = Depends(get_api_key)
+):
+    """API endpoint to get all PE protocol data needed for I-Score."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        # If API key valid, create task for query
+        task = get_iscore_pe_protocol_info.delay(
+            data.specified_orgs, data.start_date, data.end_date
+        )
+        # Return the new task id w/ "Processing" status
+        return {"task_id": task.id, "status": "Processing"}
+    else:
+        return {"message": "No api key was submitted"}
+
+
+@api_router.get(
+    "/iscore_pe_protocol/task/{task_id}",
+    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.VwIscorePEProtocolTaskResp,
+    tags=["Check task status for I-Score PE protocol view."],
+)
+async def get_iscore_pe_protocol_task_status(
+    task_id: str, tokens: dict = Depends(get_api_key)
+):
+    # Retrieve task status
+    task = get_iscore_pe_protocol_info.AsyncResult(task_id)
+    # Return appropriate message for status
+    if task.state == "SUCCESS":
+        return {"task_id": task_id, "status": "Completed", "result": task.result}
+    elif task.state == "PENDING":
+        return {"task_id": task_id, "status": "Pending"}
+    elif task.state == "FAILURE":
+        return {"task_id": task_id, "status": "Failed", "error": str(task.result)}
+    else:
+        return {"task_id": task_id, "status": task.state}
+
+
+# --- Endpoint functions for vw_iscore_was_vuln view ---
+@api_router.post(
+    "/iscore_was_vuln",
+    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.VwIscoreWASVulnTaskResp,
+    tags=["Get all WAS vuln data needed for I-Score"],
+)
+def read_iscore_was_vuln(
+    data: schemas.VwIscoreWASVulnInput, tokens: dict = Depends(get_api_key)
+):
+    """API endpoint to get all WAS vuln data needed for I-Score."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        # If API key valid, create task for query
+        task = get_iscore_was_vuln_info.delay(
+            data.specified_orgs, data.start_date, data.end_date
+        )
+        # Return the new task id w/ "Processing" status
+        return {"task_id": task.id, "status": "Processing"}
+    else:
+        return {"message": "No api key was submitted"}
+
+
+@api_router.get(
+    "/iscore_was_vuln/task/{task_id}",
+    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.VwIscoreWASVulnTaskResp,
+    tags=["Check task status for I-Score WAS vuln view."],
+)
+async def get_iscore_was_vuln_task_status(
+    task_id: str, tokens: dict = Depends(get_api_key)
+):
+    # Retrieve task status
+    task = get_iscore_was_vuln_info.AsyncResult(task_id)
+    # Return appropriate message for status
+    if task.state == "SUCCESS":
+        return {"task_id": task_id, "status": "Completed", "result": task.result}
+    elif task.state == "PENDING":
+        return {"task_id": task_id, "status": "Pending"}
+    elif task.state == "FAILURE":
+        return {"task_id": task_id, "status": "Failed", "error": str(task.result)}
+    else:
+        return {"task_id": task_id, "status": task.state}
+
+
+# --- Endpoint functions for vw_iscore_was_vuln_prev view ---
+@api_router.post(
+    "/iscore_was_vuln_prev",
+    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.VwIscoreWASVulnPrevTaskResp,
+    tags=["Get all previous WAS vuln data needed for I-Score"],
+)
+def read_iscore_was_vuln_prev(
+    data: schemas.VwIscoreWASVulnPrevInput, tokens: dict = Depends(get_api_key)
+):
+    """API endpoint to get all previous WAS vuln data needed for I-Score."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        # If API key valid, create task for query
+        task = get_iscore_was_vuln_prev_info.delay(
+            data.specified_orgs, data.start_date, data.end_date
+        )
+        # Return the new task id w/ "Processing" status
+        return {"task_id": task.id, "status": "Processing"}
+    else:
+        return {"message": "No api key was submitted"}
+
+
+@api_router.get(
+    "/iscore_was_vuln_prev/task/{task_id}",
+    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.VwIscoreWASVulnPrevTaskResp,
+    tags=["Check task status for I-Score previous WAS vuln view."],
+)
+async def get_iscore_was_vuln_prev_task_status(
+    task_id: str, tokens: dict = Depends(get_api_key)
+):
+    # Retrieve task status
+    task = get_iscore_was_vuln_prev_info.AsyncResult(task_id)
+    # Return appropriate message for status
+    if task.state == "SUCCESS":
+        return {"task_id": task_id, "status": "Completed", "result": task.result}
+    elif task.state == "PENDING":
+        return {"task_id": task_id, "status": "Pending"}
+    elif task.state == "FAILURE":
+        return {"task_id": task_id, "status": "Failed", "error": str(task.result)}
+    else:
+        return {"task_id": task_id, "status": task.state}
+
+
+# --- Endpoint function for KEV list query (no view) ---
+@api_router.post(
+    "/kev_list",
+    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.KEVListTaskResp,
+    tags=["Get list of all KEVs."],
+)
+def read_fceb_status(tokens: dict = Depends(get_api_key)):
+    """API endpoint to get list of all KEVs."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        # If API key valid, create task for query
+        task = get_kev_list_info.delay()
+        # Return the new task id w/ "Processing" status
+        return {"task_id": task.id, "status": "Processing"}
+    else:
+        return {"message": "No api key was submitted"}
+
+
+@api_router.get(
+    "/kev_list/task/{task_id}",
+    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.KEVListTaskResp,
+    tags=["Check task status for KEV list query."],
+)
+async def get_kev_list_task_status(task_id: str, tokens: dict = Depends(get_api_key)):
+    # Retrieve task status
+    task = get_kev_list_info.AsyncResult(task_id)
+    # Return appropriate message for status
+    if task.state == "SUCCESS":
+        return {"task_id": task_id, "status": "Completed", "result": task.result}
+    elif task.state == "PENDING":
+        return {"task_id": task_id, "status": "Pending"}
+    elif task.state == "FAILURE":
+        return {"task_id": task_id, "status": "Failed", "error": str(task.result)}
+    else:
+        return {"task_id": task_id, "status": task.state}
+
+
+# ---------- Misc. Score View Endpoints ----------
+# --- Endpoint function for XS stakeholder list query ---
+@api_router.post(
+    "/xs_stakeholders",
+    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.VwIscoreOrgsIpCountsTaskResp,
+    tags=["Get list of all XS stakeholders."],
+)
+def read_xs_stakeholders(tokens: dict = Depends(get_api_key)):
+    """API endpoint to get list of all XS stakeholders."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        # If API key valid, create task for query
+        task = get_xs_stakeholders_info.delay()
+        # Return the new task id w/ "Processing" status
+        return {"task_id": task.id, "status": "Processing"}
+    else:
+        return {"message": "No api key was submitted"}
+
+
+@api_router.get(
+    "/xs_stakeholders/task/{task_id}",
+    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.VwIscoreOrgsIpCountsTaskResp,
+    tags=["Check task status for XS stakeholder query."],
+)
+async def get_xs_stakeholders_task_status(
+    task_id: str, tokens: dict = Depends(get_api_key)
+):
+    # Retrieve task status
+    task = get_xs_stakeholders_info.AsyncResult(task_id)
+    # Return appropriate message for status
+    if task.state == "SUCCESS":
+        return {"task_id": task_id, "status": "Completed", "result": task.result}
+    elif task.state == "PENDING":
+        return {"task_id": task_id, "status": "Pending"}
+    elif task.state == "FAILURE":
+        return {"task_id": task_id, "status": "Failed", "error": str(task.result)}
+    else:
+        return {"task_id": task_id, "status": task.state}
+
+
+# --- Endpoint function for S stakeholder list query ---
+@api_router.post(
+    "/s_stakeholders",
+    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.VwIscoreOrgsIpCountsTaskResp,
+    tags=["Get list of all S stakeholders."],
+)
+def read_s_stakeholders(tokens: dict = Depends(get_api_key)):
+    """API endpoint to get list of all S stakeholders."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        # If API key valid, create task for query
+        task = get_s_stakeholders_info.delay()
+        # Return the new task id w/ "Processing" status
+        return {"task_id": task.id, "status": "Processing"}
+    else:
+        return {"message": "No api key was submitted"}
+
+
+@api_router.get(
+    "/s_stakeholders/task/{task_id}",
+    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.VwIscoreOrgsIpCountsTaskResp,
+    tags=["Check task status for S stakeholder query."],
+)
+async def get_s_stakeholders_task_status(
+    task_id: str, tokens: dict = Depends(get_api_key)
+):
+    # Retrieve task status
+    task = get_s_stakeholders_info.AsyncResult(task_id)
+    # Return appropriate message for status
+    if task.state == "SUCCESS":
+        return {"task_id": task_id, "status": "Completed", "result": task.result}
+    elif task.state == "PENDING":
+        return {"task_id": task_id, "status": "Pending"}
+    elif task.state == "FAILURE":
+        return {"task_id": task_id, "status": "Failed", "error": str(task.result)}
+    else:
+        return {"task_id": task_id, "status": task.state}
+
+
+# --- Endpoint function for M stakeholder list query ---
+@api_router.post(
+    "/m_stakeholders",
+    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.VwIscoreOrgsIpCountsTaskResp,
+    tags=["Get list of all M stakeholders."],
+)
+def read_m_stakeholders(tokens: dict = Depends(get_api_key)):
+    """API endpoint to get list of all M stakeholders."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        # If API key valid, create task for query
+        task = get_m_stakeholders_info.delay()
+        # Return the new task id w/ "Processing" status
+        return {"task_id": task.id, "status": "Processing"}
+    else:
+        return {"message": "No api key was submitted"}
+
+
+@api_router.get(
+    "/m_stakeholders/task/{task_id}",
+    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.VwIscoreOrgsIpCountsTaskResp,
+    tags=["Check task status for M stakeholder query."],
+)
+async def get_m_stakeholders_task_status(
+    task_id: str, tokens: dict = Depends(get_api_key)
+):
+    # Retrieve task status
+    task = get_m_stakeholders_info.AsyncResult(task_id)
+    # Return appropriate message for status
+    if task.state == "SUCCESS":
+        return {"task_id": task_id, "status": "Completed", "result": task.result}
+    elif task.state == "PENDING":
+        return {"task_id": task_id, "status": "Pending"}
+    elif task.state == "FAILURE":
+        return {"task_id": task_id, "status": "Failed", "error": str(task.result)}
+    else:
+        return {"task_id": task_id, "status": task.state}
+
+
+# --- Endpoint function for L stakeholder list query ---
+@api_router.post(
+    "/l_stakeholders",
+    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.VwIscoreOrgsIpCountsTaskResp,
+    tags=["Get list of all L stakeholders."],
+)
+def read_l_stakeholders(tokens: dict = Depends(get_api_key)):
+    """API endpoint to get list of all L stakeholders."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        # If API key valid, create task for query
+        task = get_l_stakeholders_info.delay()
+        # Return the new task id w/ "Processing" status
+        return {"task_id": task.id, "status": "Processing"}
+    else:
+        return {"message": "No api key was submitted"}
+
+
+@api_router.get(
+    "/l_stakeholders/task/{task_id}",
+    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.VwIscoreOrgsIpCountsTaskResp,
+    tags=["Check task status for L stakeholder query."],
+)
+async def get_l_stakeholders_task_status(
+    task_id: str, tokens: dict = Depends(get_api_key)
+):
+    # Retrieve task status
+    task = get_l_stakeholders_info.AsyncResult(task_id)
+    # Return appropriate message for status
+    if task.state == "SUCCESS":
+        return {"task_id": task_id, "status": "Completed", "result": task.result}
+    elif task.state == "PENDING":
+        return {"task_id": task_id, "status": "Pending"}
+    elif task.state == "FAILURE":
+        return {"task_id": task_id, "status": "Failed", "error": str(task.result)}
+    else:
+        return {"task_id": task_id, "status": task.state}
+
+
+# --- Endpoint function for XL stakeholder list query ---
+@api_router.post(
+    "/xl_stakeholders",
+    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.VwIscoreOrgsIpCountsTaskResp,
+    tags=["Get list of all XL stakeholders."],
+)
+def read_xl_stakeholders(tokens: dict = Depends(get_api_key)):
+    """API endpoint to get list of all XL stakeholders."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        # If API key valid, create task for query
+        task = get_xl_stakeholders_info.delay()
+        # Return the new task id w/ "Processing" status
+        return {"task_id": task.id, "status": "Processing"}
+    else:
+        return {"message": "No api key was submitted"}
+
+
+@api_router.get(
+    "/xl_stakeholders/task/{task_id}",
+    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.VwIscoreOrgsIpCountsTaskResp,
+    tags=["Check task status for XL stakeholder query."],
+)
+async def get_xl_stakeholders_task_status(
+    task_id: str, tokens: dict = Depends(get_api_key)
+):
+    # Retrieve task status
+    task = get_xl_stakeholders_info.AsyncResult(task_id)
+    # Return appropriate message for status
+    if task.state == "SUCCESS":
+        return {"task_id": task_id, "status": "Completed", "result": task.result}
+    elif task.state == "PENDING":
+        return {"task_id": task_id, "status": "Pending"}
+    elif task.state == "FAILURE":
+        return {"task_id": task_id, "status": "Failed", "error": str(task.result)}
+    else:
+        return {"task_id": task_id, "status": task.state}
+    
+@api_router.post("/data_source/{source_name}",dependencies=[Depends(get_api_key),
+                 Depends(RateLimiter(times=200, seconds=60))],
+                #response_model=schemas.DataSource,
+                tags = ["Get Data_source table"])
+
+def get_data_source(source_name: str, tokens: dict = Depends(get_api_key)):
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            try:
+                datas = list(DataSource.objects.filter(name=f'{source_name}'))
+                print(datas)
+                return datas[0]
+            except ValidationError as e:
+                return {"message": "Data source does not exist"}
+                
+        except:
+            LOGGER.info('API key expired please try again')
+    else:
+        return {'message': "No api key was submitted"}
+    
+#data_source_uid: str,request: Request, tokens: dict = Depends(get_api_key)
+
+@api_router.put(
+    "/update_last_viewed/{data_source_uid}",
+    dependencies=[Depends(get_api_key),
+                 Depends(RateLimiter(times=200, seconds=60))],
+    tags=["Update last viewed data"]
+)
+@transaction.atomic
+def update_last_viewed(data_source_uid: str, tokens: dict = Depends(get_api_key)):
+    if not tokens:
+        return {"message": "No api key was submitted"}
+    LOGGER.info(f"The api key submitted {tokens}")
+    try:
+        userapiTokenverify(theapiKey=tokens)
+        try:
+            data_source  = DataSource.objects.get(data_source_uid=data_source_uid)
+        except ValidationError as e:
+            return {"message": "Data source does not exist"}
+        data_source.last_run = datetime.today().strftime("%Y-%m-%d")
+        data_source.save()
+        return {"message": "Record updated successfully."}
+    except ObjectDoesNotExist:
+        LOGGER.info("API key expired please try again")
+
+
