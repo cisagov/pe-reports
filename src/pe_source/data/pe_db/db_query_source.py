@@ -62,7 +62,7 @@ def get_orgs():
         "access_token": f'{PE_API_KEY}',
     }
     try:
-        response = requests.post(PE_API_URL, headers=headers).json()
+        response = requests.post(PE_API_URL +  "get_orgs/", headers=headers).json()
         return response
     except requests.exceptions.HTTPError as errh:
         print(errh)
