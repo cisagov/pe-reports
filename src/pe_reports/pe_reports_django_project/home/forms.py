@@ -189,3 +189,14 @@ def getGHUsers(url, user):
             usersIssues[issueAssignee] = issueNames
 
     return usersIssues
+
+
+class GenerateWeeklyStatusReportingForm(forms.Form):
+    """Create web form to take user input on weekly report to be generated."""
+
+    date = forms.DateField(widget=forms.DateInput(attrs={'type': 'date'}))
+
+    def __init__(self, *args, **kwargs):
+        super(GenerateWeeklyStatusReportingForm, self).__init__(*args, **kwargs)
+        for visible in self.visible_fields():
+            visible.field.widget.attrs["class"] = "form-control"

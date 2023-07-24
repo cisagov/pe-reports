@@ -593,7 +593,7 @@ def create_word_document(request):
             'week_ending': reformatted_week_ending_date,
             "accomplishments_list": accomplishments_list,
             "ongoing_tasks_list": ongoing_tasks_list,
-            "upcoming_task_list": upcoming_tasks_list,
+            "upcoming_tasks_list": upcoming_tasks_list,
             "obstacles_list": obstacles_list,
             "non_standard_meeting_list": non_standard_meeting_list,
             "deliverables_list": deliverables_list,
@@ -653,6 +653,94 @@ class FetchWeeklyStatusesView(View):
         return JsonResponse({"error": "Failed to fetch weekly statuses"},
                             status=400)
 
+def send_email_with_attachment(subject,
+                               body_text,
+                               from_email,
+                               to_emails,
+                               attachment,
+                               aws_region='us-east-1',
+                               cc_emails=None,
+                               bcc_emails=None,
+                               body_html=None):
+    # Create a new SES resource and specify a region.
+    session = boto3.Session(profile_name='cool-dns-sessendemail-cyber.dhs.gov')
+    client = session.client('ses', region_name=aws_region)
+
+    # Assume role to use mailer
+    sts_client = boto3.client('sts')
+    assumed_role_object = sts_client.assume_role(
+        RoleArn=MAILER_ARN,
+        RoleSessionName="AssumeRoleSession1"
+    )
+    credentials = assumed_role_object['Credentials']
+
+    ses_client = boto3.client("ses",
+                              region_name="us-east-1",
+                              aws_access_key_id=credentials['AccessKeyId'],
+                              aws_secret_access_key=credentials[
+                                  'SecretAccessKey'],
+                              aws_session_token=credentials['SessionToken']
+                              )
+
+    # Create a multipart/mixed parent container.
+    msg = MIMEMultipart('mixed')
+    # Add subject, from and to lines.
+    msg['Subject'] = subject
+    msg['From'] = from_email
+    msg['To'] = to_emails
+    msg['Cc'] = ', '.join(cc_emails) if cc_emails is not None else ''
+    msg['Bcc'] = ', '.join(bcc_emails) if bcc_emails is not None else ''
+
+    # Create a multipart/alternative child container.
+    msg_body = MIMEMultipart('alternative')
+
+    # Encode the text and HTML content and set the character encoding. This step is
+    # necessary if you're sending a message with characters outside the ASCII range.
+    textpart = MIMEText(body_text.encode('utf-8'), 'plain', 'utf-8')
+    msg_body.attach(textpart)
+
+    if body_html is not None:
+        htmlpart = MIMEText(body_html.encode('utf-8'), 'html', 'utf-8')
+        msg_body.attach(htmlpart)
+
+    # Define the attachment part and encode it using MIMEApplication.
+    att = MIMEApplication(open(attachment, 'rb').read())
+
+    # Add a header to tell the email client to treat this part as an attachment,
+    # and to give the attachment a name.
+    att.add_header('Content-Disposition', 'attachment',
+                   filename=os.path.basename(attachment))
+
+    # Attach the multipart/alternative child container to the multipart/mixed
+    # parent container.
+    msg.attach(msg_body)
+
+    # Add the attachment to the parent container.
+    msg.attach(att)
+
+    print(f"From: {msg['From']}")
+    print(f"To: {msg['To']}")
+    print(f"Cc: {msg['Cc']}")
+    print(f"Bcc: {msg['Bcc']}")
+
+    try:
+        # Provide the contents of the email.
+        response = client.send_raw_email(
+            Source=msg['From'],
+            Destinations=[
+                msg['To']
+            ],
+            RawMessage={
+                'Data': msg.as_string(),
+            }
+        )
+    # Display an error if something goes wrong.
+    except ClientError as e:
+        print(e.response['Error']['Message'] + " The email was not sent.")
+    else:
+        print("Email sent! Message ID:"),
+        print(response['MessageId'])
+
 
 class StatusView(TemplateView):
     template_name = 'weeklyStatus.html'
@@ -661,90 +749,104 @@ class StatusView(TemplateView):
 
 class StatusForm(LoginRequiredMixin, FormView):
     form_class = WeeklyStatusesForm
-    template_name = 'weeklyStatus.html'
+    second_form_class = GenerateWeeklyStatusReportingForm
+    template_name = "weeklyStatus.html"
+    form_only_template_name = "weeklyStatusFormOnly.html"
+    status_report_archive_dir = os.path.join(settings.BASE_DIR,
+                                             'home/statusReportArchive')
+    print(f'The file dir is {status_report_archive_dir}')
+    filesWSR = glob.glob(os.path.join(status_report_archive_dir, '*.docx'))
+    #Check if the list of files is empty
+    if not filesWSR:
+        print("No files in directory")
+    else:
+        most_recent_file = max(filesWSR, key=os.path.getctime)
+        print(most_recent_file)
 
-    success_url = reverse_lazy('weekly_status')
+    success_url = reverse_lazy("weekly_status")
 
     def get_form_kwargs(self):
         kwargs = super(StatusForm, self).get_form_kwargs()
-        kwargs['user'] = self.request.user
+        kwargs["user"] = self.request.user
         return kwargs
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['second_form'] = self.second_form_class()
+        return context
+
     def get(self, request, *args, **kwargs):
-        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        if request.headers.get("X-Requested-With") == "XMLHttpRequest":
             form = self.form_class()
-            form_html = render_to_string(self.form_only_template_name,
-                                         {'form': form}, request=request)
-            return JsonResponse({'form_html': form_html})
+            form_html = render_to_string(
+                self.form_only_template_name, {"form": form}, request=request
+            )
+            return JsonResponse({"form_html": form_html})
         else:
             return super().get(request, *args, **kwargs)
 
-    def form_valid(self, form):
-        the_current_user = ''
-        statusComplete = 0
-        week_ending = 0
-        current_date = datetime.now()
-        days_to_week_end = (4 - current_date.weekday()) % 7
-        week_ending_date = current_date + timedelta(days=days_to_week_end)
+    def post(self, request, *args, **kwargs):
+        form = self.get_form()
+        second_form = self.second_form_class(request.POST)
+        if form.is_valid() or second_form.is_valid():
+            return self.form_valid(form, second_form)
+        else:
+            return self.form_invalid(form, second_form)
 
-        weeklyInfo = WeeklyStatuses.objects. \
-            filter(week_ending=week_ending_date,
-                   user_status=self.request.user.first_name)
+    def form_valid(self, form, second_form):
+        if form.is_valid():
+            current_date = datetime.now()
+            days_to_week_end = (4 - current_date.weekday()) % 7
+            week_ending_date = current_date + timedelta(days=days_to_week_end)
 
-        # Serialize the queryset to JSON
-        serialized_data = serializers.serialize('json', weeklyInfo)
+            key_accomplishments = form.cleaned_data['key_accomplishments'].upper()
+            ongoing_task = form.cleaned_data['ongoing_task'].upper()
+            upcoming_task = form.cleaned_data['upcoming_task'].upper()
+            obstacles = form.cleaned_data['obstacles'].upper()
+            non_standard_meeting = form.cleaned_data['non_standard_meeting'].upper()
+            deliverables = form.cleaned_data['deliverables'].upper()
+            pto = form.cleaned_data['pto_time'].upper()
 
-        # Load the serialized data into a JSON object
-        json_data = json.loads(serialized_data)
+            weeklyStatus, created = WeeklyStatuses.objects.get_or_create(
+                week_ending=week_ending_date,
+                user_status=self.request.user.first_name,
+                defaults={
+                    'key_accomplishments': key_accomplishments,
+                    'ongoing_task': ongoing_task,
+                    'upcoming_task': upcoming_task,
+                    'obstacles': obstacles,
+                    'non_standard_meeting': non_standard_meeting,
+                    'deliverables': deliverables,
+                    'pto': pto,
+                }
+            )
 
-        # Iterate through the JSON object and set variables from the fields
-        for status in json_data:
-            the_current_user = status['fields']['user_status']
-            statusComplete = status['fields']['statusComplete']
-            week_ending = status['fields']['week_ending']
+            if not created:
+                weeklyStatus.key_accomplishments = key_accomplishments
+                weeklyStatus.ongoing_task = ongoing_task
+                weeklyStatus.upcoming_task = upcoming_task
+                weeklyStatus.obstacles = obstacles
+                weeklyStatus.non_standard_meeting = non_standard_meeting
+                weeklyStatus.deliverables = deliverables
+                weeklyStatus.pto = pto
+                weeklyStatus.save()
 
-        if statusComplete == 1:
-            messages.warning(self.request,
-                             f"The weekly status for {the_current_user.title()}"
-                             f" for the weekending {week_ending} "
-                             f"has already been completed.")
-            return HttpResponseRedirect("/weekly_status/")
+            messages.success(self.request,
+                             f'The weekly status was saved successfully.')
 
-        key_accomplishments = form.cleaned_data['key_accomplishments'].upper()
-
-        ongoing_task = form.cleaned_data['ongoing_task'].upper()
-
-        upcoming_task = form.cleaned_data['upcoming_task'].upper()
-
-        obstacles = form.cleaned_data['obstacles'].upper()
-
-        non_standard_meeting = form.cleaned_data['non_standard_meeting'].upper()
-
-        deliverables = form.cleaned_data['deliverables'].upper()
-
-        pto = form.cleaned_data['pto_time'].upper()
-
-        messages.success(self.request,
-                         f'The weekly status was saved successfully.')
-
-        weeklyStatus = WeeklyStatuses(
-            key_accomplishments=key_accomplishments,
-            user_status=self.request.user.first_name,
-            ongoing_task=ongoing_task,
-            upcoming_task=upcoming_task,
-            obstacles=obstacles,
-            non_standard_meeting=non_standard_meeting,
-            deliverables=deliverables,
-            pto=pto,
-        )
-
-        weeklyStatus.save()
+        if second_form.is_valid():
+            toemail = "craig.duhn@associates.cisa.dhs.gov"
+            fromemail = "pe_automation@cisa.dhs.gov"
+            date = second_form.cleaned_data['date']
+            create_word_document(date, self.request)
+            theawsregion = 'us-east-1'
+            send_email_with_attachment("WSR Attached",
+                                       "The WSR is attached",
+                                       from_email=fromemail,
+                                       to_emails=toemail,
+                                       attachment=self.most_recent_file)
 
         return super().form_valid(form)
-
-class updateStatusView(TemplateView):
-    template_name = 'weeklyStatusFormOnly.html'
-    LOGGER.info('Got to Status')
 
 
 class updateStatusForm(LoginRequiredMixin, FormView):
