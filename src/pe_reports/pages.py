@@ -21,7 +21,13 @@ from pe_reports.data.db_query import (
 from .charts import Charts
 
 # Import Classes
-from .metrics import Credentials, Cyber_Six, Domains_Masqs, Malware_Vulns
+from .metrics import (
+    Core_Cyber_Six,
+    Credentials,
+    Cyber_Six,
+    Domains_Masqs,
+    Malware_Vulns,
+)
 
 # Setup logging to central
 LOGGER = logging.getLogger(__name__)
@@ -47,7 +53,7 @@ def credential(
     x_label = "Week Reported"
     y_label = "Creds Exposed"
     cred_date_chart = Charts(
-        Credential.by_week(),
+        Credential.by_days(),
         width,
         height,
         name,
@@ -222,7 +228,7 @@ def mal_vuln(
     }
     with open(vuln_json, "w") as outfile:
         json.dump(final_dict, outfile, default=str)
-    
+
     # Create Suspected vulnerability Excel file
     vuln_xlsx = f"{output_directory}/{org_code}/vuln_alerts.xlsx"
     vulnWriter = pd.ExcelWriter(vuln_xlsx, engine="xlsxwriter")
@@ -231,13 +237,7 @@ def mal_vuln(
     Malware_Vuln.vulns_df.to_excel(vulnWriter, sheet_name="Verified Vulns", index=False)
     vulnWriter.save()
 
-    return (
-        scorecard_dict,
-        chevron_dict,
-        vuln_json,
-        all_cves_df,
-        vuln_xlsx
-    )
+    return (scorecard_dict, chevron_dict, vuln_json, all_cves_df, vuln_xlsx)
 
 
 def dark_web(
@@ -327,23 +327,16 @@ def dark_web(
     }
     with open(mi_json, "w") as outfile:
         json.dump(final_dict, outfile, default=str)
-    
+
     # Create dark web Excel file
     mi_xlsx = f"{output_directory}/{org_code}/mention_incidents.xlsx"
     miWriter = pd.ExcelWriter(mi_xlsx, engine="xlsxwriter")
-    mentions_df.to_excel(
-        miWriter, sheet_name="Dark Web Mentions", index=False
-    )
+    mentions_df.to_excel(miWriter, sheet_name="Dark Web Mentions", index=False)
     Cyber6.alerts.to_excel(miWriter, sheet_name="Dark Web Alerts", index=False)
     Cyber6.top_cves.to_excel(miWriter, sheet_name="Top CVEs", index=False)
     miWriter.save()
 
-    return (
-        scorecard_dict,
-        chevron_dict,
-        mi_json,
-        mi_xlsx
-    )
+    return (scorecard_dict, chevron_dict, mi_json, mi_xlsx)
 
 
 def init(
@@ -351,6 +344,7 @@ def init(
     org_name,
     org_code,
     org_uid,
+    premium,
     score,
     grade,
     output_directory,
@@ -479,18 +473,29 @@ def init(
     )
 
     # Dark web mentions and alerts
-    scorecard_dict, chevron_dict, mi_json, mi_xlsx = dark_web(
-        scorecard_dict,
-        chevron_dict,
-        trending_start_date,
-        start_date,
-        end_date,
-        org_uid,
-        all_cves_df,
-        soc_med_included,
-        org_code,
-        output_directory,
-    )
+    if premium:
+        scorecard_dict, chevron_dict, mi_json, mi_xlsx = dark_web(
+            scorecard_dict,
+            chevron_dict,
+            trending_start_date,
+            start_date,
+            end_date,
+            org_uid,
+            all_cves_df,
+            soc_med_included,
+            org_code,
+            output_directory,
+        )
+    else:
+        Core_Cyber = Core_Cyber_Six(all_cves_df)
+        chevron_dict["top_cves"] = Core_Cyber.top_cve_table()
+        mi_json = None
+        mi_xlsx = None
+        scorecard_dict["threat_actor_count"] = None
+        scorecard_dict["dark_web_alerts_count"] = None
+        scorecard_dict["dark_web_mentions_count"] = None
+        scorecard_dict["dark_web_executive_alerts_count"] = None
+        scorecard_dict["dark_web_asset_alerts_count"] = None
 
     execute_scorecard(scorecard_dict)
     last_period_stats = query_previous_period(org_uid, previous_end_date)
@@ -507,5 +512,5 @@ def init(
         cred_xlsx,
         da_xlsx,
         vuln_xlsx,
-        mi_xlsx
+        mi_xlsx,
     )

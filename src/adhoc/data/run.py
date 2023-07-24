@@ -337,47 +337,21 @@ def getDataSource(source):
 def insertWASIds(listIds):
     """Insert WAS IDs into database."""
     conn = connect("")
-    sql = """INSERT INTO was_summary (was_org_id)
+    sql = """INSERT INTO was_map (was_org_id,pe_org_id)
+            VALUES ('{}','{}')
+            ON CONFLICT (was_org_id) DO NOTHING;"""
+    sqlNoUUID = """INSERT INTO was_map (was_org_id)
             VALUES ('{}')
             ON CONFLICT (was_org_id) DO NOTHING;"""
     cur = conn.cursor()
     for id in listIds:
-        cur.execute(sql.format(id))
+        if id[1] == '':
+            cur.execute(sqlNoUUID.format(id[0]))
+        else:
+            cur.execute(sql.format(id[0], id[1]))
     conn.commit()
     close(conn)
     print("Success adding WAS IDs to database.")
-
-
-def insertCountData(data):
-    """Insert web application count an vulnerability count for each org into database."""
-    conn = connect("")
-    sql = """INSERT INTO was_customers(was_org_id,webapp_count,active_vuln_count,webapp_with_vulns_count,last_updated)
-            VALUES ('{}','{}','{}','{}','{}')
-            ON CONFLICT (was_org_id) DO UPDATE SET
-            webapp_count = excluded.webapp_count,
-            active_vuln_count = excluded.active_vuln_count,
-            webapp_with_vulns_count = excluded.webapp_with_vulns_count,
-            last_updated = excluded.last_updated;"""
-    cur = conn.cursor()
-    try:
-        cur.execute(
-            sql.format(
-                data["was_org_id"],
-                data["webapp_count"],
-                data["active_vuln_count"],
-                data["webapp_with_vulns_count"],
-                data["last_updated"],
-            )
-        )
-    except KeyError:
-        print("KeyError: Data not found.")
-        close(conn)
-        return
-
-    conn.commit()
-    close(conn)
-    print("Success adding WAS data to database.")
-
 
 def insertFindingData(findingList):
     """Insert finding data into database."""
@@ -385,7 +359,11 @@ def insertFindingData(findingList):
     conn = connect("")
     sql = """INSERT INTO was_findings (finding_uid, finding_type, webapp_id, was_org_id, owasp_category, severity, times_detected, base_score, temporal_score, fstatus, last_detected, first_detected)
             VALUES ('{}','{}','{}','{}','{}','{}','{}','{}','{}','{}','{}','{}')
-            ON CONFLICT (finding_uid) DO UPDATE SET
+            ON CONFLICT (finding_uid) DO UPDATE 
+            SET is_remidiated = CASE
+                WHEN was_findings.fstatus != 'FIXED' AND excluded.fstatus = 'FIXED' THEN TRUE
+                ELSE was_findings.is_remidiated
+            END,
             fstatus = excluded.fstatus,
             times_detected = excluded.times_detected,
             last_detected = excluded.last_detected;"""
@@ -415,13 +393,12 @@ def insertFindingData(findingList):
     close(conn)
     print("Success adding finding data to database.")
 
-
 def queryVulnWebAppCount(org_id):
     """Query the amount of webapps with vulnerabilities."""
     # TODO: Dont use was_ord_id to reference orgs, use customer_id once was data become available
     conn = connect("")
-    sql = """   SELECT webapp_id FROM findings
-                WHERE org_id = '{}'
+    sql = """   SELECT webapp_id FROM was_findings
+                WHERE was_org_id = '{}'
                 AND
                 (
                     fstatus = 'ACTIVE'
@@ -434,12 +411,113 @@ def queryVulnWebAppCount(org_id):
     close(conn)
     return len(set(webIdsList))
 
-
 def queryWASOrgList():
     """Query the list of WAS orgs."""
     # TODO: Dont use was_ord_id to reference orgs, use customer_id once was data become available
     conn = connect("")
-    sql = """SELECT was_org_id FROM was_summary"""
+    sql = """SELECT was_org_id FROM was_map"""
     df = pd.read_sql_query(sql, conn)
     orgList = df["was_org_id"].values.tolist()
+    close(conn)
     return orgList
+
+def getPreviousFindings(org_id,monthsAgo):
+    """Get findings for specific time period in months."""
+    conn = connect("")
+    cur = conn.cursor()
+    sql = """   SELECT * FROM was_findings 
+                WHERE was_org_id = '{}'
+                AND last_detected >= date_trunc('month', now() - interval '{} month')
+                AND last_detected < date_trunc('month', now() - interval '{} month');
+                """
+    cur.execute(sql.format(org_id,monthsAgo,monthsAgo-1), conn)
+    ret = cur.fetchall()
+    cur.close()
+    close(conn)
+    return ret
+
+def getPreviousFindingsHistorical(org_id,monthsAgo):
+    """Get findings for specific time period in months."""
+    conn = connect("")
+    cur = conn.cursor()
+    sql = """   SELECT * FROM was_findings 
+                WHERE was_org_id = '{}';
+                """
+    cur.execute(sql.format(org_id,monthsAgo-1,monthsAgo), conn)
+    ret = cur.fetchall()
+    cur.close()
+    close(conn)
+    return ret
+
+def queryVulnCountSeverity(org_id,severity):
+    """Query the amount of webapps with vulnerabilities."""
+    # TODO: Dont use was_ord_id to reference orgs, use customer_id once was data become available
+    conn = connect("")
+    sql = """   SELECT webapp_id FROM was_findings
+                WHERE was_org_id = '{}'
+                AND severity = '{}'
+                AND
+                (
+                    fstatus = 'ACTIVE'
+                    OR fstatus = 'NEW'
+                    OR fstatus = 'REOPENED'
+                );
+        """
+    df = pd.read_sql_query(sql.format(org_id,severity), conn)
+    webIdsList = df["webapp_id"].values.tolist()
+    close(conn)
+    return len(webIdsList)
+def queryVulnCountAll(org_id):
+    """Query the amount of webapps with vulnerabilities."""
+    # TODO: Dont use was_ord_id to reference orgs, use customer_id once was data become available
+    conn = connect("")
+    sql = """   SELECT webapp_id FROM was_findings
+                WHERE was_org_id = '{}'
+                AND
+                (
+                    fstatus = 'ACTIVE'
+                    OR fstatus = 'NEW'
+                    OR fstatus = 'REOPENED'
+                );
+        """
+    df = pd.read_sql_query(sql.format(org_id), conn)
+    webIdsList = df["webapp_id"].values.tolist()
+    close(conn)
+    return len(webIdsList)
+def getPEuuid(org_id):
+    """Query the org uuid given a certain cyhy db name"""
+    conn = connect("")
+    sql = """SELECT organizations_uid FROM organizations WHERE cyhy_db_name = '{}'"""
+    cur = conn.cursor()
+    cur.execute(sql.format(org_id))
+    ret = cur.fetchone()[0]
+    close(conn)
+    return ret
+
+def insertWASVulnData(data):
+    """Insert WAS vulnerability data into database."""
+    conn = connect("")
+    cur = conn.cursor()
+    sql = """   INSERT INTO was_history (was_org_ID,date_scanned,vuln_cnt,vuln_webapp_cnt,web_app_cnt,high_rem_time,crit_rem_time,report_period,high_vuln_cnt,crit_vuln_cnt,crit_rem_cnt,high_rem_cnt)
+                VALUES ('{}','{}',{},{},{}, (CASE WHEN {} = 0 THEN NULL ELSE {} END), (CASE WHEN {} = 0 THEN NULL ELSE {} END),'{}',{},{},{},{}) """
+    cur.execute(
+        sql.format(
+            data['was_org_id'],
+            data['date_scanned'],
+            data['vuln_cnt'],
+            data['vuln_webapp_cnt'],
+            data['web_app_cnt'],
+            data['high_rem_time'],
+            data['high_rem_time'],
+            data['crit_rem_time'],
+            data['crit_rem_time'],
+            data['report_period'],
+            data['high_vuln_cnt'],
+            data['crit_vuln_cnt'],
+            data['high_rem_cnt'],
+            data['crit_rem_cnt']
+            )
+        )
+    conn.commit()
+    close(conn)
+    print("Success adding finding data to database.")

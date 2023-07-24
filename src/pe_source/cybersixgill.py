@@ -4,6 +4,7 @@
 from datetime import date, datetime, timedelta
 import sys
 import traceback
+import logging
 
 from .data.pe_db.db_query_source import (
     get_breaches,
@@ -28,12 +29,10 @@ from .data.sixgill.source import (
     top_cves,
 )
 
-LOGGER = app.config["LOGGER"]
-
 # Set todays date formatted YYYY-MM-DD and the start_date 30 days prior
 TODAY = date.today()
 DAYS_BACK = timedelta(days=30)
-MENTIONS_DAYS_BACK = timedelta(days=16)
+MENTIONS_DAYS_BACK = timedelta(days=20)
 MENTIONS_START_DATE = str(TODAY - MENTIONS_DAYS_BACK)
 END_DATE = str(TODAY)
 DATE_SPAN = f"[{MENTIONS_START_DATE} TO {END_DATE}]"
