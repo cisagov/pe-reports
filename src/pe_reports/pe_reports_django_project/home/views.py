@@ -742,7 +742,6 @@ class StatusView(TemplateView):
 
 class StatusForm(LoginRequiredMixin, FormView):
     form_class = WeeklyStatusesForm
-<<<<<<< HEAD
     second_form_class = GenerateWeeklyStatusReportingForm
     template_name = "weeklyStatus.html"
     form_only_template_name = "weeklyStatusFormOnly.html"
@@ -756,9 +755,6 @@ class StatusForm(LoginRequiredMixin, FormView):
     else:
         most_recent_file = max(filesWSR, key=os.path.getctime)
         print(most_recent_file)
-=======
-    template_name = "weeklyStatus.html"
->>>>>>> 9e3ebfad7283748be9f69d1fe9eb7e0df76d99d7
 
     success_url = reverse_lazy("weekly_status")
 
@@ -782,7 +778,6 @@ class StatusForm(LoginRequiredMixin, FormView):
         else:
             return super().get(request, *args, **kwargs)
 
-<<<<<<< HEAD
     def post(self, request, *args, **kwargs):
         form = self.get_form()
         second_form = self.second_form_class(request.POST)
@@ -804,22 +799,6 @@ class StatusForm(LoginRequiredMixin, FormView):
             non_standard_meeting = form.cleaned_data['non_standard_meeting'].upper()
             deliverables = form.cleaned_data['deliverables'].upper()
             pto = form.cleaned_data['pto_time'].upper()
-=======
-    def form_valid(self, form):
-        the_current_user = ""
-        statusComplete = 0
-        week_ending = 0
-        current_date = datetime.now()
-        days_to_week_end = (4 - current_date.weekday()) % 7
-        week_ending_date = current_date + timedelta(days=days_to_week_end)
-
-        weeklyInfo = WeeklyStatuses.objects.filter(
-            week_ending=week_ending_date, user_status=self.request.user.first_name
-        )
-
-        # Serialize the queryset to JSON
-        serialized_data = serializers.serialize("json", weeklyInfo)
->>>>>>> 9e3ebfad7283748be9f69d1fe9eb7e0df76d99d7
 
             weeklyStatus, created = WeeklyStatuses.objects.get_or_create(
                 week_ending=week_ending_date,
@@ -835,7 +814,6 @@ class StatusForm(LoginRequiredMixin, FormView):
                 }
             )
 
-<<<<<<< HEAD
             if not created:
                 weeklyStatus.key_accomplishments = key_accomplishments
                 weeklyStatus.ongoing_task = ongoing_task
@@ -863,60 +841,11 @@ class StatusForm(LoginRequiredMixin, FormView):
 
         return super().form_valid(form)
 
-=======
-        # Iterate through the JSON object and set variables from the fields
-        for status in json_data:
-            the_current_user = status["fields"]["user_status"]
-            statusComplete = status["fields"]["statusComplete"]
-            week_ending = status["fields"]["week_ending"]
-
-        if statusComplete == 1:
-            messages.warning(
-                self.request,
-                f"The weekly status for {the_current_user.title()}"
-                f" for the weekending {week_ending} "
-                f"has already been completed.",
-            )
-            return HttpResponseRedirect("/weekly_status/")
-
-        key_accomplishments = form.cleaned_data["key_accomplishments"].upper()
-
-        ongoing_task = form.cleaned_data["ongoing_task"].upper()
-
-        upcoming_task = form.cleaned_data["upcoming_task"].upper()
-
-        obstacles = form.cleaned_data["obstacles"].upper()
-
-        non_standard_meeting = form.cleaned_data["non_standard_meeting"].upper()
-
-        deliverables = form.cleaned_data["deliverables"].upper()
-
-        pto = form.cleaned_data["pto_time"].upper()
-
-        messages.success(self.request, f"The weekly status was saved successfully.")
-
-        print(self.request.user.first_name)
-        weeklyStatus = WeeklyStatuses(
-            key_accomplishments=key_accomplishments,
-            user_status=self.request.user.first_name,
-            ongoing_task=ongoing_task,
-            upcoming_task=upcoming_task,
-            obstacles=obstacles,
-            non_standard_meeting=non_standard_meeting,
-            deliverables=deliverables,
-            pto=pto,
-        )
-
-        weeklyStatus.save()
-
-        return super().form_valid(form)
-
 
 class updateStatusView(TemplateView):
     template_name = "weeklyStatusFormOnly.html"
     LOGGER.info("Got to Status")
 
->>>>>>> 9e3ebfad7283748be9f69d1fe9eb7e0df76d99d7
 
 class updateStatusForm(LoginRequiredMixin, FormView):
     form_class = UpdateWeeklyStatusesForm
