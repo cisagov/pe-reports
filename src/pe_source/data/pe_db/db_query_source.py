@@ -462,7 +462,7 @@ def insert_intelx_breaches(df):
     cursor.close()
 
 
-def get_intelx_breaches(source_uid):
+def get_intelx_breaches(source_uid,redo_interval=3):
     """
     Query API for all IntelX credential breaches.
 
@@ -499,7 +499,7 @@ def get_intelx_breaches(source_uid):
             LOGGER.info(
                 "\tPinged cred_breach_intelx status endpoint, status:", task_status
             )
-            time.sleep(3)
+            time.sleep(redo_interval)
     except requests.exceptions.HTTPError as errh:
         LOGGER.error(errh)
     except requests.exceptions.ConnectionError as errc:
