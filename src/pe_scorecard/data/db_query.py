@@ -30,6 +30,10 @@ LOGGER = logging.getLogger(__name__)
 CONN_PARAMS_DIC = config()
 # CONN_PARAMS_DIC_STAGING = staging_config()
 
+# These need to filled with API key/url path in database.ini
+pe_api_key = CONN_PARAMS_DIC.get("pe_api_key")
+pe_api_url = CONN_PARAMS_DIC.get("pe_api_url")
+
 
 def show_psycopg2_exception(err):
     """Handle errors for PostgreSQL issues."""
@@ -1458,11 +1462,6 @@ def insert_scores(start_date, org_uid, score, score_name, sector):
 
 
 # v ---------- D-Score API Queries ---------- v
-# This needs to be filled in with an API key:
-# pe_api_key = CONN_PARAMS_DIC_STAGING.get("pe_api_key")
-pe_api_key = CONN_PARAMS_DIC.get("pe_api_key")
-
-
 def api_dscore_vs_cert(org_list):
     """
     Query API for all VS certificate data needed for D-Score calculation.
@@ -1473,12 +1472,8 @@ def api_dscore_vs_cert(org_list):
         All VS certificate data of the specified orgs needed for the D-Score
     """
     # Endpoint info
-    create_task_url = (
-        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/dscore_vs_cert"
-    )
-    check_task_url = (
-        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/dscore_vs_cert/task/"
-    )
+    create_task_url = pe_api_url + "dscore_vs_cert"
+    check_task_url = pe_api_url + "dscore_vs_cert/task/"
     headers = {
         "Content-Type": "application/json",
         "access_token": pe_api_key,
@@ -1531,12 +1526,8 @@ def api_dscore_vs_mail(org_list):
         All VS mail data of the specified orgs needed for the D-Score
     """
     # Endpoint info
-    create_task_url = (
-        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/dscore_vs_mail"
-    )
-    check_task_url = (
-        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/dscore_vs_mail/task/"
-    )
+    create_task_url = pe_api_url + "dscore_vs_mail"
+    check_task_url = pe_api_url + "dscore_vs_mail/task/"
     headers = {
         "Content-Type": "application/json",
         "access_token": pe_api_key,
@@ -1589,12 +1580,8 @@ def api_dscore_pe_ip(org_list):
         All PE IP data of the specified orgs needed for the D-Score
     """
     # Endpoint info
-    create_task_url = (
-        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/dscore_pe_ip"
-    )
-    check_task_url = (
-        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/dscore_pe_ip/task/"
-    )
+    create_task_url = pe_api_url + "dscore_pe_ip"
+    check_task_url = pe_api_url + "dscore_pe_ip/task/"
     headers = {
         "Content-Type": "application/json",
         "access_token": pe_api_key,
@@ -1645,12 +1632,8 @@ def api_dscore_pe_domain(org_list):
         All PE domain data of the specified orgs needed for the D-Score
     """
     # Endpoint info
-    create_task_url = (
-        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/dscore_pe_domain"
-    )
-    check_task_url = (
-        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/dscore_pe_domain/task/"
-    )
+    create_task_url = pe_api_url + "dscore_pe_domain"
+    check_task_url = pe_api_url + "dscore_pe_domain/task/"
     headers = {
         "Content-Type": "application/json",
         "access_token": pe_api_key,
@@ -1707,12 +1690,8 @@ def api_dscore_was_webapp(org_list):
         All WAS webapp data of the specified orgs needed for the D-Score
     """
     # Endpoint info
-    create_task_url = (
-        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/dscore_was_webapp"
-    )
-    check_task_url = (
-        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/dscore_was_webapp/task/"
-    )
+    create_task_url = pe_api_url + "dscore_was_webapp"
+    check_task_url = pe_api_url + "dscore_was_webapp/task/"
     headers = {
         "Content-Type": "application/json",
         "access_token": pe_api_key,
@@ -1769,10 +1748,8 @@ def api_fceb_status(org_list):
         The FCEB status of the specified list of organizations
     """
     # Endpoint info
-    create_task_url = "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/fceb_status"
-    check_task_url = (
-        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/fceb_status/task/"
-    )
+    create_task_url = pe_api_url + "fceb_status"
+    check_task_url = pe_api_url + "fceb_status/task/"
     headers = {
         "Content-Type": "application/json",
         "access_token": pe_api_key,
@@ -1824,12 +1801,8 @@ def api_iscore_vs_vuln(org_list):
         All VS vuln data of the specified orgs needed for the I-Score
     """
     # Endpoint info
-    create_task_url = (
-        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/iscore_vs_vuln"
-    )
-    check_task_url = (
-        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/iscore_vs_vuln/task/"
-    )
+    create_task_url = pe_api_url + "iscore_vs_vuln"
+    check_task_url = pe_api_url + "iscore_vs_vuln/task/"
     headers = {
         "Content-Type": "application/json",
         "access_token": pe_api_key,
@@ -1906,12 +1879,8 @@ def api_iscore_vs_vuln_prev(org_list, start_date, end_date):
     if isinstance(end_date, datetime.date):
         end_date = end_date.strftime("%Y-%m-%d")
     # Endpoint info
-    create_task_url = (
-        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/iscore_vs_vuln_prev"
-    )
-    check_task_url = (
-        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/iscore_vs_vuln_prev/task/"
-    )
+    create_task_url = pe_api_url + "iscore_vs_vuln_prev"
+    check_task_url = pe_api_url + "iscore_vs_vuln_prev/task/"
     headers = {
         "Content-Type": "application/json",
         "access_token": pe_api_key,
@@ -1997,12 +1966,8 @@ def api_iscore_pe_vuln(org_list, start_date, end_date):
     if isinstance(end_date, datetime.date):
         end_date = end_date.strftime("%Y-%m-%d")
     # Endpoint info
-    create_task_url = (
-        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/iscore_pe_vuln"
-    )
-    check_task_url = (
-        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/iscore_pe_vuln/task/"
-    )
+    create_task_url = pe_api_url + "iscore_pe_vuln"
+    check_task_url = pe_api_url + "iscore_pe_vuln/task/"
     headers = {
         "Content-Type": "application/json",
         "access_token": pe_api_key,
@@ -2084,12 +2049,8 @@ def api_iscore_pe_cred(org_list, start_date, end_date):
     if isinstance(end_date, datetime.date):
         end_date = end_date.strftime("%Y-%m-%d")
     # Endpoint info
-    create_task_url = (
-        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/iscore_pe_cred"
-    )
-    check_task_url = (
-        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/iscore_pe_cred/task/"
-    )
+    create_task_url = pe_api_url + "iscore_pe_cred"
+    check_task_url = pe_api_url + "iscore_pe_cred/task/"
     headers = {
         "Content-Type": "application/json",
         "access_token": pe_api_key,
@@ -2171,12 +2132,8 @@ def api_iscore_pe_breach(org_list, start_date, end_date):
     if isinstance(end_date, datetime.date):
         end_date = end_date.strftime("%Y-%m-%d")
     # Endpoint info
-    create_task_url = (
-        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/iscore_pe_breach"
-    )
-    check_task_url = (
-        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/iscore_pe_breach/task/"
-    )
+    create_task_url = pe_api_url + "iscore_pe_breach"
+    check_task_url = pe_api_url + "iscore_pe_breach/task/"
     headers = {
         "Content-Type": "application/json",
         "access_token": pe_api_key,
@@ -2261,12 +2218,8 @@ def api_iscore_pe_darkweb(org_list, start_date, end_date):
     if isinstance(end_date, datetime.date):
         end_date = end_date.strftime("%Y-%m-%d")
     # Endpoint info
-    create_task_url = (
-        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/iscore_pe_darkweb"
-    )
-    check_task_url = (
-        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/iscore_pe_darkweb/task/"
-    )
+    create_task_url = pe_api_url + "iscore_pe_darkweb"
+    check_task_url = pe_api_url + "iscore_pe_darkweb/task/"
     headers = {
         "Content-Type": "application/json",
         "access_token": pe_api_key,
@@ -2352,12 +2305,8 @@ def api_iscore_pe_protocol(org_list, start_date, end_date):
     if isinstance(end_date, datetime.date):
         end_date = end_date.strftime("%Y-%m-%d")
     # Endpoint info
-    create_task_url = (
-        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/iscore_pe_protocol"
-    )
-    check_task_url = (
-        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/iscore_pe_protocol/task/"
-    )
+    create_task_url = pe_api_url + "iscore_pe_protocol"
+    check_task_url = pe_api_url + "iscore_pe_protocol/task/"
     headers = {
         "Content-Type": "application/json",
         "access_token": pe_api_key,
@@ -2445,12 +2394,8 @@ def api_iscore_was_vuln(org_list, start_date, end_date):
     if isinstance(end_date, datetime.date):
         end_date = end_date.strftime("%Y-%m-%d")
     # Endpoint info
-    create_task_url = (
-        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/iscore_was_vuln"
-    )
-    check_task_url = (
-        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/iscore_was_vuln/task/"
-    )
+    create_task_url = pe_api_url + "iscore_was_vuln"
+    check_task_url = pe_api_url + "iscore_was_vuln/task/"
     headers = {
         "Content-Type": "application/json",
         "access_token": pe_api_key,
@@ -2535,10 +2480,8 @@ def api_iscore_was_vuln_prev(org_list, start_date, end_date):
     if isinstance(end_date, datetime.date):
         end_date = end_date.strftime("%Y-%m-%d")
     # Endpoint info
-    create_task_url = (
-        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/iscore_was_vuln_prev"
-    )
-    check_task_url = "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/iscore_was_vuln_prev/task/"
+    create_task_url = pe_api_url + "iscore_was_vuln_prev"
+    check_task_url = pe_api_url + "iscore_was_vuln_prev/task/"
     headers = {
         "Content-Type": "application/json",
         "access_token": pe_api_key,
@@ -2614,10 +2557,8 @@ def api_kev_list():
         List of all KEVs
     """
     # Endpoint info
-    create_task_url = "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/kev_list"
-    check_task_url = (
-        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/kev_list/task/"
-    )
+    create_task_url = pe_api_url + "kev_list"
+    check_task_url = pe_api_url + "kev_list/task/"
     headers = {
         "Content-Type": "application/json",
         "access_token": pe_api_key,
@@ -2664,12 +2605,8 @@ def api_xs_stakeholders():
         List of all XS stakeholders
     """
     # Endpoint info
-    create_task_url = (
-        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/xs_stakeholders"
-    )
-    check_task_url = (
-        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/xs_stakeholders/task/"
-    )
+    create_task_url = pe_api_url + "xs_stakeholders"
+    check_task_url = pe_api_url + "xs_stakeholders/task/"
     headers = {
         "Content-Type": "application/json",
         "access_token": pe_api_key,
@@ -2719,12 +2656,8 @@ def api_s_stakeholders():
         List of all S stakeholders
     """
     # Endpoint info
-    create_task_url = (
-        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/s_stakeholders"
-    )
-    check_task_url = (
-        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/s_stakeholders/task/"
-    )
+    create_task_url = pe_api_url + "s_stakeholders"
+    check_task_url = pe_api_url + "s_stakeholders/task/"
     headers = {
         "Content-Type": "application/json",
         "access_token": pe_api_key,
@@ -2772,12 +2705,8 @@ def api_m_stakeholders():
         List of all M stakeholders
     """
     # Endpoint info
-    create_task_url = (
-        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/m_stakeholders"
-    )
-    check_task_url = (
-        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/m_stakeholders/task/"
-    )
+    create_task_url = pe_api_url + "m_stakeholders"
+    check_task_url = pe_api_url + "m_stakeholders/task/"
     headers = {
         "Content-Type": "application/json",
         "access_token": pe_api_key,
@@ -2825,12 +2754,8 @@ def api_l_stakeholders():
         List of all L stakeholders
     """
     # Endpoint info
-    create_task_url = (
-        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/l_stakeholders"
-    )
-    check_task_url = (
-        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/l_stakeholders/task/"
-    )
+    create_task_url = pe_api_url + "l_stakeholders"
+    check_task_url = pe_api_url + "l_stakeholders/task/"
     headers = {
         "Content-Type": "application/json",
         "access_token": pe_api_key,
@@ -2878,12 +2803,8 @@ def api_xl_stakeholders():
         List of all XL stakeholders
     """
     # Endpoint info
-    create_task_url = (
-        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/xl_stakeholders"
-    )
-    check_task_url = (
-        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/xl_stakeholders/task/"
-    )
+    create_task_url = pe_api_url + "xl_stakeholders"
+    check_task_url = pe_api_url + "xl_stakeholders/task/"
     headers = {
         "Content-Type": "application/json",
         "access_token": pe_api_key,
