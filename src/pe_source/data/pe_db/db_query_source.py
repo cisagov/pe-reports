@@ -462,7 +462,7 @@ def insert_intelx_breaches(df):
     cursor.close()
 
 
-def get_intelx_breaches(source_uid,redo_interval=3):
+def get_intelx_breaches(source_uid, redo_interval=3):
     """
     Query API for all IntelX credential breaches.
 
