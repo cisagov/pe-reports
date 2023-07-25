@@ -29,6 +29,10 @@ LOGGER = logging.getLogger(__name__)
 CONN_PARAMS_DIC = config()
 CONN_PARAMS_DIC_STAGING = staging_config()
 
+# This needs to be filled in with an API key:
+pe_api_key = CONN_PARAMS_DIC_STAGING.get("pe_api_key")
+pe_api_path = CONN_PARAMS_DIC_STAGING.get("pe_api_path")
+
 
 def show_psycopg2_exception(err):
     """Handle errors for PostgreSQL issues."""
@@ -666,7 +670,8 @@ def query_cyberSix_creds(org_uid, start_date, end_date):
             close(conn)
 
 
-def query_all_subs(conn):
+# === OLD TSQL ===
+def old_query_all_subs(conn):
     """Query sub domains table."""
     try:
         cur = conn.cursor()
@@ -694,7 +699,8 @@ def query_subs(org_uid):
     return df
 
 
-def execute_ips(conn, dataframe):
+# === OLD TSQL ===
+def old_execute_ips(conn, dataframe):
     """Insert the ips into the ips table in the database and link them to the associated cidr."""
     for i, row in dataframe.iterrows():
         try:
@@ -713,7 +719,8 @@ def execute_ips(conn, dataframe):
     print("IPs inserted using execute_values() successfully..")
 
 
-def execute_scorecard(summary_dict):
+# === OLD TSQL ===
+def old_execute_scorecard(summary_dict):
     """Save summary statistics for an organization to the database."""
     try:
         conn = connect()
@@ -787,7 +794,8 @@ def execute_scorecard(summary_dict):
         cur.close()
 
 
-def query_previous_period(org_uid, previous_end_date):
+# === OLD TSQL ===
+def old_query_previous_period(org_uid, previous_end_date):
     """Get summary statistics for the previous period."""
     conn = connect()
     cur = conn.cursor()
@@ -866,7 +874,8 @@ def get_new_cves_list(start, end):
             close(conn)
 
 
-def upsert_new_cves(new_cves):
+# === OLD TSQL ===
+def old_upsert_new_cves(new_cves):
     """
     Upsert dataframe of new CVE data into the cve_info table in the database.
 
@@ -932,10 +941,6 @@ def upsert_new_cves(new_cves):
 
 
 # v ---------- D-Score API Queries ---------- v
-# This needs to be filled in with an API key:
-pe_api_key = CONN_PARAMS_DIC_STAGING.get("pe_api_key")
-
-
 def api_dscore_vs_cert(org_list):
     """
     Query API for all VS certificate data needed for D-Score calculation.
@@ -946,12 +951,8 @@ def api_dscore_vs_cert(org_list):
         All VS certificate data of the specified orgs needed for the D-Score
     """
     # Endpoint info
-    create_task_url = (
-        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/dscore_vs_cert"
-    )
-    check_task_url = (
-        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/dscore_vs_cert/task/"
-    )
+    create_task_url = pe_api_path + "dscore_vs_cert"
+    check_task_url = pe_api_path + "dscore_vs_cert/task/"
     headers = {
         "Content-Type": "application/json",
         "access_token": pe_api_key,
@@ -1004,12 +1005,8 @@ def api_dscore_vs_mail(org_list):
         All VS mail data of the specified orgs needed for the D-Score
     """
     # Endpoint info
-    create_task_url = (
-        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/dscore_vs_mail"
-    )
-    check_task_url = (
-        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/dscore_vs_mail/task/"
-    )
+    create_task_url = pe_api_path + "dscore_vs_mail"
+    check_task_url = pe_api_path + "dscore_vs_mail/task/"
     headers = {
         "Content-Type": "application/json",
         "access_token": pe_api_key,
@@ -1062,12 +1059,8 @@ def api_dscore_pe_ip(org_list):
         All PE IP data of the specified orgs needed for the D-Score
     """
     # Endpoint info
-    create_task_url = (
-        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/dscore_pe_ip"
-    )
-    check_task_url = (
-        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/dscore_pe_ip/task/"
-    )
+    create_task_url = pe_api_path + "dscore_pe_ip"
+    check_task_url = pe_api_path + "dscore_pe_ip/task/"
     headers = {
         "Content-Type": "application/json",
         "access_token": pe_api_key,
@@ -1118,12 +1111,8 @@ def api_dscore_pe_domain(org_list):
         All PE domain data of the specified orgs needed for the D-Score
     """
     # Endpoint info
-    create_task_url = (
-        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/dscore_pe_domain"
-    )
-    check_task_url = (
-        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/dscore_pe_domain/task/"
-    )
+    create_task_url = pe_api_path + "dscore_pe_domain"
+    check_task_url = pe_api_path + "dscore_pe_domain/task/"
     headers = {
         "Content-Type": "application/json",
         "access_token": pe_api_key,
@@ -1180,12 +1169,8 @@ def api_dscore_was_webapp(org_list):
         All WAS webapp data of the specified orgs needed for the D-Score
     """
     # Endpoint info
-    create_task_url = (
-        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/dscore_was_webapp"
-    )
-    check_task_url = (
-        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/dscore_was_webapp/task/"
-    )
+    create_task_url = pe_api_path + "dscore_was_webapp"
+    check_task_url = pe_api_path + "dscore_was_webapp/task/"
     headers = {
         "Content-Type": "application/json",
         "access_token": pe_api_key,
@@ -1242,10 +1227,8 @@ def api_fceb_status(org_list):
         The FCEB status of the specified list of organizations
     """
     # Endpoint info
-    create_task_url = "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/fceb_status"
-    check_task_url = (
-        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/fceb_status/task/"
-    )
+    create_task_url = pe_api_path + "fceb_status"
+    check_task_url = pe_api_path + "fceb_status/task/"
     headers = {
         "Content-Type": "application/json",
         "access_token": pe_api_key,
@@ -1297,12 +1280,8 @@ def api_iscore_vs_vuln(org_list):
         All VS vuln data of the specified orgs needed for the I-Score
     """
     # Endpoint info
-    create_task_url = (
-        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/iscore_vs_vuln"
-    )
-    check_task_url = (
-        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/iscore_vs_vuln/task/"
-    )
+    create_task_url = pe_api_path + "iscore_vs_vuln"
+    check_task_url = pe_api_path + "iscore_vs_vuln/task/"
     headers = {
         "Content-Type": "application/json",
         "access_token": pe_api_key,
@@ -1379,12 +1358,8 @@ def api_iscore_vs_vuln_prev(org_list, start_date, end_date):
     if isinstance(end_date, datetime.date):
         end_date = end_date.strftime("%Y-%m-%d")
     # Endpoint info
-    create_task_url = (
-        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/iscore_vs_vuln_prev"
-    )
-    check_task_url = (
-        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/iscore_vs_vuln_prev/task/"
-    )
+    create_task_url = pe_api_path + "iscore_vs_vuln_prev"
+    check_task_url = pe_api_path + "iscore_vs_vuln_prev/task/"
     headers = {
         "Content-Type": "application/json",
         "access_token": pe_api_key,
@@ -1470,12 +1445,8 @@ def api_iscore_pe_vuln(org_list, start_date, end_date):
     if isinstance(end_date, datetime.date):
         end_date = end_date.strftime("%Y-%m-%d")
     # Endpoint info
-    create_task_url = (
-        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/iscore_pe_vuln"
-    )
-    check_task_url = (
-        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/iscore_pe_vuln/task/"
-    )
+    create_task_url = pe_api_path + "iscore_pe_vuln"
+    check_task_url = pe_api_path + "iscore_pe_vuln/task/"
     headers = {
         "Content-Type": "application/json",
         "access_token": pe_api_key,
@@ -1557,12 +1528,8 @@ def api_iscore_pe_cred(org_list, start_date, end_date):
     if isinstance(end_date, datetime.date):
         end_date = end_date.strftime("%Y-%m-%d")
     # Endpoint info
-    create_task_url = (
-        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/iscore_pe_cred"
-    )
-    check_task_url = (
-        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/iscore_pe_cred/task/"
-    )
+    create_task_url = pe_api_path + "iscore_pe_cred"
+    check_task_url = pe_api_path + "iscore_pe_cred/task/"
     headers = {
         "Content-Type": "application/json",
         "access_token": pe_api_key,
@@ -1644,12 +1611,8 @@ def api_iscore_pe_breach(org_list, start_date, end_date):
     if isinstance(end_date, datetime.date):
         end_date = end_date.strftime("%Y-%m-%d")
     # Endpoint info
-    create_task_url = (
-        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/iscore_pe_breach"
-    )
-    check_task_url = (
-        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/iscore_pe_breach/task/"
-    )
+    create_task_url = pe_api_path + "iscore_pe_breach"
+    check_task_url = pe_api_path + "iscore_pe_breach/task/"
     headers = {
         "Content-Type": "application/json",
         "access_token": pe_api_key,
@@ -1734,12 +1697,8 @@ def api_iscore_pe_darkweb(org_list, start_date, end_date):
     if isinstance(end_date, datetime.date):
         end_date = end_date.strftime("%Y-%m-%d")
     # Endpoint info
-    create_task_url = (
-        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/iscore_pe_darkweb"
-    )
-    check_task_url = (
-        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/iscore_pe_darkweb/task/"
-    )
+    create_task_url = pe_api_path + "iscore_pe_darkweb"
+    check_task_url = pe_api_path + "iscore_pe_darkweb/task/"
     headers = {
         "Content-Type": "application/json",
         "access_token": pe_api_key,
@@ -1825,12 +1784,8 @@ def api_iscore_pe_protocol(org_list, start_date, end_date):
     if isinstance(end_date, datetime.date):
         end_date = end_date.strftime("%Y-%m-%d")
     # Endpoint info
-    create_task_url = (
-        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/iscore_pe_protocol"
-    )
-    check_task_url = (
-        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/iscore_pe_protocol/task/"
-    )
+    create_task_url = pe_api_path + "iscore_pe_protocol"
+    check_task_url = pe_api_path + "iscore_pe_protocol/task/"
     headers = {
         "Content-Type": "application/json",
         "access_token": pe_api_key,
@@ -1918,12 +1873,8 @@ def api_iscore_was_vuln(org_list, start_date, end_date):
     if isinstance(end_date, datetime.date):
         end_date = end_date.strftime("%Y-%m-%d")
     # Endpoint info
-    create_task_url = (
-        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/iscore_was_vuln"
-    )
-    check_task_url = (
-        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/iscore_was_vuln/task/"
-    )
+    create_task_url = pe_api_path + "iscore_was_vuln"
+    check_task_url = pe_api_path + "iscore_was_vuln/task/"
     headers = {
         "Content-Type": "application/json",
         "access_token": pe_api_key,
@@ -2008,10 +1959,8 @@ def api_iscore_was_vuln_prev(org_list, start_date, end_date):
     if isinstance(end_date, datetime.date):
         end_date = end_date.strftime("%Y-%m-%d")
     # Endpoint info
-    create_task_url = (
-        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/iscore_was_vuln_prev"
-    )
-    check_task_url = "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/iscore_was_vuln_prev/task/"
+    create_task_url = pe_api_path + "iscore_was_vuln_prev"
+    check_task_url = pe_api_path + "iscore_was_vuln_prev/task/"
     headers = {
         "Content-Type": "application/json",
         "access_token": pe_api_key,
@@ -2087,10 +2036,8 @@ def api_kev_list():
         List of all KEVs
     """
     # Endpoint info
-    create_task_url = "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/kev_list"
-    check_task_url = (
-        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/kev_list/task/"
-    )
+    create_task_url = pe_api_path + "kev_list"
+    check_task_url = pe_api_path + "kev_list/task/"
     headers = {
         "Content-Type": "application/json",
         "access_token": pe_api_key,
@@ -2137,12 +2084,8 @@ def api_xs_stakeholders():
         List of all XS stakeholders
     """
     # Endpoint info
-    create_task_url = (
-        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/xs_stakeholders"
-    )
-    check_task_url = (
-        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/xs_stakeholders/task/"
-    )
+    create_task_url = pe_api_path + "xs_stakeholders"
+    check_task_url = pe_api_path + "xs_stakeholders/task/"
     headers = {
         "Content-Type": "application/json",
         "access_token": pe_api_key,
@@ -2192,12 +2135,8 @@ def api_s_stakeholders():
         List of all S stakeholders
     """
     # Endpoint info
-    create_task_url = (
-        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/s_stakeholders"
-    )
-    check_task_url = (
-        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/s_stakeholders/task/"
-    )
+    create_task_url = pe_api_path + "s_stakeholders"
+    check_task_url = pe_api_path + "s_stakeholders/task/"
     headers = {
         "Content-Type": "application/json",
         "access_token": pe_api_key,
@@ -2245,12 +2184,8 @@ def api_m_stakeholders():
         List of all M stakeholders
     """
     # Endpoint info
-    create_task_url = (
-        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/m_stakeholders"
-    )
-    check_task_url = (
-        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/m_stakeholders/task/"
-    )
+    create_task_url = pe_api_path + "m_stakeholders"
+    check_task_url = pe_api_path + "m_stakeholders/task/"
     headers = {
         "Content-Type": "application/json",
         "access_token": pe_api_key,
@@ -2298,12 +2233,8 @@ def api_l_stakeholders():
         List of all L stakeholders
     """
     # Endpoint info
-    create_task_url = (
-        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/l_stakeholders"
-    )
-    check_task_url = (
-        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/l_stakeholders/task/"
-    )
+    create_task_url = pe_api_path + "l_stakeholders"
+    check_task_url = pe_api_path + "l_stakeholders/task/"
     headers = {
         "Content-Type": "application/json",
         "access_token": pe_api_key,
@@ -2351,12 +2282,8 @@ def api_xl_stakeholders():
         List of all XL stakeholders
     """
     # Endpoint info
-    create_task_url = (
-        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/xl_stakeholders"
-    )
-    check_task_url = (
-        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/xl_stakeholders/task/"
-    )
+    create_task_url = pe_api_path + "xl_stakeholders"
+    check_task_url = pe_api_path + "xl_stakeholders/task/"
     headers = {
         "Content-Type": "application/json",
         "access_token": pe_api_key,
@@ -2398,8 +2325,8 @@ def api_xl_stakeholders():
         raise Exception("xl_stakeholders query task failed, details: ", check_task_resp)
 
 
-# --- Issue 559 (formerly execute_ips() function) ---
-def api_ips_insert(new_ips):
+# --- Issue 559 (ips_insert) ---
+def execute_ips(new_ips):
     """
     Query API to insert new IP record into ips table.
     On ip conflict, update the old record with the new data
@@ -2411,10 +2338,8 @@ def api_ips_insert(new_ips):
         Status on if the records were inserted successfully
     """
     # Endpoint info
-    create_task_url = "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/ips_insert"
-    check_task_url = (
-        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/ips_insert/task/"
-    )
+    create_task_url = pe_api_path + "ips_insert"
+    check_task_url = pe_api_path + "ips_insert/task/"
     headers = {
         "Content-Type": "application/json",
         "access_token": pe_api_key,
@@ -2457,66 +2382,85 @@ def api_ips_insert(new_ips):
         raise Exception("ips_insert query task failed, details: ", check_task_resp)
 
 
-# --- Issue 560 (formerly query_all_subs() function) ---
-def api_sub_domains_table():
+# --- Issue 560 (sub_domains_table) ---
+def query_all_subs():
     """
     Query API for the entire sub_domains table.
 
     Return:
         The sub_domains table as a dataframe
     """
-    # Endpoint info
-    create_task_url = (
-        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/sub_domains_table"
-    )
-    check_task_url = (
-        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/sub_domains_table/task/"
-    )
-    headers = {
-        "Content-Type": "application/json",
-        "access_token": pe_api_key,
-    }
-    try:
-        # Create task for query
-        create_task_result = requests.post(create_task_url, headers=headers).json()
-        task_id = create_task_result.get("task_id")
-        LOGGER.info(
-            "Created task for sub_domains_table endpoint query, task_id: ", task_id
-        )
-        # Once task has been started, keep pinging task status until finished
-        check_task_url += task_id
-        task_status = "Pending"
-        while task_status != "Completed" and task_status != "Failed":
-            # Ping task status endpoint and get status
-            check_task_resp = requests.get(check_task_url, headers=headers).json()
-            task_status = check_task_resp.get("status")
+    start_time = time.time()
+    total_num_pages = 1
+    page_num = 1
+    total_data = []
+    # Retrieve data for each page
+    while page_num <= total_num_pages:
+        # Endpoint info
+        create_task_url = pe_api_path + "sub_domains_table"
+        check_task_url = pe_api_path + "sub_domains_table/task/"
+        headers = {
+            "Content-Type": "application/json",
+            "access_token": pe_api_key,
+        }
+        data = json.dumps({"page": page_num, "per_page": 250000})
+        try:
+            # Create task for query
+            create_task_result = requests.post(
+                create_task_url, headers=headers, data=data
+            ).json()
+            task_id = create_task_result.get("task_id")
             LOGGER.info(
-                "\tPinged sub_domains_table status endpoint, status:", task_status
+                "Created task for sub_domains_table endpoint query, task_id: ", task_id
             )
-            time.sleep(3)
-    except requests.exceptions.HTTPError as errh:
-        LOGGER.error(errh)
-    except requests.exceptions.ConnectionError as errc:
-        LOGGER.error(errc)
-    except requests.exceptions.Timeout as errt:
-        LOGGER.error(errt)
-    except requests.exceptions.RequestException as err:
-        LOGGER.error(err)
-    except json.decoder.JSONDecodeError as err:
-        LOGGER.error(err)
+            # Once task has been started, keep pinging task status until finished
+            check_task_url += task_id
+            task_status = "Pending"
+            ping_ctr = 1
+            while task_status != "Completed" and task_status != "Failed":
+                # Ping task status endpoint and get status
+                check_task_resp = requests.get(check_task_url, headers=headers).json()
+                task_status = check_task_resp.get("status")
+                LOGGER.info(
+                    "\t",
+                    ping_ctr,
+                    "Pinged sub_domains_table status endpoint, status:",
+                    task_status,
+                )
+                ping_ctr += 1
+                time.sleep(3)
+        except requests.exceptions.HTTPError as errh:
+            LOGGER.error(errh)
+        except requests.exceptions.ConnectionError as errc:
+            LOGGER.error(errc)
+        except requests.exceptions.Timeout as errt:
+            LOGGER.error(errt)
+        except requests.exceptions.RequestException as err:
+            LOGGER.error(err)
+        except json.decoder.JSONDecodeError as err:
+            LOGGER.error(err)
+        # Once task finishes, return result
+        if task_status == "Completed":
+            # Append retrieved data to total list
+            result = check_task_resp.get("result")
+            total_data += result.get("data")
+            total_num_pages = result.get("total_pages")
+            LOGGER.info("Retrieved page:", page_num, "of", total_num_pages)
+            page_num += 1
+        else:
+            raise Exception(
+                "sub_domains_table query task failed, details: ", check_task_resp
+            )
+    # Once all data has been retrieved, return overall dataframe
+    total_data = pd.DataFrame.from_dict(total_data)
+    LOGGER.info(
+        "Total time to retrieve entire sub_domains table:", (time.time() - start_time)
+    )
+    return total_data
 
-    # Once task finishes, return result
-    if task_status == "Completed":
-        result_df = pd.DataFrame.from_dict(check_task_resp.get("result"))
-        return result_df
-    else:
-        raise Exception(
-            "sub_domains_table query task failed, details: ", check_task_resp
-        )
 
-
-# --- Issue 632 (formerly execute_scorecard() function) ---
-def api_rss_insert(summary_dict):
+# --- Issue 632 (rss_insert) ---
+def execute_scorecard(summary_dict):
     """
     Insert a record for an organization into the report_summary_stats table.
     On org_uid/star_date conflict, update the old record with the new data
@@ -2528,10 +2472,8 @@ def api_rss_insert(summary_dict):
         Status on if the record was inserted successfully
     """
     # Endpoint info
-    create_task_url = "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/rss_insert"
-    check_task_url = (
-        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/rss_insert/task/"
-    )
+    create_task_url = pe_api_path + "rss_insert"
+    check_task_url = pe_api_path + "rss_insert/task/"
     headers = {
         "Content-Type": "application/json",
         "access_token": pe_api_key,
@@ -2571,8 +2513,8 @@ def api_rss_insert(summary_dict):
         raise Exception("rss_insert query task failed, details: ", check_task_resp)
 
 
-# --- Issue 634 (formerly query_previous_period() function) ---
-def api_rss_prev_period(org_uid, prev_end_date):
+# --- Issue 634 (rss_prev_period) ---
+def query_previous_period(org_uid, prev_end_date):
     """
     Query API for previous period report_summary_stats data for a specific org.
 
@@ -2584,12 +2526,8 @@ def api_rss_prev_period(org_uid, prev_end_date):
         Report_summary_stats data from the previous report period for a specific org as a dataframe
     """
     # Endpoint info
-    create_task_url = (
-        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/rss_prev_period"
-    )
-    check_task_url = (
-        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/rss_prev_period/task/"
-    )
+    create_task_url = pe_api_path + "rss_prev_period"
+    check_task_url = pe_api_path + "rss_prev_period/task/"
     headers = {
         "Content-Type": "application/json",
         "access_token": pe_api_key,
@@ -2628,38 +2566,38 @@ def api_rss_prev_period(org_uid, prev_end_date):
 
     # Once task finishes, return result
     if task_status == "Completed":
-        result_df = pd.DataFrame.from_dict(check_task_resp.get("result"))
-
-        # if source:
-        #    assets_dict = {
-        #        "last_ip_count": source[0],
-        #        "last_root_domain_count": source[1],
-        #        "last_sub_domain_count": source[2],
-        #        "last_cred_password_count": source[3],
-        #        "last_sus_vuln_addrs_count": source[4],
-        #        "last_suspected_vuln_count": source[5],
-        #        "last_insecure_port_count": source[6],
-        #        "last_actor_activity_count": source[7],
-        #    }
-        # else:
-        #    assets_dict = {
-        #        "last_ip_count": 0,
-        #        "last_root_domain_count": 0,
-        #        "last_sub_domain_count": 0,
-        #        "last_cred_password_count": 0,
-        #        "last_sus_vuln_addrs_count": 0,
-        #        "last_suspected_vuln_count": 0,
-        #        "last_insecure_port_count": 0,
-        #        "last_actor_activity_count": 0,
-        #    }
-
-        return result_df
+        source = check_task_resp.get("result")[0]
+        if source:
+            # Return results if valid
+            assets_dict = {
+                "last_ip_count": source["ip_count"],
+                "last_root_domain_count": source["root_count"],
+                "last_sub_domain_count": source["sub_count"],
+                "last_cred_password_count": source["cred_password_count"],
+                "last_sus_vuln_addrs_count": source["suspected_vuln_addrs_count"],
+                "last_suspected_vuln_count": source["suspected_vuln_count"],
+                "last_insecure_port_count": source["insecure_port_count"],
+                "last_actor_activity_count": source["threat_actor_count"],
+            }
+        else:
+            # If no results, return all 0 dict
+            assets_dict = {
+                "last_ip_count": 0,
+                "last_root_domain_count": 0,
+                "last_sub_domain_count": 0,
+                "last_cred_password_count": 0,
+                "last_sus_vuln_addrs_count": 0,
+                "last_suspected_vuln_count": 0,
+                "last_insecure_port_count": 0,
+                "last_actor_activity_count": 0,
+            }
+        return assets_dict
     else:
         raise Exception("rss_prev_period query task failed, details: ", check_task_resp)
 
 
-# --- Issue 637 (formerly upsert_new_cves() function) ---
-def api_cve_info_insert(new_cves):
+# --- Issue 637 (cve_info_insert) ---
+def upsert_new_cves(new_cves):
     """
     Query API to upsert new CVE records into cve_info.
     On cve_name conflict, update the old record with the new data
@@ -2671,12 +2609,8 @@ def api_cve_info_insert(new_cves):
         Status on if the records were inserted successfully
     """
     # Endpoint info
-    create_task_url = (
-        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/cve_info_insert"
-    )
-    check_task_url = (
-        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/cve_info_insert/task/"
-    )
+    create_task_url = pe_api_path + "cve_info_insert"
+    check_task_url = pe_api_path + "cve_info_insert/task/"
     headers = {
         "Content-Type": "application/json",
         "access_token": pe_api_key,
@@ -2722,7 +2656,7 @@ def api_cve_info_insert(new_cves):
         raise Exception("cve_info_insert query task failed, details: ", check_task_resp)
 
 
-# --- Issue 641 (formerly get_intelx_breaches() function) ---
+# --- Issue 641 (cred_breach_intelx) ---
 def get_intelx_breaches(source_uid):
     """
     Query API for all IntelX credential breaches.
@@ -2734,12 +2668,8 @@ def get_intelx_breaches(source_uid):
         Credential breach data that have the specified data_source_uid as a dataframe
     """
     # Endpoint info
-    create_task_url = (
-        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/cred_breach_intelx"
-    )
-    check_task_url = (
-        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/cred_breach_intelx/task/"
-    )
+    create_task_url = pe_api_path + "cred_breach_intelx"
+    check_task_url = pe_api_path + "cred_breach_intelx/task/"
     headers = {
         "Content-Type": "application/json",
         "access_token": pe_api_key,

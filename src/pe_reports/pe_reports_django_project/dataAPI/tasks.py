@@ -8,6 +8,7 @@ import uuid
 from celery import shared_task
 from django.core import serializers
 from home.models import MatVwOrgsAllIps
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 
 # from pe_reports.helpers import ip_passthrough # TESTING
 import datetime
@@ -146,19 +147,37 @@ def ips_insert_task(self, new_ips: List[dict]):
 
 # --- Issue 560 ---
 @shared_task(bind=True)
-def sub_domains_table_task(self):
+def sub_domains_table_task(self, page: int, per_page: int):
     """Task function for the sub_domains_table API endpoint."""
-    # Make database query and convert to list of dictionaries
-    sub_domains_data = list(SubDomains.objects.all().values())
+    # Make database query and grab all data
+    total_data = list(SubDomains.objects.all().values())
+    # Divide up data w/ specified num records per page
+    paged_data = Paginator(total_data, per_page)
+    # Attempt to retrieve specified page
+    try:
+        single_page_data = paged_data.page(page)
+    except PageNotAnInteger:
+        # If page is not an integer, deliver first page.
+        single_page_data = paged_data.page(1)
+    except EmptyPage:
+        # If page is out of range (e.g. 9999), deliver last page of results.
+        single_page_data = paged_data.page(paged_data.num_pages)
+    # Serialize specified page
+    single_page_data = list(single_page_data)
     # Convert uuids to strings
-    for row in sub_domains_data:
+    for row in single_page_data:
         row["sub_domain_uid"] = convert_uuid_to_string(row["sub_domain_uid"])
         row["root_domain_uid_id"] = convert_uuid_to_string(row["root_domain_uid_id"])
         row["data_source_uid_id"] = convert_uuid_to_string(row["data_source_uid_id"])
         row["dns_record_uid_id"] = convert_uuid_to_string(row["dns_record_uid_id"])
         row["first_seen"] = convert_date_to_string(row["first_seen"])
         row["last_seen"] = convert_date_to_string(row["last_seen"])
-    return sub_domains_data
+    result = {
+        "total_pages": paged_data.num_pages,
+        "current_page": page,
+        "data": single_page_data,
+    }
+    return result
 
 
 # --- Issue 632 ---

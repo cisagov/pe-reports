@@ -969,13 +969,15 @@ async def ips_insert_status(task_id: str, tokens: dict = Depends(get_api_key)):
     response_model=schemas.SubDomainTableTaskResp,
     tags=["Get all data from the sub_domains table"],
 )
-def sub_domains_table(tokens: dict = Depends(get_api_key)):
+def sub_domains_table(
+    data: schemas.SubDomainTableInput, tokens: dict = Depends(get_api_key)
+):
     """API endpoint to get all data from the sub_domains table."""
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
         # If API key valid, create task for query
-        task = sub_domains_table_task.delay()
+        task = sub_domains_table_task.delay(data.page, data.per_page)
         # Return the new task id w/ "Processing" status
         return {"task_id": task.id, "status": "Processing"}
     else:

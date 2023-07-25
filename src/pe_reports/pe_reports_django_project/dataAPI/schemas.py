@@ -90,10 +90,28 @@ class SubDomainBase(BaseModel):
 
 
 # --- Issue 560 ---
+class SubDomainResult(BaseModel):
+    total_pages: int
+    current_page: int
+    data: List[SubDomainBase]
+
+
+# --- Issue 560 ---
+# Get entire sub_domains table, input
+class SubDomainTableInput(BaseModel):
+    page: int
+    per_page: int
+
+    class Config:
+        orm_mode = True
+
+
+# --- Issue 560 ---
+# Get entire sub_domains table, task resp
 class SubDomainTableTaskResp(BaseModel):
     task_id: str
     status: str
-    result: List[SubDomainBase] = None
+    result: SubDomainResult = None
     error: str = None
 
 
