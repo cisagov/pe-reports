@@ -468,6 +468,7 @@ def get_intelx_breaches(source_uid, redo_interval=3):
 
     Args:
         source_uid: The data source uid to filter credential breaches by
+        redo_interval: The amount of time to pause before redoing api call
 
     Return:
         Credential breach data that have the specified data_source_uid as a dataframe
