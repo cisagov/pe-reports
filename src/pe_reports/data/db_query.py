@@ -305,6 +305,34 @@ def set_org_to_demo(cyhy_db_id, premium):
     conn.close()
     return df
 
+def check_org_exists(org_code):
+    """Check if org code is listed in the P&E database."""
+
+    exists = False
+    conn = connect()
+    sql = """
+    select * from organizations o 
+    where o.cyhy_db_name = %(org_code)s
+    """
+
+    df = pd.read_sql_query(sql, conn, params={"org_code": org_code})
+
+    if not df.empty:
+        exists = True
+
+    return exists
+    
+
+def query_org_cidrs(org_uid):
+    """Query all cidrs ordered by length."""
+    conn = connect()
+    sql = """SELECT tc.cidr_uid, tc.network, tc.organizations_uid, tc.insert_alert
+            FROM cidrs tc
+            WHERE current
+            and organizations_uid = %(org_id)s
+            """
+    df = pd.read_sql(sql, conn, params={"org_id": org_uid})
+    return df
 
 def query_cyhy_assets(cyhy_db_id, conn):
     """Query cyhy assets."""

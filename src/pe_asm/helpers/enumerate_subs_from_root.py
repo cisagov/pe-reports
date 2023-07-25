@@ -72,7 +72,7 @@ def enumerate_roots(root_domain, root_uid):
     return found_subs
 
 
-def get_subdomains(staging=False):
+def get_subdomains(staging=False, roots_df=None):
     """Enumerate roots and save subdomains."""
     # Connect to database
     if staging:
@@ -81,7 +81,8 @@ def get_subdomains(staging=False):
         conn = pe_db_connect()
 
     # Query root domains
-    roots_df = query_roots(conn)
+    if roots_df == None:
+        roots_df = query_roots(conn)
     total_roots = len(roots_df.index)
     LOGGER.info("Got %d root domains.", total_roots)
 

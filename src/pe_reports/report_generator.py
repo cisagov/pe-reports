@@ -168,7 +168,7 @@ def generate_reports(datestring, output_directory, soc_med_included=False):
 
     # Resfresh ASM counts view
     LOGGER.info("Refreshing ASM count view and IPs from cidrs")
-    # refresh_asset_counts_vw()
+    refresh_asset_counts_vw()
     # set_from_cidr()
     LOGGER.info("Finished refreshing ASM count view and IPs from Cidrs")
 

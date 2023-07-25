@@ -40,7 +40,7 @@ def enumerate_ips(cidr, cidr_uid, org_uid):
     return ips_from_cidrs
 
 
-def fill_ips_from_cidrs(staging):
+def fill_ips_from_cidrs(staging, cidrs=None):
     """For each CIDR, enumerate all IPs and add them to the ips table."""
     # Connect to database
     if staging:
@@ -48,7 +48,9 @@ def fill_ips_from_cidrs(staging):
     else:
         conn = pe_db_connect()
 
-    cidrs = query_cidrs(conn)
+
+    if cidrs == None:
+        cidrs = query_cidrs(conn)
 
     # Loop through each CIDR in order of greatest length and enumerate
     LOGGER.info("Enumerating IPs:")

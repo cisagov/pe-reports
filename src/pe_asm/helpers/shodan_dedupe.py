@@ -337,7 +337,7 @@ def search(api, query, ip_obj, cidr_uid, org_type):
     return results["total"]
 
 
-def dedupe(staging):
+def dedupe(staging, orgs_df=None):
     """Check list of IPs, CIDRs, ASNS, and FQDNs in Shodan and output set of IPs."""
     # Connect to database
     if staging:
@@ -346,7 +346,8 @@ def dedupe(staging):
         conn = pe_db_connect()
 
     # Get P&E organizations DataFrame
-    orgs_df = query_pe_report_on_orgs(conn)
+    if orgs_df == None:
+        orgs_df = query_pe_report_on_orgs(conn)
     num_orgs = len(orgs_df.index)
 
     # Close database connection

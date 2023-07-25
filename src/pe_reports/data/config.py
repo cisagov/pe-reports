@@ -19,6 +19,8 @@ def config(filename=REPORT_DB_CONFIG, section="postgres"):
 
     if parser.has_section(section):
         for key, value in parser.items(section):
+            if key == "pe_api_key" or key == "pe_api_url":
+                continue
             db[key] = value
 
     else:

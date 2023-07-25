@@ -627,6 +627,7 @@ def query_orgs_rev():
 
 def insert_intelx_breaches(df):
     """Insert intelx breach data."""
+    df = df.drop_duplicates(subset=["breach_name"])
     conn = connect()
     table = "credential_breaches"
     # Create a list of tuples from the dataframe values
@@ -674,6 +675,7 @@ def get_intelx_breaches(source_uid):
 
 def insert_intelx_credentials(df):
     """Insert sixgill credential data."""
+    df = df.drop_duplicates(subset=["breach_name", "email"])
     conn = connect()
     table = "credential_exposures"
     # Create a list of tuples from the dataframe values

@@ -132,7 +132,7 @@ def run_ip_chunk(org_uid, ips_df, thread, conn):
     # LOGGER.info(f"{thread} Ips took {time.time() - start_time} to link to subs")
 
 
-def connect_subs_from_ips(staging):
+def connect_subs_from_ips(staging, org_df=None):
     """For each org find all domains that are associated to an ip and create link in the ip_subs table."""
     # Connect to database
     if staging:
@@ -141,7 +141,8 @@ def connect_subs_from_ips(staging):
         conn = pe_db_connect()
 
     # Get P&E organizations DataFrame
-    orgs_df = query_pe_report_on_orgs(conn)
+    if org_df == None:
+        orgs_df = query_pe_report_on_orgs(conn)
     num_orgs = len(orgs_df.index)
 
     # Close database connection
