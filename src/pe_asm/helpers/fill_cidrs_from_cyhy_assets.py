@@ -3,6 +3,7 @@
 # Standard Python Libraries
 import logging
 import datetime
+import pandas as pd
 
 # cisagov Libraries
 from pe_reports.data.db_query import query_cyhy_assets
@@ -26,7 +27,7 @@ def fill_cidrs(orgs, staging):
         conn = pe_db_connect()
 
     # Fetch all reporting on if not specified
-    if orgs == "all_orgs":
+    if not isinstance(orgs, pd.DataFrame):
         orgs = query_pe_report_on_orgs(conn)
 
     network_count = 0

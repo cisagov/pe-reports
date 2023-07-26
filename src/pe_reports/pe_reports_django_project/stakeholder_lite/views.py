@@ -31,7 +31,6 @@ def getAgenciesByCount(orgCount):
 
 class StakeholderLiteView(TemplateView):
     template_name = "stakeholder_lite/stakeholder_lite.html"
-    LOGGER.info("Got to Stakeholder")
 
 
 class StakeholderLiteForm(FormView):

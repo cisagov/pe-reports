@@ -558,8 +558,6 @@ def read_get_key(data: schemas.UserAPI):
     """API endpoint to get api by submitting refresh token."""
     user_key = ""
     userkey = list(apiUser.objects.filter(refresh_token=data.refresh_token))
-    LOGGER.info(f"The input data requested was ***********{data.refresh_token[-10:]}")
-
     for u in userkey:
         user_key = u.apiKey
     return user_key

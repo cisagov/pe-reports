@@ -49,7 +49,7 @@ def fill_ips_from_cidrs(staging, cidrs=None):
         conn = pe_db_connect()
 
 
-    if cidrs == None:
+    if not isinstance(cidrs, pd.DataFrame):
         cidrs = query_cidrs(conn)
 
     # Loop through each CIDR in order of greatest length and enumerate
@@ -64,6 +64,7 @@ def fill_ips_from_cidrs(staging, cidrs=None):
             continue
 
         # Enumerate IPs
+        LOGGER.info(cidr["network"])
         ips_from_cidrs = ips_from_cidrs + enumerate_ips(
             cidr["network"], cidr["cidr_uid"], cidr["organizations_uid"]
         )
@@ -75,13 +76,9 @@ def fill_ips_from_cidrs(staging, cidrs=None):
 
     # Insert into the ips table
     LOGGER.info("Starting IP insert.")
+    LOGGER.info(ips_from_cidrs)
     execute_ips(conn, ips_from_cidrs)
     LOGGER.info("Success.")
-
-    # Identify which IPs are current
-    LOGGER.info("Identify changes.")
-    identify_ip_changes(conn)
-    print("Success adding IPS to Cidrs")
 
     # Close database connection
     conn.close()

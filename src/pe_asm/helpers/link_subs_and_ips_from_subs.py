@@ -58,7 +58,7 @@ def connect_ips_from_subs(staging, orgs_df=None):
         conn = pe_db_connect()
 
     # Get P&E organizations DataFrame
-    if orgs_df == None:
+    if not isinstance(orgs_df, pd.DataFrame):
         orgs_df = query_pe_report_on_orgs(conn)
     num_orgs = len(orgs_df.index)
 

@@ -39,7 +39,6 @@ from docxtpl import DocxTemplate
 import io
 import pandas as pd
 from bs4 import BeautifulSoup
-from pe_source.data.sixgill.api import setNewCSGOrg
 
 # TODO: Figure out circular referance on import
 # from pe_source.data.sixgill.api import setOrganizationUsers, \
@@ -55,13 +54,16 @@ from pe_reports.data.db_query import (
     insert_roots,
     set_org_to_demo,
     set_org_to_report_on,
+    query_roots,
+    query_org_cidrs
 )
-from pe_reports.helpers.enumerate_subs_from_root import get_subdomains
-from pe_reports.helpers.fill_cidrs_from_cyhy_assets import fill_cidrs
-from pe_reports.helpers.fill_ips_from_cidrs import fill_ips_from_cidrs
-from .helpers.link_subs_and_ips_from_ips import connect_subs_from_ips
-from .helpers.link_subs_and_ips_from_subs import connect_ips_from_subs
+from pe_asm.helpers.enumerate_subs_from_root import get_subdomains
+from pe_asm.helpers.fill_cidrs_from_cyhy_assets import fill_cidrs
+from pe_asm.helpers.fill_ips_from_cidrs import fill_ips_from_cidrs
+from pe_asm.helpers.link_subs_and_ips_from_ips import connect_subs_from_ips
+from pe_asm.helpers.link_subs_and_ips_from_subs import connect_ips_from_subs
 from pe_asm.helpers.shodan_dedupe import dedupe
+# from pe_source.data.sixgill.api import setNewCSGOrg
 LOGGER = logging.getLogger(__name__)
 
 
@@ -381,7 +383,6 @@ def send_email_with_attachment(subject,
 
 class StatusView(TemplateView):
     template_name = "weeklyStatus.html"
-    LOGGER.info("Got to Status")
 
 
 class StatusForm(LoginRequiredMixin, FormView):
@@ -488,7 +489,6 @@ class StatusForm(LoginRequiredMixin, FormView):
 
 class updateStatusView(TemplateView):
     template_name = "weeklyStatusFormOnly.html"
-    LOGGER.info("Got to Status")
 
 
 class updateStatusForm(LoginRequiredMixin, FormView):
@@ -705,7 +705,9 @@ def add_stakeholders(request, orgs_df):
 
             # Fill IPs from CIDRS
             LOGGER.info("Filling IPs from CIDRs:")
+            LOGGER.info(new_org_df["organizations_uid"].iloc[0])
             cidrs_df = query_org_cidrs(new_org_df["organizations_uid"].iloc[0])
+            LOGGER.info(cidrs_df)
             fill_ips_from_cidrs(False, cidrs_df)
             LOGGER.info("Finished filling IPs from CIDRs.")
 

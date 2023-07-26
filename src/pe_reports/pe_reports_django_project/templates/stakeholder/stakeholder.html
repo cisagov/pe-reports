@@ -28,8 +28,7 @@ Stakeholder
                 <div class="card-body">
                     <form method="POST" enctype="multipart/form-data">
                         <label for="fileInput" class="form-label">CSV must contain these columns: org_name, org_code,
-                            root_domain,
-                            exec_url, aliases, cybersix
+                            root_domain, exec_url, aliases, premium, demo
                         </label>
                         {% csrf_token %}
                         {{ form.as_p }}
