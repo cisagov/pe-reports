@@ -1114,6 +1114,10 @@ class SubDomains(models.Model):
         null=True,
     )
     status = models.BooleanField(blank=True, null=True)
+    first_seen = models.DateField(blank=True, null=True)
+    last_seen = models.DateField(blank=True, null=True)
+    current = models.BooleanField(blank=True, null=True)
+    identified = models.BooleanField(blank=True, null=True)
 
     class Meta:
         managed = False

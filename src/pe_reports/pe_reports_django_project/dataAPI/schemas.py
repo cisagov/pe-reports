@@ -827,3 +827,197 @@ class VwIscoreOrgsIpCountsTaskResp(BaseModel):
     status: str
     result: List[VwIscoreOrgsIpCounts] = None
     error: str = None
+
+
+# --- execute_ips(), Issue 559 ---
+# Insert record into Ips
+class IpsInsert(BaseModel):
+    ip_hash: str
+    ip: str
+    origin_cidr: str
+
+    class Config:
+        orm_mode = True
+
+
+# --- execute_ips(), Issue 559 ---
+# Insert record into Ips, input
+class IpsInsertInput(BaseModel):
+    new_ips: List[IpsInsert]
+
+    class Config:
+        orm_mode = True
+
+
+# --- execute_ips(), Issue 559 ---
+# Insert record into Ips, task resp
+class IpsInsertTaskResp(BaseModel):
+    task_id: str
+    status: str
+    result: str = None
+    error: str = None
+
+
+# --- query_all_subs(), Issue 560 ---
+# Get entire sub_domains table, single output
+class SubDomainBase(BaseModel):
+    sub_domain_uid: str
+    sub_domain: Optional[str] = None
+    root_domain_uid_id: Optional[str] = None
+    data_source_uid_id: Optional[str] = None
+    dns_record_uid_id: Optional[str] = None
+    status: bool = False
+    first_seen: Optional[str] = None
+    last_seen: Optional[str] = None
+    current: Optional[bool] = None
+    identified: Optional[bool] = None
+
+    class Config:
+        orm_mode = True
+        validate_assignment = True
+
+
+# --- query_all_subs(), Issue 560 ---
+# Get entire sub_domains table, overall output
+class SubDomainResult(BaseModel):
+    total_pages: int
+    current_page: int
+    data: List[SubDomainBase]
+
+
+# --- query_all_subs(), Issue 560 ---
+# Get entire sub_domains table, input
+class SubDomainTableInput(BaseModel):
+    page: int
+    per_page: int
+
+    class Config:
+        orm_mode = True
+
+
+# --- query_all_subs(), Issue 560 ---
+# Get entire sub_domains table, task resp
+class SubDomainTableTaskResp(BaseModel):
+    task_id: str
+    status: str
+    result: SubDomainResult = None
+    error: str = None
+
+
+# --- execute_scorecard(), Issue 632 ---
+# Insert record into report_summary_stats, input
+class RSSInsertInput(BaseModel):
+    organizations_uid: str
+    start_date: str
+    end_date: str
+    ip_count: int
+    root_count: int
+    sub_count: int
+    ports_count: int
+    creds_count: int
+    breach_count: int
+    cred_password_count: int
+    domain_alert_count: int
+    suspected_domain_count: int
+    insecure_port_count: int
+    verified_vuln_count: int
+    suspected_vuln_count: int
+    suspected_vuln_addrs_count: int
+    threat_actor_count: int
+    dark_web_alerts_count: int
+    dark_web_mentions_count: int
+    dark_web_executive_alerts_count: int
+    dark_web_asset_alerts_count: int
+    pe_number_score: int
+    pe_letter_grade: str
+
+    class Config:
+        orm_mode = True
+
+
+# --- query_previous_period(), Issue 634 ---
+# Get prev. report period data from report_summary_stats
+class RSSPrevPeriod(BaseModel):
+    ip_count: Optional[int] = None
+    root_count: Optional[int] = None
+    sub_count: Optional[int] = None
+    cred_password_count: Optional[int] = None
+    suspected_vuln_addrs_count: Optional[int] = None
+    suspected_vuln_count: Optional[int] = None
+    insecure_port_count: Optional[int] = None
+    threat_actor_count: Optional[int] = None
+
+    class Config:
+        orm_mode = True
+
+
+# --- query_previous_period(), Issue 634 ---
+# Get prev. report period data from report_summary_stats, input
+class RSSPrevPeriodInput(BaseModel):
+    org_uid: str
+    prev_end_date: str
+
+    class Config:
+        orm_mode = True
+
+
+# --- upsert_new_cves(), Issue 637 ---
+# Upsert new CVEs into cve_info
+class CVEInfoInsert(BaseModel):
+    cve_name: str
+    cvss_2_0: float
+    cvss_2_0_severity: str
+    cvss_2_0_vector: str
+    cvss_3_0: float
+    cvss_3_0_severity: str
+    cvss_3_0_vector: str
+    dve_score: float
+
+    class Config:
+        orm_mode = True
+
+
+# --- upsert_new_cves(), Issue 637 ---
+# Upsert new CVEs into cve_info, input
+class CVEInfoInsertInput(BaseModel):
+    new_cves: List[CVEInfoInsert]
+
+    class Config:
+        orm_mode = True
+
+
+# --- upsert_new_cves(), Issue 637 ---
+# Upsert new CVEs into cve_info, task resp
+class CVEInfoInsertTaskResp(BaseModel):
+    task_id: str
+    status: str
+    result: str = None
+    error: str = None
+
+
+# --- get_intelx_breaches(), Issue 641 ---
+# Get IntelX breaches
+class CredBreachIntelX(BaseModel):
+    breach_name: str
+    credential_breaches_uid: str
+
+    class Config:
+        orm_mode = True
+
+
+# --- get_intelx_breaches(), Issue 641 ---
+# Get IntelX breaches, input
+class CredBreachIntelXInput(BaseModel):
+    source_uid: str
+
+    class Config:
+        orm_mode = True
+
+
+# --- get_intelx_breaches(), Issue 641 ---
+# Get IntelX breaches, task resp
+class CredBreachIntelXTaskResp(BaseModel):
+    task_id: str
+    status: str
+    result: List[CredBreachIntelX] = None
+    error: str = None

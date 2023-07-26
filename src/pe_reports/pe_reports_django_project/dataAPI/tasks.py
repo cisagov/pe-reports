@@ -2,6 +2,7 @@
 import ast
 import json
 from typing import List
+import uuid
 
 # Third-Party Libraries
 from celery import shared_task
@@ -10,6 +11,7 @@ from home.models import MatVwOrgsAllIps
 from pe_reports.helpers import ip_passthrough
 import datetime
 from django.db.models import Q
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 
 from home.models import (
     # General DB Table Models:
@@ -33,7 +35,27 @@ from home.models import (
     VwIscoreWASVulnPrev,
     # Misc. Score View Models:
     VwIscoreOrgsIpCounts,
+    # Other Models:
+    Ips,
+    SubDomains,
+    CveInfo,
+    Cidrs,
+    CredentialBreaches,
 )
+
+# ---------- Task Helper Functions ----------
+def convert_uuid_to_string(uuid):
+    """Convert uuid to string if not None."""
+    if uuid is not None:
+        return str(uuid)
+    return uuid
+
+
+def convert_date_to_string(date):
+    """Convert date to string if not None."""
+    if date is not None:
+        return date.strftime("%Y-%m-%d")
+    return date
 
 
 @shared_task(bind=True)
@@ -434,3 +456,121 @@ def get_xl_stakeholders_info(self):
     for row in xl_stakeholders:
         row["organizations_uid"] = str(row["organizations_uid"])
     return xl_stakeholders
+
+
+# --- execute_ips(), Issue 559 ---
+@shared_task(bind=True)
+def ips_insert_task(self, new_ips: List[dict]):
+    """Task function for the ips_insert API endpoint."""
+    # Go through each new ip
+    for new_ip in new_ips:
+        # Get Cidrs.origin_cidr object for this ip
+        curr_ip_origin_cidr = Cidrs.objects.get(cidr_uid=new_ip["origin_cidr"])
+        try:
+            item = Ips.objects.get(ip=new_ip["ip"])
+        except Ips.DoesNotExist:
+            # If ip record doesn't exist yet, create one
+            Ips.objects.create(
+                ip_hash=new_ip["ip_hash"],
+                ip=new_ip["ip"],
+                origin_cidr=curr_ip_origin_cidr,
+            )
+        else:
+            # If ip record does exits, update it
+            item = Ips.objects.filter(ip=new_ip["ip"]).update(
+                ip_hash=new_ip["ip_hash"],
+                origin_cidr=new_ip["origin_cidr"],
+            )
+    # Return success message
+    return "New ip records have been inserted into ips table"
+
+
+# --- query_all_subs(), Issue 560 ---
+@shared_task(bind=True)
+def sub_domains_table_task(self, page: int, per_page: int):
+    """Task function for the sub_domains_table API endpoint."""
+    # Make database query and grab all data
+    total_data = list(SubDomains.objects.all().values())
+    # Divide up data w/ specified num records per page
+    paged_data = Paginator(total_data, per_page)
+    # Attempt to retrieve specified page
+    try:
+        single_page_data = paged_data.page(page)
+    except PageNotAnInteger:
+        # If page is not an integer, deliver first page.
+        single_page_data = paged_data.page(1)
+    except EmptyPage:
+        # If page is out of range (e.g. 9999), deliver last page of results.
+        single_page_data = paged_data.page(paged_data.num_pages)
+    # Serialize specified page
+    single_page_data = list(single_page_data)
+    # Convert uuids to strings
+    for row in single_page_data:
+        row["sub_domain_uid"] = convert_uuid_to_string(row["sub_domain_uid"])
+        row["root_domain_uid_id"] = convert_uuid_to_string(row["root_domain_uid_id"])
+        row["data_source_uid_id"] = convert_uuid_to_string(row["data_source_uid_id"])
+        row["dns_record_uid_id"] = convert_uuid_to_string(row["dns_record_uid_id"])
+        row["first_seen"] = convert_date_to_string(row["first_seen"])
+        row["last_seen"] = convert_date_to_string(row["last_seen"])
+    result = {
+        "total_pages": paged_data.num_pages,
+        "current_page": page,
+        "data": single_page_data,
+    }
+    return result
+
+
+# --- upsert_new_cves(), Issue 637 ---
+@shared_task(bind=True)
+def cve_info_insert_task(self, new_cves: List[dict]):
+    """Task function for the cve_info_insert API endpoint."""
+    # Go through each new cve
+    for cve in new_cves:
+        try:
+            item = CveInfo.objects.get(cve_name=cve["cve_name"])
+        except CveInfo.DoesNotExist:
+            # If CVE record doesn't exist yet, create one
+            CveInfo.objects.create(
+                # generate new uuid
+                cve_uuid=uuid.uuid1(),
+                cve_name=cve["cve_name"],
+                cvss_2_0=cve["cvss_2_0"],
+                cvss_2_0_severity=cve["cvss_2_0_severity"],
+                cvss_2_0_vector=cve["cvss_2_0_vector"],
+                cvss_3_0=cve["cvss_3_0"],
+                cvss_3_0_severity=cve["cvss_3_0_severity"],
+                cvss_3_0_vector=cve["cvss_3_0_vector"],
+                dve_score=cve["dve_score"],
+            )
+        else:
+            # If CVE record does exits, update it
+            item = CveInfo.objects.filter(cve_name=cve["cve_name"]).update(
+                # use existing uuid
+                cvss_2_0=cve["cvss_2_0"],
+                cvss_2_0_severity=cve["cvss_2_0_severity"],
+                cvss_2_0_vector=cve["cvss_2_0_vector"],
+                cvss_3_0=cve["cvss_3_0"],
+                cvss_3_0_severity=cve["cvss_3_0_severity"],
+                cvss_3_0_vector=cve["cvss_3_0_vector"],
+                dve_score=cve["dve_score"],
+            )
+    # Return success message
+    return "New CVE records have been inserted into cve_info table"
+
+
+# --- get_intelx_breaches(), Issue 641 ---
+@shared_task(bind=True)
+def cred_breach_intelx_task(self, source_uid: str):
+    """Task function for the cred_breach_intelx API endpoint."""
+    # Make database query and convert to list of dictionaries
+    cred_breach_intelx_data = list(
+        CredentialBreaches.objects.filter(data_source_uid=source_uid).values(
+            "breach_name", "credential_breaches_uid"
+        )
+    )
+    # Convert uuids to strings
+    for row in cred_breach_intelx_data:
+        row["credential_breaches_uid"] = convert_uuid_to_string(
+            row["credential_breaches_uid"]
+        )
+    return cred_breach_intelx_data

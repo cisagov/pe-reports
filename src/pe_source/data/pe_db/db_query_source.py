@@ -3,21 +3,29 @@
 # Standard Python Libraries
 from datetime import datetime
 import sys
+import time
 
 # Third-Party Libraries
 import pandas as pd
 import psycopg2
 from psycopg2 import OperationalError
 import psycopg2.extras as extras
+import requests
+import json
 
 # cisagov Libraries
 from pe_reports import app
-from pe_reports.data.config import config
+from pe_reports.data.config import config, staging_config
 
 # Setup logging to central file
 LOGGER = app.config["LOGGER"]
 
 CONN_PARAMS_DIC = config()
+CONN_PARAMS_DIC_STAGING = staging_config()
+
+# These need to filled with API key/url path in database.ini
+pe_api_key = CONN_PARAMS_DIC_STAGING.get("pe_api_key")
+pe_api_url = CONN_PARAMS_DIC_STAGING.get("pe_api_url")
 
 
 def show_psycopg2_exception(err):
@@ -417,3 +425,64 @@ def org_root_domains(conn, org_uid):
     """
     df = pd.read_sql_query(sql, conn, params={"org_id": org_uid})
     return df
+
+
+# --- Issue 641 ---
+def get_intelx_breaches(source_uid):
+    """
+    Query API for all IntelX credential breaches.
+
+    Args:
+        source_uid: The data source uid to filter credential breaches by
+
+    Return:
+        Credential breach data that have the specified data_source_uid as a dataframe
+    """
+    # Endpoint info
+    create_task_url = pe_api_url + "cred_breach_intelx"
+    check_task_url = pe_api_url + "cred_breach_intelx/task/"
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": pe_api_key,
+    }
+    data = json.dumps({"source_uid": source_uid})
+    try:
+        # Create task for query
+        create_task_result = requests.post(
+            create_task_url, headers=headers, data=data
+        ).json()
+        task_id = create_task_result.get("task_id")
+        LOGGER.info(
+            "Created task for cred_breach_intelx endpoint query, task_id: ", task_id
+        )
+        # Once task has been started, keep pinging task status until finished
+        check_task_url += task_id
+        task_status = "Pending"
+        while task_status != "Completed" and task_status != "Failed":
+            # Ping task status endpoint and get status
+            check_task_resp = requests.get(check_task_url, headers=headers).json()
+            task_status = check_task_resp.get("status")
+            LOGGER.info(
+                "\tPinged cred_breach_intelx status endpoint, status:", task_status
+            )
+            time.sleep(3)
+    except requests.exceptions.HTTPError as errh:
+        LOGGER.error(errh)
+    except requests.exceptions.ConnectionError as errc:
+        LOGGER.error(errc)
+    except requests.exceptions.Timeout as errt:
+        LOGGER.error(errt)
+    except requests.exceptions.RequestException as err:
+        LOGGER.error(err)
+    except json.decoder.JSONDecodeError as err:
+        LOGGER.error(err)
+
+    # Once task finishes, return result
+    if task_status == "Completed":
+        # Convert result to list of tuples to match original function
+        result = [tuple(row.values()) for row in check_task_resp.get("result")]
+        return result
+    else:
+        raise Exception(
+            "cred_breach_intelx query task failed, details: ", check_task_resp
+        )

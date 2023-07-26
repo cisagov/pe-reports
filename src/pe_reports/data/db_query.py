@@ -890,20 +890,81 @@ def query_cyberSix_creds(org_uid, start_date, end_date):
             close(conn)
 
 
-def query_all_subs(conn):
-    """Query sub domains table."""
-    try:
-        cur = conn.cursor()
-        sql = """SELECT * FROM sub_domains"""
-        cur.execute(sql)
-        pe_orgs = cur.fetchall()
-        cur.close()
-        return pe_orgs
-    except (Exception, psycopg2.DatabaseError) as error:
-        LOGGER.error("There was a problem with your database query %s", error)
-    finally:
-        if conn is not None:
-            close(conn)
+# --- Issue 560 ---
+def query_all_subs():
+    """
+    Query API for the entire sub_domains table.
+
+    Return:
+        The sub_domains table as a dataframe
+    """
+    start_time = time.time()
+    total_num_pages = 1
+    page_num = 1
+    total_data = []
+    # Retrieve data for each page
+    while page_num <= total_num_pages:
+        # Endpoint info
+        create_task_url = pe_api_url + "sub_domains_table"
+        check_task_url = pe_api_url + "sub_domains_table/task/"
+        headers = {
+            "Content-Type": "application/json",
+            "access_token": pe_api_key,
+        }
+        data = json.dumps({"page": page_num, "per_page": 250000})
+        try:
+            # Create task for query
+            create_task_result = requests.post(
+                create_task_url, headers=headers, data=data
+            ).json()
+            task_id = create_task_result.get("task_id")
+            LOGGER.info(
+                "Created task for sub_domains_table endpoint query, task_id: ", task_id
+            )
+            # Once task has been started, keep pinging task status until finished
+            check_task_url += task_id
+            task_status = "Pending"
+            ping_ctr = 1
+            while task_status != "Completed" and task_status != "Failed":
+                # Ping task status endpoint and get status
+                check_task_resp = requests.get(check_task_url, headers=headers).json()
+                task_status = check_task_resp.get("status")
+                LOGGER.info(
+                    "\t",
+                    ping_ctr,
+                    "Pinged sub_domains_table status endpoint, status:",
+                    task_status,
+                )
+                ping_ctr += 1
+                time.sleep(3)
+        except requests.exceptions.HTTPError as errh:
+            LOGGER.error(errh)
+        except requests.exceptions.ConnectionError as errc:
+            LOGGER.error(errc)
+        except requests.exceptions.Timeout as errt:
+            LOGGER.error(errt)
+        except requests.exceptions.RequestException as err:
+            LOGGER.error(err)
+        except json.decoder.JSONDecodeError as err:
+            LOGGER.error(err)
+        # Once task finishes, return result
+        if task_status == "Completed":
+            # Append retrieved data to total list
+            result = check_task_resp.get("result")
+            total_data += result.get("data")
+            total_num_pages = result.get("total_pages")
+            LOGGER.info("Retrieved page:", page_num, "of", total_num_pages)
+            page_num += 1
+        else:
+            raise Exception(
+                "sub_domains_table query task failed, details: ", check_task_resp
+            )
+    # Once all data has been retrieved, return overall dataframe
+    total_data = pd.DataFrame.from_dict(total_data)
+    LOGGER.info(
+        "Total time to retrieve entire sub_domains table:", (time.time() - start_time)
+    )
+    return total_data
 
 
 def query_subs(org_uid):
@@ -918,134 +979,154 @@ def query_subs(org_uid):
     return df
 
 
-def execute_ips(conn, dataframe):
-    """Insert the ips into the ips table in the database and link them to the associated cidr."""
-    for i, row in dataframe.iterrows():
-        try:
-            cur = conn.cursor()
-            sql = """
-            INSERT INTO ips(ip_hash, ip, origin_cidr) VALUES (%s, %s, %s)
-            ON CONFLICT (ip)
-                    DO
-                    UPDATE SET origin_cidr = UUID(EXCLUDED.origin_cidr); """
-            cur.execute(sql, (row["ip_hash"], row["ip"], row["origin_cidr"]))
-            conn.commit()
-        except (Exception, psycopg2.DatabaseError) as err:
-            show_psycopg2_exception(err)
-            cur.close()
-            continue
-    print("IPs inserted using execute_values() successfully..")
+# --- Issue 559 ---
+def execute_ips(new_ips):
+    """
+    Query API to insert new IP record into ips table.
+    On ip conflict, update the old record with the new data
 
-
-def execute_scorecard(summary_dict):
-    """Save summary statistics for an organization to the database."""
+    Args:
+        new_ips: Dataframe containing the new IPs and their ip_hash/ip/origin_cidr data
+    """
+    # Endpoint info
+    create_task_url = pe_api_url + "ips_insert"
+    check_task_url = pe_api_url + "ips_insert/task/"
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": pe_api_key,
+    }
+    # Convert dataframe to list of dictionaries
+    new_ips = new_ips[["ip_hash", "ip", "origin_cidr"]]
+    new_ips = new_ips.to_dict("records")
+    data = json.dumps({"new_ips": new_ips})
     try:
-        conn = connect()
-        cur = conn.cursor()
-        sql = """
-        INSERT INTO report_summary_stats(
-            organizations_uid, start_date, end_date, ip_count, root_count, sub_count, ports_count,
-            creds_count, breach_count, cred_password_count, domain_alert_count,
-            suspected_domain_count, insecure_port_count, verified_vuln_count,
-            suspected_vuln_count, suspected_vuln_addrs_count, threat_actor_count, dark_web_alerts_count,
-            dark_web_mentions_count, dark_web_executive_alerts_count, dark_web_asset_alerts_count,
-            pe_number_score, pe_letter_grade, cidr_count, port_protocol_count, software_count, foreign_ips_count
-        )
-        VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
-        ON CONFLICT(organizations_uid, start_date)
-        DO
-        UPDATE SET
-            ip_count = EXCLUDED.ip_count,
-            root_count = EXCLUDED.root_count,
-            sub_count = EXCLUDED.sub_count,
-            ports_count = EXCLUDED.ports_count,
-            creds_count = EXCLUDED.creds_count,
-            breach_count = EXCLUDED.breach_count,
-            cred_password_count = EXCLUDED.cred_password_count,
-            domain_alert_count = EXCLUDED.domain_alert_count,
-            suspected_domain_count = EXCLUDED.suspected_domain_count,
-            insecure_port_count = EXCLUDED.insecure_port_count,
-            verified_vuln_count = EXCLUDED.verified_vuln_count,
-            suspected_vuln_count = EXCLUDED.suspected_vuln_count,
-            suspected_vuln_addrs_count = EXCLUDED.suspected_vuln_addrs_count,
-            threat_actor_count = EXCLUDED.threat_actor_count,
-            dark_web_alerts_count = EXCLUDED.dark_web_alerts_count,
-            dark_web_mentions_count = EXCLUDED.dark_web_mentions_count,
-            dark_web_executive_alerts_count = EXCLUDED.dark_web_executive_alerts_count,
-            dark_web_asset_alerts_count = EXCLUDED.dark_web_asset_alerts_count,
-            pe_number_score = EXCLUDED.pe_number_score,
-            pe_letter_grade = EXCLUDED.pe_letter_grade,
-            cidr_count = EXCLUDED.cidr_count,
-            port_protocol_count = EXCLUDED.port_protocol_count,
-            software_count = EXCLUDED.software_count,
-            foreign_ips_count = EXCLUDED.foreign_ips_count;
-        """
-        cur.execute(
-            sql,
-            (
-                summary_dict["organizations_uid"],
-                summary_dict["start_date"],
-                summary_dict["end_date"],
-                AsIs(summary_dict["ip_count"]),
-                AsIs(summary_dict["root_count"]),
-                AsIs(summary_dict["sub_count"]),
-                AsIs(summary_dict["num_ports"]),
-                AsIs(summary_dict["creds_count"]),
-                AsIs(summary_dict["breach_count"]),
-                AsIs(summary_dict["cred_password_count"]),
-                AsIs(summary_dict["domain_alert_count"]),
-                AsIs(summary_dict["suspected_domain_count"]),
-                AsIs(summary_dict["insecure_port_count"]),
-                AsIs(summary_dict["verified_vuln_count"]),
-                AsIs(summary_dict["suspected_vuln_count"]),
-                AsIs(summary_dict["suspected_vuln_addrs_count"]),
-                AsIs(summary_dict["threat_actor_count"]),
-                AsIs(summary_dict["dark_web_alerts_count"]),
-                AsIs(summary_dict["dark_web_mentions_count"]),
-                AsIs(summary_dict["dark_web_executive_alerts_count"]),
-                AsIs(summary_dict["dark_web_asset_alerts_count"]),
-                summary_dict["pe_number_score"],
-                summary_dict["pe_letter_grade"],
-                AsIs(summary_dict["cidr_count"]),
-                AsIs(summary_dict["port_protocol_count"]),
-                AsIs(summary_dict["software_count"]),
-                AsIs(summary_dict["foreign_ips_count"]),
-            ),
-        )
-        conn.commit()
-        conn.close()
-    except (Exception, psycopg2.DatabaseError) as err:
-        show_psycopg2_exception(err)
-        cur.close()
+        # Create task for query
+        create_task_result = requests.post(
+            create_task_url, headers=headers, data=data
+        ).json()
+        task_id = create_task_result.get("task_id")
+        LOGGER.info("Created task for ips_insert endpoint query, task_id: ", task_id)
+        # Once task has been started, keep pinging task status until finished
+        check_task_url += task_id
+        task_status = "Pending"
+        while task_status != "Completed" and task_status != "Failed":
+            # Ping task status endpoint and get status
+            check_task_resp = requests.get(check_task_url, headers=headers).json()
+            task_status = check_task_resp.get("status")
+            LOGGER.info("\tPinged ips_insert status endpoint, status:", task_status)
+            time.sleep(3)
+    except requests.exceptions.HTTPError as errh:
+        LOGGER.error(errh)
+    except requests.exceptions.ConnectionError as errc:
+        LOGGER.error(errc)
+    except requests.exceptions.Timeout as errt:
+        LOGGER.error(errt)
+    except requests.exceptions.RequestException as err:
+        LOGGER.error(err)
+    except json.decoder.JSONDecodeError as err:
+        LOGGER.error(err)
+
+    # Once task finishes, return result
+    if task_status == "Completed":
+        LOGGER.info("Successfully inserted new IPs into ips table using execute_ips()")
+    else:
+        raise Exception("ips_insert query task failed, details: ", check_task_resp)
 
 
-def query_previous_period(org_uid, previous_end_date):
-    """Get summary statistics for the previous period."""
-    conn = connect()
-    cur = conn.cursor()
-    sql = """select
-                sum.ip_count, sum.root_count, sum.sub_count, cred_password_count,
-                sum.suspected_vuln_addrs_count, sum.suspected_vuln_count, sum.insecure_port_count,
-                sum.threat_actor_count
+# --- Issue 632 ---
+def execute_scorecard(summary_dict):
+    """
+    Insert a record for an organization into the report_summary_stats table.
+    On org_uid/star_date conflict, update the old record with the new data
 
-            from report_summary_stats sum
-            where sum.organizations_uid = %s and sum.end_date = %s"""
-    cur.execute(sql, [org_uid, previous_end_date])
-    source = cur.fetchone()
-    cur.close()
-    conn.close()
-    if source:
+    Args:
+        summary_dict: Dictionary of column names and values to be inserted
+
+    Return:
+        Status on if the record was inserted successfully
+    """
+    # Endpoint info
+    endpoint_url = pe_api_url + "rss_insert"
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": pe_api_key,
+    }
+    data = json.dumps(summary_dict)
+    try:
+        # Call endpoint
+        rss_insert_result = requests.put(
+            endpoint_url, headers=headers, data=data
+        ).json()
+        LOGGER.info("Successfully inserted new record in report_summary_stats table")
+    except requests.exceptions.HTTPError as errh:
+        LOGGER.error(errh)
+    except requests.exceptions.ConnectionError as errc:
+        LOGGER.error(errc)
+    except requests.exceptions.Timeout as errt:
+        LOGGER.error(errt)
+    except requests.exceptions.RequestException as err:
+        LOGGER.error(err)
+    except json.decoder.JSONDecodeError as err:
+        LOGGER.error(err)
+
+
+# --- Issue 634 ---
+def query_previous_period(org_uid, prev_end_date):
+    """
+    Query API for previous period report_summary_stats data for a specific org.
+
+    Args:
+        org_uid: The organizations_uid of the specified organization
+        prev_end_date: The end_date of the previous report period
+
+    Return:
+        Report_summary_stats data from the previous report period for a specific org as a dataframe
+    """
+    # Endpoint info
+    endpoint_url = pe_api_url + "rss_prev_period"
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": pe_api_key,
+    }
+    data = json.dumps(
+        {
+            "org_uid": org_uid,
+            "prev_end_date": prev_end_date,
+        }
+    )
+    try:
+        # Call endpoint
+        rss_prev_period_result = requests.get(
+            endpoint_url, headers=headers, data=data
+        ).json()
+    except requests.exceptions.HTTPError as errh:
+        LOGGER.info(errh)
+    except requests.exceptions.ConnectionError as errc:
+        LOGGER.info(errc)
+    except requests.exceptions.Timeout as errt:
+        LOGGER.info(errt)
+    except requests.exceptions.RequestException as err:
+        LOGGER.info(err)
+    except json.decoder.JSONDecodeError as err:
+        LOGGER.info(err)
+
+    # Once task finishes, return result
+    if rss_prev_period_result:
+        # Return results if valid
         assets_dict = {
-            "last_ip_count": source[0],
-            "last_root_domain_count": source[1],
-            "last_sub_domain_count": source[2],
-            "last_cred_password_count": source[3],
-            "last_sus_vuln_addrs_count": source[4],
-            "last_suspected_vuln_count": source[5],
-            "last_insecure_port_count": source[6],
-            "last_actor_activity_count": source[7],
+            "last_ip_count": rss_prev_period_result["ip_count"],
+            "last_root_domain_count": rss_prev_period_result["root_count"],
+            "last_sub_domain_count": rss_prev_period_result["sub_count"],
+            "last_cred_password_count": rss_prev_period_result["cred_password_count"],
+            "last_sus_vuln_addrs_count": rss_prev_period_result[
+                "suspected_vuln_addrs_count"
+            ],
+            "last_suspected_vuln_count": rss_prev_period_result["suspected_vuln_count"],
+            "last_insecure_port_count": rss_prev_period_result["insecure_port_count"],
+            "last_actor_activity_count": rss_prev_period_result["threat_actor_count"],
         }
     else:
+        # If no results, return all 0 dict
         assets_dict = {
             "last_ip_count": 0,
             "last_root_domain_count": 0,
@@ -1056,7 +1137,6 @@ def query_previous_period(org_uid, previous_end_date):
             "last_insecure_port_count": 0,
             "last_actor_activity_count": 0,
         }
-
     return assets_dict
 
 
@@ -1098,55 +1178,66 @@ def get_new_cves_list(start, end):
             close(conn)
 
 
+# --- Issue 637 ---
 def upsert_new_cves(new_cves):
     """
-    Upsert dataframe of new CVE data into the cve_info table in the database.
-
-    Required dataframe columns:
-        cve_name, cvss_2_0, cvss_2_0_severity, cvss_2_0_vector,
-        cvss_3_0, cvss_3_0_severity, cvss_3_0_vector, dve_score
+    Query API to upsert new CVE records into cve_info.
+    On cve_name conflict, update the old record with the new data
 
     Args:
         new_cves: Dataframe containing the new CVEs and their CVSS2.0/3.1/DVE data
-    """
-    try:
-        # Drop duplicates in dataframe
-        new_cves = new_cves.drop_duplicates()
 
-        # Execute insert query
-        conn = connect()
-        tpls = [tuple(x) for x in new_cves.to_numpy()]
-        cols = ",".join(list(new_cves.columns))
-        table = "cve_info"
-        sql = """INSERT INTO {}({}) VALUES %s
-        ON CONFLICT (cve_name) 
-        DO UPDATE SET
-            cve_name=EXCLUDED.cve_name,
-            cvss_2_0=EXCLUDED.cvss_2_0,
-            cvss_2_0_severity=EXCLUDED.cvss_2_0_severity,
-            cvss_2_0_vector=EXCLUDED.cvss_2_0_vector,
-            cvss_3_0=EXCLUDED.cvss_3_0,
-            cvss_3_0_severity=EXCLUDED.cvss_3_0_severity,
-            cvss_3_0_vector=EXCLUDED.cvss_3_0_vector,
-            dve_score=EXCLUDED.dve_score;
-        """
-        cursor = conn.cursor()
-        extras.execute_values(
-            cursor,
-            sql.format(table, cols),
-            tpls,
-        )
-        conn.commit()
+    Return:
+        Status on if the records were inserted successfully
+    """
+    # Endpoint info
+    create_task_url = pe_api_url + "cve_info_insert"
+    check_task_url = pe_api_url + "cve_info_insert/task/"
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": pe_api_key,
+    }
+    # Convert dataframe to list of dictionaries
+    new_cves = new_cves.to_dict("records")
+    data = json.dumps({"new_cves": new_cves})
+    try:
+        # Create task for query
+        create_task_result = requests.post(
+            create_task_url, headers=headers, data=data
+        ).json()
+        task_id = create_task_result.get("task_id")
         LOGGER.info(
-            "%s new CVEs successfully upserted into cve_info table...", len(new_cves)
+            "Created task for cve_info_insert endpoint query, task_id: ", task_id
         )
-    except (Exception, psycopg2.DatabaseError) as err:
-        # Show error and close connection if failed
-        LOGGER.error("There was a problem with your database query %s", err)
-        cursor.close()
-    finally:
-        if conn is not None:
-            close(conn)
+        # Once task has been started, keep pinging task status until finished
+        check_task_url += task_id
+        task_status = "Pending"
+        while task_status != "Completed" and task_status != "Failed":
+            # Ping task status endpoint and get status
+            check_task_resp = requests.get(check_task_url, headers=headers).json()
+            task_status = check_task_resp.get("status")
+            LOGGER.info(
+                "\tPinged cve_info_insert status endpoint, status:", task_status
+            )
+            time.sleep(3)
+    except requests.exceptions.HTTPError as errh:
+        LOGGER.error(errh)
+    except requests.exceptions.ConnectionError as errc:
+        LOGGER.error(errc)
+    except requests.exceptions.Timeout as errt:
+        LOGGER.error(errt)
+    except requests.exceptions.RequestException as err:
+        LOGGER.error(err)
+    except json.decoder.JSONDecodeError as err:
+        LOGGER.error(err)
+
+    # Once task finishes, return result
+    if task_status == "Completed":
+        LOGGER.info(
+            "Successfully inserted new CVEs into cve_info table using upsert_new_cves()"
+        )
+    else:
+        raise Exception("cve_info_insert query task failed, details: ", check_task_resp)
 
 
 # v ---------- D-Score API Queries ---------- v
