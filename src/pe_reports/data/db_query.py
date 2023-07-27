@@ -964,6 +964,14 @@ def query_all_subs():
     LOGGER.info(
         "Total time to retrieve entire sub_domains table:", (time.time() - start_time)
     )
+    total_data.rename(
+        columns={
+            "root_domain_uid_id": "root_domain_uid",
+            "data_source_uid_id": "data_source_uid",
+            "dns_record_uid_id": "dns_record_uid",
+        },
+        inplace=True,
+    )
     return total_data
 
 
