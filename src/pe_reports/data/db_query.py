@@ -32,7 +32,54 @@ CONN_PARAMS_DIC_STAGING = staging_config()
 pe_api_key = CONN_PARAMS_DIC_STAGING.get("pe_api_key")
 pe_api_url = CONN_PARAMS_DIC_STAGING.get("pe_api_url")
 
+def task_api_call(task_url, check_url, data={},retry_time=3):
+    """
+    Query tasked endpoint given task_url and check_url
 
+    Return:
+        Endpoint result
+    """
+    # Endpoint info
+    create_task_url = pe_api_url + task_url
+    check_task_url = pe_api_url + check_url
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": pe_api_key,
+    }
+    task_status = "Pending"
+    check_task_resp = ""
+    try:
+        # Create task for query
+        create_task_result = requests.post(create_task_url, headers=headers , data=data).json()
+        task_id = create_task_result.get("task_id")
+        LOGGER.info(
+            "Created task for query, task_id: ", task_id
+        )
+        check_task_url += task_id
+        while task_status != "Completed" and task_status != "Failed":
+            # Ping task status endpoint and get status
+            check_task_resp = requests.get(check_task_url, headers=headers).json()
+            task_status = check_task_resp.get("status")
+            LOGGER.info(
+                "\tPinged xl_stakeholders status endpoint, status:", task_status
+            )
+            time.sleep(retry_time)
+    except requests.exceptions.HTTPError as errh:
+        LOGGER.error(errh)
+    except requests.exceptions.ConnectionError as errc:
+        LOGGER.error(errc)
+    except requests.exceptions.Timeout as errt:
+        LOGGER.error(errt)
+    except requests.exceptions.RequestException as err:
+        LOGGER.error(err)
+    except json.decoder.JSONDecodeError as err:
+        LOGGER.error(err)
+    # Once task finishes, return result
+    if task_status == "Completed":
+        return check_task_resp.get("result")
+    else:
+        raise Exception("API calls failed ", check_task_resp)
+    
 def show_psycopg2_exception(err):
     """Handle errors for PostgreSQL issues."""
     err_type, err_obj, traceback = sys.exc_info()
@@ -816,7 +863,8 @@ def query_shodan(org_uid, start_date, end_date, table):
         if conn is not None:
             close(conn)
 
-
+#--- Issue 629 ---
+#This funciton either references the "mentions" table or the "alerts" table
 def query_darkweb(org_uid, start_date, end_date, table):
     """Query Dark Web table."""
     conn = connect()
@@ -841,7 +889,9 @@ def query_darkweb(org_uid, start_date, end_date, table):
         if conn is not None:
             close(conn)
 
-
+#-- Issue 630 ---
+#This Function references the "top_cves" table
+# this one will use 
 def query_darkweb_cves(table):
     """Query Dark Web CVE table."""
     conn = connect()
@@ -858,37 +908,6 @@ def query_darkweb_cves(table):
     finally:
         if conn is not None:
             close(conn)
-
-
-def query_cyberSix_creds(org_uid, start_date, end_date):
-    """Query cybersix_exposed_credentials table."""
-    conn = connect()
-    try:
-        sql = """SELECT * FROM public.cybersix_exposed_credentials as creds
-        WHERE organizations_uid = %(org_uid)s
-        AND breach_date BETWEEN %(start)s AND %(end)s"""
-        df = pd.read_sql(
-            sql,
-            conn,
-            params={"org_uid": org_uid, "start": start_date, "end": end_date},
-        )
-        df["breach_date_str"] = pd.to_datetime(df["breach_date"]).dt.strftime(
-            "%m/%d/%Y"
-        )
-        df.loc[df["breach_name"] == "", "breach_name"] = (
-            "Cyber_six_" + df["breach_date_str"]
-        )
-        df["description"] = (
-            df["description"].str.split("Query to find the related").str[0]
-        )
-        df["password_included"] = np.where(df["password"] != "", True, False)
-        return df
-    except (Exception, psycopg2.DatabaseError) as error:
-        LOGGER.error("There was a problem with your database query %s", error)
-    finally:
-        if conn is not None:
-            close(conn)
-
 
 # --- Issue 560 ---
 def query_all_subs():
