@@ -26,7 +26,7 @@ def find_ips(domain):
         ip = socket.gethostbyname(domain)
     except Exception:
         ip = None
-    print(ip)
+    LOGGER.info(ip)
     return ip
 
 

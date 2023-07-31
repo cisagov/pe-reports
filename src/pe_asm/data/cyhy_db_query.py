@@ -488,6 +488,7 @@ def insert_sub_domains(conn, df):
     try:
         # Execute insert query
         df = df.drop_duplicates()
+        df["current"] = True
         tpls = [tuple(x) for x in df.to_numpy()]
         cols = ",".join(list(df.columns))
         table = "sub_domains"
@@ -496,7 +497,8 @@ def insert_sub_domains(conn, df):
             ON CONFLICT (sub_domain, root_domain_uid)
             DO UPDATE SET
                 last_seen = EXCLUDED.last_seen,
-                identified = EXCLUDED.identified;
+                identified = EXCLUDED.identified,
+                current = EXCLUDED.current;
             """
         cursor = conn.cursor()
         extras.execute_values(cursor, sql.format(table, cols), tpls)
