@@ -16,6 +16,7 @@ import json
 # cisagov Libraries
 from pe_reports import app
 from pe_reports.data.config import config, staging_config
+from pe_reports.data.db_query import task_api_call
 
 # Setup logging to central file
 LOGGER = app.config["LOGGER"]
@@ -439,50 +440,12 @@ def get_intelx_breaches(source_uid):
         Credential breach data that have the specified data_source_uid as a dataframe
     """
     # Endpoint info
-    create_task_url = pe_api_url + "cred_breach_intelx"
-    check_task_url = pe_api_url + "cred_breach_intelx/task/"
-    headers = {
-        "Content-Type": "application/json",
-        "access_token": pe_api_key,
-    }
+    task_url = "cred_breach_intelx"
+    status_url = "cred_breach_intelx/task/"
     data = json.dumps({"source_uid": source_uid})
-    try:
-        # Create task for query
-        create_task_result = requests.post(
-            create_task_url, headers=headers, data=data
-        ).json()
-        task_id = create_task_result.get("task_id")
-        LOGGER.info(
-            "Created task for cred_breach_intelx endpoint query, task_id: ", task_id
-        )
-        # Once task has been started, keep pinging task status until finished
-        check_task_url += task_id
-        task_status = "Pending"
-        while task_status != "Completed" and task_status != "Failed":
-            # Ping task status endpoint and get status
-            check_task_resp = requests.get(check_task_url, headers=headers).json()
-            task_status = check_task_resp.get("status")
-            LOGGER.info(
-                "\tPinged cred_breach_intelx status endpoint, status:", task_status
-            )
-            time.sleep(3)
-    except requests.exceptions.HTTPError as errh:
-        LOGGER.error(errh)
-    except requests.exceptions.ConnectionError as errc:
-        LOGGER.error(errc)
-    except requests.exceptions.Timeout as errt:
-        LOGGER.error(errt)
-    except requests.exceptions.RequestException as err:
-        LOGGER.error(err)
-    except json.decoder.JSONDecodeError as err:
-        LOGGER.error(err)
-
-    # Once task finishes, return result
-    if task_status == "Completed":
-        # Convert result to list of tuples to match original function
-        result = [tuple(row.values()) for row in check_task_resp.get("result")]
-        return result
-    else:
-        raise Exception(
-            "cred_breach_intelx query task failed, details: ", check_task_resp
-        )
+    # Make API call
+    result = task_api_call(task_url, status_url, data, 3)
+    # Process data and return
+    # Convert result to list of tuples to match original function
+    tup_result = [tuple(row.values()) for row in result]
+    return tup_result
