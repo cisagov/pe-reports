@@ -73,6 +73,10 @@ def run_asm_sync(staging, method):
 
         # Identify which CIDRs are current
         LOGGER.info("Identify CIDR changes")
+        if staging:
+            conn = pe_db_staging_connect()
+        else:
+            conn = pe_db_connect()
         identify_cidr_changes(conn)
         conn.close()
 
