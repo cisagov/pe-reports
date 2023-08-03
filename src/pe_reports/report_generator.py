@@ -259,11 +259,6 @@ def main():
     if not os.path.exists(validated_args["OUTPUT_DIRECTORY"]):
         os.mkdir(validated_args["OUTPUT_DIRECTORY"])
 
-    try:
-        soc_med = validated_args["--soc_med_included"]
-    except Exception as e:
-        LOGGER.info(f"Social media should not included: {e}")
-        soc_med = False
     # Generate reports
     generate_reports(
         validated_args["REPORT_DATE"], validated_args["OUTPUT_DIRECTORY"], soc_med
