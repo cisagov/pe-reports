@@ -1,7 +1,7 @@
 """cisagov/pe-reports: A tool for creating Posture & Exposure reports.
 
 Usage:
-  pe-reports REPORT_DATE OUTPUT_DIRECTORY [--log-level=LEVEL]
+  pe-reports REPORT_DATE OUTPUT_DIRECTORY [--log-level=LEVEL] [--soc_med_included]
 
 Options:
   -h --help                         Show this message.
@@ -11,7 +11,7 @@ Options:
   -l --log-level=LEVEL              If specified, then the log level will be set to
                                     the specified value.  Valid values are "debug", "info",
                                     "warning", "error", and "critical". [default: info]
-  -sc --soc_med_included            Include social media posts from Cybersixgill in the report.
+  -s --soc_med_included            Include social media posts from Cybersixgill in the report.
 """
 
 # Standard Python Libraries
