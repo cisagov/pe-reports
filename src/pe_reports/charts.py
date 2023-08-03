@@ -256,8 +256,7 @@ class Charts:
                     y2 = row[2]
                     y1_offset = 8
                     y2_offset = 8
-                print(y1)
-                print(y2)
+
                 # Annotate the data points
                 plt.annotate(
                     str(int(row[1])),
