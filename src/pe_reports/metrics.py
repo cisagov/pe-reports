@@ -137,6 +137,7 @@ class Domains_Masqs:
                     "name_server",
                 ]
             ]
+            # Replace empty IPv6 values with NA
             domain_sum.loc[domain_sum["ipv6"] == "", "ipv6"] = "NA"
             domain_sum = domain_sum.rename(
                 columns={
