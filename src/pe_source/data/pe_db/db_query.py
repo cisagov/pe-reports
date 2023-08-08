@@ -3,22 +3,29 @@
 
 # Standard Python Libraries
 from datetime import datetime
+import json
 import logging
 import socket
 import sys
+import time
 
 # Third-Party Libraries
 import pandas as pd
 import psycopg2
 from psycopg2 import OperationalError
 import psycopg2.extras as extras
+import requests
 
 # cisagov Libraries
-from pe_reports.data.config import config
+from pe_reports.data.config import config, staging_config
 
 LOGGER = logging.getLogger(__name__)
 
 CONN_PARAMS_DIC = config()
+CONN_PARAMS_DIC_STAGING = staging_config()
+
+
+pe_api_key = config(section="api").get("pe_api_key")
 
 
 def show_psycopg2_exception(err):
@@ -98,13 +105,14 @@ def get_ips(org_uid):
 
     return ips
 
+
 def get_ips_dhs(org_uid):
     """Get IP data. Pull in IPs for DHS_UNKNOWN, DHS_OIG, and DHS_HQ also."""
     conn = connect()
     sql1 = """SELECT i.ip_hash, i.ip, ct.network FROM ips i
     JOIN cidrs ct on ct.cidr_uid = i.origin_cidr
     JOIN organizations o on o.organizations_uid = ct.organizations_uid
-    where (o.organizations_uid = %(org_uid)s 
+    where (o.organizations_uid = %(org_uid)s
             or o.organizations_uid = '8034f26c-f247-11ec-bbc2-02c6a3fe975b'
             or o.organizations_uid = '8010f344-f247-11ec-bbbe-02c6a3fe975b'
             or o.organizations_uid = '72e290d8-f247-11ec-ba5a-02c6a3fe975b')
@@ -120,7 +128,7 @@ def get_ips_dhs(org_uid):
     join sub_domains sd on sd.sub_domain_uid = is2.sub_domain_uid
     join root_domains rd on rd.root_domain_uid = sd.root_domain_uid
     JOIN organizations o on o.organizations_uid = rd.organizations_uid
-    where (o.organizations_uid = %(org_uid)s 
+    where (o.organizations_uid = %(org_uid)s
             or o.organizations_uid = '8034f26c-f247-11ec-bbc2-02c6a3fe975b'
             or o.organizations_uid = '8010f344-f247-11ec-bbbe-02c6a3fe975b'
             or o.organizations_uid = '72e290d8-f247-11ec-ba5a-02c6a3fe975b')
@@ -138,6 +146,7 @@ def get_ips_dhs(org_uid):
     conn.close()
 
     return ips
+
 
 def get_ips_nasa(org_uid):
     """Get IP data. Pull in IPs for NASA_HQ too."""
@@ -145,8 +154,8 @@ def get_ips_nasa(org_uid):
     sql1 = """SELECT i.ip_hash, i.ip, ct.network FROM ips i
     JOIN cidrs ct on ct.cidr_uid = i.origin_cidr
     JOIN organizations o on o.organizations_uid = ct.organizations_uid
-    where (o.organizations_uid = %(org_uid)s 
-            or o.organizations_uid = '78aa7d3c-f247-11ec-baf6-02c6a3fe975b') 
+    where (o.organizations_uid = %(org_uid)s
+            or o.organizations_uid = '78aa7d3c-f247-11ec-baf6-02c6a3fe975b')
     and i.origin_cidr is not null
     and i.shodan_results is True
     and i.current;"""
@@ -159,8 +168,8 @@ def get_ips_nasa(org_uid):
     join sub_domains sd on sd.sub_domain_uid = is2.sub_domain_uid
     join root_domains rd on rd.root_domain_uid = sd.root_domain_uid
     JOIN organizations o on o.organizations_uid = rd.organizations_uid
-    where (o.organizations_uid = %(org_uid)s 
-            or o.organizations_uid = '78aa7d3c-f247-11ec-baf6-02c6a3fe975b') 
+    where (o.organizations_uid = %(org_uid)s
+            or o.organizations_uid = '78aa7d3c-f247-11ec-baf6-02c6a3fe975b')
     and i.shodan_results is True
     and sd.current;"""
     df2 = pd.read_sql(sql2, conn, params={"org_uid": org_uid})
@@ -176,13 +185,14 @@ def get_ips_nasa(org_uid):
 
     return ips
 
+
 def get_ips_hhs(org_uid):
-    """Get IP data. Pull in IPs for HHS_UNKNOWN too"""
+    """Get IP data. Pull in IPs for HHS_UNKNOWN too."""
     conn = connect()
     sql1 = """SELECT i.ip_hash, i.ip, ct.network FROM ips i
     JOIN cidrs ct on ct.cidr_uid = i.origin_cidr
     JOIN organizations o on o.organizations_uid = ct.organizations_uid
-    where (o.organizations_uid = %(org_uid)s 
+    where (o.organizations_uid = %(org_uid)s
             or o.organizations_uid = '8a7d30a4-f247-11ec-bce0-02c6a3fe975b')
     and i.origin_cidr is not null
     and i.shodan_results is True
@@ -196,7 +206,7 @@ def get_ips_hhs(org_uid):
     join sub_domains sd on sd.sub_domain_uid = is2.sub_domain_uid
     join root_domains rd on rd.root_domain_uid = sd.root_domain_uid
     JOIN organizations o on o.organizations_uid = rd.organizations_uid
-    where (o.organizations_uid = %(org_uid)s 
+    where (o.organizations_uid = %(org_uid)s
             or o.organizations_uid = '8a7d30a4-f247-11ec-bce0-02c6a3fe975b')
     and i.shodan_results is True
     and sd.current;"""
@@ -679,3 +689,138 @@ def insert_intelx_credentials(df):
         logging.info(error)
         conn.rollback()
     cursor.close()
+
+
+def api_pshtt_domains_to_run():
+    """
+    Query API for all domains that have not been recently run through PSHTT.
+
+    Return:
+        All subdomains that haven't been run in the last 15 days
+    """
+    create_task_url = (
+        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/pshtt_unscanned_domains"
+    )
+    check_task_url = "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/pshtt_unscanned_domains/task/"
+    create_task_url = "http://127.0.0.1:8000/apiv1/pshtt_unscanned_domains"
+    check_task_url = "http://127.0.0.1:8000/apiv1/pshtt_unscanned_domains/task/"
+
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": pe_api_key,
+    }
+
+    try:
+        print("in try")
+        # Create task for query
+        create_task_result = requests.post(
+            create_task_url,
+            headers=headers,
+            # data = data
+        ).json()
+
+        print(create_task_result)
+        task_id = create_task_result.get("task_id")
+        LOGGER.info(
+            "Created task for pshtt_domains_to_run endpoint query, task_id: ", task_id
+        )
+        # Once task has been started, keep pinging task status until finished
+        check_task_url += task_id
+        task_status = "Pending"
+
+        while task_status != "Completed" and task_status != "Failed":
+            # Ping task status endpoint and get status
+            check_task_resp = requests.get(check_task_url, headers=headers).json()
+            print(check_task_resp)
+
+            task_status = check_task_resp.get("status")
+            LOGGER.info(
+                "\tPinged pshtt_domains_to_run status endpoint, status:", task_status
+            )
+            time.sleep(3)
+    except requests.exceptions.HTTPError as errh:
+        print("HTTPError")
+        LOGGER.error(errh)
+    except requests.exceptions.ConnectionError as errc:
+        LOGGER.error(errc)
+        print("ConnectionError")
+    except requests.exceptions.Timeout as errt:
+        LOGGER.error(errt)
+        print("Timeout")
+    except requests.exceptions.RequestException as err:
+        LOGGER.error(err)
+        print("RequestException")
+    except json.decoder.JSONDecodeError as err:
+        print("JSONDecodeError")
+        LOGGER.error(err)
+
+    # Once task finishes, return result
+    if task_status == "Completed":
+        result_df = pd.DataFrame.from_dict(check_task_resp.get("result"))
+        list_of_dicts = result_df.to_dict("records")
+        return list_of_dicts
+    else:
+        raise Exception(
+            "pshtt_domains_to_run query task failed, details: ", check_task_resp
+        )
+
+
+# def api_pshtt_insert(pshtt_dict):
+#     """Insert pshtt scan results into the database via the API."""
+#     # insert_endpoint = 'https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/pshtt_result_update_or_insert'
+#     insert_endpoint = 'http://127.0.0.1:8000/apiv1/pshtt_result_update_or_insert'
+#     print(pshtt_dict)
+#     headers = {
+#         "Content-Type": "application/json",
+#         "access_token": pe_api_key,
+#         "x-data": json.dumps(pshtt_dict)
+#     }
+
+#     pshtt_response = requests.put(
+#         insert_endpoint,
+#         headers = headers
+#         )
+
+#     return pshtt_response
+
+
+def api_pshtt_insert(pshtt_dict):
+    """
+    Insert a pshtt record for an subdomain into the pshtt_records table.
+
+    On conflict, update the old record with the new data
+
+    Args:
+        pshtt_dict: Dictionary of column names and values to be inserted
+
+    Return:
+        Status on if the record was inserted successfully
+    """
+    # Endpoint info
+    pe_api_url = "http://127.0.0.1:8000/apiv1/"
+    endpoint_url = pe_api_url + "pshtt_result_update_or_insert"
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": pe_api_key,
+    }
+    data = json.dumps(pshtt_dict)
+    print("printing data")
+    print(data)
+    try:
+        # Call endpoint
+        pshtt_insert_result = requests.put(
+            endpoint_url, headers=headers, data=data
+        ).json()
+        print(pshtt_insert_result)
+        return pshtt_insert_result
+        LOGGER.info("Successfully inserted new record in report_summary_stats table")
+    except requests.exceptions.HTTPError as errh:
+        LOGGER.error(errh)
+    except requests.exceptions.ConnectionError as errc:
+        LOGGER.error(errc)
+    except requests.exceptions.Timeout as errt:
+        LOGGER.error(errt)
+    except requests.exceptions.RequestException as err:
+        LOGGER.error(err)
+    except json.decoder.JSONDecodeError as err:
+        LOGGER.error(err)

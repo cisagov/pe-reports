@@ -96,6 +96,7 @@ setup(
         ],
         "pe_asm": ["data/*", "helpers/*", "port_scans/*"],
         "pe_scorecard": ["data/*", "helpers/*", "fonts/*", "scorecard_assets/*"],
+        "pshtt": [],
     },
     py_modules=[splitext(basename(path))[0] for path in glob("src/*.py")],
     include_package_data=True,
@@ -128,6 +129,7 @@ setup(
         "psycopg2-binary",
         "pymongo == 4.0.1",
         "pymupdf",
+        "pyopenssl>=17.5.0",
         "python-dateutil >= 2.7.3",
         "pytest-cov",
         "python-pptx == 0.6.21",
@@ -162,6 +164,7 @@ setup(
             # to never grab the regression version.
             "coveralls != 1.11.0",
             "pre-commit",
+            "types-pyOpenSSL",
             "pytest-cov",
             "pytest",
         ]

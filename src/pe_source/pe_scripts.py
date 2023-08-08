@@ -5,7 +5,7 @@ Usage:
 
 Arguments:
   DATA_SOURCE                       Source to collect data from. Valid values are "cybersixgill",
-                                    "dnstwist", "hibp", "intelx", and "shodan".
+                                    "dnstwist", "hibp", "intelx", "pshtt", and "shodan".
 
 Options:
   -h --help                         Show this message.
@@ -42,6 +42,7 @@ from .cybersixgill import Cybersixgill
 from .dnsmonitor import DNSMonitor
 from .dnstwistscript import run_dnstwist
 from .intelx_identity import IntelX
+from .pshtt_wrapper import launch_pe_pshtt
 from .shodan import Shodan
 
 LOGGER = logging.getLogger(__name__)
@@ -74,6 +75,8 @@ def run_pe_script(source, orgs_list, cybersix_methods, soc_med_included):
     elif source == "intelx":
         intelx = IntelX(orgs_list)
         intelx.run_intelx()
+    elif source == "pshtt":
+        launch_pe_pshtt()
     else:
         logging.error(
             "Not a valid source name. Correct values are cybersixgill or shodan."

@@ -1,73 +1,83 @@
 """Create all api endpoints."""
 
 # Standard Python Libraries
-from typing import List, Any, Union, Dict
-from datetime import datetime, timedelta
-import json
-import requests
-import logging
-import re
-import asyncio
-from io import TextIOWrapper
-import csv
-import pandas as pd
+# import asyncio
 import codecs
+import csv
+from datetime import datetime, timedelta
 
-#Third party imports
-from fastapi import \
-    APIRouter,\
-    FastAPI,\
-    Body,\
-    Depends,\
-    HTTPException,\
-    status,\
-    Security,\
-    File,\
-    UploadFile, \
-    Request
+# from io import TextIOWrapper
+import json
+import logging
 
-from fastapi.responses import JSONResponse
-from fastapi.encoders import jsonable_encoder
-from fastapi.security import OAuth2PasswordBearer
-from fastapi.security.api_key import \
-    APIKeyQuery,\
-    APIKeyCookie,\
-    APIKeyHeader,\
-    APIKey
-from slowapi import Limiter, _rate_limit_exceeded_handler
-from slowapi.util import get_remote_address
-from slowapi.errors import RateLimitExceeded
-from django.core.exceptions import ValidationError, ObjectDoesNotExist
-from django.contrib.auth.models import User
-from django.db.models import Q
-from django.db import transaction
-from django.contrib import messages
-from uuid import UUID
+# import re
+# , Dict
+from typing import Any, List, Union
 
-
-from starlette.status import HTTP_403_FORBIDDEN
-from jose import jwt, exceptions
+# Third-Party Libraries
+from dataAPI.tasks import get_ve_info, get_vs_info, get_vw_pshtt_domains_to_run_info
 from decouple import config
 
-# cisagov Libraries
-from home.models import CyhyDbAssets
-from home.models import SubDomains
-from home.models import Organizations
-from home.models import VwBreachcomp
-from home.models import VwBreachcompCredsbydate
-from home.models import VwCidrs
-from home.models import MatVwOrgsAllIps
-from home.models import VwOrgsAttacksurface
-from home.models import VwBreachcompBreachdetails
-from home.models import WasTrackerCustomerdata
-from home.models import WeeklyStatuses
-from home.models import CyhyPortScans
-from dataAPI.tasks import get_vs_info
-from dataAPI.tasks import get_ve_info
+# from django.contrib import messages
+from django.contrib.auth.models import User
+from django.core.exceptions import ObjectDoesNotExist, ValidationError
+from django.db import transaction
 
+# Third party imports
+from fastapi import (  # Body,; FastAPI,
+    APIRouter,
+    Depends,
+    File,
+    HTTPException,
+    Request,
+    Security,
+    UploadFile,
+    status,
+)
 
-from .models import apiUser
+# from fastapi.encoders import jsonable_encoder
+# from fastapi.responses import JSONResponse
+from fastapi.security import OAuth2PasswordBearer
+
+# from fastapi.security.api_key import APIKey, APIKeyCookie, APIKeyHeader, APIKeyQuery
+from fastapi.security.api_key import APIKeyHeader
+
+# from fastapi_limiter import FastAPILimiter
+# from fastapi_limiter.depends import RateLimiter
+from home.models import (  # MatVwOrgsAllIps,
+    CyhyDbAssets,
+    CyhyPortScans,
+    DataSource,
+    Organizations,
+    PshttResults,
+    SubDomains,
+    VwBreachcomp,
+    VwBreachcompBreachdetails,
+    VwBreachcompCredsbydate,
+    VwCidrs,
+    VwOrgsAttacksurface,
+    WasTrackerCustomerdata,
+    WeeklyStatuses,
+)
+from jose import exceptions, jwt
+
+# import pandas as pd
+# import requests
+from slowapi import Limiter
+
+# from slowapi import Limiter, _rate_limit_exceeded_handler
+# from slowapi.errors import RateLimitExceeded
+from slowapi.util import get_remote_address
+from starlette.status import HTTP_403_FORBIDDEN
+
 from . import schemas
+from .models import apiUser
+
+# from uuid import UUID
+
+
+# from django.db.models import Q
+
 
 LOGGER = logging.getLogger(__name__)
 
@@ -80,8 +90,8 @@ api_router = APIRouter()
 ACCESS_TOKEN_EXPIRE_MINUTES = 30  # 30 minutes
 REFRESH_TOKEN_EXPIRE_MINUTES = 30  # 30 minutes
 ALGORITHM = "HS256"
-JWT_SECRET_KEY = config('JWT_SECRET_KEY')   # should be kept secret
-JWT_REFRESH_SECRET_KEY = config('JWT_REFRESH_SECRET_KEY')   # should be kept secret
+JWT_SECRET_KEY = config("JWT_SECRET_KEY")  # should be kept secret
+JWT_REFRESH_SECRET_KEY = config("JWT_REFRESH_SECRET_KEY")  # should be kept secret
 
 API_KEY_NAME = "access_token"
 COOKIE_DOMAIN = "localtest.me"
@@ -95,37 +105,41 @@ api_key_header = APIKeyHeader(name=API_KEY_NAME, auto_error=False)
 limiter = Limiter(key_func=get_remote_address, default_limits=["5 per minute"])
 
 
-
-def create_access_token(subject: Union[str, Any],
-                        expires_delta: int = None) -> str:
-    """Create access token"""
+def create_access_token(
+    subject: Union[str, Any], expires_delta: timedelta = None
+) -> str:
+    """Create access token."""
     if expires_delta is not None:
-        expires_delta = datetime.utcnow() + expires_delta
+        expires_date = datetime.utcnow() + expires_delta
     else:
-        expires_delta = datetime.utcnow() + timedelta(
-            minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+        expires_date = datetime.utcnow() + timedelta(
+            minutes=ACCESS_TOKEN_EXPIRE_MINUTES
+        )
 
-    to_encode = {"exp": expires_delta, "sub": str(subject)}
+    to_encode = {"exp": expires_date, "sub": str(subject)}
     encoded_jwt = jwt.encode(to_encode, JWT_SECRET_KEY, ALGORITHM)
     return encoded_jwt
 
 
-def create_refresh_token(subject: Union[str, Any],
-                         expires_delta: int = None) -> str:
-    """Create a refresh token"""
+def create_refresh_token(
+    subject: Union[str, Any], expires_delta: timedelta = None
+) -> str:
+    """Create a refresh token."""
     if expires_delta is not None:
-        expires_delta = datetime.utcnow() + expires_delta
+        expires_date = datetime.utcnow() + expires_delta
     else:
-        expires_delta = datetime.utcnow() + timedelta(
-            minutes=REFRESH_TOKEN_EXPIRE_MINUTES)
+        expires_date = datetime.utcnow() + timedelta(
+            minutes=REFRESH_TOKEN_EXPIRE_MINUTES
+        )
 
-    to_encode = {"exp": expires_delta, "sub": str(subject)}
+    to_encode = {"exp": expires_date, "sub": str(subject)}
     encoded_jwt = jwt.encode(to_encode, JWT_REFRESH_SECRET_KEY, ALGORITHM)
     return encoded_jwt
 
+
 def userinfo(theuser):
     """Get all users in a list."""
-    user_record = list(User.objects.filter(username=f'{theuser}'))
+    user_record = list(User.objects.filter(username=f"{theuser}"))
 
     if user_record:
         for u in user_record:
@@ -133,8 +147,7 @@ def userinfo(theuser):
 
 
 async def userapiTokenUpdate(expiredaccessToken, user_refresh, theapiKey, user_id):
-    """When api apiKey is expired a new key is created
-    and updated in the database."""
+    """When api apiKey is expired a new key is created and updated in the database."""
     theusername = ""
     user_record = list(User.objects.filter(id=f"{user_id}"))
     # user_record = User.objects.get(id=user_id)
@@ -158,7 +171,7 @@ async def userapiTokenUpdate(expiredaccessToken, user_refresh, theapiKey, user_i
     )
 
 
-async def userapiTokenverify(theapiKey):
+def userapiTokenverify(theapiKey):
     """Check to see if api key is expired."""
     tokenRecords = list(apiUser.objects.filter(apiKey=theapiKey))
     user_key = ""
@@ -182,8 +195,8 @@ async def userapiTokenverify(theapiKey):
         )
         LOGGER.info(f"The api key was alright {theapiKey}")
 
-    except exceptions.JWTError as e:
-        LOGGER.warning('The access token has expired and will be updated')
+    except exceptions.JWTError:
+        LOGGER.warning("The access token has expired and will be updated")
         userapiTokenUpdate(user_key, user_refresh, theapiKey, user_id)
 
 
@@ -193,8 +206,7 @@ async def get_api_key(
     # api_key_cookie: str = Security(api_key_cookie),
 ):
     """Get api key from header."""
-
-    if api_key_header != '':
+    if api_key_header != "":
         return api_key_header
 
     else:
@@ -250,7 +262,7 @@ def upload_was_data(dict):
         try:
             wasCustomer.save()
 
-        except DataError as e:
+        except Exception as e:
             LOGGER.error("There is an issue with the data type %s", e)
 
 
@@ -260,13 +272,166 @@ def upload_was_data(dict):
 #             status_code=status.HTTP_401_UNAUTHORIZED,
 #             detail="Forbidden"
 #         )
+@api_router.post(
+    "/pshtt_unscanned_domains",
+    dependencies=[Depends(get_api_key)],
+    response_model=schemas.PshttDomainToRunTaskResp,
+    tags=["List of subdomains to run through PSHTT"],
+)
+def get_unscanned_pshtt_domains(tokens: dict = Depends(get_api_key)):
+    """Create API endpoint to get current domains that have not been run through pshtt recently."""
+    # Check for API key
+
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        # Create task for query
+        task = get_vw_pshtt_domains_to_run_info.delay()
+
+        # Return the new task id w/ "Processing" status
+        return {"task_id": task.id, "status": "Processing"}
+
+    else:
+        return {"message": "No api key was submitted"}
 
 
-@api_router.post("/orgs", dependencies=[Depends(get_api_key)],
-                 response_model=List[schemas.Organization],
-                 tags=["List of all Organizations"])
+@api_router.get(
+    "/pshtt_unscanned_domains/task/{task_id}",
+    dependencies=[Depends(get_api_key)],
+    # , Depends(RateLimiter(times=200, seconds=60))
+    response_model=schemas.PshttDomainToRunTaskResp,
+    tags=["Check task status for endpoint."],
+)
+async def get_pshtt_domains_to_run_status(
+    task_id: str, tokens: dict = Depends(get_api_key)
+):
+    """Retrieve status of get_pshtt_domains_to_run task."""
+    # Retrieve task status
+    task = get_vw_pshtt_domains_to_run_info.AsyncResult(task_id)
+    # Return appropriate message for status
+    if task.state == "SUCCESS":
+        return {"task_id": task_id, "status": "Completed", "result": task.result}
+    elif task.state == "PENDING":
+        return {"task_id": task_id, "status": "Pending"}
+    elif task.state == "FAILURE":
+        return {"task_id": task_id, "status": "Failed", "error": str(task.result)}
+    else:
+        return {"task_id": task_id, "status": task.state}
+
+
+@api_router.put(
+    "/pshtt_result_update_or_insert",
+    dependencies=[Depends(get_api_key)],
+    # response_model=Dict[schemas.PshttDataBase],
+    tags=["Update or insert PSHTT data"],
+)
+# @transaction.atomic
+def pshtt_result_update_or_insert(
+    # tag: str,
+    data: schemas.PshttInsert,
+    tokens: dict = Depends(get_api_key),
+):
+    """Create API endpoint to create a record in database."""
+    if tokens:
+        try:
+            print(data.organizations_uid)
+            userapiTokenverify(theapiKey=tokens)
+            LOGGER.info(f"The api key submitted {tokens}")
+            data_source_uid = DataSource.objects.get(name="Pshtt")
+            organization_uid = Organizations.objects.get(
+                organizations_uid=data.organizations_uid
+            )
+            sub_domain_uid = SubDomains.objects.get(sub_domain_uid=data.sub_domain_uid)
+
+            Organizations.objects.get(organizations_uid=data.organizations_uid)
+            # Get WAS record based on tag
+            pshtt_object, created = PshttResults.objects.update_or_create(
+                sub_domain_uid=data.sub_domain_uid,
+                organizations_uid=data.organizations_uid,
+                defaults={
+                    "organizations_uid": organization_uid,
+                    "sub_domain_uid": sub_domain_uid,
+                    "data_source_uid": data_source_uid,
+                    "sub_domain": data.sub_domain,
+                    "date_scanned": data.date_scanned,
+                    "base_domain": data.base_domain,
+                    "base_domain_hsts_preloaded": data.base_domain_hsts_preloaded,
+                    "canonical_url": data.canonical_url,
+                    "defaults_to_https": data.defaults_to_https,
+                    "domain": data.domain,
+                    "domain_enforces_https": data.domain_enforces_https,
+                    "domain_supports_https": data.domain_supports_https,
+                    "domain_uses_strong_hsts": data.domain_uses_strong_hsts,
+                    "downgrades_https": data.downgrades_https,
+                    "htss": data.htss,
+                    "hsts_entire_domain": data.hsts_entire_domain,
+                    "hsts_header": data.hsts_header,
+                    "hsts_max_age": data.hsts_max_age,
+                    "hsts_preload_pending": data.hsts_preload_pending,
+                    "hsts_preload_ready": data.hsts_preload_ready,
+                    "hsts_preloaded": data.hsts_preloaded,
+                    "https_bad_chain": data.https_bad_chain,
+                    "https_bad_hostname": data.https_bad_hostname,
+                    "https_cert_chain_length": data.https_cert_chain_length,
+                    "https_client_auth_required": data.https_client_auth_required,
+                    "https_custom_truststore_trusted": data.https_custom_truststore_trusted,
+                    "https_expired_cert": data.https_expired_cert,
+                    "https_full_connection": data.https_full_connection,
+                    "https_live": data.https_live,
+                    "https_probably_missing_intermediate_cert": data.https_probably_missing_intermediate_cert,
+                    "https_publicly_trusted": data.https_publicly_trusted,
+                    "https_self_signed_cert": data.https_self_signed_cert,
+                    "https_leaf_cert_expiration_date": data.https_leaf_cert_expiration_date,
+                    "https_leaf_cert_issuer": data.https_leaf_cert_issuer,
+                    "https_leaf_cert_subject": data.https_leaf_cert_subject,
+                    "https_root_cert_issuer": data.https_root_cert_issuer,
+                    "ip": data.ip,
+                    "live": data.live,
+                    "notes": data.notes,
+                    "redirect": data.redirect,
+                    "redirect_to": data.redirect_to,
+                    "server_header": data.server_header,
+                    "server_version": data.server_version,
+                    "strictly_forces_https": data.strictly_forces_https,
+                    "unknown_error": data.unknown_error,
+                    "valid_https": data.valid_https,
+                    "ep_http_headers": data.ep_http_headers,
+                    "ep_http_server_header": data.ep_http_server_header,
+                    "ep_http_server_version": data.ep_http_server_version,
+                    "ep_https_headers": data.ep_https_headers,
+                    "ep_https_hsts_header": data.ep_https_hsts_header,
+                    "ep_https_server_header": data.ep_https_server_header,
+                    "ep_https_server_version": data.ep_https_server_version,
+                    "ep_httpswww_headers": data.ep_httpswww_headers,
+                    "ep_httpswww_hsts_header": data.ep_httpswww_hsts_header,
+                    "ep_httpswww_server_header": data.ep_httpswww_server_header,
+                    "ep_httpswww_server_version": data.ep_httpswww_server_version,
+                    "ep_httpwww_headers": data.ep_httpwww_headers,
+                    "ep_httpwww_server_header": data.ep_httpwww_server_header,
+                    "ep_httpwww_server_version": data.ep_httpwww_server_version,
+                },
+            )
+            print("made it past insert")
+            if created:
+                LOGGER.info("new PSHTT record created for %s", data.sub_domain)
+
+            return {"message": "Record updated successfully.", "updated_data": data}
+
+        except Exception as e:
+            print(e)
+            print("failed to insert or update")
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+
+@api_router.post(
+    "/orgs",
+    dependencies=[Depends(get_api_key)],
+    response_model=List[schemas.Organization],
+    tags=["List of all Organizations"],
+)
 def read_orgs(tokens: dict = Depends(get_api_key)):
-    """API endpoint to get all organizations."""
+    """Creeate API endpoint to get all organizations."""
     orgs = list(Organizations.objects.all())
 
     if tokens:
@@ -276,63 +441,73 @@ def read_orgs(tokens: dict = Depends(get_api_key)):
 
             userapiTokenverify(theapiKey=tokens)
             return orgs
-        except:
-            LOGGER.info('API key expired please try again')
+        except Exception:
+            LOGGER.info("API key expired please try again")
     else:
-        return {'message': "No api key was submitted"}
+        return {"message": "No api key was submitted"}
 
 
-@api_router.post("/fetch_weekly_statuses", dependencies=[Depends(get_api_key)],
-                 # response_model=List[schemas.WeeklyStatuses],
-                 tags=["List of all Weekly Statuses"])
+@api_router.post(
+    "/fetch_weekly_statuses",
+    dependencies=[Depends(get_api_key)],
+    # response_model=List[schemas.WeeklyStatuses],
+    tags=["List of all Weekly Statuses"],
+)
 def read_weekly_statuses(tokens: dict = Depends(get_api_key)):
-    """API endpoint to get weekly statuses."""
-
+    """Call API endpoint to get weekly statuses."""
     current_date = datetime.now()
     days_to_week_end = (4 - current_date.weekday()) % 7
     week_ending_date = current_date + timedelta(days=days_to_week_end)
     statuses = list(WeeklyStatuses.objects.filter(week_ending=week_ending_date))
 
-#    if tokens:
-        # LOGGER.info(f"The api key submitted {tokens}")
+    #    if tokens:
+    # LOGGER.info(f"The api key submitted {tokens}")
     try:
-#        userapiTokenverify(theapiKey=tokens)
+        #        userapiTokenverify(theapiKey=tokens)
         return statuses
-    except:
-        LOGGER.info('API key expired please try again')
- #   else:
- #       return {'message': "No api key was submitted"}
+    except Exception:
+        LOGGER.info("API key expired please try again")
 
 
-@api_router.post("/fetch_user_weekly_statuses/",
-                 dependencies=[Depends(get_api_key)],
-                 # response_model=List[schemas.WeeklyStatuses],
-                 tags=["List of user Weekly Status"])
-def read_user_weekly_statuses(data: schemas.UserStatuses,
-                              tokens: dict = Depends(get_api_key)):
-    """API endpoint to get a user weekly statuses."""
+#   else:
+#       return {'message': "No api key was submitted"}
 
+
+@api_router.post(
+    "/fetch_user_weekly_statuses/",
+    dependencies=[Depends(get_api_key)],
+    # response_model=List[schemas.WeeklyStatuses],
+    tags=["List of user Weekly Status"],
+)
+def read_user_weekly_statuses(
+    data: schemas.UserStatuses, tokens: dict = Depends(get_api_key)
+):
+    """Call API endpoint to get a user weekly statuses."""
     current_date = datetime.now()
     days_to_week_end = (4 - current_date.weekday()) % 7
     week_ending_date = current_date + timedelta(days=days_to_week_end)
-    statuses = list(WeeklyStatuses.objects.filter(
-        week_ending=week_ending_date, user_status=data.user_fname))
+    statuses = list(
+        WeeklyStatuses.objects.filter(
+            week_ending=week_ending_date, user_status=data.user_fname
+        )
+    )
 
     # LOGGER.info(f"The api key submitted {tokens}")
     try:
         userapiTokenverify(theapiKey=tokens)
         return statuses
-    except:
-        LOGGER.info('API key expired please try again')
+    except Exception:
+        LOGGER.info("API key expired please try again")
 
 
-
-
-@api_router.post("/subdomains/{root_domain_uid}", dependencies=[Depends(get_api_key)],
-                 # response_model=List[schemas.SubDomainBase],
-                 tags=["List of all Subdomains"])
+@api_router.post(
+    "/subdomains/{root_domain_uid}",
+    dependencies=[Depends(get_api_key)],
+    # response_model=List[schemas.SubDomainBase],
+    tags=["List of all Subdomains"],
+)
 def read_sub_domain(root_domain_uid: str, tokens: dict = Depends(get_api_key)):
-    """API endpoint to get all organizations."""
+    """Call API endpoint to get all organizations."""
     # count = SubDomains.objects.all().count()
     # print(f'The count is {count}')
     # finalList = []
@@ -349,22 +524,23 @@ def read_sub_domain(root_domain_uid: str, tokens: dict = Depends(get_api_key)):
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
         try:
-            print('Got to subdomains try')
+            print("Got to subdomains try")
             userapiTokenverify(theapiKey=tokens)
             return subs
-        except:
-            LOGGER.info('API key expired please try again')
+        except Exception:
+            LOGGER.info("API key expired please try again")
     else:
-        return {'message': "No api key was submitted"}
+        return {"message": "No api key was submitted"}
 
 
-
-@api_router.post("/breachcomp",
-                 dependencies=[Depends(get_api_key)],
-                 # response_model=List[schemas.VwBreachcomp],
-                 tags=["List all breaches"])
+@api_router.post(
+    "/breachcomp",
+    dependencies=[Depends(get_api_key)],
+    # response_model=List[schemas.VwBreachcomp],
+    tags=["List all breaches"],
+)
 def read_breachcomp(tokens: dict = Depends(get_api_key)):
-    """API endpoint to get all breaches."""
+    """Call API endpoint to get all breaches."""
     breachInfo = list(VwBreachcomp.objects.all())
     print(breachInfo)
 
@@ -373,16 +549,21 @@ def read_breachcomp(tokens: dict = Depends(get_api_key)):
         try:
             userapiTokenverify(theapiKey=tokens)
             return breachInfo
-        except:
-            LOGGER.info('API key expired please try again')
+        except Exception:
+            LOGGER.info("API key expired please try again")
 
     else:
-        return {'message': "No api key was submitted"}
+        return {"message": "No api key was submitted"}
 
-@api_router.post("/breachcomp_credsbydate", dependencies=[Depends(get_api_key)],
-                response_model=List[schemas.VwBreachcompCredsbydate], tags=["List all breaches by date"])
+
+@api_router.post(
+    "/breachcomp_credsbydate",
+    dependencies=[Depends(get_api_key)],
+    response_model=List[schemas.VwBreachcompCredsbydate],
+    tags=["List all breaches by date"],
+)
 def read_breachcomp_credsbydate(tokens: dict = Depends(get_api_key)):
-    """API endpoint to get all breach creds by date."""
+    """Call API endpoint to get all breach creds by date."""
     breachcomp_dateInfo = list(VwBreachcompCredsbydate.objects.all())
 
     LOGGER.info(f"The api key submitted {tokens}")
@@ -390,18 +571,26 @@ def read_breachcomp_credsbydate(tokens: dict = Depends(get_api_key)):
         try:
             userapiTokenverify(theapiKey=tokens)
             return breachcomp_dateInfo
-        except:
-            LOGGER.info('API key expired please try again')
+        except Exception:
+            LOGGER.info("API key expired please try again")
     else:
-        return {'message': "No api key was submitted"}
+        return {"message": "No api key was submitted"}
 
 
-@api_router.post("/orgs_attacksurface", dependencies=[Depends(get_api_key)],
-                response_model=List[schemas.VwOrgsAttacksurface], tags=["Get asset counts for an organization"])
-def read_orgs_attacksurface(data: schemas.VwOrgsAttacksurfaceInput, tokens: dict = Depends(get_api_key)):
+@api_router.post(
+    "/orgs_attacksurface",
+    dependencies=[Depends(get_api_key)],
+    response_model=List[schemas.VwOrgsAttacksurface],
+    tags=["Get asset counts for an organization"],
+)
+def read_orgs_attacksurface(
+    data: schemas.VwOrgsAttacksurfaceInput, tokens: dict = Depends(get_api_key)
+):
     """Get asset counts for an organization attack surfaces."""
     print(data.organizations_uid)
-    attackSurfaceInfo = list(VwOrgsAttacksurface.objects.filter(organizations_uid=data.organizations_uid))
+    attackSurfaceInfo = list(
+        VwOrgsAttacksurface.objects.filter(organizations_uid=data.organizations_uid)
+    )
 
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
@@ -409,15 +598,21 @@ def read_orgs_attacksurface(data: schemas.VwOrgsAttacksurfaceInput, tokens: dict
         try:
             userapiTokenverify(theapiKey=tokens)
             return attackSurfaceInfo
-        except:
-            LOGGER.info('API key expired please try again')
+        except Exception:
+            LOGGER.info("API key expired please try again")
     else:
-        return {'message': "No api key was submitted"}
+        return {"message": "No api key was submitted"}
 
 
-@api_router.post("/cyhy_db_asset", dependencies=[Depends(get_api_key)],
-                response_model=List[schemas.CyhyDbAssets], tags=["Get cyhy assets"])
-def read_cyhy_db_asset(data: schemas.CyhyDbAssetsInput, tokens: dict = Depends(get_api_key)):
+@api_router.post(
+    "/cyhy_db_asset",
+    dependencies=[Depends(get_api_key)],
+    response_model=List[schemas.CyhyDbAssets],
+    tags=["Get cyhy assets"],
+)
+def read_cyhy_db_asset(
+    data: schemas.CyhyDbAssetsInput, tokens: dict = Depends(get_api_key)
+):
     """Get Query cyhy assets."""
     print(data.org_id)
     cyhyAssets = list(CyhyDbAssets.objects.filter(org_id=data.org_id))
@@ -428,17 +623,20 @@ def read_cyhy_db_asset(data: schemas.CyhyDbAssetsInput, tokens: dict = Depends(g
         try:
             userapiTokenverify(theapiKey=tokens)
             return cyhyAssets
-        except:
-            LOGGER.info('API key expired please try again')
+        except Exception:
+            LOGGER.info("API key expired please try again")
     else:
-        return {'message': "No api key was submitted"}
+        return {"message": "No api key was submitted"}
 
 
-@api_router.post("/cidrs", dependencies=[Depends(get_api_key)],
-                 # response_model=List[schemas.Cidrs],
-                 tags=["List of all CIDRS"])
+@api_router.post(
+    "/cidrs",
+    dependencies=[Depends(get_api_key)],
+    # response_model=List[schemas.Cidrs],
+    tags=["List of all CIDRS"],
+)
 def read_cidrs(tokens: dict = Depends(get_api_key)):
-    """API endpoint to get all CIDRS."""
+    """Call API endpoint to get all CIDRS."""
     cidrs = list(VwCidrs.objects.all())
 
     LOGGER.info(f"The api key submitted {tokens}")
@@ -447,17 +645,20 @@ def read_cidrs(tokens: dict = Depends(get_api_key)):
         try:
             userapiTokenverify(theapiKey=tokens)
             return cidrs
-        except:
-            LOGGER.info('API key expired please try again')
+        except Exception:
+            LOGGER.info("API key expired please try again")
     else:
-        return {'message': "No api key was submitted"}
+        return {"message": "No api key was submitted"}
 
 
-@api_router.post("/breachdetails", dependencies=[Depends(get_api_key)],
-                 response_model=List[schemas.VwBreachDetails],
-                 tags=["List of all Breach Details"])
+@api_router.post(
+    "/breachdetails",
+    dependencies=[Depends(get_api_key)],
+    response_model=List[schemas.VwBreachDetails],
+    tags=["List of all Breach Details"],
+)
 def read_breachdetails(tokens: dict = Depends(get_api_key)):
-    """API endpoint to get all CIDRS."""
+    """Call API endpoint to get all CIDRS."""
     breachDetails = list(VwBreachcompBreachdetails.objects.all())
 
     LOGGER.info(f"The api key submitted {tokens}")
@@ -466,24 +667,22 @@ def read_breachdetails(tokens: dict = Depends(get_api_key)):
         try:
             userapiTokenverify(theapiKey=tokens)
             return breachDetails
-        except:
-            LOGGER.info('API key expired please try again')
+        except Exception:
+            LOGGER.info("API key expired please try again")
     else:
-        return {'message': "No api key was submitted"}
-
+        return {"message": "No api key was submitted"}
 
 
 @api_router.post("/get_key", tags=["Get user api keys"])
 def read_get_key(data: schemas.UserAPI):
-    """API endpoint to get api by submitting refresh token."""
-    user_key = ''
+    """Call API endpoint to get api by submitting refresh token."""
+    user_key = ""
     userkey = list(apiUser.objects.filter(refresh_token=data.refresh_token))
-    LOGGER.info(f'The input data requested was ***********{data.refresh_token[-10:]}')
+    LOGGER.info(f"The input data requested was ***********{data.refresh_token[-10:]}")
 
     for u in userkey:
         user_key = u.apiKey
     return user_key
-
 
 
 # @api_router.post("/testingUsers",
@@ -500,7 +699,6 @@ def read_get_key(data: schemas.UserAPI):
 #     return userinfo(data.username)
 
 
-
 # @api_router.get("/secure_endpoint", tags=["test"])
 # async def get_open_api_endpoint(api_key: APIKey = Depends(get_api_key)):
 #     print(api_key)
@@ -508,23 +706,28 @@ def read_get_key(data: schemas.UserAPI):
 #     return response
 
 
-@api_router.post('/signup', summary='Create api key and access token on user', tags=['Sign-up to add api_key and access token to user'])
+@api_router.post(
+    "/signup",
+    summary="Create api key and access token on user",
+    tags=["Sign-up to add api_key and access token to user"],
+)
 def create_user(data: schemas.UserAuth):
+    """Create api key and access token on user."""
     # querying database to check if user already exist
     user = userinfo(data.username)
 
-    #TODO put logging statement here.
-    print(f'The user id is {user}\n')
+    # TODO put logging statement here.
+    print(f"The user id is {user}\n")
     if user is None:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="User with this username does not exist"
+            detail="User with this username does not exist",
         )
 
     theNewUser = apiUser(
         apiKey=create_access_token(data.username),
         user_id=user,
-        refresh_token=create_refresh_token(data.username)
+        refresh_token=create_refresh_token(data.username),
     )
     apiUser.save(theNewUser)
     return theNewUser
@@ -539,25 +742,29 @@ def create_user(data: schemas.UserAuth):
     "/was_upload", dependencies=[Depends(get_api_key)], tags=["Upload WAS csv file"]
 )
 def upload(tokens: dict = Depends(get_api_key), file: UploadFile = File(...)):
-    """Upload csv file from WAS"""
-
+    """Upload csv file from WAS."""
     if not tokens:
         return {"message": "No api key was submitted"}
 
     if not file.filename.endswith("csv"):
         raise HTTPException(400, detail="Invalid document type")
-    
+
     # f = TextIOWrapper(file.file)
 
-    dict_reader = csv.DictReader(codecs.iterdecode(file.file, 'utf-8'))
+    dict_reader = csv.DictReader(codecs.iterdecode(file.file, "utf-8"))
     col_names = dict_reader.fieldnames
-    col_names = set(col_names)
+    if col_names is None:
+        raise HTTPException(400, detail="The CSV file does not have headers")
+
+    col_names_set: set[str] = set(col_names)
+    # col_names = dict_reader.fieldnames
+    # col_names = set(col_names)
     data_dict = list(dict_reader)
 
     required_columns = [
         "tag",
         "customer_name",
-        "testing_sector",	
+        "testing_sector",
         "ci_type",
         "ticket",
         "next_scheduled",
@@ -572,13 +779,14 @@ def upload(tokens: dict = Depends(get_api_key), file: UploadFile = File(...)):
 
     try:
         # Check that all the required column names are present
-        if all(item in col_names for item in required_columns):
+        if all(item in col_names_set for item in required_columns):
             print("column names are all correct")
             upload_was_data(data_dict)
             return {"message": "Successfully uploaded %s" % file.filename}
         else:
+            incorrect_col = []
             for col in required_columns:
-                if col in dict_reader:
+                if col in col_names:
                     pass
                 else:
                     incorrect_col.append(col)
@@ -600,11 +808,14 @@ def upload(tokens: dict = Depends(get_api_key), file: UploadFile = File(...)):
         file.file.close()
 
 
-@api_router.post("/ve_info", dependencies=[Depends(get_api_key)],
-                 response_model=schemas.TaskResponse,
-                 tags=["List of all VE data"])
+@api_router.post(
+    "/ve_info",
+    dependencies=[Depends(get_api_key)],
+    response_model=schemas.TaskResponse,
+    tags=["List of all VE data"],
+)
 def ve_info(ip_address: List[str], tokens: dict = Depends(get_api_key)):
-    """API endpoint to get all WAS data."""
+    """Call API endpoint to get all WAS data."""
     print(ip_address)
 
     # orgs_df = pd.DataFrame(orgs)
@@ -614,12 +825,17 @@ def ve_info(ip_address: List[str], tokens: dict = Depends(get_api_key)):
         task = get_ve_info.delay(ip_address)
         return {"task_id": task.id, "status": "Processing"}
     else:
-        return {'message': "No api key was submitted"}
+        return {"message": "No api key was submitted"}
 
-@api_router.get("/ve_info/task/{task_id}", dependencies=[Depends(get_api_key)],
-                response_model=schemas.veTaskResponse,
-                tags=["Check task VE status"])
+
+@api_router.get(
+    "/ve_info/task/{task_id}",
+    dependencies=[Depends(get_api_key)],
+    response_model=schemas.veTaskResponse,
+    tags=["Check task VE status"],
+)
 async def get_ve_task_status(task_id: str, tokens: dict = Depends(get_api_key)):
+    """Check task VE status."""
     task = get_ve_info.AsyncResult(task_id)
 
     if task.state == "SUCCESS":
@@ -633,11 +849,14 @@ async def get_ve_task_status(task_id: str, tokens: dict = Depends(get_api_key)):
         return {"task_id": task_id, "status": task.state}
 
 
-@api_router.post("/vs_info", dependencies=[Depends(get_api_key)],
-                 response_model=schemas.veTaskResponse,
-                 tags=["List of all VS data"])
+@api_router.post(
+    "/vs_info",
+    dependencies=[Depends(get_api_key)],
+    response_model=schemas.veTaskResponse,
+    tags=["List of all VS data"],
+)
 def vs_info(cyhy_db_names: List[str], tokens: dict = Depends(get_api_key)):
-    """API endpoint to get all WAS data."""
+    """Call API endpoint to get all WAS data."""
     print(cyhy_db_names)
 
     LOGGER.info(f"The api key submitted {tokens}")
@@ -645,12 +864,17 @@ def vs_info(cyhy_db_names: List[str], tokens: dict = Depends(get_api_key)):
         task = get_vs_info.delay(cyhy_db_names)
         return {"task_id": task.id, "status": "Processing"}
     else:
-        return {'message': "No api key was submitted"}
+        return {"message": "No api key was submitted"}
 
-@api_router.get("/vs_info/task/{task_id}", dependencies=[Depends(get_api_key)],
-                response_model=schemas.TaskResponse,
-                tags=["Check task status"])
+
+@api_router.get(
+    "/vs_info/task/{task_id}",
+    dependencies=[Depends(get_api_key)],
+    response_model=schemas.TaskResponse,
+    tags=["Check task status"],
+)
 async def get_task_status(task_id: str, tokens: dict = Depends(get_api_key)):
+    """Check VS_info task status."""
     task = get_vs_info.AsyncResult(task_id)
 
     if task.state == "SUCCESS":
@@ -670,15 +894,14 @@ async def get_task_status(task_id: str, tokens: dict = Depends(get_api_key)):
     tags=["List of all WAS data"],
 )
 def was_info(tokens: dict = Depends(get_api_key)):
-    """API endpoint to get all WAS data."""
-
+    """Call API endpoint to get all WAS data."""
     if not tokens:
         return {"message": "No api key was submitted"}
     try:
         was_data = list(WasTrackerCustomerdata.objects.all())
         userapiTokenverify(theapiKey=tokens)
         return was_data
-    except:
+    except Exception:
         LOGGER.info("API key expired please try again")
 
 
@@ -688,8 +911,7 @@ def was_info(tokens: dict = Depends(get_api_key)):
     tags=["Delete WAS data"],
 )
 def was_info_delete(tag: str, tokens: dict = Depends(get_api_key)):
-    """API endpoint to delete a record in database."""
-
+    """Call API endpoint to delete a record in database."""
     if not tokens:
         return {"message": "No api key was submitted"}
 
@@ -701,7 +923,7 @@ def was_info_delete(tag: str, tokens: dict = Depends(get_api_key)):
             userapiTokenverify(theapiKey=tokens)
             was_data.delete()
             return {"deleted_tag": tag}
-        except:
+        except Exception:
             LOGGER.info("API key expired please try again")
     else:
         return {"message": "No api key was submitted"}
@@ -714,13 +936,11 @@ def was_info_delete(tag: str, tokens: dict = Depends(get_api_key)):
     tags=["Create new WAS data"],
 )
 def was_info_create(request: Request, tokens: dict = Depends(get_api_key)):
-    """API endpoint to create a record in database."""
-
+    """Call API endpoint to create a record in database."""
     if not tokens:
         return {"message": "No api key was submitted"}
 
     print("got to the endpoint")
-    
 
     LOGGER.info(f"The api key submitted {tokens}")
     try:
@@ -730,7 +950,7 @@ def was_info_create(request: Request, tokens: dict = Depends(get_api_key)):
         userapiTokenverify(theapiKey=tokens)
         was_customer.save()
         return {"saved_customer": was_customer}
-    except:
+    except Exception:
         LOGGER.info("API key expired please try again")
         return {"message": "Failed to upload"}
 
@@ -742,10 +962,8 @@ def was_info_create(request: Request, tokens: dict = Depends(get_api_key)):
     tags=["Update WAS data"],
 )
 @transaction.atomic
-def was_info_update(
-    tag: str, request: Request, tokens: dict = Depends(get_api_key)
-):
-    """API endpoint to create a record in database."""
+def was_info_update(tag: str, request: Request, tokens: dict = Depends(get_api_key)):
+    """Call API endpoint to create a record in database."""
     if not tokens:
         return {"message": "No api key was submitted"}
     LOGGER.info(f"The api key submitted {tokens}")
@@ -773,12 +991,16 @@ def was_info_update(
         LOGGER.info("API key expired please try again")
 
 
-@api_router.post("/cyhy_port_scan", dependencies=[Depends(get_api_key)],
-                 # response_model=Dict[schemas.WASDataBase],
-                 tags=["Create new cyhy port scan data"])
-def cyhy_port_scan_info_create(ports_scan_data: schemas.CyhyPortScans, tokens: dict = Depends(get_api_key)):
-    """API endpoint to create a record in database."""
-
+@api_router.post(
+    "/cyhy_port_scan",
+    dependencies=[Depends(get_api_key)],
+    # response_model=Dict[schemas.WASDataBase],
+    tags=["Create new cyhy port scan data"],
+)
+def cyhy_port_scan_info_create(
+    ports_scan_data: schemas.CyhyPortScans, tokens: dict = Depends(get_api_key)
+):
+    """Call API endpoint to create a record in database."""
     cyhy_ports = CyhyPortScans(**ports_scan_data.dict())
 
     LOGGER.info(f"The api key submitted {tokens}")
@@ -787,21 +1009,24 @@ def cyhy_port_scan_info_create(ports_scan_data: schemas.CyhyPortScans, tokens: d
         try:
             userapiTokenverify(theapiKey=tokens)
             cyhy_ports.save()
-            return {'saved_customer': cyhy_ports}
-        except:
-            LOGGER.info('API key expired please try again')
+            return {"saved_customer": cyhy_ports}
+        except Exception:
+            LOGGER.info("API key expired please try again")
     else:
-        return {'message': "No api key was submitted"}
+        return {"message": "No api key was submitted"}
 
 
-@api_router.put("/was_info_update/{cyhy_id}", dependencies=[Depends(get_api_key)],
-                # response_model=Dict[schemas.WASDataBase],
-                tags=["Update cyhy_port_scan data"])
+@api_router.put(
+    "/was_info_update/{cyhy_id}",
+    dependencies=[Depends(get_api_key)],
+    # response_model=Dict[schemas.WASDataBase],
+    tags=["Update cyhy_port_scan data"],
+)
 @transaction.atomic
-def cyhy_ports_scan_info_update(cyhy_id: str, org_scans: schemas.CyhyPortScans,
-                    tokens: dict = Depends(get_api_key)):
-    """API endpoint to update a record in database."""
-
+def cyhy_ports_scan_info_update(
+    cyhy_id: str, org_scans: schemas.CyhyPortScans, tokens: dict = Depends(get_api_key)
+):
+    """Call API endpoint to update a record in database."""
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
 
@@ -810,16 +1035,17 @@ def cyhy_ports_scan_info_update(cyhy_id: str, org_scans: schemas.CyhyPortScans,
             scan_data = CyhyPortScans.objects.get(cyhy_id=cyhy_id)
             updated_data = {}
             for field, value in org_scans.dict(exclude_unset=True).items():
-                print(f'the field is {field} and the value is {value}')
+                print(f"the field is {field} and the value is {value}")
                 if hasattr(scan_data, field) and getattr(scan_data, field) != value:
                     setattr(scan_data, field, value)
                     updated_data[field] = value
             scan_data.save()
-            return {"message": "Record updated successfully.",
-                    "updated_data": updated_data}
-
+            return {
+                "message": "Record updated successfully.",
+                "updated_data": updated_data,
+            }
 
         except ObjectDoesNotExist:
-            LOGGER.info('API key expired please try again')
+            LOGGER.info("API key expired please try again")
     else:
-        return {'message': "No api key was submitted"}
+        return {"message": "No api key was submitted"}
