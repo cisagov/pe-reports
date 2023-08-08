@@ -14,14 +14,17 @@ metricbeat.modules:
 
 # Configure the output destination for the collected metrics.
 output.elasticsearch:
-  hosts: "es01:9200"
-  protocol: "https"
+  hosts: ["https://es01:9200"]  # Specify the hosts of your Elasticsearch instance.
   username: "${ELASTIC_USERNAME}"             # The username used to connect to Elasticsearch.
   password: "${ELASTIC_PASSWORD}"        # The password used to connect to Elasticsearch.
-  ssl.verification_mode: "true"  # To skip verification. Use with caution.
+  ssl.verification_mode: "full"  # To skip verification. Use with caution.
   # Or, provide the path to the CA certificate.
-  ssl.certificate_authorities: ["/usr/share/metricbeat/config/certs/CA.pem"]
+  ssl.certificate_authorities: [ "/usr/share/metricbeat/config/certs/ca/ca.crt" ]
+  ssl.certificate: "/usr/share/metricbeat/config/certs/ca/ca.crt"
+  ssl.key: "/usr/share/metricbeat/config/certs/ca/ca.key"
 
 # Configure the Kibana settings for index pattern setup and dashboard loading.
 setup.kibana:
   host: "kibana:5601"
+
+

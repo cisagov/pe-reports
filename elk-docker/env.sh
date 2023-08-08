@@ -13,6 +13,10 @@ echo "ELASTIC_PASSWORD=${ELASTIC_PASSWORD}" >> .env
 KIBANA_PASSWORD=$(aws ssm get-parameter --name /ELK-Test/KIBANA_PASSWORD --with-decryption --query 'Parameter.Value' --output text)
 echo "KIBANA_PASSWORD=${KIBANA_PASSWORD}" >> .env
 
+# Get the Kibana IP address parameter, decrypt it, and append it to the .env file.
+KIBANA_IP=$(aws ssm get-parameter --name /ELK-Test/KIBANA_IP --with-decryption --query 'Parameter.Value' --output text)
+echo "KIBANA_IP=${KIBANA_IP}" >> .env
+
 # Get the Cluster Name parameter, decrypt it, and append it to the .env file.
 CLUSTER_NAME=$(aws ssm get-parameter --name /ELK-Test/CLUSTER_NAME --with-decryption --query 'Parameter.Value' --output text)
 echo "CLUSTER_NAME=${CLUSTER_NAME}" >> .env
