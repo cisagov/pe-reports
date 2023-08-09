@@ -1798,3 +1798,13 @@ class VwIscoreOrgsIpCounts(models.Model):
     class Meta:
         managed = False
         db_table = "vw_iscore_orgs_ip_counts"
+
+
+# Github issues connected to this model:
+# - Issue 636
+class VwPEScoreCheckNewCVE(models.Model):
+    cve_name = models.CharField(blank=True, null=True)
+
+    class Meta:
+        managed = False
+        db_table = "vw_pescore_check_new_cve"
