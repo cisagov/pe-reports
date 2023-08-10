@@ -34,7 +34,7 @@ from pe_scorecard.scores.score_helper_functions import (
 LOGGER = logging.getLogger(__name__)
 
 # df_orgs_df is a datframe of stakeholders with two columns: organizations_uid and cyhy_db_name
-def get_profiling_score(df_orgs_df, report_period_year, report_period_month):
+def get_profiling_score(df_orgs_df, report_period_month, report_period_year):
     this_month = datetime(report_period_year, report_period_month, 1)
     next_month = get_next_month(report_period_year, report_period_month)
 
@@ -83,9 +83,10 @@ def summarize_software(orgs_df, this_month, next_month):
     software_list = []
     for index, org in orgs_df.iterrows():
         total_software = 0.0
-        for index2, software in df_software.iterrows():
-            if org['organizations_uid'] == software['organizations_uid'] or org['organizations_uid'] == software['parent_org_uid']:
-                total_software = total_software + software['count']
+        org_id = org['organizations_uid']
+        org_df_software = df_software.loc[((df_software['organizations_uid'] == org_id) | (df_software['parent_org_uid'] == org_id))] 
+        for index2, software in org_df_software.iterrows():
+            total_software = total_software + software['count']
         software_list.append([org['organizations_uid'], org['cyhy_db_name'], total_software])
     df_port_scans = pd.DataFrame(software_list, columns= ["organizations_uid", "cyhy_db_name", "total_software"])
     return df_port_scans
@@ -101,13 +102,14 @@ def summarize_port_scans(orgs_df, this_month, next_month):
         this_month_vuln_protocols = 0.0
         this_month_total_services = 0.0
         this_month_vuln_services = 0.0
-        for index2, ports in df_port_scans.iterrows():
-            if org['organizations_uid'] == ports['organizations_uid'] or org['organizations_uid'] == ports['parent_org_uid']:
-                this_month_total_ports = this_month_total_ports + ports['ports']
-                this_month_vuln_ports = this_month_vuln_ports + ports['risky_ports']
-                this_month_total_protocols = this_month_total_protocols + ports['protocols']
-                this_month_vuln_protocols = this_month_vuln_protocols + ports['risky_protocols']
-                this_month_total_services = this_month_total_services + ports['services']
+        org_id = org['organizations_uid']
+        org_df_ports = df_port_scans.loc[((df_port_scans['organizations_uid'] == org_id) | (df_port_scans['parent_org_uid'] == org_id))] 
+        for index2, ports in org_df_ports.iterrows():
+            this_month_total_ports = this_month_total_ports + ports['ports']
+            this_month_vuln_ports = this_month_vuln_ports + ports['risky_ports']
+            this_month_total_protocols = this_month_total_protocols + ports['protocols']
+            this_month_vuln_protocols = this_month_vuln_protocols + ports['risky_protocols']
+            this_month_total_services = this_month_total_services + ports['services']
 
         percent_vuln_ports = average_numbers(this_month_vuln_ports, this_month_total_ports)
         percent_vuln_protocols = average_numbers(this_month_vuln_protocols, this_month_total_protocols)
@@ -167,10 +169,11 @@ def summarize_hosts(orgs_df, this_month, next_month):
     for index, org in orgs_df.iterrows():
         total_hosts = 0.0
         total_vuln_hosts = 0.0
-        for index2, hosts in df_hosts.iterrows():
-            if org['organizations_uid'] == hosts['organizations_uid'] or org['organizations_uid'] == hosts['parent_org_uid']:
-                total_hosts = total_hosts + hosts['host_count']
-                total_vuln_hosts = total_vuln_hosts + hosts['vulnerable_host_count']
+        org_id = org['organizations_uid']
+        org_df_hosts = df_hosts.loc[((df_hosts['organizations_uid'] == org_id) | (df_hosts['parent_org_uid'] == org_id))] 
+        for index2, hosts in org_df_hosts.iterrows():
+            total_hosts = total_hosts + hosts['host_count']
+            total_vuln_hosts = total_vuln_hosts + hosts['vulnerable_host_count']
         percent_vuln_hosts = average_numbers(total_vuln_hosts, total_hosts)
         hosts_list.append([org['organizations_uid'], org['cyhy_db_name'], percent_vuln_hosts])
     df_hosts = pd.DataFrame(hosts_list, columns= ["organizations_uid", "cyhy_db_name", "percent_vuln_hosts"])

@@ -33,6 +33,7 @@ from .data.cyhy_db_query import (
     identify_ip_changes,
     identify_ip_sub_changes,
     identify_sub_changes,
+    identify_cidr_changes,
     pe_db_connect,
     pe_db_staging_connect,
 )
@@ -69,6 +70,15 @@ def run_asm_sync(staging, method):
         LOGGER.info("Filling CIDRs.")
         fill_cidrs("all_orgs", staging)
         LOGGER.info("Finished.")
+
+        # Identify which CIDRs are current
+        LOGGER.info("Identify CIDR changes")
+        if staging:
+            conn = pe_db_staging_connect()
+        else:
+            conn = pe_db_connect()
+        identify_cidr_changes(conn)
+        conn.close()
 
         # Enumerate CIDRs for IPs
         LOGGER.info("Filling IPs from CIDRs.")

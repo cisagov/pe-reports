@@ -89,7 +89,6 @@ class Credentials:
             breach_det_df["breach_date"] = pd.to_datetime(
                 breach_det_df["breach_date"]
             ).dt.strftime("%m/%d/%y")
-
         breach_det_df = breach_det_df.rename(
             columns={
                 "breach_name": "Breach Name",
@@ -714,6 +713,40 @@ class Cyber_Six:
             if cve_row["CVE"] in shodan_cves:
                 print("we got a match")
                 print(cve_row["CVE"])
+                top_cve_table.at[cve_index, "Identified By"] += ",   Shodan"
+
+        return top_cve_table
+
+
+class Core_Cyber_Six:
+    """Collect relevant CyberSix data for a given Core report."""
+
+    def __init__(
+        self,
+        all_cves_df,
+    ):
+        """Initialize Core CyberSix class."""
+        self.all_cves_df = all_cves_df
+        top_cves = query_darkweb_cves(
+            "top_cves",
+        )
+        top_cves = top_cves[top_cves["date"] == top_cves["date"].max()]
+        self.top_cves = top_cves
+
+    def top_cve_table(self):
+        """Get top CVEs."""
+        top_cves = self.top_cves
+        top_cves["summary_short"] = top_cves["summary"].str[:500]
+        top_cve_table = top_cves[["cve_id", "summary_short"]]
+        top_cve_table = top_cve_table.rename(
+            columns={"cve_id": "CVE", "summary_short": "Description"}
+        )
+        top_cve_table["Identified By"] = "Cybersixgill"
+
+        # Get all CVEs found in shodan
+        shodan_cves = self.all_cves_df
+        for cve_index, cve_row in top_cve_table.iterrows():
+            if cve_row["CVE"] in shodan_cves:
                 top_cve_table.at[cve_index, "Identified By"] += ",   Shodan"
 
         return top_cve_table

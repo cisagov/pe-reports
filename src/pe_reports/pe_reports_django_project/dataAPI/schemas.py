@@ -1,14 +1,17 @@
 """Pydantic models used by FastAPI."""
 # Standard Python Libraries
+
+# Standard Python Libraries
 from datetime import date, datetime
 
 # from pydantic.types import UUID1, UUID
-from typing import Any, List
+from typing import Any, List, Optional
 from uuid import UUID
 
 # Third-Party Libraries
 from pydantic import BaseModel, EmailStr, Field
-from pydantic.schema import Optional
+
+# from pydantic.schema import Optional
 
 """
 Developer Note: If there comes an instance as in class Cidrs where there are
@@ -614,3 +617,634 @@ class UserInDB(UserInDBBase):
     """UserInDB schema class."""
 
     hashed_password: str
+
+
+# ---------- D-Score View Schemas ----------
+# vw_dscore_vs_cert schema:
+class VwDscoreVSCert(BaseModel):
+    """VwDscoreVSCert schema class."""
+
+    organizations_uid: str
+    parent_org_uid: Optional[str] = None
+    num_ident_cert: Optional[int] = None
+    num_monitor_cert: Optional[int] = None
+
+    class Config:
+        """VwDscoreVSCert schema config class."""
+
+        orm_mode = True
+
+
+# vw_dscore_vs_cert input schema:
+class VwDscoreVSCertInput(BaseModel):
+    """VwDscoreVSCertInput schema class."""
+
+    specified_orgs: List[str]
+
+    class Config:
+        """VwDscoreVSCertInput schema config class."""
+
+        orm_mode = True
+
+
+# vw_dscore_vs_cert task response schema:
+class VwDscoreVSCertTaskResp(BaseModel):
+    """VwDscoreVSCertTaskResp schema class."""
+
+    task_id: str
+    status: str
+    result: Optional[List[VwDscoreVSCert]] = None
+    error: Optional[str] = None
+
+
+# vw_dscore_vs_mail schema:
+class VwDscoreVSMail(BaseModel):
+    """VwDscoreVSMail schema class."""
+
+    organizations_uid: str
+    parent_org_uid: Optional[str] = None
+    num_valid_dmarc: Optional[int] = None
+    num_valid_spf: Optional[int] = None
+    num_valid_dmarc_or_spf: Optional[int] = None
+    total_mail_domains: Optional[int] = None
+
+    class Config:
+        """VwDscoreVSMail schema config class."""
+
+        orm_mode = True
+
+
+# vw_dscore_vs_mail input schema:
+class VwDscoreVSMailInput(BaseModel):
+    """VwDscoreVSMailInput schema class."""
+
+    specified_orgs: List[str]
+
+    class Config:
+        """VwDscoreVSMailInput schema config class."""
+
+        orm_mode = True
+
+
+# vw_dscore_vs_mail task response schema:
+class VwDscoreVSMailTaskResp(BaseModel):
+    """VwDscoreVSMailTaskResp schema class."""
+
+    task_id: str
+    status: str
+    result: Optional[List[VwDscoreVSMail]] = None
+    error: Optional[str] = None
+
+
+# vw_dscore_pe_ip schema:
+class VwDscorePEIp(BaseModel):
+    """VwDscorePEIp schema class."""
+
+    organizations_uid: str
+    parent_org_uid: Optional[str] = None
+    num_ident_ip: Optional[int] = None
+    num_monitor_ip: Optional[int] = None
+
+    class Config:
+        """VwDscorePEIp schema config class."""
+
+        orm_mode = True
+
+
+# vw_dscore_pe_ip input schema:
+class VwDscorePEIpInput(BaseModel):
+    """VwDscorePEIpInput schema class."""
+
+    specified_orgs: List[str]
+
+    class Config:
+        """VwDscorePEIpInput schema config class."""
+
+        orm_mode = True
+
+
+# vw_dscore_pe_ip task response schema:
+class VwDscorePEIpTaskResp(BaseModel):
+    """VwDscorePEIpTaskResp schema class."""
+
+    task_id: str
+    status: str
+    result: Optional[List[VwDscorePEIp]] = None
+    error: Optional[str] = None
+
+
+# vw_dscore_pe_domain schema:
+class VwDscorePEDomain(BaseModel):
+    """VwDscorePEDomain schema class."""
+
+    organizations_uid: str
+    parent_org_uid: Optional[str] = None
+    num_ident_domain: Optional[int] = None
+    num_monitor_domain: Optional[int] = None
+
+    class Config:
+        """VwDscorePEDomain schema config class."""
+
+        orm_mode = True
+
+
+# vw_dscore_pe_domain input schema:
+class VwDscorePEDomainInput(BaseModel):
+    """VwDscorePEDomainInput schema class."""
+
+    specified_orgs: List[str]
+
+    class Config:
+        """VwDscorePEDomainInput schema config class."""
+
+        orm_mode = True
+
+
+# vw_dscore_pe_domain task response schema:
+class VwDscorePEDomainTaskResp(BaseModel):
+    """VwDscorePEDomainTaskResp schema class."""
+
+    task_id: str
+    status: str
+    result: Optional[List[VwDscorePEDomain]] = None
+    error: Optional[str] = None
+
+
+# vw_dscore_was_webapp schema:
+class VwDscoreWASWebapp(BaseModel):
+    """VwDscoreWASWebapp schema class."""
+
+    organizations_uid: str
+    parent_org_uid: Optional[str] = None
+    num_ident_webapp: Optional[int] = None
+    num_monitor_webapp: Optional[int] = None
+
+    class Config:
+        """VwDscoreWASWebapp schema config class."""
+
+        orm_mode = True
+
+
+# vw_dscore_was_webapp input schema:
+class VwDscoreWASWebappInput(BaseModel):
+    """VwDscoreWASWebappInput schema class."""
+
+    specified_orgs: List[str]
+
+    class Config:
+        """VwDscoreWASWebappInput schema config class."""
+
+        orm_mode = True
+
+
+# vw_dscore_was_webapp task response schema:
+class VwDscoreWASWebappTaskResp(BaseModel):
+    """VwDscoreWASWebappTaskResp schema class."""
+
+    task_id: str
+    status: str
+    result: Optional[List[VwDscoreWASWebapp]] = None
+    error: Optional[str] = None
+
+
+# FCEB status query schema (no view):
+class FCEBStatus(BaseModel):
+    """FCEBStatus schema class."""
+
+    organizations_uid: str
+    fceb: Optional[bool] = None
+
+    class Config:
+        """FCEBStatus schema config class."""
+
+        orm_mode = True
+
+
+# FCEB status query input schema (no view):
+class FCEBStatusInput(BaseModel):
+    """FCEBStatusInput schema class."""
+
+    specified_orgs: List[str]
+
+    class Config:
+        """FCEBStatusInput schema config class."""
+
+        orm_mode = True
+
+
+# FCEB status query task response schema (no view):
+class FCEBStatusTaskResp(BaseModel):
+    """FCEBStatusTaskResp schema class."""
+
+    task_id: str
+    status: str
+    result: Optional[List[FCEBStatus]] = None
+    error: Optional[str] = None
+
+
+# ---------- I-Score View Schemas ----------
+# vw_iscore_vs_vuln schema:
+class VwIscoreVSVuln(BaseModel):
+    """VwIscoreVSVuln schema class."""
+
+    organizations_uid: str
+    parent_org_uid: Optional[str] = None
+    cve_name: Optional[str] = None
+    cvss_score: Optional[float] = None
+
+    class Config:
+        """VwIscoreVSVuln schema config class."""
+
+        orm_mode = True
+
+
+# vw_iscore_vs_vuln input schema:
+class VwIscoreVSVulnInput(BaseModel):
+    """VwIscoreVSVulnInput schema class."""
+
+    specified_orgs: List[str]
+
+    class Config:
+        """VwIscoreVSVulnInput schema config class."""
+
+        orm_mode = True
+
+
+# vw_iscore_vs_vuln task response schema:
+class VwIscoreVSVulnTaskResp(BaseModel):
+    """VwIscoreVSVulnTaskResp schema class."""
+
+    task_id: str
+    status: str
+    result: Optional[List[VwIscoreVSVuln]] = None
+    error: Optional[str] = None
+
+
+# vw_iscore_vs_vuln_prev schema:
+class VwIscoreVSVulnPrev(BaseModel):
+    """VwIscoreVSVulnPrev schema class."""
+
+    organizations_uid: str
+    parent_org_uid: Optional[str] = None
+    cve_name: Optional[str] = None
+    cvss_score: Optional[float] = None
+    time_closed: Optional[str] = None
+
+    class Config:
+        """VwIscoreVSVulnPrev schema config class."""
+
+        orm_mode = True
+
+
+# vw_iscore_vs_vuln_prev input schema:
+class VwIscoreVSVulnPrevInput(BaseModel):
+    """VwIscoreVSVulnPrevInput schema class."""
+
+    specified_orgs: List[str]
+    start_date: str
+    end_date: str
+
+    class Config:
+        """VwIscoreVSVulnPrevInput schema config class."""
+
+        orm_mode = True
+
+
+# vw_iscore_vs_vuln_prev task response schema:
+class VwIscoreVSVulnPrevTaskResp(BaseModel):
+    """VwIscoreVSVulnPrevTaskResp schema class."""
+
+    task_id: str
+    status: str
+    result: Optional[List[VwIscoreVSVulnPrev]] = None
+    error: Optional[str] = None
+
+
+# vw_iscore_pe_vuln schema:
+class VwIscorePEVuln(BaseModel):
+    """VwIscorePEVuln schema class."""
+
+    organizations_uid: str
+    parent_org_uid: Optional[str] = None
+    date: Optional[str] = None
+    cve_name: Optional[str] = None
+    cvss_score: Optional[float] = None
+
+    class Config:
+        """VwIscorePEVuln schema config class."""
+
+        orm_mode = True
+
+
+# vw_iscore_pe_vuln input schema:
+class VwIscorePEVulnInput(BaseModel):
+    """VwIscorePEVulnInput schema class."""
+
+    specified_orgs: List[str]
+    start_date: str
+    end_date: str
+
+    class Config:
+        """VwIscorePEVulnInput schema config class."""
+
+        orm_mode = True
+
+
+# vw_iscore_pe_vuln task response schema:
+class VwIscorePEVulnTaskResp(BaseModel):
+    """VwIscorePEVulnTaskResp schema class."""
+
+    task_id: str
+    status: str
+    result: Optional[List[VwIscorePEVuln]] = None
+    error: Optional[str] = None
+
+
+# vw_iscore_pe_cred schema:
+class VwIscorePECred(BaseModel):
+    """VwIscorePECred schema class."""
+
+    organizations_uid: str
+    parent_org_uid: Optional[str] = None
+    date: Optional[str] = None
+    password_creds: Optional[int] = None
+    total_creds: Optional[int] = None
+
+    class Config:
+        """VwIscorePECred schema config class."""
+
+        orm_mode = True
+
+
+# vw_iscore_pe_cred input schema:
+class VwIscorePECredInput(BaseModel):
+    """VwIscorePECredInput schema class."""
+
+    specified_orgs: List[str]
+    start_date: str
+    end_date: str
+
+    class Config:
+        """VwIscorePECredInput schema config class."""
+
+        orm_mode = True
+
+
+# vw_iscore_pe_cred task response schema:
+class VwIscorePECredTaskResp(BaseModel):
+    """VwIscorePECredTaskResp schema class."""
+
+    task_id: str
+    status: str
+    result: Optional[List[VwIscorePECred]] = None
+    error: Optional[str] = None
+
+
+# vw_iscore_pe_breach schema:
+class VwIscorePEBreach(BaseModel):
+    """VwIscorePEBreach schema class."""
+
+    organizations_uid: str
+    parent_org_uid: Optional[str] = None
+    date: Optional[str] = None
+    breach_count: Optional[int] = None
+
+    class Config:
+        """VwIscorePEBreach schema config class."""
+
+        orm_mode = True
+
+
+# vw_iscore_pe_breach input schema:
+class VwIscorePEBreachInput(BaseModel):
+    """VwIscorePEBreachInput schema class."""
+
+    specified_orgs: List[str]
+    start_date: str
+    end_date: str
+
+    class Config:
+        """VwIscorePEBreachInput schema config class."""
+
+        orm_mode = True
+
+
+# vw_iscore_pe_breach task response schema:
+class VwIscorePEBreachTaskResp(BaseModel):
+    """VwIscorePEBreachTaskResp schema class."""
+
+    task_id: str
+    status: str
+    result: Optional[List[VwIscorePEBreach]] = None
+    error: Optional[str] = None
+
+
+# vw_iscore_pe_darkweb schema:
+class VwIscorePEDarkweb(BaseModel):
+    """VwIscorePEDarkweb schema class."""
+
+    organizations_uid: str
+    parent_org_uid: Optional[str] = None
+    alert_type: Optional[str] = None
+    date: Optional[str] = None
+    Count: Optional[int] = None
+
+    class Config:
+        """VwIscorePEDarkweb schema config class."""
+
+        orm_mode = True
+
+
+# vw_iscore_pe_darkweb input schema:
+class VwIscorePEDarkwebInput(BaseModel):
+    """VwIscorePEDarkwebInput schema class."""
+
+    specified_orgs: List[str]
+    start_date: str
+    end_date: str
+    # Don't forget 0001-01-01 dates
+
+    class Config:
+        """VwIscorePEDarkwebInput schema config class."""
+
+        orm_mode = True
+
+
+# vw_iscore_pe_darkweb task response schema:
+class VwIscorePEDarkwebTaskResp(BaseModel):
+    """VwIscorePEDarkwebTaskResp schema class."""
+
+    task_id: str
+    status: str
+    result: Optional[List[VwIscorePEDarkweb]] = None
+    error: Optional[str] = None
+
+
+# vw_iscore_pe_protocol schema:
+class VwIscorePEProtocol(BaseModel):
+    """VwIscorePEProtocol schema class."""
+
+    organizations_uid: str
+    parent_org_uid: Optional[str] = None
+    port: Optional[str] = None
+    ip: Optional[str] = None
+    protocol: Optional[str] = None
+    protocol_type: Optional[str] = None
+    date: Optional[str] = None
+
+    class Config:
+        """VwIscorePEProtocol schema config class."""
+
+        orm_mode = True
+
+
+# vw_iscore_pe_protocol input schema:
+class VwIscorePEProtocolInput(BaseModel):
+    """VwIscorePEProtocolInput schema class."""
+
+    specified_orgs: List[str]
+    start_date: str
+    end_date: str
+
+    class Config:
+        """VwIscorePEProtocolInput schema config class."""
+
+        orm_mode = True
+
+
+# vw_iscore_pe_protocol task response schema:
+class VwIscorePEProtocolTaskResp(BaseModel):
+    """VwIscorePEProtocolTaskResp schema class."""
+
+    task_id: str
+    status: str
+    result: Optional[List[VwIscorePEProtocol]] = None
+    error: Optional[str] = None
+
+
+# vw_iscore_was_vuln schema:
+class VwIscoreWASVuln(BaseModel):
+    """VwIscoreWASVuln schema class."""
+
+    organizations_uid: str
+    parent_org_uid: Optional[str] = None
+    date: Optional[str] = None
+    cve_name: Optional[str] = None
+    cvss_score: Optional[float] = None
+    owasp_category: Optional[str] = None
+
+    class Config:
+        """VwIscoreWASVuln schema config class."""
+
+        orm_mode = True
+
+
+# vw_iscore_was_vuln input schema:
+class VwIscoreWASVulnInput(BaseModel):
+    """VwIscoreWASVulnInput schema class."""
+
+    specified_orgs: List[str]
+    start_date: str
+    end_date: str
+
+    class Config:
+        """VwIscoreWASVulnInput schema config class."""
+
+        orm_mode = True
+
+
+# vw_iscore_was_vuln task response schema:
+class VwIscoreWASVulnTaskResp(BaseModel):
+    """VwIscoreWASVulnTaskResp schema class."""
+
+    task_id: str
+    status: str
+    result: Optional[List[VwIscoreWASVuln]] = None
+    error: Optional[str] = None
+
+
+# vw_iscore_was_vuln_prev schema:
+class VwIscoreWASVulnPrev(BaseModel):
+    """VwIscoreWASVulnPrev schema class."""
+
+    organizations_uid: str
+    parent_org_uid: Optional[str] = None
+    was_total_vulns_prev: Optional[int] = None
+    date: Optional[str] = None
+
+    class Config:
+        """VwIscoreWASVulnPrev schema config class."""
+
+        orm_mode = True
+
+
+# vw_iscore_was_vuln_prev input schema:
+class VwIscoreWASVulnPrevInput(BaseModel):
+    """VwIscoreWASVulnPrevInput schema class."""
+
+    specified_orgs: List[str]
+    start_date: str
+    end_date: str
+
+    class Config:
+        """VwIscoreWASVulnPrevInput schema config class."""
+
+        orm_mode = True
+
+
+# vw_iscore_was_vuln_prev task response schema:
+class VwIscoreWASVulnPrevTaskResp(BaseModel):
+    """VwIscoreWASVulnPrevTaskResp schema class."""
+
+    task_id: str
+    status: str
+    result: Optional[List[VwIscoreWASVulnPrev]] = None
+    error: Optional[str] = None
+
+
+# KEV list query schema (no view):
+# KEV list query does not use any input parameters
+class KEVList(BaseModel):
+    """KEVList schema class."""
+
+    kev: str
+
+    class Config:
+        """KEVList schema config class."""
+
+        orm_mode = True
+
+
+# KEV list query task response schema (no view):
+class KEVListTaskResp(BaseModel):
+    """KEVListTaskResp schema class."""
+
+    task_id: str
+    status: str
+    result: Optional[List[KEVList]] = None
+    error: Optional[str] = None
+
+
+# ---------- Misc. Score Schemas ----------
+# vw_iscore_orgs_ip_counts schema:
+# vw_iscore_orgs_ip_counts does not use any input parameters
+class VwIscoreOrgsIpCounts(BaseModel):
+    """VwIscoreOrgsIpCounts schema class."""
+
+    organizations_uid: str
+    cyhy_db_name: str
+
+    class Config:
+        """VwIscoreOrgsIpCounts schema config class."""
+
+        orm_mode = True
+
+
+# vw_iscore_orgs_ip_counts task response schema:
+class VwIscoreOrgsIpCountsTaskResp(BaseModel):
+    """VwIscoreOrgsIpCountsTaskResp schema class."""
+
+    task_id: str
+    status: str
+    result: Optional[List[VwIscoreOrgsIpCounts]] = None
+    error: Optional[str] = None

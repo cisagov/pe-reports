@@ -11,14 +11,14 @@ import pandas as pd
 import requests
 
 from .data.pe_db.config import get_params
-from .data.pe_db.db_query import (
+from .data.pe_db.db_query_source import (
     connect,
     get_data_source_uid,
     get_intelx_breaches,
     get_orgs,
     insert_intelx_breaches,
     insert_intelx_credentials,
-    org_root_domains,
+    get_root_domains,
 )
 
 # Calculate Datetimes for collection period
@@ -60,12 +60,11 @@ class IntelX:
 
     def get_credentials(self, cyhy_org_id, pe_org_uid):
         """Get credentials for a provided org."""
-        LOGGER.info("Fetching credential data for %s.", cyhy_org_id)
+        LOGGER.info("Running IntelX on %s", cyhy_org_id)
 
         try:
             conn = connect()
-            roots_df = org_root_domains(conn, pe_org_uid)
-            LOGGER.info(f"Got roots for {cyhy_org_id}")
+            roots_df = get_root_domains(conn, pe_org_uid)
         except Exception as e:
             LOGGER.error("Failed fetching root domains for %s", cyhy_org_id)
             LOGGER.error(e)
@@ -120,7 +119,6 @@ class IntelX:
             except Exception as e:
                 LOGGER.error(f"Error occured geting search id: {e}")
                 return 0
-        LOGGER.info("Acquired search id.")
         time.sleep(5)
         return response.json()
 
@@ -151,9 +149,8 @@ class IntelX:
         """Find leaks for a domain between two dates."""
         all_results_list = []
         for domain in domain_list:
-            if not domain: 
+            if not domain:
                 continue
-            LOGGER.info("Finding credentials leaked associated with " + domain)
             response = self.query_identity_api(domain, start_date, end_date)
             if not response:
                 continue

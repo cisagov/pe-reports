@@ -4,7 +4,8 @@ from django.contrib.auth.decorators import login_required
 from .views import StatusForm,\
     FetchWeeklyStatusesView, \
     WeeklyStatusesFormOnlyView,\
-    FetchUserWeeklyStatusesView
+    FetchUserWeeklyStatusesView, \
+    PeBulkUploadForm 
 
 urlpatterns = [
 
@@ -12,7 +13,6 @@ urlpatterns = [
     path('index/', views.index, name='index'),
     path('create_word_doc/', views.create_word_document,
          name='create_word_doc'),
-    path('stakeholder/', views.stakeholder, name='stakeholder'),
     path('weekly_status/', login_required(StatusForm.as_view()),
          name='weekly_status'),
     path('fetch_weekly_statuses/',
@@ -23,5 +23,6 @@ urlpatterns = [
          name='fetch_user_weekly_statuses'),
     path('weekly-status-form-only/', WeeklyStatusesFormOnlyView.as_view(),
          name='weekly-status-form-only'),
-
+     
+    path('stakeholder/', login_required(PeBulkUploadForm.as_view()), name='peBulkUpload'),
 ]

@@ -86,9 +86,17 @@ class Charts:
         name = self.name
         color = ["#1357BE", "#D0342C"]
         df.plot(kind="bar", stacked=True, zorder=3, color=color)
+        # Add title to chart
         plt.title(title, pad=15, fontsize=10)
+        # Format chart's axis
         plt.xlabel(x_label, labelpad=10, fontdict={"size": 8})
         plt.ylabel(y_label, labelpad=10, fontdict={"size": 8})
+        plt.gca().yaxis.set_major_locator(MaxNLocator(integer=True))
+        plt.rc("axes", axisbelow=True)
+        plt.grid(axis="y", zorder=0)
+        plt.xticks(rotation=0)
+        plt.ylim(ymin=0)
+        # Set sizing for image
         plt.gcf().set_size_inches(
             width / CM_CONVERSION_FACTOR, height / CM_CONVERSION_FACTOR
         )
@@ -133,7 +141,7 @@ class Charts:
             width / CM_CONVERSION_FACTOR, height / CM_CONVERSION_FACTOR
         )
         plt.tight_layout()
-
+        # Add data labels to each bar if greater than 0
         for i in range(len(df)):
             if df.loc[i, value_name] > 0:
                 label = df.loc[i, value_name]
@@ -198,6 +206,12 @@ class Charts:
         plt.xlabel(x_label, labelpad=10, fontdict={"size": 8})
         plt.xticks(rotation=0)
         plt.grid(axis="y")
+        # Add legend
+        plt.legend(loc="upper right")
+        # Set sizing for image
+        plt.gcf().set_size_inches(
+            width / CM_CONVERSION_FACTOR, height / CM_CONVERSION_FACTOR
+        )
         plt.tight_layout()
 
         # loop through the dataframe

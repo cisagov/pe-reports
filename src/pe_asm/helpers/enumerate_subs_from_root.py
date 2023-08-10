@@ -72,7 +72,7 @@ def enumerate_roots(root_domain, root_uid):
     return found_subs
 
 
-def get_subdomains(staging=False):
+def get_subdomains(staging=False, roots_df=None):
     """Enumerate roots and save subdomains."""
     # Connect to database
     if staging:
@@ -81,18 +81,18 @@ def get_subdomains(staging=False):
         conn = pe_db_connect()
 
     # Query root domains
-    roots_df = query_roots(conn)
+    if not isinstance(roots_df, pd.DataFrame):
+        roots_df = query_roots(conn)
     total_roots = len(roots_df.index)
     LOGGER.info("Got %d root domains.", total_roots)
 
     # Loop through roots
     count = 0
     for root_index, root_row in roots_df.iterrows():
-
         # Enumerate for sub-domains
-        print(root_row["root_domain"])
+        LOGGER.info("Enumerating this root: %s", root_row["root_domain"])
         subs = enumerate_roots(root_row["root_domain"], root_row["root_domain_uid"])
-
+        LOGGER.info(subs)
         # Create DataFrame
         subs_df = pd.DataFrame(subs)
 
@@ -102,11 +102,6 @@ def get_subdomains(staging=False):
         count += 1
         if count % 10 == 0 or count == total_roots:
             LOGGER.info("\t\t%d/%d complete.", count, total_roots)
-
-    # Identify which Sub-domians are current
-    LOGGER.info("Identify changes.")
-    identify_sub_changes(conn)
-    LOGGER.info("Success.")
 
     # Close database connection
     conn.close()

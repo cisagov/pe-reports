@@ -5,6 +5,9 @@
 import datetime
 import logging
 import sys
+import requests
+import json
+import time
 
 # Third-Party Libraries
 import pandas as pd
@@ -25,7 +28,58 @@ from .config import config, staging_config
 LOGGER = logging.getLogger(__name__)
 
 CONN_PARAMS_DIC = config()
-CONN_PARAMS_DIC_STAGING = staging_config()
+# CONN_PARAMS_DIC_STAGING = staging_config()
+
+# These need to filled with API key/url path in database.ini
+pe_api_key = CONN_PARAMS_DIC.get("pe_api_key")
+pe_api_url = CONN_PARAMS_DIC.get("pe_api_url")
+
+
+def task_api_call(task_url, check_url, data={}, retry_time=3):
+    """
+    Query tasked endpoint given task_url and check_url
+
+    Return:
+        Endpoint result
+    """
+    # Endpoint info
+    create_task_url = pe_api_url + task_url
+    check_task_url = pe_api_url + check_url
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": pe_api_key,
+    }
+    task_status = "Pending"
+    check_task_resp = ""
+    try:
+        # Create task for query
+        create_task_result = requests.post(
+            create_task_url, headers=headers, data=data
+        ).json()
+        task_id = create_task_result.get("task_id")
+        LOGGER.info("Created task for", task_url, "query, task_id: ", task_id)
+        check_task_url += task_id
+        while task_status != "Completed" and task_status != "Failed":
+            # Ping task status endpoint and get status
+            check_task_resp = requests.get(check_task_url, headers=headers).json()
+            task_status = check_task_resp.get("status")
+            LOGGER.info("\tPinged", check_url, "status endpoint, status:", task_status)
+            time.sleep(retry_time)
+    except requests.exceptions.HTTPError as errh:
+        LOGGER.error(errh)
+    except requests.exceptions.ConnectionError as errc:
+        LOGGER.error(errc)
+    except requests.exceptions.Timeout as errt:
+        LOGGER.error(errt)
+    except requests.exceptions.RequestException as err:
+        LOGGER.error(err)
+    except json.decoder.JSONDecodeError as err:
+        LOGGER.error(err)
+    # Once task finishes, return result
+    if task_status == "Completed":
+        return check_task_resp.get("result")
+    else:
+        raise Exception("API calls failed ", check_task_resp)
 
 
 def show_psycopg2_exception(err):
@@ -411,1035 +465,6 @@ def query_trusty_mail(org_id_list):
     finally:
         if conn is not None:
             close(conn)
-
-
-# v ---------- D-Score SQL Queries ---------- v
-# ----- VS Cert -----
-def query_dscore_vs_data_cert(org_list):
-    """
-    Query all VS certificate data needed for D-Score calculation.
-
-    Args:
-        org_list: The specified list of organizations to retrieve data for
-    Return:
-        All VS certificate data of the specified orgs needed for the D-Score
-    """
-    # Open connection
-    conn = connect()
-    # Build query
-    # sector_str = (
-    #     "UUID('" + "')), (UUID('".join(org_list["organizations_uid"].tolist()) + "')"
-    # )
-    
-    # sql = """
-    # SELECT
-    #     sector.organizations_uid, cert.parent_org_uid, cert.num_ident_cert, cert.num_monitor_cert
-    # FROM
-    #     (VALUES (%(sector_str)s)) AS sector(organizations_uid)
-    #     LEFT JOIN
-    #     vw_dscore_vs_cert cert
-    #     ON sector.organizations_uid = cert.organizations_uid::varchar;"""
-
-    sql = """
-       SELECT  cert.organizations_uid, cert.parent_org_uid, cert.num_ident_cert, cert.num_monitor_cert
-        FROM  vw_dscore_vs_cert cert
-        Where cert.organizations_uid in %(sector_str)s
-    """
-    # Make query
-    dscore_vs_data_cert = pd.read_sql(
-        sql,
-        conn,
-        params={"sector_str": tuple(org_list["organizations_uid"].tolist())},
-    )
-    # Close connection
-    conn.close()
-    return dscore_vs_data_cert
-
-
-# ----- VS Mail -----
-def query_dscore_vs_data_mail(org_list):
-    """
-    Query all VS mail data needed for D-Score calculation.
-
-    Args:
-        org_list: The specified list of organizations to retrieve data for
-    Return:
-        All VS mail data of the specified orgs needed for the D-Score
-    """
-    # Open connection
-    conn = connect()
-    # Build query
-    # sector_str = (
-    #     "UUID('" + "')), (UUID('".join(org_list["organizations_uid"].tolist()) + "')"
-    # )
-    # sql = """
-    # SELECT
-    #     sector.organizations_uid, mail.parent_org_uid, mail.num_valid_dmarc, mail.num_valid_spf, mail.num_valid_dmarc_or_spf, mail.total_mail_domains
-    # FROM
-    #     (VALUES (%(sector_str)s)) AS sector(organizations_uid)
-    #     LEFT JOIN
-    #     vw_dscore_vs_mail mail
-    #     ON sector.organizations_uid = mail.organizations_uid;"""
-
-    sql = """
-       SELECT  mail.organizations_uid, mail.parent_org_uid, mail.num_valid_dmarc, mail.num_valid_spf, mail.num_valid_dmarc_or_spf, mail.total_mail_domains
-        FROM  vw_dscore_vs_mail mail
-        Where mail.organizations_uid in %(sector_str)s
-    """
-    # Make query
-    dscore_vs_data_mail = pd.read_sql(
-        sql,
-        conn,
-        params={"sector_str": tuple(org_list["organizations_uid"].tolist())},
-    )
-    # Close connection
-    conn.close()
-    return dscore_vs_data_mail
-
-
-# ----- PE IP -----
-def query_dscore_pe_data_ip(org_list):
-    """
-    Query all PE IP data needed for D-Score calculation.
-
-    Args:
-        org_list: The specified list of organizations to retrieve data for
-    Return:
-        All PE ip data of the specified orgs needed for the D-Score
-    """
-    # Open connection
-    conn = connect()
-    # Build query
-    sector_str = (
-        "UUID('" + "')), (UUID('".join(org_list["organizations_uid"].tolist()) + "')"
-    )
-    sql = """
-    SELECT
-        sector.organizations_uid, ip.parent_org_uid, ip.num_ident_ip, ip.num_monitor_ip
-    FROM
-        (VALUES (%(sector_str)s)) AS sector(organizations_uid)
-        LEFT JOIN
-        vw_dscore_pe_ip ip
-        ON sector.organizations_uid = ip.organizations_uid;"""
-
-    # sql = """
-    #    SELECT  ip.organizations_uid, ip.parent_org_uid, ip.num_ident_ip, ip.num_monitor_ip
-    #     FROM  vw_dscore_pe_ip ip
-    #     Where ip.organizations_uid in %(sector_str)s
-    # """
-    # Make query
-    # tuple(org_list["organizations_uid"].tolist())
-    dscore_pe_data_ip = pd.read_sql(
-        sql,
-        conn,
-        params={"sector_str": AsIs(sector_str)},
-    )
-    # Close connection
-    conn.close()
-    return dscore_pe_data_ip
-
-
-# ----- PE Domain -----
-def query_dscore_pe_data_domain(org_list):
-    """
-    Query all PE domain data needed for D-Score calculation.
-
-    Args:
-        org_list: The specified list of organizations to retrieve data for
-    Return:
-        All PE domain data of the specified orgs needed for the D-Score
-    """
-    # Open connection
-    conn = connect()
-    # Build query
-    # sector_str = (
-    #     "UUID('" + "')), (UUID('".join(org_list["organizations_uid"].tolist()) + "')"
-    # )
-    # sql = """
-    # SELECT
-    #     sector.organizations_uid, domain.parent_org_uid, domain.num_ident_domain, domain.num_monitor_domain
-    # FROM
-    #     (VALUES (%(sector_str)s)) AS sector(organizations_uid)
-    #     LEFT JOIN
-    #     vw_dscore_pe_domain domain
-    #     ON sector.organizations_uid = domain.organizations_uid;"""
-
-    sql = """
-       SELECT  
-            domain.organizations_uid, domain.parent_org_uid, domain.num_ident_domain, domain.num_monitor_domain
-       FROM  
-            vw_dscore_pe_domain domain
-        Where domain.organizations_uid in %(sector_str)s
-    """
-    # Make query
-    dscore_pe_data_domain = pd.read_sql(
-        sql,
-        conn,
-        params={"sector_str": tuple(org_list["organizations_uid"].tolist())},
-    )
-    # Close connection
-    conn.close()
-    return dscore_pe_data_domain
-
-
-# ----- WAS Webapp -----
-def query_dscore_was_data_webapp(org_list):
-    """
-    Query all WAS webapp data needed for D-Score calculation.
-
-    Args:
-        org_list: The specified list of organizations to retrieve data for
-    Return:
-        All WAS webapp data of the specified orgs needed for the D-Score
-    """
-    # Open connection
-    conn = connect()
-    # Build query
-    # sector_str = (
-    #     "UUID('" + "')), (UUID('".join(org_list["organizations_uid"].tolist()) + "')"
-    # )
-    # sql = """
-    # SELECT
-    #     sector.organizations_uid, webapp.parent_org_uid, webapp.num_ident_webapp, webapp.num_monitor_webapp
-    # FROM
-    #     (VALUES (%(sector_str)s)) AS sector(organizations_uid)
-    #     LEFT JOIN
-    #     vw_dscore_was_webapp webapp
-    #     ON sector.organizations_uid = webapp.organizations_uid;"""
-    sql = """
-       SELECT  
-            webapp.organizations_uid, webapp.parent_org_uid, webapp.num_ident_webapp, webapp.num_monitor_webapp
-       FROM  
-            vw_dscore_was_webapp webapp
-        Where webapp.organizations_uid in %(sector_str)s
-    """
-
-    # Make query
-    dscore_was_data_webapp = pd.read_sql(
-        sql,
-        conn,
-        params={"sector_str": tuple(org_list["organizations_uid"].tolist())},
-    )
-    # Close connection
-    conn.close()
-    return dscore_was_data_webapp
-
-
-# v ---------- I-Score SQL Queries ---------- v
-# ----- VS Vulns -----
-def query_iscore_vs_data_vuln(org_list):
-    """
-    Query all VS vuln data needed for I-Score calculation.
-
-    Args:
-        org_list: The specified list of organizations to retrieve data for
-    Return:
-        All VS vuln data of the specified orgs needed for the I-Score
-    """
-    # Open connection
-    conn = connect()
-    # Build query
-    # sector_str = (
-    #     "UUID('" + "')), (UUID('".join(org_list["organizations_uid"].tolist()) + "')"
-    # )
-    # sql = """
-    # SELECT
-    #     sector.organizations_uid, vuln.parent_org_uid, vuln.cve_name, vuln.cvss_score
-    # FROM
-    #     (VALUES (%(sector_str)s)) AS sector(organizations_uid)
-    #     LEFT JOIN
-    #     vw_iscore_vs_vuln vuln
-    #     ON sector.organizations_uid = vuln.organizations_uid;"""
-
-    sql = """
-       SELECT  
-            vuln.organizations_uid, vuln.parent_org_uid, vuln.cve_name, vuln.cvss_score
-       FROM  
-            vw_iscore_vs_vuln vuln
-        Where vuln.organizations_uid in %(sector_str)s
-    """
-    # Make query
-    iscore_vs_vuln_data = pd.read_sql(
-        sql,
-        conn,
-        params={"sector_str": tuple(org_list["organizations_uid"].tolist())},
-    )
-    # Close connection
-    conn.close()
-    # Check if dataframe comes back empty
-    if iscore_vs_vuln_data.empty:
-        # If empty, insert placeholder data row
-        # This data will not affect score calculations
-        iscore_vs_vuln_data = pd.concat(
-            [
-                iscore_vs_vuln_data,
-                pd.DataFrame(
-                    {
-                        "organizations_uid": "test_org",
-                        "parent_org_uid": "test_parent_org",
-                        "cve_name": "test_cve",
-                        "cvss_score": 1.0,
-                    },
-                    index=[0],
-                ),
-            ],
-            ignore_index=True,
-        )
-    return iscore_vs_vuln_data
-
-
-# ----- VS Vulns Previous -----
-def query_iscore_vs_data_vuln_prev(org_list, start_date, end_date):
-    """
-    Query all VS prev vuln data needed for I-Score calculation.
-
-    Args:
-        org_list: The specified list of organizations to retrieve data for
-        start_date: Start date of specified report period
-        end_date: End date of specified report period
-    Return:
-        All VS prev vuln data of the specified orgs needed for the I-Score
-    """
-    # Open connection
-    conn = connect()
-    # Build query
-    # sector_str = (
-    #     "UUID('" + "')), (UUID('".join(org_list["organizations_uid"].tolist()) + "')"
-    # )
-    # sql = """
-    # SELECT
-    #     sector.organizations_uid, prev_vuln.parent_org_uid, prev_vuln.cve_name, prev_vuln.cvss_score, prev_vuln.time_closed
-    # FROM
-    #     (VALUES (%(sector_str)s)) AS sector(organizations_uid)
-    #     LEFT JOIN
-    #     vw_iscore_vs_vuln prev_vuln
-    #     ON sector.organizations_uid = prev_vuln.organizations_uid
-    # WHERE
-    #     time_closed BETWEEN %(start_date)s AND %(end_date)s;"""
-
-    sql = """
-        SELECT 
-            prev_vuln.organizations_uid, prev_vuln.parent_org_uid, prev_vuln.cve_name, prev_vuln.cvss_score, prev_vuln.time_closed
-        FROM 
-            vw_iscore_vs_vuln_prev prev_vuln
-        WHERE 
-            prev_vuln.organizations_uid in %(sector_str)s
-        AND 
-            prev_vuln.time_closed BETWEEN %(start_date)s AND %(end_date)s;
-    """
-    # Make query
-    iscore_vs_vuln_prev_data = pd.read_sql(
-        sql,
-        conn,
-        params={
-            "sector_str": tuple(org_list["organizations_uid"].tolist()),
-            "start_date": start_date,
-            "end_date": end_date,
-        },
-    )
-    # Close connection
-    conn.close()
-    # Check if dataframe comes back empty
-    if iscore_vs_vuln_prev_data.empty:
-        # If empty, insert placeholder data row
-        # This data will not affect score calculations
-        iscore_vs_vuln_prev_data = pd.concat(
-            [
-                iscore_vs_vuln_prev_data,
-                pd.DataFrame(
-                    {
-                        "organizations_uid": "test_org",
-                        "parent_org_uid": "test_parent_org",
-                        "cve_name": "test_cve",
-                        "cvss_score": 1.0,
-                        "time_closed": datetime.date(1, 1, 1),
-                    },
-                    index=[0],
-                ),
-            ],
-            ignore_index=True,
-        )
-    return iscore_vs_vuln_prev_data
-
-
-# ----- PE Vulns -----
-def query_iscore_pe_data_vuln(org_list, start_date, end_date):
-    """
-    Query all PE vuln data needed for I-Score calculation.
-
-    Args:
-        org_list: The specified list of organizations to retrieve data for
-        start_date: Start date of specified report period
-        end_date: End date of specified report period
-    Return:
-        All PE vuln data of the specified orgs needed for the I-Score
-    """
-    # Open connection
-    conn = connect()
-    # Build query
-    # sector_str = (
-    #     "UUID('" + "')), (UUID('".join(org_list["organizations_uid"].tolist()) + "')"
-    # )
-    # sql = """
-    # SELECT
-    #     sector.organizations_uid, vuln.parent_org_uid, vuln.date, vuln.cve_name, vuln.cvss_score
-    # FROM
-    #     (VALUES (%(sector_str)s)) AS sector(organizations_uid)
-    #     LEFT JOIN
-    #     vw_iscore_pe_vuln vuln
-    #     ON sector.organizations_uid = vuln.organizations_uid
-    # WHERE
-    #     date BETWEEN %(start_date)s AND %(end_date)s;"""
-
-    sql = """
-    SELECT
-        vuln.organizations_uid, vuln.parent_org_uid, vuln.date, vuln.cve_name, vuln.cvss_score
-    FROM
-        vw_iscore_pe_vuln vuln
-    WHERE
-        vuln.organizations_uid in %(sector_str)s
-    AND 
-        vuln.date BETWEEN %(start_date)s AND %(end_date)s;
-    """
-
-    # Make query
-    iscore_pe_vuln_data = pd.read_sql(
-        sql,
-        conn,
-        params={
-            "sector_str": tuple(org_list["organizations_uid"].tolist()),
-            "start_date": start_date,
-            "end_date": end_date,
-        },
-    )
-    # Close connection
-    conn.close()
-    # Check if dataframe comes back empty
-    if iscore_pe_vuln_data.empty:
-        # If empty, insert placeholder data row
-        # This data will not affect score calculations
-        iscore_pe_vuln_data = pd.concat(
-            [
-                iscore_pe_vuln_data,
-                pd.DataFrame(
-                    {
-                        "organizations_uid": "test_org",
-                        "parent_org_uid": "test_parent_org",
-                        "date": datetime.date(1, 1, 1),
-                        "cve_name": "test_cve",
-                        "cvss_score": 1.0,
-                    },
-                    index=[0],
-                ),
-            ],
-            ignore_index=True,
-        )
-    return iscore_pe_vuln_data
-
-
-# ----- PE Vulns Previous -----
-# Uses query_iscore_pe_data_vuln, but with prev report period dates
-
-
-# ----- PE Creds -----
-def query_iscore_pe_data_cred(org_list, start_date, end_date):
-    """
-    Query all PE cred data needed for I-Score calculation.
-
-    Args:
-        org_list: The specified list of organizations to retrieve data for
-        start_date: Start date of specified report period
-        end_date: End date of specified report period
-    Return:
-        All PE cred data of the specified orgs needed for the I-Score
-    """
-    # Open connection
-    conn = connect()
-    # Build query
-    # sector_str = (
-    #     "UUID('" + "')), (UUID('".join(org_list["organizations_uid"].tolist()) + "')"
-    # )
-    # sql = """
-    # SELECT
-    #     sector.organizations_uid, cred.parent_org_uid, cred.date, cred.password_creds, cred.total_creds
-    # FROM
-    #     (VALUES (%(sector_str)s)) AS sector(organizations_uid)
-    #     LEFT JOIN
-    #     vw_iscore_pe_cred cred
-    #     ON sector.organizations_uid = cred.organizations_uid
-    # WHERE
-    #     date BETWEEN %(start_date)s AND %(end_date)s;"""
-
-    sql = """
-        SELECT
-            cred.organizations_uid, cred.parent_org_uid, cred.date, cred.password_creds, cred.total_creds
-        FROM
-            vw_iscore_pe_cred cred
-        WHERE 
-            cred.organizations_uid in %(sector_str)s
-        AND
-            date BETWEEN %(start_date)s AND %(end_date)s;
-    """
-    # Make query
-    iscore_pe_cred_data = pd.read_sql(
-        sql,
-        conn,
-        params={
-            "sector_str": tuple(org_list["organizations_uid"].tolist()),
-            "start_date": start_date,
-            "end_date": end_date,
-        },
-    )
-    # Close connection
-    conn.close()
-    # Check if dataframe comes back empty
-    if iscore_pe_cred_data.empty:
-        # If empty, insert placeholder data row
-        # This data will not affect score calculations
-        iscore_pe_cred_data = pd.concat(
-            [
-                iscore_pe_cred_data,
-                pd.DataFrame(
-                    {
-                        "organizations_uid": "test_org",
-                        "parent_org_uid": "test_parent_org",
-                        "date": datetime.date(1, 1, 1),
-                        "password_creds": 0,
-                        "total_creds": 0,
-                    },
-                    index=[0],
-                ),
-            ],
-            ignore_index=True,
-        )
-    return iscore_pe_cred_data
-
-
-# ----- PE Breaches -----
-def query_iscore_pe_data_breach(org_list, start_date, end_date):
-    """
-    Query all PE breach data needed for I-Score calculation.
-
-    Args:
-        org_list: The specified list of organizations to retrieve data for
-        start_date: Start date of specified report period
-        end_date: End date of specified report period
-    Return:
-        All PE breach data of the specified orgs needed for the I-Score
-    """
-    # Open connection
-    conn = connect()
-    # Build query
-    # sector_str = (
-    #     "UUID('" + "')), (UUID('".join(org_list["organizations_uid"].tolist()) + "')"
-    # )
-    # sql = """
-    # SELECT
-    #     sector.organizations_uid, breach.parent_org_uid, breach.date, breach.breach_count
-    # FROM
-    #     (VALUES (%(sector_str)s)) AS sector(organizations_uid)
-    #     LEFT JOIN
-    #     vw_iscore_pe_breach breach
-    #     ON sector.organizations_uid = breach.organizations_uid
-    # WHERE
-    #     date BETWEEN %(start_date)s AND %(end_date)s;"""
-
-    sql = """
-        SELECT 
-            breach.organizations_uid, breach.parent_org_uid, breach.date, breach.breach_count
-        FROM
-            vw_iscore_pe_breach breach
-        WHERE 
-            breach.organizations_uid in %(sector_str)s
-        AND
-            date BETWEEN %(start_date)s AND %(end_date)s;"""
-
-    # Make query
-    iscore_pe_breach_data = pd.read_sql(
-        sql,
-        conn,
-        params={
-            "sector_str": tuple(org_list["organizations_uid"].tolist()),
-            "start_date": start_date,
-            "end_date": end_date,
-        },
-    )
-    # Close connection
-    conn.close()
-    # Check if dataframe comes back empty
-    if iscore_pe_breach_data.empty:
-        # If empty, insert placeholder data row
-        # This data will not affect score calculations
-        iscore_pe_breach_data = pd.concat(
-            [
-                iscore_pe_breach_data,
-                pd.DataFrame(
-                    {
-                        "organizations_uid": "test_org",
-                        "parent_org_uid": "test_parent_org",
-                        "date": datetime.date(1, 1, 1),
-                        "breach_count": 0,
-                    },
-                    index=[0],
-                ),
-            ],
-            ignore_index=True,
-        )
-    return iscore_pe_breach_data
-
-
-# ----- PE DarkWeb -----
-def query_iscore_pe_data_darkweb(org_list, start_date, end_date):
-    """
-    Query all PE dark web data needed for I-Score calculation.
-
-    Args:
-        org_list: The specified list of organizations to retrieve data for
-        start_date: Start date of specified report period
-        end_date: End date of specified report period
-    Return:
-        All PE darkweb data of the specified orgs needed for the I-Score
-    """
-    # Open connection
-    conn = connect()
-    # Build query
-    sector_str = (
-        "UUID('" + "')), (UUID('".join(org_list["organizations_uid"].tolist()) + "')"
-    )
-    sql = """
-    SELECT
-        sector.organizations_uid, darkweb.parent_org_uid, darkweb.alert_type, darkweb.date, darkweb."Count"
-    FROM
-        (VALUES (%(sector_str)s)) AS sector(organizations_uid)
-        LEFT JOIN
-        vw_iscore_pe_darkweb darkweb
-        ON sector.organizations_uid = darkweb.organizations_uid
-    WHERE
-        date BETWEEN %(start_date)s AND %(end_date)s OR date = '0001-01-01';"""
-
-    sql = """
-        SELECT 
-            darkweb.organizations_uid, darkweb.parent_org_uid, darkweb.alert_type, darkweb.date, darkweb."Count"
-        FROM
-            vw_iscore_pe_darkweb darkweb
-        WHERE 
-            darkweb.organizations_uid in %(sector_str)s
-        AND
-        date BETWEEN %(start_date)s AND %(end_date)s OR date = '0001-01-01';"""
-
-    # Make query
-    iscore_pe_darkweb_data = pd.read_sql(
-        sql,
-        conn,
-        params={
-            "sector_str": tuple(org_list["organizations_uid"].tolist()),
-            "start_date": start_date,
-            "end_date": end_date,
-        },
-    )
-    # Close connection
-    conn.close()
-    # Check if dataframe comes back empty
-    if iscore_pe_darkweb_data.empty:
-        # If empty, insert placeholder data row
-        # This data will not affect score calculations
-        iscore_pe_darkweb_data = pd.concat(
-            [
-                iscore_pe_darkweb_data,
-                pd.DataFrame(
-                    {
-                        "organizations_uid": "test_org",
-                        "parent_org_uid": "test_parent_org",
-                        "alert_type": "TEST_TYPE",
-                        "date": datetime.date(1, 1, 1),
-                        "Count": 0,
-                    },
-                    index=[0],
-                ),
-            ],
-            ignore_index=True,
-        )
-    return iscore_pe_darkweb_data
-
-
-# ----- PE Protocol -----
-def query_iscore_pe_data_protocol(org_list, start_date, end_date):
-    """
-    Query all PE protocol data needed for I-Score calculation.
-
-    Args:
-        org_list: The specified list of organizations to retrieve data for
-        start_date: Start date of specified report period
-        end_date: End date of specified report period
-    Return:
-        All PE protocol data of the specified orgs needed for the I-Score
-    """
-    # Open connection
-    conn = connect()
-    # Build query
-    # sector_str = (
-    #     "UUID('" + "')), (UUID('".join(org_list["organizations_uid"].tolist()) + "')"
-    # )
-    # sql = """
-    # SELECT
-    #     sector.organizations_uid, protocol.parent_org_uid, protocol.port, protocol.ip, protocol.protocol, protocol.protocol_type, protocol.date
-    # FROM
-    #     (VALUES (%(sector_str)s)) AS sector(organizations_uid)
-    #     LEFT JOIN
-    #     vw_iscore_pe_protocol protocol
-    #     ON sector.organizations_uid = protocol.organizations_uid
-    # WHERE
-    #     date BETWEEN %(start_date)s AND %(end_date)s;"""
-
-    sql = """
-        SELECT
-            protocol.organizations_uid, protocol.parent_org_uid, protocol.port, protocol.ip, protocol.protocol, protocol.protocol_type, protocol.date
-        FROM 
-            vw_iscore_pe_protocol protocol
-        WHERE 
-            protocol.organizations_uid in %(sector_str)s
-        AND
-            date BETWEEN %(start_date)s AND %(end_date)s;
-    """
-    # Make query
-    iscore_pe_protocol_data = pd.read_sql(
-        sql,
-        conn,
-        params={
-            "sector_str": tuple(org_list["organizations_uid"].tolist()),
-            "start_date": start_date,
-            "end_date": end_date,
-        },
-    )
-    # Close connection
-    conn.close()
-    # Check if dataframe comes back empty
-    if iscore_pe_protocol_data.empty:
-        # If empty, insert placeholder data row
-        # This data will not affect score calculations
-        iscore_pe_protocol_data = pd.concat(
-            [
-                iscore_pe_protocol_data,
-                pd.DataFrame(
-                    {
-                        "organizations_uid": "test_org",
-                        "parent_org_uid": "test_parent_org",
-                        "port": "test_port",
-                        "ip": "test_ip",
-                        "protocol": "test_protocol",
-                        "protocol_type": "test_type",
-                        "date": datetime.date(1, 1, 1),
-                    },
-                    index=[0],
-                ),
-            ],
-            ignore_index=True,
-        )
-    return iscore_pe_protocol_data
-
-
-# ----- WAS Vulns -----
-def query_iscore_was_data_vuln(org_list, start_date, end_date):
-    """
-    Query all WAS vuln data needed for I-Score calculation.
-
-    Args:
-        org_list: The specified list of organizations to retrieve data for
-        start_date: Start date of specified report period
-        end_date: End date of specified report period
-    Return:
-        All WAS vuln data of the specified orgs needed for the I-Score
-    """
-    # Open connection
-    conn = connect()
-    # Build query
-    # sector_str = (
-    #     "UUID('" + "')), (UUID('".join(org_list["organizations_uid"].tolist()) + "')"
-    # )
-    # sql = """
-    # SELECT
-    #     sector.organizations_uid, vuln.parent_org_uid, vuln.date, vuln.cve_name, vuln.cvss_score, vuln.owasp_category
-    # FROM
-    #     (VALUES (%(sector_str)s)) AS sector(organizations_uid)
-    #     LEFT JOIN
-    #     vw_iscore_was_vuln vuln
-    #     ON sector.organizations_uid = vuln.organizations_uid
-    # WHERE
-    #     date BETWEEN %(start_date)s AND %(end_date)s;"""
-
-    sql = """
-        SELECT
-            vuln.organizations_uid, vuln.parent_org_uid, vuln.date, vuln.cve_name, vuln.cvss_score, vuln.owasp_category
-        FROM
-            vw_iscore_was_vuln vuln
-        WHERE
-            vuln.organizations_uid in %(sector_str)s
-        AND
-            date BETWEEN %(start_date)s AND %(end_date)s;
-    """
-    # Make query
-    iscore_was_vuln_data = pd.read_sql(
-        sql,
-        conn,
-        params={
-            "sector_str":  tuple(org_list["organizations_uid"].tolist()),
-            "start_date": start_date,
-            "end_date": end_date,
-        },
-    )
-    # Close connection
-    conn.close()
-    # Check if dataframe comes back empty
-    if iscore_was_vuln_data.empty:
-        # If empty, insert placeholder data row
-        # This data will not affect score calculations
-        iscore_was_vuln_data = pd.concat(
-            [
-                iscore_was_vuln_data,
-                pd.DataFrame(
-                    {
-                        "organizations_uid": "test_org",
-                        "parent_org_uid": "test_parent_org",
-                        "date": datetime.date(1, 1, 1),
-                        "cve_name": "test_cve",
-                        "cvss_score": 1.0,
-                        "owasp_category": "test_category",
-                    },
-                    index=[0],
-                ),
-            ],
-            ignore_index=True,
-        )
-    return iscore_was_vuln_data
-
-
-# ----- WAS Vulns Previous -----
-def query_iscore_was_data_vuln_prev(org_list, start_date, end_date):
-    """
-    Query all WAS prev vuln data needed for I-Score calculation.
-
-    Args:
-        org_list: The specified list of organizations to retrieve data for
-        start_date: Start date of specified report period
-        end_date: End date of specified report period
-    Return:
-        All WAS vuln prev data of the specified orgs needed for the I-Score
-    """
-    # Open connection
-    conn = connect()
-    # Build query
-    # sector_str = (
-    #     "UUID('" + "')), (UUID('".join(org_list["organizations_uid"].tolist()) + "')"
-    # )
-    # sql = """
-    # SELECT
-    #     sector.organizations_uid, prev_vuln.parent_org_uid, prev_vuln.was_total_vulns_prev, prev_vuln.date
-    # FROM
-    #     (VALUES (%(sector_str)s)) AS sector(organizations_uid)
-    #     LEFT JOIN
-    #     vw_iscore_was_vuln_prev prev_vuln
-    #     ON sector.organizations_uid = prev_vuln.organizations_uid
-    # WHERE
-    #     date BETWEEN %(start_date)s AND %(end_date)s;"""
-
-    sql = """
-        SELECT 
-            prev_vuln.organizations_uid, prev_vuln.parent_org_uid, prev_vuln.was_total_vulns_prev, prev_vuln.date
-        FROM 
-            vw_iscore_was_vuln_prev prev_vuln
-        WHERE 
-            prev_vuln.organizations_uid in %(sector_str)s
-        AND 
-            date BETWEEN %(start_date)s AND %(end_date)s;
-    """
-    # Make query
-    iscore_was_vuln_prev_data = pd.read_sql(
-        sql,
-        conn,
-        params={
-            "sector_str": tuple(org_list["organizations_uid"].tolist()),
-            "start_date": start_date,
-            "end_date": end_date,
-        },
-    )
-    # Close connection
-    conn.close()
-    # Check if dataframe comes back empty
-    if iscore_was_vuln_prev_data.empty:
-        # If empty, insert placeholder data row
-        # This data will not affect score calculations
-        iscore_was_vuln_prev_data = pd.concat(
-            [
-                iscore_was_vuln_prev_data,
-                pd.DataFrame(
-                    {
-                        "organizations_uid": "test_org",
-                        "parent_org_uid": "test_parent_org",
-                        "was_total_vulns_prev": 0,
-                        "date": datetime.date(1, 1, 1),
-                    },
-                    index=[0],
-                ),
-            ],
-            ignore_index=True,
-        )
-    return iscore_was_vuln_prev_data
-
-
-# ----- KEV List -----
-def query_kev_list():
-    """Query list of all CVE names that are considered KEVs."""
-    # Open connection
-    conn = connect()
-    # Make query
-    sql = """SELECT kev FROM cyhy_kevs;"""
-    kev_list = pd.read_sql(sql, conn)
-    # Close connection
-    conn.close()
-    return kev_list
-
-
-# v ---------- Misc. Score SQL Queries ---------- v
-# ----- All FCEB Parents List -----
-def query_fceb_parent_list():
-    """Query list of all FCEB parent stakeholders (all FCEB excluding child orgs)."""
-    # Open connection
-    conn = connect()
-    # Make query
-    sql = """SELECT organizations_uid, cyhy_db_name FROM organizations WHERE fceb = true AND retired = false AND election = false;"""
-    fceb_parent_list = pd.read_sql(sql, conn)
-    # Close connection
-    conn.close()
-    return fceb_parent_list
-
-
-# ----- XS Stakeholder List -----
-def query_xs_stakeholder_list():
-    """Query list of all stakeholders that fall in the XS group/sector."""
-    # Open connection
-    conn = connect()
-    # Make query
-    sql = """SELECT organizations_uid, cyhy_db_name FROM vw_iscore_orgs_ip_counts WHERE ip_count >= 0 AND ip_count <= 100;"""
-    xs_stakeholder_list = pd.read_sql(sql, conn)
-    # Close connection
-    conn.close()
-    return xs_stakeholder_list
-
-
-# ----- S Stakeholder List -----
-def query_s_stakeholder_list():
-    """Query list of all stakeholders that fall in the S group/sector."""
-    # Open connection
-    conn = connect()
-    # Make query
-    sql = """SELECT organizations_uid, cyhy_db_name FROM vw_iscore_orgs_ip_counts WHERE ip_count > 100 AND ip_count <= 1000;"""
-    s_stakeholder_list = pd.read_sql(sql, conn)
-    # Close connection
-    conn.close()
-    return s_stakeholder_list
-
-
-# ----- M Stakeholder List -----
-def query_m_stakeholder_list():
-    """Query list of all stakeholders that fall in the M group/sector."""
-    # Open connection
-    conn = connect()
-    # Make query
-    sql = """SELECT organizations_uid, cyhy_db_name FROM vw_iscore_orgs_ip_counts WHERE (ip_count > 1000 AND ip_count <= 10000)
-    OR ip_count = -1;"""
-    # Any stakeholderes not reported on get put in this
-    # sector by default
-    m_stakeholder_list = pd.read_sql(sql, conn)
-    # Close connection
-    conn.close()
-    return m_stakeholder_list
-
-
-# ----- L Stakeholder List -----
-def query_l_stakeholder_list():
-    """Query list of all stakeholders that fall in the L group/sector."""
-    # Open connection
-    conn = connect()
-    # Make query
-    sql = """SELECT organizations_uid, cyhy_db_name FROM vw_iscore_orgs_ip_counts WHERE ip_count > 10000 AND ip_count <= 100000;"""
-    l_stakeholder_list = pd.read_sql(sql, conn)
-    # Close connection
-    conn.close()
-    return l_stakeholder_list
-
-
-# ----- XL Stakeholder List -----
-def query_xl_stakeholder_list():
-    """Query list of all stakeholders that fall in the XL group/sector."""
-    # Open connection
-    conn = connect()
-    # Make query
-    sql = """SELECT organizations_uid, cyhy_db_name FROM vw_iscore_orgs_ip_counts WHERE ip_count > 100000;"""
-    xl_stakeholder_list = pd.read_sql(sql, conn)
-    # Close connection
-    conn.close()
-    return xl_stakeholder_list
-
-
-# ----- PE Stakeholder List -----
-def query_pe_stakeholder_list():
-    """Query list of all stakeholders PE reports on."""
-    # Open connection
-    conn = connect()
-    # Make query
-    sql = """SELECT organizations_uid, cyhy_db_name, is_parent, parent_org_uid FROM organizations WHERE report_on = True or runs_scans = True;"""
-    pe_stakeholder_list = pd.read_sql(sql, conn)
-    # Close connection
-    conn.close()
-    return pe_stakeholder_list
-
-
-# ----- FCEB Status -----
-def query_fceb_status(org_list):
-    """
-    Check if each organization in the list is FCEB or non-FCEB.
-
-    Args:
-        org_list: The specified list of organizations to retrieve data for
-    Return:
-        org list with additional boolean column of FCEB true/false
-    """
-    # Open connection
-    conn = connect()
-    # Build query
-    # sector_str = (
-    #     "UUID('" + "')), (UUID('".join(org_list["organizations_uid"].tolist()) + "')"
-    # )
-    # sql = """
-    # SELECT
-    #     sector.organizations_uid, COALESCE(fceb_status.fceb, false) as fceb
-    # FROM
-    #     (VALUES (%(sector_str)s)) AS sector(organizations_uid)
-    #     LEFT JOIN
-    #     (
-    #         SELECT
-    #             organizations_uid,
-    #             fceb
-    #         FROM
-    #             organizations
-    #     ) fceb_status
-    #     ON sector.organizations_uid = fceb_status.organizations_uid;"""
-
-    sql = """
-        SELECT 
-            org.organizations_uid, COALESCE(org.fceb, false) as fceb
-        FROM organizations org
-        WHERE organizations_uid in %(sector_str)s;
-    """
-    # Make query
-    orgs_fceb_status = pd.read_sql(
-        sql,
-        conn,
-        params={"sector_str":  tuple(org_list["organizations_uid"].tolist())},
-    )
-    # Close connection
-    conn.close()
-    return orgs_fceb_status
 
 
 def query_cyhy_snapshots(start_date, end_date):
@@ -1909,7 +934,6 @@ def query_scorecard_data(org_uid, start_date, sector):
     print("test query_scorercard_data")
     print(last_period_data)
     print("test complete")
-    
 
     if last_period_data.empty:
         LOGGER.error("No Scorecard summary data for the last report period.")
@@ -2259,7 +1283,7 @@ def get_software(start_date, end_date, df_orgs=[]):
             close(conn)
 
 
-def get_bod_18():
+def get_bod_18(start_date):
     """Query BOD 18-01 data necessary to calculate compliance."""
     conn = connect()
     try:
@@ -2267,8 +1291,8 @@ def get_bod_18():
         FROM scorecard_summary_stats sss
         left join organizations o on
         sss.organizations_uid = o.organizations_uid
-        where sss.email_compliance_pct notnull and sss.https_compliance_pct notnull"""
-        bod_18_df = pd.read_sql(sql, conn)
+        where sss.email_compliance_pct notnull and sss.https_compliance_pct notnull and start_date = %(start_date)s"""
+        bod_18_df = pd.read_sql(sql, conn, params={"start_date": start_date})
         return bod_18_df
     except (Exception, psycopg2.DatabaseError) as error:
         LOGGER.error("There was a problem with your database query %s", error)
@@ -2449,15 +1473,15 @@ def insert_scores(start_date, org_uid, score, score_name, sector):
         conn = connect()
 
         cursor = conn.cursor()
-        query = sql.SQL("""
+        query = sql.SQL(
+            """
             UPDATE scorecard_summary_stats
             set {column_name} = %(score)s
             where start_date = %(start_date)s
             and organizations_uid = %(org_uid)s
             and sector_name = %(sector)s;
-            """).format(
-                column_name= sql.Identifier(score_name)
-            )
+            """
+        ).format(column_name=sql.Identifier(score_name))
         # sql = """
         #     UPDATE scorecard_summary_stats
         #     set {} = %(score)s
@@ -2482,3 +1506,1510 @@ def insert_scores(start_date, org_uid, score, score_name, sector):
         LOGGER.error("There was a problem with your database query %s", error)
         if conn is not None:
             close(conn)
+
+
+# v ---------- D-Score API Queries ---------- v
+def api_dscore_vs_cert(org_list):
+    """
+    Query API for all VS certificate data needed for D-Score calculation.
+
+    Args:
+        org_list: The specified list of organizations to retrieve data for
+    Return:
+        All VS certificate data of the specified orgs needed for the D-Score
+    """
+    # Endpoint info
+    task_url = "dscore_vs_cert"
+    status_url = "dscore_vs_cert/task/"
+    data = json.dumps({"specified_orgs": org_list})
+    # Make API call
+    result = task_api_call(task_url, status_url, data, 3)
+    # Process data and return
+    result_df = pd.DataFrame.from_dict(result)
+    return result_df
+
+
+def api_dscore_vs_mail(org_list):
+    """
+    Query API for all VS mail data needed for D-Score calculation.
+
+    Args:
+        org_list: The specified list of organizations to retrieve data for
+    Return:
+        All VS mail data of the specified orgs needed for the D-Score
+    """
+    # Endpoint info
+    task_url = "dscore_vs_mail"
+    status_url = "dscore_vs_mail/task/"
+    data = json.dumps({"specified_orgs": org_list})
+    # Make API call
+    result = task_api_call(task_url, status_url, data, 3)
+    # Process data and return
+    result_df = pd.DataFrame.from_dict(result)
+    return result_df
+
+
+def api_dscore_pe_ip(org_list):
+    """
+    Query API for all PE IP data needed for D-Score calculation.
+
+    Args:
+        org_list: The specified list of organizations to retrieve data for
+    Return:
+        All PE IP data of the specified orgs needed for the D-Score
+    """
+    # Endpoint info
+    task_url = "dscore_pe_ip"
+    status_url = "dscore_pe_ip/task/"
+    data = json.dumps({"specified_orgs": org_list})
+    # Make API call
+    result = task_api_call(task_url, status_url, data, 3)
+    # Process data and return
+    result_df = pd.DataFrame.from_dict(result)
+    return result_df
+
+
+def api_dscore_pe_domain(org_list):
+    """
+    Query API for all PE domain data needed for D-Score calculation.
+
+    Args:
+        org_list: The specified list of organizations to retrieve data for
+    Return:
+        All PE domain data of the specified orgs needed for the D-Score
+    """
+    # Endpoint info
+    task_url = "dscore_pe_domain"
+    status_url = "dscore_pe_domain/task/"
+    data = json.dumps({"specified_orgs": org_list})
+    # Make API call
+    result = task_api_call(task_url, status_url, data, 3)
+    # Process data and return
+    result_df = pd.DataFrame.from_dict(result)
+    return result_df
+
+
+def api_dscore_was_webapp(org_list):
+    """
+    Query API for all WAS webapp data needed for D-Score calculation.
+
+    Args:
+        org_list: The specified list of organizations to retrieve data for
+    Return:
+        All WAS webapp data of the specified orgs needed for the D-Score
+    """
+    # Endpoint info
+    task_url = "dscore_was_webapp"
+    status_url = "dscore_was_webapp/task/"
+    data = json.dumps({"specified_orgs": org_list})
+    # Make API call
+    result = task_api_call(task_url, status_url, data, 3)
+    # Process data and return
+    result_df = pd.DataFrame.from_dict(result)
+    return result_df
+
+
+def api_fceb_status(org_list):
+    """
+    Query API for the FCEB status of a list of organizations.
+
+    Args:
+        org_list: The specified list of organizations to retrieve data for
+    Return:
+        The FCEB status of the specified list of organizations
+    """
+    # Endpoint info
+    task_url = "fceb_status"
+    status_url = "fceb_status/task/"
+    data = json.dumps({"specified_orgs": org_list})
+    # Make API call
+    result = task_api_call(task_url, status_url, data, 3)
+    # Process data and return
+    result_df = pd.DataFrame.from_dict(result)
+    return result_df
+
+
+# v ---------- I-Score API Queries ---------- v
+def api_iscore_vs_vuln(org_list):
+    """
+    Query API for all VS vuln data needed for I-Score calculation.
+
+    Args:
+        org_list: The specified list of organizations to retrieve data for
+    Return:
+        All VS vuln data of the specified orgs needed for the I-Score
+    """
+    # Endpoint info
+    task_url = "iscore_vs_vuln"
+    status_url = "iscore_vs_vuln/task/"
+    data = json.dumps({"specified_orgs": org_list})
+    # Make API call
+    result = task_api_call(task_url, status_url, data, 3)
+    # Process data and return
+    result_df = pd.DataFrame.from_dict(result)
+    # If empty dataframe comes back, insert placeholder data
+    if result_df.empty:
+        result_df = pd.concat(
+            [
+                result_df,
+                pd.DataFrame(
+                    {
+                        "organizations_uid": "test_org",
+                        "parent_org_uid": "test_parent_org",
+                        "cve_name": "test_cve",
+                        "cvss_score": 1.0,
+                    },
+                    index=[0],
+                ),
+            ],
+            ignore_index=True,
+        )
+    return result_df
+
+
+def api_iscore_vs_vuln_prev(org_list, start_date, end_date):
+    """
+    Query API for all previous VS vuln data needed for I-Score calculation.
+
+    Args:
+        org_list: The specified list of organizations to retrieve data for
+        start_date: the start date (datetime.date object) of the report period
+        end_date: the end date (datetime.date object) of the report period
+    Return:
+        All previous VS vuln data of the specified orgs needed for the I-Score
+    """
+    # Convert datetime.date objects to string
+    if isinstance(start_date, datetime.date):
+        start_date = start_date.strftime("%Y-%m-%d")
+    if isinstance(end_date, datetime.date):
+        end_date = end_date.strftime("%Y-%m-%d")
+    # Endpoint info
+    task_url = "iscore_vs_vuln_prev"
+    status_url = "iscore_vs_vuln_prev/task/"
+    data = json.dumps(
+        {"specified_orgs": org_list, "start_date": start_date, "end_date": end_date}
+    )
+    # Make API call
+    result = task_api_call(task_url, status_url, data, 3)
+    # Process data and return
+    result_df = pd.DataFrame.from_dict(result)
+    # If empty dataframe comes back, insert placeholder data
+    if result_df.empty:
+        result_df = pd.concat(
+            [
+                result_df,
+                pd.DataFrame(
+                    {
+                        "organizations_uid": "test_org",
+                        "parent_org_uid": "test_parent_org",
+                        "cve_name": "test_cve",
+                        "cvss_score": 1.0,
+                        "time_closed": datetime.date(1, 1, 1),
+                    },
+                    index=[0],
+                ),
+            ],
+            ignore_index=True,
+        )
+    else:
+        result_df["time_closed"] = pd.to_datetime(result_df["time_closed"]).dt.date
+    return result_df
+
+
+def api_iscore_pe_vuln(org_list, start_date, end_date):
+    """
+    Query API for all PE vuln data needed for I-Score calculation.
+
+    Args:
+        org_list: The specified list of organizations to retrieve data for
+        start_date: the start date (datetime.date object) of the report period
+        end_date: the end date (datetime.date object) of the report period
+    Return:
+        All PE vuln data of the specified orgs needed for the I-Score
+    """
+    # Convert datetime.date objects to string
+    if isinstance(start_date, datetime.date):
+        start_date = start_date.strftime("%Y-%m-%d")
+    if isinstance(end_date, datetime.date):
+        end_date = end_date.strftime("%Y-%m-%d")
+    # Endpoint info
+    task_url = "iscore_pe_vuln"
+    status_url = "iscore_pe_vuln/task/"
+    data = json.dumps(
+        {"specified_orgs": org_list, "start_date": start_date, "end_date": end_date}
+    )
+    # Make API call
+    result = task_api_call(task_url, status_url, data, 3)
+    # Process data and return
+    result_df = pd.DataFrame.from_dict(result)
+    # If empty dataframe comes back, insert placeholder data
+    if result_df.empty:
+        result_df = pd.concat(
+            [
+                result_df,
+                pd.DataFrame(
+                    {
+                        "organizations_uid": "test_org",
+                        "parent_org_uid": "test_parent_org",
+                        "date": datetime.date(1, 1, 1),
+                        "cve_name": "test_cve",
+                        "cvss_score": 1.0,
+                    },
+                    index=[0],
+                ),
+            ],
+            ignore_index=True,
+        )
+    else:
+        result_df["date"] = pd.to_datetime(result_df["date"]).dt.date
+    return result_df
+
+
+def api_iscore_pe_cred(org_list, start_date, end_date):
+    """
+    Query API for all PE cred data needed for I-Score calculation.
+
+    Args:
+        org_list: The specified list of organizations to retrieve data for
+        start_date: the start date (datetime.date object) of the report period
+        end_date: the end date (datetime.date object) of the report period
+    Return:
+        All PE cred data of the specified orgs needed for the I-Score
+    """
+    # Convert datetime.date objects to string
+    if isinstance(start_date, datetime.date):
+        start_date = start_date.strftime("%Y-%m-%d")
+    if isinstance(end_date, datetime.date):
+        end_date = end_date.strftime("%Y-%m-%d")
+    # Endpoint info
+    task_url = "iscore_pe_cred"
+    status_url = "iscore_pe_cred/task/"
+    data = json.dumps(
+        {"specified_orgs": org_list, "start_date": start_date, "end_date": end_date}
+    )
+    # Make API call
+    result = task_api_call(task_url, status_url, data, 3)
+    # Process data and return
+    result_df = pd.DataFrame.from_dict(result)
+    # If empty dataframe comes back, insert placeholder data
+    if result_df.empty:
+        result_df = pd.concat(
+            [
+                result_df,
+                pd.DataFrame(
+                    {
+                        "organizations_uid": "test_org",
+                        "parent_org_uid": "test_parent_org",
+                        "date": datetime.date(1, 1, 1),
+                        "password_creds": 0,
+                        "total_creds": 0,
+                    },
+                    index=[0],
+                ),
+            ],
+            ignore_index=True,
+        )
+    else:
+        result_df["date"] = pd.to_datetime(result_df["date"]).dt.date
+    return result_df
+
+
+def api_iscore_pe_breach(org_list, start_date, end_date):
+    """
+    Query API for all PE breach data needed for I-Score calculation.
+
+    Args:
+        org_list: The specified list of organizations to retrieve data for
+        start_date: the start date (datetime.date object) of the report period
+        end_date: the end date (datetime.date object) of the report period
+    Return:
+        All PE breach data of the specified orgs needed for the I-Score
+    """
+    # Convert datetime.date objects to string
+    if isinstance(start_date, datetime.date):
+        start_date = start_date.strftime("%Y-%m-%d")
+    if isinstance(end_date, datetime.date):
+        end_date = end_date.strftime("%Y-%m-%d")
+    # Endpoint info
+    task_url = "iscore_pe_breach"
+    status_url = "iscore_pe_breach/task/"
+    data = json.dumps(
+        {"specified_orgs": org_list, "start_date": start_date, "end_date": end_date}
+    )
+    # Make API call
+    result = task_api_call(task_url, status_url, data, 3)
+    # Process data and return
+    result_df = pd.DataFrame.from_dict(result)
+    # If empty dataframe comes back, insert placeholder data
+    if result_df.empty:
+        result_df = pd.concat(
+            [
+                result_df,
+                pd.DataFrame(
+                    {
+                        "organizations_uid": "test_org",
+                        "parent_org_uid": "test_parent_org",
+                        "date": datetime.date(1, 1, 1),
+                        "breach_count": 0,
+                    },
+                    index=[0],
+                ),
+            ],
+            ignore_index=True,
+        )
+    else:
+        result_df["date"] = pd.to_datetime(result_df["date"]).dt.date
+    return result_df
+
+
+def api_iscore_pe_darkweb(org_list, start_date, end_date):
+    """
+    Query API for all PE darkweb data needed for I-Score calculation.
+
+    Args:
+        org_list: The specified list of organizations to retrieve data for
+        start_date: the start date (datetime.date object) of the report period
+        end_date: the end date (datetime.date object) of the report period
+    Return:
+        All PE darkweb data of the specified orgs needed for the I-Score
+    """
+    # Convert datetime.date objects to string
+    if isinstance(start_date, datetime.date):
+        start_date = start_date.strftime("%Y-%m-%d")
+    if isinstance(end_date, datetime.date):
+        end_date = end_date.strftime("%Y-%m-%d")
+    # Endpoint info
+    task_url = "iscore_pe_darkweb"
+    status_url = "iscore_pe_darkweb/task/"
+    data = json.dumps(
+        {"specified_orgs": org_list, "start_date": start_date, "end_date": end_date}
+    )
+    # Make API call
+    result = task_api_call(task_url, status_url, data, 3)
+    # Process data and return
+    result_df = pd.DataFrame.from_dict(result)
+    # If empty dataframe comes back, insert placeholder data
+    if result_df.empty:
+        result_df = pd.concat(
+            [
+                result_df,
+                pd.DataFrame(
+                    {
+                        "organizations_uid": "test_org",
+                        "parent_org_uid": "test_parent_org",
+                        "alert_type": "TEST_TYPE",
+                        "date": datetime.date(1, 1, 1),
+                        "Count": 0,
+                    },
+                    index=[0],
+                ),
+            ],
+            ignore_index=True,
+        )
+    else:
+        result_df["date"] = pd.to_datetime(result_df["date"]).dt.date
+    return result_df
+
+
+def api_iscore_pe_protocol(org_list, start_date, end_date):
+    """
+    Query API for all PE protocol data needed for I-Score calculation.
+
+    Args:
+        org_list: The specified list of organizations to retrieve data for
+        start_date: the start date (datetime.date object) of the report period
+        end_date: the end date (datetime.date object) of the report period
+    Return:
+        All PE protocol data of the specified orgs needed for the I-Score
+    """
+    # Convert datetime.date objects to string
+    if isinstance(start_date, datetime.date):
+        start_date = start_date.strftime("%Y-%m-%d")
+    if isinstance(end_date, datetime.date):
+        end_date = end_date.strftime("%Y-%m-%d")
+    # Endpoint info
+    task_url = "iscore_pe_protocol"
+    status_url = "iscore_pe_protocol/task/"
+    data = json.dumps(
+        {"specified_orgs": org_list, "start_date": start_date, "end_date": end_date}
+    )
+    # Make API call
+    result = task_api_call(task_url, status_url, data, 3)
+    # Process data and return
+    result_df = pd.DataFrame.from_dict(result)
+    # If empty dataframe comes back, insert placeholder data
+    if result_df.empty:
+        result_df = pd.concat(
+            [
+                result_df,
+                pd.DataFrame(
+                    {
+                        "organizations_uid": "test_org",
+                        "parent_org_uid": "test_parent_org",
+                        "port": "test_port",
+                        "ip": "test_ip",
+                        "protocol": "test_protocol",
+                        "protocol_type": "test_type",
+                        "date": datetime.date(1, 1, 1),
+                    },
+                    index=[0],
+                ),
+            ],
+            ignore_index=True,
+        )
+    else:
+        result_df["date"] = pd.to_datetime(result_df["date"]).dt.date
+    return result_df
+
+
+def api_iscore_was_vuln(org_list, start_date, end_date):
+    """
+    Query API for all WAS vuln data needed for I-Score calculation.
+
+    Args:
+        org_list: The specified list of organizations to retrieve data for
+        start_date: the start date (datetime.date object) of the report period
+        end_date: the end date (datetime.date object) of the report period
+    Return:
+        All WAS vuln data of the specified orgs needed for the I-Score
+    """
+    # Convert datetime.date objects to string
+    if isinstance(start_date, datetime.date):
+        start_date = start_date.strftime("%Y-%m-%d")
+    if isinstance(end_date, datetime.date):
+        end_date = end_date.strftime("%Y-%m-%d")
+    # Endpoint info
+    task_url = "iscore_was_vuln"
+    status_url = "iscore_was_vuln/task/"
+    data = json.dumps(
+        {"specified_orgs": org_list, "start_date": start_date, "end_date": end_date}
+    )
+    # Make API call
+    result = task_api_call(task_url, status_url, data, 3)
+    # Process data and return
+    result_df = pd.DataFrame.from_dict(result)
+    # If empty dataframe comes back, insert placeholder data
+    if result_df.empty:
+        result_df = pd.concat(
+            [
+                result_df,
+                pd.DataFrame(
+                    {
+                        "organizations_uid": "test_org",
+                        "parent_org_uid": "test_parent_org",
+                        "date": datetime.date(1, 1, 1),
+                        "cve_name": "test_cve",
+                        "cvss_score": 1.0,
+                        "owasp_category": "test_category",
+                    },
+                    index=[0],
+                ),
+            ],
+            ignore_index=True,
+        )
+    else:
+        result_df["date"] = pd.to_datetime(result_df["date"]).dt.date
+    return result_df
+
+
+def api_iscore_was_vuln_prev(org_list, start_date, end_date):
+    """
+    Query API for all previous WAS vuln data needed for I-Score calculation.
+
+    Args:
+        org_list: The specified list of organizations to retrieve data for
+        start_date: the start date (datetime.date object) of the report period
+        end_date: the end date (datetime.date object) of the report period
+    Return:
+        All previous WAS vuln data of the specified orgs needed for the I-Score
+    """
+    # Convert datetime.date objects to string
+    if isinstance(start_date, datetime.date):
+        start_date = start_date.strftime("%Y-%m-%d")
+    if isinstance(end_date, datetime.date):
+        end_date = end_date.strftime("%Y-%m-%d")
+    # Endpoint info
+    task_url = "iscore_was_vuln_prev"
+    status_url = "iscore_was_vuln_prev/task/"
+    data = json.dumps(
+        {"specified_orgs": org_list, "start_date": start_date, "end_date": end_date}
+    )
+    # Make API call
+    result = task_api_call(task_url, status_url, data, 3)
+    # Process data and return
+    result_df = pd.DataFrame.from_dict(result)
+    # If empty dataframe comes back, insert placeholder data
+    if result_df.empty:
+        result_df = pd.concat(
+            [
+                result_df,
+                pd.DataFrame(
+                    {
+                        "organizations_uid": "test_org",
+                        "parent_org_uid": "test_parent_org",
+                        "was_total_vulns_prev": 0,
+                        "date": datetime.date(1, 1, 1),
+                    },
+                    index=[0],
+                ),
+            ],
+            ignore_index=True,
+        )
+    else:
+        result_df["date"] = pd.to_datetime(result_df["date"]).dt.date
+    return result_df
+
+
+def api_kev_list():
+    """
+    Query API for list of all KEVs.
+
+    Return:
+        List of all KEVs
+    """
+    # Endpoint info
+    task_url = "kev_list"
+    status_url = "kev_list/task/"
+    data = None
+    # Make API call
+    result = task_api_call(task_url, status_url, data, 3)
+    # Process data and return
+    result_df = pd.DataFrame.from_dict(result)
+    return result_df
+
+
+# ---------- Misc. Score Related API Queries ----------
+def api_xs_stakeholders():
+    """
+    Query API for list of all XS stakeholders.
+
+    Return:
+        List of all XS stakeholders
+    """
+    task_url = "xs_stakeholders"
+    status_url = "xs_stakeholders/task/"
+    data = None
+    # Make API call
+    result = task_api_call(task_url, status_url, data, 3)
+    # Process data and return
+    result_df = pd.DataFrame.from_dict(result)
+    return result_df
+
+
+def api_s_stakeholders():
+    """
+    Query API for list of all S stakeholders.
+
+    Return:
+        List of all S stakeholders
+    """
+    # Endpoint info
+    task_url = "s_stakeholders"
+    status_url = "s_stakeholders/task/"
+    data = None
+    # Make API call
+    result = task_api_call(task_url, status_url, data, 3)
+    # Process data and return
+    result_df = pd.DataFrame.from_dict(result)
+    return result_df
+
+
+def api_m_stakeholders():
+    """
+    Query API for list of all M stakeholders.
+
+    Return:
+        List of all M stakeholders
+    """
+    # Endpoint info
+    task_url = "m_stakeholders"
+    status_url = "m_stakeholders/task/"
+    data = None
+    # Make API call
+    result = task_api_call(task_url, status_url, data, 3)
+    # Process data and return
+    result_df = pd.DataFrame.from_dict(result)
+    return result_df
+
+
+def api_l_stakeholders():
+    """
+    Query API for list of all L stakeholders.
+
+    Return:
+        List of all L stakeholders
+    """
+    # Endpoint info
+    task_url = "l_stakeholders"
+    status_url = "l_stakeholders/task/"
+    data = None
+    # Make API call
+    result = task_api_call(task_url, status_url, data, 3)
+    # Process data and return
+    result_df = pd.DataFrame.from_dict(result)
+    return result_df
+
+
+def api_xl_stakeholders():
+    """
+    Query API for list of all XL stakeholders.
+
+    Return:
+        List of all XL stakeholders
+    """
+    # Endpoint info
+    task_url = "xl_stakeholders"
+    status_url = "xl_stakeholders/task/"
+    data = None
+    # Make API call
+    result = task_api_call(task_url, status_url, data, 3)
+    # Process data and return
+    result_df = pd.DataFrame.from_dict(result)
+    return result_df
+
+
+# v ========== OLD TSQL VERSIONS OF I/D SCORE QUERIES ========== v
+# Fallback to these if something goes wrong during the first run using API endpoints.
+# If the new api_...() functions are breaking things, just revert all the
+# api functions called in generate_d_score.py and generate_i_score.py to the
+# old query_...() TSQL functions below.
+
+# ---------- D-Score SQL Queries ----------
+# ----- VS Cert -----
+def query_dscore_vs_data_cert(org_list):
+    """
+    Query all VS certificate data needed for D-Score calculation.
+
+    Args:
+        org_list: The specified list of organizations to retrieve data for
+    Return:
+        All VS certificate data of the specified orgs needed for the D-Score
+    """
+    # Open connection
+    conn = connect()
+    # Build query
+    sql = """
+       SELECT  cert.organizations_uid, cert.parent_org_uid, cert.num_ident_cert, cert.num_monitor_cert
+        FROM  vw_dscore_vs_cert cert
+        Where cert.organizations_uid in %(sector_str)s
+    """
+    # Make query
+    dscore_vs_data_cert = pd.read_sql(
+        sql,
+        conn,
+        params={"sector_str": tuple(org_list["organizations_uid"].tolist())},
+    )
+    # Close connection
+    conn.close()
+    return dscore_vs_data_cert
+
+
+# ----- VS Mail -----
+def query_dscore_vs_data_mail(org_list):
+    """
+    Query all VS mail data needed for D-Score calculation.
+
+    Args:
+        org_list: The specified list of organizations to retrieve data for
+    Return:
+        All VS mail data of the specified orgs needed for the D-Score
+    """
+    # Open connection
+    conn = connect()
+    sql = """
+       SELECT  mail.organizations_uid, mail.parent_org_uid, mail.num_valid_dmarc, mail.num_valid_spf, mail.num_valid_dmarc_or_spf, mail.total_mail_domains
+        FROM  vw_dscore_vs_mail mail
+        Where mail.organizations_uid in %(sector_str)s
+    """
+    # Make query
+    dscore_vs_data_mail = pd.read_sql(
+        sql,
+        conn,
+        params={"sector_str": tuple(org_list["organizations_uid"].tolist())},
+    )
+    # Close connection
+    conn.close()
+    return dscore_vs_data_mail
+
+
+# ----- PE IP -----
+def query_dscore_pe_data_ip(org_list):
+    """
+    Query all PE IP data needed for D-Score calculation.
+
+    Args:
+        org_list: The specified list of organizations to retrieve data for
+    Return:
+        All PE ip data of the specified orgs needed for the D-Score
+    """
+    # Open connection
+    conn = connect()
+    # Build query
+    sector_str = (
+        "UUID('" + "')), (UUID('".join(org_list["organizations_uid"].tolist()) + "')"
+    )
+    sql = """
+    SELECT
+        sector.organizations_uid, ip.parent_org_uid, ip.num_ident_ip, ip.num_monitor_ip
+    FROM
+        (VALUES (%(sector_str)s)) AS sector(organizations_uid)
+        LEFT JOIN
+        vw_dscore_pe_ip ip
+        ON sector.organizations_uid = ip.organizations_uid;"""
+    dscore_pe_data_ip = pd.read_sql(
+        sql,
+        conn,
+        params={"sector_str": AsIs(sector_str)},
+    )
+    # Close connection
+    conn.close()
+    return dscore_pe_data_ip
+
+
+# ----- PE Domain -----
+def query_dscore_pe_data_domain(org_list):
+    """
+    Query all PE domain data needed for D-Score calculation.
+
+    Args:
+        org_list: The specified list of organizations to retrieve data for
+    Return:
+        All PE domain data of the specified orgs needed for the D-Score
+    """
+    # Open connection
+    conn = connect()
+    # Build query
+    sql = """
+       SELECT  
+            domain.organizations_uid, domain.parent_org_uid, domain.num_ident_domain, domain.num_monitor_domain
+       FROM  
+            vw_dscore_pe_domain domain
+        Where domain.organizations_uid in %(sector_str)s
+    """
+    # Make query
+    dscore_pe_data_domain = pd.read_sql(
+        sql,
+        conn,
+        params={"sector_str": tuple(org_list["organizations_uid"].tolist())},
+    )
+    # Close connection
+    conn.close()
+    return dscore_pe_data_domain
+
+
+# ----- WAS Webapp -----
+def query_dscore_was_data_webapp(org_list):
+    """
+    Query all WAS webapp data needed for D-Score calculation.
+
+    Args:
+        org_list: The specified list of organizations to retrieve data for
+    Return:
+        All WAS webapp data of the specified orgs needed for the D-Score
+    """
+    # Open connection
+    conn = connect()
+    # Build query
+    sql = """
+       SELECT  
+            webapp.organizations_uid, webapp.parent_org_uid, webapp.num_ident_webapp, webapp.num_monitor_webapp
+       FROM  
+            vw_dscore_was_webapp webapp
+        Where webapp.organizations_uid in %(sector_str)s
+    """
+    # Make query
+    dscore_was_data_webapp = pd.read_sql(
+        sql,
+        conn,
+        params={"sector_str": tuple(org_list["organizations_uid"].tolist())},
+    )
+    # Close connection
+    conn.close()
+    return dscore_was_data_webapp
+
+
+# ---------- I-Score SQL Queries ----------
+# ----- VS Vulns -----
+def query_iscore_vs_data_vuln(org_list):
+    """
+    Query all VS vuln data needed for I-Score calculation.
+
+    Args:
+        org_list: The specified list of organizations to retrieve data for
+    Return:
+        All VS vuln data of the specified orgs needed for the I-Score
+    """
+    # Open connection
+    conn = connect()
+    # Build query
+    sql = """
+       SELECT  
+            vuln.organizations_uid, vuln.parent_org_uid, vuln.cve_name, vuln.cvss_score
+       FROM  
+            vw_iscore_vs_vuln vuln
+        Where vuln.organizations_uid in %(sector_str)s
+    """
+    # Make query
+    iscore_vs_vuln_data = pd.read_sql(
+        sql,
+        conn,
+        params={"sector_str": tuple(org_list["organizations_uid"].tolist())},
+    )
+    # Close connection
+    conn.close()
+    # Check if dataframe comes back empty
+    if iscore_vs_vuln_data.empty:
+        # If empty, insert placeholder data row
+        # This data will not affect score calculations
+        iscore_vs_vuln_data = pd.concat(
+            [
+                iscore_vs_vuln_data,
+                pd.DataFrame(
+                    {
+                        "organizations_uid": "test_org",
+                        "parent_org_uid": "test_parent_org",
+                        "cve_name": "test_cve",
+                        "cvss_score": 1.0,
+                    },
+                    index=[0],
+                ),
+            ],
+            ignore_index=True,
+        )
+    return iscore_vs_vuln_data
+
+
+# ----- VS Vulns Previous -----
+def query_iscore_vs_data_vuln_prev(org_list, start_date, end_date):
+    """
+    Query all VS prev vuln data needed for I-Score calculation.
+
+    Args:
+        org_list: The specified list of organizations to retrieve data for
+        start_date: Start date of specified report period
+        end_date: End date of specified report period
+    Return:
+        All VS prev vuln data of the specified orgs needed for the I-Score
+    """
+    # Open connection
+    conn = connect()
+    # Build query
+    sql = """
+        SELECT 
+            prev_vuln.organizations_uid, prev_vuln.parent_org_uid, prev_vuln.cve_name, prev_vuln.cvss_score, prev_vuln.time_closed
+        FROM 
+            vw_iscore_vs_vuln_prev prev_vuln
+        WHERE 
+            prev_vuln.organizations_uid in %(sector_str)s
+        AND 
+            prev_vuln.time_closed BETWEEN %(start_date)s AND %(end_date)s;
+    """
+    # Make query
+    iscore_vs_vuln_prev_data = pd.read_sql(
+        sql,
+        conn,
+        params={
+            "sector_str": tuple(org_list["organizations_uid"].tolist()),
+            "start_date": start_date,
+            "end_date": end_date,
+        },
+    )
+    # Close connection
+    conn.close()
+    # Check if dataframe comes back empty
+    if iscore_vs_vuln_prev_data.empty:
+        # If empty, insert placeholder data row
+        # This data will not affect score calculations
+        iscore_vs_vuln_prev_data = pd.concat(
+            [
+                iscore_vs_vuln_prev_data,
+                pd.DataFrame(
+                    {
+                        "organizations_uid": "test_org",
+                        "parent_org_uid": "test_parent_org",
+                        "cve_name": "test_cve",
+                        "cvss_score": 1.0,
+                        "time_closed": datetime.date(1, 1, 1),
+                    },
+                    index=[0],
+                ),
+            ],
+            ignore_index=True,
+        )
+    return iscore_vs_vuln_prev_data
+
+
+# ----- PE Vulns -----
+def query_iscore_pe_data_vuln(org_list, start_date, end_date):
+    """
+    Query all PE vuln data needed for I-Score calculation.
+
+    Args:
+        org_list: The specified list of organizations to retrieve data for
+        start_date: Start date of specified report period
+        end_date: End date of specified report period
+    Return:
+        All PE vuln data of the specified orgs needed for the I-Score
+    """
+    # Open connection
+    conn = connect()
+    # Build query
+    sql = """
+    SELECT
+        vuln.organizations_uid, vuln.parent_org_uid, vuln.date, vuln.cve_name, vuln.cvss_score
+    FROM
+        vw_iscore_pe_vuln vuln
+    WHERE
+        vuln.organizations_uid in %(sector_str)s
+    AND 
+        vuln.date BETWEEN %(start_date)s AND %(end_date)s;
+    """
+    # Make query
+    iscore_pe_vuln_data = pd.read_sql(
+        sql,
+        conn,
+        params={
+            "sector_str": tuple(org_list["organizations_uid"].tolist()),
+            "start_date": start_date,
+            "end_date": end_date,
+        },
+    )
+    # Close connection
+    conn.close()
+    # Check if dataframe comes back empty
+    if iscore_pe_vuln_data.empty:
+        # If empty, insert placeholder data row
+        # This data will not affect score calculations
+        iscore_pe_vuln_data = pd.concat(
+            [
+                iscore_pe_vuln_data,
+                pd.DataFrame(
+                    {
+                        "organizations_uid": "test_org",
+                        "parent_org_uid": "test_parent_org",
+                        "date": datetime.date(1, 1, 1),
+                        "cve_name": "test_cve",
+                        "cvss_score": 1.0,
+                    },
+                    index=[0],
+                ),
+            ],
+            ignore_index=True,
+        )
+    return iscore_pe_vuln_data
+
+
+# ----- PE Vulns Previous -----
+# Uses query_iscore_pe_data_vuln, but with prev report period dates
+
+
+# ----- PE Creds -----
+def query_iscore_pe_data_cred(org_list, start_date, end_date):
+    """
+    Query all PE cred data needed for I-Score calculation.
+
+    Args:
+        org_list: The specified list of organizations to retrieve data for
+        start_date: Start date of specified report period
+        end_date: End date of specified report period
+    Return:
+        All PE cred data of the specified orgs needed for the I-Score
+    """
+    # Open connection
+    conn = connect()
+    # Build query
+    sql = """
+        SELECT
+            cred.organizations_uid, cred.parent_org_uid, cred.date, cred.password_creds, cred.total_creds
+        FROM
+            vw_iscore_pe_cred cred
+        WHERE 
+            cred.organizations_uid in %(sector_str)s
+        AND
+            date BETWEEN %(start_date)s AND %(end_date)s;
+    """
+    # Make query
+    iscore_pe_cred_data = pd.read_sql(
+        sql,
+        conn,
+        params={
+            "sector_str": tuple(org_list["organizations_uid"].tolist()),
+            "start_date": start_date,
+            "end_date": end_date,
+        },
+    )
+    # Close connection
+    conn.close()
+    # Check if dataframe comes back empty
+    if iscore_pe_cred_data.empty:
+        # If empty, insert placeholder data row
+        # This data will not affect score calculations
+        iscore_pe_cred_data = pd.concat(
+            [
+                iscore_pe_cred_data,
+                pd.DataFrame(
+                    {
+                        "organizations_uid": "test_org",
+                        "parent_org_uid": "test_parent_org",
+                        "date": datetime.date(1, 1, 1),
+                        "password_creds": 0,
+                        "total_creds": 0,
+                    },
+                    index=[0],
+                ),
+            ],
+            ignore_index=True,
+        )
+    return iscore_pe_cred_data
+
+
+# ----- PE Breaches -----
+def query_iscore_pe_data_breach(org_list, start_date, end_date):
+    """
+    Query all PE breach data needed for I-Score calculation.
+
+    Args:
+        org_list: The specified list of organizations to retrieve data for
+        start_date: Start date of specified report period
+        end_date: End date of specified report period
+    Return:
+        All PE breach data of the specified orgs needed for the I-Score
+    """
+    # Open connection
+    conn = connect()
+    # Build query
+    sql = """
+        SELECT 
+            breach.organizations_uid, breach.parent_org_uid, breach.date, breach.breach_count
+        FROM
+            vw_iscore_pe_breach breach
+        WHERE 
+            breach.organizations_uid in %(sector_str)s
+        AND
+            date BETWEEN %(start_date)s AND %(end_date)s;"""
+    # Make query
+    iscore_pe_breach_data = pd.read_sql(
+        sql,
+        conn,
+        params={
+            "sector_str": tuple(org_list["organizations_uid"].tolist()),
+            "start_date": start_date,
+            "end_date": end_date,
+        },
+    )
+    # Close connection
+    conn.close()
+    # Check if dataframe comes back empty
+    if iscore_pe_breach_data.empty:
+        # If empty, insert placeholder data row
+        # This data will not affect score calculations
+        iscore_pe_breach_data = pd.concat(
+            [
+                iscore_pe_breach_data,
+                pd.DataFrame(
+                    {
+                        "organizations_uid": "test_org",
+                        "parent_org_uid": "test_parent_org",
+                        "date": datetime.date(1, 1, 1),
+                        "breach_count": 0,
+                    },
+                    index=[0],
+                ),
+            ],
+            ignore_index=True,
+        )
+    return iscore_pe_breach_data
+
+
+# ----- PE DarkWeb -----
+def query_iscore_pe_data_darkweb(org_list, start_date, end_date):
+    """
+    Query all PE dark web data needed for I-Score calculation.
+
+    Args:
+        org_list: The specified list of organizations to retrieve data for
+        start_date: Start date of specified report period
+        end_date: End date of specified report period
+    Return:
+        All PE darkweb data of the specified orgs needed for the I-Score
+    """
+    # Open connection
+    conn = connect()
+    # Build query
+    sector_str = (
+        "UUID('" + "')), (UUID('".join(org_list["organizations_uid"].tolist()) + "')"
+    )
+    sql = """
+    SELECT
+        sector.organizations_uid, darkweb.parent_org_uid, darkweb.alert_type, darkweb.date, darkweb."Count"
+    FROM
+        (VALUES (%(sector_str)s)) AS sector(organizations_uid)
+        LEFT JOIN
+        vw_iscore_pe_darkweb darkweb
+        ON sector.organizations_uid = darkweb.organizations_uid
+    WHERE
+        date BETWEEN %(start_date)s AND %(end_date)s OR date = '0001-01-01';"""
+
+    sql = """
+        SELECT 
+            darkweb.organizations_uid, darkweb.parent_org_uid, darkweb.alert_type, darkweb.date, darkweb."Count"
+        FROM
+            vw_iscore_pe_darkweb darkweb
+        WHERE 
+            darkweb.organizations_uid in %(sector_str)s
+        AND
+        date BETWEEN %(start_date)s AND %(end_date)s OR date = '0001-01-01';"""
+
+    # Make query
+    iscore_pe_darkweb_data = pd.read_sql(
+        sql,
+        conn,
+        params={
+            "sector_str": tuple(org_list["organizations_uid"].tolist()),
+            "start_date": start_date,
+            "end_date": end_date,
+        },
+    )
+    # Close connection
+    conn.close()
+    # Check if dataframe comes back empty
+    if iscore_pe_darkweb_data.empty:
+        # If empty, insert placeholder data row
+        # This data will not affect score calculations
+        iscore_pe_darkweb_data = pd.concat(
+            [
+                iscore_pe_darkweb_data,
+                pd.DataFrame(
+                    {
+                        "organizations_uid": "test_org",
+                        "parent_org_uid": "test_parent_org",
+                        "alert_type": "TEST_TYPE",
+                        "date": datetime.date(1, 1, 1),
+                        "Count": 0,
+                    },
+                    index=[0],
+                ),
+            ],
+            ignore_index=True,
+        )
+    return iscore_pe_darkweb_data
+
+
+# ----- PE Protocol -----
+def query_iscore_pe_data_protocol(org_list, start_date, end_date):
+    """
+    Query all PE protocol data needed for I-Score calculation.
+
+    Args:
+        org_list: The specified list of organizations to retrieve data for
+        start_date: Start date of specified report period
+        end_date: End date of specified report period
+    Return:
+        All PE protocol data of the specified orgs needed for the I-Score
+    """
+    # Open connection
+    conn = connect()
+    # Build query
+    sql = """
+        SELECT
+            protocol.organizations_uid, protocol.parent_org_uid, protocol.port, protocol.ip, protocol.protocol, protocol.protocol_type, protocol.date
+        FROM 
+            vw_iscore_pe_protocol protocol
+        WHERE 
+            protocol.organizations_uid in %(sector_str)s
+        AND
+            date BETWEEN %(start_date)s AND %(end_date)s;
+    """
+    # Make query
+    iscore_pe_protocol_data = pd.read_sql(
+        sql,
+        conn,
+        params={
+            "sector_str": tuple(org_list["organizations_uid"].tolist()),
+            "start_date": start_date,
+            "end_date": end_date,
+        },
+    )
+    # Close connection
+    conn.close()
+    # Check if dataframe comes back empty
+    if iscore_pe_protocol_data.empty:
+        # If empty, insert placeholder data row
+        # This data will not affect score calculations
+        iscore_pe_protocol_data = pd.concat(
+            [
+                iscore_pe_protocol_data,
+                pd.DataFrame(
+                    {
+                        "organizations_uid": "test_org",
+                        "parent_org_uid": "test_parent_org",
+                        "port": "test_port",
+                        "ip": "test_ip",
+                        "protocol": "test_protocol",
+                        "protocol_type": "test_type",
+                        "date": datetime.date(1, 1, 1),
+                    },
+                    index=[0],
+                ),
+            ],
+            ignore_index=True,
+        )
+    return iscore_pe_protocol_data
+
+
+# ----- WAS Vulns -----
+def query_iscore_was_data_vuln(org_list, start_date, end_date):
+    """
+    Query all WAS vuln data needed for I-Score calculation.
+
+    Args:
+        org_list: The specified list of organizations to retrieve data for
+        start_date: Start date of specified report period
+        end_date: End date of specified report period
+    Return:
+        All WAS vuln data of the specified orgs needed for the I-Score
+    """
+    # Open connection
+    conn = connect()
+    # Build query
+    sql = """
+        SELECT
+            vuln.organizations_uid, vuln.parent_org_uid, vuln.date, vuln.cve_name, vuln.cvss_score, vuln.owasp_category
+        FROM
+            vw_iscore_was_vuln vuln
+        WHERE
+            vuln.organizations_uid in %(sector_str)s
+        AND
+            date BETWEEN %(start_date)s AND %(end_date)s;
+    """
+    # Make query
+    iscore_was_vuln_data = pd.read_sql(
+        sql,
+        conn,
+        params={
+            "sector_str": tuple(org_list["organizations_uid"].tolist()),
+            "start_date": start_date,
+            "end_date": end_date,
+        },
+    )
+    # Close connection
+    conn.close()
+    # Check if dataframe comes back empty
+    if iscore_was_vuln_data.empty:
+        # If empty, insert placeholder data row
+        # This data will not affect score calculations
+        iscore_was_vuln_data = pd.concat(
+            [
+                iscore_was_vuln_data,
+                pd.DataFrame(
+                    {
+                        "organizations_uid": "test_org",
+                        "parent_org_uid": "test_parent_org",
+                        "date": datetime.date(1, 1, 1),
+                        "cve_name": "test_cve",
+                        "cvss_score": 1.0,
+                        "owasp_category": "test_category",
+                    },
+                    index=[0],
+                ),
+            ],
+            ignore_index=True,
+        )
+    return iscore_was_vuln_data
+
+
+# ----- WAS Vulns Previous -----
+def query_iscore_was_data_vuln_prev(org_list, start_date, end_date):
+    """
+    Query all WAS prev vuln data needed for I-Score calculation.
+
+    Args:
+        org_list: The specified list of organizations to retrieve data for
+        start_date: Start date of specified report period
+        end_date: End date of specified report period
+    Return:
+        All WAS vuln prev data of the specified orgs needed for the I-Score
+    """
+    # Open connection
+    conn = connect()
+    # Build query
+    sql = """
+        SELECT 
+            prev_vuln.organizations_uid, prev_vuln.parent_org_uid, prev_vuln.was_total_vulns_prev, prev_vuln.date
+        FROM 
+            vw_iscore_was_vuln_prev prev_vuln
+        WHERE 
+            prev_vuln.organizations_uid in %(sector_str)s
+        AND 
+            date BETWEEN %(start_date)s AND %(end_date)s;
+    """
+    # Make query
+    iscore_was_vuln_prev_data = pd.read_sql(
+        sql,
+        conn,
+        params={
+            "sector_str": tuple(org_list["organizations_uid"].tolist()),
+            "start_date": start_date,
+            "end_date": end_date,
+        },
+    )
+    # Close connection
+    conn.close()
+    # Check if dataframe comes back empty
+    if iscore_was_vuln_prev_data.empty:
+        # If empty, insert placeholder data row
+        # This data will not affect score calculations
+        iscore_was_vuln_prev_data = pd.concat(
+            [
+                iscore_was_vuln_prev_data,
+                pd.DataFrame(
+                    {
+                        "organizations_uid": "test_org",
+                        "parent_org_uid": "test_parent_org",
+                        "was_total_vulns_prev": 0,
+                        "date": datetime.date(1, 1, 1),
+                    },
+                    index=[0],
+                ),
+            ],
+            ignore_index=True,
+        )
+    return iscore_was_vuln_prev_data
+
+
+# ----- KEV List -----
+def query_kev_list():
+    """Query list of all CVE names that are considered KEVs."""
+    # Open connection
+    conn = connect()
+    # Make query
+    sql = """SELECT kev FROM cyhy_kevs;"""
+    kev_list = pd.read_sql(sql, conn)
+    # Close connection
+    conn.close()
+    return kev_list
+
+
+# v ---------- Misc. Score SQL Queries ---------- v
+# ----- All FCEB Parents List -----
+def query_fceb_parent_list():
+    """Query list of all FCEB parent stakeholders (all FCEB excluding child orgs)."""
+    # Open connection
+    conn = connect()
+    # Make query
+    sql = """SELECT organizations_uid, cyhy_db_name FROM organizations WHERE fceb = true AND retired = false AND election = false;"""
+    fceb_parent_list = pd.read_sql(sql, conn)
+    # Close connection
+    conn.close()
+    return fceb_parent_list
+
+
+# ----- XS Stakeholder List -----
+def query_xs_stakeholder_list():
+    """Query list of all stakeholders that fall in the XS group/sector."""
+    # Open connection
+    conn = connect()
+    # Make query
+    sql = """SELECT organizations_uid, cyhy_db_name FROM vw_iscore_orgs_ip_counts WHERE ip_count >= 0 AND ip_count <= 100;"""
+    xs_stakeholder_list = pd.read_sql(sql, conn)
+    # Close connection
+    conn.close()
+    return xs_stakeholder_list
+
+
+# ----- S Stakeholder List -----
+def query_s_stakeholder_list():
+    """Query list of all stakeholders that fall in the S group/sector."""
+    # Open connection
+    conn = connect()
+    # Make query
+    sql = """SELECT organizations_uid, cyhy_db_name FROM vw_iscore_orgs_ip_counts WHERE ip_count > 100 AND ip_count <= 1000;"""
+    s_stakeholder_list = pd.read_sql(sql, conn)
+    # Close connection
+    conn.close()
+    return s_stakeholder_list
+
+
+# ----- M Stakeholder List -----
+def query_m_stakeholder_list():
+    """Query list of all stakeholders that fall in the M group/sector."""
+    # Open connection
+    conn = connect()
+    # Make query
+    sql = """SELECT organizations_uid, cyhy_db_name FROM vw_iscore_orgs_ip_counts WHERE (ip_count > 1000 AND ip_count <= 10000)
+    OR ip_count = -1;"""
+    # Any stakeholderes not reported on get put in this
+    # sector by default
+    m_stakeholder_list = pd.read_sql(sql, conn)
+    # Close connection
+    conn.close()
+    return m_stakeholder_list
+
+
+# ----- L Stakeholder List -----
+def query_l_stakeholder_list():
+    """Query list of all stakeholders that fall in the L group/sector."""
+    # Open connection
+    conn = connect()
+    # Make query
+    sql = """SELECT organizations_uid, cyhy_db_name FROM vw_iscore_orgs_ip_counts WHERE ip_count > 10000 AND ip_count <= 100000;"""
+    l_stakeholder_list = pd.read_sql(sql, conn)
+    # Close connection
+    conn.close()
+    return l_stakeholder_list
+
+
+# ----- XL Stakeholder List -----
+def query_xl_stakeholder_list():
+    """Query list of all stakeholders that fall in the XL group/sector."""
+    # Open connection
+    conn = connect()
+    # Make query
+    sql = """SELECT organizations_uid, cyhy_db_name FROM vw_iscore_orgs_ip_counts WHERE ip_count > 100000;"""
+    xl_stakeholder_list = pd.read_sql(sql, conn)
+    # Close connection
+    conn.close()
+    return xl_stakeholder_list
+
+
+# ----- PE Stakeholder List -----
+def query_pe_stakeholder_list():
+    """Query list of all stakeholders PE reports on."""
+    # Open connection
+    conn = connect()
+    # Make query
+    sql = """SELECT organizations_uid, cyhy_db_name, is_parent, parent_org_uid FROM organizations WHERE report_on = True or runs_scans = True;"""
+    pe_stakeholder_list = pd.read_sql(sql, conn)
+    # Close connection
+    conn.close()
+    return pe_stakeholder_list
+
+
+# ----- FCEB Status -----
+def query_fceb_status(org_list):
+    """
+    Check if each organization in the list is FCEB or non-FCEB.
+
+    Args:
+        org_list: The specified list of organizations to retrieve data for
+    Return:
+        org list with additional boolean column of FCEB true/false
+    """
+    # Open connection
+    conn = connect()
+    # Build query
+    sql = """
+        SELECT 
+            org.organizations_uid, COALESCE(org.fceb, false) as fceb
+        FROM organizations org
+        WHERE organizations_uid in %(sector_str)s;
+    """
+    # Make query
+    orgs_fceb_status = pd.read_sql(
+        sql,
+        conn,
+        params={"sector_str": tuple(org_list["organizations_uid"].tolist())},
+    )
+    # Close connection
+    conn.close()
+    return orgs_fceb_status

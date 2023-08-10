@@ -8,9 +8,9 @@ from decouple import config
 class GatherStakeholderForm(forms.Form):
     cust = forms.CharField(label='Customer', max_length=500, required=True)
 
-    custDomainAliases = forms.CharField(label='Domain Aliases', max_length=500)
+    custDomainAliases = forms.CharField(label='Aliases', max_length=5000)
 
-    custRootDomain = forms.CharField(label='Customer Root Domain',max_length=500)
+    custRootDomain = forms.CharField(label='Customer Root Domains',max_length=5000)
 
     custExecutives = forms.CharField(label='Customer Executives', max_length=500)
 
@@ -18,6 +18,19 @@ class GatherStakeholderForm(forms.Form):
         super(GatherStakeholderForm, self).__init__(*args, **kwargs)
         for visible in self.visible_fields():
             visible.field.widget.attrs['class'] = 'form-control'
+
+class PeBulkUpload(forms.Form):
+    file = forms.FileField()
+    def clean(self):
+        cleaned_data = super().clean()
+        file = cleaned_data.get("file")
+        if not file.name.endswith(".csv"):
+            raise ValidationError(
+                {
+                    "file": "Filetype not supported, the file must be a '.csv'",
+                }
+            )
+        return cleaned_data
 
 class WeeklyStatusesForm(forms.Form):
     """Create web form to take user input on bulletin to be generated."""
@@ -189,3 +202,14 @@ def getGHUsers(url, user):
             usersIssues[issueAssignee] = issueNames
 
     return usersIssues
+
+
+class GenerateWeeklyStatusReportingForm(forms.Form):
+    """Create web form to take user input on weekly report to be generated."""
+
+    date = forms.DateField(widget=forms.DateInput(attrs={'type': 'date'}))
+
+    def __init__(self, *args, **kwargs):
+        super(GenerateWeeklyStatusReportingForm, self).__init__(*args, **kwargs)
+        for visible in self.visible_fields():
+            visible.field.widget.attrs["class"] = "form-control"

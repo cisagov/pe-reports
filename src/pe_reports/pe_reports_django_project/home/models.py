@@ -1741,3 +1741,272 @@ class VwOrgsTotalPorts(models.Model):
 
         managed = False  # Created from a view. Don't remove.
         db_table = "vw_orgs_total_ports"
+
+
+# ---------- D-Score View Models ----------
+# D-Score VS Cert View
+class VwDscoreVSCert(models.Model):
+    """Define VwDscoreVSCert model."""
+
+    organizations_uid = models.UUIDField(primary_key=True)
+    parent_org_uid = models.UUIDField(blank=True, null=True)
+    num_ident_cert = models.BigIntegerField(blank=True, null=True)
+    num_monitor_cert = models.BigIntegerField(blank=True, null=True)
+
+    class Meta:
+        """Set VwDscoreVSCert model metadata."""
+
+        managed = False  # Created from a view. Don't remove.
+        db_table = "vw_dscore_vs_cert"
+
+
+# D-Score VS Mail View
+class VwDscoreVSMail(models.Model):
+    """Define VwDscoreVSMail model."""
+
+    organizations_uid = models.UUIDField(primary_key=True)
+    parent_org_uid = models.UUIDField(blank=True, null=True)
+    num_valid_dmarc = models.BigIntegerField(blank=True, null=True)
+    num_valid_spf = models.BigIntegerField(blank=True, null=True)
+    num_valid_dmarc_or_spf = models.BigIntegerField(blank=True, null=True)
+    total_mail_domains = models.BigIntegerField(blank=True, null=True)
+
+    class Meta:
+        """Set VwDscoreVSMail model metadata."""
+
+        managed = False  # Created from a view. Don't remove.
+        db_table = "vw_dscore_vs_mail"
+
+
+# D-Score PE IP View
+class VwDscorePEIp(models.Model):
+    """Define VwDscorePEIp model."""
+
+    organizations_uid = models.UUIDField(primary_key=True)
+    parent_org_uid = models.UUIDField(blank=True, null=True)
+    num_ident_ip = models.BigIntegerField(blank=True, null=True)
+    num_monitor_ip = models.BigIntegerField(blank=True, null=True)
+
+    class Meta:
+        """Set VwDscorePEIp model metadata."""
+
+        managed = False  # Created from a view. Don't remove.
+        db_table = "vw_dscore_pe_ip"
+
+
+# D-Score PE Domain View
+class VwDscorePEDomain(models.Model):
+    """Define VwDscorePEDomain model."""
+
+    organizations_uid = models.UUIDField(primary_key=True)
+    parent_org_uid = models.UUIDField(blank=True, null=True)
+    num_ident_domain = models.BigIntegerField(blank=True, null=True)
+    num_monitor_domain = models.BigIntegerField(blank=True, null=True)
+
+    class Meta:
+        """Set VwDscorePEDomain model metadata."""
+
+        managed = False  # Created from a view. Don't remove.
+        db_table = "vw_dscore_pe_domain"
+
+
+# D-Score WAS Webapp View
+class VwDscoreWASWebapp(models.Model):
+    """Define VwDscoreWASWebapp model."""
+
+    organizations_uid = models.UUIDField(primary_key=True)
+    parent_org_uid = models.UUIDField(blank=True, null=True)
+    num_ident_webapp = models.BigIntegerField(blank=True, null=True)
+    num_monitor_webapp = models.BigIntegerField(blank=True, null=True)
+
+    class Meta:
+        """Set VwDscoreWASWebapp model metadata."""
+
+        managed = False  # Created from a view. Don't remove.
+        db_table = "vw_dscore_was_webapp"
+
+
+# ---------- I-Score View Models ----------
+# I-Score VS Vuln View
+class VwIscoreVSVuln(models.Model):
+    """Define VwIscoreVSVuln model."""
+
+    organizations_uid = models.UUIDField(primary_key=True)
+    parent_org_uid = models.UUIDField(blank=True, null=True)
+    cve_name = models.CharField(blank=True, null=True)
+    cvss_score = models.FloatField(blank=True, null=True)
+
+    class Meta:
+        """Set VwIscoreVSVuln model metadata."""
+
+        managed = False  # Created from a view. Don't remove.
+        db_table = "vw_iscore_vs_vuln"
+
+
+# I-Score VS Vuln Previous View
+class VwIscoreVSVulnPrev(models.Model):
+    """Define VwIscoreVSVulnPrev model."""
+
+    organizations_uid = models.UUIDField(primary_key=True)
+    parent_org_uid = models.UUIDField(blank=True, null=True)
+    cve_name = models.CharField(blank=True, null=True)
+    cvss_score = models.FloatField(blank=True, null=True)
+    time_closed = models.DateField(blank=True, null=True)
+
+    class Meta:
+        """Set VwIscoreVSVulnPrev model metadata."""
+
+        managed = False  # Created from a view. Don't remove.
+        db_table = "vw_iscore_vs_vuln_prev"
+
+
+# I-Score PE Vuln View
+class VwIscorePEVuln(models.Model):
+    """Define VwIscorePEVuln model."""
+
+    organizations_uid = models.UUIDField(primary_key=True)
+    parent_org_uid = models.UUIDField(blank=True, null=True)
+    date = models.DateField(blank=True, null=True)
+    cve_name = models.CharField(blank=True, null=True)
+    cvss_score = models.FloatField(blank=True, null=True)
+
+    class Meta:
+        """Set VwIscorePEVuln model metadata."""
+
+        managed = False  # Created from a view. Don't remove.
+        db_table = "vw_iscore_pe_vuln"
+
+
+# I-Score PE Cred View
+class VwIscorePECred(models.Model):
+    """Define VwIscorePECred model."""
+
+    organizations_uid = models.UUIDField(primary_key=True)
+    parent_org_uid = models.UUIDField(blank=True, null=True)
+    date = models.DateField(blank=True, null=True)
+    password_creds = models.BigIntegerField(blank=True, null=True)
+    total_creds = models.BigIntegerField(blank=True, null=True)
+
+    class Meta:
+        """Set VwIscorePECred model metadata."""
+
+        managed = False  # Created from a view. Don't remove.
+        db_table = "vw_iscore_pe_cred"
+
+
+# I-Score PE Breach View
+class VwIscorePEBreach(models.Model):
+    """Define VwIscorePEBreach model."""
+
+    organizations_uid = models.UUIDField(primary_key=True)
+    parent_org_uid = models.UUIDField(blank=True, null=True)
+    date = models.DateField(blank=True, null=True)
+    breach_count = models.BigIntegerField(blank=True, null=True)
+
+    class Meta:
+        """Set VwIscorePEBreach model metadata."""
+
+        managed = False  # Created from a view. Don't remove.
+        db_table = "vw_iscore_pe_breach"
+
+
+# I-Score PE Darkweb View
+class VwIscorePEDarkweb(models.Model):
+    """Define VwIscorePEDarkweb model."""
+
+    organizations_uid = models.UUIDField(primary_key=True)
+    parent_org_uid = models.UUIDField(blank=True, null=True)
+    alert_type = models.CharField(blank=True, null=True)
+    date = models.DateField(blank=True, null=True)
+    Count = models.BigIntegerField(blank=True, null=True)
+
+    class Meta:
+        """Set VwIscorePEDarkweb model metadata."""
+
+        managed = False  # Created from a view. Don't remove.
+        db_table = "vw_iscore_pe_darkweb"
+
+
+# I-Score PE Protocol View
+class VwIscorePEProtocol(models.Model):
+    """Define VwIscorePEProtocol model."""
+
+    organizations_uid = models.UUIDField(primary_key=True)
+    parent_org_uid = models.UUIDField(blank=True, null=True)
+    port = models.CharField(blank=True, null=True)
+    ip = models.CharField(blank=True, null=True)
+    protocol = models.CharField(blank=True, null=True)
+    protocol_type = models.CharField(blank=True, null=True)
+    date = models.DateField(blank=True, null=True)
+
+    class Meta:
+        """Set VwIscorePEProtocol model metadata."""
+
+        managed = False  # Created from a view. Don't remove.
+        db_table = "vw_iscore_pe_protocol"
+
+
+# I-Score WAS Vuln View
+class VwIscoreWASVuln(models.Model):
+    """Define VwIscoreWASVuln model."""
+
+    organizations_uid = models.UUIDField(primary_key=True)
+    parent_org_uid = models.UUIDField(blank=True, null=True)
+    date = models.DateField(blank=True, null=True)
+    cve_name = models.CharField(blank=True, null=True)
+    cvss_score = models.FloatField(blank=True, null=True)
+    owasp_category = models.CharField(blank=True, null=True)
+
+    class Meta:
+        """Set VwIscoreWASVuln model metadata."""
+
+        managed = False  # Created from a view. Don't remove.
+        db_table = "vw_iscore_was_vuln"
+
+
+# I-Score WAS Vuln Previous View
+class VwIscoreWASVulnPrev(models.Model):
+    """Define VwIscoreWASVulnPrev model."""
+
+    organizations_uid = models.UUIDField(primary_key=True)
+    parent_org_uid = models.UUIDField(blank=True, null=True)
+    was_total_vulns_prev = models.BigIntegerField(blank=True, null=True)
+    date = models.DateField(blank=True, null=True)
+
+    class Meta:
+        """Set VwIscoreWASVulnPrev model metadata."""
+
+        managed = False  # Created from a view. Don't remove.
+        db_table = "vw_iscore_was_vuln_prev"
+
+
+# cyhy_kevs table model (needed for kev_list endpoint)
+class CyhyKevs(models.Model):
+    """Define CyhyKevs model."""
+
+    cyhy_kevs_uid = models.UUIDField(primary_key=True)
+    kev = models.CharField(blank=True, null=True)
+    first_seen = models.DateField(blank=True, null=True)
+    last_seen = models.DateField(blank=True, null=True)
+
+    class Meta:
+        """Set CyhyKevs model metadata."""
+
+        managed = False
+        db_table = "cyhy_kevs"
+
+
+# ---------- Misc. Score Related Models ----------
+# vw_iscore_orgs_ip_counts view model (used for XS/S/M/L/XL orgs endpoints)
+class VwIscoreOrgsIpCounts(models.Model):
+    """Define VwIscoreOrgsIpCounts model."""
+
+    organizations_uid = models.UUIDField(primary_key=True)
+    cyhy_db_name = models.CharField(blank=True, null=True)
+    ip_count = models.BigIntegerField(blank=True, null=True)
+
+    class Meta:
+        """Set VwIscoreOrgsIpCounts model metadata."""
+
+        managed = False
+        db_table = "vw_iscore_orgs_ip_counts"

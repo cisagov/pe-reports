@@ -10,7 +10,7 @@ from .data.dnsmonitor.source import (
     get_monitored_domains,
 )
 from .data.pe_db.config import dnsmonitor_token
-from .data.pe_db.db_query import (
+from .data.pe_db.db_query_source import (
     addSubdomain,
     execute_dnsmonitor_alert_data,
     execute_dnsmonitor_data,
@@ -89,14 +89,14 @@ class DNSMonitor:
             for alert_index, alert_row in alerts_df.iterrows():
                 # Get subdomain_uid
                 root_domain = alert_row["rootDomain"]
-                sub_domain = getSubdomain(root_domain)
-                if not sub_domain:
+                sub_domain_uid = getSubdomain(root_domain)
+                if not sub_domain_uid:
                     LOGGER.info(
                         "Root domain, %s, isn't in subdomain table as a sub_domain.",
                         root_domain,
                     )
                     try:
-                        addSubdomain(None, root_domain, org_uid)
+                        addSubdomain(None, root_domain, org_uid, True)
                         LOGGER.info(
                             "Success adding %s to subdomain table.", root_domain
                         )
@@ -106,10 +106,9 @@ class DNSMonitor:
                         failed.append(
                             f"{org_code} - {root_domain} - Failed inserting into subdomain table"
                         )
-                    sub_domain = getSubdomain(root_domain)
+                    sub_domain_uid = getSubdomain(root_domain)
 
                 # Add subdomain_uid to associated alert
-                sub_domain_uid = sub_domain[0]
                 alerts_df.at[alert_index, "sub_domain_uid"] = sub_domain_uid
 
                 # Get DNS records for each domain permutation

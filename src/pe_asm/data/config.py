@@ -17,6 +17,8 @@ def db_config(filename=REPORT_DB_CONFIG, section="postgres"):
     db = dict()
     if parser.has_section(section):
         for key, value in parser.items(section):
+            if key == "pe_api_key" or key == "pe_api_url":
+                continue
             db[key] = value
     else:
         raise Exception(f"Section {section} not found in {filename}")

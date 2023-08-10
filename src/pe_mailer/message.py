@@ -5,8 +5,14 @@ from email import encoders
 from email.mime.application import MIMEApplication
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-import logging
 import os.path
+
+# cisagov Libraries
+from pe_reports import app
+
+# Setup logging to central file
+
+LOGGER = app.config["LOGGER"]
 
 
 class Message(MIMEMultipart):
@@ -87,26 +93,26 @@ class Message(MIMEMultipart):
         MIMEMultipart.__init__(self, "mixed")
 
         self["From"] = from_addr
-        logging.debug("Message to be sent from: %s", self["From"])
+        LOGGER.debug("Message to be sent from: %s", self["From"])
 
         self["To"] = ",".join(to_addrs)
-        logging.debug("Message to be sent to: %s", self["To"])
+        LOGGER.debug("Message to be sent to: %s", self["To"])
 
         if cc_addrs:
             self["CC"] = ",".join(cc_addrs)
-            logging.debug("Message to be sent as CC to: %s", self["CC"])
+            LOGGER.debug("Message to be sent as CC to: %s", self["CC"])
 
         if bcc_addrs:
             self["BCC"] = ",".join(bcc_addrs)
-            logging.debug("Message to be sent as BCC to: %s", self["BCC"])
+            LOGGER.debug("Message to be sent as BCC to: %s", self["BCC"])
 
         if reply_to_addr:
             self["Reply-To"] = reply_to_addr
-            logging.debug("Replies to be sent to: %s", self["Reply-To"])
+            LOGGER.debug("Replies to be sent to: %s", self["Reply-To"])
 
         if subject:
             self["Subject"] = subject
-            logging.debug("Message subject: %s", subject)
+            LOGGER.debug("Message subject: %s", subject)
 
         if html_body or text_body:
             self.attach_text_and_html_bodies(html_body, text_body)
@@ -133,14 +139,14 @@ class Message(MIMEMultipart):
         # default version that is displayed, as long as the client supports it.
         if text:
             textBody.attach(MIMEText(text, "plain"))
-            logging.debug("Message plain-text body: %s", text)
+            LOGGER.debug("Message plain-text body: %s", text)
 
         if html:
             htmlPart = MIMEText(html, "html")
             # See https://en.wikipedia.org/wiki/MIME#Content-Disposition
             htmlPart.add_header("Content-Disposition", "inline")
             textBody.attach(htmlPart)
-            logging.debug("Message HTML body: %s", html)
+            LOGGER.debug("Message HTML body: %s", html)
 
         self.attach(textBody)
 
@@ -161,7 +167,7 @@ class Message(MIMEMultipart):
         _, filename = os.path.split(pdf_filename)
         part.add_header("Content-Disposition", "attachment", filename=filename)
         self.attach(part)
-        logging.debug("Message PDF attachment: %s", pdf_filename)
+        LOGGER.debug("Message PDF attachment: %s", pdf_filename)
 
     def attach_csv(self, csv_filename):
         """Attach a CSV file to this message.
@@ -172,11 +178,11 @@ class Message(MIMEMultipart):
             The filename of the CSV file to attach.
 
         """
-        with open(csv_filename, "r") as attachment:
+        with open(csv_filename) as attachment:
             part = MIMEText(attachment.read(), "csv")
 
         # See https://en.wikipedia.org/wiki/MIME#Content-Disposition
         _, filename = os.path.split(csv_filename)
         part.add_header("Content-Disposition", "attachment", filename=filename)
         self.attach(part)
-        logging.debug("Message CSV attachment: %s", csv_filename)
+        LOGGER.debug("Message CSV attachment: %s", csv_filename)

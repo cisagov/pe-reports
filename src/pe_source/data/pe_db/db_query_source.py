@@ -56,7 +56,7 @@ def get_orgs():
     conn = connect()
     try:
         cur = conn.cursor()
-        sql = """SELECT * FROM organizations where report_on or demo or run_scans"""
+        sql = """SELECT * FROM organizations where report_on or demo"""
         cur.execute(sql)
         pe_orgs = cur.fetchall()
         keys = ("org_uid", "org_name", "cyhy_db_name")
@@ -64,7 +64,7 @@ def get_orgs():
         cur.close()
         return pe_orgs
     except (Exception, psycopg2.DatabaseError) as error:
-        logging.error("There was a problem with your database query %s", error)
+        LOGGER.error("There was a problem with your database query %s", error)
     finally:
         if conn is not None:
             close(conn)
@@ -542,18 +542,6 @@ def execute_dnsmonitor_alert_data(dataframe, table):
     conn.commit()
 
 
-def getSubdomain(domain):
-    """Get subdomain."""
-    conn = connect()
-    cur = conn.cursor()
-    sql = """SELECT * FROM sub_domains sd
-        WHERE sd.sub_domain = '{}'"""
-    cur.execute(sql.format(domain))
-    sub = cur.fetchone()
-    cur.close()
-    return sub
-
-
 def getRootdomain(domain):
     """Get root domain."""
     conn = connect()
@@ -578,27 +566,59 @@ def addRootdomain(root_domain, pe_org_uid, source_uid, org_name):
     cur.close()
 
 
-def addSubdomain(conn, domain, pe_org_uid):
+def addSubdomain(conn, domain, pe_org_uid, root):
     """Add a subdomain into the database."""
-    if conn is None:
-        conn = connect()
-        closeConn = True
-    root_domain = domain.split(".")[-2:]
-    root_domain = ".".join(root_domain)
+    conn = connect()
+    if root:
+        root_domain = domain
+    else:
+        root_domain = domain.split(".")[-2:]
+        root_domain = ".".join(root_domain)
     cur = conn.cursor()
+    date = datetime.today().strftime("%Y-%m-%d")
     cur.callproc(
-        "insert_sub_domain", (domain, pe_org_uid, "findomain", root_domain, None)
+        "insert_sub_domain",
+        (False, date, domain, pe_org_uid, "findomain", root_domain, None),
     )
     LOGGER.info("Success adding domain %s to subdomains table.", domain)
-    if closeConn:
-        close(conn)
+    conn.commit()
+    close(conn)
 
 
 def org_root_domains(conn, org_uid):
     """Get root domains from database given the org_uid."""
+    conn = connect()
+    try:
+        cur = conn.cursor()
+        sql = """select * from root_domains rd
+                where rd.organizations_uid = %s
+                and enumerate_subs is True;"""
+        cur.execute(sql, [org_uid])
+        roots = cur.fetchall()
+        keys = (
+            "root_uid",
+            "org_uid",
+            "root_domain",
+            "ip_address",
+            "data_source_uid",
+            "enumerate_subs",
+        )
+        roots = [dict(zip(keys, values)) for values in roots]
+        cur.close()
+        return roots
+    except (Exception, psycopg2.DatabaseError) as error:
+        LOGGER.error("There was a problem with your database query %s", error)
+    finally:
+        if conn is not None:
+            close(conn)
+
+
+def get_root_domains(conn, org_uid):
+    """Get root domains from database given the org_uid."""
     sql = """
         select * from root_domains rd
-        where rd.organizations_uid = %(org_id)s;
+        where rd.organizations_uid = %(org_id)s
+        and enumerate_subs is True;
     """
     df = pd.read_sql_query(sql, conn, params={"org_id": org_uid})
     return df
@@ -614,6 +634,7 @@ def query_orgs_rev():
 
 def insert_intelx_breaches(df):
     """Insert intelx breach data."""
+    df = df.drop_duplicates(subset=["breach_name"])
     conn = connect()
     table = "credential_breaches"
     # Create a list of tuples from the dataframe values
@@ -661,6 +682,7 @@ def get_intelx_breaches(source_uid):
 
 def insert_intelx_credentials(df):
     """Insert sixgill credential data."""
+    df = df.drop_duplicates(subset=["breach_name", "email"])
     conn = connect()
     table = "credential_exposures"
     # Create a list of tuples from the dataframe values
@@ -824,3 +846,31 @@ def api_pshtt_insert(pshtt_dict):
         LOGGER.error(err)
     except json.decoder.JSONDecodeError as err:
         LOGGER.error(err)
+
+
+def getSubdomain(domain):
+    """Get subdomain."""
+    conn = connect()
+    try:
+        cur = conn.cursor()
+        sql = """select * from sub_domains sd
+                where sd.sub_domain = %s;"""
+        cur.execute(sql, [domain])
+        sub = cur.fetchall()
+        cur.close()
+        return sub[0][0]
+    except (Exception, psycopg2.DatabaseError):
+        print("Adding domain to the sub-domain table")
+    finally:
+        if conn is not None:
+            close(conn)
+
+
+def getDataSource(conn, source):
+    """Get datasource information from a database."""
+    cur = conn.cursor()
+    sql = """SELECT * FROM data_source WHERE name=%(s)s"""
+    cur.execute(sql, {"s": source})
+    source = cur.fetchone()
+    cur.close()
+    return source

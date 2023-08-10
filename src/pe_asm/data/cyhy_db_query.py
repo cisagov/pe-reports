@@ -234,6 +234,7 @@ def insert_sectors(conn, sectors_list):
     password = db_password_key()
     for sector in sectors_list:
         try:
+            print(sector)
             cur = conn.cursor()
             sql = """
             INSERT INTO sectors(id, acronym, name, email, contact_name, retired, first_seen, last_seen, password) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, PGP_SYM_ENCRYPT(%s, %s))
@@ -267,6 +268,7 @@ def insert_sectors(conn, sectors_list):
 
         except (Exception, psycopg2.DatabaseError) as err:
             show_psycopg2_exception(err)
+            LOGGER.error(sector)
             cur.close()
             continue
 
@@ -377,7 +379,7 @@ def update_scan_status(conn, child_name):
         set run_scans = True
         where cyhy_db_name = %s
         """,
-        (child_name),
+        (child_name,),
     )
 
     conn.commit()
@@ -393,7 +395,7 @@ def update_fceb_child_status(conn, child_name):
         set fceb_child = True
         where cyhy_db_name = %s
         """,
-        (child_name),
+        (child_name,),
     )
 
     conn.commit()
@@ -409,7 +411,7 @@ def updated_scorecard_child_status(conn, child_name):
         set scorecard_child = True
         where cyhy_db_name = %s
         """,
-        (child_name),
+        (child_name,),
     )
 
     conn.commit()
@@ -460,7 +462,7 @@ def execute_ips(conn, df):
         DO UPDATE SET
             origin_cidr = UUID(EXCLUDED.origin_cidr),
             last_seen = EXCLUDED.last_seen,
-            organizations_uid = EXCLUDE.organizations_uid;
+            organizations_uid = EXCLUDED.organizations_uid;
         """
         cursor = conn.cursor()
         extras.execute_values(cursor, sql.format(table, cols), tpls, page_size=100000)
@@ -486,6 +488,7 @@ def insert_sub_domains(conn, df):
     try:
         # Execute insert query
         df = df.drop_duplicates()
+        df["current"] = True
         tpls = [tuple(x) for x in df.to_numpy()]
         cols = ",".join(list(df.columns))
         table = "sub_domains"
@@ -494,7 +497,8 @@ def insert_sub_domains(conn, df):
             ON CONFLICT (sub_domain, root_domain_uid)
             DO UPDATE SET
                 last_seen = EXCLUDED.last_seen,
-                identified = EXCLUDED.identified;
+                identified = EXCLUDED.identified,
+                current = EXCLUDED.current;
             """
         cursor = conn.cursor()
         extras.execute_values(cursor, sql.format(table, cols), tpls)

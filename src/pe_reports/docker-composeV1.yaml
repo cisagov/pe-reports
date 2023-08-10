@@ -1,0 +1,34 @@
+---
+
+version: "3.8"
+services:
+  pe_reports_rabbitmq:
+    container_name: pe_reports_rabbitmq
+    hostname: 7ccb5fe7f56c
+    image: rabbitmq:3.8.14-management
+    restart: always
+    ports:
+      - 15672:15672
+      - 5672:5672
+    environment:
+      - RABBITMQ_DEFAULT_USER=${RABBITMQ_USER}
+      - RABBITMQ_DEFAULT_PASS=${RABBITMQ_PASS}
+      - PATH=/opt/rabbitmq/sbin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+      - RABBITMQ_DATA_DIR=/var/lib/rabbitmq
+      - RABBITMQ_VERSION=3.8.14
+      - RABBITMQ_HOME=/opt/rabbitmq
+      - RABBITMQ_LOGS=-
+      - HOME=/var/lib/rabbitmq
+      - LANG=C.UTF-8
+      - LANGUAGE=C.UTF-8
+      - LC_ALL=C.UTF-8
+    volumes:
+      - /home/ubuntu/pe-reports/src/pe_reports/data/rabbitmq/data:/var/lib/rabbitmq/mnesia:rw
+      - /var/www/pe-reports/src/pe_reports/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf
+    networks:
+      - pe_reports_pe_reports_rabbitmq_network
+
+networks:
+  pe_reports_pe_reports_rabbitmq_network:
+    external: true
+    name: pe_reports_pe_reports_rabbitmq_network

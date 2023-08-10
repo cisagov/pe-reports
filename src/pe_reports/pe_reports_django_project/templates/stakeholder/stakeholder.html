@@ -5,60 +5,64 @@
 {% load static %}
 
 {% block title %}
-    Stakeholder
+Stakeholder
 {% endblock title %}
 
 {% block content %}
-    <div class="row justify-content-lg-center">
-        <div class="row col-lg-8 offset-lg-2">
+<div class="row justify-content-lg-center">
+    <div class="d-flex justify-content-center">
 
-            <button type="button" class="btn btn-primary" onclick="showDiv()">
-                Add External Stakeholder
-            </button>
-        </div>
-        <br/>
+        <button type="button" class="btn btn-primary" onclick="showBulkUpoadDiv()">
+            P&E Stakeholder Bulk Upload
+        </button>
+    </div>
+    <br />
 
-        <div id="TestsDiv" class="row justify-content-lg-center">
-            <div class="d-flex justify-content-center">
-                <div class="card" style="width: 55%;" id="content">
-                    <div class="card-header text-white bg-primary mb-3">
-                        Add external agency
-                    </div>
-                    <div class="card-body">
-                        <form action="" method="post">
-                            {% csrf_token %}
-                            {{ form|crispy }}
-                            <input class="btn btn-primary" type="submit"
-                                   value="Submit">
-                        </form>
-                    </div>
+    <div id="BulkUploadDiv" class="row justify-content-lg-center" style="display: none">
+
+        <div class="d-flex justify-content-center">
+            <div class="card" id="content">
+                <div class="card-header text-white bg-primary mb-3">
+                    P&E Stakeholder Bulk Upload
+                </div>
+                <div class="card-body">
+                    <form method="POST" enctype="multipart/form-data">
+                        <label for="fileInput" class="form-label">CSV must contain these columns: org_name, org_code,
+                            root_domain, exec_url, aliases, premium, demo
+                        </label>
+                        {% csrf_token %}
+                        {{ form.as_p }}
+                        <br />
+                        <input class="btn btn-primary" type="submit" value="Process CSV">
+                    </form>
                 </div>
             </div>
         </div>
-        <script>
-            function showDiv() {
-                let T = document.getElementById("TestsDiv"),
-                    displayValue = "";
-                if (T.style.display == "") displayValue = "none";
-                T.style.display = displayValue;
-            }
+    </div>
+    <script>
+        function showBulkUpoadDiv() {
+            let T = document.getElementById("BulkUploadDiv"),
+                displayValue = "";
+            if (T.style.display == "") displayValue = "none";
+            T.style.display = displayValue;
+        }
 
-            function loading() {
-                $("#loading").show();
-                $("#content").hide();
-            }
+        function loading() {
+            $("#loading").show();
+            $("#content").hide();
+        }
 
-            $(document).ready(function () {
-                console.log("Im ready ");
+        $(document).ready(function () {
+            console.log("Im ready ");
 
-                showDiv();
+            showDiv();
 
-                setTimeout(function () {
-                    $("#messageDiv").fadeOut("fast");
-                }, 5000);
-                $(window).load(function () {
-                    $("#loading").hide();
-                });
+            setTimeout(function () {
+                $("#messageDiv").fadeOut("fast");
+            }, 5000);
+            $(window).load(function () {
+                $("#loading").hide();
             });
-        </script>
-{% endblock content %}
+        });
+    </script>
+    {% endblock content %}

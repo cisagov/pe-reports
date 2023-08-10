@@ -26,7 +26,7 @@ def find_ips(domain):
         ip = socket.gethostbyname(domain)
     except Exception:
         ip = None
-    print(ip)
+    LOGGER.info(ip)
     return ip
 
 
@@ -49,7 +49,7 @@ def link_ip_from_domain(sub, root_uid, org_uid, data_source, conn):
     return 1
 
 
-def connect_ips_from_subs(staging):
+def connect_ips_from_subs(staging, orgs_df=None):
     """For each org, find all ips associated with its sub_domains and link them in the ips_subs table."""
     # Connect to database
     if staging:
@@ -58,7 +58,8 @@ def connect_ips_from_subs(staging):
         conn = pe_db_connect()
 
     # Get P&E organizations DataFrame
-    orgs_df = query_pe_report_on_orgs(conn)
+    if not isinstance(orgs_df, pd.DataFrame):
+        orgs_df = query_pe_report_on_orgs(conn)
     num_orgs = len(orgs_df.index)
 
     # Close database connection
