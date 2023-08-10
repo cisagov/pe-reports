@@ -3,21 +3,30 @@
 # Standard Python Libraries
 from datetime import datetime
 import sys
+import time
 
 # Third-Party Libraries
 import pandas as pd
 import psycopg2
 from psycopg2 import OperationalError
 import psycopg2.extras as extras
+import requests
+import json
 
 # cisagov Libraries
 from pe_reports import app
-from pe_reports.data.config import config
+from pe_reports.data.config import config, staging_config
+from pe_reports.data.db_query import task_api_call
 
 # Setup logging to central file
 LOGGER = app.config["LOGGER"]
 
 CONN_PARAMS_DIC = config()
+CONN_PARAMS_DIC_STAGING = staging_config()
+
+# These need to filled with API key/url path in database.ini
+pe_api_key = CONN_PARAMS_DIC_STAGING.get("pe_api_key")
+pe_api_url = CONN_PARAMS_DIC_STAGING.get("pe_api_url")
 
 
 def show_psycopg2_exception(err):
@@ -417,3 +426,26 @@ def org_root_domains(conn, org_uid):
     """
     df = pd.read_sql_query(sql, conn, params={"org_id": org_uid})
     return df
+
+
+# --- Issue 641 ---
+def get_intelx_breaches(source_uid):
+    """
+    Query API for all IntelX credential breaches.
+
+    Args:
+        source_uid: The data source uid to filter credential breaches by
+
+    Return:
+        Credential breach data that have the specified data_source_uid as a dataframe
+    """
+    # Endpoint info
+    task_url = "cred_breach_intelx"
+    status_url = "cred_breach_intelx/task/"
+    data = json.dumps({"source_uid": source_uid})
+    # Make API call
+    result = task_api_call(task_url, status_url, data, 3)
+    # Process data and return
+    # Convert result to list of tuples to match original function
+    tup_result = [tuple(row.values()) for row in result]
+    return tup_result

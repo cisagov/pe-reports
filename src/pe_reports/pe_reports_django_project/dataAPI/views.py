@@ -54,6 +54,8 @@ from home.models import (
     VwOrgsAttacksurface,
     WasTrackerCustomerdata,
     WeeklyStatuses,
+    ReportSummaryStats,
+    VwPEScoreCheckNewCVE,
 )
 from pe_reports.helpers import ip_passthrough
 from jose import exceptions, jwt
@@ -69,6 +71,9 @@ from . import schemas
 from .models import apiUser
 
 from dataAPI.tasks import (
+    # Task helpers
+    convert_uuid_to_string,
+    convert_date_to_string,
     # D-Score Task Functions:
     get_dscore_vs_cert_info,
     get_dscore_vs_mail_info,
@@ -93,6 +98,16 @@ from dataAPI.tasks import (
     get_m_stakeholders_info,
     get_l_stakeholders_info,
     get_xl_stakeholders_info,
+    # Other Endpoint Task Functions:
+    ips_insert_task,  # Issue 559
+    sub_domains_table_task,  # Issue 560
+    pescore_hist_domain_alert_task,  # Issue 635
+    pescore_hist_darkweb_alert_task,  # Issue 635
+    pescore_hist_darkweb_ment_task,  # Issue 635
+    pescore_hist_cred_task,  # Issue 635
+    pescore_base_metrics_task,  # Issue 635
+    cve_info_insert_task,  # Issue 637
+    cred_breach_intelx_task,  # Issue 641
 )
 
 LOGGER = logging.getLogger(__name__)
@@ -266,7 +281,7 @@ def process_item(item):
 def read_orgs(tokens: dict = Depends(get_api_key)):
     """API endpoint to get all organizations."""
     orgs = list(Organizations.objects.all())
-    
+
     if tokens:
 
         # LOGGER.info(f"The api key submitted {tokens}")
@@ -927,10 +942,14 @@ def read_dscore_vs_cert(
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
-        # If API key valid, create task for query
-        task = get_dscore_vs_cert_info.delay(data.specified_orgs)
-        # Return the new task id w/ "Processing" status
-        return {"task_id": task.id, "status": "Processing"}
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # If API key valid, create task for query
+            task = get_dscore_vs_cert_info.delay(data.specified_orgs)
+            # Return the new task id w/ "Processing" status
+            return {"task_id": task.id, "status": "Processing"}
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
     else:
         return {"message": "No api key was submitted"}
 
@@ -944,17 +963,34 @@ def read_dscore_vs_cert(
 async def get_dscore_vs_cert_task_status(
     task_id: str, tokens: dict = Depends(get_api_key)
 ):
-    # Retrieve task status
-    task = get_dscore_vs_cert_info.AsyncResult(task_id)
-    # Return appropriate message for status
-    if task.state == "SUCCESS":
-        return {"task_id": task_id, "status": "Completed", "result": task.result}
-    elif task.state == "PENDING":
-        return {"task_id": task_id, "status": "Pending"}
-    elif task.state == "FAILURE":
-        return {"task_id": task_id, "status": "Failed", "error": str(task.result)}
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # Retrieve task status
+            task = get_dscore_vs_cert_info.AsyncResult(task_id)
+            # Return appropriate message for status
+            if task.state == "SUCCESS":
+                return {
+                    "task_id": task_id,
+                    "status": "Completed",
+                    "result": task.result,
+                }
+            elif task.state == "PENDING":
+                return {"task_id": task_id, "status": "Pending"}
+            elif task.state == "FAILURE":
+                return {
+                    "task_id": task_id,
+                    "status": "Failed",
+                    "error": str(task.result),
+                }
+            else:
+                return {"task_id": task_id, "status": task.state}
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
     else:
-        return {"task_id": task_id, "status": task.state}
+        return {"message": "No api key was submitted"}
 
 
 # --- Endpoint functions for vw_dscore_vs_mail view ---
@@ -971,10 +1007,14 @@ def read_dscore_vs_mail(
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
-        # If API key valid, create task for query
-        task = get_dscore_vs_mail_info.delay(data.specified_orgs)
-        # Return the new task id w/ "Processing" status
-        return {"task_id": task.id, "status": "Processing"}
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # If API key valid, create task for query
+            task = get_dscore_vs_mail_info.delay(data.specified_orgs)
+            # Return the new task id w/ "Processing" status
+            return {"task_id": task.id, "status": "Processing"}
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
     else:
         return {"message": "No api key was submitted"}
 
@@ -988,17 +1028,34 @@ def read_dscore_vs_mail(
 async def get_dscore_vs_mail_task_status(
     task_id: str, tokens: dict = Depends(get_api_key)
 ):
-    # Retrieve task status
-    task = get_dscore_vs_mail_info.AsyncResult(task_id)
-    # Return appropriate message for status
-    if task.state == "SUCCESS":
-        return {"task_id": task_id, "status": "Completed", "result": task.result}
-    elif task.state == "PENDING":
-        return {"task_id": task_id, "status": "Pending"}
-    elif task.state == "FAILURE":
-        return {"task_id": task_id, "status": "Failed", "error": str(task.result)}
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # Retrieve task status
+            task = get_dscore_vs_mail_info.AsyncResult(task_id)
+            # Return appropriate message for status
+            if task.state == "SUCCESS":
+                return {
+                    "task_id": task_id,
+                    "status": "Completed",
+                    "result": task.result,
+                }
+            elif task.state == "PENDING":
+                return {"task_id": task_id, "status": "Pending"}
+            elif task.state == "FAILURE":
+                return {
+                    "task_id": task_id,
+                    "status": "Failed",
+                    "error": str(task.result),
+                }
+            else:
+                return {"task_id": task_id, "status": task.state}
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
     else:
-        return {"task_id": task_id, "status": task.state}
+        return {"message": "No api key was submitted"}
 
 
 # --- Endpoint functions for vw_dscore_pe_ip view ---
@@ -1015,10 +1072,14 @@ def read_dscore_pe_ip(
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
-        # If API key valid, create task for query
-        task = get_dscore_pe_ip_info.delay(data.specified_orgs)
-        # Return the new task id w/ "Processing" status
-        return {"task_id": task.id, "status": "Processing"}
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # If API key valid, create task for query
+            task = get_dscore_pe_ip_info.delay(data.specified_orgs)
+            # Return the new task id w/ "Processing" status
+            return {"task_id": task.id, "status": "Processing"}
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
     else:
         return {"message": "No api key was submitted"}
 
@@ -1032,17 +1093,34 @@ def read_dscore_pe_ip(
 async def get_dscore_pe_ip_task_status(
     task_id: str, tokens: dict = Depends(get_api_key)
 ):
-    # Retrieve task status
-    task = get_dscore_pe_ip_info.AsyncResult(task_id)
-    # Return appropriate message for status
-    if task.state == "SUCCESS":
-        return {"task_id": task_id, "status": "Completed", "result": task.result}
-    elif task.state == "PENDING":
-        return {"task_id": task_id, "status": "Pending"}
-    elif task.state == "FAILURE":
-        return {"task_id": task_id, "status": "Failed", "error": str(task.result)}
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # Retrieve task status
+            task = get_dscore_pe_ip_info.AsyncResult(task_id)
+            # Return appropriate message for status
+            if task.state == "SUCCESS":
+                return {
+                    "task_id": task_id,
+                    "status": "Completed",
+                    "result": task.result,
+                }
+            elif task.state == "PENDING":
+                return {"task_id": task_id, "status": "Pending"}
+            elif task.state == "FAILURE":
+                return {
+                    "task_id": task_id,
+                    "status": "Failed",
+                    "error": str(task.result),
+                }
+            else:
+                return {"task_id": task_id, "status": task.state}
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
     else:
-        return {"task_id": task_id, "status": task.state}
+        return {"message": "No api key was submitted"}
 
 
 # --- Endpoint functions for vw_dscore_pe_domain view ---
@@ -1059,10 +1137,14 @@ def read_dscore_pe_domain(
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
-        # If API key valid, create task for query
-        task = get_dscore_pe_domain_info.delay(data.specified_orgs)
-        # Return the new task id w/ "Processing" status
-        return {"task_id": task.id, "status": "Processing"}
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # If API key valid, create task for query
+            task = get_dscore_pe_domain_info.delay(data.specified_orgs)
+            # Return the new task id w/ "Processing" status
+            return {"task_id": task.id, "status": "Processing"}
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
     else:
         return {"message": "No api key was submitted"}
 
@@ -1076,17 +1158,34 @@ def read_dscore_pe_domain(
 async def get_dscore_pe_domain_task_status(
     task_id: str, tokens: dict = Depends(get_api_key)
 ):
-    # Retrieve task status
-    task = get_dscore_pe_domain_info.AsyncResult(task_id)
-    # Return appropriate message for status
-    if task.state == "SUCCESS":
-        return {"task_id": task_id, "status": "Completed", "result": task.result}
-    elif task.state == "PENDING":
-        return {"task_id": task_id, "status": "Pending"}
-    elif task.state == "FAILURE":
-        return {"task_id": task_id, "status": "Failed", "error": str(task.result)}
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # Retrieve task status
+            task = get_dscore_pe_domain_info.AsyncResult(task_id)
+            # Return appropriate message for status
+            if task.state == "SUCCESS":
+                return {
+                    "task_id": task_id,
+                    "status": "Completed",
+                    "result": task.result,
+                }
+            elif task.state == "PENDING":
+                return {"task_id": task_id, "status": "Pending"}
+            elif task.state == "FAILURE":
+                return {
+                    "task_id": task_id,
+                    "status": "Failed",
+                    "error": str(task.result),
+                }
+            else:
+                return {"task_id": task_id, "status": task.state}
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
     else:
-        return {"task_id": task_id, "status": task.state}
+        return {"message": "No api key was submitted"}
 
 
 # --- Endpoint functions for vw_dscore_was_webapp view ---
@@ -1103,10 +1202,14 @@ def read_dscore_was_webapp(
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
-        # If API key valid, create task for query
-        task = get_dscore_was_webapp_info.delay(data.specified_orgs)
-        # Return the new task id w/ "Processing" status
-        return {"task_id": task.id, "status": "Processing"}
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # If API key valid, create task for query
+            task = get_dscore_was_webapp_info.delay(data.specified_orgs)
+            # Return the new task id w/ "Processing" status
+            return {"task_id": task.id, "status": "Processing"}
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
     else:
         return {"message": "No api key was submitted"}
 
@@ -1120,17 +1223,34 @@ def read_dscore_was_webapp(
 async def get_dscore_was_webapp_task_status(
     task_id: str, tokens: dict = Depends(get_api_key)
 ):
-    # Retrieve task status
-    task = get_dscore_was_webapp_info.AsyncResult(task_id)
-    # Return appropriate message for status
-    if task.state == "SUCCESS":
-        return {"task_id": task_id, "status": "Completed", "result": task.result}
-    elif task.state == "PENDING":
-        return {"task_id": task_id, "status": "Pending"}
-    elif task.state == "FAILURE":
-        return {"task_id": task_id, "status": "Failed", "error": str(task.result)}
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # Retrieve task status
+            task = get_dscore_was_webapp_info.AsyncResult(task_id)
+            # Return appropriate message for status
+            if task.state == "SUCCESS":
+                return {
+                    "task_id": task_id,
+                    "status": "Completed",
+                    "result": task.result,
+                }
+            elif task.state == "PENDING":
+                return {"task_id": task_id, "status": "Pending"}
+            elif task.state == "FAILURE":
+                return {
+                    "task_id": task_id,
+                    "status": "Failed",
+                    "error": str(task.result),
+                }
+            else:
+                return {"task_id": task_id, "status": task.state}
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
     else:
-        return {"task_id": task_id, "status": task.state}
+        return {"message": "No api key was submitted"}
 
 
 # --- Endpoint function for FCEB status query (no view) ---
@@ -1147,10 +1267,14 @@ def read_fceb_status(
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
-        # If API key valid, create task for query
-        task = get_fceb_status_info.delay(data.specified_orgs)
-        # Return the new task id w/ "Processing" status
-        return {"task_id": task.id, "status": "Processing"}
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # If API key valid, create task for query
+            task = get_fceb_status_info.delay(data.specified_orgs)
+            # Return the new task id w/ "Processing" status
+            return {"task_id": task.id, "status": "Processing"}
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
     else:
         return {"message": "No api key was submitted"}
 
@@ -1164,17 +1288,34 @@ def read_fceb_status(
 async def get_fceb_status_task_status(
     task_id: str, tokens: dict = Depends(get_api_key)
 ):
-    # Retrieve task status
-    task = get_fceb_status_info.AsyncResult(task_id)
-    # Return appropriate message for status
-    if task.state == "SUCCESS":
-        return {"task_id": task_id, "status": "Completed", "result": task.result}
-    elif task.state == "PENDING":
-        return {"task_id": task_id, "status": "Pending"}
-    elif task.state == "FAILURE":
-        return {"task_id": task_id, "status": "Failed", "error": str(task.result)}
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # Retrieve task status
+            task = get_fceb_status_info.AsyncResult(task_id)
+            # Return appropriate message for status
+            if task.state == "SUCCESS":
+                return {
+                    "task_id": task_id,
+                    "status": "Completed",
+                    "result": task.result,
+                }
+            elif task.state == "PENDING":
+                return {"task_id": task_id, "status": "Pending"}
+            elif task.state == "FAILURE":
+                return {
+                    "task_id": task_id,
+                    "status": "Failed",
+                    "error": str(task.result),
+                }
+            else:
+                return {"task_id": task_id, "status": task.state}
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
     else:
-        return {"task_id": task_id, "status": task.state}
+        return {"message": "No api key was submitted"}
 
 
 # ---------- I-Score View Endpoints ----------
@@ -1192,10 +1333,14 @@ def read_iscore_vs_vuln(
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
-        # If API key valid, create task for query
-        task = get_iscore_vs_vuln_info.delay(data.specified_orgs)
-        # Return the new task id w/ "Processing" status
-        return {"task_id": task.id, "status": "Processing"}
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # If API key valid, create task for query
+            task = get_iscore_vs_vuln_info.delay(data.specified_orgs)
+            # Return the new task id w/ "Processing" status
+            return {"task_id": task.id, "status": "Processing"}
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
     else:
         return {"message": "No api key was submitted"}
 
@@ -1209,17 +1354,34 @@ def read_iscore_vs_vuln(
 async def get_iscore_vs_vuln_task_status(
     task_id: str, tokens: dict = Depends(get_api_key)
 ):
-    # Retrieve task status
-    task = get_iscore_vs_vuln_info.AsyncResult(task_id)
-    # Return appropriate message for status
-    if task.state == "SUCCESS":
-        return {"task_id": task_id, "status": "Completed", "result": task.result}
-    elif task.state == "PENDING":
-        return {"task_id": task_id, "status": "Pending"}
-    elif task.state == "FAILURE":
-        return {"task_id": task_id, "status": "Failed", "error": str(task.result)}
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # Retrieve task status
+            task = get_iscore_vs_vuln_info.AsyncResult(task_id)
+            # Return appropriate message for status
+            if task.state == "SUCCESS":
+                return {
+                    "task_id": task_id,
+                    "status": "Completed",
+                    "result": task.result,
+                }
+            elif task.state == "PENDING":
+                return {"task_id": task_id, "status": "Pending"}
+            elif task.state == "FAILURE":
+                return {
+                    "task_id": task_id,
+                    "status": "Failed",
+                    "error": str(task.result),
+                }
+            else:
+                return {"task_id": task_id, "status": task.state}
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
     else:
-        return {"task_id": task_id, "status": task.state}
+        return {"message": "No api key was submitted"}
 
 
 # --- Endpoint functions for vw_iscore_vs_vuln_prev view ---
@@ -1236,12 +1398,16 @@ def read_iscore_vs_vuln_prev(
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
-        # If API key valid, create task for query
-        task = get_iscore_vs_vuln_prev_info.delay(
-            data.specified_orgs, data.start_date, data.end_date
-        )
-        # Return the new task id w/ "Processing" status
-        return {"task_id": task.id, "status": "Processing"}
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # If API key valid, create task for query
+            task = get_iscore_vs_vuln_prev_info.delay(
+                data.specified_orgs, data.start_date, data.end_date
+            )
+            # Return the new task id w/ "Processing" status
+            return {"task_id": task.id, "status": "Processing"}
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
     else:
         return {"message": "No api key was submitted"}
 
@@ -1255,17 +1421,34 @@ def read_iscore_vs_vuln_prev(
 async def get_iscore_vs_vuln_prev_task_status(
     task_id: str, tokens: dict = Depends(get_api_key)
 ):
-    # Retrieve task status
-    task = get_iscore_vs_vuln_prev_info.AsyncResult(task_id)
-    # Return appropriate message for status
-    if task.state == "SUCCESS":
-        return {"task_id": task_id, "status": "Completed", "result": task.result}
-    elif task.state == "PENDING":
-        return {"task_id": task_id, "status": "Pending"}
-    elif task.state == "FAILURE":
-        return {"task_id": task_id, "status": "Failed", "error": str(task.result)}
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # Retrieve task status
+            task = get_iscore_vs_vuln_prev_info.AsyncResult(task_id)
+            # Return appropriate message for status
+            if task.state == "SUCCESS":
+                return {
+                    "task_id": task_id,
+                    "status": "Completed",
+                    "result": task.result,
+                }
+            elif task.state == "PENDING":
+                return {"task_id": task_id, "status": "Pending"}
+            elif task.state == "FAILURE":
+                return {
+                    "task_id": task_id,
+                    "status": "Failed",
+                    "error": str(task.result),
+                }
+            else:
+                return {"task_id": task_id, "status": task.state}
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
     else:
-        return {"task_id": task_id, "status": task.state}
+        return {"message": "No api key was submitted"}
 
 
 # --- Endpoint functions for vw_iscore_pe_vuln view ---
@@ -1282,12 +1465,16 @@ def read_iscore_pe_vuln(
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
-        # If API key valid, create task for query
-        task = get_iscore_pe_vuln_info.delay(
-            data.specified_orgs, data.start_date, data.end_date
-        )
-        # Return the new task id w/ "Processing" status
-        return {"task_id": task.id, "status": "Processing"}
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # If API key valid, create task for query
+            task = get_iscore_pe_vuln_info.delay(
+                data.specified_orgs, data.start_date, data.end_date
+            )
+            # Return the new task id w/ "Processing" status
+            return {"task_id": task.id, "status": "Processing"}
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
     else:
         return {"message": "No api key was submitted"}
 
@@ -1301,17 +1488,34 @@ def read_iscore_pe_vuln(
 async def get_iscore_pe_vuln_task_status(
     task_id: str, tokens: dict = Depends(get_api_key)
 ):
-    # Retrieve task status
-    task = get_iscore_pe_vuln_info.AsyncResult(task_id)
-    # Return appropriate message for status
-    if task.state == "SUCCESS":
-        return {"task_id": task_id, "status": "Completed", "result": task.result}
-    elif task.state == "PENDING":
-        return {"task_id": task_id, "status": "Pending"}
-    elif task.state == "FAILURE":
-        return {"task_id": task_id, "status": "Failed", "error": str(task.result)}
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # Retrieve task status
+            task = get_iscore_pe_vuln_info.AsyncResult(task_id)
+            # Return appropriate message for status
+            if task.state == "SUCCESS":
+                return {
+                    "task_id": task_id,
+                    "status": "Completed",
+                    "result": task.result,
+                }
+            elif task.state == "PENDING":
+                return {"task_id": task_id, "status": "Pending"}
+            elif task.state == "FAILURE":
+                return {
+                    "task_id": task_id,
+                    "status": "Failed",
+                    "error": str(task.result),
+                }
+            else:
+                return {"task_id": task_id, "status": task.state}
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
     else:
-        return {"task_id": task_id, "status": task.state}
+        return {"message": "No api key was submitted"}
 
 
 # --- Endpoint functions for vw_iscore_pe_cred view ---
@@ -1328,12 +1532,16 @@ def read_iscore_pe_cred(
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
-        # If API key valid, create task for query
-        task = get_iscore_pe_cred_info.delay(
-            data.specified_orgs, data.start_date, data.end_date
-        )
-        # Return the new task id w/ "Processing" status
-        return {"task_id": task.id, "status": "Processing"}
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # If API key valid, create task for query
+            task = get_iscore_pe_cred_info.delay(
+                data.specified_orgs, data.start_date, data.end_date
+            )
+            # Return the new task id w/ "Processing" status
+            return {"task_id": task.id, "status": "Processing"}
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
     else:
         return {"message": "No api key was submitted"}
 
@@ -1347,17 +1555,34 @@ def read_iscore_pe_cred(
 async def get_iscore_pe_cred_task_status(
     task_id: str, tokens: dict = Depends(get_api_key)
 ):
-    # Retrieve task status
-    task = get_iscore_pe_cred_info.AsyncResult(task_id)
-    # Return appropriate message for status
-    if task.state == "SUCCESS":
-        return {"task_id": task_id, "status": "Completed", "result": task.result}
-    elif task.state == "PENDING":
-        return {"task_id": task_id, "status": "Pending"}
-    elif task.state == "FAILURE":
-        return {"task_id": task_id, "status": "Failed", "error": str(task.result)}
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # Retrieve task status
+            task = get_iscore_pe_cred_info.AsyncResult(task_id)
+            # Return appropriate message for status
+            if task.state == "SUCCESS":
+                return {
+                    "task_id": task_id,
+                    "status": "Completed",
+                    "result": task.result,
+                }
+            elif task.state == "PENDING":
+                return {"task_id": task_id, "status": "Pending"}
+            elif task.state == "FAILURE":
+                return {
+                    "task_id": task_id,
+                    "status": "Failed",
+                    "error": str(task.result),
+                }
+            else:
+                return {"task_id": task_id, "status": task.state}
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
     else:
-        return {"task_id": task_id, "status": task.state}
+        return {"message": "No api key was submitted"}
 
 
 # --- Endpoint functions for vw_iscore_pe_breach view ---
@@ -1374,12 +1599,16 @@ def read_iscore_pe_breach(
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
-        # If API key valid, create task for query
-        task = get_iscore_pe_breach_info.delay(
-            data.specified_orgs, data.start_date, data.end_date
-        )
-        # Return the new task id w/ "Processing" status
-        return {"task_id": task.id, "status": "Processing"}
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # If API key valid, create task for query
+            task = get_iscore_pe_breach_info.delay(
+                data.specified_orgs, data.start_date, data.end_date
+            )
+            # Return the new task id w/ "Processing" status
+            return {"task_id": task.id, "status": "Processing"}
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
     else:
         return {"message": "No api key was submitted"}
 
@@ -1393,17 +1622,34 @@ def read_iscore_pe_breach(
 async def get_iscore_pe_breach_task_status(
     task_id: str, tokens: dict = Depends(get_api_key)
 ):
-    # Retrieve task status
-    task = get_iscore_pe_breach_info.AsyncResult(task_id)
-    # Return appropriate message for status
-    if task.state == "SUCCESS":
-        return {"task_id": task_id, "status": "Completed", "result": task.result}
-    elif task.state == "PENDING":
-        return {"task_id": task_id, "status": "Pending"}
-    elif task.state == "FAILURE":
-        return {"task_id": task_id, "status": "Failed", "error": str(task.result)}
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # Retrieve task status
+            task = get_iscore_pe_breach_info.AsyncResult(task_id)
+            # Return appropriate message for status
+            if task.state == "SUCCESS":
+                return {
+                    "task_id": task_id,
+                    "status": "Completed",
+                    "result": task.result,
+                }
+            elif task.state == "PENDING":
+                return {"task_id": task_id, "status": "Pending"}
+            elif task.state == "FAILURE":
+                return {
+                    "task_id": task_id,
+                    "status": "Failed",
+                    "error": str(task.result),
+                }
+            else:
+                return {"task_id": task_id, "status": task.state}
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
     else:
-        return {"task_id": task_id, "status": task.state}
+        return {"message": "No api key was submitted"}
 
 
 # --- Endpoint functions for vw_iscore_pe_darkweb view ---
@@ -1420,12 +1666,16 @@ def read_iscore_pe_darkweb(
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
-        # If API key valid, create task for query
-        task = get_iscore_pe_darkweb_info.delay(
-            data.specified_orgs, data.start_date, data.end_date
-        )
-        # Return the new task id w/ "Processing" status
-        return {"task_id": task.id, "status": "Processing"}
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # If API key valid, create task for query
+            task = get_iscore_pe_darkweb_info.delay(
+                data.specified_orgs, data.start_date, data.end_date
+            )
+            # Return the new task id w/ "Processing" status
+            return {"task_id": task.id, "status": "Processing"}
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
     else:
         return {"message": "No api key was submitted"}
 
@@ -1439,17 +1689,34 @@ def read_iscore_pe_darkweb(
 async def get_iscore_pe_darkweb_task_status(
     task_id: str, tokens: dict = Depends(get_api_key)
 ):
-    # Retrieve task status
-    task = get_iscore_pe_darkweb_info.AsyncResult(task_id)
-    # Return appropriate message for status
-    if task.state == "SUCCESS":
-        return {"task_id": task_id, "status": "Completed", "result": task.result}
-    elif task.state == "PENDING":
-        return {"task_id": task_id, "status": "Pending"}
-    elif task.state == "FAILURE":
-        return {"task_id": task_id, "status": "Failed", "error": str(task.result)}
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # Retrieve task status
+            task = get_iscore_pe_darkweb_info.AsyncResult(task_id)
+            # Return appropriate message for status
+            if task.state == "SUCCESS":
+                return {
+                    "task_id": task_id,
+                    "status": "Completed",
+                    "result": task.result,
+                }
+            elif task.state == "PENDING":
+                return {"task_id": task_id, "status": "Pending"}
+            elif task.state == "FAILURE":
+                return {
+                    "task_id": task_id,
+                    "status": "Failed",
+                    "error": str(task.result),
+                }
+            else:
+                return {"task_id": task_id, "status": task.state}
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
     else:
-        return {"task_id": task_id, "status": task.state}
+        return {"message": "No api key was submitted"}
 
 
 # --- Endpoint functions for vw_iscore_pe_protocol view ---
@@ -1466,12 +1733,16 @@ def read_iscore_pe_protocol(
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
-        # If API key valid, create task for query
-        task = get_iscore_pe_protocol_info.delay(
-            data.specified_orgs, data.start_date, data.end_date
-        )
-        # Return the new task id w/ "Processing" status
-        return {"task_id": task.id, "status": "Processing"}
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # If API key valid, create task for query
+            task = get_iscore_pe_protocol_info.delay(
+                data.specified_orgs, data.start_date, data.end_date
+            )
+            # Return the new task id w/ "Processing" status
+            return {"task_id": task.id, "status": "Processing"}
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
     else:
         return {"message": "No api key was submitted"}
 
@@ -1485,17 +1756,34 @@ def read_iscore_pe_protocol(
 async def get_iscore_pe_protocol_task_status(
     task_id: str, tokens: dict = Depends(get_api_key)
 ):
-    # Retrieve task status
-    task = get_iscore_pe_protocol_info.AsyncResult(task_id)
-    # Return appropriate message for status
-    if task.state == "SUCCESS":
-        return {"task_id": task_id, "status": "Completed", "result": task.result}
-    elif task.state == "PENDING":
-        return {"task_id": task_id, "status": "Pending"}
-    elif task.state == "FAILURE":
-        return {"task_id": task_id, "status": "Failed", "error": str(task.result)}
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # Retrieve task status
+            task = get_iscore_pe_protocol_info.AsyncResult(task_id)
+            # Return appropriate message for status
+            if task.state == "SUCCESS":
+                return {
+                    "task_id": task_id,
+                    "status": "Completed",
+                    "result": task.result,
+                }
+            elif task.state == "PENDING":
+                return {"task_id": task_id, "status": "Pending"}
+            elif task.state == "FAILURE":
+                return {
+                    "task_id": task_id,
+                    "status": "Failed",
+                    "error": str(task.result),
+                }
+            else:
+                return {"task_id": task_id, "status": task.state}
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
     else:
-        return {"task_id": task_id, "status": task.state}
+        return {"message": "No api key was submitted"}
 
 
 # --- Endpoint functions for vw_iscore_was_vuln view ---
@@ -1512,12 +1800,16 @@ def read_iscore_was_vuln(
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
-        # If API key valid, create task for query
-        task = get_iscore_was_vuln_info.delay(
-            data.specified_orgs, data.start_date, data.end_date
-        )
-        # Return the new task id w/ "Processing" status
-        return {"task_id": task.id, "status": "Processing"}
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # If API key valid, create task for query
+            task = get_iscore_was_vuln_info.delay(
+                data.specified_orgs, data.start_date, data.end_date
+            )
+            # Return the new task id w/ "Processing" status
+            return {"task_id": task.id, "status": "Processing"}
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
     else:
         return {"message": "No api key was submitted"}
 
@@ -1531,17 +1823,34 @@ def read_iscore_was_vuln(
 async def get_iscore_was_vuln_task_status(
     task_id: str, tokens: dict = Depends(get_api_key)
 ):
-    # Retrieve task status
-    task = get_iscore_was_vuln_info.AsyncResult(task_id)
-    # Return appropriate message for status
-    if task.state == "SUCCESS":
-        return {"task_id": task_id, "status": "Completed", "result": task.result}
-    elif task.state == "PENDING":
-        return {"task_id": task_id, "status": "Pending"}
-    elif task.state == "FAILURE":
-        return {"task_id": task_id, "status": "Failed", "error": str(task.result)}
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # Retrieve task status
+            task = get_iscore_was_vuln_info.AsyncResult(task_id)
+            # Return appropriate message for status
+            if task.state == "SUCCESS":
+                return {
+                    "task_id": task_id,
+                    "status": "Completed",
+                    "result": task.result,
+                }
+            elif task.state == "PENDING":
+                return {"task_id": task_id, "status": "Pending"}
+            elif task.state == "FAILURE":
+                return {
+                    "task_id": task_id,
+                    "status": "Failed",
+                    "error": str(task.result),
+                }
+            else:
+                return {"task_id": task_id, "status": task.state}
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
     else:
-        return {"task_id": task_id, "status": task.state}
+        return {"message": "No api key was submitted"}
 
 
 # --- Endpoint functions for vw_iscore_was_vuln_prev view ---
@@ -1558,12 +1867,16 @@ def read_iscore_was_vuln_prev(
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
-        # If API key valid, create task for query
-        task = get_iscore_was_vuln_prev_info.delay(
-            data.specified_orgs, data.start_date, data.end_date
-        )
-        # Return the new task id w/ "Processing" status
-        return {"task_id": task.id, "status": "Processing"}
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # If API key valid, create task for query
+            task = get_iscore_was_vuln_prev_info.delay(
+                data.specified_orgs, data.start_date, data.end_date
+            )
+            # Return the new task id w/ "Processing" status
+            return {"task_id": task.id, "status": "Processing"}
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
     else:
         return {"message": "No api key was submitted"}
 
@@ -1577,17 +1890,34 @@ def read_iscore_was_vuln_prev(
 async def get_iscore_was_vuln_prev_task_status(
     task_id: str, tokens: dict = Depends(get_api_key)
 ):
-    # Retrieve task status
-    task = get_iscore_was_vuln_prev_info.AsyncResult(task_id)
-    # Return appropriate message for status
-    if task.state == "SUCCESS":
-        return {"task_id": task_id, "status": "Completed", "result": task.result}
-    elif task.state == "PENDING":
-        return {"task_id": task_id, "status": "Pending"}
-    elif task.state == "FAILURE":
-        return {"task_id": task_id, "status": "Failed", "error": str(task.result)}
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # Retrieve task status
+            task = get_iscore_was_vuln_prev_info.AsyncResult(task_id)
+            # Return appropriate message for status
+            if task.state == "SUCCESS":
+                return {
+                    "task_id": task_id,
+                    "status": "Completed",
+                    "result": task.result,
+                }
+            elif task.state == "PENDING":
+                return {"task_id": task_id, "status": "Pending"}
+            elif task.state == "FAILURE":
+                return {
+                    "task_id": task_id,
+                    "status": "Failed",
+                    "error": str(task.result),
+                }
+            else:
+                return {"task_id": task_id, "status": task.state}
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
     else:
-        return {"task_id": task_id, "status": task.state}
+        return {"message": "No api key was submitted"}
 
 
 # --- Endpoint function for KEV list query (no view) ---
@@ -1602,10 +1932,14 @@ def read_fceb_status(tokens: dict = Depends(get_api_key)):
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
-        # If API key valid, create task for query
-        task = get_kev_list_info.delay()
-        # Return the new task id w/ "Processing" status
-        return {"task_id": task.id, "status": "Processing"}
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # If API key valid, create task for query
+            task = get_kev_list_info.delay()
+            # Return the new task id w/ "Processing" status
+            return {"task_id": task.id, "status": "Processing"}
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
     else:
         return {"message": "No api key was submitted"}
 
@@ -1617,17 +1951,34 @@ def read_fceb_status(tokens: dict = Depends(get_api_key)):
     tags=["Check task status for KEV list query."],
 )
 async def get_kev_list_task_status(task_id: str, tokens: dict = Depends(get_api_key)):
-    # Retrieve task status
-    task = get_kev_list_info.AsyncResult(task_id)
-    # Return appropriate message for status
-    if task.state == "SUCCESS":
-        return {"task_id": task_id, "status": "Completed", "result": task.result}
-    elif task.state == "PENDING":
-        return {"task_id": task_id, "status": "Pending"}
-    elif task.state == "FAILURE":
-        return {"task_id": task_id, "status": "Failed", "error": str(task.result)}
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # Retrieve task status
+            task = get_kev_list_info.AsyncResult(task_id)
+            # Return appropriate message for status
+            if task.state == "SUCCESS":
+                return {
+                    "task_id": task_id,
+                    "status": "Completed",
+                    "result": task.result,
+                }
+            elif task.state == "PENDING":
+                return {"task_id": task_id, "status": "Pending"}
+            elif task.state == "FAILURE":
+                return {
+                    "task_id": task_id,
+                    "status": "Failed",
+                    "error": str(task.result),
+                }
+            else:
+                return {"task_id": task_id, "status": task.state}
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
     else:
-        return {"task_id": task_id, "status": task.state}
+        return {"message": "No api key was submitted"}
 
 
 # ---------- Misc. Score View Endpoints ----------
@@ -1643,10 +1994,14 @@ def read_xs_stakeholders(tokens: dict = Depends(get_api_key)):
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
-        # If API key valid, create task for query
-        task = get_xs_stakeholders_info.delay()
-        # Return the new task id w/ "Processing" status
-        return {"task_id": task.id, "status": "Processing"}
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # If API key valid, create task for query
+            task = get_xs_stakeholders_info.delay()
+            # Return the new task id w/ "Processing" status
+            return {"task_id": task.id, "status": "Processing"}
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
     else:
         return {"message": "No api key was submitted"}
 
@@ -1660,17 +2015,34 @@ def read_xs_stakeholders(tokens: dict = Depends(get_api_key)):
 async def get_xs_stakeholders_task_status(
     task_id: str, tokens: dict = Depends(get_api_key)
 ):
-    # Retrieve task status
-    task = get_xs_stakeholders_info.AsyncResult(task_id)
-    # Return appropriate message for status
-    if task.state == "SUCCESS":
-        return {"task_id": task_id, "status": "Completed", "result": task.result}
-    elif task.state == "PENDING":
-        return {"task_id": task_id, "status": "Pending"}
-    elif task.state == "FAILURE":
-        return {"task_id": task_id, "status": "Failed", "error": str(task.result)}
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # Retrieve task status
+            task = get_xs_stakeholders_info.AsyncResult(task_id)
+            # Return appropriate message for status
+            if task.state == "SUCCESS":
+                return {
+                    "task_id": task_id,
+                    "status": "Completed",
+                    "result": task.result,
+                }
+            elif task.state == "PENDING":
+                return {"task_id": task_id, "status": "Pending"}
+            elif task.state == "FAILURE":
+                return {
+                    "task_id": task_id,
+                    "status": "Failed",
+                    "error": str(task.result),
+                }
+            else:
+                return {"task_id": task_id, "status": task.state}
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
     else:
-        return {"task_id": task_id, "status": task.state}
+        return {"message": "No api key was submitted"}
 
 
 # --- Endpoint function for S stakeholder list query ---
@@ -1685,10 +2057,14 @@ def read_s_stakeholders(tokens: dict = Depends(get_api_key)):
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
-        # If API key valid, create task for query
-        task = get_s_stakeholders_info.delay()
-        # Return the new task id w/ "Processing" status
-        return {"task_id": task.id, "status": "Processing"}
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # If API key valid, create task for query
+            task = get_s_stakeholders_info.delay()
+            # Return the new task id w/ "Processing" status
+            return {"task_id": task.id, "status": "Processing"}
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
     else:
         return {"message": "No api key was submitted"}
 
@@ -1702,17 +2078,34 @@ def read_s_stakeholders(tokens: dict = Depends(get_api_key)):
 async def get_s_stakeholders_task_status(
     task_id: str, tokens: dict = Depends(get_api_key)
 ):
-    # Retrieve task status
-    task = get_s_stakeholders_info.AsyncResult(task_id)
-    # Return appropriate message for status
-    if task.state == "SUCCESS":
-        return {"task_id": task_id, "status": "Completed", "result": task.result}
-    elif task.state == "PENDING":
-        return {"task_id": task_id, "status": "Pending"}
-    elif task.state == "FAILURE":
-        return {"task_id": task_id, "status": "Failed", "error": str(task.result)}
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # Retrieve task status
+            task = get_s_stakeholders_info.AsyncResult(task_id)
+            # Return appropriate message for status
+            if task.state == "SUCCESS":
+                return {
+                    "task_id": task_id,
+                    "status": "Completed",
+                    "result": task.result,
+                }
+            elif task.state == "PENDING":
+                return {"task_id": task_id, "status": "Pending"}
+            elif task.state == "FAILURE":
+                return {
+                    "task_id": task_id,
+                    "status": "Failed",
+                    "error": str(task.result),
+                }
+            else:
+                return {"task_id": task_id, "status": task.state}
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
     else:
-        return {"task_id": task_id, "status": task.state}
+        return {"message": "No api key was submitted"}
 
 
 # --- Endpoint function for M stakeholder list query ---
@@ -1727,10 +2120,14 @@ def read_m_stakeholders(tokens: dict = Depends(get_api_key)):
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
-        # If API key valid, create task for query
-        task = get_m_stakeholders_info.delay()
-        # Return the new task id w/ "Processing" status
-        return {"task_id": task.id, "status": "Processing"}
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # If API key valid, create task for query
+            task = get_m_stakeholders_info.delay()
+            # Return the new task id w/ "Processing" status
+            return {"task_id": task.id, "status": "Processing"}
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
     else:
         return {"message": "No api key was submitted"}
 
@@ -1744,17 +2141,34 @@ def read_m_stakeholders(tokens: dict = Depends(get_api_key)):
 async def get_m_stakeholders_task_status(
     task_id: str, tokens: dict = Depends(get_api_key)
 ):
-    # Retrieve task status
-    task = get_m_stakeholders_info.AsyncResult(task_id)
-    # Return appropriate message for status
-    if task.state == "SUCCESS":
-        return {"task_id": task_id, "status": "Completed", "result": task.result}
-    elif task.state == "PENDING":
-        return {"task_id": task_id, "status": "Pending"}
-    elif task.state == "FAILURE":
-        return {"task_id": task_id, "status": "Failed", "error": str(task.result)}
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # Retrieve task status
+            task = get_m_stakeholders_info.AsyncResult(task_id)
+            # Return appropriate message for status
+            if task.state == "SUCCESS":
+                return {
+                    "task_id": task_id,
+                    "status": "Completed",
+                    "result": task.result,
+                }
+            elif task.state == "PENDING":
+                return {"task_id": task_id, "status": "Pending"}
+            elif task.state == "FAILURE":
+                return {
+                    "task_id": task_id,
+                    "status": "Failed",
+                    "error": str(task.result),
+                }
+            else:
+                return {"task_id": task_id, "status": task.state}
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
     else:
-        return {"task_id": task_id, "status": task.state}
+        return {"message": "No api key was submitted"}
 
 
 # --- Endpoint function for L stakeholder list query ---
@@ -1769,10 +2183,14 @@ def read_l_stakeholders(tokens: dict = Depends(get_api_key)):
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
-        # If API key valid, create task for query
-        task = get_l_stakeholders_info.delay()
-        # Return the new task id w/ "Processing" status
-        return {"task_id": task.id, "status": "Processing"}
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # If API key valid, create task for query
+            task = get_l_stakeholders_info.delay()
+            # Return the new task id w/ "Processing" status
+            return {"task_id": task.id, "status": "Processing"}
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
     else:
         return {"message": "No api key was submitted"}
 
@@ -1786,17 +2204,34 @@ def read_l_stakeholders(tokens: dict = Depends(get_api_key)):
 async def get_l_stakeholders_task_status(
     task_id: str, tokens: dict = Depends(get_api_key)
 ):
-    # Retrieve task status
-    task = get_l_stakeholders_info.AsyncResult(task_id)
-    # Return appropriate message for status
-    if task.state == "SUCCESS":
-        return {"task_id": task_id, "status": "Completed", "result": task.result}
-    elif task.state == "PENDING":
-        return {"task_id": task_id, "status": "Pending"}
-    elif task.state == "FAILURE":
-        return {"task_id": task_id, "status": "Failed", "error": str(task.result)}
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # Retrieve task status
+            task = get_l_stakeholders_info.AsyncResult(task_id)
+            # Return appropriate message for status
+            if task.state == "SUCCESS":
+                return {
+                    "task_id": task_id,
+                    "status": "Completed",
+                    "result": task.result,
+                }
+            elif task.state == "PENDING":
+                return {"task_id": task_id, "status": "Pending"}
+            elif task.state == "FAILURE":
+                return {
+                    "task_id": task_id,
+                    "status": "Failed",
+                    "error": str(task.result),
+                }
+            else:
+                return {"task_id": task_id, "status": task.state}
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
     else:
-        return {"task_id": task_id, "status": task.state}
+        return {"message": "No api key was submitted"}
 
 
 # --- Endpoint function for XL stakeholder list query ---
@@ -1811,10 +2246,14 @@ def read_xl_stakeholders(tokens: dict = Depends(get_api_key)):
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
-        # If API key valid, create task for query
-        task = get_xl_stakeholders_info.delay()
-        # Return the new task id w/ "Processing" status
-        return {"task_id": task.id, "status": "Processing"}
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # If API key valid, create task for query
+            task = get_xl_stakeholders_info.delay()
+            # Return the new task id w/ "Processing" status
+            return {"task_id": task.id, "status": "Processing"}
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
     else:
         return {"message": "No api key was submitted"}
 
@@ -1828,47 +2267,67 @@ def read_xl_stakeholders(tokens: dict = Depends(get_api_key)):
 async def get_xl_stakeholders_task_status(
     task_id: str, tokens: dict = Depends(get_api_key)
 ):
-    # Retrieve task status
-    task = get_xl_stakeholders_info.AsyncResult(task_id)
-    # Return appropriate message for status
-    if task.state == "SUCCESS":
-        return {"task_id": task_id, "status": "Completed", "result": task.result}
-    elif task.state == "PENDING":
-        return {"task_id": task_id, "status": "Pending"}
-    elif task.state == "FAILURE":
-        return {"task_id": task_id, "status": "Failed", "error": str(task.result)}
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # Retrieve task status
+            task = get_xl_stakeholders_info.AsyncResult(task_id)
+            # Return appropriate message for status
+            if task.state == "SUCCESS":
+                return {
+                    "task_id": task_id,
+                    "status": "Completed",
+                    "result": task.result,
+                }
+            elif task.state == "PENDING":
+                return {"task_id": task_id, "status": "Pending"}
+            elif task.state == "FAILURE":
+                return {
+                    "task_id": task_id,
+                    "status": "Failed",
+                    "error": str(task.result),
+                }
+            else:
+                return {"task_id": task_id, "status": task.state}
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
     else:
-        return {"task_id": task_id, "status": task.state}
-    
-@api_router.post("/data_source/{source_name}",dependencies=[Depends(get_api_key),
-                 Depends(RateLimiter(times=200, seconds=60))],
-                #response_model=schemas.DataSource,
-                tags = ["Get Data_source table"])
+        return {"message": "No api key was submitted"}
 
+
+@api_router.post(
+    "/data_source/{source_name}",
+    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    # response_model=schemas.DataSource,
+    tags=["Get Data_source table"],
+)
 def get_data_source(source_name: str, tokens: dict = Depends(get_api_key)):
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
         try:
             userapiTokenverify(theapiKey=tokens)
             try:
-                datas = list(DataSource.objects.filter(name=f'{source_name}'))
+                datas = list(DataSource.objects.filter(name=f"{source_name}"))
                 print(datas)
                 return datas[0]
             except ValidationError as e:
                 return {"message": "Data source does not exist"}
-                
+
         except:
-            LOGGER.info('API key expired please try again')
+            LOGGER.info("API key expired please try again")
     else:
-        return {'message': "No api key was submitted"}
-    
-#data_source_uid: str,request: Request, tokens: dict = Depends(get_api_key)
+        return {"message": "No api key was submitted"}
+
+
+# data_source_uid: str,request: Request, tokens: dict = Depends(get_api_key)
+
 
 @api_router.put(
     "/update_last_viewed/{data_source_uid}",
-    dependencies=[Depends(get_api_key),
-                 Depends(RateLimiter(times=200, seconds=60))],
-    tags=["Update last viewed data"]
+    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    tags=["Update last viewed data"],
 )
 @transaction.atomic
 def update_last_viewed(data_source_uid: str, tokens: dict = Depends(get_api_key)):
@@ -1878,7 +2337,7 @@ def update_last_viewed(data_source_uid: str, tokens: dict = Depends(get_api_key)
     try:
         userapiTokenverify(theapiKey=tokens)
         try:
-            data_source  = DataSource.objects.get(data_source_uid=data_source_uid)
+            data_source = DataSource.objects.get(data_source_uid=data_source_uid)
         except ValidationError as e:
             return {"message": "Data source does not exist"}
         data_source.last_run = datetime.today().strftime("%Y-%m-%d")
@@ -1888,3 +2347,752 @@ def update_last_viewed(data_source_uid: str, tokens: dict = Depends(get_api_key)
         LOGGER.info("API key expired please try again")
 
 
+# --- execute_ips(), Issue 559 ---
+@api_router.post(
+    "/ips_insert",
+    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.IpsInsertTaskResp,
+    tags=["Insert new ip records into the ips table"],
+)
+def ips_insert(data: schemas.IpsInsertInput, tokens: dict = Depends(get_api_key)):
+    """API endpoint to insert new ip records into the ips table."""
+    # Convert list of input models to list of dictionaries
+    data.new_ips = [dict(input_dict) for input_dict in data.new_ips]
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # If API key valid, create task for query
+            task = ips_insert_task.delay(data.new_ips)
+            # Return the new task id w/ "Processing" status
+            return {"task_id": task.id, "status": "Processing"}
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+
+@api_router.get(
+    "/ips_insert/task/{task_id}",
+    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.IpsInsertTaskResp,
+    tags=["Check task status for ips_insert endpoint task."],
+)
+async def ips_insert_status(task_id: str, tokens: dict = Depends(get_api_key)):
+    """API endpoint to check status of ips_insert endpoint task."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # Retrieve task status
+            task = ips_insert_task.AsyncResult(task_id)
+            # Return appropriate message for status
+            if task.state == "SUCCESS":
+                return {
+                    "task_id": task_id,
+                    "status": "Completed",
+                    "result": task.result,
+                }
+            elif task.state == "PENDING":
+                return {"task_id": task_id, "status": "Pending"}
+            elif task.state == "FAILURE":
+                return {
+                    "task_id": task_id,
+                    "status": "Failed",
+                    "error": str(task.result),
+                }
+            else:
+                return {"task_id": task_id, "status": task.state}
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+
+# --- query_all_subs(), Issue 560 ---
+@api_router.post(
+    "/sub_domains_table",
+    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.SubDomainTableTaskResp,
+    tags=["Get all data from the sub_domains table"],
+)
+def sub_domains_table(
+    data: schemas.SubDomainTableInput, tokens: dict = Depends(get_api_key)
+):
+    """API endpoint to get all data from the sub_domains table."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # If API key valid, create task for query
+            task = sub_domains_table_task.delay(data.page, data.per_page)
+            # Return the new task id w/ "Processing" status
+            return {"task_id": task.id, "status": "Processing"}
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+
+@api_router.get(
+    "/sub_domains_table/task/{task_id}",
+    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.SubDomainTableTaskResp,
+    tags=["Check task status for sub_domains_table endpoint task."],
+)
+async def sub_domains_table_status(task_id: str, tokens: dict = Depends(get_api_key)):
+    """API endpoint to check status of sub_domains_table endpoint task."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # Retrieve task status
+            task = sub_domains_table_task.AsyncResult(task_id)
+            # Return appropriate message for status
+            if task.state == "SUCCESS":
+                return {
+                    "task_id": task_id,
+                    "status": "Completed",
+                    "result": task.result,
+                }
+            elif task.state == "PENDING":
+                return {"task_id": task_id, "status": "Pending"}
+            elif task.state == "FAILURE":
+                return {
+                    "task_id": task_id,
+                    "status": "Failed",
+                    "error": str(task.result),
+                }
+            else:
+                return {"task_id": task_id, "status": task.state}
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+
+# --- execute_scorecard(), Issue 632 ---
+@api_router.put(
+    "/rss_insert",
+    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    # response_model=schemas.RSSInsertTaskResp,
+    tags=["Insert an organization's record into the report_summary_stats table"],
+)
+def rss_insert(data: schemas.RSSInsertInput, tokens: dict = Depends(get_api_key)):
+    """API endpoint to insert an organization's record into the report_summary_stats table."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # If API key valid
+            # Get Organizations.organization_uid object for the specified org
+            specified_org_uid = Organizations.objects.get(
+                organizations_uid=data.organizations_uid
+            )
+            # Insert new record. If record already exists, update that record
+            rss_insert_record_data = ReportSummaryStats.objects.update_or_create(
+                organizations_uid=specified_org_uid,
+                start_date=data.start_date,
+                defaults={
+                    "organizations_uid": specified_org_uid,
+                    "start_date": data.start_date,
+                    "end_date": data.end_date,
+                    "ip_count": data.ip_count,
+                    "root_count": data.root_count,
+                    "sub_count": data.sub_count,
+                    "ports_count": data.ports_count,
+                    "creds_count": data.creds_count,
+                    "breach_count": data.breach_count,
+                    "cred_password_count": data.cred_password_count,
+                    "domain_alert_count": data.domain_alert_count,
+                    "suspected_domain_count": data.suspected_domain_count,
+                    "insecure_port_count": data.insecure_port_count,
+                    "verified_vuln_count": data.verified_vuln_count,
+                    "suspected_vuln_count": data.suspected_vuln_count,
+                    "suspected_vuln_addrs_count": data.suspected_vuln_addrs_count,
+                    "threat_actor_count": data.threat_actor_count,
+                    "dark_web_alerts_count": data.dark_web_alerts_count,
+                    "dark_web_mentions_count": data.dark_web_mentions_count,
+                    "dark_web_executive_alerts_count": data.dark_web_executive_alerts_count,
+                    "dark_web_asset_alerts_count": data.dark_web_asset_alerts_count,
+                    "pe_number_score": data.pe_number_score,
+                    "pe_letter_grade": data.pe_letter_grade,
+                },
+            )
+        except:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+
+# --- query_subs(), Issue 633 ---
+@api_router.get(
+    "/sub_domains_by_org",
+    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    response_model=List[schemas.SubDomainTable],
+    tags=["Get all sub domains for a specified organization."],
+)
+def sub_domains_by_org(
+    data: schemas.SubDomainsByOrgInput, tokens: dict = Depends(get_api_key)
+):
+    """API endpoint to get all sub domains for a specified organization."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # If API key valid, make query
+            sub_domains_by_org_data = list(
+                SubDomains.objects.filter(
+                    root_domain_uid__organizations_uid=data.org_uid
+                ).values()
+            )
+            # Convert uuids to strings
+            for row in sub_domains_by_org_data:
+                row["sub_domain_uid"] = convert_uuid_to_string(row["sub_domain_uid"])
+                row["root_domain_uid_id"] = convert_uuid_to_string(
+                    row["root_domain_uid_id"]
+                )
+                row["data_source_uid_id"] = convert_uuid_to_string(
+                    row["data_source_uid_id"]
+                )
+                row["dns_record_uid_id"] = convert_uuid_to_string(
+                    row["dns_record_uid_id"]
+                )
+                row["first_seen"] = convert_date_to_string(row["first_seen"])
+                row["last_seen"] = convert_date_to_string(row["last_seen"])
+            return sub_domains_by_org_data
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+
+# --- query_previous_period(), Issue 634 ---
+@api_router.get(
+    "/rss_prev_period",
+    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    response_model=List[schemas.RSSPrevPeriod],
+    tags=[
+        "Get previous report period report_summary_stats data for the specified organization"
+    ],
+)
+def rss_prev_period(
+    data: schemas.RSSPrevPeriodInput, tokens: dict = Depends(get_api_key)
+):
+    """API endpoint to get previous period report_summary_stats data for the specified organization."""
+
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # If API key valid
+            # Make query
+            rss_prev_period_data = list(
+                ReportSummaryStats.objects.filter(
+                    organizations_uid=data.org_uid, end_date=data.prev_end_date
+                ).values(
+                    "ip_count",
+                    "root_count",
+                    "sub_count",
+                    "cred_password_count",
+                    "suspected_vuln_addrs_count",
+                    "suspected_vuln_count",
+                    "insecure_port_count",
+                    "threat_actor_count",
+                )
+            )
+            return rss_prev_period_data
+        except:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+
+# --- pescore_hist_domain_alert(), Issue 635 ---
+@api_router.post(
+    "/pescore_hist_domain_alert",
+    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.PEScoreHistDomainAlertTaskResp,
+    tags=["Get all historical domain alert data for PE score."],
+)
+def pescore_hist_domain_alert(
+    data: schemas.PEScoreDateRangeInput, tokens: dict = Depends(get_api_key)
+):
+    """API endpoint to get the PE score domain alert data for a specified time period."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # If API key valid, create task for query
+            task = pescore_hist_domain_alert_task.delay(data.start_date, data.end_date)
+            # Return the new task id w/ "Processing" status
+            return {"task_id": task.id, "status": "Processing"}
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+
+@api_router.get(
+    "/pescore_hist_domain_alert/task/{task_id}",
+    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.PEScoreHistDomainAlertTaskResp,
+    tags=["Check task status for pescore_hist_domain_alert endpoint task."],
+)
+async def pescore_hist_domain_alert_status(
+    task_id: str, tokens: dict = Depends(get_api_key)
+):
+    """API endpoint to check status of pescore_hist_domain_alert endpoint task."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # Retrieve task status
+            task = pescore_hist_domain_alert_task.AsyncResult(task_id)
+            # Return appropriate message for status
+            if task.state == "SUCCESS":
+                return {
+                    "task_id": task_id,
+                    "status": "Completed",
+                    "result": task.result,
+                }
+            elif task.state == "PENDING":
+                return {"task_id": task_id, "status": "Pending"}
+            elif task.state == "FAILURE":
+                return {
+                    "task_id": task_id,
+                    "status": "Failed",
+                    "error": str(task.result),
+                }
+            else:
+                return {"task_id": task_id, "status": task.state}
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+
+# --- pescore_hist_darkweb_alert(), Issue 635 ---
+@api_router.post(
+    "/pescore_hist_darkweb_alert",
+    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.PEScoreHistDarkwebAlertTaskResp,
+    tags=["Get all historical darkweb alert data for PE score."],
+)
+def pescore_hist_darkweb_alert(
+    data: schemas.PEScoreDateRangeInput, tokens: dict = Depends(get_api_key)
+):
+    """API endpoint to get the PE score dark web alert data for a specified time period."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # If API key valid, create task for query
+            task = pescore_hist_darkweb_alert_task.delay(data.start_date, data.end_date)
+            # Return the new task id w/ "Processing" status
+            return {"task_id": task.id, "status": "Processing"}
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+
+@api_router.get(
+    "/pescore_hist_darkweb_alert/task/{task_id}",
+    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.PEScoreHistDarkwebAlertTaskResp,
+    tags=["Check task status for pescore_hist_darkweb_alert endpoint task."],
+)
+async def pescore_hist_darkweb_alert_status(
+    task_id: str, tokens: dict = Depends(get_api_key)
+):
+    """API endpoint to check status of pescore_hist_darkweb_alert endpoint task."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # Retrieve task status
+            task = pescore_hist_darkweb_alert_task.AsyncResult(task_id)
+            # Return appropriate message for status
+            if task.state == "SUCCESS":
+                return {
+                    "task_id": task_id,
+                    "status": "Completed",
+                    "result": task.result,
+                }
+            elif task.state == "PENDING":
+                return {"task_id": task_id, "status": "Pending"}
+            elif task.state == "FAILURE":
+                return {
+                    "task_id": task_id,
+                    "status": "Failed",
+                    "error": str(task.result),
+                }
+            else:
+                return {"task_id": task_id, "status": task.state}
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+
+# --- pescore_hist_darkweb_ment(), Issue 635 ---
+@api_router.post(
+    "/pescore_hist_darkweb_ment",
+    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.PEScoreHistDarkwebMentTaskResp,
+    tags=["Get all historical darkweb mention data for PE score."],
+)
+def pescore_hist_darkweb_ment(
+    data: schemas.PEScoreDateRangeInput, tokens: dict = Depends(get_api_key)
+):
+    """API endpoint to get the PE score dark web mention data for a specified time period."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # If API key valid, create task for query
+            task = pescore_hist_darkweb_ment_task.delay(data.start_date, data.end_date)
+            # Return the new task id w/ "Processing" status
+            return {"task_id": task.id, "status": "Processing"}
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+
+@api_router.get(
+    "/pescore_hist_darkweb_ment/task/{task_id}",
+    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.PEScoreHistDarkwebMentTaskResp,
+    tags=["Check task status for pescore_hist_darkweb_ment endpoint task."],
+)
+async def pescore_hist_darkweb_ment_status(
+    task_id: str, tokens: dict = Depends(get_api_key)
+):
+    """API endpoint to check status of pescore_hist_darkweb_ment endpoint task."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # Retrieve task status
+            task = pescore_hist_darkweb_ment_task.AsyncResult(task_id)
+            # Return appropriate message for status
+            if task.state == "SUCCESS":
+                return {
+                    "task_id": task_id,
+                    "status": "Completed",
+                    "result": task.result,
+                }
+            elif task.state == "PENDING":
+                return {"task_id": task_id, "status": "Pending"}
+            elif task.state == "FAILURE":
+                return {
+                    "task_id": task_id,
+                    "status": "Failed",
+                    "error": str(task.result),
+                }
+            else:
+                return {"task_id": task_id, "status": task.state}
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+
+# --- pescore_hist_cred(), Issue 635 ---
+@api_router.post(
+    "/pescore_hist_cred",
+    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.PEScoreHistCredTaskResp,
+    tags=["Get all historical credential data for PE score."],
+)
+def pescore_hist_cred(
+    data: schemas.PEScoreDateRangeInput, tokens: dict = Depends(get_api_key)
+):
+    """API endpoint to get the PE score credential data for a specified time period."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # If API key valid, create task for query
+            task = pescore_hist_cred_task.delay(data.start_date, data.end_date)
+            # Return the new task id w/ "Processing" status
+            return {"task_id": task.id, "status": "Processing"}
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+
+@api_router.get(
+    "/pescore_hist_cred/task/{task_id}",
+    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.PEScoreHistCredTaskResp,
+    tags=["Check task status for pescore_hist_cred endpoint task."],
+)
+async def pescore_hist_cred_status(task_id: str, tokens: dict = Depends(get_api_key)):
+    """API endpoint to check status of pescore_hist_cred endpoint task."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # Retrieve task status
+            task = pescore_hist_cred_task.AsyncResult(task_id)
+            # Return appropriate message for status
+            if task.state == "SUCCESS":
+                return {
+                    "task_id": task_id,
+                    "status": "Completed",
+                    "result": task.result,
+                }
+            elif task.state == "PENDING":
+                return {"task_id": task_id, "status": "Pending"}
+            elif task.state == "FAILURE":
+                return {
+                    "task_id": task_id,
+                    "status": "Failed",
+                    "error": str(task.result),
+                }
+            else:
+                return {"task_id": task_id, "status": task.state}
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+
+# --- pescore_base_metrics(), Issue 635 ---
+@api_router.post(
+    "/pescore_base_metrics",
+    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.PEScoreBaseMetricsTaskResp,
+    tags=["Get all base metric data for PE score."],
+)
+def pescore_base_metrics(
+    data: schemas.PEScoreDateRangeInput, tokens: dict = Depends(get_api_key)
+):
+    """API endpoint to get the PE score base metric data for a specified time period."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # If API key valid, create task for query
+            task = pescore_base_metrics_task.delay(data.start_date, data.end_date)
+            # Return the new task id w/ "Processing" status
+            return {"task_id": task.id, "status": "Processing"}
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+
+@api_router.get(
+    "/pescore_base_metrics/task/{task_id}",
+    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.PEScoreBaseMetricsTaskResp,
+    tags=["Check task status for pescore_base_metrics endpoint task."],
+)
+async def pescore_base_metrics_status(
+    task_id: str, tokens: dict = Depends(get_api_key)
+):
+    """API endpoint to check status of pescore_base_metrics endpoint task."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # Retrieve task status
+            task = pescore_base_metrics_task.AsyncResult(task_id)
+            # Return appropriate message for status
+            if task.state == "SUCCESS":
+                return {
+                    "task_id": task_id,
+                    "status": "Completed",
+                    "result": task.result,
+                }
+            elif task.state == "PENDING":
+                return {"task_id": task_id, "status": "Pending"}
+            elif task.state == "FAILURE":
+                return {
+                    "task_id": task_id,
+                    "status": "Failed",
+                    "error": str(task.result),
+                }
+            else:
+                return {"task_id": task_id, "status": task.state}
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+
+# --- get_new_cves_list(), Issue 636 ---
+@api_router.get(
+    "/pescore_check_new_cve",
+    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    response_model=List[schemas.VwPEScoreCheckNewCVE],
+    tags=["Get any detected CVEs that aren't in the cve_info table yet."],
+)
+def pescore_check_new_cve(tokens: dict = Depends(get_api_key)):
+    """API endpoint to get any detected CVEs that aren't in the cve_info table yet."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # If API key valid, make query
+            pescore_check_new_cve_data = list(
+                VwPEScoreCheckNewCVE.objects.values("cve_name")
+            )
+            return pescore_check_new_cve_data
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+
+# --- upsert_new_cves(), Issue 637 ---
+@api_router.post(
+    "/cve_info_insert",
+    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.CVEInfoInsertTaskResp,
+    tags=["Upsert new CVEs into the cve_info table"],
+)
+def cve_info_insert(
+    data: schemas.CVEInfoInsertInput, tokens: dict = Depends(get_api_key)
+):
+    """API endpoint to insert new CVEs into the cve_info table."""
+    # Convert list of input models to list of dictionaries
+    data.new_cves = [dict(input_dict) for input_dict in data.new_cves]
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # If API key valid, create task for query
+            task = cve_info_insert_task.delay(data.new_cves)
+            # Return the new task id w/ "Processing" status
+            return {"task_id": task.id, "status": "Processing"}
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+
+@api_router.get(
+    "/cve_info_insert/task/{task_id}",
+    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.CVEInfoInsertTaskResp,
+    tags=["Check task status for cve_info_insert endpoint task."],
+)
+async def cve_info_insert_status(task_id: str, tokens: dict = Depends(get_api_key)):
+    """API endpoint to check status of cve_info_insert endpoint task."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # Retrieve task status
+            task = cve_info_insert_task.AsyncResult(task_id)
+            # Return appropriate message for status
+            if task.state == "SUCCESS":
+                return {
+                    "task_id": task_id,
+                    "status": "Completed",
+                    "result": task.result,
+                }
+            elif task.state == "PENDING":
+                return {"task_id": task_id, "status": "Pending"}
+            elif task.state == "FAILURE":
+                return {
+                    "task_id": task_id,
+                    "status": "Failed",
+                    "error": str(task.result),
+                }
+            else:
+                return {"task_id": task_id, "status": task.state}
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+
+# --- get_intelx_breaches(), Issue 641 ---
+@api_router.post(
+    "/cred_breach_intelx",
+    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.CredBreachIntelXTaskResp,
+    tags=["Get IntelX credential breaches"],
+)
+def cred_breach_intelx(
+    data: schemas.CredBreachIntelXInput, tokens: dict = Depends(get_api_key)
+):
+    """API endpoint to get IntelX credential breaches"""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # If API key valid, create task for query
+            task = cred_breach_intelx_task.delay(data.source_uid)
+            # Return the new task id w/ "Processing" status
+            return {"task_id": task.id, "status": "Processing"}
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+
+@api_router.get(
+    "/cred_breach_intelx/task/{task_id}",
+    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.CredBreachIntelXTaskResp,
+    tags=["Check task status for cred_breach_intelx endpoint task."],
+)
+async def cred_breach_intelx_status(task_id: str, tokens: dict = Depends(get_api_key)):
+    """API endpoint to check status of cred_breach_intelx endpoint task."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # Retrieve task status
+            task = cred_breach_intelx_task.AsyncResult(task_id)
+            # Return appropriate message for status
+            if task.state == "SUCCESS":
+                return {
+                    "task_id": task_id,
+                    "status": "Completed",
+                    "result": task.result,
+                }
+            elif task.state == "PENDING":
+                return {"task_id": task_id, "status": "Pending"}
+            elif task.state == "FAILURE":
+                return {
+                    "task_id": task_id,
+                    "status": "Failed",
+                    "error": str(task.result),
+                }
+            else:
+                return {"task_id": task_id, "status": task.state}
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
