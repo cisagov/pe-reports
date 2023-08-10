@@ -24,8 +24,9 @@ LOGGER = logging.getLogger(__name__)
 CONN_PARAMS_DIC = config()
 CONN_PARAMS_DIC_STAGING = staging_config()
 
-
-pe_api_key = config(section="api").get("pe_api_key")
+API_DIC = config(section="pe_api")
+pe_api_url = API_DIC.get("pe_api_url")
+pe_api_key = API_DIC.get("pe_api_key")
 
 
 def show_psycopg2_exception(err):
@@ -720,12 +721,8 @@ def api_pshtt_domains_to_run():
     Return:
         All subdomains that haven't been run in the last 15 days
     """
-    create_task_url = (
-        "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/pshtt_unscanned_domains"
-    )
-    check_task_url = "https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/pshtt_unscanned_domains/task/"
-    create_task_url = "http://127.0.0.1:8000/apiv1/pshtt_unscanned_domains"
-    check_task_url = "http://127.0.0.1:8000/apiv1/pshtt_unscanned_domains/task/"
+    create_task_url = pe_api_url + "pshtt_unscanned_domains"
+    check_task_url = pe_api_url + "pshtt_unscanned_domains/task/"
 
     headers = {
         "Content-Type": "application/json",
@@ -787,25 +784,6 @@ def api_pshtt_domains_to_run():
         )
 
 
-# def api_pshtt_insert(pshtt_dict):
-#     """Insert pshtt scan results into the database via the API."""
-#     # insert_endpoint = 'https://api.staging.crossfeed.cyber.dhs.gov/pe/apiv1/pshtt_result_update_or_insert'
-#     insert_endpoint = 'http://127.0.0.1:8000/apiv1/pshtt_result_update_or_insert'
-#     print(pshtt_dict)
-#     headers = {
-#         "Content-Type": "application/json",
-#         "access_token": pe_api_key,
-#         "x-data": json.dumps(pshtt_dict)
-#     }
-
-#     pshtt_response = requests.put(
-#         insert_endpoint,
-#         headers = headers
-#         )
-
-#     return pshtt_response
-
-
 def api_pshtt_insert(pshtt_dict):
     """
     Insert a pshtt record for an subdomain into the pshtt_records table.
@@ -819,7 +797,6 @@ def api_pshtt_insert(pshtt_dict):
         Status on if the record was inserted successfully
     """
     # Endpoint info
-    pe_api_url = "http://127.0.0.1:8000/apiv1/"
     endpoint_url = pe_api_url + "pshtt_result_update_or_insert"
     headers = {
         "Content-Type": "application/json",
