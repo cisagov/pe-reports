@@ -437,7 +437,7 @@ def get_intelx_breaches(source_uid):
         source_uid: The data source uid to filter credential breaches by
 
     Return:
-        Credential breach data that have the specified data_source_uid as a dataframe
+        Credential breach data that have the specified data_source_uid as a list of tuples
     """
     # Endpoint info
     task_url = "cred_breach_intelx"
