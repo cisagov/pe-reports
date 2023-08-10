@@ -63,6 +63,7 @@ INSTALLED_APPS = [
     "crispy_forms",
     "crispy_bootstrap5",
     "whitenoise.runserver_nostatic",
+    "elasticapm.contrib.django",
 ]
 
 CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
@@ -143,6 +144,7 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
+    "elastic.contrib.django.middleware.TracingMiddleware",
 ]
 
 ROOT_URLCONF = "pe_reports_django.urls"
