@@ -223,12 +223,6 @@ class GenerateWeeklyStatusReportingForm(forms.Form):
     """Create web form to take user input on weekly report to be generated."""
 
     date = forms.DateField(widget=forms.DateInput(attrs={'type': 'date'}))
-    # date = forms.DateField(widget=forms.SelectDateWidget(
-    #     years=range(datetime.date.today().year - 5,
-    #                 datetime.date.today().year + 5),
-    #     empty_label=("Choose Year", "Choose Month", "Choose Day"),
-    # ))
-
 
 
     def __init__(self, *args, **kwargs):

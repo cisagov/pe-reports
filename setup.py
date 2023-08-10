@@ -109,6 +109,7 @@ setup(
         "docopt",
         "DShield",
         "glob2 == 0.7",
+        "elastic-apm",
         "fastapi",
         "fastapi-limiter",
         "flask",
