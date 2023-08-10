@@ -967,7 +967,7 @@ class RootDomains(models.Model):
 
 
 class TeamMembers(models.Model):
-    team_member_uid = models.UUIDField(primary_key=True, default=uuid.uuid1())
+    team_member_uid = models.UUIDField(primary_key=True, default=uuid.uuid1)
     team_member_fname = models.TextField()
     team_member_lname = models.TextField()
     team_member_email = models.TextField()
@@ -1214,7 +1214,7 @@ class WebAssets(models.Model):
 
 
 class WeeklyStatuses(models.Model):
-    weekly_status_uid = models.UUIDField(primary_key=True, default=uuid.uuid1())
+    weekly_status_uid = models.UUIDField(primary_key=True, default=uuid.uuid1)
     user_status = models.TextField(blank=True)
     key_accomplishments = models.TextField(blank=True, null=True)
     ongoing_task = models.TextField()
@@ -1228,7 +1228,7 @@ class WeeklyStatuses(models.Model):
     statusComplete = models.IntegerField(blank=True, null=True)
 
     class Meta:
-        managed = True
+        managed = False
         db_table = "weekly_statuses"
 
 
@@ -1659,7 +1659,7 @@ class VwDscoreWASWebapp(models.Model):
 class VwIscoreVSVuln(models.Model):
     organizations_uid = models.UUIDField(primary_key=True)
     parent_org_uid = models.UUIDField(blank=True, null=True)
-    cve_name = models.CharField(blank=True, null=True)
+    cve_name = models.TextField(blank=True, null=True)
     cvss_score = models.FloatField(blank=True, null=True)
 
     class Meta:
@@ -1671,7 +1671,7 @@ class VwIscoreVSVuln(models.Model):
 class VwIscoreVSVulnPrev(models.Model):
     organizations_uid = models.UUIDField(primary_key=True)
     parent_org_uid = models.UUIDField(blank=True, null=True)
-    cve_name = models.CharField(blank=True, null=True)
+    cve_name = models.TextField(blank=True, null=True)
     cvss_score = models.FloatField(blank=True, null=True)
     time_closed = models.DateField(blank=True, null=True)
 
@@ -1685,7 +1685,7 @@ class VwIscorePEVuln(models.Model):
     organizations_uid = models.UUIDField(primary_key=True)
     parent_org_uid = models.UUIDField(blank=True, null=True)
     date = models.DateField(blank=True, null=True)
-    cve_name = models.CharField(blank=True, null=True)
+    cve_name = models.TextField(blank=True, null=True)
     cvss_score = models.FloatField(blank=True, null=True)
 
     class Meta:
@@ -1722,7 +1722,7 @@ class VwIscorePEBreach(models.Model):
 class VwIscorePEDarkweb(models.Model):
     organizations_uid = models.UUIDField(primary_key=True)
     parent_org_uid = models.UUIDField(blank=True, null=True)
-    alert_type = models.CharField(blank=True, null=True)
+    alert_type = models.TextField(blank=True, null=True)
     date = models.DateField(blank=True, null=True)
     Count = models.BigIntegerField(blank=True, null=True)
 
@@ -1735,10 +1735,10 @@ class VwIscorePEDarkweb(models.Model):
 class VwIscorePEProtocol(models.Model):
     organizations_uid = models.UUIDField(primary_key=True)
     parent_org_uid = models.UUIDField(blank=True, null=True)
-    port = models.CharField(blank=True, null=True)
-    ip = models.CharField(blank=True, null=True)
-    protocol = models.CharField(blank=True, null=True)
-    protocol_type = models.CharField(blank=True, null=True)
+    port = models.TextField(blank=True, null=True)
+    ip = models.TextField(blank=True, null=True)
+    protocol = models.TextField(blank=True, null=True)
+    protocol_type = models.TextField(blank=True, null=True)
     date = models.DateField(blank=True, null=True)
 
     class Meta:
@@ -1751,9 +1751,9 @@ class VwIscoreWASVuln(models.Model):
     organizations_uid = models.UUIDField(primary_key=True)
     parent_org_uid = models.UUIDField(blank=True, null=True)
     date = models.DateField(blank=True, null=True)
-    cve_name = models.CharField(blank=True, null=True)
+    cve_name = models.TextField(blank=True, null=True)
     cvss_score = models.FloatField(blank=True, null=True)
-    owasp_category = models.CharField(blank=True, null=True)
+    owasp_category = models.TextField(blank=True, null=True)
 
     class Meta:
         managed = False  # Created from a view. Don't remove.
@@ -1775,7 +1775,7 @@ class VwIscoreWASVulnPrev(models.Model):
 # cyhy_kevs table model (needed for kev_list endpoint)
 class CyhyKevs(models.Model):
     cyhy_kevs_uid = models.UUIDField(primary_key=True)
-    kev = models.CharField(blank=True, null=True)
+    kev = models.TextField(blank=True, null=True)
     first_seen = models.DateField(blank=True, null=True)
     last_seen = models.DateField(blank=True, null=True)
 
@@ -1788,7 +1788,7 @@ class CyhyKevs(models.Model):
 # vw_iscore_orgs_ip_counts view model (used for XS/S/M/L/XL orgs endpoints)
 class VwIscoreOrgsIpCounts(models.Model):
     organizations_uid = models.UUIDField(primary_key=True)
-    cyhy_db_name = models.CharField(blank=True, null=True)
+    cyhy_db_name = models.TextField(blank=True, null=True)
     ip_count = models.BigIntegerField(blank=True, null=True)
 
     class Meta:

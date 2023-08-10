@@ -598,7 +598,7 @@ def create_word_document(date, request):
             "week_ending": reformatted_week_ending_date,
             "accomplishments_list": accomplishments_list,
             "ongoing_tasks_list": ongoing_tasks_list,
-            "upcoming_task_list": upcoming_tasks_list,
+            "upcoming_tasks_list": upcoming_tasks_list,
             "obstacles_list": obstacles_list,
             "non_standard_meeting_list": non_standard_meeting_list,
             "deliverables_list": deliverables_list,

@@ -1,4 +1,6 @@
-{% extends 'base.html' %} {% load crispy_forms_tags %} {% load static %}
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+{% load static %}
 {% block title %} Weekly Status {% endblock title %} {% block content %}
 
 <div class="row justify-content-lg-center">
@@ -31,16 +33,37 @@
 </div>
 <br />
 {% if user.is_superuser %}
-<div class="row justify-content-lg-center">
+
+    <div class="row justify-content-lg-center">
   <div class="row col-lg-4">
-    <button id="createDoc" type="button" class="btn btn-primary" onclick="">
+    <button type="button" class="btn btn-primary" onclick="showWeeklyDiv()">
       Generate Weekly Status
     </button>
   </div>
+  <br />
+
+  <div id="GenDiv" class="row justify-content-lg-center">
+    <div class="d-flex justify-content-center">
+      <div class="card" style="width: 25%" id="content">
+        <div class="card-header text-white bg-primary mb-3">Generate Weekly Status Report</div>
+        <div class="card-body">
+          <form action="" method="POST">
+            <div class="form-group">
+              {% csrf_token %}
+                {{ second_form|crispy }}
+            </div>
+            <input class="btn btn-primary" type="submit" value="Submit" />
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
+
 <br />
 
 <br />
+
 
 <div class="row">
   <div class="col-8 offset-2">
@@ -140,6 +163,13 @@
 <script>
   function showDiv() {
     let T = document.getElementById("TestsDiv"),
+      displayValue = "";
+    if (T.style.display == "") displayValue = "none";
+    T.style.display = displayValue;
+  }
+
+  function showWeeklyDiv() {
+    let T = document.getElementById("GenDiv"),
       displayValue = "";
     if (T.style.display == "") displayValue = "none";
     T.style.display = displayValue;
@@ -306,6 +336,7 @@
     });
 
     showDiv();
+    showWeeklyDiv();
 
     setTimeout(function () {
       $("#messageDiv").fadeOut("fast");
