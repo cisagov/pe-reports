@@ -134,6 +134,15 @@ LOGGING = {
     },
 }
 
+ELASTIC_APM = {
+  'SERVICE_NAME': 'my-service-name',
+
+  'SECRET_TOKEN': '',
+
+  'SERVER_URL': 'http://10.0.2.109:8200',
+
+  'ENVIRONMENT': 'my-environment',
+}
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -144,7 +153,7 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
-    "elastic.contrib.django.middleware.TracingMiddleware",
+    "elasticapm.contrib.django.middleware.TracingMiddleware",
 ]
 
 ROOT_URLCONF = "pe_reports_django.urls"
