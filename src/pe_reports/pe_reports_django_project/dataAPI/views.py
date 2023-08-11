@@ -963,6 +963,7 @@ def read_dscore_vs_cert(
 async def get_dscore_vs_cert_task_status(
     task_id: str, tokens: dict = Depends(get_api_key)
 ):
+    """API endpoint to get status of dscore_vs_cert task."""
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
@@ -1028,6 +1029,7 @@ def read_dscore_vs_mail(
 async def get_dscore_vs_mail_task_status(
     task_id: str, tokens: dict = Depends(get_api_key)
 ):
+    """API endpoint to get status of dscore_vs_mail task."""
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
@@ -1093,6 +1095,7 @@ def read_dscore_pe_ip(
 async def get_dscore_pe_ip_task_status(
     task_id: str, tokens: dict = Depends(get_api_key)
 ):
+    """API endpoint to get status of dscore_pe_ip task."""
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
@@ -1158,6 +1161,7 @@ def read_dscore_pe_domain(
 async def get_dscore_pe_domain_task_status(
     task_id: str, tokens: dict = Depends(get_api_key)
 ):
+    """API endpoint to get status of dscore_pe_domain task."""
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
@@ -1223,6 +1227,7 @@ def read_dscore_was_webapp(
 async def get_dscore_was_webapp_task_status(
     task_id: str, tokens: dict = Depends(get_api_key)
 ):
+    """API endpoint to get status of dscore_was_webapp task."""
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
@@ -1288,6 +1293,7 @@ def read_fceb_status(
 async def get_fceb_status_task_status(
     task_id: str, tokens: dict = Depends(get_api_key)
 ):
+    """API endpoint to get status of fceb_status task."""
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
@@ -1354,6 +1360,7 @@ def read_iscore_vs_vuln(
 async def get_iscore_vs_vuln_task_status(
     task_id: str, tokens: dict = Depends(get_api_key)
 ):
+    """API endpoint to get status of iscore_vs_vuln task."""
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
@@ -1421,6 +1428,7 @@ def read_iscore_vs_vuln_prev(
 async def get_iscore_vs_vuln_prev_task_status(
     task_id: str, tokens: dict = Depends(get_api_key)
 ):
+    """API endpoint to get status of iscore_vs_vuln_prev task."""
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
@@ -1488,6 +1496,7 @@ def read_iscore_pe_vuln(
 async def get_iscore_pe_vuln_task_status(
     task_id: str, tokens: dict = Depends(get_api_key)
 ):
+    """API endpoint to get status of iscore_pe_vuln task."""
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
@@ -1555,6 +1564,7 @@ def read_iscore_pe_cred(
 async def get_iscore_pe_cred_task_status(
     task_id: str, tokens: dict = Depends(get_api_key)
 ):
+    """API endpoint to get status of iscore_pe_cred task."""
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
@@ -1622,6 +1632,7 @@ def read_iscore_pe_breach(
 async def get_iscore_pe_breach_task_status(
     task_id: str, tokens: dict = Depends(get_api_key)
 ):
+    """API endpoint to get status of iscore_pe_breach task."""
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
@@ -1689,6 +1700,7 @@ def read_iscore_pe_darkweb(
 async def get_iscore_pe_darkweb_task_status(
     task_id: str, tokens: dict = Depends(get_api_key)
 ):
+    """API endpoint to get status of iscore_pe_darkweb task."""
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
@@ -1756,6 +1768,7 @@ def read_iscore_pe_protocol(
 async def get_iscore_pe_protocol_task_status(
     task_id: str, tokens: dict = Depends(get_api_key)
 ):
+    """API endpoint to get status of iscore_pe_protocol task."""
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
@@ -1823,6 +1836,7 @@ def read_iscore_was_vuln(
 async def get_iscore_was_vuln_task_status(
     task_id: str, tokens: dict = Depends(get_api_key)
 ):
+    """API endpoint to get status of iscore_was_vuln task."""
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
@@ -1890,6 +1904,7 @@ def read_iscore_was_vuln_prev(
 async def get_iscore_was_vuln_prev_task_status(
     task_id: str, tokens: dict = Depends(get_api_key)
 ):
+    """API endpoint to get status of iscore_vas_vuln_prev task."""
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
@@ -1951,6 +1966,7 @@ def read_fceb_status(tokens: dict = Depends(get_api_key)):
     tags=["Check task status for KEV list query."],
 )
 async def get_kev_list_task_status(task_id: str, tokens: dict = Depends(get_api_key)):
+    """API endpoint to get status of kev_list task."""
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
@@ -2015,6 +2031,7 @@ def read_xs_stakeholders(tokens: dict = Depends(get_api_key)):
 async def get_xs_stakeholders_task_status(
     task_id: str, tokens: dict = Depends(get_api_key)
 ):
+    """API endpoint to get status of xs_stakeholders task."""
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
@@ -2078,6 +2095,7 @@ def read_s_stakeholders(tokens: dict = Depends(get_api_key)):
 async def get_s_stakeholders_task_status(
     task_id: str, tokens: dict = Depends(get_api_key)
 ):
+    """API endpoint to get status of s_stakeholders task."""
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
@@ -2141,6 +2159,7 @@ def read_m_stakeholders(tokens: dict = Depends(get_api_key)):
 async def get_m_stakeholders_task_status(
     task_id: str, tokens: dict = Depends(get_api_key)
 ):
+    """API endpoint to get status of m_stakeholders task."""
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
@@ -2204,6 +2223,7 @@ def read_l_stakeholders(tokens: dict = Depends(get_api_key)):
 async def get_l_stakeholders_task_status(
     task_id: str, tokens: dict = Depends(get_api_key)
 ):
+    """API endpoint to get status of l_stakeholders task."""
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
@@ -2267,6 +2287,7 @@ def read_xl_stakeholders(tokens: dict = Depends(get_api_key)):
 async def get_xl_stakeholders_task_status(
     task_id: str, tokens: dict = Depends(get_api_key)
 ):
+    """API endpoint to get status of xl_stakeholders task."""
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
@@ -2380,7 +2401,7 @@ def ips_insert(data: schemas.IpsInsertInput, tokens: dict = Depends(get_api_key)
     tags=["Check task status for ips_insert endpoint task."],
 )
 async def ips_insert_status(task_id: str, tokens: dict = Depends(get_api_key)):
-    """API endpoint to check status of ips_insert endpoint task."""
+    """API endpoint to get status of ips_insert task."""
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
@@ -2444,7 +2465,7 @@ def sub_domains_table(
     tags=["Check task status for sub_domains_table endpoint task."],
 )
 async def sub_domains_table_status(task_id: str, tokens: dict = Depends(get_api_key)):
-    """API endpoint to check status of sub_domains_table endpoint task."""
+    """API endpoint to get status of sub_domains_table task."""
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
@@ -2650,7 +2671,7 @@ def pescore_hist_domain_alert(
 async def pescore_hist_domain_alert_status(
     task_id: str, tokens: dict = Depends(get_api_key)
 ):
-    """API endpoint to check status of pescore_hist_domain_alert endpoint task."""
+    """API endpoint to get status of pescore_hist_domain_alert task."""
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
@@ -2716,7 +2737,7 @@ def pescore_hist_darkweb_alert(
 async def pescore_hist_darkweb_alert_status(
     task_id: str, tokens: dict = Depends(get_api_key)
 ):
-    """API endpoint to check status of pescore_hist_darkweb_alert endpoint task."""
+    """API endpoint to get status of pescore_hist_darkweb_alert task."""
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
@@ -2782,7 +2803,7 @@ def pescore_hist_darkweb_ment(
 async def pescore_hist_darkweb_ment_status(
     task_id: str, tokens: dict = Depends(get_api_key)
 ):
-    """API endpoint to check status of pescore_hist_darkweb_ment endpoint task."""
+    """API endpoint to get status of pescore_hist_darkweb_ment task."""
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
@@ -2846,7 +2867,7 @@ def pescore_hist_cred(
     tags=["Check task status for pescore_hist_cred endpoint task."],
 )
 async def pescore_hist_cred_status(task_id: str, tokens: dict = Depends(get_api_key)):
-    """API endpoint to check status of pescore_hist_cred endpoint task."""
+    """API endpoint to get status of pescore_hist_cred task."""
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
@@ -2912,7 +2933,7 @@ def pescore_base_metrics(
 async def pescore_base_metrics_status(
     task_id: str, tokens: dict = Depends(get_api_key)
 ):
-    """API endpoint to check status of pescore_base_metrics endpoint task."""
+    """API endpoint to get status of pescore_base_metrics task."""
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
@@ -3003,7 +3024,7 @@ def cve_info_insert(
     tags=["Check task status for cve_info_insert endpoint task."],
 )
 async def cve_info_insert_status(task_id: str, tokens: dict = Depends(get_api_key)):
-    """API endpoint to check status of cve_info_insert endpoint task."""
+    """API endpoint to get status of cve_info_insert task."""
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
@@ -3067,7 +3088,7 @@ def cred_breach_intelx(
     tags=["Check task status for cred_breach_intelx endpoint task."],
 )
 async def cred_breach_intelx_status(task_id: str, tokens: dict = Depends(get_api_key)):
-    """API endpoint to check status of cred_breach_intelx endpoint task."""
+    """API endpoint to get status of cred_breach_intelx task."""
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:

@@ -1073,9 +1073,6 @@ def execute_scorecard(summary_dict):
 
     Args:
         summary_dict: Dictionary of column names and values to be inserted
-
-    Return:
-        Status on if the record was inserted successfully
     """
     # Endpoint info
     endpoint_url = pe_api_url + "rss_insert"
@@ -1498,9 +1495,6 @@ def upsert_new_cves(new_cves):
 
     Args:
         new_cves: Dataframe containing the new CVEs and their CVSS2.0/3.1/DVE data
-
-    Return:
-        Status on if the records were inserted successfully
     """
     # Convert dataframe to list of dictionaries
     new_cves = new_cves.to_dict("records")
