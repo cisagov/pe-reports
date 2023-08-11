@@ -171,7 +171,7 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
-    "elastic.contrib.django.middleware.TracingMiddleware",
+    "elasticapm.contrib.django.middleware.TracingMiddleware",
 ]
 
 ROOT_URLCONF = "pe_reports_django.urls"
