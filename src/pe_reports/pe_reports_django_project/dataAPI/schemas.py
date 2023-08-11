@@ -1,15 +1,13 @@
-"""Pydantic models used by FastAPI"""
+"""Pydantic models used by FastAPI."""
 # Standard Python Libraries
 from datetime import date, datetime
 
 # from pydantic.types import UUID1, UUID
 from typing import Any, List, Optional
-import uuid
-from uuid import UUID, uuid1, uuid4
+from uuid import UUID
 
 # Third-Party Libraries
 from pydantic import BaseModel, EmailStr, Field
-from pydantic.schema import Optional
 
 """
 Developer Note: If there comes an instance as in class Cidrs where there are
@@ -22,16 +20,22 @@ the data type "Any" to see what the return is.
 
 
 class OrgType(BaseModel):
+    """OrgType schema."""
+
     org_type_uid: UUID
 
     class Config:
+        """OrgType schema configuration."""
+
         orm_mode = True
 
 
 class OrganizationBase(BaseModel):
+    """OrganizationBase schema."""
+
     organizations_uid: UUID
     name: str
-    cyhy_db_name: str = None
+    cyhy_db_name: Optional[str] = None
     org_type_uid: Any
     report_on: bool
     password: Optional[str]
@@ -42,18 +46,26 @@ class OrganizationBase(BaseModel):
     demo: bool = False
 
     class Config:
+        """OrganizationBase schema configuration."""
+
         orm_mode = True
         validate_assignment = True
 
 
 class Organization(OrganizationBase):
+    """Organization schema."""
+
     pass
 
     class Config:
+        """Organization schema configuration."""
+
         orm_mode = True
 
 
 class SubDomainBase(BaseModel):
+    """SubDomainBase schema."""
+
     sub_domain_uid: UUID
     sub_domain: str
     root_domain_uid: Optional[Any]
@@ -62,11 +74,15 @@ class SubDomainBase(BaseModel):
     status: bool = False
 
     class Config:
+        """SubDomainBase schema configuration."""
+
         orm_mode = True
         validate_assignment = True
 
 
 class VwBreachcomp(BaseModel):
+    """VwBreachcomp schema."""
+
     credential_exposures_uid: str
     email: str
     breach_name: str
@@ -93,6 +109,8 @@ class VwBreachcomp(BaseModel):
 
 
 class VwBreachDetails(BaseModel):
+    """VwBreachDetails schema."""
+
     organizations_uid: str
     breach_name: str
     mod_date: str
@@ -103,6 +121,8 @@ class VwBreachDetails(BaseModel):
 
 
 class VwBreachcompCredsbydate(BaseModel):
+    """VwBreachcompCredsbydate schema."""
+
     organizations_uid: str
     mod_date: str
     no_password: str
@@ -110,6 +130,8 @@ class VwBreachcompCredsbydate(BaseModel):
 
 
 class VwOrgsAttacksurface(BaseModel):
+    """VwOrgsAttacksurface schema."""
+
     organizations_uid: UUID
     cyhy_db_name: str
     num_ports: str
@@ -118,47 +140,67 @@ class VwOrgsAttacksurface(BaseModel):
     num_ips: str
 
     class Config:
+        """VwOrgsAttacksurface schema configuration."""
+
         orm_mode = True
 
 
 class VwOrgsAttacksurfaceInput(BaseModel):
+    """VwOrgsAttacksurfaceInput schema."""
+
     organizations_uid: UUID
 
     class Config:
+        """VwOrgsAttacksurfaceInput schema configuration."""
+
         orm_mode = True
 
 
 class MatVwOrgsAllIps(BaseModel):
+    """MatVwOrgsAllIps schema."""
+
     organizations_uid: Any
     cyhy_db_name: str
     ip_addresses: List[Optional[str]] = []
 
     class Config:
+        """MatVwOrgsAllIps schema configuration."""
+
         orm_mode = True
 
 
 class TaskResponse(BaseModel):
+    """TaskResponse schema."""
+
     task_id: str
     status: str
-    result: List[MatVwOrgsAllIps] = None
-    error: str = None
+    result: Optional[List[MatVwOrgsAllIps]] = None
+    error: Optional[str] = None
 
 
 class veMatVwOrgsAllIps(BaseModel):
+    """veMatVwOrgsAllIps schema."""
+
     cyhy_db_name: Optional[str]
 
     class Config:
+        """veMatVwOrgsAllIps schema configuration."""
+
         orm_mode = True
 
 
 class veTaskResponse(BaseModel):
+    """veTaskResponse schema."""
+
     task_id: str
     status: str
-    result: List[veMatVwOrgsAllIps] = None
-    error: str = None
+    result: Optional[List[veMatVwOrgsAllIps]] = None
+    error: Optional[str] = None
 
 
 class WASDataBase(BaseModel):
+    """WASDataBase schema."""
+
     # customer_id: UUID
     tag: Optional[str] = "test"
     customer_name: Optional[str] = "test"
@@ -182,11 +224,14 @@ class WASDataBase(BaseModel):
     child_tags: Optional[str] = "test"
 
     class Config:
+        """WASDataBase schema configuration."""
+
         orm_mode = True
         validate_assignment = True
 
 
 class WeeklyStatuses(BaseModel):
+    """WeeklyStatuses schema."""
 
     key_accomplishments: Optional[str] = None
     ongoing_task: Optional[str] = None
@@ -200,20 +245,27 @@ class WeeklyStatuses(BaseModel):
     statusComplete: Optional[str] = None
 
     class Config:
+        """WeeklyStatuses schema configuration."""
+
         orm_mode = True
         validate_assignment = True
 
 
 class UserStatuses(BaseModel):
+    """UserStatuses schema."""
 
     user_fname: str
 
     class Config:
+        """UserStatuses schema configuration."""
+
         orm_mode = True
         validate_assignment = True
 
 
 class CyhyPortScans(BaseModel):
+    """CyhyPortScans schema."""
+
     cyhy_port_scans_uid: UUID
     organizations_uid: Any
     cyhy_id: str
@@ -229,11 +281,15 @@ class CyhyPortScans(BaseModel):
     agency_type: str
 
     class Config:
-        orm_mode: True
+        """CyhyPortScans schema configuration."""
+
+        orm_mode = True
         validate_assignment = True
 
 
 class CyhyDbAssets(BaseModel):
+    """CyhyDbAssets schema."""
+
     # field_id: str
     org_id: str
     org_name: str
@@ -245,17 +301,25 @@ class CyhyDbAssets(BaseModel):
     currently_in_cyhy: Optional[str] = None
 
     class Config:
+        """CyhyDbAssets schema configuration."""
+
         orm_mode = True
 
 
 class CyhyDbAssetsInput(BaseModel):
+    """CyhyDbAssetsInput schema."""
+
     org_id: str
 
     class Config:
+        """CyhyDbAssetsInput schema configuration."""
+
         orm_mode = True
 
 
 class Cidrs(BaseModel):
+    """Cidrs schema."""
+
     cidr_uid: UUID
     network: Any
     organizations_uid: Any
@@ -263,10 +327,14 @@ class Cidrs(BaseModel):
     insert_alert: Optional[str] = None
 
     class Config:
+        """Cidrs schema configuration."""
+
         orm_mode = True
 
 
 class VwCidrs(BaseModel):
+    """VwCidrs schema."""
+
     cidr_uid: str
     network: str
     organizations_uid: str
@@ -275,6 +343,7 @@ class VwCidrs(BaseModel):
 
 
 class DataSource(BaseModel):
+    """DataSource schema."""
 
     data_source_uid: Optional[UUID]
     name: Optional[str]
@@ -282,32 +351,46 @@ class DataSource(BaseModel):
     last_run: Optional[str]
 
     class Config:
+        """DataSource schema configuration."""
+
         orm_mode = True
 
 
 class UserAPIBase(BaseModel):
+    """UserAPIBase schema."""
+
     # user_id: int
     refresh_token: str
 
 
 class UserAPI(UserAPIBase):
+    """UserAPI schema."""
+
     pass
 
     class Config:
+        """UserAPI schema configuration."""
+
         orm_mode = True
 
 
 class TokenSchema(BaseModel):
+    """TokenSchema schema."""
+
     access_token: str
     refresh_token: str
 
 
 class TokenPayload(BaseModel):
-    sub: str = None
-    exp: int = None
+    """TokenPayload schema."""
+
+    sub: Optional[str] = None
+    exp: Optional[int] = None
 
 
 class UserAuth(BaseModel):
+    """UserAuth schema."""
+
     # id: UUID = Field(..., description='user UUID')
     # email: EmailStr = Field(..., description="user email")
     username: str = Field(..., description="user name")
@@ -316,16 +399,22 @@ class UserAuth(BaseModel):
 
 
 class UserOut(BaseModel):
+    """UserOut schema."""
+
     id: UUID
     email: str
 
 
 class SystemUser(UserOut):
+    """SystemUser schema."""
+
     password: str
 
 
 # Shared properties
 class UserBase(BaseModel):
+    """UserBase schema."""
+
     email: Optional[EmailStr] = None
     is_active: Optional[bool] = True
     is_superuser: bool = False
@@ -334,29 +423,41 @@ class UserBase(BaseModel):
 
 # Properties to receive via API on creation
 class UserCreate(UserBase):
+    """UserCreate schema."""
+
     email: EmailStr
     password: str
 
 
 # Properties to receive via API on update
 class UserUpdate(UserBase):
+    """UserUpdate schema."""
+
     password: Optional[str] = None
 
 
 class UserInDBBase(UserBase):
+    """UserInDBBase schema."""
+
     id: Optional[int] = None
 
     class Config:
+        """UserInDBBase schema configuration."""
+
         orm_mode = True
 
 
 # Additional properties to return via API
 class User(UserInDBBase):
+    """User schema."""
+
     pass
 
 
 # Additional properties stored in DB
 class UserInDB(UserInDBBase):
+    """UserInDB schema."""
+
     hashed_password: str
 
 
@@ -394,8 +495,8 @@ class VwDscoreVSCertTaskResp(BaseModel):
 
     task_id: str
     status: str
-    result: List[VwDscoreVSCert] = None
-    error: str = None
+    result: Optional[List[VwDscoreVSCert]] = None
+    error: Optional[str] = None
 
 
 # vw_dscore_vs_mail schema:
@@ -433,8 +534,8 @@ class VwDscoreVSMailTaskResp(BaseModel):
 
     task_id: str
     status: str
-    result: List[VwDscoreVSMail] = None
-    error: str = None
+    result: Optional[List[VwDscoreVSMail]] = None
+    error: Optional[str] = None
 
 
 # vw_dscore_pe_ip schema:
@@ -470,8 +571,8 @@ class VwDscorePEIpTaskResp(BaseModel):
 
     task_id: str
     status: str
-    result: List[VwDscorePEIp] = None
-    error: str = None
+    result: Optional[List[VwDscorePEIp]] = None
+    error: Optional[str] = None
 
 
 # vw_dscore_pe_domain schema:
@@ -507,8 +608,8 @@ class VwDscorePEDomainTaskResp(BaseModel):
 
     task_id: str
     status: str
-    result: List[VwDscorePEDomain] = None
-    error: str = None
+    result: Optional[List[VwDscorePEDomain]] = None
+    error: Optional[str] = None
 
 
 # vw_dscore_was_webapp schema:
@@ -544,8 +645,8 @@ class VwDscoreWASWebappTaskResp(BaseModel):
 
     task_id: str
     status: str
-    result: List[VwDscoreWASWebapp] = None
-    error: str = None
+    result: Optional[List[VwDscoreWASWebapp]] = None
+    error: Optional[str] = None
 
 
 # FCEB status query schema (no view):
@@ -579,8 +680,8 @@ class FCEBStatusTaskResp(BaseModel):
 
     task_id: str
     status: str
-    result: List[FCEBStatus] = None
-    error: str = None
+    result: Optional[List[FCEBStatus]] = None
+    error: Optional[str] = None
 
 
 # ---------- I-Score View Schemas ----------
@@ -617,8 +718,8 @@ class VwIscoreVSVulnTaskResp(BaseModel):
 
     task_id: str
     status: str
-    result: List[VwIscoreVSVuln] = None
-    error: str = None
+    result: Optional[List[VwIscoreVSVuln]] = None
+    error: Optional[str] = None
 
 
 # vw_iscore_vs_vuln_prev schema:
@@ -657,8 +758,8 @@ class VwIscoreVSVulnPrevTaskResp(BaseModel):
 
     task_id: str
     status: str
-    result: List[VwIscoreVSVulnPrev] = None
-    error: str = None
+    result: Optional[List[VwIscoreVSVulnPrev]] = None
+    error: Optional[str] = None
 
 
 # vw_iscore_pe_vuln schema:
@@ -697,8 +798,8 @@ class VwIscorePEVulnTaskResp(BaseModel):
 
     task_id: str
     status: str
-    result: List[VwIscorePEVuln] = None
-    error: str = None
+    result: Optional[List[VwIscorePEVuln]] = None
+    error: Optional[str] = None
 
 
 # vw_iscore_pe_cred schema:
@@ -737,8 +838,8 @@ class VwIscorePECredTaskResp(BaseModel):
 
     task_id: str
     status: str
-    result: List[VwIscorePECred] = None
-    error: str = None
+    result: Optional[List[VwIscorePECred]] = None
+    error: Optional[str] = None
 
 
 # vw_iscore_pe_breach schema:
@@ -776,8 +877,8 @@ class VwIscorePEBreachTaskResp(BaseModel):
 
     task_id: str
     status: str
-    result: List[VwIscorePEBreach] = None
-    error: str = None
+    result: Optional[List[VwIscorePEBreach]] = None
+    error: Optional[str] = None
 
 
 # vw_iscore_pe_darkweb schema:
@@ -817,8 +918,8 @@ class VwIscorePEDarkwebTaskResp(BaseModel):
 
     task_id: str
     status: str
-    result: List[VwIscorePEDarkweb] = None
-    error: str = None
+    result: Optional[List[VwIscorePEDarkweb]] = None
+    error: Optional[str] = None
 
 
 # vw_iscore_pe_protocol schema:
@@ -859,8 +960,8 @@ class VwIscorePEProtocolTaskResp(BaseModel):
 
     task_id: str
     status: str
-    result: List[VwIscorePEProtocol] = None
-    error: str = None
+    result: Optional[List[VwIscorePEProtocol]] = None
+    error: Optional[str] = None
 
 
 # vw_iscore_was_vuln schema:
@@ -900,8 +1001,8 @@ class VwIscoreWASVulnTaskResp(BaseModel):
 
     task_id: str
     status: str
-    result: List[VwIscoreWASVuln] = None
-    error: str = None
+    result: Optional[List[VwIscoreWASVuln]] = None
+    error: Optional[str] = None
 
 
 # vw_iscore_was_vuln_prev schema:
@@ -939,8 +1040,8 @@ class VwIscoreWASVulnPrevTaskResp(BaseModel):
 
     task_id: str
     status: str
-    result: List[VwIscoreWASVulnPrev] = None
-    error: str = None
+    result: Optional[List[VwIscoreWASVulnPrev]] = None
+    error: Optional[str] = None
 
 
 # KEV list query schema (no view):
@@ -962,27 +1063,33 @@ class KEVListTaskResp(BaseModel):
 
     task_id: str
     status: str
-    result: List[KEVList] = None
-    error: str = None
+    result: Optional[List[KEVList]] = None
+    error: Optional[str] = None
 
 
 # ---------- Misc. Score Schemas ----------
 # vw_iscore_orgs_ip_counts schema:
 # vw_iscore_orgs_ip_counts does not use any input parameters
 class VwIscoreOrgsIpCounts(BaseModel):
+    """VwIscoreOrgsIpCounts schema."""
+
     organizations_uid: str
     cyhy_db_name: str
 
     class Config:
+        """VwIscoreOrgsIpCounts schema configuration."""
+
         orm_mode = True
 
 
 # vw_iscore_orgs_ip_counts task response schema:
 class VwIscoreOrgsIpCountsTaskResp(BaseModel):
+    """VwIscoreOrgsIpCountsTaskResp schema."""
+
     task_id: str
     status: str
-    result: List[VwIscoreOrgsIpCounts] = None
-    error: str = None
+    result: Optional[List[VwIscoreOrgsIpCounts]] = None
+    error: Optional[str] = None
 
 
 # --- execute_ips(), Issue 559 ---
@@ -1020,8 +1127,8 @@ class IpsInsertTaskResp(BaseModel):
 
     task_id: str
     status: str
-    result: str = None
-    error: str = None
+    result: Optional[str] = None
+    error: Optional[str] = None
 
 
 # --- query_all_subs(), Issue 560 ---
@@ -1078,8 +1185,8 @@ class SubDomainTableTaskResp(BaseModel):
 
     task_id: str
     status: str
-    result: SubDomainResult = None
-    error: str = None
+    result: Optional[SubDomainResult] = None
+    error: Optional[str] = None
 
 
 # --- execute_scorecard(), Issue 632 ---
@@ -1242,8 +1349,8 @@ class PEScoreHistDomainAlertTaskResp(BaseModel):
 
     task_id: str
     status: str
-    result: PEScoreHistDomainAlertResp = None
-    error: str = None
+    result: Optional[PEScoreHistDomainAlertResp] = None
+    error: Optional[str] = None
 
 
 # --- pescore_hist_darkweb_alert(), Issue 635 ---
@@ -1281,8 +1388,8 @@ class PEScoreHistDarkwebAlertTaskResp(BaseModel):
 
     task_id: str
     status: str
-    result: PEScoreHistDarkwebAlertResp = None
-    error: str = None
+    result: Optional[PEScoreHistDarkwebAlertResp] = None
+    error: Optional[str] = None
 
 
 # --- pescore_hist_darkweb_ment(), Issue 635 ---
@@ -1309,7 +1416,7 @@ class PEScoreHistDarkwebMentResp(BaseModel):
     hist_darkweb_ment_data: List[PEScoreHistDarkwebMent]
 
     class Config:
-        """ "PEScoreHistDarkwebMentResp schema config class."""
+        """PEScoreHistDarkwebMentResp schema config class."""
 
         orm_mode = True
 
@@ -1321,8 +1428,8 @@ class PEScoreHistDarkwebMentTaskResp(BaseModel):
 
     task_id: str
     status: str
-    result: PEScoreHistDarkwebMentResp = None
-    error: str = None
+    result: Optional[PEScoreHistDarkwebMentResp] = None
+    error: Optional[str] = None
 
 
 # --- pescore_hist_cred(), Issue 635 ---
@@ -1362,8 +1469,8 @@ class PEScoreHistCredTaskResp(BaseModel):
 
     task_id: str
     status: str
-    result: PEScoreHistCredResp = None
-    error: str = None
+    result: Optional[PEScoreHistCredResp] = None
+    error: Optional[str] = None
 
 
 # ---------- PE Score Base Metrics Data ----------
@@ -1571,8 +1678,8 @@ class PEScoreBaseMetricsTaskResp(BaseModel):
 
     task_id: str
     status: str
-    result: PEScoreBaseMetrics = None
-    error: str = None
+    result: Optional[PEScoreBaseMetrics] = None
+    error: Optional[str] = None
 
 
 # --- get_new_cves_list(), Issue 636 ---
@@ -1628,8 +1735,8 @@ class CVEInfoInsertTaskResp(BaseModel):
 
     task_id: str
     status: str
-    result: str = None
-    error: str = None
+    result: Optional[str] = None
+    error: Optional[str] = None
 
 
 # --- get_intelx_breaches(), Issue 641 ---
@@ -1666,5 +1773,159 @@ class CredBreachIntelXTaskResp(BaseModel):
 
     task_id: str
     status: str
-    result: List[CredBreachIntelX] = None
-    error: str = None
+    result: Optional[List[CredBreachIntelX]] = None
+    error: Optional[str] = None
+
+
+class PshttDomainToRun(BaseModel):
+    """PshttDomainsToRun schema class."""
+
+    sub_domain_uid: str
+    sub_domain: str
+    organizations_uid: str
+    name: str
+
+    class Config:
+        """PshttDomainsToRun config."""
+
+        orm_mode = True
+        validate_assignment = True
+
+
+class PshttDomainToRunTaskResp(BaseModel):
+    """PshttDomainsToRunTaskResp schema class."""
+
+    task_id: str
+    status: str
+    result: Optional[List[PshttDomainToRun]] = None
+    error: Optional[str] = None
+
+
+class PshttDataBase(BaseModel):
+    """PshttDataBase schema class."""
+
+    pshtt_results_uid: UUID
+    organizations_uid: Optional[Any]
+    sub_domain_uid: Optional[Any]
+    data_source_uid: Optional[Any]
+    sub_domain: str
+    date_scanned: str  # date
+    base_domain: str
+    base_domain_hsts_preloaded: bool
+    canonical_url: str
+    defaults_to_https: bool
+    domain: str
+    domain_enforces_https: bool
+    domain_supports_https: bool
+    domain_uses_strong_hsts: Optional[bool] = None
+    downgrades_https: bool
+    htss: bool
+    hsts_entire_domain: Optional[bool] = None
+    hsts_header: str
+    hsts_max_age: Optional[float] = None
+    hsts_preload_pending: bool
+    hsts_preload_ready: bool
+    hsts_preloaded: bool
+    https_bad_chain: bool
+    https_bad_hostname: bool
+    https_cert_chain_length = int
+    https_client_auth_required: bool
+    https_custom_truststore_trusted: bool
+    https_expired_cert: bool
+    https_full_connection: bool
+    https_live: bool
+    https_probably_missing_intermediate_cert: bool
+    https_publicly_trusted: bool
+    https_self_signed_cert: bool
+    https_leaf_cert_expiration_date: Optional[date] = None
+    https_leaf_cert_issuer: str
+    https_leaf_cert_subject: str
+    https_root_cert_issuer: str
+    ip: str  # Not sure if there is a better type for this
+    live: bool
+    notes: str
+    redirect: bool
+    redirect_to: str
+    server_header: str
+    server_version: str
+    strictly_forces_https: bool
+    unknown_error: bool
+    valid_https: bool
+    ep_http_headers: str  # This field type is a guess.
+    ep_http_server_header: str
+    ep_http_server_version: str
+    ep_https_headers: str  # This field type is a guess.
+    ep_https_hsts_header: str
+    ep_https_server_header: str
+    ep_https_server_version: str
+    ep_httpswww_headers: str  # This field type is a guess.
+    ep_httpswww_hsts_header: str
+    ep_httpswww_server_header: str
+    ep_httpswww_server_version: str
+    ep_httpwww_headers: str  # This field type is a guess.
+    ep_httpwww_server_header: str
+    ep_httpwww_server_version: str
+
+
+class PshttInsert(BaseModel):
+    """PshttInsert schema class."""
+
+    organizations_uid: Optional[Any]
+    sub_domain_uid: Optional[Any]
+    sub_domain: str
+    date_scanned: str  # date
+    base_domain: str
+    base_domain_hsts_preloaded: bool
+    canonical_url: str
+    defaults_to_https: bool
+    domain: str
+    domain_enforces_https: bool
+    domain_supports_https: bool
+    domain_uses_strong_hsts: Optional[bool] = None
+    downgrades_https: bool
+    htss: bool
+    hsts_entire_domain: Optional[bool] = None
+    hsts_header: Optional[str] = None
+    hsts_max_age: Optional[float] = None
+    hsts_preload_pending: bool
+    hsts_preload_ready: bool
+    hsts_preloaded: bool
+    https_bad_chain: bool
+    https_bad_hostname: bool
+    https_cert_chain_length = int
+    https_client_auth_required: bool
+    https_custom_truststore_trusted: bool
+    https_expired_cert: bool
+    https_full_connection: bool
+    https_live: bool
+    https_probably_missing_intermediate_cert: bool
+    https_publicly_trusted: bool
+    https_self_signed_cert: bool
+    https_leaf_cert_expiration_date: Optional[date] = None
+    https_leaf_cert_issuer: Optional[str] = None
+    https_leaf_cert_subject: Optional[str] = None
+    https_root_cert_issuer: Optional[str] = None
+    ip: Optional[str] = None  # Not sure if there is a better type for this
+    live: bool
+    notes: Optional[str] = None
+    redirect: bool
+    redirect_to: Optional[str] = None
+    server_header: Optional[str] = None
+    server_version: Optional[str] = None
+    strictly_forces_https: bool
+    unknown_error: bool
+    valid_https: bool
+    ep_http_headers: Optional[str] = None  # This field type is a guess.
+    ep_http_server_header: Optional[str] = None
+    ep_http_server_version: Optional[str] = None
+    ep_https_headers: Optional[str] = None  # This field type is a guess.
+    ep_https_hsts_header: Optional[str] = None
+    ep_https_server_header: Optional[str] = None
+    ep_https_server_version: Optional[str] = None
+    ep_httpswww_headers: Optional[str] = None  # This field type is a guess.
+    ep_httpswww_hsts_header: Optional[str] = None
+    ep_httpswww_server_header: Optional[str] = None
+    ep_httpswww_server_version: Optional[str] = None
+    ep_httpwww_headers: Optional[str] = None  # This field type is a guess.
+    ep_httpwww_server_header: Optional[str] = None
+    ep_httpwww_server_version: Optional[str] = None

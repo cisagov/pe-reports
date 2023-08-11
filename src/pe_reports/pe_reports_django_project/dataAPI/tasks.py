@@ -1,5 +1,7 @@
+"""API task functions."""
 # Standard Python Libraries
 import ast
+import datetime
 import json
 from typing import List
 import uuid
@@ -7,53 +9,49 @@ import uuid
 # Third-Party Libraries
 from celery import shared_task
 from django.core import serializers
-from home.models import MatVwOrgsAllIps
-from pe_reports.helpers import ip_passthrough
-import datetime
-from django.db.models import Q, Count, Sum
-from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
-
-from home.models import (
-    # General DB Table Models:
-    CyhyKevs,
-    Organizations,
-    # D-Score View Models:
-    VwDscoreVSCert,
-    VwDscoreVSMail,
-    VwDscorePEIp,
-    VwDscorePEDomain,
-    VwDscoreWASWebapp,
-    # I-Score View Models:
-    VwIscoreVSVuln,
-    VwIscoreVSVulnPrev,
-    VwIscorePEVuln,
-    VwIscorePECred,
-    VwIscorePEBreach,
-    VwIscorePEDarkweb,
-    VwIscorePEProtocol,
-    VwIscoreWASVuln,
-    VwIscoreWASVulnPrev,
-    # Misc. Score View Models:
-    VwIscoreOrgsIpCounts,
-    # PE Score Models:
-    DomainAlerts,
+from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
+from django.db.models import Count, Q, Sum
+from home.models import (  # General DB Table Models:; D-Score View Models:; I-Score View Models:; Misc. Score View Models:; PE Score Models:; Other Models:
     Alerts,
-    VwDarkwebMentionsbydate,
-    VwBreachcompCredsbydate,
-    VwBreachcomp,
-    DomainPermutations,
-    VwShodanvulnsVerified,
-    VwShodanvulnsSuspected,
-    VwDarkwebPotentialthreats,
-    VwDarkwebInviteonlymarkets,
-    VwOrgsAttacksurface,
-    # Other Models:
-    Ips,
-    SubDomains,
-    CveInfo,
     Cidrs,
     CredentialBreaches,
+    CveInfo,
+    CyhyKevs,
+    DomainAlerts,
+    DomainPermutations,
+    Ips,
+    MatVwOrgsAllIps,
+    Organizations,
+    SubDomains,
+    VwBreachcomp,
+    VwBreachcompCredsbydate,
+    VwDarkwebInviteonlymarkets,
+    VwDarkwebMentionsbydate,
+    VwDarkwebPotentialthreats,
+    VwDscorePEDomain,
+    VwDscorePEIp,
+    VwDscoreVSCert,
+    VwDscoreVSMail,
+    VwDscoreWASWebapp,
+    VwIscoreOrgsIpCounts,
+    VwIscorePEBreach,
+    VwIscorePECred,
+    VwIscorePEDarkweb,
+    VwIscorePEProtocol,
+    VwIscorePEVuln,
+    VwIscoreVSVuln,
+    VwIscoreVSVulnPrev,
+    VwIscoreWASVuln,
+    VwIscoreWASVulnPrev,
+    VwOrgsAttacksurface,
+    VwPshttDomainsToRun,
+    VwShodanvulnsSuspected,
+    VwShodanvulnsVerified,
 )
+
+# cisagov Libraries
+from pe_reports.helpers import ip_passthrough
+
 
 # ---------- Task Helper Functions ----------
 def convert_uuid_to_string(uuid):
@@ -72,6 +70,7 @@ def convert_date_to_string(date):
 
 @shared_task(bind=True)
 def get_vs_info(self, cyhy_db_names: List[str]):
+    """Get vulerability scanning info."""
     vs_data_orm = list(MatVwOrgsAllIps.objects.filter(cyhy_db_name__in=cyhy_db_names))
 
     vs_data = serializers.serialize("json", vs_data_orm)
@@ -89,6 +88,7 @@ def get_vs_info(self, cyhy_db_names: List[str]):
 
 @shared_task
 def get_ve_info(ip_address: List[str]):
+    """Get VE information."""
     ve_data = MatVwOrgsAllIps.objects.filter(ip_addresses__contains=ip_address)
 
     print(ve_data)  # temporary print for debugging
@@ -104,6 +104,7 @@ def get_ve_info(ip_address: List[str]):
 
 @shared_task
 def get_rva_info(ip_address: List[str]):
+    """Get data for RVA team."""
     rva_data = MatVwOrgsAllIps.objects.filter(ip_addresses__contains=ip_address)
 
     print(rva_data)  # temporary print for debugging
@@ -479,7 +480,7 @@ def ips_insert_task(self, new_ips: List[dict]):
         # Get Cidrs.origin_cidr object for this ip
         curr_ip_origin_cidr = Cidrs.objects.get(cidr_uid=new_ip["origin_cidr"])
         try:
-            item = Ips.objects.get(ip=new_ip["ip"])
+            Ips.objects.get(ip=new_ip["ip"])
         except Ips.DoesNotExist:
             # If ip record doesn't exist yet, create one
             Ips.objects.create(
@@ -489,7 +490,7 @@ def ips_insert_task(self, new_ips: List[dict]):
             )
         else:
             # If ip record does exits, update it
-            item = Ips.objects.filter(ip=new_ip["ip"]).update(
+            Ips.objects.filter(ip=new_ip["ip"]).update(
                 ip_hash=new_ip["ip_hash"],
                 origin_cidr=new_ip["origin_cidr"],
             )
@@ -821,7 +822,7 @@ def cve_info_insert_task(self, new_cves: List[dict]):
     # Go through each new cve
     for cve in new_cves:
         try:
-            item = CveInfo.objects.get(cve_name=cve["cve_name"])
+            CveInfo.objects.get(cve_name=cve["cve_name"])
         except CveInfo.DoesNotExist:
             # If CVE record doesn't exist yet, create one
             CveInfo.objects.create(
@@ -838,7 +839,7 @@ def cve_info_insert_task(self, new_cves: List[dict]):
             )
         else:
             # If CVE record does exits, update it
-            item = CveInfo.objects.filter(cve_name=cve["cve_name"]).update(
+            CveInfo.objects.filter(cve_name=cve["cve_name"]).update(
                 # use existing uuid
                 cvss_2_0=cve["cvss_2_0"],
                 cvss_2_0_severity=cve["cvss_2_0_severity"],
@@ -868,3 +869,17 @@ def cred_breach_intelx_task(self, source_uid: str):
             row["credential_breaches_uid"]
         )
     return cred_breach_intelx_data
+
+
+@shared_task(bind=True)
+def get_vw_pshtt_domains_to_run_info(self):
+    """Get subdomains to run through the PSHTT scan."""
+    # Make database query, then convert to list of dictionaries
+    endpoint_data = list(VwPshttDomainsToRun.objects.all().values())
+
+    # Convert UUID data to string (UUIDs cause issues with formatting)
+    for row in endpoint_data:
+        row["sub_domain_uid"] = str(row["sub_domain_uid"])
+        row["organizations_uid"] = str(row["organizations_uid"])
+    # Return results
+    return endpoint_data

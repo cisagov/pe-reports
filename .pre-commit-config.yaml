@@ -110,7 +110,9 @@ repos:
       - id: mypy
         additional_dependencies:
           - types-PyYAML
+          - types-redis
           - types-requests
+          - types-retry
           - types-setuptools
   - repo: https://github.com/asottile/pyupgrade
     rev: v2.31.0

@@ -1,114 +1,99 @@
-"""Create all api enpoints"""
+"""Create all api enpoints."""
 
 # Standard Python Libraries
-import asyncio
 import csv
 from datetime import datetime, timedelta
 from io import TextIOWrapper
-import json
 import logging
-import re
-from typing import Any, Dict, List, Union
-from uuid import UUID
+from typing import Any, List, Union
 
 # Third-Party Libraries
-from dataAPI.tasks import get_rva_info, get_ve_info, get_vs_info
+from dataAPI.tasks import (  # Task helpers; D-Score Task Functions:; I-Score Task Functions:; Misc. Score-Related Task Functions:; Other Endpoint Task Functions:
+    convert_date_to_string,
+    convert_uuid_to_string,
+    get_dscore_pe_domain_info,
+    get_dscore_pe_ip_info,
+    get_dscore_vs_cert_info,
+    get_dscore_vs_mail_info,
+    get_dscore_was_webapp_info,
+    get_fceb_status_info,
+    get_iscore_pe_breach_info,
+    get_iscore_pe_cred_info,
+    get_iscore_pe_darkweb_info,
+    get_iscore_pe_protocol_info,
+    get_iscore_pe_vuln_info,
+    get_iscore_vs_vuln_info,
+    get_iscore_vs_vuln_prev_info,
+    get_iscore_was_vuln_info,
+    get_iscore_was_vuln_prev_info,
+    get_kev_list_info,
+    get_l_stakeholders_info,
+    get_m_stakeholders_info,
+    get_rva_info,
+    get_s_stakeholders_info,
+    get_ve_info,
+    get_vs_info,
+    get_vw_pshtt_domains_to_run_info,
+    get_xl_stakeholders_info,
+    get_xs_stakeholders_info,
+)
+from dataAPI.tasks import cred_breach_intelx_task  # Issue 641
+from dataAPI.tasks import cve_info_insert_task  # Issue 637
+from dataAPI.tasks import ips_insert_task  # Issue 559
+from dataAPI.tasks import pescore_base_metrics_task  # Issue 635
+from dataAPI.tasks import pescore_hist_cred_task  # Issue 635
+from dataAPI.tasks import pescore_hist_darkweb_alert_task  # Issue 635
+from dataAPI.tasks import pescore_hist_darkweb_ment_task  # Issue 635
+from dataAPI.tasks import pescore_hist_domain_alert_task  # Issue 635
+from dataAPI.tasks import sub_domains_table_task  # Issue 560
 from decouple import config
 from django.conf import settings
-from django.contrib import messages
 from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.db import transaction
-from django.db.models import Q
 
 # Third party imports
 from fastapi import (
     APIRouter,
-    Body,
     Depends,
-    FastAPI,
     File,
     HTTPException,
     Security,
     UploadFile,
     status,
 )
-from fastapi.encoders import jsonable_encoder
-from fastapi.responses import JSONResponse
 from fastapi.security import OAuth2PasswordBearer
-from fastapi.security.api_key import APIKey, APIKeyCookie, APIKeyHeader, APIKeyQuery
+from fastapi.security.api_key import APIKeyHeader
 from fastapi_limiter import FastAPILimiter
 from fastapi_limiter.depends import RateLimiter
-
 from home.models import (
     CyhyDbAssets,
     CyhyPortScans,
     DataSource,
-    MatVwOrgsAllIps,
     Organizations,
+    PshttResults,
+    ReportSummaryStats,
     SubDomains,
     VwBreachcomp,
     VwBreachcompBreachdetails,
     VwBreachcompCredsbydate,
     VwCidrs,
     VwOrgsAttacksurface,
+    VwPEScoreCheckNewCVE,
     WasTrackerCustomerdata,
     WeeklyStatuses,
-    ReportSummaryStats,
-    VwPEScoreCheckNewCVE,
 )
-from pe_reports.helpers import ip_passthrough
 from jose import exceptions, jwt
-import pandas as pd
 from redis import asyncio as aioredis
-import requests
-from slowapi import Limiter, _rate_limit_exceeded_handler
-from slowapi.errors import RateLimitExceeded
+from slowapi import Limiter
 from slowapi.util import get_remote_address
 from starlette.status import HTTP_403_FORBIDDEN
 
 from . import schemas
 from .models import apiUser
 
-from dataAPI.tasks import (
-    # Task helpers
-    convert_uuid_to_string,
-    convert_date_to_string,
-    # D-Score Task Functions:
-    get_dscore_vs_cert_info,
-    get_dscore_vs_mail_info,
-    get_dscore_pe_ip_info,
-    get_dscore_pe_domain_info,
-    get_dscore_was_webapp_info,
-    get_fceb_status_info,
-    # I-Score Task Functions:
-    get_iscore_vs_vuln_info,
-    get_iscore_vs_vuln_prev_info,
-    get_iscore_pe_vuln_info,
-    get_iscore_pe_cred_info,
-    get_iscore_pe_breach_info,
-    get_iscore_pe_darkweb_info,
-    get_iscore_pe_protocol_info,
-    get_iscore_was_vuln_info,
-    get_iscore_was_vuln_prev_info,
-    get_kev_list_info,
-    # Misc. Score-Related Task Functions:
-    get_xs_stakeholders_info,
-    get_s_stakeholders_info,
-    get_m_stakeholders_info,
-    get_l_stakeholders_info,
-    get_xl_stakeholders_info,
-    # Other Endpoint Task Functions:
-    ips_insert_task,  # Issue 559
-    sub_domains_table_task,  # Issue 560
-    pescore_hist_domain_alert_task,  # Issue 635
-    pescore_hist_darkweb_alert_task,  # Issue 635
-    pescore_hist_darkweb_ment_task,  # Issue 635
-    pescore_hist_cred_task,  # Issue 635
-    pescore_base_metrics_task,  # Issue 635
-    cve_info_insert_task,  # Issue 637
-    cred_breach_intelx_task,  # Issue 641
-)
+# from pe_reports.helpers import ip_passthrough
+
 
 LOGGER = logging.getLogger(__name__)
 
@@ -137,41 +122,47 @@ limiter = Limiter(key_func=get_remote_address, default_limits=["5 per minute"])
 
 
 async def default_identifier(request):
+    """Return default identifier."""
     return request.headers.get("X-Real-IP", request.client.host)
 
 
 @api_router.on_event("startup")
 async def startup():
+    """Start up Redis."""
     redis = aioredis.from_url(
         settings.CELERY_RESULT_BACKEND, encoding="utf-8", decode_responses=True
     )
     await FastAPILimiter.init(redis, identifier=default_identifier)
 
 
-def create_access_token(subject: Union[str, Any], expires_delta: int = None) -> str:
-    """Create access token"""
+def create_access_token(
+    subject: Union[str, Any], expires_delta: timedelta = None
+) -> str:
+    """Create access token."""
     if expires_delta is not None:
-        expires_delta = datetime.utcnow() + expires_delta
+        expires_date = datetime.utcnow() + expires_delta
     else:
-        expires_delta = datetime.utcnow() + timedelta(
+        expires_date = datetime.utcnow() + timedelta(
             minutes=ACCESS_TOKEN_EXPIRE_MINUTES
         )
 
-    to_encode = {"exp": expires_delta, "sub": str(subject)}
+    to_encode = {"exp": expires_date, "sub": str(subject)}
     encoded_jwt = jwt.encode(to_encode, JWT_SECRET_KEY, ALGORITHM)
     return encoded_jwt
 
 
-def create_refresh_token(subject: Union[str, Any], expires_delta: int = None) -> str:
-    """Create a refresh token"""
+def create_refresh_token(
+    subject: Union[str, Any], expires_delta: timedelta = None
+) -> str:
+    """Create a refresh token."""
     if expires_delta is not None:
-        expires_delta = datetime.utcnow() + expires_delta
+        expires_date = datetime.utcnow() + expires_delta
     else:
-        expires_delta = datetime.utcnow() + timedelta(
+        expires_date = datetime.utcnow() + timedelta(
             minutes=REFRESH_TOKEN_EXPIRE_MINUTES
         )
 
-    to_encode = {"exp": expires_delta, "sub": str(subject)}
+    to_encode = {"exp": expires_date, "sub": str(subject)}
     encoded_jwt = jwt.encode(to_encode, JWT_REFRESH_SECRET_KEY, ALGORITHM)
     return encoded_jwt
 
@@ -186,8 +177,7 @@ def userinfo(theuser):
 
 
 def userapiTokenUpdate(expiredaccessToken, user_refresh, theapiKey, user_id):
-    """When api apiKey is expired a new key is created
-    and updated in the database."""
+    """When api apiKey is expired a new key is created and updated in the database."""
     print(f"Got to update token {expiredaccessToken}")
     theusername = ""
     user_record = list(User.objects.filter(id=f"{user_id}"))
@@ -237,7 +227,7 @@ def userapiTokenverify(theapiKey):
         )
         LOGGER.info(f"The api key was alright {theapiKey}")
 
-    except exceptions.JWTError as e:
+    except exceptions.JWTError:
         LOGGER.warning("The access token has expired and will be updated")
         userapiTokenUpdate(user_key, user_refresh, theapiKey, user_id)
 
@@ -248,7 +238,6 @@ async def get_api_key(
     # api_key_cookie: str = Security(api_key_cookie),
 ):
     """Get api key from header."""
-
     if api_key_header != "":
         return api_key_header
 
@@ -259,7 +248,8 @@ async def get_api_key(
 
 
 def process_item(item):
-    #     # TODO: Replace with the code for what you wish to do with the row of data in the CSV.
+    """Process CSV rows."""
+    # TODO: Replace with the code for what you wish to do with the row of data in the CSV.
     LOGGER.info("The item is %s" % item)
     print("The item is %s" % item)
 
@@ -279,7 +269,7 @@ def process_item(item):
     tags=["List of all Organizations"],
 )
 def read_orgs(tokens: dict = Depends(get_api_key)):
-    """API endpoint to get all organizations."""
+    """Call API endpoint to get all organizations."""
     orgs = list(Organizations.objects.all())
 
     if tokens:
@@ -289,7 +279,7 @@ def read_orgs(tokens: dict = Depends(get_api_key)):
 
             userapiTokenverify(theapiKey=tokens)
             return orgs
-        except:
+        except Exception:
             LOGGER.info("API key expired please try again")
     else:
         return {"message": "No api key was submitted"}
@@ -302,8 +292,7 @@ def read_orgs(tokens: dict = Depends(get_api_key)):
     tags=["List of all Weekly Statuses"],
 )
 def read_weekly_statuses(tokens: dict = Depends(get_api_key)):
-    """API endpoint to get weekly statuses."""
-
+    """Call API endpoint to get weekly statuses."""
     current_date = datetime.now()
     days_to_week_end = (4 - current_date.weekday()) % 7
     week_ending_date = current_date + timedelta(days=days_to_week_end)
@@ -313,7 +302,7 @@ def read_weekly_statuses(tokens: dict = Depends(get_api_key)):
     try:
         userapiTokenverify(theapiKey=tokens)
         return statuses
-    except:
+    except Exception:
         LOGGER.info("API key expired please try again")
 
 
@@ -326,8 +315,7 @@ def read_weekly_statuses(tokens: dict = Depends(get_api_key)):
 def read_user_weekly_statuses(
     data: schemas.UserStatuses, tokens: dict = Depends(get_api_key)
 ):
-    """API endpoint to get a user weekly statuses."""
-
+    """Call API endpoint to get a user weekly statuses."""
     current_date = datetime.now()
     days_to_week_end = (4 - current_date.weekday()) % 7
     week_ending_date = current_date + timedelta(days=days_to_week_end)
@@ -341,7 +329,7 @@ def read_user_weekly_statuses(
     try:
         userapiTokenverify(theapiKey=tokens)
         return statuses
-    except:
+    except Exception:
         LOGGER.info("API key expired please try again")
 
 
@@ -352,7 +340,7 @@ def read_user_weekly_statuses(
     tags=["List of all Subdomains"],
 )
 def read_sub_domain(root_domain_uid: str, tokens: dict = Depends(get_api_key)):
-    """API endpoint to get all organizations."""
+    """Call API endpoint to get all organizations."""
     # count = SubDomains.objects.all().count()
     # print(f'The count is {count}')
     # finalList = []
@@ -372,7 +360,7 @@ def read_sub_domain(root_domain_uid: str, tokens: dict = Depends(get_api_key)):
             print("Got to subdomains try")
             userapiTokenverify(theapiKey=tokens)
             return subs
-        except:
+        except Exception:
             LOGGER.info("API key expired please try again")
     else:
         return {"message": "No api key was submitted"}
@@ -385,7 +373,7 @@ def read_sub_domain(root_domain_uid: str, tokens: dict = Depends(get_api_key)):
     tags=["List all breaches"],
 )
 def read_breachcomp(tokens: dict = Depends(get_api_key)):
-    """API endpoint to get all breaches."""
+    """Call API endpoint to get all breaches."""
     breachInfo = list(VwBreachcomp.objects.all())
     print(breachInfo)
 
@@ -394,7 +382,7 @@ def read_breachcomp(tokens: dict = Depends(get_api_key)):
         try:
             userapiTokenverify(theapiKey=tokens)
             return breachInfo
-        except:
+        except Exception:
             LOGGER.info("API key expired please try again")
 
     else:
@@ -408,7 +396,7 @@ def read_breachcomp(tokens: dict = Depends(get_api_key)):
     tags=["List all breaches by date"],
 )
 def read_breachcomp_credsbydate(tokens: dict = Depends(get_api_key)):
-    """API endpoint to get all breach creds by date."""
+    """Call API endpoint to get all breach creds by date."""
     breachcomp_dateInfo = list(VwBreachcompCredsbydate.objects.all())
 
     LOGGER.info(f"The api key submitted {tokens}")
@@ -416,7 +404,7 @@ def read_breachcomp_credsbydate(tokens: dict = Depends(get_api_key)):
         try:
             userapiTokenverify(theapiKey=tokens)
             return breachcomp_dateInfo
-        except:
+        except Exception:
             LOGGER.info("API key expired please try again")
     else:
         return {"message": "No api key was submitted"}
@@ -443,7 +431,7 @@ def read_orgs_attacksurface(
         try:
             userapiTokenverify(theapiKey=tokens)
             return attackSurfaceInfo
-        except:
+        except Exception:
             LOGGER.info("API key expired please try again")
     else:
         return {"message": "No api key was submitted"}
@@ -468,7 +456,7 @@ def read_cyhy_db_asset(
         try:
             userapiTokenverify(theapiKey=tokens)
             return cyhyAssets
-        except:
+        except Exception:
             LOGGER.info("API key expired please try again")
     else:
         return {"message": "No api key was submitted"}
@@ -481,7 +469,7 @@ def read_cyhy_db_asset(
     tags=["List of all CIDRS"],
 )
 def read_cidrs(tokens: dict = Depends(get_api_key)):
-    """API endpoint to get all CIDRS."""
+    """Call API endpoint to get all CIDRS."""
     cidrs = list(VwCidrs.objects.all())
 
     LOGGER.info(f"The api key submitted {tokens}")
@@ -490,7 +478,7 @@ def read_cidrs(tokens: dict = Depends(get_api_key)):
         try:
             userapiTokenverify(theapiKey=tokens)
             return cidrs
-        except:
+        except Exception:
             LOGGER.info("API key expired please try again")
     else:
         return {"message": "No api key was submitted"}
@@ -503,7 +491,7 @@ def read_cidrs(tokens: dict = Depends(get_api_key)):
     tags=["List of all Breach Details"],
 )
 def read_breachdetails(tokens: dict = Depends(get_api_key)):
-    """API endpoint to get all CIDRS."""
+    """Call API endpoint to get all CIDRS."""
     breachDetails = list(VwBreachcompBreachdetails.objects.all())
 
     LOGGER.info(f"The api key submitted {tokens}")
@@ -512,7 +500,7 @@ def read_breachdetails(tokens: dict = Depends(get_api_key)):
         try:
             userapiTokenverify(theapiKey=tokens)
             return breachDetails
-        except:
+        except Exception:
             LOGGER.info("API key expired please try again")
     else:
         return {"message": "No api key was submitted"}
@@ -520,7 +508,7 @@ def read_breachdetails(tokens: dict = Depends(get_api_key)):
 
 @api_router.post("/get_key", tags=["Get user api keys"])
 def read_get_key(data: schemas.UserAPI):
-    """API endpoint to get api by submitting refresh token."""
+    """Call API endpoint to get api by submitting refresh token."""
     user_key = ""
     userkey = list(apiUser.objects.filter(refresh_token=data.refresh_token))
     LOGGER.info(f"The input data requested was ***********{data.refresh_token[-10:]}")
@@ -557,6 +545,7 @@ def read_get_key(data: schemas.UserAPI):
     tags=["Sign-up to add api_key and access token to user"],
 )
 def create_user(data: schemas.UserAuth):
+    """Create an API User."""
     # querying database to check if user already exist
     user = userinfo(data.username)
 
@@ -586,13 +575,17 @@ def create_user(data: schemas.UserAuth):
     "/was_upload", dependencies=[Depends(get_api_key)], tags=["Upload WAS csv file"]
 )
 def upload(file: UploadFile = File(...)):
-    """Upload csv file from WAS"""
-
+    """Upload csv file from WAS."""
     f = TextIOWrapper(file.file)
 
     dict_reader = csv.DictReader(f)
-    dict_reader = dict_reader.fieldnames
-    dict_reader = set(dict_reader)
+    # dict_reader = dict_reader.fieldnames
+    # dict_reader = set(dict_reader)
+    col_names = dict_reader.fieldnames
+    if col_names is None:
+        raise HTTPException(400, detail="The CSV file does not have headers")
+
+    col_names_set: set[str] = set(col_names)
 
     required_columns = [
         "org",
@@ -605,21 +598,21 @@ def upload(file: UploadFile = File(...)):
     ]
     # Check needed columns exist
     incorrect_col = []
-    testtheList = [i for i in required_columns if i in dict_reader]
+    testtheList = [i for i in required_columns if i in col_names_set]
 
     try:
         if not file.filename.endswith("csv"):
 
             raise HTTPException(400, detail="Invalid document type")
 
-        if len(testtheList) == len(dict_reader):
+        if len(testtheList) == len(col_names):
 
             for row, item in enumerate(dict_reader, start=1):
                 process_item(item)
             return {"message": "Successfully uploaded %s" % file.filename}
         else:
             for col in required_columns:
-                if col in dict_reader:
+                if col in col_names:
                     pass
                 else:
                     incorrect_col.append(col)
@@ -649,7 +642,7 @@ def upload(file: UploadFile = File(...)):
     tags=["List of all VE data"],
 )
 def rva_info(ip_address: List[str], tokens: dict = Depends(get_api_key)):
-    """API endpoint to get all WAS data."""
+    """Call API endpoint to get all WAS data."""
     print(ip_address)
 
     # orgs_df = pd.DataFrame(orgs)
@@ -668,7 +661,8 @@ def rva_info(ip_address: List[str], tokens: dict = Depends(get_api_key)):
     response_model=schemas.veTaskResponse,
     tags=["Check task VE status"],
 )
-async def get_ve_task_status(task_id: str, tokens: dict = Depends(get_api_key)):
+async def get_rva_task_status(task_id: str, tokens: dict = Depends(get_api_key)):
+    """Get RVA task status."""
     task = get_rva_info.AsyncResult(task_id)
 
     if task.state == "SUCCESS":
@@ -689,7 +683,7 @@ async def get_ve_task_status(task_id: str, tokens: dict = Depends(get_api_key)):
     tags=["List of all VE data"],
 )
 def ve_info(ip_address: List[str], tokens: dict = Depends(get_api_key)):
-    """API endpoint to get all WAS data."""
+    """Call API endpoint to get all WAS data."""
     print(ip_address)
 
     # orgs_df = pd.DataFrame(orgs)
@@ -709,6 +703,7 @@ def ve_info(ip_address: List[str], tokens: dict = Depends(get_api_key)):
     tags=["Check task VE status"],
 )
 async def get_ve_task_status(task_id: str, tokens: dict = Depends(get_api_key)):
+    """Get VE task status."""
     task = get_ve_info.AsyncResult(task_id)
 
     if task.state == "SUCCESS":
@@ -729,7 +724,7 @@ async def get_ve_task_status(task_id: str, tokens: dict = Depends(get_api_key)):
     tags=["List of all VS data"],
 )
 def vs_info(cyhy_db_names: List[str], tokens: dict = Depends(get_api_key)):
-    """API endpoint to get all WAS data."""
+    """Call API endpoint to get all WAS data."""
     print(cyhy_db_names)
 
     LOGGER.info(f"The api key submitted {tokens}")
@@ -747,6 +742,7 @@ def vs_info(cyhy_db_names: List[str], tokens: dict = Depends(get_api_key)):
     tags=["Check task status"],
 )
 async def get_task_status(task_id: str, tokens: dict = Depends(get_api_key)):
+    """Get VS info task status."""
     task = get_vs_info.AsyncResult(task_id)
 
     if task.state == "SUCCESS":
@@ -766,7 +762,7 @@ async def get_task_status(task_id: str, tokens: dict = Depends(get_api_key)):
     tags=["List of all WAS data"],
 )
 def was_info(tokens: dict = Depends(get_api_key)):
-    """API endpoint to get all WAS data."""
+    """Call API endpoint to get all WAS data."""
     was_data = list(WasTrackerCustomerdata.objects.all())
 
     # orgs_df = pd.DataFrame(orgs)
@@ -776,7 +772,7 @@ def was_info(tokens: dict = Depends(get_api_key)):
         try:
             userapiTokenverify(theapiKey=tokens)
             return was_data
-        except:
+        except Exception:
             LOGGER.info("API key expired please try again")
     else:
         return {"message": "No api key was submitted"}
@@ -788,8 +784,7 @@ def was_info(tokens: dict = Depends(get_api_key)):
     tags=["Delete WAS data"],
 )
 def was_info_delete(tag: str, tokens: dict = Depends(get_api_key)):
-    """API endpoint to delete a record in database."""
-
+    """Call API endpoint to delete a record in database."""
     was_data = WasTrackerCustomerdata.objects.get(tag=tag)
 
     LOGGER.info(f"The api key submitted {tokens}")
@@ -799,7 +794,7 @@ def was_info_delete(tag: str, tokens: dict = Depends(get_api_key)):
             userapiTokenverify(theapiKey=tokens)
             was_data.delete()
             return {"deleted_tag": tag}
-        except:
+        except Exception:
             LOGGER.info("API key expired please try again")
     else:
         return {"message": "No api key was submitted"}
@@ -812,8 +807,7 @@ def was_info_delete(tag: str, tokens: dict = Depends(get_api_key)):
     tags=["Create new WAS data"],
 )
 def was_info_create(customer: schemas.WASDataBase, tokens: dict = Depends(get_api_key)):
-    """API endpoint to create a record in database."""
-
+    """Call API endpoint to create a record in database."""
     was_customer = WasTrackerCustomerdata(**customer.dict())
 
     LOGGER.info(f"The api key submitted {tokens}")
@@ -823,7 +817,7 @@ def was_info_create(customer: schemas.WASDataBase, tokens: dict = Depends(get_ap
             userapiTokenverify(theapiKey=tokens)
             was_customer.save()
             return {"saved_customer": was_customer}
-        except:
+        except Exception:
             LOGGER.info("API key expired please try again")
     else:
         return {"message": "No api key was submitted"}
@@ -839,8 +833,7 @@ def was_info_create(customer: schemas.WASDataBase, tokens: dict = Depends(get_ap
 def was_info_update(
     tag: str, customer: schemas.WASDataBase, tokens: dict = Depends(get_api_key)
 ):
-    """API endpoint to create a record in database."""
-
+    """Call API endpoint to create a record in database."""
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
 
@@ -874,8 +867,7 @@ def was_info_update(
 def cyhy_port_scan_info_create(
     ports_scan_data: schemas.CyhyPortScans, tokens: dict = Depends(get_api_key)
 ):
-    """API endpoint to create a record in database."""
-
+    """Call API endpoint to create a record in database."""
     cyhy_ports = CyhyPortScans(**ports_scan_data.dict())
 
     LOGGER.info(f"The api key submitted {tokens}")
@@ -885,7 +877,7 @@ def cyhy_port_scan_info_create(
             userapiTokenverify(theapiKey=tokens)
             cyhy_ports.save()
             return {"saved_customer": cyhy_ports}
-        except:
+        except Exception:
             LOGGER.info("API key expired please try again")
     else:
         return {"message": "No api key was submitted"}
@@ -901,8 +893,7 @@ def cyhy_port_scan_info_create(
 def cyhy_ports_scan_info_update(
     cyhy_id: str, org_scans: schemas.CyhyPortScans, tokens: dict = Depends(get_api_key)
 ):
-    """API endpoint to update a record in database."""
-
+    """Call API endpoint to update a record in database."""
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
 
@@ -938,7 +929,7 @@ def cyhy_ports_scan_info_update(
 def read_dscore_vs_cert(
     data: schemas.VwDscoreVSCertInput, tokens: dict = Depends(get_api_key)
 ):
-    """API endpoint to get all VS cert data needed for D-Score."""
+    """Call API endpoint to get all VS cert data needed for D-Score."""
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
@@ -963,7 +954,7 @@ def read_dscore_vs_cert(
 async def get_dscore_vs_cert_task_status(
     task_id: str, tokens: dict = Depends(get_api_key)
 ):
-    """API endpoint to get status of dscore_vs_cert task."""
+    """Call API endpoint to get status of dscore_vs_cert task."""
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
@@ -1004,7 +995,7 @@ async def get_dscore_vs_cert_task_status(
 def read_dscore_vs_mail(
     data: schemas.VwDscoreVSMailInput, tokens: dict = Depends(get_api_key)
 ):
-    """API endpoint to get all VS mail data needed for D-Score."""
+    """Call API endpoint to get all VS mail data needed for D-Score."""
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
@@ -1029,7 +1020,7 @@ def read_dscore_vs_mail(
 async def get_dscore_vs_mail_task_status(
     task_id: str, tokens: dict = Depends(get_api_key)
 ):
-    """API endpoint to get status of dscore_vs_mail task."""
+    """Call API endpoint to get status of dscore_vs_mail task."""
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
@@ -1070,7 +1061,7 @@ async def get_dscore_vs_mail_task_status(
 def read_dscore_pe_ip(
     data: schemas.VwDscorePEIpInput, tokens: dict = Depends(get_api_key)
 ):
-    """API endpoint to get all PE IP data needed for D-Score."""
+    """Call API endpoint to get all PE IP data needed for D-Score."""
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
@@ -1095,7 +1086,7 @@ def read_dscore_pe_ip(
 async def get_dscore_pe_ip_task_status(
     task_id: str, tokens: dict = Depends(get_api_key)
 ):
-    """API endpoint to get status of dscore_pe_ip task."""
+    """Call API endpoint to get status of dscore_pe_ip task."""
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
@@ -1136,7 +1127,7 @@ async def get_dscore_pe_ip_task_status(
 def read_dscore_pe_domain(
     data: schemas.VwDscorePEDomainInput, tokens: dict = Depends(get_api_key)
 ):
-    """API endpoint to get all PE domain data needed for D-Score."""
+    """Call API endpoint to get all PE domain data needed for D-Score."""
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
@@ -1161,7 +1152,7 @@ def read_dscore_pe_domain(
 async def get_dscore_pe_domain_task_status(
     task_id: str, tokens: dict = Depends(get_api_key)
 ):
-    """API endpoint to get status of dscore_pe_domain task."""
+    """Call API endpoint to get status of dscore_pe_domain task."""
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
@@ -1202,7 +1193,7 @@ async def get_dscore_pe_domain_task_status(
 def read_dscore_was_webapp(
     data: schemas.VwDscoreWASWebappInput, tokens: dict = Depends(get_api_key)
 ):
-    """API endpoint to get all WAS webapp data needed for D-Score."""
+    """Call API endpoint to get all WAS webapp data needed for D-Score."""
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
@@ -1227,7 +1218,7 @@ def read_dscore_was_webapp(
 async def get_dscore_was_webapp_task_status(
     task_id: str, tokens: dict = Depends(get_api_key)
 ):
-    """API endpoint to get status of dscore_was_webapp task."""
+    """Call API endpoint to get status of dscore_was_webapp task."""
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
@@ -1268,7 +1259,7 @@ async def get_dscore_was_webapp_task_status(
 def read_fceb_status(
     data: schemas.FCEBStatusInput, tokens: dict = Depends(get_api_key)
 ):
-    """API endpoint to get the FCEB status of a specified list of organizations."""
+    """Call API endpoint to get the FCEB status of a specified list of organizations."""
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
@@ -1293,7 +1284,7 @@ def read_fceb_status(
 async def get_fceb_status_task_status(
     task_id: str, tokens: dict = Depends(get_api_key)
 ):
-    """API endpoint to get status of fceb_status task."""
+    """Call API endpoint to get status of fceb_status task."""
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
@@ -1335,7 +1326,7 @@ async def get_fceb_status_task_status(
 def read_iscore_vs_vuln(
     data: schemas.VwIscoreVSVulnInput, tokens: dict = Depends(get_api_key)
 ):
-    """API endpoint to get all VS vuln data needed for I-Score."""
+    """Call API endpoint to get all VS vuln data needed for I-Score."""
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
@@ -1360,7 +1351,7 @@ def read_iscore_vs_vuln(
 async def get_iscore_vs_vuln_task_status(
     task_id: str, tokens: dict = Depends(get_api_key)
 ):
-    """API endpoint to get status of iscore_vs_vuln task."""
+    """Call API endpoint to get status of iscore_vs_vuln task."""
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
@@ -1401,7 +1392,7 @@ async def get_iscore_vs_vuln_task_status(
 def read_iscore_vs_vuln_prev(
     data: schemas.VwIscoreVSVulnPrevInput, tokens: dict = Depends(get_api_key)
 ):
-    """API endpoint to get all previous VS vuln data needed for I-Score."""
+    """Call API endpoint to get all previous VS vuln data needed for I-Score."""
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
@@ -1428,7 +1419,7 @@ def read_iscore_vs_vuln_prev(
 async def get_iscore_vs_vuln_prev_task_status(
     task_id: str, tokens: dict = Depends(get_api_key)
 ):
-    """API endpoint to get status of iscore_vs_vuln_prev task."""
+    """Call API endpoint to get status of iscore_vs_vuln_prev task."""
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
@@ -1469,7 +1460,7 @@ async def get_iscore_vs_vuln_prev_task_status(
 def read_iscore_pe_vuln(
     data: schemas.VwIscorePEVulnInput, tokens: dict = Depends(get_api_key)
 ):
-    """API endpoint to get all PE vuln data needed for I-Score."""
+    """Call API endpoint to get all PE vuln data needed for I-Score."""
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
@@ -1496,7 +1487,7 @@ def read_iscore_pe_vuln(
 async def get_iscore_pe_vuln_task_status(
     task_id: str, tokens: dict = Depends(get_api_key)
 ):
-    """API endpoint to get status of iscore_pe_vuln task."""
+    """Call API endpoint to get status of iscore_pe_vuln task."""
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
@@ -1537,7 +1528,7 @@ async def get_iscore_pe_vuln_task_status(
 def read_iscore_pe_cred(
     data: schemas.VwIscorePECredInput, tokens: dict = Depends(get_api_key)
 ):
-    """API endpoint to get all PE cred data needed for I-Score."""
+    """Call API endpoint to get all PE cred data needed for I-Score."""
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
@@ -1564,7 +1555,7 @@ def read_iscore_pe_cred(
 async def get_iscore_pe_cred_task_status(
     task_id: str, tokens: dict = Depends(get_api_key)
 ):
-    """API endpoint to get status of iscore_pe_cred task."""
+    """Call API endpoint to get status of iscore_pe_cred task."""
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
@@ -1605,7 +1596,7 @@ async def get_iscore_pe_cred_task_status(
 def read_iscore_pe_breach(
     data: schemas.VwIscorePEBreachInput, tokens: dict = Depends(get_api_key)
 ):
-    """API endpoint to get all PE breach data needed for I-Score."""
+    """Call API endpoint to get all PE breach data needed for I-Score."""
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
@@ -1632,7 +1623,7 @@ def read_iscore_pe_breach(
 async def get_iscore_pe_breach_task_status(
     task_id: str, tokens: dict = Depends(get_api_key)
 ):
-    """API endpoint to get status of iscore_pe_breach task."""
+    """Call API endpoint to get status of iscore_pe_breach task."""
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
@@ -1673,7 +1664,7 @@ async def get_iscore_pe_breach_task_status(
 def read_iscore_pe_darkweb(
     data: schemas.VwIscorePEDarkwebInput, tokens: dict = Depends(get_api_key)
 ):
-    """API endpoint to get all PE darkweb data needed for I-Score."""
+    """Call API endpoint to get all PE darkweb data needed for I-Score."""
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
@@ -1700,7 +1691,7 @@ def read_iscore_pe_darkweb(
 async def get_iscore_pe_darkweb_task_status(
     task_id: str, tokens: dict = Depends(get_api_key)
 ):
-    """API endpoint to get status of iscore_pe_darkweb task."""
+    """Call API endpoint to get status of iscore_pe_darkweb task."""
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
@@ -1741,7 +1732,7 @@ async def get_iscore_pe_darkweb_task_status(
 def read_iscore_pe_protocol(
     data: schemas.VwIscorePEProtocolInput, tokens: dict = Depends(get_api_key)
 ):
-    """API endpoint to get all PE protocol data needed for I-Score."""
+    """Call API endpoint to get all PE protocol data needed for I-Score."""
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
@@ -1768,7 +1759,7 @@ def read_iscore_pe_protocol(
 async def get_iscore_pe_protocol_task_status(
     task_id: str, tokens: dict = Depends(get_api_key)
 ):
-    """API endpoint to get status of iscore_pe_protocol task."""
+    """Call API endpoint to get status of iscore_pe_protocol task."""
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
@@ -1809,7 +1800,7 @@ async def get_iscore_pe_protocol_task_status(
 def read_iscore_was_vuln(
     data: schemas.VwIscoreWASVulnInput, tokens: dict = Depends(get_api_key)
 ):
-    """API endpoint to get all WAS vuln data needed for I-Score."""
+    """Call API endpoint to get all WAS vuln data needed for I-Score."""
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
@@ -1836,7 +1827,7 @@ def read_iscore_was_vuln(
 async def get_iscore_was_vuln_task_status(
     task_id: str, tokens: dict = Depends(get_api_key)
 ):
-    """API endpoint to get status of iscore_was_vuln task."""
+    """Call API endpoint to get status of iscore_was_vuln task."""
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
@@ -1877,7 +1868,7 @@ async def get_iscore_was_vuln_task_status(
 def read_iscore_was_vuln_prev(
     data: schemas.VwIscoreWASVulnPrevInput, tokens: dict = Depends(get_api_key)
 ):
-    """API endpoint to get all previous WAS vuln data needed for I-Score."""
+    """Call API endpoint to get all previous WAS vuln data needed for I-Score."""
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
@@ -1904,7 +1895,7 @@ def read_iscore_was_vuln_prev(
 async def get_iscore_was_vuln_prev_task_status(
     task_id: str, tokens: dict = Depends(get_api_key)
 ):
-    """API endpoint to get status of iscore_vas_vuln_prev task."""
+    """Call API endpoint to get status of iscore_vas_vuln_prev task."""
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
@@ -1942,8 +1933,8 @@ async def get_iscore_was_vuln_prev_task_status(
     response_model=schemas.KEVListTaskResp,
     tags=["Get list of all KEVs."],
 )
-def read_fceb_status(tokens: dict = Depends(get_api_key)):
-    """API endpoint to get list of all KEVs."""
+def read_kev_list(tokens: dict = Depends(get_api_key)):
+    """Call API endpoint to get list of all KEVs."""
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
@@ -1966,7 +1957,7 @@ def read_fceb_status(tokens: dict = Depends(get_api_key)):
     tags=["Check task status for KEV list query."],
 )
 async def get_kev_list_task_status(task_id: str, tokens: dict = Depends(get_api_key)):
-    """API endpoint to get status of kev_list task."""
+    """Call API endpoint to get status of kev_list task."""
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
@@ -2006,7 +1997,7 @@ async def get_kev_list_task_status(task_id: str, tokens: dict = Depends(get_api_
     tags=["Get list of all XS stakeholders."],
 )
 def read_xs_stakeholders(tokens: dict = Depends(get_api_key)):
-    """API endpoint to get list of all XS stakeholders."""
+    """Call API endpoint to get list of all XS stakeholders."""
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
@@ -2031,7 +2022,7 @@ def read_xs_stakeholders(tokens: dict = Depends(get_api_key)):
 async def get_xs_stakeholders_task_status(
     task_id: str, tokens: dict = Depends(get_api_key)
 ):
-    """API endpoint to get status of xs_stakeholders task."""
+    """Call API endpoint to get status of xs_stakeholders task."""
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
@@ -2070,7 +2061,7 @@ async def get_xs_stakeholders_task_status(
     tags=["Get list of all S stakeholders."],
 )
 def read_s_stakeholders(tokens: dict = Depends(get_api_key)):
-    """API endpoint to get list of all S stakeholders."""
+    """Call API endpoint to get list of all S stakeholders."""
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
@@ -2095,7 +2086,7 @@ def read_s_stakeholders(tokens: dict = Depends(get_api_key)):
 async def get_s_stakeholders_task_status(
     task_id: str, tokens: dict = Depends(get_api_key)
 ):
-    """API endpoint to get status of s_stakeholders task."""
+    """Call API endpoint to get status of s_stakeholders task."""
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
@@ -2134,7 +2125,7 @@ async def get_s_stakeholders_task_status(
     tags=["Get list of all M stakeholders."],
 )
 def read_m_stakeholders(tokens: dict = Depends(get_api_key)):
-    """API endpoint to get list of all M stakeholders."""
+    """Call API endpoint to get list of all M stakeholders."""
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
@@ -2159,7 +2150,7 @@ def read_m_stakeholders(tokens: dict = Depends(get_api_key)):
 async def get_m_stakeholders_task_status(
     task_id: str, tokens: dict = Depends(get_api_key)
 ):
-    """API endpoint to get status of m_stakeholders task."""
+    """Call API endpoint to get status of m_stakeholders task."""
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
@@ -2198,7 +2189,7 @@ async def get_m_stakeholders_task_status(
     tags=["Get list of all L stakeholders."],
 )
 def read_l_stakeholders(tokens: dict = Depends(get_api_key)):
-    """API endpoint to get list of all L stakeholders."""
+    """Call API endpoint to get list of all L stakeholders."""
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
@@ -2223,7 +2214,7 @@ def read_l_stakeholders(tokens: dict = Depends(get_api_key)):
 async def get_l_stakeholders_task_status(
     task_id: str, tokens: dict = Depends(get_api_key)
 ):
-    """API endpoint to get status of l_stakeholders task."""
+    """Call API endpoint to get status of l_stakeholders task."""
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
@@ -2262,7 +2253,7 @@ async def get_l_stakeholders_task_status(
     tags=["Get list of all XL stakeholders."],
 )
 def read_xl_stakeholders(tokens: dict = Depends(get_api_key)):
-    """API endpoint to get list of all XL stakeholders."""
+    """Call API endpoint to get list of all XL stakeholders."""
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
@@ -2287,7 +2278,7 @@ def read_xl_stakeholders(tokens: dict = Depends(get_api_key)):
 async def get_xl_stakeholders_task_status(
     task_id: str, tokens: dict = Depends(get_api_key)
 ):
-    """API endpoint to get status of xl_stakeholders task."""
+    """Call API endpoint to get status of xl_stakeholders task."""
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
@@ -2325,6 +2316,7 @@ async def get_xl_stakeholders_task_status(
     tags=["Get Data_source table"],
 )
 def get_data_source(source_name: str, tokens: dict = Depends(get_api_key)):
+    """Get data source API endpoint."""
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
         try:
@@ -2333,10 +2325,10 @@ def get_data_source(source_name: str, tokens: dict = Depends(get_api_key)):
                 datas = list(DataSource.objects.filter(name=f"{source_name}"))
                 print(datas)
                 return datas[0]
-            except ValidationError as e:
+            except ValidationError:
                 return {"message": "Data source does not exist"}
 
-        except:
+        except Exception:
             LOGGER.info("API key expired please try again")
     else:
         return {"message": "No api key was submitted"}
@@ -2352,6 +2344,7 @@ def get_data_source(source_name: str, tokens: dict = Depends(get_api_key)):
 )
 @transaction.atomic
 def update_last_viewed(data_source_uid: str, tokens: dict = Depends(get_api_key)):
+    """Update last viewed column in the datasource table."""
     if not tokens:
         return {"message": "No api key was submitted"}
     LOGGER.info(f"The api key submitted {tokens}")
@@ -2359,7 +2352,7 @@ def update_last_viewed(data_source_uid: str, tokens: dict = Depends(get_api_key)
         userapiTokenverify(theapiKey=tokens)
         try:
             data_source = DataSource.objects.get(data_source_uid=data_source_uid)
-        except ValidationError as e:
+        except ValidationError:
             return {"message": "Data source does not exist"}
         data_source.last_run = datetime.today().strftime("%Y-%m-%d")
         data_source.save()
@@ -2376,16 +2369,16 @@ def update_last_viewed(data_source_uid: str, tokens: dict = Depends(get_api_key)
     tags=["Insert new ip records into the ips table"],
 )
 def ips_insert(data: schemas.IpsInsertInput, tokens: dict = Depends(get_api_key)):
-    """API endpoint to insert new ip records into the ips table."""
+    """Call API endpoint to insert new ip records into the ips table."""
     # Convert list of input models to list of dictionaries
-    data.new_ips = [dict(input_dict) for input_dict in data.new_ips]
+    new_ips = [dict(input_dict) for input_dict in data.new_ips]
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
         try:
             userapiTokenverify(theapiKey=tokens)
             # If API key valid, create task for query
-            task = ips_insert_task.delay(data.new_ips)
+            task = ips_insert_task.delay(new_ips)
             # Return the new task id w/ "Processing" status
             return {"task_id": task.id, "status": "Processing"}
         except ObjectDoesNotExist:
@@ -2401,7 +2394,7 @@ def ips_insert(data: schemas.IpsInsertInput, tokens: dict = Depends(get_api_key)
     tags=["Check task status for ips_insert endpoint task."],
 )
 async def ips_insert_status(task_id: str, tokens: dict = Depends(get_api_key)):
-    """API endpoint to get status of ips_insert task."""
+    """Call API endpoint to get status of ips_insert task."""
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
@@ -2442,7 +2435,7 @@ async def ips_insert_status(task_id: str, tokens: dict = Depends(get_api_key)):
 def sub_domains_table(
     data: schemas.SubDomainTableInput, tokens: dict = Depends(get_api_key)
 ):
-    """API endpoint to get all data from the sub_domains table."""
+    """Call API endpoint to get all data from the sub_domains table."""
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
@@ -2465,7 +2458,7 @@ def sub_domains_table(
     tags=["Check task status for sub_domains_table endpoint task."],
 )
 async def sub_domains_table_status(task_id: str, tokens: dict = Depends(get_api_key)):
-    """API endpoint to get status of sub_domains_table task."""
+    """Call API endpoint to get status of sub_domains_table task."""
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
@@ -2504,7 +2497,7 @@ async def sub_domains_table_status(task_id: str, tokens: dict = Depends(get_api_
     tags=["Insert an organization's record into the report_summary_stats table"],
 )
 def rss_insert(data: schemas.RSSInsertInput, tokens: dict = Depends(get_api_key)):
-    """API endpoint to insert an organization's record into the report_summary_stats table."""
+    """Call API endpoint to insert an organization's record into the report_summary_stats table."""
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
@@ -2516,7 +2509,7 @@ def rss_insert(data: schemas.RSSInsertInput, tokens: dict = Depends(get_api_key)
                 organizations_uid=data.organizations_uid
             )
             # Insert new record. If record already exists, update that record
-            rss_insert_record_data = ReportSummaryStats.objects.update_or_create(
+            ReportSummaryStats.objects.update_or_create(
                 organizations_uid=specified_org_uid,
                 start_date=data.start_date,
                 defaults={
@@ -2545,7 +2538,7 @@ def rss_insert(data: schemas.RSSInsertInput, tokens: dict = Depends(get_api_key)
                     "pe_letter_grade": data.pe_letter_grade,
                 },
             )
-        except:
+        except Exception:
             LOGGER.info("API key expired please try again")
     else:
         return {"message": "No api key was submitted"}
@@ -2561,7 +2554,7 @@ def rss_insert(data: schemas.RSSInsertInput, tokens: dict = Depends(get_api_key)
 def sub_domains_by_org(
     data: schemas.SubDomainsByOrgInput, tokens: dict = Depends(get_api_key)
 ):
-    """API endpoint to get all sub domains for a specified organization."""
+    """Call API endpoint to get all sub domains for a specified organization."""
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
@@ -2606,8 +2599,7 @@ def sub_domains_by_org(
 def rss_prev_period(
     data: schemas.RSSPrevPeriodInput, tokens: dict = Depends(get_api_key)
 ):
-    """API endpoint to get previous period report_summary_stats data for the specified organization."""
-
+    """Call API endpoint to get previous period report_summary_stats data for the specified organization."""
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
@@ -2630,7 +2622,7 @@ def rss_prev_period(
                 )
             )
             return rss_prev_period_data
-        except:
+        except Exception:
             LOGGER.info("API key expired please try again")
     else:
         return {"message": "No api key was submitted"}
@@ -2646,7 +2638,7 @@ def rss_prev_period(
 def pescore_hist_domain_alert(
     data: schemas.PEScoreDateRangeInput, tokens: dict = Depends(get_api_key)
 ):
-    """API endpoint to get the PE score domain alert data for a specified time period."""
+    """Call API endpoint to get the PE score domain alert data for a specified time period."""
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
@@ -2671,7 +2663,7 @@ def pescore_hist_domain_alert(
 async def pescore_hist_domain_alert_status(
     task_id: str, tokens: dict = Depends(get_api_key)
 ):
-    """API endpoint to get status of pescore_hist_domain_alert task."""
+    """Call API endpoint to get status of pescore_hist_domain_alert task."""
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
@@ -2712,7 +2704,7 @@ async def pescore_hist_domain_alert_status(
 def pescore_hist_darkweb_alert(
     data: schemas.PEScoreDateRangeInput, tokens: dict = Depends(get_api_key)
 ):
-    """API endpoint to get the PE score dark web alert data for a specified time period."""
+    """Call API endpoint to get the PE score dark web alert data for a specified time period."""
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
@@ -2737,7 +2729,7 @@ def pescore_hist_darkweb_alert(
 async def pescore_hist_darkweb_alert_status(
     task_id: str, tokens: dict = Depends(get_api_key)
 ):
-    """API endpoint to get status of pescore_hist_darkweb_alert task."""
+    """Call API endpoint to get status of pescore_hist_darkweb_alert task."""
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
@@ -2778,7 +2770,7 @@ async def pescore_hist_darkweb_alert_status(
 def pescore_hist_darkweb_ment(
     data: schemas.PEScoreDateRangeInput, tokens: dict = Depends(get_api_key)
 ):
-    """API endpoint to get the PE score dark web mention data for a specified time period."""
+    """Call API endpoint to get the PE score dark web mention data for a specified time period."""
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
@@ -2803,7 +2795,7 @@ def pescore_hist_darkweb_ment(
 async def pescore_hist_darkweb_ment_status(
     task_id: str, tokens: dict = Depends(get_api_key)
 ):
-    """API endpoint to get status of pescore_hist_darkweb_ment task."""
+    """Call API endpoint to get status of pescore_hist_darkweb_ment task."""
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
@@ -2844,7 +2836,7 @@ async def pescore_hist_darkweb_ment_status(
 def pescore_hist_cred(
     data: schemas.PEScoreDateRangeInput, tokens: dict = Depends(get_api_key)
 ):
-    """API endpoint to get the PE score credential data for a specified time period."""
+    """Call API endpoint to get the PE score credential data for a specified time period."""
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
@@ -2867,7 +2859,7 @@ def pescore_hist_cred(
     tags=["Check task status for pescore_hist_cred endpoint task."],
 )
 async def pescore_hist_cred_status(task_id: str, tokens: dict = Depends(get_api_key)):
-    """API endpoint to get status of pescore_hist_cred task."""
+    """Call API endpoint to get status of pescore_hist_cred task."""
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
@@ -2908,7 +2900,7 @@ async def pescore_hist_cred_status(task_id: str, tokens: dict = Depends(get_api_
 def pescore_base_metrics(
     data: schemas.PEScoreDateRangeInput, tokens: dict = Depends(get_api_key)
 ):
-    """API endpoint to get the PE score base metric data for a specified time period."""
+    """Call API endpoint to get the PE score base metric data for a specified time period."""
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
@@ -2933,7 +2925,7 @@ def pescore_base_metrics(
 async def pescore_base_metrics_status(
     task_id: str, tokens: dict = Depends(get_api_key)
 ):
-    """API endpoint to get status of pescore_base_metrics task."""
+    """Call API endpoint to get status of pescore_base_metrics task."""
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
@@ -2972,7 +2964,7 @@ async def pescore_base_metrics_status(
     tags=["Get any detected CVEs that aren't in the cve_info table yet."],
 )
 def pescore_check_new_cve(tokens: dict = Depends(get_api_key)):
-    """API endpoint to get any detected CVEs that aren't in the cve_info table yet."""
+    """Call API endpoint to get any detected CVEs that aren't in the cve_info table yet."""
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
@@ -2999,16 +2991,16 @@ def pescore_check_new_cve(tokens: dict = Depends(get_api_key)):
 def cve_info_insert(
     data: schemas.CVEInfoInsertInput, tokens: dict = Depends(get_api_key)
 ):
-    """API endpoint to insert new CVEs into the cve_info table."""
+    """Call API endpoint to insert new CVEs into the cve_info table."""
     # Convert list of input models to list of dictionaries
-    data.new_cves = [dict(input_dict) for input_dict in data.new_cves]
+    new_cves = [dict(input_dict) for input_dict in data.new_cves]
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
         try:
             userapiTokenverify(theapiKey=tokens)
             # If API key valid, create task for query
-            task = cve_info_insert_task.delay(data.new_cves)
+            task = cve_info_insert_task.delay(new_cves)
             # Return the new task id w/ "Processing" status
             return {"task_id": task.id, "status": "Processing"}
         except ObjectDoesNotExist:
@@ -3024,7 +3016,7 @@ def cve_info_insert(
     tags=["Check task status for cve_info_insert endpoint task."],
 )
 async def cve_info_insert_status(task_id: str, tokens: dict = Depends(get_api_key)):
-    """API endpoint to get status of cve_info_insert task."""
+    """Call API endpoint to get status of cve_info_insert task."""
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
@@ -3065,7 +3057,7 @@ async def cve_info_insert_status(task_id: str, tokens: dict = Depends(get_api_ke
 def cred_breach_intelx(
     data: schemas.CredBreachIntelXInput, tokens: dict = Depends(get_api_key)
 ):
-    """API endpoint to get IntelX credential breaches"""
+    """Call API endpoint to get IntelX credential breaches."""
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
@@ -3088,7 +3080,7 @@ def cred_breach_intelx(
     tags=["Check task status for cred_breach_intelx endpoint task."],
 )
 async def cred_breach_intelx_status(task_id: str, tokens: dict = Depends(get_api_key)):
-    """API endpoint to get status of cred_breach_intelx task."""
+    """Call API endpoint to get status of cred_breach_intelx task."""
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
@@ -3114,6 +3106,157 @@ async def cred_breach_intelx_status(task_id: str, tokens: dict = Depends(get_api
             else:
                 return {"task_id": task_id, "status": task.state}
         except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+
+@api_router.post(
+    "/pshtt_unscanned_domains",
+    dependencies=[Depends(get_api_key)],
+    response_model=schemas.PshttDomainToRunTaskResp,
+    tags=["List of subdomains to run through PSHTT"],
+)
+def get_unscanned_pshtt_domains(tokens: dict = Depends(get_api_key)):
+    """Create API endpoint to get current domains that have not been run through pshtt recently."""
+    # Check for API key
+
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        # Create task for query
+        task = get_vw_pshtt_domains_to_run_info.delay()
+
+        # Return the new task id w/ "Processing" status
+        return {"task_id": task.id, "status": "Processing"}
+
+    else:
+        return {"message": "No api key was submitted"}
+
+
+@api_router.get(
+    "/pshtt_unscanned_domains/task/{task_id}",
+    dependencies=[Depends(get_api_key)],
+    # , Depends(RateLimiter(times=200, seconds=60))
+    response_model=schemas.PshttDomainToRunTaskResp,
+    tags=["Check task status for endpoint."],
+)
+async def get_pshtt_domains_to_run_status(
+    task_id: str, tokens: dict = Depends(get_api_key)
+):
+    """Retrieve status of get_pshtt_domains_to_run task."""
+    # Retrieve task status
+    task = get_vw_pshtt_domains_to_run_info.AsyncResult(task_id)
+    # Return appropriate message for status
+    if task.state == "SUCCESS":
+        return {"task_id": task_id, "status": "Completed", "result": task.result}
+    elif task.state == "PENDING":
+        return {"task_id": task_id, "status": "Pending"}
+    elif task.state == "FAILURE":
+        return {"task_id": task_id, "status": "Failed", "error": str(task.result)}
+    else:
+        return {"task_id": task_id, "status": task.state}
+
+
+@api_router.put(
+    "/pshtt_result_update_or_insert",
+    dependencies=[Depends(get_api_key)],
+    # response_model=Dict[schemas.PshttDataBase],
+    tags=["Update or insert PSHTT data"],
+)
+# @transaction.atomic
+def pshtt_result_update_or_insert(
+    # tag: str,
+    data: schemas.PshttInsert,
+    tokens: dict = Depends(get_api_key),
+):
+    """Create API endpoint to create a record in database."""
+    if tokens:
+        try:
+            print(data.organizations_uid)
+            userapiTokenverify(theapiKey=tokens)
+            LOGGER.info(f"The api key submitted {tokens}")
+            data_source_uid = DataSource.objects.get(name="Pshtt")
+            organization_uid = Organizations.objects.get(
+                organizations_uid=data.organizations_uid
+            )
+            sub_domain_uid = SubDomains.objects.get(sub_domain_uid=data.sub_domain_uid)
+
+            # Get WAS record based on tag
+            pshtt_object, created = PshttResults.objects.update_or_create(
+                sub_domain_uid=data.sub_domain_uid,
+                organizations_uid=data.organizations_uid,
+                defaults={
+                    "organizations_uid": organization_uid,
+                    "sub_domain_uid": sub_domain_uid,
+                    "data_source_uid": data_source_uid,
+                    "sub_domain": data.sub_domain,
+                    "date_scanned": data.date_scanned,
+                    "base_domain": data.base_domain,
+                    "base_domain_hsts_preloaded": data.base_domain_hsts_preloaded,
+                    "canonical_url": data.canonical_url,
+                    "defaults_to_https": data.defaults_to_https,
+                    "domain": data.domain,
+                    "domain_enforces_https": data.domain_enforces_https,
+                    "domain_supports_https": data.domain_supports_https,
+                    "domain_uses_strong_hsts": data.domain_uses_strong_hsts,
+                    "downgrades_https": data.downgrades_https,
+                    "htss": data.htss,
+                    "hsts_entire_domain": data.hsts_entire_domain,
+                    "hsts_header": data.hsts_header,
+                    "hsts_max_age": data.hsts_max_age,
+                    "hsts_preload_pending": data.hsts_preload_pending,
+                    "hsts_preload_ready": data.hsts_preload_ready,
+                    "hsts_preloaded": data.hsts_preloaded,
+                    "https_bad_chain": data.https_bad_chain,
+                    "https_bad_hostname": data.https_bad_hostname,
+                    "https_cert_chain_length": data.https_cert_chain_length,
+                    "https_client_auth_required": data.https_client_auth_required,
+                    "https_custom_truststore_trusted": data.https_custom_truststore_trusted,
+                    "https_expired_cert": data.https_expired_cert,
+                    "https_full_connection": data.https_full_connection,
+                    "https_live": data.https_live,
+                    "https_probably_missing_intermediate_cert": data.https_probably_missing_intermediate_cert,
+                    "https_publicly_trusted": data.https_publicly_trusted,
+                    "https_self_signed_cert": data.https_self_signed_cert,
+                    "https_leaf_cert_expiration_date": data.https_leaf_cert_expiration_date,
+                    "https_leaf_cert_issuer": data.https_leaf_cert_issuer,
+                    "https_leaf_cert_subject": data.https_leaf_cert_subject,
+                    "https_root_cert_issuer": data.https_root_cert_issuer,
+                    "ip": data.ip,
+                    "live": data.live,
+                    "notes": data.notes,
+                    "redirect": data.redirect,
+                    "redirect_to": data.redirect_to,
+                    "server_header": data.server_header,
+                    "server_version": data.server_version,
+                    "strictly_forces_https": data.strictly_forces_https,
+                    "unknown_error": data.unknown_error,
+                    "valid_https": data.valid_https,
+                    "ep_http_headers": data.ep_http_headers,
+                    "ep_http_server_header": data.ep_http_server_header,
+                    "ep_http_server_version": data.ep_http_server_version,
+                    "ep_https_headers": data.ep_https_headers,
+                    "ep_https_hsts_header": data.ep_https_hsts_header,
+                    "ep_https_server_header": data.ep_https_server_header,
+                    "ep_https_server_version": data.ep_https_server_version,
+                    "ep_httpswww_headers": data.ep_httpswww_headers,
+                    "ep_httpswww_hsts_header": data.ep_httpswww_hsts_header,
+                    "ep_httpswww_server_header": data.ep_httpswww_server_header,
+                    "ep_httpswww_server_version": data.ep_httpswww_server_version,
+                    "ep_httpwww_headers": data.ep_httpwww_headers,
+                    "ep_httpwww_server_header": data.ep_httpwww_server_header,
+                    "ep_httpwww_server_version": data.ep_httpwww_server_version,
+                },
+            )
+            print("made it past insert")
+            if created:
+                LOGGER.info("new PSHTT record created for %s", data.sub_domain)
+
+            return {"message": "Record updated successfully.", "updated_data": data}
+
+        except Exception as e:
+            print(e)
+            print("failed to insert or update")
             LOGGER.info("API key expired please try again")
     else:
         return {"message": "No api key was submitted"}
