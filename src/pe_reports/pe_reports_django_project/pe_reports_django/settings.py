@@ -135,13 +135,13 @@ LOGGING = {
 }
 
 ELASTIC_APM = {
-  'SERVICE_NAME': 'my-service-name',
+  'SERVICE_NAME': 'PE-ReportsAMP',
 
   'SECRET_TOKEN': '',
 
-  'SERVER_URL': 'http://10.0.2.109:8200',
+  'SERVER_URL': 'http://localhost:8200',
 
-  'ENVIRONMENT': 'my-environment',
+  'ENVIRONMENT': 'PE-ReportsAccessorEC2',
 }
 
 MIDDLEWARE = [
