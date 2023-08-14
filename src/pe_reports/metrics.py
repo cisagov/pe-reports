@@ -546,7 +546,7 @@ class Cyber_Six:
         )
         soc_med_most_act = soc_med_most_act[:10]
         # Translate title field to english
-        soc_med_most_act = translate(soc_med_most_act, ["Title"])
+        # soc_med_most_act = translate(soc_med_most_act, ["Title"])
         soc_med_most_act["Title"] = soc_med_most_act["Title"].str[:200]
         soc_med_most_act = soc_med_most_act.replace(r"^\s*$", "Untitled", regex=True)
         return soc_med_most_act
@@ -565,7 +565,7 @@ class Cyber_Six:
         )
         # Translate title field to english
         dark_web_most_act = dark_web_most_act[:10]
-        dark_web_most_act = translate(dark_web_most_act, ["Title"])
+        # dark_web_most_act = translate(dark_web_most_act, ["Title"])
         dark_web_most_act["Title"] = dark_web_most_act["Title"].str[:200]
         dark_web_most_act = dark_web_most_act.replace(r"^\s*$", "Untitled", regex=True)
         return dark_web_most_act
@@ -625,7 +625,7 @@ class Cyber_Six:
             by=["Grade"], ascending=False
         )
         dark_web_bad_actors = dark_web_bad_actors[:10]
-        dark_web_bad_actors = translate(dark_web_bad_actors, ["Creator"])
+        # dark_web_bad_actors = translate(dark_web_bad_actors, ["Creator"])
         return dark_web_bad_actors
 
     def alerts_threats(self):

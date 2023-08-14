@@ -63,6 +63,7 @@ INSTALLED_APPS = [
     "crispy_forms",
     "crispy_bootstrap5",
     "whitenoise.runserver_nostatic",
+    "elasticapm.contrib.django",
 ]
 
 CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
@@ -133,6 +134,15 @@ LOGGING = {
     },
 }
 
+ELASTIC_APM = {
+  'SERVICE_NAME': 'PE-ReportsAMP',
+
+  'SECRET_TOKEN': '',
+
+  'SERVER_URL': 'http://localhost:8200',
+
+  'ENVIRONMENT': 'PE-ReportsAccessorEC2',
+}
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -143,6 +153,7 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
+    "elasticapm.contrib.django.middleware.TracingMiddleware",
 ]
 
 ROOT_URLCONF = "pe_reports_django.urls"
