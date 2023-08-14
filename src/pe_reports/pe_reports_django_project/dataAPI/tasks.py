@@ -11,7 +11,7 @@ from celery import shared_task
 from django.core import serializers
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.db.models import Count, Q, Sum
-from home.models import (  # General DB Table Models:; D-Score View Models:; I-Score View Models:; Misc. Score View Models:; PE Score Models:; Other Models:
+from home.models import (
     Alerts,
     Cidrs,
     CredentialBreaches,

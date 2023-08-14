@@ -11,6 +11,8 @@ from typing import Any, List, Union
 from dataAPI.tasks import (
     convert_date_to_string,
     convert_uuid_to_string,
+    cred_breach_intelx_task,
+    cve_info_insert_task,
     get_dscore_pe_domain_info,
     get_dscore_pe_ip_info,
     get_dscore_vs_cert_info,
@@ -37,14 +39,12 @@ from dataAPI.tasks import (
     get_xl_stakeholders_info,
     get_xs_stakeholders_info,
     ips_insert_task,
-    sub_domains_table_task,
-    pescore_hist_domain_alert_task,
+    pescore_base_metrics_task,
+    pescore_hist_cred_task,
     pescore_hist_darkweb_alert_task,
     pescore_hist_darkweb_ment_task,
-    pescore_hist_cred_task,
-    pescore_base_metrics_task,
-    cve_info_insert_task,
-    cred_breach_intelx_task,
+    pescore_hist_domain_alert_task,
+    sub_domains_table_task,
 )
 from decouple import config
 from django.conf import settings
@@ -59,20 +59,23 @@ from fastapi import (
     File,
     HTTPException,
     Security,
-    UploadFile,
     status,
+    UploadFile,
 )
 from fastapi.security import OAuth2PasswordBearer
 from fastapi.security.api_key import APIKeyHeader
 from fastapi_limiter import FastAPILimiter
 from fastapi_limiter.depends import RateLimiter
 from home.models import (
+    Cidrs,
     CyhyDbAssets,
     CyhyPortScans,
     DataSource,
     Organizations,
     PshttResults,
     ReportSummaryStats,
+    RootDomains,
+    ShodanAssets,
     SubDomains,
     VwBreachcomp,
     VwBreachcompBreachdetails,
@@ -2483,6 +2486,182 @@ async def sub_domains_table_status(task_id: str, tokens: dict = Depends(get_api_
                 }
             else:
                 return {"task_id": task_id, "status": task.state}
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+
+# --- query_cidrs_by_org(), Issue 618 ---
+@api_router.get(
+    "/cidrs_by_org",
+    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    response_model=List[schemas.CidrsByOrg],
+    tags=["Get all CIDRs for a specified organization."],
+)
+def cidrs_by_org(
+    data: schemas.GenInputOrgUIDSingle, tokens: dict = Depends(get_api_key)
+):
+    """API endpoint to get all CIDRs for a specified organization."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # If API key valid, make query
+            cidrs_by_org_data = list(
+                Cidrs.objects.filter(
+                    organizations_uid=data.org_uid, current=True
+                ).values()
+            )
+
+            # Convert uuids to strings
+            for row in cidrs_by_org_data:
+                row["cidr_uid"] = convert_uuid_to_string(row["cidr_uid"])
+                row["organizations_uid_id"] = convert_uuid_to_string(
+                    row["organizations_uid_id"]
+                )
+                row["data_source_uid_id"] = convert_uuid_to_string(
+                    row["data_source_uid_id"]
+                )
+                row["first_seen"] = convert_date_to_string(row["first_seen"])
+                row["last_seen"] = convert_date_to_string(row["last_seen"])
+            return cidrs_by_org_data
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+
+# --- query_ports_protocols(), Issue 619 ---
+@api_router.get(
+    "/ports_protocols_by_org",
+    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    response_model=List[schemas.PortsProtocolsByOrg],
+    tags=["Get all distinct ports/protocols for a specified organization."],
+)
+def ports_protocols_by_org(
+    data: schemas.GenInputOrgUIDSingle, tokens: dict = Depends(get_api_key)
+):
+    """API endpoint to get all distinct ports/protocols for a specified organization."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # If API key valid, make query
+            ports_protocols_by_org_data = list(
+                ShodanAssets.objects.filter(organizations_uid=data.org_uid)
+                .values("port", "protocol")
+                .distinct()
+            )
+            return ports_protocols_by_org_data
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+
+# --- query_software(), Issue 620 ---
+@api_router.get(
+    "/software_by_org",
+    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    response_model=List[schemas.SoftwareByOrg],
+    tags=["Get all distinct software products for a specified organization."],
+)
+def software_by_org(
+    data: schemas.GenInputOrgUIDSingle, tokens: dict = Depends(get_api_key)
+):
+    """API endpoint to get all distinct software products for a specified organization."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # If API key valid, make query
+            software_by_org_data = list(
+                ShodanAssets.objects.filter(
+                    organizations_uid=data.org_uid, product__isnull=False
+                )
+                .values("product")
+                .distinct()
+            )
+            return software_by_org_data
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+
+# --- query_foreign_IPs(), Issue 621 ---
+@api_router.get(
+    "/foreign_ips_by_org",
+    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    response_model=List[schemas.ForeignIpsByOrg],
+    tags=["Get all foreign IPs for a specified organization."],
+)
+def foreign_ips_by_org(
+    data: schemas.GenInputOrgUIDSingle, tokens: dict = Depends(get_api_key)
+):
+    """API endpoint to get all foreign IPs for a specified organization."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # If API key valid, make query
+            foreign_ips_by_org_data = list(
+                ShodanAssets.objects.filter(
+                    organizations_uid=data.org_uid, country_code__isnull=False
+                )
+                .exclude(country_code="US")
+                .values()
+            )
+            # Convert uuids to strings
+            for row in foreign_ips_by_org_data:
+                row["shodan_asset_uid"] = convert_uuid_to_string(
+                    row["shodan_asset_uid"]
+                )
+                row["organizations_uid_id"] = convert_uuid_to_string(
+                    row["organizations_uid_id"]
+                )
+                row["timestamp"] = convert_date_to_string(row["timestamp"])
+                row["data_source_uid_id"] = convert_uuid_to_string(
+                    row["data_source_uid_id"]
+                )
+            return foreign_ips_by_org_data
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+
+# --- query_roots(), Issue 622 ---
+@api_router.get(
+    "/root_domains_by_org",
+    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    response_model=List[schemas.RootDomainsByOrg],
+    tags=["Get all root domains for a specified organization."],
+)
+def root_domains_by_org(
+    data: schemas.GenInputOrgUIDSingle, tokens: dict = Depends(get_api_key)
+):
+    """API endpoint to get all root domains for a specified organization."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # If API key valid, make query
+            root_domains_by_org_data = list(
+                RootDomains.objects.filter(
+                    organizations_uid=data.org_uid, enumerate_subs=True
+                ).values()
+            )
+            # Convert uuids to strings
+            for row in root_domains_by_org_data:
+                row["root_domain_uid"] = convert_uuid_to_string(row["root_domain_uid"])
+            return root_domains_by_org_data
         except ObjectDoesNotExist:
             LOGGER.info("API key expired please try again")
     else:
