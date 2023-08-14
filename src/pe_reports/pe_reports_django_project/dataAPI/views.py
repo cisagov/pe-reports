@@ -8,7 +8,7 @@ import logging
 from typing import Any, List, Union
 
 # Third-Party Libraries
-from dataAPI.tasks import (  # Task helpers; D-Score Task Functions:; I-Score Task Functions:; Misc. Score-Related Task Functions:; Other Endpoint Task Functions:
+from dataAPI.tasks import (
     convert_date_to_string,
     convert_uuid_to_string,
     get_dscore_pe_domain_info,
@@ -36,16 +36,16 @@ from dataAPI.tasks import (  # Task helpers; D-Score Task Functions:; I-Score Ta
     get_vw_pshtt_domains_to_run_info,
     get_xl_stakeholders_info,
     get_xs_stakeholders_info,
+    ips_insert_task,
+    sub_domains_table_task,
+    pescore_hist_domain_alert_task,
+    pescore_hist_darkweb_alert_task,
+    pescore_hist_darkweb_ment_task,
+    pescore_hist_cred_task,
+    pescore_base_metrics_task,
+    cve_info_insert_task,
+    cred_breach_intelx_task,
 )
-from dataAPI.tasks import cred_breach_intelx_task  # Issue 641
-from dataAPI.tasks import cve_info_insert_task  # Issue 637
-from dataAPI.tasks import ips_insert_task  # Issue 559
-from dataAPI.tasks import pescore_base_metrics_task  # Issue 635
-from dataAPI.tasks import pescore_hist_cred_task  # Issue 635
-from dataAPI.tasks import pescore_hist_darkweb_alert_task  # Issue 635
-from dataAPI.tasks import pescore_hist_darkweb_ment_task  # Issue 635
-from dataAPI.tasks import pescore_hist_domain_alert_task  # Issue 635
-from dataAPI.tasks import sub_domains_table_task  # Issue 560
 from decouple import config
 from django.conf import settings
 from django.contrib.auth.models import User
@@ -927,7 +927,7 @@ def cyhy_ports_scan_info_update(
     tags=["Get all VS cert data needed for D-Score"],
 )
 def read_dscore_vs_cert(
-    data: schemas.VwDscoreVSCertInput, tokens: dict = Depends(get_api_key)
+    data: schemas.GenInputOrgUIDList, tokens: dict = Depends(get_api_key)
 ):
     """Call API endpoint to get all VS cert data needed for D-Score."""
     # Check for API key
@@ -936,7 +936,7 @@ def read_dscore_vs_cert(
         try:
             userapiTokenverify(theapiKey=tokens)
             # If API key valid, create task for query
-            task = get_dscore_vs_cert_info.delay(data.specified_orgs)
+            task = get_dscore_vs_cert_info.delay(data.org_uid_list)
             # Return the new task id w/ "Processing" status
             return {"task_id": task.id, "status": "Processing"}
         except ObjectDoesNotExist:
@@ -993,7 +993,7 @@ async def get_dscore_vs_cert_task_status(
     tags=["Get all VS mail data needed for D-Score"],
 )
 def read_dscore_vs_mail(
-    data: schemas.VwDscoreVSMailInput, tokens: dict = Depends(get_api_key)
+    data: schemas.GenInputOrgUIDList, tokens: dict = Depends(get_api_key)
 ):
     """Call API endpoint to get all VS mail data needed for D-Score."""
     # Check for API key
@@ -1002,7 +1002,7 @@ def read_dscore_vs_mail(
         try:
             userapiTokenverify(theapiKey=tokens)
             # If API key valid, create task for query
-            task = get_dscore_vs_mail_info.delay(data.specified_orgs)
+            task = get_dscore_vs_mail_info.delay(data.org_uid_list)
             # Return the new task id w/ "Processing" status
             return {"task_id": task.id, "status": "Processing"}
         except ObjectDoesNotExist:
@@ -1059,7 +1059,7 @@ async def get_dscore_vs_mail_task_status(
     tags=["Get all PE IP data needed for D-Score"],
 )
 def read_dscore_pe_ip(
-    data: schemas.VwDscorePEIpInput, tokens: dict = Depends(get_api_key)
+    data: schemas.GenInputOrgUIDList, tokens: dict = Depends(get_api_key)
 ):
     """Call API endpoint to get all PE IP data needed for D-Score."""
     # Check for API key
@@ -1068,7 +1068,7 @@ def read_dscore_pe_ip(
         try:
             userapiTokenverify(theapiKey=tokens)
             # If API key valid, create task for query
-            task = get_dscore_pe_ip_info.delay(data.specified_orgs)
+            task = get_dscore_pe_ip_info.delay(data.org_uid_list)
             # Return the new task id w/ "Processing" status
             return {"task_id": task.id, "status": "Processing"}
         except ObjectDoesNotExist:
@@ -1125,7 +1125,7 @@ async def get_dscore_pe_ip_task_status(
     tags=["Get all PE domain data needed for D-Score"],
 )
 def read_dscore_pe_domain(
-    data: schemas.VwDscorePEDomainInput, tokens: dict = Depends(get_api_key)
+    data: schemas.GenInputOrgUIDList, tokens: dict = Depends(get_api_key)
 ):
     """Call API endpoint to get all PE domain data needed for D-Score."""
     # Check for API key
@@ -1134,7 +1134,7 @@ def read_dscore_pe_domain(
         try:
             userapiTokenverify(theapiKey=tokens)
             # If API key valid, create task for query
-            task = get_dscore_pe_domain_info.delay(data.specified_orgs)
+            task = get_dscore_pe_domain_info.delay(data.org_uid_list)
             # Return the new task id w/ "Processing" status
             return {"task_id": task.id, "status": "Processing"}
         except ObjectDoesNotExist:
@@ -1191,7 +1191,7 @@ async def get_dscore_pe_domain_task_status(
     tags=["Get all WAS webapp data needed for D-Score"],
 )
 def read_dscore_was_webapp(
-    data: schemas.VwDscoreWASWebappInput, tokens: dict = Depends(get_api_key)
+    data: schemas.GenInputOrgUIDList, tokens: dict = Depends(get_api_key)
 ):
     """Call API endpoint to get all WAS webapp data needed for D-Score."""
     # Check for API key
@@ -1200,7 +1200,7 @@ def read_dscore_was_webapp(
         try:
             userapiTokenverify(theapiKey=tokens)
             # If API key valid, create task for query
-            task = get_dscore_was_webapp_info.delay(data.specified_orgs)
+            task = get_dscore_was_webapp_info.delay(data.org_uid_list)
             # Return the new task id w/ "Processing" status
             return {"task_id": task.id, "status": "Processing"}
         except ObjectDoesNotExist:
@@ -1257,7 +1257,7 @@ async def get_dscore_was_webapp_task_status(
     tags=["Get the FCEB status of a specified list of organizations."],
 )
 def read_fceb_status(
-    data: schemas.FCEBStatusInput, tokens: dict = Depends(get_api_key)
+    data: schemas.GenInputOrgUIDList, tokens: dict = Depends(get_api_key)
 ):
     """Call API endpoint to get the FCEB status of a specified list of organizations."""
     # Check for API key
@@ -1266,7 +1266,7 @@ def read_fceb_status(
         try:
             userapiTokenverify(theapiKey=tokens)
             # If API key valid, create task for query
-            task = get_fceb_status_info.delay(data.specified_orgs)
+            task = get_fceb_status_info.delay(data.org_uid_list)
             # Return the new task id w/ "Processing" status
             return {"task_id": task.id, "status": "Processing"}
         except ObjectDoesNotExist:
@@ -1324,7 +1324,7 @@ async def get_fceb_status_task_status(
     tags=["Get all VS vuln data needed for I-Score"],
 )
 def read_iscore_vs_vuln(
-    data: schemas.VwIscoreVSVulnInput, tokens: dict = Depends(get_api_key)
+    data: schemas.GenInputOrgUIDList, tokens: dict = Depends(get_api_key)
 ):
     """Call API endpoint to get all VS vuln data needed for I-Score."""
     # Check for API key
@@ -1333,7 +1333,7 @@ def read_iscore_vs_vuln(
         try:
             userapiTokenverify(theapiKey=tokens)
             # If API key valid, create task for query
-            task = get_iscore_vs_vuln_info.delay(data.specified_orgs)
+            task = get_iscore_vs_vuln_info.delay(data.org_uid_list)
             # Return the new task id w/ "Processing" status
             return {"task_id": task.id, "status": "Processing"}
         except ObjectDoesNotExist:
@@ -1390,7 +1390,7 @@ async def get_iscore_vs_vuln_task_status(
     tags=["Get all previous VS vuln data needed for I-Score"],
 )
 def read_iscore_vs_vuln_prev(
-    data: schemas.VwIscoreVSVulnPrevInput, tokens: dict = Depends(get_api_key)
+    data: schemas.GenInputOrgUIDListDateRange, tokens: dict = Depends(get_api_key)
 ):
     """Call API endpoint to get all previous VS vuln data needed for I-Score."""
     # Check for API key
@@ -1400,7 +1400,7 @@ def read_iscore_vs_vuln_prev(
             userapiTokenverify(theapiKey=tokens)
             # If API key valid, create task for query
             task = get_iscore_vs_vuln_prev_info.delay(
-                data.specified_orgs, data.start_date, data.end_date
+                data.org_uid_list, data.start_date, data.end_date
             )
             # Return the new task id w/ "Processing" status
             return {"task_id": task.id, "status": "Processing"}
@@ -1458,7 +1458,7 @@ async def get_iscore_vs_vuln_prev_task_status(
     tags=["Get all PE vuln data needed for I-Score"],
 )
 def read_iscore_pe_vuln(
-    data: schemas.VwIscorePEVulnInput, tokens: dict = Depends(get_api_key)
+    data: schemas.GenInputOrgUIDListDateRange, tokens: dict = Depends(get_api_key)
 ):
     """Call API endpoint to get all PE vuln data needed for I-Score."""
     # Check for API key
@@ -1468,7 +1468,7 @@ def read_iscore_pe_vuln(
             userapiTokenverify(theapiKey=tokens)
             # If API key valid, create task for query
             task = get_iscore_pe_vuln_info.delay(
-                data.specified_orgs, data.start_date, data.end_date
+                data.org_uid_list, data.start_date, data.end_date
             )
             # Return the new task id w/ "Processing" status
             return {"task_id": task.id, "status": "Processing"}
@@ -1526,7 +1526,7 @@ async def get_iscore_pe_vuln_task_status(
     tags=["Get all PE cred data needed for I-Score"],
 )
 def read_iscore_pe_cred(
-    data: schemas.VwIscorePECredInput, tokens: dict = Depends(get_api_key)
+    data: schemas.GenInputOrgUIDListDateRange, tokens: dict = Depends(get_api_key)
 ):
     """Call API endpoint to get all PE cred data needed for I-Score."""
     # Check for API key
@@ -1536,7 +1536,7 @@ def read_iscore_pe_cred(
             userapiTokenverify(theapiKey=tokens)
             # If API key valid, create task for query
             task = get_iscore_pe_cred_info.delay(
-                data.specified_orgs, data.start_date, data.end_date
+                data.org_uid_list, data.start_date, data.end_date
             )
             # Return the new task id w/ "Processing" status
             return {"task_id": task.id, "status": "Processing"}
@@ -1594,7 +1594,7 @@ async def get_iscore_pe_cred_task_status(
     tags=["Get all PE breach data needed for I-Score"],
 )
 def read_iscore_pe_breach(
-    data: schemas.VwIscorePEBreachInput, tokens: dict = Depends(get_api_key)
+    data: schemas.GenInputOrgUIDListDateRange, tokens: dict = Depends(get_api_key)
 ):
     """Call API endpoint to get all PE breach data needed for I-Score."""
     # Check for API key
@@ -1604,7 +1604,7 @@ def read_iscore_pe_breach(
             userapiTokenverify(theapiKey=tokens)
             # If API key valid, create task for query
             task = get_iscore_pe_breach_info.delay(
-                data.specified_orgs, data.start_date, data.end_date
+                data.org_uid_list, data.start_date, data.end_date
             )
             # Return the new task id w/ "Processing" status
             return {"task_id": task.id, "status": "Processing"}
@@ -1662,7 +1662,7 @@ async def get_iscore_pe_breach_task_status(
     tags=["Get all PE darkweb data needed for I-Score"],
 )
 def read_iscore_pe_darkweb(
-    data: schemas.VwIscorePEDarkwebInput, tokens: dict = Depends(get_api_key)
+    data: schemas.GenInputOrgUIDListDateRange, tokens: dict = Depends(get_api_key)
 ):
     """Call API endpoint to get all PE darkweb data needed for I-Score."""
     # Check for API key
@@ -1672,7 +1672,7 @@ def read_iscore_pe_darkweb(
             userapiTokenverify(theapiKey=tokens)
             # If API key valid, create task for query
             task = get_iscore_pe_darkweb_info.delay(
-                data.specified_orgs, data.start_date, data.end_date
+                data.org_uid_list, data.start_date, data.end_date
             )
             # Return the new task id w/ "Processing" status
             return {"task_id": task.id, "status": "Processing"}
@@ -1730,7 +1730,7 @@ async def get_iscore_pe_darkweb_task_status(
     tags=["Get all PE protocol data needed for I-Score"],
 )
 def read_iscore_pe_protocol(
-    data: schemas.VwIscorePEProtocolInput, tokens: dict = Depends(get_api_key)
+    data: schemas.GenInputOrgUIDListDateRange, tokens: dict = Depends(get_api_key)
 ):
     """Call API endpoint to get all PE protocol data needed for I-Score."""
     # Check for API key
@@ -1740,7 +1740,7 @@ def read_iscore_pe_protocol(
             userapiTokenverify(theapiKey=tokens)
             # If API key valid, create task for query
             task = get_iscore_pe_protocol_info.delay(
-                data.specified_orgs, data.start_date, data.end_date
+                data.org_uid_list, data.start_date, data.end_date
             )
             # Return the new task id w/ "Processing" status
             return {"task_id": task.id, "status": "Processing"}
@@ -1798,7 +1798,7 @@ async def get_iscore_pe_protocol_task_status(
     tags=["Get all WAS vuln data needed for I-Score"],
 )
 def read_iscore_was_vuln(
-    data: schemas.VwIscoreWASVulnInput, tokens: dict = Depends(get_api_key)
+    data: schemas.GenInputOrgUIDListDateRange, tokens: dict = Depends(get_api_key)
 ):
     """Call API endpoint to get all WAS vuln data needed for I-Score."""
     # Check for API key
@@ -1808,7 +1808,7 @@ def read_iscore_was_vuln(
             userapiTokenverify(theapiKey=tokens)
             # If API key valid, create task for query
             task = get_iscore_was_vuln_info.delay(
-                data.specified_orgs, data.start_date, data.end_date
+                data.org_uid_list, data.start_date, data.end_date
             )
             # Return the new task id w/ "Processing" status
             return {"task_id": task.id, "status": "Processing"}
@@ -1866,7 +1866,7 @@ async def get_iscore_was_vuln_task_status(
     tags=["Get all previous WAS vuln data needed for I-Score"],
 )
 def read_iscore_was_vuln_prev(
-    data: schemas.VwIscoreWASVulnPrevInput, tokens: dict = Depends(get_api_key)
+    data: schemas.GenInputOrgUIDListDateRange, tokens: dict = Depends(get_api_key)
 ):
     """Call API endpoint to get all previous WAS vuln data needed for I-Score."""
     # Check for API key
@@ -1876,7 +1876,7 @@ def read_iscore_was_vuln_prev(
             userapiTokenverify(theapiKey=tokens)
             # If API key valid, create task for query
             task = get_iscore_was_vuln_prev_info.delay(
-                data.specified_orgs, data.start_date, data.end_date
+                data.org_uid_list, data.start_date, data.end_date
             )
             # Return the new task id w/ "Processing" status
             return {"task_id": task.id, "status": "Processing"}
@@ -2552,7 +2552,7 @@ def rss_insert(data: schemas.RSSInsertInput, tokens: dict = Depends(get_api_key)
     tags=["Get all sub domains for a specified organization."],
 )
 def sub_domains_by_org(
-    data: schemas.SubDomainsByOrgInput, tokens: dict = Depends(get_api_key)
+    data: schemas.GenInputOrgUIDSingle, tokens: dict = Depends(get_api_key)
 ):
     """Call API endpoint to get all sub domains for a specified organization."""
     # Check for API key
@@ -2636,7 +2636,7 @@ def rss_prev_period(
     tags=["Get all historical domain alert data for PE score."],
 )
 def pescore_hist_domain_alert(
-    data: schemas.PEScoreDateRangeInput, tokens: dict = Depends(get_api_key)
+    data: schemas.GenInputDateRange, tokens: dict = Depends(get_api_key)
 ):
     """Call API endpoint to get the PE score domain alert data for a specified time period."""
     # Check for API key
@@ -2702,7 +2702,7 @@ async def pescore_hist_domain_alert_status(
     tags=["Get all historical darkweb alert data for PE score."],
 )
 def pescore_hist_darkweb_alert(
-    data: schemas.PEScoreDateRangeInput, tokens: dict = Depends(get_api_key)
+    data: schemas.GenInputDateRange, tokens: dict = Depends(get_api_key)
 ):
     """Call API endpoint to get the PE score dark web alert data for a specified time period."""
     # Check for API key
@@ -2768,7 +2768,7 @@ async def pescore_hist_darkweb_alert_status(
     tags=["Get all historical darkweb mention data for PE score."],
 )
 def pescore_hist_darkweb_ment(
-    data: schemas.PEScoreDateRangeInput, tokens: dict = Depends(get_api_key)
+    data: schemas.GenInputDateRange, tokens: dict = Depends(get_api_key)
 ):
     """Call API endpoint to get the PE score dark web mention data for a specified time period."""
     # Check for API key
@@ -2834,7 +2834,7 @@ async def pescore_hist_darkweb_ment_status(
     tags=["Get all historical credential data for PE score."],
 )
 def pescore_hist_cred(
-    data: schemas.PEScoreDateRangeInput, tokens: dict = Depends(get_api_key)
+    data: schemas.GenInputDateRange, tokens: dict = Depends(get_api_key)
 ):
     """Call API endpoint to get the PE score credential data for a specified time period."""
     # Check for API key
@@ -2898,7 +2898,7 @@ async def pescore_hist_cred_status(task_id: str, tokens: dict = Depends(get_api_
     tags=["Get all base metric data for PE score."],
 )
 def pescore_base_metrics(
-    data: schemas.PEScoreDateRangeInput, tokens: dict = Depends(get_api_key)
+    data: schemas.GenInputDateRange, tokens: dict = Depends(get_api_key)
 ):
     """Call API endpoint to get the PE score base metric data for a specified time period."""
     # Check for API key

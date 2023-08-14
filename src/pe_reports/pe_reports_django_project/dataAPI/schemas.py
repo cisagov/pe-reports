@@ -461,6 +461,57 @@ class UserInDB(UserInDBBase):
     hashed_password: str
 
 
+# ---------- Generalized Schemas ----------
+# Generalized 1 org_uid input schema
+class GenInputOrgUIDSingle(BaseModel):
+    """GenInputOrgUIDSingle schema class."""
+
+    org_uid: str
+
+    class Config:
+        """GenInputOrgUIDSingle schema config class."""
+
+        orm_mode = True
+
+
+# Generalized list of org_uids input schema
+class GenInputOrgUIDList(BaseModel):
+    "GenInputOrgUIDList schema class."
+    org_uid_list: List[str]
+
+    class Config:
+        """GenInputOrgUIDList"""
+
+        orm_mode = True
+
+
+# Generalized start/end date input schema
+class GenInputDateRange(BaseModel):
+    """GenInputDateRange schema class."""
+
+    start_date: str
+    end_date: str
+
+    class Config:
+        """GenInputDateRange schema config class."""
+
+        orm_mode = True
+
+
+# Generalized list of org_uids and start/end date input schema
+class GenInputOrgUIDListDateRange(BaseModel):
+    """GenInputOrgUIDListDateRange schema class."""
+
+    org_uid_list: List[str]
+    start_date: str
+    end_date: str
+
+    class Config:
+        """GenInputOrgUIDListDateRange schema config class."""
+
+        orm_mode = True
+
+
 # ---------- D-Score View Schemas ----------
 # vw_dscore_vs_cert schema:
 class VwDscoreVSCert(BaseModel):
@@ -473,18 +524,6 @@ class VwDscoreVSCert(BaseModel):
 
     class Config:
         """VwDscoreVSCert schema config class."""
-
-        orm_mode = True
-
-
-# vw_dscore_vs_cert input schema:
-class VwDscoreVSCertInput(BaseModel):
-    """VwDscoreVSCertInput schema class."""
-
-    specified_orgs: List[str]
-
-    class Config:
-        """VwDscoreVSCertInput schema config class."""
 
         orm_mode = True
 
@@ -516,18 +555,6 @@ class VwDscoreVSMail(BaseModel):
         orm_mode = True
 
 
-# vw_dscore_vs_mail input schema:
-class VwDscoreVSMailInput(BaseModel):
-    """VwDscoreVSMailInput schema class."""
-
-    specified_orgs: List[str]
-
-    class Config:
-        """VwDscoreVSMailInput schema config class."""
-
-        orm_mode = True
-
-
 # vw_dscore_vs_mail task response schema:
 class VwDscoreVSMailTaskResp(BaseModel):
     """VwDscoreVSMailTaskResp schema class."""
@@ -549,18 +576,6 @@ class VwDscorePEIp(BaseModel):
 
     class Config:
         """VwDscorePEIp schema config class."""
-
-        orm_mode = True
-
-
-# vw_dscore_pe_ip input schema:
-class VwDscorePEIpInput(BaseModel):
-    """VwDscorePEIpInput schema class."""
-
-    specified_orgs: List[str]
-
-    class Config:
-        """VwDscorePEIpInput schema config class."""
 
         orm_mode = True
 
@@ -590,18 +605,6 @@ class VwDscorePEDomain(BaseModel):
         orm_mode = True
 
 
-# vw_dscore_pe_domain input schema:
-class VwDscorePEDomainInput(BaseModel):
-    """VwDscorePEDomainInput schema class."""
-
-    specified_orgs: List[str]
-
-    class Config:
-        """VwDscorePEDomainInput schema config class."""
-
-        orm_mode = True
-
-
 # vw_dscore_pe_domain task response schema:
 class VwDscorePEDomainTaskResp(BaseModel):
     """VwDscorePEDomainTaskResp schema class."""
@@ -627,18 +630,6 @@ class VwDscoreWASWebapp(BaseModel):
         orm_mode = True
 
 
-# vw_dscore_was_webapp input schema:
-class VwDscoreWASWebappInput(BaseModel):
-    """VwDscoreWASWebappInput schema class."""
-
-    specified_orgs: List[str]
-
-    class Config:
-        """VwDscoreWASWebappInput schema config class."""
-
-        orm_mode = True
-
-
 # vw_dscore_was_webapp task response schema:
 class VwDscoreWASWebappTaskResp(BaseModel):
     """VwDscoreWASWebappTaskResp schema class."""
@@ -658,18 +649,6 @@ class FCEBStatus(BaseModel):
 
     class Config:
         """FCEBStatus schema config class."""
-
-        orm_mode = True
-
-
-# FCEB status query input schema (no view):
-class FCEBStatusInput(BaseModel):
-    """FCEBStatusInput schema class."""
-
-    specified_orgs: List[str]
-
-    class Config:
-        """FCEBStatusInput schema config class."""
 
         orm_mode = True
 
@@ -700,18 +679,6 @@ class VwIscoreVSVuln(BaseModel):
         orm_mode = True
 
 
-# vw_iscore_vs_vuln input schema:
-class VwIscoreVSVulnInput(BaseModel):
-    """VwIscoreVSVulnInput schema class."""
-
-    specified_orgs: List[str]
-
-    class Config:
-        """VwIscoreVSVulnInput schema config class."""
-
-        orm_mode = True
-
-
 # vw_iscore_vs_vuln task response schema:
 class VwIscoreVSVulnTaskResp(BaseModel):
     """VwIscoreVSVulnTaskResp schema class."""
@@ -734,20 +701,6 @@ class VwIscoreVSVulnPrev(BaseModel):
 
     class Config:
         """VwIscoreVSVulnPrev schema config class."""
-
-        orm_mode = True
-
-
-# vw_iscore_vs_vuln_prev input schema:
-class VwIscoreVSVulnPrevInput(BaseModel):
-    """VwIscoreVSVulnPrevInput schema class."""
-
-    specified_orgs: List[str]
-    start_date: str
-    end_date: str
-
-    class Config:
-        """VwIscoreVSVulnPrevInput schema config class."""
 
         orm_mode = True
 
@@ -778,20 +731,6 @@ class VwIscorePEVuln(BaseModel):
         orm_mode = True
 
 
-# vw_iscore_pe_vuln input schema:
-class VwIscorePEVulnInput(BaseModel):
-    """VwIscorePEVulnInput schema class."""
-
-    specified_orgs: List[str]
-    start_date: str
-    end_date: str
-
-    class Config:
-        """VwIscorePEVulnInput schema config class."""
-
-        orm_mode = True
-
-
 # vw_iscore_pe_vuln task response schema:
 class VwIscorePEVulnTaskResp(BaseModel):
     """VwIscorePEVulnTaskResp schema class."""
@@ -814,20 +753,6 @@ class VwIscorePECred(BaseModel):
 
     class Config:
         """VwIscorePECred schema config class."""
-
-        orm_mode = True
-
-
-# vw_iscore_pe_cred input schema:
-class VwIscorePECredInput(BaseModel):
-    """VwIscorePECredInput schema class."""
-
-    specified_orgs: List[str]
-    start_date: str
-    end_date: str
-
-    class Config:
-        """VwIscorePECredInput schema config class."""
 
         orm_mode = True
 
@@ -857,20 +782,6 @@ class VwIscorePEBreach(BaseModel):
         orm_mode = True
 
 
-# vw_iscore_pe_breach input schema:
-class VwIscorePEBreachInput(BaseModel):
-    """VwIscorePEBreachInput schema class."""
-
-    specified_orgs: List[str]
-    start_date: str
-    end_date: str
-
-    class Config:
-        """VwIscorePEBreachInput schema config class."""
-
-        orm_mode = True
-
-
 # vw_iscore_pe_breach task response schema:
 class VwIscorePEBreachTaskResp(BaseModel):
     """VwIscorePEBreachTaskResp schema class."""
@@ -893,21 +804,6 @@ class VwIscorePEDarkweb(BaseModel):
 
     class Config:
         """VwIscorePEDarkweb schema config class."""
-
-        orm_mode = True
-
-
-# vw_iscore_pe_darkweb input schema:
-class VwIscorePEDarkwebInput(BaseModel):
-    """VwIscorePEDarkwebInput schema class."""
-
-    specified_orgs: List[str]
-    start_date: str
-    end_date: str
-    # Don't forget 0001-01-01 dates
-
-    class Config:
-        """VwIscorePEDarkwebInput schema config class."""
 
         orm_mode = True
 
@@ -940,20 +836,6 @@ class VwIscorePEProtocol(BaseModel):
         orm_mode = True
 
 
-# vw_iscore_pe_protocol input schema:
-class VwIscorePEProtocolInput(BaseModel):
-    """VwIscorePEProtocolInput schema class."""
-
-    specified_orgs: List[str]
-    start_date: str
-    end_date: str
-
-    class Config:
-        """VwIscorePEProtocolInput schema config class."""
-
-        orm_mode = True
-
-
 # vw_iscore_pe_protocol task response schema:
 class VwIscorePEProtocolTaskResp(BaseModel):
     """VwIscorePEProtocolTaskResp schema class."""
@@ -981,20 +863,6 @@ class VwIscoreWASVuln(BaseModel):
         orm_mode = True
 
 
-# vw_iscore_was_vuln input schema:
-class VwIscoreWASVulnInput(BaseModel):
-    """VwIscoreWASVulnInput schema class."""
-
-    specified_orgs: List[str]
-    start_date: str
-    end_date: str
-
-    class Config:
-        """VwIscoreWASVulnInput schema config class."""
-
-        orm_mode = True
-
-
 # vw_iscore_was_vuln task response schema:
 class VwIscoreWASVulnTaskResp(BaseModel):
     """VwIscoreWASVulnTaskResp schema class."""
@@ -1016,20 +884,6 @@ class VwIscoreWASVulnPrev(BaseModel):
 
     class Config:
         """VwIscoreWASVulnPrev schema config class."""
-
-        orm_mode = True
-
-
-# vw_iscore_was_vuln_prev input schema:
-class VwIscoreWASVulnPrevInput(BaseModel):
-    """VwIscoreWASVulnPrevInput schema class."""
-
-    specified_orgs: List[str]
-    start_date: str
-    end_date: str
-
-    class Config:
-        """VwIscoreWASVulnPrevInput schema config class."""
 
         orm_mode = True
 
@@ -1224,19 +1078,6 @@ class RSSInsertInput(BaseModel):
         orm_mode = True
 
 
-# --- query_subs(), Issue 633 ---
-# Get all subdomains for an org, input
-class SubDomainsByOrgInput(BaseModel):
-    """SubDomainsByOrgInput schema class."""
-
-    org_uid: str
-
-    class Config:
-        """SubDomainsByOrgInput schema config class."""
-
-        orm_mode = True
-
-
 # --- query_previous_period(), Issue 634 ---
 # Get prev. report period data from report_summary_stats
 class RSSPrevPeriod(BaseModel):
@@ -1272,20 +1113,6 @@ class RSSPrevPeriodInput(BaseModel):
 
 
 # ---------- General PE Score Schemas ----------
-# --- generalized input schema, Issue 635 ---
-# Input date range schema for all PE score endpoints
-class PEScoreDateRangeInput(BaseModel):
-    """PEScoreDateRangeInput schema class."""
-
-    start_date: str
-    end_date: str
-
-    class Config:
-        """PEScoreDateRangeInput schema config class."""
-
-        orm_mode = True
-
-
 # --- reported orgs schema, Issue 635 ---
 # List of reported organizations schema
 class ReportedOrgs(BaseModel):
