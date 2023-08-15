@@ -55,12 +55,13 @@ def credential(
         y_label,
     )
     cred_date_chart.line_chart()
-
+    # Filter breach details table down to top 15 rows.
+    breach_table_row_count = 15
     creds_dict = {
         "breach": Credential.breaches(),
         "creds": Credential.total(),
         "pw_creds": Credential.password(),
-        "breach_table": Credential.breach_details()[:15],
+        "breach_table": Credential.breach_details()[:breach_table_row_count],
         "breach_appendix": Credential.breach_appendix(),
     }
     report_dict.update(creds_dict)
