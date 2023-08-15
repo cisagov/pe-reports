@@ -43,10 +43,20 @@ class DNSMonitor:
         pe_orgs = get_orgs()
 
         # Filter orgs if specified
+        pe_orgs_final = []
         if orgs_list == "all":
-            pe_orgs_final = pe_orgs
+            for pe_org in pe_orgs:
+                if pe_org["report_on"]:
+                    pe_orgs_final.append(pe_org)
+                else:
+                    continue
+        elif orgs_list == "DEMO":
+            for pe_org in pe_orgs:
+                if pe_org["demo"]:
+                    pe_orgs_final.append(pe_org)
+                else:
+                    continue
         else:
-            pe_orgs_final = []
             for pe_org in pe_orgs:
                 if pe_org["cyhy_db_name"] in orgs_list:
                     pe_orgs_final.append(pe_org)

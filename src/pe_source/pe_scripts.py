@@ -16,7 +16,7 @@ Options:
   -o --orgs=ORG_LIST                A comma-separated list of orgs to collect data for.
                                     If not specified, data will be collected for all
                                     orgs in the pe database. Orgs in the list must match the
-                                    IDs in the cyhy-db. E.g. DHS,DHS_ICE,DOC
+                                    IDs in the cyhy-db. E.g. DHS,DHS_ICE,DOC. Enter DEMO to run all demo orgs
                                     [default: all]
   -csg --cybersix-methods=METHODS   A comma-separated list of cybersixgill methods to run.
                                     If not specified, all will run. Valid values are "alerts",
@@ -51,7 +51,7 @@ LOGGER = logging.getLogger(__name__)
 def run_pe_script(source, orgs_list, cybersix_methods, soc_med_included):
     """Collect data from the source specified."""
     # If not "all", separate orgs string into a list of orgs
-    if orgs_list != "all":
+    if orgs_list != "all" and orgs_list != "DEMO":
         orgs_list = orgs_list.split(",")
     # If not "all", separate Cybersixgill methods string into a list
     if cybersix_methods == "all":

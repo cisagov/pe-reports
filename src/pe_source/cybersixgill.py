@@ -2,9 +2,9 @@
 
 # Standard Python Libraries
 from datetime import date, datetime, timedelta
+import logging
 import sys
 import traceback
-import logging
 
 from .data.pe_db.db_query_source import (
     get_breaches,
@@ -61,7 +61,28 @@ class Cybersixgill:
         soc_med_included = self.soc_med_included
 
         # Get org info from PE database
-        pe_orgs = get_orgs()
+        all_pe_orgs = get_orgs()
+
+        pe_orgs_final = []
+        if orgs_list == "all":
+            for pe_org in all_pe_orgs:
+                if pe_org["report_on"]:
+                    pe_orgs_final.append(pe_org)
+                else:
+                    continue
+        elif orgs_list == "DEMO":
+            for pe_org in all_pe_orgs:
+                if pe_org["demo"]:
+                    pe_orgs_final.append(pe_org)
+                else:
+                    continue
+        else:
+            for pe_org in all_pe_orgs:
+                if pe_org["cyhy_db_name"] in orgs_list:
+                    pe_orgs_final.append(pe_org)
+                else:
+                    continue
+
         # Get Cybersixgill org info
         sixgill_orgs = get_sixgill_organizations()
         failed = []
@@ -76,14 +97,14 @@ class Cybersixgill:
                 failed.append("Top CVEs")
 
         list = ""
-        for pe_org in pe_orgs:
+        for pe_org in pe_orgs_final:
             list = list + pe_org["cyhy_db_name"] + ","
         print(list)
-        for pe_org in pe_orgs:
+        for pe_org in pe_orgs_final:
             org_id = pe_org["cyhy_db_name"]
             pe_org_uid = pe_org["org_uid"]
             # Only run on specified orgs
-            if org_id in orgs_list or orgs_list == "all":
+            if org_id in orgs_list or orgs_list == "all" or orgs_list == "DEMO":
                 count += 1
                 # Get sixgill_org_id associated with the PE org
                 try:
@@ -186,19 +207,19 @@ class Cybersixgill:
                 try:
                     alert_id = alert_row["sixgill_id"]
 
-                    # content_snip, asset_mentioned, asset_type = get_alerts_content(
-                    #     sixgill_org_id, alert_id, org_assets_dict
-                    # )
+                    content_snip, asset_mentioned, asset_type = get_alerts_content(
+                        sixgill_org_id, alert_id, org_assets_dict
+                    )
 
                     alerts_df.at[alert_index, "content_snip"] = content_snip
                     alerts_df.at[alert_index, "asset_mentioned"] = asset_mentioned
                     alerts_df.at[alert_index, "asset_type"] = asset_type
                 except Exception as e:
-                    # LOGGER.error(
-                    #     "Failed fetching a specific alert content for %s", org_id
-                    # )
-                    # LOGGER.error(e)
-                    # print(traceback.format_exc())
+                    LOGGER.error(
+                        "Failed fetching a specific alert content for %s", org_id
+                    )
+                    LOGGER.error(e)
+                    print(traceback.format_exc())
                     alerts_df.at[alert_index, "content_snip"] = ""
                     alerts_df.at[alert_index, "asset_mentioned"] = ""
                     alerts_df.at[alert_index, "asset_type"] = ""

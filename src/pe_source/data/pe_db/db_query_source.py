@@ -60,7 +60,8 @@ def get_orgs():
         sql = """SELECT * FROM organizations where report_on or demo"""
         cur.execute(sql)
         pe_orgs = cur.fetchall()
-        keys = ("org_uid", "org_name", "cyhy_db_name")
+        # keys = ("org_uid", "org_name", "cyhy_db_name")
+        keys = tuple([desc[0] for desc in cur.description])
         pe_orgs = [dict(zip(keys, values)) for values in pe_orgs]
         cur.close()
         return pe_orgs

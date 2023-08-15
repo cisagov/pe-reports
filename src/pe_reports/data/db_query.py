@@ -119,6 +119,23 @@ def get_orgs(conn):
             close(conn)
 
 
+def get_demo_orgs(conn):
+    """Query organizations table for orgs we report on."""
+    try:
+        cur = conn.cursor()
+        sql = """SELECT * FROM organizations
+        WHERE demo is True"""
+        cur.execute(sql)
+        pe_orgs = cur.fetchall()
+        cur.close()
+        return pe_orgs
+    except (Exception, psycopg2.DatabaseError) as error:
+        LOGGER.error("There was a problem with your database query %s", error)
+    finally:
+        if conn is not None:
+            close(conn)
+
+
 def get_orgs_pass(conn, password):
     """Get all org passwords."""
     try:
@@ -159,7 +176,7 @@ def get_orgs_contacts(conn):
 def get_org_assets_count_past(org_uid, date):
     """Get asset counts for an organization."""
     conn = connect()
-    sql = """select * from report_summary_stats rss 
+    sql = """select * from report_summary_stats rss
                 where organizations_uid = %(org_id)s
                 and end_date = %(date)s;"""
     df = pd.read_sql(sql, conn, params={"org_id": org_uid, "date": date})
@@ -192,7 +209,7 @@ def get_org_assets_count(uid):
             - 1,  # Subtract 1 to remove the automatic null entry
             "num_foreign_ips": source[8],
         }
-    except:
+    except Exception:
         assets_dict = {
             "org_uid": uid,
             "cyhy_db_name": "N/A",
@@ -216,7 +233,7 @@ def get_orgs_df(staging=False):
         conn = connect()
     try:
         sql = """
-        SELECT * FROM organizations 
+        SELECT * FROM organizations
         WHERE report_on is True
         """
         pe_orgs_df = pd.read_sql(sql, conn)
@@ -305,13 +322,13 @@ def set_org_to_demo(cyhy_db_id, premium):
     conn.close()
     return df
 
+
 def check_org_exists(org_code):
     """Check if org code is listed in the P&E database."""
-
     exists = False
     conn = connect()
     sql = """
-    select * from organizations o 
+    select * from organizations o
     where o.cyhy_db_name = %(org_code)s
     """
 
@@ -321,7 +338,7 @@ def check_org_exists(org_code):
         exists = True
 
     return exists
-    
+
 
 def query_org_cidrs(org_uid):
     """Query all cidrs ordered by length."""
@@ -333,6 +350,7 @@ def query_org_cidrs(org_uid):
             """
     df = pd.read_sql(sql, conn, params={"org_id": org_uid})
     return df
+
 
 def query_cyhy_assets(cyhy_db_id, conn):
     """Query cyhy assets."""
@@ -489,17 +507,20 @@ def query_extra_ips(org_uid):
 
 
 def set_from_cidr():
+    """Set the from_cidr flag in the IPs table."""
     conn = connect()
     sql = """
         update ips
-        set from_cidr = True 
+        set from_cidr = True
         where origin_cidr is not null;
     """
     cur = conn.cursor()
     cur.execute(sql)
     conn.commit()
 
+
 def refresh_asset_counts_vw():
+    """Refresh asset count materialized views."""
     conn = connect()
     sql = """
         REFRESH MATERIALIZED VIEW
@@ -559,8 +580,8 @@ def query_cidrs_by_org(org_uid):
 def query_ports_protocols(org_uid):
     """Query distinct ports and protocols by org."""
     conn = connect()
-    sql = """select distinct sa.port,sa.protocol 
-            from shodan_assets sa 
+    sql = """select distinct sa.port,sa.protocol
+            from shodan_assets sa
             where sa.organizations_uid  = %(org_uid)s;
             """
     df = pd.read_sql(sql, conn, params={"org_uid": org_uid})
@@ -571,8 +592,8 @@ def query_ports_protocols(org_uid):
 def query_software(org_uid):
     """Query distinct software by org."""
     conn = connect()
-    sql = """select distinct sa.product 
-            from shodan_assets sa 
+    sql = """select distinct sa.product
+            from shodan_assets sa
             where sa.organizations_uid  = %(org_uid)s
             and sa.product notnull;
             """
@@ -585,7 +606,7 @@ def query_foreign_IPs(org_uid):
     """Query distinct software by org."""
     conn = connect()
     sql = """select * from
-            shodan_assets sa 
+            shodan_assets sa
             where (sa.country_code != 'US' and sa.country_code notnull)
             and sa.organizations_uid  = %(org_uid)s;
             """
@@ -1079,7 +1100,7 @@ def upsert_new_cves(new_cves):
         cols = ",".join(list(new_cves.columns))
         table = "cve_info"
         sql = """INSERT INTO {}({}) VALUES %s
-        ON CONFLICT (cve_name) 
+        ON CONFLICT (cve_name)
         DO UPDATE SET
             cve_name=EXCLUDED.cve_name,
             cvss_2_0=EXCLUDED.cvss_2_0,
