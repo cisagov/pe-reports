@@ -1556,7 +1556,7 @@ def report_gen(data_dict, soc_med_included=False):
     Story.append(NextPageTemplate("ContentPage"))
     Story.append(PageBreak())
 
-    # ***Start Generating Methodology Page***#
+    # Start generating Methodology page
     Story.append(doHeading("4. Methodology", h1))
     Story.append(horizontal_line)
     Story.append(point12_spacer)
