@@ -1,6 +1,7 @@
 """Query the PE PostgreSQL database."""
 
 # Standard Python Libraries
+import json
 import logging
 import re
 import sys
@@ -11,6 +12,7 @@ import pandas as pd
 import psycopg2
 from psycopg2 import OperationalError
 from psycopg2.extensions import AsIs
+import requests
 
 from .config import config
 
@@ -20,6 +22,8 @@ from .config import config
 LOGGER = logging.getLogger(__name__)
 
 CONN_PARAMS_DIC = config()
+PE_API_KEY = config(section="peapi").get("api_key")
+PE_API_URL = config(section="peapi").get("api_url")
 
 
 def sanitize_string(string):
@@ -57,20 +61,25 @@ def close(conn):
     return
 
 
-def get_orgs(conn):
-    """Query organizations table for orgs we report on."""
+def get_orgs():
+    """Query organizations table."""
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": f"{PE_API_KEY}",
+    }
     try:
-        cur = conn.cursor()
-        sql = """SELECT * FROM organizations WHERE report_on"""
-        cur.execute(sql)
-        pe_orgs = cur.fetchall()
-        cur.close()
-        return pe_orgs
-    except (Exception, psycopg2.DatabaseError) as error:
-        LOGGER.error("There was a problem with your database query %s", error)
-    finally:
-        if conn is not None:
-            close(conn)
+        response = requests.post(PE_API_URL, headers=headers).json()
+        return response
+    except requests.exceptions.HTTPError as errh:
+        print(errh)
+    except requests.exceptions.ConnectionError as errc:
+        print(errc)
+    except requests.exceptions.Timeout as errt:
+        print(errt)
+    except requests.exceptions.RequestException as err:
+        print(err)
+    except json.decoder.JSONDecodeError as err:
+        print(err)
 
 
 def get_orgs_df():
