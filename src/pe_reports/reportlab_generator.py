@@ -1160,7 +1160,7 @@ def report_gen(data_dict, soc_med_included=False):
     # Story.append(NextPageTemplate('ContentPage'))
     Story.append(PageBreak())
 
-    # ***Start Generating Dark Web Page***#
+    # Start generating Dark Web page
     Story.append(KeepTogether([doHeading("3.4 Dark Web Activity", h2), Spacer(1, 6)]))
 
     row = [
