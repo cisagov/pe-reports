@@ -183,7 +183,7 @@ def generate_reports(datestring, output_directory, soc_med_included=False):
             # Grab the PDF
             pdf = f"{output_directory}/Posture_and_Exposure_Report-{org_code}-{datestring}.pdf"
 
-            # Embed excel and Json files
+            # Embed Excel and JSON files
             (filesize, tooLarge, output) = embed(
                 output_directory,
                 org_code,
