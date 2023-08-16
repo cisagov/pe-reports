@@ -1157,7 +1157,6 @@ def report_gen(data_dict, soc_med_included=False):
             ]
         )
     )
-    # Story.append(NextPageTemplate('ContentPage'))
     Story.append(PageBreak())
 
     # Start generating Dark Web page
