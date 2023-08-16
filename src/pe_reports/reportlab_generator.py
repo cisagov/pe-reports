@@ -1195,7 +1195,6 @@ def report_gen(data_dict, soc_med_included=False):
             topPadding=None,  # default frame paddings
             bottomPadding=None,  # are used
             innerPadding=35,  # the gap between frames if specified else
-            # use max(leftPadding,rightPadding)
             name="dark_web_kpis",  # for identification purposes when stuff goes awry
             endSlack=0.1,  # height disparity allowance ie 10% of available height
         )
