@@ -173,7 +173,7 @@ def generate_reports(datestring, output_directory, soc_med_included=False):
 
             # Convert to HTML to PDF
             output_filename = f"{output_directory}/Posture_and_Exposure_Report-{org_code}-{datestring}.pdf"
-            # convert_html_to_pdf(source_html, output_filename)#TODO possibly generate report here
+
             report_dict["filename"] = output_filename
             if premium:
                 report_gen(report_dict, soc_med_included)
