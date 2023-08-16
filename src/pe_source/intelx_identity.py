@@ -71,7 +71,7 @@ class IntelX:
 
         for pe_org in pe_orgs_final:
             cyhy_org_id = pe_org["cyhy_db_name"]
-            pe_org_uid = pe_org["org_uid"]
+            pe_org_uid = pe_org["organizations_uid"]
 
             # Verify the org is in the list of orgs to scan
             if cyhy_org_id in orgs_list or orgs_list == "all" or orgs_list == "DEMO":

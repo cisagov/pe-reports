@@ -102,7 +102,7 @@ class Cybersixgill:
         print(list)
         for pe_org in pe_orgs_final:
             org_id = pe_org["cyhy_db_name"]
-            pe_org_uid = pe_org["org_uid"]
+            pe_org_uid = pe_org["organizations_uid"]
             # Only run on specified orgs
             if org_id in orgs_list or orgs_list == "all" or orgs_list == "DEMO":
                 count += 1

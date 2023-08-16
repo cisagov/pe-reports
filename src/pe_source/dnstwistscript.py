@@ -200,7 +200,7 @@ def run_dnstwist(orgs_list):
 
     failures = []
     for org in pe_orgs_final:
-        pe_org_uid = org["org_uid"]
+        pe_org_uid = org["organizations_uid"]
         org_name = org["name"]
         pe_org_id = org["cyhy_db_name"]
 

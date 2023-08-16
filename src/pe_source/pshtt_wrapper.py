@@ -16,7 +16,7 @@ import numpy as np
 from pshtt.pshtt import inspect_domains
 import pshtt.utils as utils
 
-from .data.pe_db.db_query import api_pshtt_domains_to_run, api_pshtt_insert
+from .data.pe_db.db_query_source import api_pshtt_domains_to_run, api_pshtt_insert
 
 NOW = datetime.datetime.now()
 DAYS_BACK = datetime.timedelta(days=15)
