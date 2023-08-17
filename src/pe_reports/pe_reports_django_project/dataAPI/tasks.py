@@ -132,7 +132,7 @@ def convert_uuids_to_strings(list_of_dicts):
     return list_of_dicts
 
 
-# ---------- D-Score View Tasks ----------
+# ---------- D-Score View Tasks, Issue 571 ----------
 @shared_task(bind=True)
 def get_dscore_vs_cert_info(self, specified_orgs: List[str]):
     """Task function for the dscore_vs_cert API endpoint."""
@@ -208,7 +208,7 @@ def get_fceb_status_info(self, specified_orgs: List[str]):
     return fceb_status
 
 
-# ---------- I-Score View Tasks ----------
+# ---------- I-Score View Tasks, Issue 570 ----------
 @shared_task(bind=True)
 def get_iscore_vs_vuln_info(self, specified_orgs: List[str]):
     """Task function for the iscore_vs_vuln API endpoint."""
@@ -533,7 +533,16 @@ def sub_domains_table_task(self, page: int, per_page: int):
     return result
 
 
-# --- pescore_hist_domain_alert, Issue 635 ---
+# -- set_from_cidr(), Issue 616 ---
+@shared_task(bind=True)
+def ips_update_from_cidr_task(self):
+    """Task function for the ips_update_from_cidr API endpoint."""
+    # Make database query and convert to list of dictionaries
+    Ips.objects.filter(origin_cidr__isnull=False).update(from_cidr=True)
+    return "Ips table from_cidr field has been updated"
+
+
+# --- pescore_hist_domain_alert(), Issue 635 ---
 @shared_task(bind=True)
 def pescore_hist_domain_alert_task(self, start_date: str, end_date: str):
     """Task function for the pescore_hist_domain_alert API endpoint."""
@@ -562,7 +571,7 @@ def pescore_hist_domain_alert_task(self, start_date: str, end_date: str):
     }
 
 
-# --- pescore_hist_darkweb_alert, Issue 635 ---
+# --- pescore_hist_darkweb_alert(), Issue 635 ---
 @shared_task(bind=True)
 def pescore_hist_darkweb_alert_task(self, start_date: str, end_date: str):
     """Task function for the pescore_hist_darkweb_alert API endpoint."""
@@ -591,7 +600,7 @@ def pescore_hist_darkweb_alert_task(self, start_date: str, end_date: str):
     }
 
 
-# --- pescore_hist_darkweb_ment, Issue 635 ---
+# --- pescore_hist_darkweb_ment(), Issue 635 ---
 @shared_task(bind=True)
 def pescore_hist_darkweb_ment_task(self, start_date: str, end_date: str):
     """Task function for the pescore_hist_darkweb_ment API endpoint."""
@@ -620,7 +629,7 @@ def pescore_hist_darkweb_ment_task(self, start_date: str, end_date: str):
     }
 
 
-# --- pescore_hist_cred, Issue 635 ---
+# --- pescore_hist_cred(), Issue 635 ---
 @shared_task(bind=True)
 def pescore_hist_cred_task(self, start_date: str, end_date: str):
     """Task function for the pescore_hist_cred API endpoint."""
@@ -649,7 +658,7 @@ def pescore_hist_cred_task(self, start_date: str, end_date: str):
     }
 
 
-# --- pescore_base_metrics, Issue 635 ---
+# --- pescore_base_metrics(), Issue 635 ---
 @shared_task(bind=True)
 def pescore_base_metrics_task(self, start_date: str, end_date: str):
     """Task function for the pescore_base_metrics API endpoint."""

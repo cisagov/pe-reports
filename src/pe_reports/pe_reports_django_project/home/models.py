@@ -702,6 +702,11 @@ class Ips(models.Model):
     live = models.BooleanField(blank=True, null=True)
     date_last_live = models.DateTimeField(blank=True, null=True)
     last_reverse_lookup = models.DateTimeField(blank=True, null=True)
+    first_seen = models.DateField(blank=True, null=True)
+    last_seen = models.DateField(blank=True, null=True)
+    current = models.BooleanField(blank=True, null=True)
+    from_cidr = models.BooleanField(blank=True, null=True)  # varchar type in db???
+    organizations_uid = models.UUIDField(blank=True, null=True)
 
     class Meta:
         """Ips model meta class."""
@@ -2016,6 +2021,43 @@ class VwIscoreOrgsIpCounts(models.Model):
 
         managed = False
         db_table = "vw_iscore_orgs_ip_counts"
+
+
+# Github issues connected to this model:
+# - Issue 612
+# - Issue 611
+# - Issue 610
+class VwIpsSubRootOrgInfo(models.Model):
+    """VwIpsSubRootOrgInfo model class."""
+
+    ip_hash = models.CharField(blank=True, null=True)
+    ip = models.CharField(blank=True, null=True)
+    origin_cidr = models.UUIDField(blank=True, null=True)
+    organizations_uid = models.UUIDField(blank=True, null=True)
+
+    class Meta:
+        """VwIpsSubRootOrgInfo model meta class."""
+
+        managed = False
+        db_table = "vw_ips_sub_root_org_info"
+
+
+# Github issues connected to this model:
+# - Issue 611
+class VwIpsCidrOrgInfo(models.Model):
+    """VwIpsCidrOrgInfo model class."""
+
+    ip_hash = models.CharField(blank=True, null=True)
+    ip = models.CharField(blank=True, null=True)
+    origin_cidr = models.UUIDField(blank=True, null=True)
+    network = models.CharField(blank=True, null=True)
+    organizations_uid = models.UUIDField(blank=True, null=True)
+
+    class Meta:
+        """VwIpsCidrOrgInfo model meta class."""
+
+        managed = False
+        db_table = "vw_ips_cidr_org_info"
 
 
 # Github issues connected to this model:

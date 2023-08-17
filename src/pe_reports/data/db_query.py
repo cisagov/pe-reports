@@ -360,18 +360,48 @@ def set_org_to_demo(cyhy_db_id, premium):
     return df
 
 
-def query_cyhy_assets(cyhy_db_id, conn):
-    """Query cyhy assets."""
-    sql = """
-    SELECT *
-    FROM cyhy_db_assets ca
-    where ca.org_id = %(org_id)s
-    and currently_in_cyhy;
+# --- Issue 608 ---
+def query_cyhy_assets(org_cyhy_name):
     """
+    Query API to retrieve all cyhy assets for an organization.
 
-    df = pd.read_sql_query(sql, conn, params={"org_id": cyhy_db_id})
+    Args:
+        org_cyhy_name: CyHy database name of the specified organization (not uid)
 
-    return df
+    Return:
+        All the cyhy assets belonging to the specified org as a dataframe
+    """
+    # Endpoint info
+    endpoint_url = pe_api_url + "cyhy_assets_by_org"
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": pe_api_key,
+    }
+    data = json.dumps({"org_cyhy_name": org_cyhy_name})
+    try:
+        # Call endpoint
+        result = requests.get(endpoint_url, headers=headers, data=data).json()
+        # Process data and return
+        result_df = pd.DataFrame.from_dict(result)
+        result_df.rename(
+            columns={
+                "field_id": "_id",
+            },
+            inplace=True,
+        )
+        result_df["first_seen"] = pd.to_datetime(result_df["first_seen"]).dt.date
+        result_df["last_seen"] = pd.to_datetime(result_df["last_seen"]).dt.date
+        return result_df
+    except requests.exceptions.HTTPError as errh:
+        LOGGER.info(errh)
+    except requests.exceptions.ConnectionError as errc:
+        LOGGER.info(errc)
+    except requests.exceptions.Timeout as errt:
+        LOGGER.info(errt)
+    except requests.exceptions.RequestException as err:
+        LOGGER.info(err)
+    except json.decoder.JSONDecodeError as err:
+        LOGGER.info(err)
 
 
 def get_data_source_uid(source):
@@ -464,32 +494,43 @@ def verifyCIDR(custIP):
         return False
 
 
+# --- Issue 610 ---
 def get_cidrs_and_ips(org_uid):
-    """Query all cidrs and ips for an organization."""
-    params = config()
-    conn = psycopg2.connect(**params)
-    cur = conn.cursor()
-    sql = """SELECT network from cidrs where
-        organizations_uid = %s;"""
-    cur.execute(sql, [org_uid])
-    cidrs = cur.fetchall()
-    sql = """
-    SELECT i.ip
-    FROM ips i
-    join ips_subs ip_s on ip_s.ip_hash = i.ip_hash
-    join sub_domains sd on sd.sub_domain_uid = ip_s.sub_domain_uid
-    join root_domains rd on rd.root_domain_uid = sd.root_domain_uid
-    WHERE rd.organizations_uid = %s
-    AND i.origin_cidr is null;
     """
-    cur.execute(sql, [org_uid])
-    ips = cur.fetchall()
-    conn.close()
-    cidrs_ips = cidrs + ips
-    cidrs_ips = [x[0] for x in cidrs_ips]
-    cidrs_ips = validateIP(cidrs_ips)
-    LOGGER.info(cidrs_ips)
-    return cidrs_ips
+    Query API to retrieve all CIDRs and IPs for an organization.
+
+    Args:
+        org_uid: uid of the specified organization
+
+    Return:
+        All the CIDRs and IPs belonging to the specified org as a dataframe
+    """
+    # Endpoint info
+    endpoint_url = pe_api_url + "cidrs_ips_by_org"
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": pe_api_key,
+    }
+    data = json.dumps({"org_uid": org_uid})
+    try:
+        # Call endpoint
+        result = requests.get(endpoint_url, headers=headers, data=data).json()
+        result_list = [d["ip"] for d in result]
+        # validate IPs
+        validateIP(result_list)
+        LOGGER.info(result_list)
+        # Process data and return
+        return result_list
+    except requests.exceptions.HTTPError as errh:
+        LOGGER.info(errh)
+    except requests.exceptions.ConnectionError as errc:
+        LOGGER.info(errc)
+    except requests.exceptions.Timeout as errt:
+        LOGGER.info(errt)
+    except requests.exceptions.RequestException as err:
+        LOGGER.info(err)
+    except json.decoder.JSONDecodeError as err:
+        LOGGER.info(err)
 
 
 def query_cidrs():
@@ -504,67 +545,95 @@ def query_cidrs():
     return df
 
 
+# --- Issue 611 ---
 def query_ips(org_uid):
-    """Get IP data."""
-    conn = connect()
-    sql1 = """SELECT i.ip_hash, i.ip, ct.network FROM ips i
-    JOIN cidrs ct on ct.cidr_uid = i.origin_cidr
-    JOIN organizations o on o.organizations_uid = ct.organizations_uid
-    where o.organizations_uid = %(org_uid)s
-    and i.origin_cidr is not null;"""
-    df1 = pd.read_sql(sql1, conn, params={"org_uid": org_uid})
-    ips1 = list(df1["ip"].values)
-
-    sql2 = """select i.ip_hash, i.ip
-    from ips i
-    join ips_subs is2 ON i.ip_hash = is2.ip_hash
-    join sub_domains sd on sd.sub_domain_uid = is2.sub_domain_uid
-    join root_domains rd on rd.root_domain_uid = sd.root_domain_uid
-    JOIN organizations o on o.organizations_uid = rd.organizations_uid
-    where o.organizations_uid = %(org_uid)s;"""
-    df2 = pd.read_sql(sql2, conn, params={"org_uid": org_uid})
-    ips2 = list(df2["ip"].values)
-
-    in_first = set(ips1)
-    in_second = set(ips2)
-
-    in_second_but_not_in_first = in_second - in_first
-
-    ips = ips1 + list(in_second_but_not_in_first)
-    conn.close()
-
-    return ips
-
-
-def query_extra_ips(org_uid):
-    """Get IP data."""
-    conn = connect()
-
-    sql2 = """select i.ip_hash, i.ip
-    from ips i
-    join ips_subs is2 ON i.ip_hash = is2.ip_hash
-    join sub_domains sd on sd.sub_domain_uid = is2.sub_domain_uid
-    join root_domains rd on rd.root_domain_uid = sd.root_domain_uid
-    JOIN organizations o on o.organizations_uid = rd.organizations_uid
-    where o.organizations_uid = %(org_uid)s and i.origin_cidr is null;"""
-    df = pd.read_sql(sql2, conn, params={"org_uid": org_uid})
-    ips = list(set(list(df["ip"].values)))
-
-    conn.close()
-
-    return ips
-
-
-def set_from_cidr():
-    conn = connect()
-    sql = """
-        update ips
-        set from_cidr = True 
-        where origin_cidr is not null;
     """
-    cur = conn.cursor()
-    cur.execute(sql)
-    conn.commit()
+    Query API to retrieve all IPs for an organization.
+
+    Args:
+        org_uid: uid of the specified organization
+
+    Return:
+        All the IPs belonging to the specified org as a dataframe
+    """
+    # Endpoint info
+    endpoint_url = pe_api_url + "ips_by_org"
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": pe_api_key,
+    }
+    data = json.dumps({"org_uid": org_uid})
+    try:
+        # Call endpoint
+        result = requests.get(endpoint_url, headers=headers, data=data).json()
+        # Process data and return
+        cidr_ip_list = [d["ip"] for d in result["cidr_ip_data"]]
+        sub_root_ip_list = [d["ip"] for d in result["sub_root_ip_data"]]
+        cidr_ip_set = set(cidr_ip_list)
+        sub_root_ip_set = set(sub_root_ip_list)
+        diff_set = sub_root_ip_set - cidr_ip_set
+        final_ip_list = cidr_ip_list + list(diff_set)
+        return final_ip_list
+    except requests.exceptions.HTTPError as errh:
+        LOGGER.info(errh)
+    except requests.exceptions.ConnectionError as errc:
+        LOGGER.info(errc)
+    except requests.exceptions.Timeout as errt:
+        LOGGER.info(errt)
+    except requests.exceptions.RequestException as err:
+        LOGGER.info(err)
+    except json.decoder.JSONDecodeError as err:
+        LOGGER.info(err)
+
+
+# --- Issue 612 ---
+def query_extra_ips(org_uid):
+    """
+    Query API to retrieve all extra IPs for an organization.
+
+    Args:
+        org_uid: uid of the specified organization
+
+    Return:
+        All the extra IPs belonging to the specified org as a dataframe
+    """
+    # Endpoint info
+    endpoint_url = pe_api_url + "extra_ips_by_org"
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": pe_api_key,
+    }
+    data = json.dumps({"org_uid": org_uid})
+    try:
+        # Call endpoint
+        result = requests.get(endpoint_url, headers=headers, data=data).json()
+        # Process data and return
+        result_list = list(set([d["ip"] for d in result]))
+        return result_list
+    except requests.exceptions.HTTPError as errh:
+        LOGGER.info(errh)
+    except requests.exceptions.ConnectionError as errc:
+        LOGGER.info(errc)
+    except requests.exceptions.Timeout as errt:
+        LOGGER.info(errt)
+    except requests.exceptions.RequestException as err:
+        LOGGER.info(err)
+    except json.decoder.JSONDecodeError as err:
+        LOGGER.info(err)
+
+
+# --- Issue 616 ---
+def set_from_cidr():
+    """
+    Query API to set from_cidr to True for any IPs that have an origin_cidr.
+    """
+    # Endpoint info
+    task_url = "ips_update_from_cidr"
+    status_url = "ips_update_from_cidr/task/"
+    data = None
+    # Make API call
+    result = task_api_call(task_url, status_url, data, 3)
+    LOGGER.info(result)
 
 
 def refresh_asset_counts_vw():
@@ -612,7 +681,7 @@ def refresh_asset_counts_vw():
     conn.commit()
 
 
-# --- Issue 618 (cidrs_by_org) ---
+# --- Issue 618 ---
 def query_cidrs_by_org(org_uid):
     """
     Query API to retrieve all CIDRs for an organization.
@@ -657,7 +726,7 @@ def query_cidrs_by_org(org_uid):
         LOGGER.error(err)
 
 
-# --- Issue 619 (ports_protocols_by_org) ---
+# --- Issue 619 ---
 def query_ports_protocols(org_uid):
     """
     Query API to retrieve all distinct ports/protocols for an organization.
@@ -693,7 +762,7 @@ def query_ports_protocols(org_uid):
         LOGGER.error(err)
 
 
-# --- Issue 620 (software_by_org) ---
+# --- Issue 620 ---
 def query_software(org_uid):
     """
     Query API to retrieve all distinct software products for an organization.
@@ -729,7 +798,7 @@ def query_software(org_uid):
         LOGGER.error(err)
 
 
-# --- Issue 621 (foreign_ips_by_org) ---
+# --- Issue 621 ---
 def query_foreign_IPs(org_uid):
     """
     Query API to retrieve all foreign ips for an organization.
@@ -798,7 +867,7 @@ def insert_roots(org, domain_list):
     execute_values(conn, roots, "public.root_domains", except_clause)
 
 
-# --- Issue 622 (root_domains_by_org) ---
+# --- Issue 622 ---
 def query_roots(org_uid):
     """
     Query API to retrieve all root domains for an organization.
@@ -1303,7 +1372,7 @@ def query_previous_period(org_uid, prev_end_date):
     return assets_dict
 
 
-# --- pescore_hist_domain_alert, Issue 635 ---
+# --- Issue 635 ---
 def pescore_hist_domain_alert(start_date, end_date):
     """
     Get all historical domain alert data for the PE score.
@@ -1338,7 +1407,7 @@ def pescore_hist_domain_alert(start_date, end_date):
     return result_df
 
 
-# --- pescore_hist_darkweb_alert, Issue 635 ---
+# --- Issue 635 ---
 def pescore_hist_darkweb_alert(start_date, end_date):
     """
     Get all historical darkweb alert data for the PE score.
@@ -1373,7 +1442,7 @@ def pescore_hist_darkweb_alert(start_date, end_date):
     return result_df
 
 
-# --- pescore_hist_darkweb_ment, Issue 635 ---
+# --- Issue 635 ---
 def pescore_hist_darkweb_ment(start_date, end_date):
     """
     Get all historical darkweb mention data for the PE score.
@@ -1409,7 +1478,7 @@ def pescore_hist_darkweb_ment(start_date, end_date):
     return result_df
 
 
-# --- pescore_hist_cred, Issue 635 ---
+# --- Issue 635 ---
 def pescore_hist_cred(start_date, end_date):
     """
     Get all historical credential data for the PE score.
@@ -1444,7 +1513,7 @@ def pescore_hist_cred(start_date, end_date):
     return result_df
 
 
-# --- pescore_base_metrics, Issue 635 ---
+# --- Issue 635 ---
 def pescore_base_metrics(start_date, end_date):
     """
     Get all base metrics for the PE score.
@@ -1644,7 +1713,7 @@ def upsert_new_cves(new_cves):
     )
 
 
-# v ---------- D-Score API Queries ---------- v
+# v ---------- D-Score API Queries, Issue 571 ---------- v
 def api_dscore_vs_cert(org_list):
     """
     Query API for all VS certificate data needed for D-Score calculation.
@@ -1765,7 +1834,7 @@ def api_fceb_status(org_list):
     return result_df
 
 
-# v ---------- I-Score API Queries ---------- v
+# v ---------- I-Score API Queries, Issue 570 ---------- v
 def api_iscore_vs_vuln(org_list):
     """
     Query API for all VS vuln data needed for I-Score calculation.

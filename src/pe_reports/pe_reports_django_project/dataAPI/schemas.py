@@ -474,6 +474,18 @@ class GenInputOrgUIDSingle(BaseModel):
         orm_mode = True
 
 
+# Generalized 1 org cyhy_db_name input schema
+class GenInputOrgCyhyNameSingle(BaseModel):
+    """GenInputOrgCyhyNameSingle schema class."""
+
+    org_cyhy_name: str
+
+    class Config:
+        """GenInputOrgCyhyNameSingle schema config class."""
+
+        orm_mode = True
+
+
 # Generalized list of org_uids input schema
 class GenInputOrgUIDList(BaseModel):
     "GenInputOrgUIDList schema class."
@@ -512,7 +524,7 @@ class GenInputOrgUIDListDateRange(BaseModel):
         orm_mode = True
 
 
-# ---------- D-Score View Schemas ----------
+# ---------- D-Score View Schemas, Issue 571 ----------
 # vw_dscore_vs_cert schema:
 class VwDscoreVSCert(BaseModel):
     """VwDscoreVSCert schema class."""
@@ -663,7 +675,7 @@ class FCEBStatusTaskResp(BaseModel):
     error: Optional[str] = None
 
 
-# ---------- I-Score View Schemas ----------
+# ---------- I-Score View Schemas, Issue 570 ----------
 # vw_iscore_vs_vuln schema:
 class VwIscoreVSVuln(BaseModel):
     """VwIscoreVSVuln schema class."""
@@ -986,6 +998,7 @@ class IpsInsertTaskResp(BaseModel):
 
 
 # --- query_all_subs(), Issue 560 ---
+# --- query_subs(), Issue 633 ---
 # Get entire sub_domains table, single output
 class SubDomainTable(BaseModel):
     """SubDomainTable schema class."""
@@ -1041,6 +1054,79 @@ class SubDomainTableTaskResp(BaseModel):
     status: str
     result: Optional[SubDomainResult] = None
     error: Optional[str] = None
+
+
+# --- query_cyhy_assets(), Issue 608 ---
+# Get CyHy database assets for an org (cyhy_db_name)
+class CyhyDbAssetsByOrg(BaseModel):
+    """CyhyDbAssetsByOrg schema class."""
+
+    field_id: Optional[str] = None
+    org_id: Optional[str] = None
+    org_name: Optional[str] = None
+    contact: Optional[str] = None
+    network: Optional[str] = None
+    type: Optional[str] = None
+    first_seen: Optional[str] = None
+    last_seen: Optional[str] = None
+    currently_in_cyhy: Optional[bool] = None
+
+    class Config:
+        """CyhyDbAssetsByOrg schema config class."""
+
+        orm_mode = True
+
+
+# --- get_cidrs_and_ips(), Issue 610 ---
+# Get CIDRs and IPs data for an org
+class CidrsIpsByOrg(BaseModel):
+    """CidrsIpsByOrg schema class."""
+
+    ip: str
+
+    class Config:
+        """CidrsIpsByOrg schema config class."""
+
+        orm_mode = True
+
+
+# --- query_ips(), Issue 611 ---
+# Get IPs data for an org
+class IpsByOrg(BaseModel):
+    """IpsByOrg schema class."""
+
+    cidr_ip_data: List[CidrsIpsByOrg]
+    sub_root_ip_data: List[CidrsIpsByOrg]
+
+    class Config:
+        """IpsByOrg schema config class."""
+
+        orm_mode = True
+
+
+# --- query_extra_ips(), Issue 612 ---
+# Get "extra" IP data for an org
+class ExtraIpsByOrg(BaseModel):
+    """ExtraIpsByOrg schema class."""
+
+    ip_hash: str
+    ip: str
+
+    class Config:
+        """ExtraIpsByOrg schema config class."""
+
+        orm_mode = True
+
+
+# --- set_from_cidr(), Issue 616 ---
+# Set from_cidr to True for any IPs that have an origin_cidr, task resp
+class IpsUpdateFromCidrTaskResp(BaseModel):
+    """IpsUpdateFromCidrTaskResp schema class."""
+
+    task_id: str
+    status: str
+    result: str = None
+    error: str = None
 
 
 # --- query_cidrs_by_org(), Issue 618 ---
@@ -1217,7 +1303,7 @@ class ReportedOrgs(BaseModel):
 
 
 # --- reported orgs schema, Issue 635 ---
-# List of reported organizations schema
+# List of reported organizations w/ cyhy db name schema
 class ReportedOrgsCyhy(BaseModel):
     """ReportedOrgsCyhy schema class."""
 
