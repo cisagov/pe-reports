@@ -36,32 +36,14 @@ from reportlab.platypus.tableofcontents import TableOfContents
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 
-pdfmetrics.registerFont(
-    TTFont(
-        "Franklin_Gothic_Book_Italic", BASE_DIR + "/fonts/FranklinGothicBookItalic.ttf"
-    )
-)
-pdfmetrics.registerFont(
-    TTFont("Franklin_Gothic_Book", BASE_DIR + "/fonts/FranklinGothicBook.ttf")
-)
-pdfmetrics.registerFont(
-    TTFont(
-        "Franklin_Gothic_Demi_Regular",
-        BASE_DIR + "/fonts/FranklinGothicDemiRegular.ttf",
-    )
-)
-pdfmetrics.registerFont(
-    TTFont(
-        "Franklin_Gothic_Medium_Italic",
-        BASE_DIR + "/fonts/FranklinGothicMediumItalic.ttf",
-    )
-)
-pdfmetrics.registerFont(
-    TTFont(
-        "Franklin_Gothic_Medium_Regular",
-        BASE_DIR + "/fonts/FranklinGothicMediumRegular.ttf",
-    )
-)
+for font_name, font_filename in [
+    ("Franklin_Gothic_Book", "FranklinGothicBook.ttf"),
+    ("Franklin_Gothic_Book_Italic", "FranklinGothicBookItalic.ttf"),
+    ("Franklin_Gothic_Demi_Regular", "FranklinGothicDemiRegular.ttf"),
+    ("Franklin_Gothic_Medium_Italic", "FranklinGothicMediumItalic.ttf"),
+    ("Franklin_Gothic_Medium_Regular", "FranklinGothicMediumRegular.ttf"),
+    ]:
+    pdfmetrics.registerFont(TTFont(font_name, BASE_DIR + "/fonts/" + font_filename))
 
 defaultPageSize = letter
 PAGE_HEIGHT = defaultPageSize[1]
