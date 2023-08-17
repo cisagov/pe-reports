@@ -61,7 +61,7 @@ class ListOfFigures(TableOfContents):
 
     def notify(self, kind, stuff):
         """
-        Call he notification hook to register all kinds of events.
+        Call the notification hook to register all kinds of events.
 
         Here we are interested in 'Figure' events only.
         """
