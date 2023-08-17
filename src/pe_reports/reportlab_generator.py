@@ -517,7 +517,6 @@ def report_gen(data_dict, soc_med_included=False):
 
     """Stream all the dynamic content to the report."""
 
-    # *************************#
     # Create repeated elements
     point12_spacer = ConditionalSpacer(1, 12)
     horizontal_line = HRFlowable(
