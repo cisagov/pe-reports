@@ -850,7 +850,7 @@ def report_gen(data_dict, soc_med_included=False):
     Story.append(point12_spacer)
     Story.append(PageBreak())
 
-    # ***Start Generating Domain Masquerading Page***#
+    # Start generating Domain Masquerading page
     Story.append(
         KeepTogether(
             [
