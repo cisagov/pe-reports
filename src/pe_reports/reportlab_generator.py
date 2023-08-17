@@ -388,7 +388,7 @@ def report_gen(data_dict, soc_med_included=False):
         h._bookmarkName = bn
         return h
 
-    # ***Document Structures***#
+    # Document structures
     """Build frames for different page structures."""
     doc = MyDocTemplate(data_dict["filename"])
     title_frame = Frame(45, 390, 530, 250, id=None, showBoundary=0)
