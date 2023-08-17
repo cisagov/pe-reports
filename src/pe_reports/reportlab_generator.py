@@ -71,7 +71,7 @@ class ListOfFigures(TableOfContents):
 
 # Extend TableOfContents class to create ListOfTables class
 class ListOfTables(TableOfContents):
-    """Class extention to build a Table of Tables."""
+    """Build a table of tables."""
 
     def notify(self, kind, stuff):
         """Call the notification hook to register all kinds of events.
