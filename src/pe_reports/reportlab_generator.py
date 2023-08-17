@@ -69,7 +69,7 @@ class ListOfFigures(TableOfContents):
             self.addEntry(*stuff)
 
 
-# Extend Table of contents to create a List of Tables Class
+# Extend TableOfContents class to create ListOfTables class
 class ListOfTables(TableOfContents):
     """Class extention to build a Table of Tables."""
 
