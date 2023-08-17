@@ -579,7 +579,7 @@ def report_gen(data_dict, soc_med_included=False):
     Story.append(toc)
     Story.append(PageBreak())
 
-    # ***Table of Figures and Table of Contents***#
+    # Table of figures and table of contents
     tot.levelStyles = toc_styles
     tof.levelStyles = toc_styles
     Story.append(Paragraph("<b>Table of Figures</b>", centered))
