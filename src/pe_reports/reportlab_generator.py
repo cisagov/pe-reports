@@ -725,7 +725,7 @@ def report_gen(data_dict, soc_med_included=False):
     Story.append(NextPageTemplate("ContentPage"))
     Story.append(PageBreak())
 
-    # ***Start Generating Creds Page***#
+    # Start generating Credentials page
     Story.append(doHeading("3. Detailed Results", h1))
     Story.append(horizontal_line)
     Story.append(point12_spacer)
