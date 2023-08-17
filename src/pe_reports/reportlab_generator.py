@@ -241,7 +241,7 @@ def build_kpi(data, width):
 
 
 def report_gen(data_dict, soc_med_included=False):
-    """Generate a P&E report with data passed in the data dictionry."""
+    """Generate a P&E report with data passed in the data dictionary."""
 
     def titlePage(canvas, doc):
         """Build static elements of the cover page."""
