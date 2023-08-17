@@ -969,7 +969,7 @@ def report_gen(data_dict, soc_med_included=False):
 
     Story.append(PageBreak())
 
-    # ***Start Generating Vulnerabilities Page***#
+    # Start generating Vulnerabilities page
     Story.append(
         KeepTogether(
             [
