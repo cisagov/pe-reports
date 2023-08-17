@@ -537,7 +537,7 @@ def report_gen(data_dict, soc_med_included=False):
     Story.append(NextPageTemplate("ContentPage"))
     Story.append(PageBreak())
 
-    # ***Table of Contents***#
+    # Table of contents
     Story.append(Paragraph("<b>Table of Contents</b>", centered))
     # Set styles for levels in Table of contents
     toc_styles = [
