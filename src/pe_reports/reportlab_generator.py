@@ -530,7 +530,7 @@ def report_gen(data_dict, soc_med_included=False):
         vAlign="TOP",
         dash=None,
     )
-    # ***Title Page***#
+    # Title page
     Story.append(Paragraph("Prepared for: " + data_dict["department"], title_data))
     Story.append(point12_spacer)
     Story.append(Paragraph("Reporting Period: " + data_dict["dateRange"], title_data))
