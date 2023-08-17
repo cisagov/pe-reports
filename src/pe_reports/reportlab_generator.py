@@ -708,7 +708,7 @@ def report_gen(data_dict, soc_med_included=False):
     Story.append(NextPageTemplate("SummaryPage"))
     Story.append(PageBreak())
 
-    # ***Start Generating Summary Page***#
+    # Start generating Summary page
     Story.append(doHeading("2. Summary of Findings", h1))
     Story.append(horizontal_line)
     Story.append(point12_spacer)
