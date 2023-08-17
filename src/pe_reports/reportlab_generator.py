@@ -55,7 +55,7 @@ def sha_hash(s: str):
     return sha256(s.encode("utf-8")).hexdigest()
 
 
-# Extend Table of contents to create a List of Figures Class
+# Extend TableOfContents class to create ListOfFigures class
 class ListOfFigures(TableOfContents):
     """Class extention to build a Table of Figures."""
 
