@@ -83,7 +83,7 @@ class ListOfTables(TableOfContents):
 
 
 class MyDocTemplate(BaseDocTemplate):
-    """Extend the BaseDocTemplate to adjust Template."""
+    """Customize the document template."""
 
     def __init__(self, filename, **kw):
         """Initialize MyDocTemplate."""
