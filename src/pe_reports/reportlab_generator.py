@@ -57,7 +57,7 @@ def sha_hash(s: str):
 
 # Extend TableOfContents class to create ListOfFigures class
 class ListOfFigures(TableOfContents):
-    """Class extention to build a Table of Figures."""
+    """Build a table of figures."""
 
     def notify(self, kind, stuff):
         """
