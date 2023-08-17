@@ -42,7 +42,7 @@ for font_name, font_filename in [
     ("Franklin_Gothic_Demi_Regular", "FranklinGothicDemiRegular.ttf"),
     ("Franklin_Gothic_Medium_Italic", "FranklinGothicMediumItalic.ttf"),
     ("Franklin_Gothic_Medium_Regular", "FranklinGothicMediumRegular.ttf"),
-    ]:
+]:
     pdfmetrics.registerFont(TTFont(font_name, BASE_DIR + "/fonts/" + font_filename))
 
 defaultPageSize = letter
