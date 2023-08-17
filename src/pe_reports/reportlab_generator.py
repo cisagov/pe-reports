@@ -588,8 +588,8 @@ def report_gen(data_dict, soc_med_included=False):
     Story.append(tot)
     Story.append(PageBreak())
 
-    # ***Content Pages***#
-    # ***Start Introduction Page***#
+    # Content pages
+    # Start Introduction page
     Story.append(doHeading("1. Introduction", h1))
     Story.append(horizontal_line)
     Story.append(point12_spacer)
