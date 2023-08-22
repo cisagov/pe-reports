@@ -11,7 +11,7 @@ Options:
   -l --log-level=LEVEL              If specified, then the log level will be set to
                                     the specified value.  Valid values are "debug", "info",
                                     "warning", "error", and "critical". [default: info]
-  -s --soc_med_included             Include social media posts from Cybersixgill in the report.
+  -s --soc-med-included             Include social media posts from Cybersixgill in the report.
 """
 
 # Standard Python Libraries
