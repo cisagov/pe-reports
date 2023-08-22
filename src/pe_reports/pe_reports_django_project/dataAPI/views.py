@@ -2496,6 +2496,288 @@ async def sub_domains_table_status(task_id: str, tokens: dict = Depends(get_api_
         return {"message": "No api key was submitted"}
 
 
+# --- get_org_assets_count_past(), Issue 603 ---
+@api_router.get(
+    "/past_asset_counts_by_org",
+    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    response_model=List[schemas.RSSTable],
+    tags=["Get all RSS data for the specified org_uid and date."],
+)
+def past_asset_counts_by_org(
+    data: schemas.GenInputOrgUIDDateSingle, tokens: dict = Depends(get_api_key)
+):
+    """API endpoint to get all RSS data for the specified org_uid and date."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # If API key valid, make query
+            past_asset_counts_by_org_data = list(
+                ReportSummaryStats.objects.filter(
+                    organizations_uid=data.org_uid, end_date=data.date
+                ).values()
+            )
+            # Convert uuids to strings
+            for row in past_asset_counts_by_org_data:
+                row["report_uid"] = convert_uuid_to_string(row["report_uid"])
+                row["organizations_uid_id"] = convert_uuid_to_string(
+                    row["organizations_uid_id"]
+                )
+                row["start_date"] = convert_date_to_string(row["start_date"])
+                row["end_date"] = convert_date_to_string(row["end_date"])
+            return past_asset_counts_by_org_data
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+
+# --- get_org_assets_count(), Issue 604 ---
+@api_router.get(
+    "/asset_counts_by_org",
+    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    response_model=List[schemas.AssetCountsByOrg],
+    tags=["Get attacksurface data for the specified org_uid."],
+)
+def asset_counts_by_org(
+    data: schemas.GenInputOrgUIDSingle, tokens: dict = Depends(get_api_key)
+):
+    """API endpoint to get attacksurface data for the specified org_uid."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # If API key valid, make query
+            asset_counts_by_org_data = list(
+                VwOrgsAttacksurface.objects.filter(
+                    organizations_uid=data.org_uid
+                ).values(
+                    "organizations_uid",
+                    "cyhy_db_name",
+                    "num_root_domain",
+                    "num_sub_domain",
+                    "num_ips",
+                    "num_ports",
+                    "num_cidrs",
+                    "num_ports_protocols",
+                    "num_software",
+                    "num_foreign_ips",
+                )
+            )
+            # Convert uuids to strings
+            for row in asset_counts_by_org_data:
+                row["organizations_uid"] = convert_uuid_to_string(
+                    row["organizations_uid"]
+                )
+            return asset_counts_by_org_data
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+
+# --- get_new_orgs(), Issue 605 ---
+@api_router.get(
+    "/orgs_report_on_false",
+    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    response_model=List[schemas.OrgsTable],
+    tags=["Get all data for organizations where report on is false."],
+)
+def orgs_report_on_false(tokens: dict = Depends(get_api_key)):
+    """API endpoint to get all data for organizations where report on is false."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # If API key valid, make query
+            orgs_report_on_false_data = list(
+                Organizations.objects.filter(report_on=False).values()
+            )
+            # Convert uuids to strings
+            for row in orgs_report_on_false_data:
+                row["organizations_uid"] = convert_uuid_to_string(
+                    row["organizations_uid"]
+                )
+                row["org_type_uid_id"] = convert_uuid_to_string(row["org_type_uid_id"])
+                row["date_first_reported"] = convert_date_to_string(
+                    row["date_first_reported"]
+                )
+                row["parent_org_uid_id"] = convert_uuid_to_string(
+                    row["parent_org_uid_id"]
+                )
+                row["cyhy_period_start"] = convert_date_to_string(
+                    row["cyhy_period_start"]
+                )
+            return orgs_report_on_false_data
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+
+# --- set_org_to_report_on(), Issue 606 ---
+@api_router.get(
+    "/orgs_set_report_on",
+    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    response_model=List[schemas.OrgsTable],
+    tags=["Set report_on to true for the specified organization."],
+)
+def orgs_set_report_on(
+    data: schemas.OrgsSetReportOnInput, tokens: dict = Depends(get_api_key)
+):
+    """API endpoint to set report_on to true for the specified organization."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # If API key valid, make query
+            specified_org = list(
+                Organizations.objects.filter(cyhy_db_name=data.cyhy_db_name).values()
+            )
+            if len(specified_org) != 0:
+                # If org exists, update fields
+                Organizations.objects.filter(cyhy_db_name=data.cyhy_db_name).update(
+                    report_on=True, premium_report=data.premium, demo=False
+                )
+                # Convert uuids to strings
+                for row in specified_org:
+                    row["organizations_uid"] = convert_uuid_to_string(
+                        row["organizations_uid"]
+                    )
+                    row["org_type_uid_id"] = convert_uuid_to_string(
+                        row["org_type_uid_id"]
+                    )
+                    row["date_first_reported"] = convert_date_to_string(
+                        row["date_first_reported"]
+                    )
+                    row["parent_org_uid_id"] = convert_uuid_to_string(
+                        row["parent_org_uid_id"]
+                    )
+                    row["cyhy_period_start"] = convert_date_to_string(
+                        row["cyhy_period_start"]
+                    )
+                return specified_org
+            else:
+                # Otherwise, return empty
+                LOGGER.error("No org found for that cyhy id")
+                return [
+                    {
+                        "organizations_uid": "NOT FOUND",
+                        "name": "",
+                        "cyhy_db_name": "",
+                        "org_type_uid_id": "",
+                        "report_on": False,
+                        "password": "",
+                        "date_first_reported": "",
+                        "parent_org_uid_id": "",
+                        "premium_report": False,
+                        "agency_type": "",
+                        "demo": False,
+                        "scorecard": False,
+                        "fceb": False,
+                        "receives_cyhy_report": False,
+                        "receives_bod_report": False,
+                        "receives_cybex_report": False,
+                        "run_scans": False,
+                        "is_parent": False,
+                        "ignore_roll_up": True,
+                        "retired": True,
+                        "cyhy_period_start": "",
+                        "fceb_child": False,
+                        "election": False,
+                        "scorecard_child": False,
+                    }
+                ]
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+
+# --- set_org_to_demo(), Issue 607 ---
+@api_router.get(
+    "/orgs_set_demo",
+    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    response_model=List[schemas.OrgsTable],
+    tags=["Set demo to true for the specified organization."],
+)
+def orgs_set_demo(
+    data: schemas.OrgsSetReportOnInput, tokens: dict = Depends(get_api_key)
+):
+    """API endpoint to set demo to true for the specified organization."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # If API key valid, make query
+            specified_org = list(
+                Organizations.objects.filter(cyhy_db_name=data.cyhy_db_name).values()
+            )
+            if len(specified_org) != 0:
+                # If org exists, update fields
+                Organizations.objects.filter(cyhy_db_name=data.cyhy_db_name).update(
+                    report_on=False, premium_report=data.premium, demo=True
+                )
+                # Convert uuids to strings
+                for row in specified_org:
+                    row["organizations_uid"] = convert_uuid_to_string(
+                        row["organizations_uid"]
+                    )
+                    row["org_type_uid_id"] = convert_uuid_to_string(
+                        row["org_type_uid_id"]
+                    )
+                    row["date_first_reported"] = convert_date_to_string(
+                        row["date_first_reported"]
+                    )
+                    row["parent_org_uid_id"] = convert_uuid_to_string(
+                        row["parent_org_uid_id"]
+                    )
+                    row["cyhy_period_start"] = convert_date_to_string(
+                        row["cyhy_period_start"]
+                    )
+                return specified_org
+            else:
+                # Otherwise, return empty
+                LOGGER.error("No org found for that cyhy id")
+                return [
+                    {
+                        "organizations_uid": "NOT FOUND",
+                        "name": "",
+                        "cyhy_db_name": "",
+                        "org_type_uid_id": "",
+                        "report_on": False,
+                        "password": "",
+                        "date_first_reported": "",
+                        "parent_org_uid_id": "",
+                        "premium_report": False,
+                        "agency_type": "",
+                        "demo": False,
+                        "scorecard": False,
+                        "fceb": False,
+                        "receives_cyhy_report": False,
+                        "receives_bod_report": False,
+                        "receives_cybex_report": False,
+                        "run_scans": False,
+                        "is_parent": False,
+                        "ignore_roll_up": True,
+                        "retired": True,
+                        "cyhy_period_start": "",
+                        "fceb_child": False,
+                        "election": False,
+                        "scorecard_child": False,
+                    }
+                ]
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+
 # --- query_cyhy_assets(), Issue 608 ---
 @api_router.get(
     "/cyhy_assets_by_org",

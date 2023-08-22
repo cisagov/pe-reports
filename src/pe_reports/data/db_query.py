@@ -210,56 +210,107 @@ def get_orgs_contacts(conn):
             close(conn)
 
 
+# --- Issue 603 ---
 def get_org_assets_count_past(org_uid, date):
-    """Get asset counts for an organization."""
-    conn = connect()
-    sql = """select * from report_summary_stats rss 
-                where organizations_uid = %(org_id)s
-                and end_date = %(date)s;"""
-    df = pd.read_sql(sql, conn, params={"org_id": org_uid, "date": date})
-    conn.close()
-    return df
+    """
+    Query API to retrieve all report_summary_stats data for the specified org_uid and date.
 
+    Args:
+        org_uid: The organizations_uid of the specified org
+        date: The end date of the specified report period
 
-def get_org_assets_count(uid):
-    """Get asset counts for an organization."""
-    conn = connect()
-    cur = conn.cursor()
-    sql = """select sur.cyhy_db_name, sur.num_root_domain, sur.num_sub_domain, sur.num_ips, sur.num_ports, sur.num_cidrs, sur.num_ports_protocols , sur.num_software, sur.num_foreign_ips
-            from mat_vw_orgs_attacksurface sur
-            where sur.organizations_uid = %s"""
-    cur.execute(sql, [uid])
+    Return:
+        All report_summary_stats data for the specified org_uid and date as a dataframe
+    """
+    # Endpoint info
+    endpoint_url = pe_api_url + "past_asset_counts_by_org"
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": pe_api_key,
+    }
+    data = json.dumps({"org_uid": org_uid, "date": date})
     try:
-        source = cur.fetchone()
-        cur.close()
-        conn.close()
-        assets_dict = {
-            "org_uid": uid,
-            "cyhy_db_name": source[0],
-            "num_root_domain": source[1],
-            "num_sub_domain": source[2],
-            "num_ips": source[3],
-            "num_ports": source[4],
-            "num_cidrs": source[5],
-            "num_ports_protocols": source[6],
-            "num_software": source[7]
-            - 1,  # Subtract 1 to remove the automatic null entry
-            "num_foreign_ips": source[8],
-        }
-    except:
-        assets_dict = {
-            "org_uid": uid,
-            "cyhy_db_name": "N/A",
-            "num_root_domain": 0,
-            "num_sub_domain": 0,
-            "num_ips": 0,
-            "num_ports": 0,
-            "num_cidrs": 0,
-            "num_ports_protocols": 0,
-            "num_software": 0,
-            "num_foreign_ips": 0,
-        }
-    return assets_dict
+        # Call endpoint
+        result = requests.get(endpoint_url, headers=headers, data=data).json()
+        # Process data and return
+        result_df = pd.DataFrame.from_dict(result)
+        result_df.rename(
+            columns={
+                "organizations_uid_id": "organizations_uid",
+            },
+            inplace=True,
+        )
+        result_df["start_date"] = pd.to_datetime(result_df["start_date"]).dt.date
+        result_df["end_date"] = pd.to_datetime(result_df["end_date"]).dt.date
+        return result_df
+    except requests.exceptions.HTTPError as errh:
+        LOGGER.info(errh)
+    except requests.exceptions.ConnectionError as errc:
+        LOGGER.info(errc)
+    except requests.exceptions.Timeout as errt:
+        LOGGER.info(errt)
+    except requests.exceptions.RequestException as err:
+        LOGGER.info(err)
+    except json.decoder.JSONDecodeError as err:
+        LOGGER.info(err)
+
+
+# --- Issue 604 ---
+def get_org_assets_count(org_uid):
+    """
+    Query API to retrieve attacksurface data for the specified org_uid.
+
+    Args:
+        org_uid: The organizations_uid of the specified org
+
+    Return:
+        attacksurface data for the specified org_uid as a dataframe
+    """
+    # Endpoint info
+    endpoint_url = pe_api_url + "asset_counts_by_org"
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": pe_api_key,
+    }
+    data = json.dumps({"org_uid": org_uid})
+    try:
+        # Call endpoint
+        result = requests.get(endpoint_url, headers=headers, data=data).json()
+        if result:
+            # If there are results, return those
+            result_df = pd.DataFrame(result[0], index=[0])
+            result_df.rename(
+                columns={
+                    "organizations_uid": "org_uid",
+                },
+                inplace=True,
+            )
+            assets_dict = result_df.to_dict("records")[0]
+            return assets_dict
+        else:
+            # If no results, return dummy asset dict
+            return {
+                "org_uid": org_uid,
+                "cyhy_db_name": "N/A",
+                "num_root_domain": 0,
+                "num_sub_domain": 0,
+                "num_ips": 0,
+                "num_ports": 0,
+                "num_cidrs": 0,
+                "num_ports_protocols": 0,
+                "num_software": 0,
+                "num_foreign_ips": 0,
+            }
+    except requests.exceptions.HTTPError as errh:
+        LOGGER.info(errh)
+    except requests.exceptions.ConnectionError as errc:
+        LOGGER.info(errc)
+    except requests.exceptions.Timeout as errt:
+        LOGGER.info(errt)
+    except requests.exceptions.RequestException as err:
+        LOGGER.info(err)
+    except json.decoder.JSONDecodeError as err:
+        LOGGER.info(err)
 
 
 def get_orgs_df(staging=False):
@@ -282,82 +333,164 @@ def get_orgs_df(staging=False):
             close(conn)
 
 
+# --- Issue 605 ---
 def get_new_orgs():
-    """Query organizations table for new orgs."""
-    conn = connect()
+    """
+    Query API to retrieve all data for organizations where report_on is false.
+
+    Return:
+        All data for organizations where report_on is false as a dataframe
+    """
+    # Endpoint info
+    endpoint_url = pe_api_url + "orgs_report_on_false"
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": pe_api_key,
+    }
+    data = None
     try:
-        sql = """SELECT * FROM organizations WHERE report_on='False'"""
-        pe_orgs_df = pd.read_sql(sql, conn)
-        return pe_orgs_df
-    except (Exception, psycopg2.DatabaseError) as error:
-        LOGGER.error("There was a problem with your database query %s", error)
-    finally:
-        if conn is not None:
-            close(conn)
+        # Call endpoint
+        result = requests.get(endpoint_url, headers=headers, data=data).json()
+        # Process data and return
+        result_df = pd.DataFrame.from_dict(result)
+        result_df.rename(
+            columns={
+                "org_type_uid_id": "org_type_uid",
+                "parent_org_uid_id": "parent_org_uid",
+            },
+            inplace=True,
+        )
+        result_df["date_first_reported"] = pd.to_datetime(
+            result_df["date_first_reported"]
+        ).dt.date
+        # to_datetime conversion only supports +/- 584 years
+        result_df.loc[
+            result_df["cyhy_period_start"] == "9999-01-01", "cyhy_period_start"
+        ] = "1950-01-01"
+        result_df["cyhy_period_start"] = pd.to_datetime(
+            result_df["cyhy_period_start"]
+        ).dt.date
+        result_df.loc[
+            result_df["cyhy_period_start"] == datetime.date(1950, 1, 1),
+            "cyhy_period_start",
+        ] = datetime.date(9999, 1, 1)
+        return result_df
+    except requests.exceptions.HTTPError as errh:
+        LOGGER.info(errh)
+    except requests.exceptions.ConnectionError as errc:
+        LOGGER.info(errc)
+    except requests.exceptions.Timeout as errt:
+        LOGGER.info(errt)
+    except requests.exceptions.RequestException as err:
+        LOGGER.info(err)
+    except json.decoder.JSONDecodeError as err:
+        LOGGER.info(err)
 
 
+# --- Issue 606 ---
 def set_org_to_report_on(cyhy_db_id, premium: bool = False):
-    """Set organization to report_on."""
-    sql = """
-    SELECT *
-    FROM organizations o
-    where o.cyhy_db_name = %(org_id)s
     """
-    params = config()
-    conn = psycopg2.connect(**params)
-    df = pd.read_sql_query(sql, conn, params={"org_id": cyhy_db_id})
+    Query API to set the specified org's report_on and premium_report fields.
 
-    if len(df) < 1:
-        LOGGER.error("No org found for that cyhy id")
-        return 0
+    Args:
+        cyhy_db_id: The cyhy db name of the specified org
+        premium: The boolean value you want to set the premium_report field to
 
-    for i, row in df.iterrows():
-        if row["report_on"] == True:
-            if row["premium_report"] == premium:
-                continue
+    Return:
+        The data of the org's whose report_on and premium_report fields were set.
+    """
+    # Endpoint info
+    endpoint_url = pe_api_url + "orgs_set_report_on"
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": pe_api_key,
+    }
+    data = json.dumps({"cyhy_db_name": cyhy_db_id, "premium": premium})
+    try:
+        # Call endpoint
+        result = requests.get(endpoint_url, headers=headers, data=data).json()
+        # Process data and return
+        if result[0].get("organizations_uid") == "NOT FOUND":
+            return 0
+        else:
+            result_df = pd.DataFrame.from_dict(result)
+            result_df.rename(
+                columns={
+                    "org_type_uid_id": "org_type_uid",
+                    "parent_org_uid_id": "parent_org_uid",
+                },
+                inplace=True,
+            )
+            result_df["date_first_reported"] = pd.to_datetime(
+                result_df["date_first_reported"]
+            ).dt.date
+            result_df["cyhy_period_start"] = pd.to_datetime(
+                result_df["cyhy_period_start"]
+            ).dt.date
+            return result_df
+    except requests.exceptions.HTTPError as errh:
+        LOGGER.error(errh)
+    except requests.exceptions.ConnectionError as errc:
+        LOGGER.error(errc)
+    except requests.exceptions.Timeout as errt:
+        LOGGER.error(errt)
+    except requests.exceptions.RequestException as err:
+        LOGGER.error(err)
+    except json.decoder.JSONDecodeError as err:
+        LOGGER.error(err)
 
-        cursor = conn.cursor()
-        sql = """UPDATE organizations
-                SET report_on = True, premium_report = %s, demo = False
-                WHERE organizations_uid = %s"""
-        uid = row["organizations_uid"]
-        cursor.execute(sql, (premium, uid))
-        conn.commit()
-        cursor.close()
-    conn.close()
-    return df
 
-
+# --- Issue 607 ---
 def set_org_to_demo(cyhy_db_id, premium):
-    """Set organization to demo."""
-    sql = """
-    SELECT *
-    FROM organizations o
-    where o.cyhy_db_name = %(org_id)s
     """
-    params = config()
-    conn = psycopg2.connect(**params)
-    df = pd.read_sql_query(sql, conn, params={"org_id": cyhy_db_id})
+    Query API to set the specified org's demo and premium_report fields.
 
-    if len(df) < 1:
-        LOGGER.error("No org found for that cyhy id")
-        return 0
+    Args:
+        cyhy_db_id: The cyhy db name of the specified org
+        premium: The boolean value you want to set the premium_report field to
 
-    for i, row in df.iterrows():
-        if row["demo"] == True:
-            if row["premium_report"] == premium:
-                continue
-
-        cursor = conn.cursor()
-        sql = """UPDATE organizations
-                SET report_on = False, premium_report = %s, demo = True
-                WHERE organizations_uid = %s"""
-        uid = row["organizations_uid"]
-        cursor.execute(sql, (premium, uid))
-        conn.commit()
-        cursor.close()
-    conn.close()
-    return df
+    Return:
+        The data of the org's whose demo and premium_report fields were set.
+    """
+    # Endpoint info
+    endpoint_url = pe_api_url + "orgs_set_demo"
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": pe_api_key,
+    }
+    data = json.dumps({"cyhy_db_name": cyhy_db_id, "premium": premium})
+    try:
+        # Call endpoint
+        result = requests.get(endpoint_url, headers=headers, data=data).json()
+        # Process data and return
+        if result[0].get("organizations_uid") == "NOT FOUND":
+            return 0
+        else:
+            result_df = pd.DataFrame.from_dict(result)
+            result_df.rename(
+                columns={
+                    "org_type_uid_id": "org_type_uid",
+                    "parent_org_uid_id": "parent_org_uid",
+                },
+                inplace=True,
+            )
+            result_df["date_first_reported"] = pd.to_datetime(
+                result_df["date_first_reported"]
+            ).dt.date
+            result_df["cyhy_period_start"] = pd.to_datetime(
+                result_df["cyhy_period_start"]
+            ).dt.date
+            return result_df
+    except requests.exceptions.HTTPError as errh:
+        LOGGER.error(errh)
+    except requests.exceptions.ConnectionError as errc:
+        LOGGER.error(errc)
+    except requests.exceptions.Timeout as errt:
+        LOGGER.error(errt)
+    except requests.exceptions.RequestException as err:
+        LOGGER.error(err)
+    except json.decoder.JSONDecodeError as err:
+        LOGGER.error(err)
 
 
 # --- Issue 608 ---

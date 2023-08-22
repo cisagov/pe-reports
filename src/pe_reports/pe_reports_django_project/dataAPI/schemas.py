@@ -486,6 +486,19 @@ class GenInputOrgCyhyNameSingle(BaseModel):
         orm_mode = True
 
 
+# Generalized 1 org_uid, 1 date input schema
+class GenInputOrgUIDDateSingle(BaseModel):
+    """GenInputOrgUIDDateSingle schema class."""
+
+    org_uid: str
+    date: str
+
+    class Config:
+        """GenInputOrgUIDDateSingle schema config class."""
+
+        orm_mode = True
+
+
 # Generalized list of org_uids input schema
 class GenInputOrgUIDList(BaseModel):
     "GenInputOrgUIDList schema class."
@@ -1054,6 +1067,116 @@ class SubDomainTableTaskResp(BaseModel):
     status: str
     result: Optional[SubDomainResult] = None
     error: Optional[str] = None
+
+
+# --- get_org_assets_count_past(), Issue 603 ---
+# Generalized schema for returning all report_summary_stats table fields
+class RSSTable(BaseModel):
+    """RSSTable schema class."""
+
+    report_uid: str
+    organizations_uid_id: str
+    start_date: Optional[str]
+    end_date: Optional[str]
+    ip_count: Optional[int]
+    root_count: Optional[int]
+    sub_count: Optional[int]
+    ports_count: Optional[int]
+    creds_count: Optional[int]
+    breach_count: Optional[int]
+    creds_password_count: Optional[int]
+    domain_alert_count: Optional[int]
+    suspected_domain_count: Optional[int]
+    insecure_port_count: Optional[int]
+    verified_vuln_count: Optional[int]
+    suspected_vuln_count: Optional[int]
+    threat_actor_count: Optional[int]
+    dark_web_alerts_count: Optional[int]
+    dark_web_mentions_count: Optional[int]
+    dark_web_executive_alerts_count: Optional[int]
+    dark_web_asset_alerts_count: Optional[int]
+    pe_number_score: Optional[str]  # ?
+    pe_letter_grade: Optional[str]
+    pe_percent_score: Optional[float]  # ?
+    cidr_count: Optional[int]
+    port_protocol_count: Optional[int]
+    software_count: Optional[int]
+    foreign_ips_count: Optional[int]
+
+    class Config:
+        """RSSTable schema config class."""
+
+        orm_mode = True
+
+
+# --- get_org_assets_count(), Issue 604 ---
+# Get asset counts for the specified org_uid
+class AssetCountsByOrg(BaseModel):
+    """AssetCountsByOrg schema class."""
+
+    organizations_uid: str
+    cyhy_db_name: str
+    num_root_domain: int
+    num_sub_domain: int
+    num_ips: int
+    num_ports: int
+    num_cidrs: int
+    num_ports_protocols: int
+    num_software: int
+    num_foreign_ips: int
+
+    class Config:
+        """AssetCountsByOrg schema config class."""
+
+        orm_mode = True
+
+
+# --- get_new_orgs(), Issue 605, 606, 607 ---
+# Generalized schema for returning all organizations table fields
+class OrgsTable(BaseModel):
+    """OrgsTable schema class."""
+
+    organizations_uid: str
+    name: Optional[str] = None
+    cyhy_db_name: Optional[str] = None
+    org_type_uid_id: Optional[str] = None
+    report_on: Optional[bool] = None
+    password: Optional[str] = None
+    date_first_reported: Optional[str] = None
+    parent_org_uid_id: Optional[str] = None
+    premium_report: Optional[bool] = None
+    agency_type: Optional[str] = None
+    demo: Optional[bool] = None
+    scorecard: Optional[bool] = None
+    fceb: Optional[bool] = None
+    receives_cyhy_report: Optional[bool] = None
+    receives_bod_report: Optional[bool] = None
+    receives_cybex_report: Optional[bool] = None
+    run_scans: Optional[bool] = None
+    is_parent: Optional[bool] = None
+    ignore_roll_up: Optional[bool] = None
+    retired: Optional[bool] = None
+    cyhy_period_start: Optional[str] = None
+    fceb_child: Optional[bool] = None
+    election: Optional[bool] = None
+    scorecard_child: Optional[bool] = None
+
+    class Config:
+        """OrgsTable schema config class."""
+
+        orm_mode = True
+
+
+# --- set_org_to_report_on(), Issue 606, 607 ---
+# Set specified organization to report_on
+class OrgsSetReportOnInput(BaseModel):
+    """OrgsSetReportOnInput schema class."""
+
+    cyhy_db_name: str
+    premium: bool
+
+    class Config:
+        """OrgsSetReportOnInput schema config class."""
 
 
 # --- query_cyhy_assets(), Issue 608 ---

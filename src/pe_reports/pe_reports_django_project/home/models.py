@@ -822,6 +822,19 @@ class Organizations(models.Model):
     premium_report = models.BooleanField(blank=True, null=True)
     agency_type = models.TextField(blank=True, null=True)
     demo = models.BooleanField(blank=True, null=True)
+    scorecard = models.BooleanField(blank=True, null=True)
+    fceb = models.BooleanField(blank=True, null=True)
+    receives_cyhy_report = models.BooleanField(blank=True, null=True)
+    receives_bod_report = models.BooleanField(blank=True, null=True)
+    receives_cybex_report = models.BooleanField(blank=True, null=True)
+    run_scans = models.BooleanField(blank=True, null=True)
+    is_parent = models.BooleanField(blank=True, null=True)
+    ignore_roll_up = models.BooleanField(blank=True, null=True)
+    retired = models.BooleanField(blank=True, null=True)
+    cyhy_period_start = models.DateField(blank=True, null=True)
+    fceb_child = models.BooleanField(blank=True, null=True)
+    election = models.BooleanField(blank=True, null=True)
+    scorecard_child = models.BooleanField(blank=True, null=True)
 
     class Meta:
         """Set Organizations model metadata."""
@@ -1732,6 +1745,10 @@ class VwOrgsAttacksurface(models.Model):
     num_root_domain = models.BigIntegerField(blank=True, null=True)
     num_sub_domain = models.BigIntegerField(blank=True, null=True)
     num_ips = models.BigIntegerField(blank=True, null=True)
+    num_cidrs = models.BigIntegerField(blank=True, null=True)
+    num_ports_protocols = models.BigIntegerField(blank=True, null=True)
+    num_software = models.BigIntegerField(blank=True, null=True)
+    num_foreign_ips = models.BigIntegerField(blank=True, null=True)
 
     class Meta:
         """VwOrgsAttacksurface model meta class."""
