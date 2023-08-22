@@ -263,7 +263,7 @@ def main():
     generate_reports(
         validated_args["REPORT_DATE"],
         validated_args["OUTPUT_DIRECTORY"],
-        validated_args["--soc_med_included"],
+        validated_args["--soc-med-included"],
     )
 
     # Stop logging and clean up
