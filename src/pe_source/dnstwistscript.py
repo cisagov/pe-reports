@@ -149,25 +149,26 @@ def execute_dnstwist(root_domain, test=0):
     if test == 1:
         return dnstwist_result
     finalorglist = dnstwist_result + []
-    for dom in dnstwist_result:
-        if (
-            ("tld-swap" not in dom["fuzzer"])
-            and ("original" not in dom["fuzzer"])
-            and ("replacement" not in dom["fuzzer"])
-            and ("repetition" not in dom["fuzzer"])
-            and ("omission" not in dom["fuzzer"])
-            and ("insertion" not in dom["fuzzer"])
-            and ("transposition" not in dom["fuzzer"])
-        ):
-            LOGGER.info("Running again on %s", dom["domain"])
-            secondlist = dnstwist.run(
-                registered=True,
-                tld=pathtoDict,
-                format="json",
-                threads=8,
-                domain=dom["domain"],
-            )
-            finalorglist += secondlist
+    if root_domain.split(".")[-1] == "gov": 
+        for dom in dnstwist_result:
+            if (
+                ("tld-swap" not in dom["fuzzer"])
+                and ("original" not in dom["fuzzer"])
+                and ("replacement" not in dom["fuzzer"])
+                and ("repetition" not in dom["fuzzer"])
+                and ("omission" not in dom["fuzzer"])
+                and ("insertion" not in dom["fuzzer"])
+                and ("transposition" not in dom["fuzzer"])
+            ):
+                LOGGER.info("Running again on %s", dom["domain"])
+                secondlist = dnstwist.run(
+                    registered=True,
+                    tld=pathtoDict,
+                    format="json",
+                    threads=8,
+                    domain=dom["domain"],
+                )
+                finalorglist += secondlist
     return finalorglist
 
 
