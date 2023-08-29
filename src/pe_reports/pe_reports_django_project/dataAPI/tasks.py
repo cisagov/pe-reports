@@ -11,43 +11,7 @@ from celery import shared_task
 from django.core import serializers
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.db.models import Count, Q, Sum
-from home.models import (
-    Alerts,
-    Cidrs,
-    CredentialBreaches,
-    CveInfo,
-    CyhyKevs,
-    DomainAlerts,
-    DomainPermutations,
-    Ips,
-    MatVwOrgsAllIps,
-    Organizations,
-    SubDomains,
-    VwBreachcomp,
-    VwBreachcompCredsbydate,
-    VwDarkwebInviteonlymarkets,
-    VwDarkwebMentionsbydate,
-    VwDarkwebPotentialthreats,
-    VwDscorePEDomain,
-    VwDscorePEIp,
-    VwDscoreVSCert,
-    VwDscoreVSMail,
-    VwDscoreWASWebapp,
-    VwIscoreOrgsIpCounts,
-    VwIscorePEBreach,
-    VwIscorePECred,
-    VwIscorePEDarkweb,
-    VwIscorePEProtocol,
-    VwIscorePEVuln,
-    VwIscoreVSVuln,
-    VwIscoreVSVulnPrev,
-    VwIscoreWASVuln,
-    VwIscoreWASVulnPrev,
-    VwOrgsAttacksurface,
-    VwPshttDomainsToRun,
-    VwShodanvulnsSuspected,
-    VwShodanvulnsVerified,
-)
+from home.models import *
 
 # cisagov Libraries
 from pe_reports.helpers import ip_passthrough
@@ -892,3 +856,15 @@ def get_vw_pshtt_domains_to_run_info(self):
         row["organizations_uid"] = str(row["organizations_uid"])
     # Return results
     return endpoint_data
+
+# --- darkweb_cves(), Issue 630 ---
+@shared_task(bind=True)
+def darkweb_cves_task(self):
+    """Task function for the darkweb_cves API endpoint."""
+    # Make database query and convert to list of dictionaries
+    all_data = list(TopCves.objects.all().values())
+    
+    for row in all_data:
+        row["top_cves_uid"] = convert_uuid_to_string(row["top_cves_uid"])
+        row["data_source_uid_id"] = convert_uuid_to_string(row["data_source_uid_id"])
+    return all_data

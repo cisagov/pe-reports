@@ -8,45 +8,8 @@ import logging
 from typing import Any, List, Union
 
 # Third-Party Libraries
-from dataAPI.tasks import (
-    convert_date_to_string,
-    convert_uuid_to_string,
-    cred_breach_intelx_task,
-    cve_info_insert_task,
-    get_dscore_pe_domain_info,
-    get_dscore_pe_ip_info,
-    get_dscore_vs_cert_info,
-    get_dscore_vs_mail_info,
-    get_dscore_was_webapp_info,
-    get_fceb_status_info,
-    get_iscore_pe_breach_info,
-    get_iscore_pe_cred_info,
-    get_iscore_pe_darkweb_info,
-    get_iscore_pe_protocol_info,
-    get_iscore_pe_vuln_info,
-    get_iscore_vs_vuln_info,
-    get_iscore_vs_vuln_prev_info,
-    get_iscore_was_vuln_info,
-    get_iscore_was_vuln_prev_info,
-    get_kev_list_info,
-    get_l_stakeholders_info,
-    get_m_stakeholders_info,
-    get_rva_info,
-    get_s_stakeholders_info,
-    get_ve_info,
-    get_vs_info,
-    get_vw_pshtt_domains_to_run_info,
-    get_xl_stakeholders_info,
-    get_xs_stakeholders_info,
-    ips_insert_task,
-    ips_update_from_cidr_task,
-    pescore_base_metrics_task,
-    pescore_hist_cred_task,
-    pescore_hist_darkweb_alert_task,
-    pescore_hist_darkweb_ment_task,
-    pescore_hist_domain_alert_task,
-    sub_domains_table_task,
-)
+from dataAPI.tasks import *
+
 from decouple import config
 from django.conf import settings
 from django.contrib.auth.models import User
@@ -68,28 +31,7 @@ from fastapi.security import OAuth2PasswordBearer
 from fastapi.security.api_key import APIKeyHeader
 from fastapi_limiter import FastAPILimiter
 from fastapi_limiter.depends import RateLimiter
-from home.models import (
-    Cidrs,
-    CyhyDbAssets,
-    CyhyPortScans,
-    DataSource,
-    Organizations,
-    PshttResults,
-    ReportSummaryStats,
-    RootDomains,
-    ShodanAssets,
-    SubDomains,
-    VwBreachcomp,
-    VwBreachcompBreachdetails,
-    VwBreachcompCredsbydate,
-    VwCidrs,
-    VwIpsCidrOrgInfo,
-    VwIpsSubRootOrgInfo,
-    VwOrgsAttacksurface,
-    VwPEScoreCheckNewCVE,
-    WasTrackerCustomerdata,
-    WeeklyStatuses,
-)
+from home.models import *
 from jose import exceptions, jwt
 from redis import asyncio as aioredis
 from slowapi import Limiter
@@ -3918,3 +3860,135 @@ def pshtt_result_update_or_insert(
             LOGGER.info("API key expired please try again")
     else:
         return {"message": "No api key was submitted"}
+    
+# --- get_darkweb_cves_breaches(), Issue 630 ---
+@api_router.post(
+    "/darkweb_cves",
+    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.DarkWebCvesTaskResp,
+    tags=["Get all darkweb cve data"],
+)
+def darkweb_cves(
+    tokens: dict = Depends(get_api_key)
+):
+    """API endpoint to get all darkweb cve data"""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        task = darkweb_cves_task.delay()
+        # Return the new task id w/ "Processing" status
+        return {"task_id": task.id, "status": "Processing"}
+    else:
+        return {"message": "No api key was submitted"}
+
+# --
+@api_router.get(
+    "/darkweb_cves/task/{task_id}",
+    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    #\response_model=schemas.DarkWebCvesTaskResp,
+    tags=["Check task status for darkweb_cves endpoint task."],
+)
+async def darkweb_cves_status(task_id: str, tokens: dict = Depends(get_api_key)):
+    """API endpoint to check status of darkweb_cves endpoint task."""
+    # Retrieve task status
+    task = darkweb_cves_task.AsyncResult(task_id)
+    # Return appropriate message for status
+    if task.state == "SUCCESS":
+        return {"task_id": task_id, "status": "Completed", "result": task.result}
+    elif task.state == "PENDING":
+        return {"task_id": task_id, "status": "Pending"}
+    elif task.state == "FAILURE":
+        return {"task_id": task_id, "status": "Failed", "error": str(task.result)}
+    else:
+        return {"task_id": task_id, "status": task.state}
+
+# --- Issue 629 ---
+# Query the darkweb data, It eithere hits the Alerts table or the Mentions Table
+@api_router.post(
+    "/darkweb_data",
+    #response_model=schemas.DarkWebCvesTaskResp,
+    tags=["Get darkweb data from either mentions or alerts table"],
+)
+def darkweb_data(
+    data: schemas.DarkWebDataInput, tokens: dict = Depends(get_api_key)
+):
+    """API Endpoint to query the darkweb data from either alerts table or mentions table."""
+    if tokens:
+        try:
+            #userapiTokenverify(theapiKey=tokens)
+            date_format = "%Y-%m-%d"
+            try:
+                sdate = datetime.datetime.strptime(data.start_date, date_format)
+                edate = datetime.datetime.strptime(data.end_date, date_format)
+            except ValueError:
+                return {"message": "date is in wrong format"}
+            print('testing')
+            match data.table:
+                case 'mentions':
+                    print("here")
+                    mentions = list(Mentions.objects.filter(organizations_uid=data.org_uid,date__range=(sdate,edate)).values())
+                    return mentions
+                case 'alerts':
+                    alerts = mentions = list(Alerts.objects.filter(organizations_uid=data.org_uid,date__range=(sdate,edate)).values())
+                    return alerts
+        except:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+    
+# --- Issue 627 ---
+# Query domain masquerading alerts tables
+@api_router.post(
+    "/dom_masq_alerts",
+    #response_model=schemas.DarkWebCvesTaskResp,
+    tags=["query the domain masq alert data."],
+)
+def dom_masq_alerts(
+    data: schemas.AlertInput, tokens: dict = Depends(get_api_key)
+):
+    """API Endpoint to query the domain masq data. """
+    if tokens:
+        try:
+            #userapiTokenverify(theapiKey=tokens)
+            date_format = "%Y-%m-%d"
+            try:
+                sdate = datetime.datetime.strptime(data.start_date, date_format)
+                edate = datetime.datetime.strptime(data.end_date, date_format)
+            except:
+                return {"message": "date is in wrong format"}        
+            mentions = list(DomainAlerts.objects.filter(organizations_uid=data.org_uid,date__range=(sdate,edate)).values())
+            return mentions
+        except:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+    
+
+# --- Issue 626 ---
+# Query domain masquerading on the domain permutattions tables
+@api_router.post(
+    "/dom_masq",
+    #response_model=schemas.DarkWebCvesTaskResp,
+    tags=["query the domain masq data."],
+)
+def dom_masq(
+    data: schemas.AlertInput, tokens: dict = Depends(get_api_key)
+):
+    """API Endpoint to query the domain masq data. """
+    if tokens:
+        try:
+            #userapiTokenverify(theapiKey=tokens)
+            date_format = "%Y-%m-%d"
+            try:
+                sdate = datetime.datetime.strptime(data.start_date, date_format)
+                edate = datetime.datetime.strptime(data.end_date, date_format)
+            except:
+                return {"message": "date is in wrong format"}        
+            mentions = list(DomainPermutations.objects.filter(organizations_uid=data.org_uid,date_active__range=(sdate,edate)).values())
+            return mentions
+        except:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+    
+    

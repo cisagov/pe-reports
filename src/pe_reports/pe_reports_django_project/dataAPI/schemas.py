@@ -2055,3 +2055,39 @@ class PshttInsert(BaseModel):
     ep_httpwww_headers: Optional[str] = None  # This field type is a guess.
     ep_httpwww_server_header: Optional[str] = None
     ep_httpwww_server_version: Optional[str] = None
+
+# --- Top_cves table record, Issue 630 ---
+class TopCvesRecord(BaseModel):
+    top_cves_uid: str
+    cve_id: str
+    dynamic_rating: str
+    nvd_base_score: str
+    date: datetime
+    summary: str
+    data_source_uid_id: str
+    
+# --- darkweb_cves(), Issue 630 ---
+# Get darkweb
+class DarkWebCvesTaskResp(BaseModel):
+    task_id: str
+    status: str
+    result: List[TopCvesRecord] = None
+    error: str = None
+    
+# --- darkwebdatainput Issue 629 ---
+class DarkWebDataInput(BaseModel):
+    table: str
+    org_uid: str
+    start_date: str
+    end_date: str
+    
+    class Config:
+        orm_mode = True
+
+class AlertInput(BaseModel):
+    org_uid: str
+    start_date: str
+    end_date: str
+    
+    class Config:
+        orm_mode = True

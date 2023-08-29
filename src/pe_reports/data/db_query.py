@@ -1096,7 +1096,7 @@ def query_breachdetails_view(org_uid, start_date, end_date):
         if conn is not None:
             close(conn)
 
-
+#--- Issue 626 ---
 def query_domMasq(org_uid, start_date, end_date):
     """Query domain masquerading table."""
     conn = connect()
@@ -1120,7 +1120,7 @@ def query_domMasq(org_uid, start_date, end_date):
         if conn is not None:
             close(conn)
 
-
+#Issue 627 - Query domain alerts table
 def query_domMasq_alerts(org_uid, start_date, end_date):
     """Query domain alerts table."""
     conn = connect()
@@ -1135,7 +1135,7 @@ def query_domMasq_alerts(org_uid, start_date, end_date):
                 "org_uid": org_uid,
                 "start_date": start_date,
                 "end_date": end_date,
-            },
+            },  
         )
         return df
     except (Exception, psycopg2.DatabaseError) as error:
@@ -1144,6 +1144,39 @@ def query_domMasq_alerts(org_uid, start_date, end_date):
         if conn is not None:
             close(conn)
 
+def query_domMasq_alerts_api(org_uid, start_date, end_date):
+    # Endpoint info
+    endpoint_url = pe_api_url + "dom_masq_alerts"
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": pe_api_key,
+    }
+    data = json.dumps({ "org_uid": org_uid, "start_date": start_date, "end_date": end_date})
+    try:
+        # Call endpoint
+        result = requests.post(endpoint_url, headers=headers, data=data).json()
+        # Process data and return
+        result_df = pd.DataFrame.from_dict(result)
+        result_df.rename(
+            columns={
+               "organizations_uid_id": "organizations_uid",
+               "data_source_uid_id": "data_source_uid",
+               "sub_domain_uid_id": "sub_domain_uid",
+            },
+            inplace=True,
+        )
+        result_df["date"] = pd.to_datetime(result_df["date"]).dt.date
+        return result_df
+    except requests.exceptions.HTTPError as errh:
+        LOGGER.info(errh)
+    except requests.exceptions.ConnectionError as errc:
+        LOGGER.info(errc)
+    except requests.exceptions.Timeout as errt:
+        LOGGER.info(errt)
+    except requests.exceptions.RequestException as err:
+        LOGGER.info(err)
+    except json.decoder.JSONDecodeError as err:
+        LOGGER.info(err)
 
 # The 'table' parameter is used in query_shodan, query_darkweb and
 # query_darkweb_cves functions to call specific tables that relate to the
@@ -1225,13 +1258,60 @@ def query_darkweb(org_uid, start_date, end_date, table):
     finally:
         if conn is not None:
             close(conn)
+            
+def query_darkweb_api(org_uid, start_date, end_date, table):
+    # Endpoint info
+    endpoint_url = pe_api_url + "darkweb_data"
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": pe_api_key,
+    }
+    data = json.dumps({"table": table, "org_uid": org_uid, "start_date": start_date, "end_date": end_date})
+    try:
+        # Call endpoint
+        result = requests.post(endpoint_url, headers=headers, data=data).json()
+        # Process data and return
+        result_df = pd.DataFrame.from_dict(result)
+        result_df.rename(
+            columns={
+               "organizations_uid_id": "organizations_uid",
+               "data_source_uid_id": "data_source_uid",
+            },
+            inplace=True,
+        )
+        result_df["date"] = pd.to_datetime(result_df["date"]).dt.date
+        return result_df
+    except requests.exceptions.HTTPError as errh:
+        LOGGER.info(errh)
+    except requests.exceptions.ConnectionError as errc:
+        LOGGER.info(errc)
+    except requests.exceptions.Timeout as errt:
+        LOGGER.info(errt)
+    except requests.exceptions.RequestException as err:
+        LOGGER.info(err)
+    except json.decoder.JSONDecodeError as err:
+        LOGGER.info(err)
 
 
 # -- Issue 630 ---
 # This Function references the "top_cves" table
 # this one will use
+def query_darkweb_cves_api(table):
+    """Query Dark Web CVE table."""
+    result = task_api_call("darkweb_cves","darkweb_cves/task/")
+    result_df = pd.DataFrame.from_dict(result)
+    result_df.rename(
+            columns={
+                "data_source_uid_id": "data_source_uid",
+            },
+            inplace=True,
+    )
+    result_df["date"] = pd.to_datetime(result_df["date"]).dt.date
+    return result_df
+
 def query_darkweb_cves(table):
     """Query Dark Web CVE table."""
+
     conn = connect()
     try:
         sql = """SELECT * FROM %(table)s"""

@@ -20,6 +20,7 @@ def config(filename=REPORT_DB_CONFIG, section="postgres"):
 
     if parser.has_section(section):
         for key, value in parser.items(section):
+            print(value)
             db[key] = value
 
     else:
