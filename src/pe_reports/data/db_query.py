@@ -1123,6 +1123,11 @@ def query_domMasq(org_uid, start_date, end_date):
     """
     Query API to retrieve all domain_permutations data for the specified org_uid and date range.
 
+    Args:
+        org_uid: The uid of the organization to retrieve data for
+        start_date: The start date of the query's date range
+        end_date: The end date of the query's date range
+
     Return:
         All domain_permutations data for the specified org_uid and date range as a dataframe
     """
@@ -1167,6 +1172,11 @@ def query_domMasq(org_uid, start_date, end_date):
 def query_domMasq_alert(org_uid, start_date, end_date):
     """
     Query API to retrieve all domain_alerts data for the specified org_uid and date range.
+
+    Args:
+        org_uid: The uid of the organization to retrieve data for
+        start_date: The start date of the query's date range
+        end_date: The end date of the query's date range
 
     Return:
         All domain_alerts data for the specified org_uid and date range as a dataframe
