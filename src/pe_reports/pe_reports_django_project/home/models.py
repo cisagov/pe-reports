@@ -618,7 +618,7 @@ class DomainAlerts(models.Model):
 class DomainPermutations(models.Model):
     """DomainPermutations model class."""
 
-    suspected_domain_uid = models.UUIDField(default=uuid.uuid1())
+    suspected_domain_uid = models.UUIDField(primary_key=True, default=uuid.uuid1())
     organizations_uid = models.ForeignKey(
         "Organizations", on_delete=models.CASCADE, db_column="organizations_uid"
     )

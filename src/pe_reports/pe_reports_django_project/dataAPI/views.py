@@ -16,6 +16,8 @@ from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.db import transaction
 from django.db.models import F
+import numpy as np
+import socket
 
 # Third party imports
 from fastapi import (
@@ -2438,6 +2440,180 @@ async def sub_domains_table_status(task_id: str, tokens: dict = Depends(get_api_
         return {"message": "No api key was submitted"}
 
 
+# --- query_domMasq_alerts(), Issue 562 ---
+@api_router.get(
+    "/domain_alerts_by_org_date",
+    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    response_model=List[schemas.DomainAlertsTable],
+    tags=["Get all domain_alerts table data for the specified org_uid and date range."],
+)
+def domain_alerts_by_org_date(
+    data: schemas.GenInputOrgUIDDateRange, tokens: dict = Depends(get_api_key)
+):
+    """API endpoint to get all domain_alerts table data for the specified org_uid and date range."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # If API key valid, make query
+            domain_alerts_by_org_date_data = list(
+                DomainAlerts.objects.filter(
+                    organizations_uid=data.org_uid,
+                    date__range=[data.start_date, data.end_date],
+                ).values()
+            )
+            # Convert uuids to strings
+            for row in domain_alerts_by_org_date_data:
+                row["domain_alert_uid"] = convert_uuid_to_string(
+                    row["domain_alert_uid"]
+                )
+                row["sub_domain_uid_id"] = convert_uuid_to_string(
+                    row["sub_domain_uid_id"]
+                )
+                row["data_source_uid_id"] = convert_uuid_to_string(
+                    row["data_source_uid_id"]
+                )
+                row["organizations_uid"] = convert_uuid_to_string(
+                    row["organizations_uid"]
+                )
+                row["date"] = convert_date_to_string(row["date"])
+            return domain_alerts_by_org_date_data
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+
+# --- query_domMasq(), Issue 563 ---
+@api_router.get(
+    "/domain_permu_by_org_date",
+    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    response_model=List[schemas.DomainPermuTable],
+    tags=[
+        "Get all domain_permutations table data for the specified org_uid and date range."
+    ],
+)
+def domain_permu_by_org_date(
+    data: schemas.GenInputOrgUIDDateRange, tokens: dict = Depends(get_api_key)
+):
+    """API endpoint to get all domain_permutations table data for the specified org_uid and date range."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # If API key valid, make query
+            domain_permu_by_org_date_data = list(
+                DomainPermutations.objects.filter(
+                    organizations_uid=data.org_uid,
+                    date_active__range=[data.start_date, data.end_date],
+                ).values()
+            )
+            # Convert uuids to strings
+            for row in domain_permu_by_org_date_data:
+                row["suspected_domain_uid"] = convert_uuid_to_string(
+                    row["suspected_domain_uid"]
+                )
+                row["organizations_uid_id"] = convert_uuid_to_string(
+                    row["organizations_uid_id"]
+                )
+                row["date_observed"] = convert_date_to_string(row["date_observed"])
+                row["data_source_uid_id"] = convert_uuid_to_string(
+                    row["data_source_uid_id"]
+                )
+                row["sub_domain_uid_id"] = convert_uuid_to_string(
+                    row["sub_domain_uid_id"]
+                )
+                row["date_active"] = convert_date_to_string(row["date_active"])
+            return domain_permu_by_org_date_data
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+
+# --- insert_roots(), Issue 564 ---
+@api_router.put(
+    "/root_domains_insert",
+    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    tags=["Insert list of root domains for the specified org."],
+)
+def root_domains_insert(
+    data: schemas.RootDomainsInsertInput, tokens: dict = Depends(get_api_key)
+):
+    """API endpoint to insert list of root domains for the specified org."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # If API key valid, go through and insert domains
+            insert_count = 0
+            for domain in data.domain_list:
+                # Check if record already exists
+                domain_results = RootDomains.objects.filter(
+                    root_domain=domain,
+                    organizations_uid=data.org_dict["organizations_uid"],
+                )
+                if not domain_results.exists():
+                    # If not, insert new record
+                    curr_org_uid = Organizations.objects.get(
+                        organizations_uid=data.org_dict["organizations_uid"]
+                    )
+                    try:
+                        ip = socket.gethostbyname(domain)
+                    except Exception:
+                        ip = np.nan
+                    pe_data_source_uid = DataSource.objects.get(name="P&E")
+                    RootDomains.objects.create(
+                        organizations_uid=curr_org_uid,
+                        root_domain=domain,
+                        ip_address=ip,
+                        data_source_uid=pe_data_source_uid,
+                        enumerate_subs=True,
+                    )
+                    insert_count += 1
+            return (
+                str(insert_count)
+                + " domains were inserted into root_domains table for "
+                + data.org_dict["cyhy_db_name"]
+            )
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+
+# --- get_orgs_contacts(), Issue 601 ---
+@api_router.get(
+    "/orgs_report_on_contacts",
+    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    response_model=List[schemas.OrgsReportOnContacts],
+    tags=["Get all contact data for orgs where report_on is true."],
+)
+def orgs_report_on_contacts(tokens: dict = Depends(get_api_key)):
+    """API endpoint to get all contact data for orgs where report_on is true."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # If API key valid, make query
+            orgs_report_on_contacts_data = list(
+                CyhyContacts.objects.filter(
+                    org_id__in=Organizations.objects.filter(report_on=True).values(
+                        "cyhy_db_name"
+                    )
+                ).values("email", "contact_type", "org_id")
+            )
+            return orgs_report_on_contacts_data
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+
 # --- get_org_assets_count_past(), Issue 603 ---
 @api_router.get(
     "/past_asset_counts_by_org",
@@ -3860,7 +4036,8 @@ def pshtt_result_update_or_insert(
             LOGGER.info("API key expired please try again")
     else:
         return {"message": "No api key was submitted"}
-    
+
+
 # --- get_darkweb_cves_breaches(), Issue 630 ---
 @api_router.post(
     "/darkweb_cves",
@@ -3868,9 +4045,7 @@ def pshtt_result_update_or_insert(
     response_model=schemas.DarkWebCvesTaskResp,
     tags=["Get all darkweb cve data"],
 )
-def darkweb_cves(
-    tokens: dict = Depends(get_api_key)
-):
+def darkweb_cves(tokens: dict = Depends(get_api_key)):
     """API endpoint to get all darkweb cve data"""
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
@@ -3881,11 +4056,12 @@ def darkweb_cves(
     else:
         return {"message": "No api key was submitted"}
 
+
 # --
 @api_router.get(
     "/darkweb_cves/task/{task_id}",
     dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
-    #\response_model=schemas.DarkWebCvesTaskResp,
+    # \response_model=schemas.DarkWebCvesTaskResp,
     tags=["Check task status for darkweb_cves endpoint task."],
 )
 async def darkweb_cves_status(task_id: str, tokens: dict = Depends(get_api_key)):
@@ -3902,93 +4078,103 @@ async def darkweb_cves_status(task_id: str, tokens: dict = Depends(get_api_key))
     else:
         return {"task_id": task_id, "status": task.state}
 
+
 # --- Issue 629 ---
 # Query the darkweb data, It eithere hits the Alerts table or the Mentions Table
 @api_router.post(
     "/darkweb_data",
-    #response_model=schemas.DarkWebCvesTaskResp,
+    # response_model=schemas.DarkWebCvesTaskResp,
     tags=["Get darkweb data from either mentions or alerts table"],
 )
-def darkweb_data(
-    data: schemas.DarkWebDataInput, tokens: dict = Depends(get_api_key)
-):
+def darkweb_data(data: schemas.DarkWebDataInput, tokens: dict = Depends(get_api_key)):
     """API Endpoint to query the darkweb data from either alerts table or mentions table."""
     if tokens:
         try:
-            #userapiTokenverify(theapiKey=tokens)
+            # userapiTokenverify(theapiKey=tokens)
             date_format = "%Y-%m-%d"
             try:
                 sdate = datetime.datetime.strptime(data.start_date, date_format)
                 edate = datetime.datetime.strptime(data.end_date, date_format)
             except ValueError:
                 return {"message": "date is in wrong format"}
-            print('testing')
+            print("testing")
             match data.table:
-                case 'mentions':
+                case "mentions":
                     print("here")
-                    mentions = list(Mentions.objects.filter(organizations_uid=data.org_uid,date__range=(sdate,edate)).values())
+                    mentions = list(
+                        Mentions.objects.filter(
+                            organizations_uid=data.org_uid, date__range=(sdate, edate)
+                        ).values()
+                    )
                     return mentions
-                case 'alerts':
-                    alerts = mentions = list(Alerts.objects.filter(organizations_uid=data.org_uid,date__range=(sdate,edate)).values())
+                case "alerts":
+                    alerts = mentions = list(
+                        Alerts.objects.filter(
+                            organizations_uid=data.org_uid, date__range=(sdate, edate)
+                        ).values()
+                    )
                     return alerts
         except:
             LOGGER.info("API key expired please try again")
     else:
         return {"message": "No api key was submitted"}
-    
+
+
 # --- Issue 627 ---
 # Query domain masquerading alerts tables
 @api_router.post(
     "/dom_masq_alerts",
-    #response_model=schemas.DarkWebCvesTaskResp,
+    # response_model=schemas.DarkWebCvesTaskResp,
     tags=["query the domain masq alert data."],
 )
-def dom_masq_alerts(
-    data: schemas.AlertInput, tokens: dict = Depends(get_api_key)
-):
-    """API Endpoint to query the domain masq data. """
+def dom_masq_alerts(data: schemas.AlertInput, tokens: dict = Depends(get_api_key)):
+    """API Endpoint to query the domain masq data."""
     if tokens:
         try:
-            #userapiTokenverify(theapiKey=tokens)
+            # userapiTokenverify(theapiKey=tokens)
             date_format = "%Y-%m-%d"
             try:
                 sdate = datetime.datetime.strptime(data.start_date, date_format)
                 edate = datetime.datetime.strptime(data.end_date, date_format)
             except:
-                return {"message": "date is in wrong format"}        
-            mentions = list(DomainAlerts.objects.filter(organizations_uid=data.org_uid,date__range=(sdate,edate)).values())
+                return {"message": "date is in wrong format"}
+            mentions = list(
+                DomainAlerts.objects.filter(
+                    organizations_uid=data.org_uid, date__range=(sdate, edate)
+                ).values()
+            )
             return mentions
         except:
             LOGGER.info("API key expired please try again")
     else:
         return {"message": "No api key was submitted"}
-    
+
 
 # --- Issue 626 ---
 # Query domain masquerading on the domain permutattions tables
 @api_router.post(
     "/dom_masq",
-    #response_model=schemas.DarkWebCvesTaskResp,
+    # response_model=schemas.DarkWebCvesTaskResp,
     tags=["query the domain masq data."],
 )
-def dom_masq(
-    data: schemas.AlertInput, tokens: dict = Depends(get_api_key)
-):
-    """API Endpoint to query the domain masq data. """
+def dom_masq(data: schemas.AlertInput, tokens: dict = Depends(get_api_key)):
+    """API Endpoint to query the domain masq data."""
     if tokens:
         try:
-            #userapiTokenverify(theapiKey=tokens)
+            # userapiTokenverify(theapiKey=tokens)
             date_format = "%Y-%m-%d"
             try:
                 sdate = datetime.datetime.strptime(data.start_date, date_format)
                 edate = datetime.datetime.strptime(data.end_date, date_format)
             except:
-                return {"message": "date is in wrong format"}        
-            mentions = list(DomainPermutations.objects.filter(organizations_uid=data.org_uid,date_active__range=(sdate,edate)).values())
+                return {"message": "date is in wrong format"}
+            mentions = list(
+                DomainPermutations.objects.filter(
+                    organizations_uid=data.org_uid, date_active__range=(sdate, edate)
+                ).values()
+            )
             return mentions
         except:
             LOGGER.info("API key expired please try again")
     else:
         return {"message": "No api key was submitted"}
-    
-    

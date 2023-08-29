@@ -510,6 +510,17 @@ class GenInputOrgUIDList(BaseModel):
         orm_mode = True
 
 
+class GenInputOrgUIDDateRange(BaseModel):
+    """GenInputOrgUIDDateRange schema class."""
+
+    org_uid: str
+    start_date: str
+    end_date: str
+
+    class Config:
+        """GenInputOrgUIDDateRange schema config class."""
+
+
 # Generalized start/end date input schema
 class GenInputDateRange(BaseModel):
     """GenInputDateRange schema class."""
@@ -1067,6 +1078,85 @@ class SubDomainTableTaskResp(BaseModel):
     status: str
     result: Optional[SubDomainResult] = None
     error: Optional[str] = None
+
+
+# --- query_domMasq_alerts(), Issue 562
+# Return all the fields of the domain_alerts table
+class DomainAlertsTable(BaseModel):
+    """DomainAlertsTable schema class."""
+
+    domain_alert_uid: str
+    sub_domain_uid_id: Optional[str] = None
+    data_source_uid_id: Optional[str] = None
+    organizations_uid: Optional[str] = None
+    alert_type: Optional[str] = None
+    message: Optional[str] = None
+    previous_value: Optional[str] = None
+    new_value: Optional[str] = None
+    date: Optional[str] = None
+
+    class Config:
+        """DomainAlertsTable schema config class."""
+
+        orm_mode = True
+
+
+# --- query_domMasq(), Issue 563
+# Return all the fields of the domain_permutation table
+class DomainPermuTable(BaseModel):
+    """DomainPermuTable schema class."""
+
+    suspected_domain_uid: str
+    organizations_uid_id: str
+    domain_permutation: Optional[str] = None
+    ipv4: Optional[str] = None
+    ipv6: Optional[str] = None
+    mail_server: Optional[str] = None
+    name_server: Optional[str] = None
+    fuzzer: Optional[str] = None
+    date_observed: Optional[str] = None
+    ssdeep_score: Optional[str] = None
+    malicious: Optional[bool] = None
+    blocklist_attack_count: Optional[int] = None
+    blocklist_report_count: Optional[int] = None
+    data_source_uid_id: Optional[str] = None
+    sub_domain_uid_id: Optional[str] = None
+    dshield_record_count: Optional[int] = None
+    date_active: Optional[str] = None
+
+    class Config:
+        """DomainPermuTable schema config class."""
+
+        orm_mode = True
+
+
+# --- insert_roots(), Issue 564
+# Return all the fields of the domain_permutation table, input
+class RootDomainsInsertInput(BaseModel):
+    """RootDomainsInsertInput schema class."""
+
+    org_dict: dict
+    domain_list: list[str]
+
+    class Config:
+        """RootDomainsInsertInput schema config class."""
+
+        orm_mode = True
+
+
+# --- get_orgs_contacts(), Issue 601
+# Get the contact info for all orgs where report_on is true
+class OrgsReportOnContacts(BaseModel):
+    """OrgsReportOnContacts schema class."""
+
+    email: str
+    contact_type: str
+    org_id: str
+
+    class Config:
+        """OrgsReportOnContacts schema config class."""
+
+        orm_mode = True
 
 
 # --- get_org_assets_count_past(), Issue 603 ---
@@ -2056,6 +2146,7 @@ class PshttInsert(BaseModel):
     ep_httpwww_server_header: Optional[str] = None
     ep_httpwww_server_version: Optional[str] = None
 
+
 # --- Top_cves table record, Issue 630 ---
 class TopCvesRecord(BaseModel):
     top_cves_uid: str
@@ -2065,7 +2156,8 @@ class TopCvesRecord(BaseModel):
     date: datetime
     summary: str
     data_source_uid_id: str
-    
+
+
 # --- darkweb_cves(), Issue 630 ---
 # Get darkweb
 class DarkWebCvesTaskResp(BaseModel):
@@ -2073,21 +2165,23 @@ class DarkWebCvesTaskResp(BaseModel):
     status: str
     result: List[TopCvesRecord] = None
     error: str = None
-    
+
+
 # --- darkwebdatainput Issue 629 ---
 class DarkWebDataInput(BaseModel):
     table: str
     org_uid: str
     start_date: str
     end_date: str
-    
+
     class Config:
         orm_mode = True
+
 
 class AlertInput(BaseModel):
     org_uid: str
     start_date: str
     end_date: str
-    
+
     class Config:
         orm_mode = True
