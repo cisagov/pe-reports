@@ -202,7 +202,7 @@ def run_dnstwist(orgs_list):
                         # Issue 265: https://github.com/cisagov/pe-reports/issues/265
                         LOGGER.info("Unable to get sub domain uid", "warning")
                         # Add and then get it
-                        addSubdomain(PE_conn, sub_domain, pe_org_uid)
+                        addSubdomain(sub_domain, pe_org_uid, False)
                         sub_domain_uid = getSubdomain(PE_conn, sub_domain)[0]
 
                     for dom in finalorglist:

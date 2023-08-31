@@ -247,7 +247,7 @@ class Cidrs(models.Model):
 class CredentialBreaches(models.Model):
     """Define CredentialBreaches model."""
 
-    credential_breaches_uid = models.UUIDField(primary_key=True)
+    credential_breaches_uid = models.UUIDField(primary_key=True, default=uuid.uuid1())
     breach_name = models.TextField(unique=True)
     description = models.TextField(blank=True, null=True)
     exposed_cred_count = models.BigIntegerField(blank=True, null=True)

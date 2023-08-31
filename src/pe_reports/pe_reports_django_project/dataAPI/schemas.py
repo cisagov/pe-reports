@@ -1993,6 +1993,69 @@ class CredBreachIntelXTaskResp(BaseModel):
     error: Optional[str] = None
 
 
+# --- addRootdomain(), Issue 661 ---
+# Insert single root domain into root_domains table, input
+class RootDomainsSingleInsertInput(BaseModel):
+    """RootDomainsSingleInsertInput schema class."""
+
+    root_domain: str
+    pe_org_uid: str
+    source_uid: str
+    org_name: str
+
+    class Config:
+        """RootDomainsSingleInsertInput schema config class."""
+
+        orm_mode = True
+
+
+# --- addSubdomain(), Issue 662 ---
+# Insert single sub domain into sub_domains table, input
+class SubDomainsSingleInsertInput(BaseModel):
+    """SubDomainsSingleInsertInput schema class."""
+
+    domain: str
+    pe_org_uid: str
+    root: Optional[bool] = None
+
+    class Config:
+        """SubDomainsSingleInsertInput schema config class."""
+
+        orm_mode = True
+
+
+# --- insert_intelx_breaches(), Issue 663 ---
+# Insert bulk IntelX breach data into credential_breaches table
+class CredBreachesIntelxInsert(BaseModel):
+    """CredBreachesIntelxInsert schema class."""
+
+    breach_name: str
+    description: str
+    breach_date: str
+    added_date: str
+    modified_date: str
+    password_included: bool
+    data_source_uid: str
+
+    class Config:
+        """CredBreachesIntelxInsert schema config class."""
+
+        orm_mode = True
+
+
+# --- insert_intelx_breaches(), Issue 663 ---
+# Insert bulk IntelX breach data into credential_breaches table, input
+class CredBreachesIntelxInsertInput(BaseModel):
+    """CredBreachesIntelxInsertInput schema class."""
+
+    breach_data: List[CredBreachesIntelxInsert]
+
+    class Config:
+        """CredBreachesIntelxInsertInput schema config class."""
+
+        orm_mode = True
+
+
 class PshttDomainToRun(BaseModel):
     """PshttDomainsToRun schema class."""
 

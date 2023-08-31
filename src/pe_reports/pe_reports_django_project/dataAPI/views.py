@@ -3887,6 +3887,192 @@ async def cred_breach_intelx_status(task_id: str, tokens: dict = Depends(get_api
         return {"message": "No api key was submitted"}
 
 
+# --- addRootdomain(), Issue 661 ---
+@api_router.put(
+    "/root_domains_single_insert",
+    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    tags=["Insert a single root domain into the root_domains table."],
+)
+def root_domains_single_insert(
+    data: schemas.RootDomainsSingleInsertInput, tokens: dict = Depends(get_api_key)
+):
+    """API endpoint to insert a single root domain into the root_domains table."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # If API key valid, insert root domain
+            # Check if record already exists
+            domain_results = RootDomains.objects.filter(
+                root_domain=data.root_domain,
+                organizations_uid=data.pe_org_uid,
+                data_source_uid=data.source_uid,
+            )
+            if not domain_results.exists():
+                # If not, insert new record
+                curr_org_inst = Organizations.objects.get(
+                    organizations_uid=data.pe_org_uid
+                )
+                curr_source_inst = DataSource.objects.get(
+                    data_source_uid=data.source_uid
+                )
+                try:
+                    ip = socket.gethostbyname(data.root_domain)
+                except Exception:
+                    ip = np.nan
+                RootDomains.objects.create(
+                    root_domain=data.root_domain,
+                    organizations_uid=curr_org_inst,
+                    data_source_uid=curr_source_inst,
+                    ip_address=ip,
+                )
+                return (
+                    "Root domain has been inserted into root_domains table for "
+                    + data.org_name
+                )
+            return (
+                "Root domain already exists in root_domains table for " + data.org_name
+            )
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+
+# --- addSubdomain(), Issue 662 ---
+@api_router.put(
+    "/sub_domains_single_insert",
+    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    tags=["Insert a single sub domain into the sub_domains table."],
+)
+def sub_domains_single_insert(
+    data: schemas.SubDomainsSingleInsertInput, tokens: dict = Depends(get_api_key)
+):
+    """API endpoint to insert a single sub domain into the sub_domains table."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # If API key valid, proceed
+            if data.root:
+                # If sub domain is also a root domain
+                curr_root = data.domain
+            else:
+                # If sub domain is not a root domain
+                curr_root = data.domain.split(".")[-2]
+                curr_root = ".".join(curr_root)
+            curr_date = datetime.today().strftime("%Y-%m-%d")
+            org_name = Organizations.objects.filter(
+                organizations_uid=data.pe_org_uid
+            ).values("cyhy_db_name")[0]["cyhy_db_name"]
+            # Check if sub domain already exists in table
+            sub_domain_results = SubDomains.objects.filter(
+                sub_domain=data.domain,
+                root_domain_uid__organizations_uid=data.pe_org_uid,
+            )
+            if not sub_domain_results.exists():
+                # If not, insert new record
+                # Get data_source instance of "findomain"
+                findomain_inst = DataSource.objects.get(name="findomain")
+                # Check if root domain already exists
+                root_results = RootDomains.objects.filter(
+                    organizations_uid=data.pe_org_uid, root_domain=curr_root
+                )
+                if not root_results.exists():
+                    # If root domain does not exist, create a new record
+                    RootDomains.objects.create(
+                        organizations_uid=Organizations.objects.get(
+                            organizations_uid=data.pe_org_uid
+                        ),
+                        root_domain=curr_root,
+                        data_source_uid=findomain_inst,
+                        enumerate_subs=False,
+                    )
+                # Get root_domains instance of specified root domain
+                root_inst = RootDomains.objects.get(
+                    organizations_uid=data.pe_org_uid, root_domain=curr_root
+                )
+                # Create new sub domain record
+                SubDomains.objects.create(
+                    sub_domain=data.domain,
+                    root_domain_uid=root_inst,
+                    data_source_uid=findomain_inst,
+                    first_seen=curr_date,
+                    last_seen=curr_date,
+                    identified=False,
+                )
+                # Return status message
+                return (
+                    "Sub domain has been inserted into sub_domains table for "
+                    + org_name
+                )
+            else:
+                # If sub domain already exists, update last_seen and identified
+                SubDomains.objects.filter(
+                    sub_domain=data.domain,
+                    root_domain_uid__organizations_uid=data.pe_org_uid,
+                ).update(last_seen=curr_date, identified=False)
+                # Return status message
+                return (
+                    "Sub domain record has been updated in the sub_domains table for "
+                    + org_name
+                )
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+
+# --- insert_intelx_breaches(), Issue 663 ---
+@api_router.put(
+    "/cred_breaches_intelx_insert",
+    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    tags=["Insert IntelX credential breaches into the credential_breaches table."],
+)
+def cred_breaches_intelx_insert(
+    data: schemas.CredBreachesIntelxInsertInput, tokens: dict = Depends(get_api_key)
+):
+    """API endpoint to insert IntelX credential breaches into the credential_breaches table."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # If API key valid, insert intelx breach data
+            insert_count = 0
+            for row in data.breach_data:
+                # Check if record already exists
+                row_dict = row.__dict__
+                breach_results = CredentialBreaches.objects.filter(
+                    breach_name=row_dict["breach_name"]
+                )
+                if not breach_results.exists():
+                    # If not, insert new record
+                    curr_data_source_inst = DataSource.objects.get(
+                        data_source_uid=row_dict["data_source_uid"]
+                    )
+                    CredentialBreaches.objects.create(
+                        breach_name=row_dict["breach_name"],
+                        description=row_dict["description"],
+                        breach_date=row_dict["breach_date"],
+                        added_date=row_dict["added_date"],
+                        modified_date=row_dict["modified_date"],
+                        password_included=row_dict["password_included"],
+                        data_source_uid=curr_data_source_inst,
+                    )
+                    insert_count += 1
+            return (
+                str(insert_count)
+                + " IntelX cred breach records were inserted into credential_breaches table"
+            )
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+
 @api_router.post(
     "/pshtt_unscanned_domains",
     dependencies=[Depends(get_api_key)],

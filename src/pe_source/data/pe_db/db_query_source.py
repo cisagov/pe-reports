@@ -397,15 +397,44 @@ def getSubdomain(conn, domain):
     return sub
 
 
-def addSubdomain(conn, domain, pe_org_uid):
-    """Add a subdomain into the database."""
-    root_domain = domain.split(".")[-2:]
-    root_domain = ".".join(root_domain)
-    cur = conn.cursor()
-    cur.callproc(
-        "insert_sub_domain", (domain, pe_org_uid, "findomain", root_domain, None)
+# --- Issue 662 ---
+def addSubdomain(domain, pe_org_uid, root):
+    """
+    Query API to insert a single root domain into the root_domains table.
+
+    Args:
+        domain: The sub domain associated with the new record
+        pe_org_uid: The organizations_uid associated with the new record
+        root: Boolean whether or not specified domain is also a root domain
+    """
+    # Endpoint info
+    endpoint_url = pe_api_url + "sub_domains_single_insert"
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": pe_api_key,
+    }
+    data = json.dumps(
+        {
+            "domain": domain,
+            "pe_org_uid": pe_org_uid,
+            "root": root,
+        }
     )
-    LOGGER.info("Success adding domain %s to subdomains table.", domain)
+    try:
+        # Call endpoint
+        result = requests.put(endpoint_url, headers=headers, data=data).json()
+        # Process data and return
+        LOGGER.info(result)
+    except requests.exceptions.HTTPError as errh:
+        LOGGER.error(errh)
+    except requests.exceptions.ConnectionError as errc:
+        LOGGER.error(errc)
+    except requests.exceptions.Timeout as errt:
+        LOGGER.error(errt)
+    except requests.exceptions.RequestException as err:
+        LOGGER.error(err)
+    except json.decoder.JSONDecodeError as err:
+        LOGGER.error(err)
 
 
 def getDataSource(conn, source):
@@ -449,3 +478,83 @@ def get_intelx_breaches(source_uid):
     # Convert result to list of tuples to match original function
     tup_result = [tuple(row.values()) for row in result]
     return tup_result
+
+
+# --- Issue 661 ---
+def addRootdomain(root_domain, pe_org_uid, source_uid, org_name):
+    """
+    Query API to insert a single root domain into the root_domains table.
+
+    Args:
+        root_domain: The root domain associated with the new record
+        pe_org_uid: The organizations_uid associated with the new record
+        source_uid: The data_source_uid associated with the new record
+        org_name: The name of the organization associated with the new record
+    """
+    # Endpoint info
+    endpoint_url = pe_api_path + "root_domains_single_insert"
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": pe_api_key,
+    }
+    data = json.dumps(
+        {
+            "root_domain": root_domain,
+            "pe_org_uid": pe_org_uid,
+            "source_uid": source_uid,
+            "org_name": org_name,
+        }
+    )
+    try:
+        # Call endpoint
+        result = requests.put(endpoint_url, headers=headers, data=data).json()
+        # Process data and return
+        LOGGER.info(result)
+    except requests.exceptions.HTTPError as errh:
+        LOGGER.error(errh)
+    except requests.exceptions.ConnectionError as errc:
+        LOGGER.error(errc)
+    except requests.exceptions.Timeout as errt:
+        LOGGER.error(errt)
+    except requests.exceptions.RequestException as err:
+        LOGGER.error(err)
+    except json.decoder.JSONDecodeError as err:
+        LOGGER.error(err)
+
+
+# --- Issue 663 ---
+def insert_intelx_breaches(df):
+    """
+    Query API to insert a single root domain into the root_domains table.
+
+    Args:
+        df: Dataframe containing IntelX breach data to be inserted
+    """
+    # Endpoint info
+    endpoint_url = pe_api_url + "cred_breaches_intelx_insert"
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": pe_api_key,
+    }
+    # Remove duplicates and convert to list of dictionaries
+    df = df.drop_duplicates(subset=["breach_name"])
+    df[["breach_date", "added_date", "modified_date"]] = df[
+        ["breach_date", "added_date", "modified_date"]
+    ].astype(str)
+    df_dict_list = df.to_dict("records")
+    data = json.dumps({"breach_data": df_dict_list})
+    try:
+        # Call endpoint
+        result = requests.put(endpoint_url, headers=headers, data=data).json()
+        # Process data and return
+        LOGGER.info(result)
+    except requests.exceptions.HTTPError as errh:
+        LOGGER.error(errh)
+    except requests.exceptions.ConnectionError as errc:
+        LOGGER.error(errc)
+    except requests.exceptions.Timeout as errt:
+        LOGGER.error(errt)
+    except requests.exceptions.RequestException as err:
+        LOGGER.error(err)
+    except json.decoder.JSONDecodeError as err:
+        LOGGER.error(err)
