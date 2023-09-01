@@ -40,7 +40,7 @@ from ._version import __version__
 from .cybersixgill import Cybersixgill
 from .dnstwistscript import run_dnstwist
 from .intelx_identity import IntelX
-from .shodan import Shodan
+from .pe_shodan import Shodan
 
 LOGGER = logging.getLogger(__name__)
 

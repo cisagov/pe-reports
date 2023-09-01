@@ -15,7 +15,7 @@ import pe_source.cybersixgill
 import pe_source.data.sixgill.api
 import pe_source.dnstwistscript
 import pe_source.pe_scripts
-import pe_source.shodan
+import pe_source.pe_shodan
 
 log_levels = (
     "debug",
