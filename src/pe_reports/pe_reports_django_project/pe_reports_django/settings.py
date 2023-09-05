@@ -213,8 +213,15 @@ DATABASES = {
 CELERY_BROKER_URL = (
     f"amqp://{config('RABBITMQ_USER')}:{config('RABBITMQ_PASS')}@localhost:5672/"
 )
-CELERY_RESULT_BACKEND = "redis://localhost:6379"
+CELERY_RESULT_BACKEND = f"redis://:{config('REDIS_PW')}@localhost:6379"
+# CELERY_RESULT_BACKEND = f"rediss://:{config('REDIS_PW')}@localhost:6379"
 CELERY_RESULT_EXPIRES = 3600
+
+# SSL settings for Redis
+# CELERY_REDIS_BACKEND_USE_SSL = {
+#     'ssl_cert_reqs': 'required',
+#     'ssl_ca_certs': '/path/to/ca.crt',  # Replace with the path to your CA certificate
+# }
 
 
 # Password validation
