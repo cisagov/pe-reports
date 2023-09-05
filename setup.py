@@ -111,6 +111,7 @@ setup(
         "dnstwist",
         "dshield",
         "glob2 == 0.7",
+        "elastic-apm",
         # "flask",
         # "Flask-Login",
         # "flask_migrate",

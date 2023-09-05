@@ -194,7 +194,7 @@ DATABASES = {
 #Celery settings
 CELERY_BROKER_URL = f"amqp://{config('RABBITMQ_USER')}:{config('RABBITMQ_PASS')}@localhost:5672/"
 CELERY_RESULT_BACKEND = "redis://localhost:6379"
-CELERY_RESULT_EXPIRES = 3600
+CELERY_RESULT_EXPIRES = 86400
 
 
 # Password validation
