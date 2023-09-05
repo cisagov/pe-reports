@@ -1,3 +1,4 @@
+"""Django Models."""
 # Create your models here.
 # This is an auto-generated Django model module.
 # You'll have to do the following manually to clean this up:
@@ -6,13 +7,18 @@
 #   * Make sure each ForeignKey and OneToOneField has `on_delete` set to the desired behavior
 #   * Remove `managed = False` lines if you wish to allow Django to create, modify, and delete the table
 # Feel free to rename the models, but don't rename db_table values or field names.
-from django.db import models
-from django.conf import settings
-from django.contrib.postgres.fields import ArrayField
+# Standard Python Libraries
 import uuid
+
+# Third-Party Libraries
+# from django.conf import settings
+from django.contrib.postgres.fields import ArrayField
+from django.db import models
 
 
 class Users(models.Model):
+    """Define Users model."""
+
     id = models.UUIDField(primary_key=True)
     email = models.CharField(unique=True, max_length=64, blank=True, null=True)
     username = models.CharField(unique=True, max_length=64, blank=True, null=True)
@@ -22,19 +28,27 @@ class Users(models.Model):
     api_key = models.CharField(unique=True, max_length=128, blank=True, null=True)
 
     class Meta:
+        """Set User model metadata."""
+
         managed = False
         db_table = "Users"
 
 
 class AlembicVersion(models.Model):
+    """Define AlembicVersion model."""
+
     version_num = models.CharField(primary_key=True, max_length=32)
 
     class Meta:
+        """Set AlembicVersion model metadata."""
+
         managed = False
         db_table = "alembic_version"
 
 
 class Alerts(models.Model):
+    """Define Alerts model."""
+
     alerts_uid = models.UUIDField(primary_key=True)
     alert_name = models.TextField(blank=True, null=True)
     content = models.TextField(blank=True, null=True)
@@ -60,11 +74,15 @@ class Alerts(models.Model):
     asset_type = models.TextField(blank=True, null=True)
 
     class Meta:
+        """Set Alerts model metadata."""
+
         managed = False
         db_table = "alerts"
 
 
 class Alias(models.Model):
+    """Define Alias model."""
+
     alias_uid = models.UUIDField(primary_key=True)
     organizations_uid = models.ForeignKey(
         "Organizations", on_delete=models.CASCADE, db_column="organizations_uid"
@@ -72,11 +90,15 @@ class Alias(models.Model):
     alias = models.TextField(unique=True)
 
     class Meta:
+        """Set Alias model metadata."""
+
         managed = False
         db_table = "alias"
 
 
 class AssetHeaders(models.Model):
+    """Define AssetHeaders model."""
+
     field_id = models.UUIDField(
         db_column="_id", primary_key=True
     )  # Field renamed because it started with '_'.
@@ -91,42 +113,58 @@ class AssetHeaders(models.Model):
     ssl_scanned = models.BooleanField(blank=True, null=True)
 
     class Meta:
+        """Set AssetHeaders model metadata."""
+
         managed = False
         db_table = "asset_headers"
         unique_together = (("organizations_uid", "sub_url"),)
 
 
 class AuthGroup(models.Model):
+    """Define AuthGroup model."""
+
     name = models.CharField(unique=True, max_length=150)
 
     class Meta:
+        """Set AuthGroup model metadata."""
+
         managed = False
         db_table = "auth_group"
 
 
 class AuthGroupPermissions(models.Model):
+    """Define AuthGroupPermissions model."""
+
     id = models.BigAutoField(primary_key=True)
     group = models.ForeignKey(AuthGroup, on_delete=models.CASCADE)
     permission = models.ForeignKey("AuthPermission", on_delete=models.CASCADE)
 
     class Meta:
+        """Set AuthGroupPermissions model metadata."""
+
         managed = False
         db_table = "auth_group_permissions"
         unique_together = (("group", "permission"),)
 
 
 class AuthPermission(models.Model):
+    """Define AuthPermission model."""
+
     name = models.CharField(max_length=255)
     content_type = models.ForeignKey("DjangoContentType", on_delete=models.CASCADE)
     codename = models.CharField(max_length=100)
 
     class Meta:
+        """Set AuthPermission model metadata."""
+
         managed = False
         db_table = "auth_permission"
         unique_together = (("content_type", "codename"),)
 
 
 class AuthUser(models.Model):
+    """Define AuthUser model."""
+
     password = models.CharField(max_length=128)
     last_login = models.DateTimeField(blank=True, null=True)
     is_superuser = models.BooleanField()
@@ -139,33 +177,45 @@ class AuthUser(models.Model):
     date_joined = models.DateTimeField()
 
     class Meta:
+        """Set AuthUser model metadata."""
+
         managed = False
         db_table = "auth_user"
 
 
 class AuthUserGroups(models.Model):
+    """Define AuthUserGroups model."""
+
     id = models.BigAutoField(primary_key=True)
     user = models.ForeignKey(AuthUser, on_delete=models.CASCADE)
     group = models.ForeignKey(AuthGroup, on_delete=models.CASCADE)
 
     class Meta:
+        """Set AuthUserGroups model metadata."""
+
         managed = False
         db_table = "auth_user_groups"
         unique_together = (("user", "group"),)
 
 
 class AuthUserUserPermissions(models.Model):
+    """Define AuthUserUserPermissions model."""
+
     id = models.BigAutoField(primary_key=True)
     user = models.ForeignKey(AuthUser, on_delete=models.CASCADE)
     permission = models.ForeignKey(AuthPermission, on_delete=models.CASCADE)
 
     class Meta:
+        """Set AuthUserUserPermissions model metadata."""
+
         managed = False
         db_table = "auth_user_user_permissions"
         unique_together = (("user", "permission"),)
 
 
 class Cidrs(models.Model):
+    """Define Cidrs model."""
+
     cidr_uid = models.UUIDField(primary_key=True, default=uuid.uuid1())
     network = models.TextField()  # This field type is a guess.
     organizations_uid = models.ForeignKey(
@@ -185,12 +235,16 @@ class Cidrs(models.Model):
     insert_alert = models.TextField(blank=True, null=True)
 
     class Meta:
+        """Set Cidrs model metadata."""
+
         managed = False
         db_table = "cidrs"
         unique_together = (("organizations_uid", "network"),)
 
 
 class CredentialBreaches(models.Model):
+    """Define CredentialBreaches model."""
+
     credential_breaches_uid = models.UUIDField(primary_key=True)
     breach_name = models.TextField(unique=True)
     description = models.TextField(blank=True, null=True)
@@ -212,11 +266,15 @@ class CredentialBreaches(models.Model):
     )
 
     class Meta:
+        """Set CredentialBreaches model metadata."""
+
         managed = False
         db_table = "credential_breaches"
 
 
 class CredentialExposures(models.Model):
+    """Define CredentialExposures model."""
+
     credential_exposures_uid = models.UUIDField(primary_key=True)
     email = models.TextField()
     organizations_uid = models.ForeignKey(
@@ -241,12 +299,16 @@ class CredentialExposures(models.Model):
     hash_type = models.TextField(blank=True, null=True)
 
     class Meta:
+        """Set CredentialExposures model metadata."""
+
         managed = False
         db_table = "credential_exposures"
         unique_together = (("breach_name", "email"),)
 
 
 class CveInfo(models.Model):
+    """Define CveInfo model."""
+
     cve_uuid = models.UUIDField(primary_key=True, default=uuid.uuid1())
     cve_name = models.TextField(unique=True, blank=True, null=True)
     cvss_2_0 = models.DecimalField(
@@ -264,11 +326,15 @@ class CveInfo(models.Model):
     )
 
     class Meta:
+        """Set CveInfo model metadata."""
+
         managed = False
         db_table = "cve_info"
 
 
 class CyhyContacts(models.Model):
+    """Define CyhyContacts model."""
+
     field_id = models.UUIDField(
         db_column="_id", primary_key=True, default=uuid.uuid1()
     )  # Field renamed because it started with '_'.
@@ -281,12 +347,16 @@ class CyhyContacts(models.Model):
     date_pulled = models.DateField(blank=True, null=True)
 
     class Meta:
+        """Set CyhyContacts model metadata."""
+
         managed = False
         db_table = "cyhy_contacts"
         unique_together = (("org_id", "contact_type", "email", "name"),)
 
 
 class CyhyDbAssets(models.Model):
+    """Define CyhyDbAssets model."""
+
     field_id = models.UUIDField(
         db_column="_id", primary_key=True, default=uuid.uuid1()
     )  # Field renamed because it started with '_'.
@@ -300,12 +370,16 @@ class CyhyDbAssets(models.Model):
     currently_in_cyhy = models.BooleanField(blank=True, null=True)
 
     class Meta:
+        """Set CyhyDbAssets model metadata."""
+
         managed = False
         db_table = "cyhy_db_assets"
         unique_together = (("org_id", "network"),)
 
 
 class CyhyPortScans(models.Model):
+    """Define CyhyPortScans model."""
+
     cyhy_port_scans_uid = models.UUIDField(primary_key=True)
     organizations_uid = models.ForeignKey(
         "Organizations", models.DO_NOTHING, db_column="organizations_uid"
@@ -323,11 +397,15 @@ class CyhyPortScans(models.Model):
     agency_type = models.TextField(blank=True, null=True)
 
     class Meta:
+        """Set CyhyPortScans model metadata."""
+
         managed = False
         db_table = "cyhy_port_scans"
 
 
 class DataapiApiuser(models.Model):
+    """Define DataapiApiuser model."""
+
     id = models.BigAutoField(primary_key=True)
     apikey = models.CharField(
         db_column="apiKey", max_length=200, blank=True, null=True
@@ -336,22 +414,30 @@ class DataapiApiuser(models.Model):
     refresh_token = models.CharField(max_length=200, blank=True, null=True)
 
     class Meta:
+        """Set DataapiApiuser model metadata."""
+
         managed = False
         db_table = "dataAPI_apiuser"
 
 
 class DataSource(models.Model):
+    """Define DataSource model."""
+
     data_source_uid = models.UUIDField(primary_key=True, default=uuid.uuid1())
     name = models.TextField()
     description = models.TextField()
     last_run = models.DateField()
 
     class Meta:
+        """Set DataSource model metadata."""
+
         managed = False
         db_table = "data_source"
 
 
 class DjangoAdminLog(models.Model):
+    """Define DjangoAdminLog model."""
+
     action_time = models.DateTimeField()
     object_id = models.TextField(blank=True, null=True)
     object_repr = models.CharField(max_length=200)
@@ -363,42 +449,58 @@ class DjangoAdminLog(models.Model):
     user = models.ForeignKey(AuthUser, on_delete=models.CASCADE)
 
     class Meta:
+        """Set DjangoAdminLog model metadata."""
+
         managed = False
         db_table = "django_admin_log"
 
 
 class DjangoContentType(models.Model):
+    """Define DjangoContentType model."""
+
     app_label = models.CharField(max_length=100)
     model = models.CharField(max_length=100)
 
     class Meta:
+        """Set DjangoContentType model metadata."""
+
         managed = False
         db_table = "django_content_type"
         unique_together = (("app_label", "model"),)
 
 
 class DjangoMigrations(models.Model):
+    """Define DjangoMigrations model."""
+
     id = models.BigAutoField(primary_key=True)
     app = models.CharField(max_length=255)
     name = models.CharField(max_length=255)
     applied = models.DateTimeField()
 
     class Meta:
+        """Set DjangoMigrations model metadata."""
+
         managed = False
         db_table = "django_migrations"
 
 
 class DjangoSession(models.Model):
+    """Define DjangoSession model."""
+
     session_key = models.CharField(primary_key=True, max_length=40)
     session_data = models.TextField()
     expire_date = models.DateTimeField()
 
     class Meta:
+        """Set DjangoSession model metadata."""
+
         managed = False
         db_table = "django_session"
 
 
 class DnsRecords(models.Model):
+    """Define DnsRecords model."""
+
     dns_record_uid = models.UUIDField(primary_key=True, default=uuid.uuid1())
     domain_name = models.TextField(blank=True, null=True)
     domain_type = models.TextField(blank=True, null=True)
@@ -480,11 +582,15 @@ class DnsRecords(models.Model):
     zone_raw_text = models.TextField(blank=True, null=True)
 
     class Meta:
+        """Set DnsRecords model metadata."""
+
         managed = False
         db_table = "dns_records"
 
 
 class DomainAlerts(models.Model):
+    """Define DomainAlerts model."""
+
     domain_alert_uid = models.UUIDField(primary_key=True, default=uuid.uuid1())
     sub_domain_uid = models.ForeignKey(
         "SubDomains", on_delete=models.CASCADE, db_column="sub_domain_uid"
@@ -500,12 +606,16 @@ class DomainAlerts(models.Model):
     date = models.DateField(blank=True, null=True)
 
     class Meta:
+        """Set DomainAlerts model metadata."""
+
         managed = False
         db_table = "domain_alerts"
         unique_together = (("alert_type", "sub_domain_uid", "date", "new_value"),)
 
 
 class DomainPermutations(models.Model):
+    """Define DomainPermutations model."""
+
     suspected_domain_uid = models.UUIDField(default=uuid.uuid1())
     organizations_uid = models.ForeignKey(
         "Organizations", on_delete=models.CASCADE, db_column="organizations_uid"
@@ -536,12 +646,16 @@ class DomainPermutations(models.Model):
     date_active = models.DateField(blank=True, null=True)
 
     class Meta:
+        """Set DomainPermutations model metadata."""
+
         managed = False
         db_table = "domain_permutations"
         unique_together = (("domain_permutation", "organizations_uid"),)
 
 
 class DotgovDomains(models.Model):
+    """Define DotgovDomains model."""
+
     dotgov_uid = models.UUIDField(primary_key=True, default=uuid.uuid1())
     domain_name = models.TextField(unique=True)
     domain_type = models.TextField(blank=True, null=True)
@@ -552,11 +666,15 @@ class DotgovDomains(models.Model):
     security_contact_email = models.TextField(blank=True, null=True)
 
     class Meta:
+        """Set DotgovDomains model metadata."""
+
         managed = False
         db_table = "dotgov_domains"
 
 
 class Executives(models.Model):
+    """Define Executives model."""
+
     executives_uid = models.UUIDField(primary_key=True)
     organizations_uid = models.ForeignKey(
         "Organizations", on_delete=models.CASCADE, db_column="organizations_uid"
@@ -564,11 +682,15 @@ class Executives(models.Model):
     executives = models.TextField()
 
     class Meta:
+        """Set Executives model metadata."""
+
         managed = False
         db_table = "executives"
 
 
 class Ips(models.Model):
+    """Define Ips model."""
+
     ip_hash = models.TextField(primary_key=True)
     ip = models.GenericIPAddressField(unique=True)
     origin_cidr = models.ForeignKey(
@@ -580,11 +702,15 @@ class Ips(models.Model):
     last_reverse_lookup = models.DateTimeField(blank=True, null=True)
 
     class Meta:
+        """Set Ips model metadata."""
+
         managed = False
         db_table = "ips"
 
 
 class IpsSubs(models.Model):
+    """Define IpsSubs model."""
+
     ips_subs_uid = models.UUIDField(primary_key=True)
     ip_hash = models.ForeignKey(Ips, on_delete=models.CASCADE, db_column="ip_hash")
     sub_domain_uid = models.ForeignKey(
@@ -592,12 +718,16 @@ class IpsSubs(models.Model):
     )
 
     class Meta:
+        """Set IpsSubs model metadata."""
+
         managed = False
         # db_table = 'ips_subs'
         unique_together = (("ip_hash", "sub_domain_uid"),)
 
 
 class Mentions(models.Model):
+    """Define Mentions model."""
+
     mentions_uid = models.UUIDField(primary_key=True)
     category = models.TextField(blank=True, null=True)
     collection_date = models.TextField(blank=True, null=True)
@@ -625,31 +755,43 @@ class Mentions(models.Model):
     detected_lang = models.TextField(blank=True, null=True)
 
     class Meta:
+        """Set Mentions model metadata."""
+
         managed = False
         db_table = "mentions"
 
 
 class OrgIdMap(models.Model):
+    """Define OrgIdMap model."""
+
     cyhy_id = models.TextField(blank=True, null=True)
     pe_org_id = models.TextField(blank=True, null=True)
     merge_orgs = models.BooleanField(blank=True, null=True)
 
     class Meta:
+        """Set OrgIdMap model metadata."""
+
         managed = False
         db_table = "org_id_map"
         unique_together = (("cyhy_id", "pe_org_id"),)
 
 
 class OrgType(models.Model):
+    """Define OrgType model."""
+
     org_type_uid = models.UUIDField(primary_key=True, default=uuid.uuid1())
     org_type = models.TextField(blank=True, null=True)
 
     class Meta:
+        """Set OrgType model metadata."""
+
         managed = False
         db_table = "org_type"
 
 
 class Organizations(models.Model):
+    """Define Organizations model."""
+
     organizations_uid = models.UUIDField(primary_key=True)
     name = models.TextField()
     cyhy_db_name = models.TextField(unique=True, blank=True, null=True)
@@ -675,21 +817,27 @@ class Organizations(models.Model):
     demo = models.BooleanField(blank=True, null=True)
 
     class Meta:
+        """Set Organizations model metadata."""
+
         managed = False
         db_table = "organizations"
 
 
 class PshttResults(models.Model):
+    """Define PshttResults model."""
+
     pshtt_results_uid = models.UUIDField(primary_key=True, default=uuid.uuid1())
     organizations_uid = models.ForeignKey(
-        Organizations, on_delete=models.CASCADE, db_column="organizations_uid"
+        "Organizations", on_delete=models.CASCADE, db_column="organizations_uid"
     )
     sub_domain_uid = models.ForeignKey(
         "SubDomains", on_delete=models.CASCADE, db_column="sub_domain_uid"
     )
-    data_source_uid = models.UUIDField()
+    data_source_uid = models.ForeignKey(
+        "DataSource", on_delete=models.CASCADE, db_column="data_source_uid"
+    )
     sub_domain = models.TextField()
-    scanned = models.BooleanField(blank=True, null=True)
+    date_scanned = models.DateField(blank=True, null=True)
     base_domain = models.TextField(blank=True, null=True)
     base_domain_hsts_preloaded = models.BooleanField(blank=True, null=True)
     canonical_url = models.TextField(blank=True, null=True)
@@ -721,6 +869,10 @@ class PshttResults(models.Model):
     )
     https_publicly_trusted = models.BooleanField(blank=True, null=True)
     https_self_signed_cert = models.BooleanField(blank=True, null=True)
+    https_leaf_cert_expiration_date = models.DateField(blank=True, null=True)
+    https_leaf_cert_issuer = models.TextField(blank=True, null=True)
+    https_leaf_cert_subject = models.TextField(blank=True, null=True)
+    https_root_cert_issuer = models.TextField(blank=True, null=True)
     ip = models.GenericIPAddressField(blank=True, null=True)
     live = models.BooleanField(blank=True, null=True)
     notes = models.TextField(blank=True, null=True)
@@ -734,181 +886,52 @@ class PshttResults(models.Model):
     ep_http_headers = models.TextField(
         blank=True, null=True
     )  # This field type is a guess.
-    ep_http_ip = models.GenericIPAddressField(blank=True, null=True)
-    ep_http_live = models.BooleanField(blank=True, null=True)
-    ep_http_notes = models.TextField(blank=True, null=True)
-    ep_http_redirect = models.BooleanField(blank=True, null=True)
-    ep_http_redirect_eventually_to = models.TextField(blank=True, null=True)
-    ep_http_redirect_eventually_to_external = models.BooleanField(blank=True, null=True)
-    ep_http_redirect_eventually_to_http = models.BooleanField(blank=True, null=True)
-    ep_http_redirect_eventually_to_https = models.BooleanField(blank=True, null=True)
-    ep_http_redirect_eventually_to_subdomain = models.BooleanField(
-        blank=True, null=True
-    )
-    ep_http_redirect_immediately_to = models.TextField(blank=True, null=True)
-    ep_http_redirect_immediately_to_external = models.BooleanField(
-        blank=True, null=True
-    )
-    ep_http_redirect_immediately_to_http = models.BooleanField(blank=True, null=True)
-    ep_http_redirect_immediately_to_https = models.BooleanField(blank=True, null=True)
-    ep_http_redirect_immediately_to_subdomain = models.BooleanField(
-        blank=True, null=True
-    )
-    ep_http_redirect_immediately_to_www = models.BooleanField(blank=True, null=True)
     ep_http_server_header = models.TextField(blank=True, null=True)
     ep_http_server_version = models.TextField(blank=True, null=True)
-    ep_http_status = models.IntegerField(blank=True, null=True)
-    ep_http_unknown_error = models.BooleanField(blank=True, null=True)
-    ep_http_url = models.TextField(blank=True, null=True)
     ep_https_headers = models.TextField(
         blank=True, null=True
     )  # This field type is a guess.
-    ep_https_hsts = models.BooleanField(blank=True, null=True)
-    ep_https_hsts_all_subdomains = models.BooleanField(blank=True, null=True)
     ep_https_hsts_header = models.TextField(blank=True, null=True)
-    ep_https_hsts_max_age = models.DecimalField(
-        max_digits=1000, decimal_places=1000, blank=True, null=True
-    )
-    ep_https_hsts_preload = models.BooleanField(blank=True, null=True)
-    ep_https_https_bad_chain = models.BooleanField(blank=True, null=True)
-    ep_https_https_bad_hostname = models.BooleanField(blank=True, null=True)
-    ep_https_https_cert_chain_len = models.IntegerField(blank=True, null=True)
-    ep_https_https_client_auth_required = models.BooleanField(blank=True, null=True)
-    ep_https_https_custom_trusted = models.BooleanField(blank=True, null=True)
-    ep_https_https_expired_cert = models.BooleanField(blank=True, null=True)
-    ep_https_https_vull_connection = models.BooleanField(blank=True, null=True)
-    ep_https_https_missing_intermediate_cert = models.BooleanField(
-        blank=True, null=True
-    )
-    ep_https_https_public_trusted = models.BooleanField(blank=True, null=True)
-    ep_https_https_self_signed_cert = models.BooleanField(blank=True, null=True)
-    ep_https_https_valid = models.BooleanField(blank=True, null=True)
-    ep_https_ip = models.GenericIPAddressField(blank=True, null=True)
-    ep_https_live = models.BooleanField(blank=True, null=True)
-    ep_https_notes = models.TextField(blank=True, null=True)
-    ep_https_redirect = models.BooleanField(blank=True, null=True)
-    ep_https_redireect_eventually_to = models.TextField(blank=True, null=True)
-    ep_https_redirect_eventually_to_external = models.BooleanField(
-        blank=True, null=True
-    )
-    ep_https_redirect_eventually_to_http = models.BooleanField(blank=True, null=True)
-    ep_https_redirect_eventually_to_https = models.BooleanField(blank=True, null=True)
-    ep_https_redirect_eventually_to_subdomain = models.BooleanField(
-        blank=True, null=True
-    )
-    ep_https_redirect_immediately_to = models.TextField(blank=True, null=True)
-    ep_https_redirect_immediately_to_external = models.BooleanField(
-        blank=True, null=True
-    )
-    ep_https_redirect_immediately_to_http = models.BooleanField(blank=True, null=True)
-    ep_https_redirect_immediately_to_https = models.BooleanField(blank=True, null=True)
-    ep_https_redirect_immediately_to_subdomain = models.BooleanField(
-        blank=True, null=True
-    )
-    ep_https_redirect_immediately_to_www = models.BooleanField(blank=True, null=True)
     ep_https_server_header = models.TextField(blank=True, null=True)
     ep_https_server_version = models.TextField(blank=True, null=True)
-    ep_https_status = models.IntegerField(blank=True, null=True)
-    ep_https_unknown_error = models.BooleanField(blank=True, null=True)
-    ep_https_url = models.TextField(blank=True, null=True)
     ep_httpswww_headers = models.TextField(
         blank=True, null=True
     )  # This field type is a guess.
-    ep_httpswww_hsts = models.BooleanField(blank=True, null=True)
-    ep_httpswww_hsts_all_subdomains = models.BooleanField(blank=True, null=True)
     ep_httpswww_hsts_header = models.TextField(blank=True, null=True)
-    ep_httpswww_hsts_max_age = models.DecimalField(
-        max_digits=1000, decimal_places=1000, blank=True, null=True
-    )
-    ep_httpswww_hsts_preload = models.BooleanField(blank=True, null=True)
-    ep_httpswww_https_bad_chain = models.BooleanField(blank=True, null=True)
-    ep_httpswww_https_bad_hostname = models.BooleanField(blank=True, null=True)
-    ep_httpswww_https_cert_chain_len = models.IntegerField(blank=True, null=True)
-    ep_httpswww_https_client_auth_required = models.BooleanField(blank=True, null=True)
-    ep_httpswww_https_custom_trusted = models.BooleanField(blank=True, null=True)
-    ep_httpswww_https_expired_cert = models.BooleanField(blank=True, null=True)
-    ep_httpswww_https_full_connection = models.BooleanField(blank=True, null=True)
-    ep_httpswww_https_missing_intermediate_cert = models.BooleanField(
-        blank=True, null=True
-    )
-    ep_httpswww_https_public_trusted = models.BooleanField(blank=True, null=True)
-    ep_httpswww_https_self_signed_cert = models.BooleanField(blank=True, null=True)
-    ep_httpswww_https_valid = models.BooleanField(blank=True, null=True)
-    ep_httpswww_ip = models.GenericIPAddressField(blank=True, null=True)
-    ep_httpswww_live = models.BooleanField(blank=True, null=True)
-    ep_httpswww_notes = models.TextField(blank=True, null=True)
-    ep_httpswww_redirect = models.BooleanField(blank=True, null=True)
-    ep_httpswww_redirect_eventually_to = models.TextField(blank=True, null=True)
-    ep_httpswww_redirect_eventually_to_external = models.BooleanField(
-        blank=True, null=True
-    )
-    ep_httpswww_redirect_eventually_to_http = models.BooleanField(blank=True, null=True)
-    ep_httpswww_redirect_eventually_to_https = models.BooleanField(
-        blank=True, null=True
-    )
-    ep_httpswww_redirect_eventually_to_subdomain = models.BooleanField(
-        blank=True, null=True
-    )
-    ep_httpswww_redirect_immediately_to = models.TextField(blank=True, null=True)
-    ep_httpswww_redirect_immediately_to_external = models.BooleanField(
-        blank=True, null=True
-    )
-    ep_httpswww_redirect_immediately_to_http = models.BooleanField(
-        blank=True, null=True
-    )
-    ep_httpswww_redirect_immediately_to_https = models.BooleanField(
-        blank=True, null=True
-    )
-    ep_httpswww_redirect_immediately_to_subdomain = models.BooleanField(
-        blank=True, null=True
-    )
-    ep_httpswww_redirect_immediately_to_www = models.BooleanField(blank=True, null=True)
     ep_httpswww_server_header = models.TextField(blank=True, null=True)
     ep_httpswww_server_version = models.TextField(blank=True, null=True)
-    ep_httpswww_status = models.IntegerField(blank=True, null=True)
-    ep_httpswww_unknown_error = models.BooleanField(blank=True, null=True)
-    ep_httpswww_url = models.TextField(blank=True, null=True)
     ep_httpwww_headers = models.TextField(
         blank=True, null=True
     )  # This field type is a guess.
-    ep_httpwww_ip = models.GenericIPAddressField(blank=True, null=True)
-    ep_httpwww_live = models.BooleanField(blank=True, null=True)
-    ep_httpwww_notes = models.TextField(blank=True, null=True)
-    ep_httpwww_redirect = models.BooleanField(blank=True, null=True)
-    ep_httpwww_redirect_eventually_to = models.TextField(blank=True, null=True)
-    ep_httpwww_redirect_eventually_to_external = models.BooleanField(
-        blank=True, null=True
-    )
-    ep_httpwww_redirect_eventually_to_http = models.BooleanField(blank=True, null=True)
-    ep_httpwww_redirect_eventually_to_https = models.BooleanField(blank=True, null=True)
-    ep_httpwww_redirect_eventually_to_subdomain = models.BooleanField(
-        blank=True, null=True
-    )
-    ep_httpwww_redirect_immediately_to = models.TextField(blank=True, null=True)
-    ep_httpwww_redirect_immediately_to_external = models.BooleanField(
-        blank=True, null=True
-    )
-    ep_httpwww_redirect_immediately_to_http = models.BooleanField(blank=True, null=True)
-    ep_httpwww_redirect_immediately_to_https = models.BooleanField(
-        blank=True, null=True
-    )
-    ep_httpwww_redirect_immediately_to_subdomain = models.BooleanField(
-        blank=True, null=True
-    )
-    ep_httpwww_redirect_immediately_to_www = models.BooleanField(blank=True, null=True)
     ep_httpwww_server_header = models.TextField(blank=True, null=True)
     ep_httpwww_server_version = models.TextField(blank=True, null=True)
-    ep_httpwww_status = models.IntegerField(blank=True, null=True)
-    ep_httpwww_unknown_error = models.BooleanField(blank=True, null=True)
-    ep_httpwww_url = models.TextField(blank=True, null=True)
 
     class Meta:
+        """Set PshttResults model metadata."""
+
         managed = False
         db_table = "pshtt_results"
         unique_together = (("organizations_uid", "sub_domain_uid"),)
 
 
+class VwPshttDomainsToRun(models.Model):
+    """Define VwPshttDomainsToRun model."""
+
+    sub_domain_uid = models.UUIDField(primary_key=True)
+    sub_domain = models.TextField(blank=True, null=True)
+    organizations_uid = models.UUIDField()
+    name = models.TextField(blank=True, null=True)
+
+    class Meta:
+        """Set VwPshttDomainsToRun model metadata."""
+
+        managed = False
+        db_table = "vw_pshtt_domains_to_run"
+
+
 class ReportSummaryStats(models.Model):
+    """Define ReportSummaryStats model."""
+
     report_uid = models.UUIDField(primary_key=True, default=uuid.uuid1())
     organizations_uid = models.ForeignKey(
         Organizations, on_delete=models.CASCADE, db_column="organizations_uid"
@@ -940,12 +963,16 @@ class ReportSummaryStats(models.Model):
     )
 
     class Meta:
+        """Set ReportSummaryStats model metadata."""
+
         managed = False
         db_table = "report_summary_stats"
         unique_together = (("organizations_uid", "start_date"),)
 
 
 class RootDomains(models.Model):
+    """Define RootDomains model."""
+
     root_domain_uid = models.UUIDField(primary_key=True, default=uuid.uuid1())
     organizations_uid = models.ForeignKey(
         Organizations, on_delete=models.CASCADE, db_column="organizations_uid"
@@ -958,12 +985,16 @@ class RootDomains(models.Model):
     enumerate_subs = models.BooleanField(blank=True, null=True)
 
     class Meta:
+        """Set RootDomains model metadata."""
+
         managed = False
         db_table = "root_domains"
         unique_together = (("root_domain", "organizations_uid"),)
 
 
 class TeamMembers(models.Model):
+    """Define TeamMembers model."""
+
     team_member_uid = models.UUIDField(primary_key=True, default=uuid.uuid1())
     team_member_fname = models.TextField()
     team_member_lname = models.TextField()
@@ -974,11 +1005,15 @@ class TeamMembers(models.Model):
     team_member_notes = models.TextField(blank=True, null=True)
 
     class Meta:
+        """Set TeamMembers model metadata."""
+
         managed = True
         db_table = "team_members"
 
 
 class ShodanAssets(models.Model):
+    """Define ShodanAssets model."""
+
     shodan_asset_uid = models.UUIDField(primary_key=True, default=uuid.uuid1())
     organizations_uid = models.ForeignKey(
         Organizations, on_delete=models.CASCADE, db_column="organizations_uid"
@@ -1000,6 +1035,8 @@ class ShodanAssets(models.Model):
     )
 
     class Meta:
+        """Set ShodanAssets model metadata."""
+
         managed = False
         db_table = "shodan_assets"
         unique_together = (
@@ -1008,6 +1045,8 @@ class ShodanAssets(models.Model):
 
 
 class ShodanInsecureProtocolsUnverifiedVulns(models.Model):
+    """Define ShodanInsecureProtocolsUnverifiedVulns model."""
+
     insecure_product_uid = models.UUIDField(primary_key=True, default=uuid.uuid1())
     organizations_uid = models.ForeignKey(
         Organizations, on_delete=models.CASCADE, db_column="organizations_uid"
@@ -1035,6 +1074,8 @@ class ShodanInsecureProtocolsUnverifiedVulns(models.Model):
     )
 
     class Meta:
+        """Set ShodanInsecureProtocolsUnverifiedVulns model metadata."""
+
         managed = False
         db_table = "shodan_insecure_protocols_unverified_vulns"
         unique_together = (
@@ -1043,6 +1084,8 @@ class ShodanInsecureProtocolsUnverifiedVulns(models.Model):
 
 
 class ShodanVulns(models.Model):
+    """Define ShodanVulns model."""
+
     shodan_vuln_uid = models.UUIDField(primary_key=True, default=uuid.uuid1())
     organizations_uid = models.ForeignKey(
         Organizations, on_delete=models.CASCADE, db_column="organizations_uid"
@@ -1087,6 +1130,8 @@ class ShodanVulns(models.Model):
     is_verified = models.BooleanField(blank=True, null=True)
 
     class Meta:
+        """Set ShodanVulns model metadata."""
+
         managed = False
         db_table = "shodan_vulns"
         unique_together = (
@@ -1095,6 +1140,8 @@ class ShodanVulns(models.Model):
 
 
 class SubDomains(models.Model):
+    """Define SubDomains model."""
+
     sub_domain_uid = models.UUIDField(primary_key=True, default=uuid.uuid1())
     sub_domain = models.TextField()
     root_domain_uid = models.ForeignKey(
@@ -1111,14 +1158,22 @@ class SubDomains(models.Model):
         null=True,
     )
     status = models.BooleanField(blank=True, null=True)
+    first_seen = models.DateField(blank=True, null=True)
+    last_seen = models.DateField(blank=True, null=True)
+    current = models.BooleanField(blank=True, null=True)
+    identified = models.BooleanField(blank=True, null=True)
 
     class Meta:
+        """Set SubDomains model metadata."""
+
         managed = False
         db_table = "sub_domains"
         unique_together = (("sub_domain", "root_domain_uid"),)
 
 
 class TopCves(models.Model):
+    """Define TopCves model."""
+
     top_cves_uid = models.UUIDField(primary_key=True, default=uuid.uuid1())
     cve_id = models.TextField(blank=True, null=True)
     dynamic_rating = models.TextField(blank=True, null=True)
@@ -1130,34 +1185,46 @@ class TopCves(models.Model):
     )
 
     class Meta:
+        """Set TopCves model metadata."""
+
         managed = False
         db_table = "top_cves"
         unique_together = (("cve_id", "date"),)
 
 
 class TopicTotals(models.Model):
+    """Define TopicTotals model."""
+
     cound_uuid = models.UUIDField(primary_key=True, default=uuid.uuid1())
     organizations_uid = models.UUIDField()
     content_count = models.IntegerField()
     count_date = models.TextField(blank=True, null=True)
 
     class Meta:
+        """Set TopicTotals model metadata."""
+
         managed = False
         db_table = "topic_totals"
 
 
 class UniqueSoftware(models.Model):
+    """Define UniqueSoftware model."""
+
     field_id = models.UUIDField(
         db_column="_id", primary_key=True, default=uuid.uuid1()
     )  # Field renamed because it started with '_'.
     software_name = models.TextField()
 
     class Meta:
+        """Set UniqueSoftware model metadata."""
+
         managed = False
         db_table = "unique_software"
 
 
 class WasTrackerCustomerdata(models.Model):
+    """Define WasTrackerCustomerdata model."""
+
     customer_id = models.UUIDField(
         db_column="customer_id", primary_key=True, default=uuid.uuid1
     )
@@ -1183,11 +1250,15 @@ class WasTrackerCustomerdata(models.Model):
     child_tags = models.TextField()
 
     class Meta:
+        """Set WasTrackerCustomerdata model metadata."""
+
         managed = False
         db_table = "was_tracker_customerdata"
 
 
 class WebAssets(models.Model):
+    """Define WebAssets model."""
+
     asset_uid = models.UUIDField(primary_key=True, default=uuid.uuid1())
     asset_type = models.TextField()
     asset = models.TextField()
@@ -1205,12 +1276,16 @@ class WebAssets(models.Model):
     )
 
     class Meta:
+        """Set WebAssets model metadata."""
+
         managed = False
         db_table = "web_assets"
         unique_together = (("asset", "organizations_uid"),)
 
 
 class WeeklyStatuses(models.Model):
+    """Define WeeklyStatuses model."""
+
     weekly_status_uid = models.UUIDField(primary_key=True, default=uuid.uuid1())
     user_status = models.TextField(blank=True)
     key_accomplishments = models.TextField(blank=True, null=True)
@@ -1225,22 +1300,30 @@ class WeeklyStatuses(models.Model):
     statusComplete = models.IntegerField(blank=True, null=True)
 
     class Meta:
+        """Set WeeklyStatuses model metadata."""
+
         managed = True
         db_table = "weekly_statuses"
 
 
 class VwBreachcompCredsbydate(models.Model):
+    """Define VwBreachcompCredsbydate model."""
+
     organizations_uid = models.UUIDField(primary_key=True)
     mod_date = models.DateField(blank=True, null=True)
     no_password = models.BigIntegerField(blank=True, null=True)
     password_included = models.BigIntegerField(blank=True, null=True)
 
     class Meta:
+        """Set VwBreachcompCredsbydate model metadata."""
+
         managed = False  # Created from a view. Don't remove.
         db_table = "vw_breachcomp_credsbydate"
 
 
 class VwDarkwebMentionsbydate(models.Model):
+    """Define VwDarkwebMentionsbydate model."""
+
     organizations_uid = models.UUIDField(primary_key=True)
     date = models.DateField(blank=True, null=True)
     count = models.BigIntegerField(
@@ -1248,11 +1331,15 @@ class VwDarkwebMentionsbydate(models.Model):
     )  # Field name made lowercase.
 
     class Meta:
+        """Set VwDarkwebMentionsbydate model metadata."""
+
         managed = False  # Created from a view. Don't remove.
         db_table = "vw_darkweb_mentionsbydate"
 
 
 class VwShodanvulnsSuspected(models.Model):
+    """Define VwShodanvulnsSuspected model."""
+
     organizations_uid = models.UUIDField(primary_key=True)
     organization = models.TextField(blank=True, null=True)
     ip = models.TextField(blank=True, null=True)
@@ -1275,11 +1362,15 @@ class VwShodanvulnsSuspected(models.Model):
     data_source = models.TextField(blank=True, null=True)
 
     class Meta:
+        """Set VwShodanvulnsSuspected model metadata."""
+
         managed = False  # Created from a view. Don't remove.
         db_table = "vw_shodanvulns_suspected"
 
 
 class VwShodanvulnsVerified(models.Model):
+    """Define VwShodanvulnsVerified model."""
+
     organizations_uid = models.UUIDField(primary_key=True)
     organization = models.TextField(blank=True, null=True)
     ip = models.TextField(blank=True, null=True)
@@ -1311,11 +1402,15 @@ class VwShodanvulnsVerified(models.Model):
     data_source = models.TextField(blank=True, null=True)
 
     class Meta:
+        """Set VwShodanvulnsVerified model metadata."""
+
         managed = False  # Created from a view. Don't remove.
         db_table = "vw_shodanvulns_verified"
 
 
 class VwBreachcompBreachdetails(models.Model):
+    """Define VwBreachcompBreachdetails model."""
+
     organizations_uid = models.UUIDField(primary_key=True)
     breach_name = models.TextField(blank=True, null=True)
     mod_date = models.DateField(blank=True, null=True)
@@ -1325,11 +1420,15 @@ class VwBreachcompBreachdetails(models.Model):
     number_of_creds = models.BigIntegerField(blank=True, null=True)
 
     class Meta:
+        """Set VwBreachcompBreachdetails model metadata."""
+
         managed = False  # Created from a view. Don't remove.
         db_table = "vw_breachcomp_breachdetails"
 
 
 class VwDarkwebSocmediaMostactposts(models.Model):
+    """Define VwDarkwebSocmediaMostactposts model."""
+
     organizations_uid = models.UUIDField(primary_key=True)
     date = models.DateField(blank=True, null=True)
     title = models.TextField(
@@ -1340,11 +1439,15 @@ class VwDarkwebSocmediaMostactposts(models.Model):
     )  # Field name made lowercase. Field renamed to remove unsuitable characters.
 
     class Meta:
+        """Set VwDarkwebSocmediaMostactposts model metadata."""
+
         managed = False  # Created from a view. Don't remove.
         db_table = "vw_darkweb_socmedia_mostactposts"
 
 
 class VwDarkwebMostactposts(models.Model):
+    """Define VwDarkwebMostactposts model."""
+
     organizations_uid = models.UUIDField(primary_key=True)
     date = models.DateField(blank=True, null=True)
     title = models.TextField(
@@ -1355,11 +1458,15 @@ class VwDarkwebMostactposts(models.Model):
     )  # Field name made lowercase. Field renamed to remove unsuitable characters.
 
     class Meta:
+        """Set VwDarkwebMostactposts model metadata."""
+
         managed = False  # Created from a view. Don't remove.
         db_table = "vw_darkweb_mostactposts"
 
 
 class VwDarkwebAssetalerts(models.Model):
+    """Define VwDarkwebAssetalerts model."""
+
     organizations_uid = models.UUIDField(primary_key=True)
     date = models.DateField(blank=True, null=True)
     site = models.TextField(
@@ -1373,11 +1480,15 @@ class VwDarkwebAssetalerts(models.Model):
     )  # Field name made lowercase.
 
     class Meta:
+        """Set VwDarkwebAssetalerts model metadata."""
+
         managed = False  # Created from a view. Don't remove.
         db_table = "vw_darkweb_assetalerts"
 
 
 class VwDarkwebExecalerts(models.Model):
+    """Define VwDarkwebExecalerts model."""
+
     organizations_uid = models.UUIDField(primary_key=True)
     date = models.DateField(blank=True, null=True)
     site = models.TextField(
@@ -1391,11 +1502,15 @@ class VwDarkwebExecalerts(models.Model):
     )  # Field name made lowercase.
 
     class Meta:
+        """Set VwDarkwebExecalerts model metadata."""
+
         managed = False  # Created from a view. Don't remove.
         db_table = "vw_darkweb_execalerts"
 
 
 class VwDarkwebThreatactors(models.Model):
+    """Define VwDarkwebThreatactors model."""
+
     organizations_uid = models.UUIDField(primary_key=True)
     date = models.DateField(blank=True, null=True)
     creator = models.TextField(
@@ -1406,11 +1521,15 @@ class VwDarkwebThreatactors(models.Model):
     )  # Field name made lowercase.
 
     class Meta:
+        """Set VwDarkwebThreatactors model metadata."""
+
         managed = False  # Created from a view. Don't remove.
         db_table = "vw_darkweb_threatactors"
 
 
 class VwDarkwebPotentialthreats(models.Model):
+    """Define VwDarkwebPotentialthreats model."""
+
     organizations_uid = models.UUIDField(primary_key=True)
     date = models.DateField(blank=True, null=True)
     site = models.TextField(
@@ -1421,11 +1540,15 @@ class VwDarkwebPotentialthreats(models.Model):
     )  # Field name made lowercase.
 
     class Meta:
+        """Set VwDarkwebPotentialthreats model metadata."""
+
         managed = False  # Created from a view. Don't remove.
         db_table = "vw_darkweb_potentialthreats"
 
 
 class VwDarkwebSites(models.Model):
+    """Define VwDarkwebSites model."""
+
     organizations_uid = models.UUIDField(primary_key=True)
     date = models.DateField(blank=True, null=True)
     site = models.TextField(
@@ -1433,11 +1556,15 @@ class VwDarkwebSites(models.Model):
     )  # Field name made lowercase.
 
     class Meta:
+        """Set VwDarkwebSites model metadata."""
+
         managed = False  # Created from a view. Don't remove.
         db_table = "vw_darkweb_sites"
 
 
 class VwDarkwebInviteonlymarkets(models.Model):
+    """Define VwDarkwebInviteonlymarkets model."""
+
     organizations_uid = models.UUIDField(primary_key=True)
     date = models.DateField(blank=True, null=True)
     site = models.TextField(
@@ -1445,11 +1572,15 @@ class VwDarkwebInviteonlymarkets(models.Model):
     )  # Field name made lowercase.
 
     class Meta:
+        """Set VwDarkwebInviteonlymarkets model metadata."""
+
         managed = False  # Created from a view. Don't remove.
         db_table = "vw_darkweb_inviteonlymarkets"
 
 
 class VwDarkwebTopcves(models.Model):
+    """Define VwDarkwebTopcves model."""
+
     top_cves_uid = models.UUIDField(primary_key=True)
     cve_id = models.TextField(blank=True, null=True)
     dynamic_rating = models.TextField(blank=True, null=True)
@@ -1459,11 +1590,15 @@ class VwDarkwebTopcves(models.Model):
     data_source_uid = models.UUIDField(blank=True, null=True)
 
     class Meta:
+        """Set VwDarkwebTopcves model metadata."""
+
         managed = False  # Created from a view. Don't remove.
         db_table = "vw_darkweb_topcves"
 
 
 class VwCidrs(models.Model):
+    """Define VwCidrs model."""
+
     cidr_uid = models.UUIDField(primary_key=True)
     network = models.TextField(blank=True, null=True)  # This field type is a guess.
     organizations_uid = models.UUIDField(blank=True, null=True)
@@ -1471,11 +1606,15 @@ class VwCidrs(models.Model):
     insert_alert = models.TextField(blank=True, null=True)
 
     class Meta:
+        """Set VwCidrs model metadata."""
+
         managed = False  # Created from a view. Don't remove.
         db_table = "vw_cidrs"
 
 
 class VwBreachcomp(models.Model):
+    """Define VwBreachcomp model."""
+
     credential_exposures_uid = models.UUIDField(primary_key=True)
     email = models.TextField(blank=True, null=True)
     breach_name = models.TextField(blank=True, null=True)
@@ -1503,22 +1642,30 @@ class VwBreachcomp(models.Model):
     is_spam_list = models.BooleanField(blank=True, null=True)
 
     class Meta:
+        """Set VwBreachcomp model metadata."""
+
         managed = False  # Created from a view. Don't remove.
         db_table = "vw_breachcomp"
 
 
 class VwOrgsTotalDomains(models.Model):
+    """Define VwOrgsTotalDomains model."""
+
     organizations_uid = models.UUIDField(primary_key=True)
     cyhy_db_name = models.TextField(blank=True, null=True)
     num_root_domain = models.BigIntegerField(blank=True, null=True)
     num_sub_domain = models.BigIntegerField(blank=True, null=True)
 
     class Meta:
+        """Set VwOrgsTotalDomains model metadata."""
+
         managed = False  # Created from a view. Don't remove.
         db_table = "vw_orgs_total_domains"
 
 
 class VwOrgsContactInfo(models.Model):
+    """Define VwOrgsContactInfo model."""
+
     organizations_uid = models.UUIDField(primary_key=True)
     cyhy_db_name = models.TextField(blank=True, null=True)
     agency_name = models.TextField(blank=True, null=True)
@@ -1529,21 +1676,29 @@ class VwOrgsContactInfo(models.Model):
     date_pulled = models.DateField(blank=True, null=True)
 
     class Meta:
+        """Set VwOrgsContactInfo model metadata."""
+
         managed = False  # Created from a view. Don't remove.
         db_table = "vw_orgs_contact_info"
 
 
 class VwOrgsTotalIps(models.Model):
+    """Define VwOrgsTotalIps model."""
+
     organizations_uid = models.UUIDField(primary_key=True)
     cyhy_db_name = models.TextField(blank=True, null=True)
     num_ips = models.BigIntegerField(blank=True, null=True)
 
     class Meta:
+        """Set VwOrgsTotalIps model metadata."""
+
         managed = False  # Created from a view. Don't remove.
         db_table = "vw_orgs_total_ips"
 
 
 class MatVwOrgsAllIps(models.Model):
+    """Define MatVwOrgsAllIps model."""
+
     organizations_uid = models.UUIDField(primary_key=True)
     cyhy_db_name = models.TextField(blank=True, null=True)
     ip_addresses = ArrayField(
@@ -1551,11 +1706,15 @@ class MatVwOrgsAllIps(models.Model):
     )
 
     class Meta:
+        """Set MatVwOrgsAllIps model metadata."""
+
         managed = False  # Created from a view. Don't remove.
         db_table = "mat_vw_orgs_all_ips"
 
 
 class VwOrgsAttacksurface(models.Model):
+    """Define VwOrgsAttacksurface model."""
+
     organizations_uid = models.UUIDField(primary_key=True)
     cyhy_db_name = models.TextField(blank=True, null=True)
     num_ports = models.BigIntegerField(blank=True, null=True)
@@ -1564,16 +1723,22 @@ class VwOrgsAttacksurface(models.Model):
     num_ips = models.BigIntegerField(blank=True, null=True)
 
     class Meta:
+        """Set VwOrgsAttacksurface model metadata."""
+
         managed = False  # Created from a view. Don't remove.
         db_table = "vw_orgs_attacksurface"
 
 
 class VwOrgsTotalPorts(models.Model):
+    """Define VwOrgsTotalPorts model."""
+
     organizations_uid = models.UUIDField(primary_key=True)
     cyhy_db_name = models.TextField(blank=True, null=True)
     num_ports = models.BigIntegerField(blank=True, null=True)
 
     class Meta:
+        """Set VwOrgsTotalPorts model metadata."""
+
         managed = False  # Created from a view. Don't remove.
         db_table = "vw_orgs_total_ports"
 
@@ -1581,18 +1746,24 @@ class VwOrgsTotalPorts(models.Model):
 # ---------- D-Score View Models ----------
 # D-Score VS Cert View
 class VwDscoreVSCert(models.Model):
+    """Define VwDscoreVSCert model."""
+
     organizations_uid = models.UUIDField(primary_key=True)
     parent_org_uid = models.UUIDField(blank=True, null=True)
     num_ident_cert = models.BigIntegerField(blank=True, null=True)
     num_monitor_cert = models.BigIntegerField(blank=True, null=True)
 
     class Meta:
+        """Set VwDscoreVSCert model metadata."""
+
         managed = False  # Created from a view. Don't remove.
         db_table = "vw_dscore_vs_cert"
 
 
 # D-Score VS Mail View
 class VwDscoreVSMail(models.Model):
+    """Define VwDscoreVSMail model."""
+
     organizations_uid = models.UUIDField(primary_key=True)
     parent_org_uid = models.UUIDField(blank=True, null=True)
     num_valid_dmarc = models.BigIntegerField(blank=True, null=True)
@@ -1601,42 +1772,56 @@ class VwDscoreVSMail(models.Model):
     total_mail_domains = models.BigIntegerField(blank=True, null=True)
 
     class Meta:
+        """Set VwDscoreVSMail model metadata."""
+
         managed = False  # Created from a view. Don't remove.
         db_table = "vw_dscore_vs_mail"
 
 
 # D-Score PE IP View
 class VwDscorePEIp(models.Model):
+    """Define VwDscorePEIp model."""
+
     organizations_uid = models.UUIDField(primary_key=True)
     parent_org_uid = models.UUIDField(blank=True, null=True)
     num_ident_ip = models.BigIntegerField(blank=True, null=True)
     num_monitor_ip = models.BigIntegerField(blank=True, null=True)
 
     class Meta:
+        """Set VwDscorePEIp model metadata."""
+
         managed = False  # Created from a view. Don't remove.
         db_table = "vw_dscore_pe_ip"
 
 
 # D-Score PE Domain View
 class VwDscorePEDomain(models.Model):
+    """Define VwDscorePEDomain model."""
+
     organizations_uid = models.UUIDField(primary_key=True)
     parent_org_uid = models.UUIDField(blank=True, null=True)
     num_ident_domain = models.BigIntegerField(blank=True, null=True)
     num_monitor_domain = models.BigIntegerField(blank=True, null=True)
 
     class Meta:
+        """Set VwDscorePEDomain model metadata."""
+
         managed = False  # Created from a view. Don't remove.
         db_table = "vw_dscore_pe_domain"
 
 
 # D-Score WAS Webapp View
 class VwDscoreWASWebapp(models.Model):
+    """Define VwDscoreWASWebapp model."""
+
     organizations_uid = models.UUIDField(primary_key=True)
     parent_org_uid = models.UUIDField(blank=True, null=True)
     num_ident_webapp = models.BigIntegerField(blank=True, null=True)
     num_monitor_webapp = models.BigIntegerField(blank=True, null=True)
 
     class Meta:
+        """Set VwDscoreWASWebapp model metadata."""
+
         managed = False  # Created from a view. Don't remove.
         db_table = "vw_dscore_was_webapp"
 
@@ -1644,18 +1829,24 @@ class VwDscoreWASWebapp(models.Model):
 # ---------- I-Score View Models ----------
 # I-Score VS Vuln View
 class VwIscoreVSVuln(models.Model):
+    """Define VwIscoreVSVuln model."""
+
     organizations_uid = models.UUIDField(primary_key=True)
     parent_org_uid = models.UUIDField(blank=True, null=True)
     cve_name = models.CharField(blank=True, null=True)
     cvss_score = models.FloatField(blank=True, null=True)
 
     class Meta:
+        """Set VwIscoreVSVuln model metadata."""
+
         managed = False  # Created from a view. Don't remove.
         db_table = "vw_iscore_vs_vuln"
 
 
 # I-Score VS Vuln Previous View
 class VwIscoreVSVulnPrev(models.Model):
+    """Define VwIscoreVSVulnPrev model."""
+
     organizations_uid = models.UUIDField(primary_key=True)
     parent_org_uid = models.UUIDField(blank=True, null=True)
     cve_name = models.CharField(blank=True, null=True)
@@ -1663,12 +1854,16 @@ class VwIscoreVSVulnPrev(models.Model):
     time_closed = models.DateField(blank=True, null=True)
 
     class Meta:
+        """Set VwIscoreVSVulnPrev model metadata."""
+
         managed = False  # Created from a view. Don't remove.
         db_table = "vw_iscore_vs_vuln_prev"
 
 
 # I-Score PE Vuln View
 class VwIscorePEVuln(models.Model):
+    """Define VwIscorePEVuln model."""
+
     organizations_uid = models.UUIDField(primary_key=True)
     parent_org_uid = models.UUIDField(blank=True, null=True)
     date = models.DateField(blank=True, null=True)
@@ -1676,12 +1871,16 @@ class VwIscorePEVuln(models.Model):
     cvss_score = models.FloatField(blank=True, null=True)
 
     class Meta:
+        """Set VwIscorePEVuln model metadata."""
+
         managed = False  # Created from a view. Don't remove.
         db_table = "vw_iscore_pe_vuln"
 
 
 # I-Score PE Cred View
 class VwIscorePECred(models.Model):
+    """Define VwIscorePECred model."""
+
     organizations_uid = models.UUIDField(primary_key=True)
     parent_org_uid = models.UUIDField(blank=True, null=True)
     date = models.DateField(blank=True, null=True)
@@ -1689,24 +1888,32 @@ class VwIscorePECred(models.Model):
     total_creds = models.BigIntegerField(blank=True, null=True)
 
     class Meta:
+        """Set VwIscorePECred model metadata."""
+
         managed = False  # Created from a view. Don't remove.
         db_table = "vw_iscore_pe_cred"
 
 
 # I-Score PE Breach View
 class VwIscorePEBreach(models.Model):
+    """Define VwIscorePEBreach model."""
+
     organizations_uid = models.UUIDField(primary_key=True)
     parent_org_uid = models.UUIDField(blank=True, null=True)
     date = models.DateField(blank=True, null=True)
     breach_count = models.BigIntegerField(blank=True, null=True)
 
     class Meta:
+        """Set VwIscorePEBreach model metadata."""
+
         managed = False  # Created from a view. Don't remove.
         db_table = "vw_iscore_pe_breach"
 
 
 # I-Score PE Darkweb View
 class VwIscorePEDarkweb(models.Model):
+    """Define VwIscorePEDarkweb model."""
+
     organizations_uid = models.UUIDField(primary_key=True)
     parent_org_uid = models.UUIDField(blank=True, null=True)
     alert_type = models.CharField(blank=True, null=True)
@@ -1714,12 +1921,16 @@ class VwIscorePEDarkweb(models.Model):
     Count = models.BigIntegerField(blank=True, null=True)
 
     class Meta:
+        """Set VwIscorePEDarkweb model metadata."""
+
         managed = False  # Created from a view. Don't remove.
         db_table = "vw_iscore_pe_darkweb"
 
 
 # I-Score PE Protocol View
 class VwIscorePEProtocol(models.Model):
+    """Define VwIscorePEProtocol model."""
+
     organizations_uid = models.UUIDField(primary_key=True)
     parent_org_uid = models.UUIDField(blank=True, null=True)
     port = models.CharField(blank=True, null=True)
@@ -1729,12 +1940,16 @@ class VwIscorePEProtocol(models.Model):
     date = models.DateField(blank=True, null=True)
 
     class Meta:
+        """Set VwIscorePEProtocol model metadata."""
+
         managed = False  # Created from a view. Don't remove.
         db_table = "vw_iscore_pe_protocol"
 
 
 # I-Score WAS Vuln View
 class VwIscoreWASVuln(models.Model):
+    """Define VwIscoreWASVuln model."""
+
     organizations_uid = models.UUIDField(primary_key=True)
     parent_org_uid = models.UUIDField(blank=True, null=True)
     date = models.DateField(blank=True, null=True)
@@ -1743,30 +1958,40 @@ class VwIscoreWASVuln(models.Model):
     owasp_category = models.CharField(blank=True, null=True)
 
     class Meta:
+        """Set VwIscoreWASVuln model metadata."""
+
         managed = False  # Created from a view. Don't remove.
         db_table = "vw_iscore_was_vuln"
 
 
 # I-Score WAS Vuln Previous View
 class VwIscoreWASVulnPrev(models.Model):
+    """Define VwIscoreWASVulnPrev model."""
+
     organizations_uid = models.UUIDField(primary_key=True)
     parent_org_uid = models.UUIDField(blank=True, null=True)
     was_total_vulns_prev = models.BigIntegerField(blank=True, null=True)
     date = models.DateField(blank=True, null=True)
 
     class Meta:
+        """Set VwIscoreWASVulnPrev model metadata."""
+
         managed = False  # Created from a view. Don't remove.
         db_table = "vw_iscore_was_vuln_prev"
 
 
 # cyhy_kevs table model (needed for kev_list endpoint)
 class CyhyKevs(models.Model):
+    """Define CyhyKevs model."""
+
     cyhy_kevs_uid = models.UUIDField(primary_key=True)
     kev = models.CharField(blank=True, null=True)
     first_seen = models.DateField(blank=True, null=True)
     last_seen = models.DateField(blank=True, null=True)
 
     class Meta:
+        """Set CyhyKevs model metadata."""
+
         managed = False
         db_table = "cyhy_kevs"
 
@@ -1774,10 +1999,14 @@ class CyhyKevs(models.Model):
 # ---------- Misc. Score Related Models ----------
 # vw_iscore_orgs_ip_counts view model (used for XS/S/M/L/XL orgs endpoints)
 class VwIscoreOrgsIpCounts(models.Model):
+    """Define VwIscoreOrgsIpCounts model."""
+
     organizations_uid = models.UUIDField(primary_key=True)
     cyhy_db_name = models.CharField(blank=True, null=True)
     ip_count = models.BigIntegerField(blank=True, null=True)
 
     class Meta:
+        """Set VwIscoreOrgsIpCounts model metadata."""
+
         managed = False
         db_table = "vw_iscore_orgs_ip_counts"

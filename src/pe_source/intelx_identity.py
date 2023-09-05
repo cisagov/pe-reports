@@ -16,9 +16,9 @@ from .data.pe_db.db_query_source import (
     get_data_source_uid,
     get_intelx_breaches,
     get_orgs,
+    get_root_domains,
     insert_intelx_breaches,
     insert_intelx_credentials,
-    get_root_domains,
 )
 
 # Calculate Datetimes for collection period
@@ -49,12 +49,32 @@ class IntelX:
         orgs_list = self.orgs_list
 
         pe_orgs = get_orgs()
-        for pe_org in pe_orgs:
+        pe_orgs_final = []
+        if orgs_list == "all":
+            for pe_org in pe_orgs:
+                if pe_org["report_on"]:
+                    pe_orgs_final.append(pe_org)
+                else:
+                    continue
+        elif orgs_list == "DEMO":
+            for pe_org in pe_orgs:
+                if pe_org["demo"]:
+                    pe_orgs_final.append(pe_org)
+                else:
+                    continue
+        else:
+            for pe_org in pe_orgs:
+                if pe_org["cyhy_db_name"] in orgs_list:
+                    pe_orgs_final.append(pe_org)
+                else:
+                    continue
+
+        for pe_org in pe_orgs_final:
             cyhy_org_id = pe_org["cyhy_db_name"]
-            pe_org_uid = pe_org["org_uid"]
+            pe_org_uid = pe_org["organizations_uid"]
 
             # Verify the org is in the list of orgs to scan
-            if cyhy_org_id in orgs_list or orgs_list == "all":
+            if cyhy_org_id in orgs_list or orgs_list == "all" or orgs_list == "DEMO":
                 if self.get_credentials(cyhy_org_id, pe_org_uid) == 1:
                     LOGGER.error("Failed to get credentials for %s", cyhy_org_id)
 

@@ -1,7 +1,7 @@
 """cisagov/pe-reports: A tool for creating Posture & Exposure reports.
 
 Usage:
-  pe-reports REPORT_DATE OUTPUT_DIRECTORY [--log-level=LEVEL] [--soc_med_included]
+  pe-reports REPORT_DATE OUTPUT_DIRECTORY [--log-level=LEVEL] [--soc_med_included] [--demo]
 
 Options:
   -h --help                         Show this message.
@@ -11,7 +11,8 @@ Options:
   -l --log-level=LEVEL              If specified, then the log level will be set to
                                     the specified value.  Valid values are "debug", "info",
                                     "warning", "error", and "critical". [default: info]
-  -sc --soc_med_included            Include social media posts from Cybersixgill in the report.
+  -s --soc_med_included            Include social media posts from Cybersixgill in the report.
+  -d --demo                         Run report on demo orgs.
 """
 
 # Standard Python Libraries
@@ -33,7 +34,7 @@ import pe_reports
 
 from ._version import __version__
 from .asm_generator import create_summary
-from .data.db_query import connect, get_orgs, refresh_asset_counts_vw, set_from_cidr
+from .data.db_query import connect, get_demo_orgs, get_orgs, refresh_asset_counts_vw
 
 # from .helpers.generate_score import get_pe_scores
 from .pages import init
@@ -156,12 +157,15 @@ def embed(
     return filesize, tooLarge, output
 
 
-def generate_reports(datestring, output_directory, soc_med_included=False):
+def generate_reports(datestring, output_directory, soc_med_included=False, demo=False):
     """Process steps for generating report data."""
     # Get PE orgs from PE db
     conn = connect()
     if conn:
-        pe_orgs = get_orgs(conn)
+        if demo:
+            pe_orgs = get_demo_orgs(conn)
+        else:
+            pe_orgs = get_orgs(conn)
     else:
         return 1
     generated_reports = 0
@@ -372,16 +376,12 @@ def main():
     if not os.path.exists(validated_args["OUTPUT_DIRECTORY"]):
         os.mkdir(validated_args["OUTPUT_DIRECTORY"])
 
-    try:
-        soc_med = validated_args["--soc_med_included"]
-    except Exception as e:
-        LOGGER.info(f"Social media should not included: {e}")
-        soc_med = False
     # Generate reports
     generated_reports = generate_reports(
         validated_args["REPORT_DATE"],
         validated_args["OUTPUT_DIRECTORY"],
-        soc_med,
+        validated_args["--soc_med_included"],
+        validated_args["--demo"],
     )
 
     LOGGER.info("%s reports generated", generated_reports)

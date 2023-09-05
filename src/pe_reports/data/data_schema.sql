@@ -2,8 +2,8 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 14.4
--- Dumped by pg_dump version 14.8 (Ubuntu 14.8-1.pgdg20.04+1)
+-- Dumped from database version 15.3
+-- Dumped by pg_dump version 15.3 (Ubuntu 15.3-1.pgdg20.04+1)
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -17,6 +17,15 @@ SET client_min_messages = warning;
 SET row_security = off;
 
 --
+-- Name: public; Type: SCHEMA; Schema: -; Owner: crossfeed
+--
+
+-- *not* creating schema, since initdb creates it
+
+
+ALTER SCHEMA public OWNER TO crossfeed;
+
+--
 -- Name: pgcrypto; Type: EXTENSION; Schema: -; Owner: -
 --
 
@@ -24,7 +33,7 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA public;
 
 
 --
--- Name: EXTENSION pgcrypto; Type: COMMENT; Schema: -; Owner: 
+-- Name: EXTENSION pgcrypto; Type: COMMENT; Schema: -; Owner:
 --
 
 COMMENT ON EXTENSION pgcrypto IS 'cryptographic functions';
@@ -38,7 +47,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA public;
 
 
 --
--- Name: EXTENSION "uuid-ossp"; Type: COMMENT; Schema: -; Owner: 
+-- Name: EXTENSION "uuid-ossp"; Type: COMMENT; Schema: -; Owner:
 --
 
 COMMENT ON EXTENSION "uuid-ossp" IS 'generate universally unique identifiers (UUIDs)';
@@ -53,7 +62,7 @@ CREATE FUNCTION public.get_cred_metrics(start_date date, end_date date) RETURNS 
     AS $$
 BEGIN
 RETURN QUERY
-	SELECT 
+	SELECT
 		cred_metrics.organizations_uid,
 		cred_metrics.password_creds,
 		cred_metrics.total_creds,
@@ -65,7 +74,7 @@ RETURN QUERY
 				CAST(COALESCE(creds.password_included, 0) as bigint) password_creds,
 				CAST(COALESCE(creds.no_password + creds.password_included, 0) as bigint) total_creds
 			FROM
-				(				
+				(
 					/* Orgs we're reporting on */
 					SELECT
 						organizations.organizations_uid
@@ -87,7 +96,7 @@ RETURN QUERY
 					GROUP BY
 						vw_breachcomp_credsbydate.organizations_uid
 				) creds
-				ON reported_orgs.organizations_uid = creds.organizations_uid	
+				ON reported_orgs.organizations_uid = creds.organizations_uid
 		) cred_metrics
 		INNER JOIN
 		(
@@ -95,7 +104,7 @@ RETURN QUERY
 				reported_orgs.organizations_uid,
 				COALESCE(breaches.num_breaches, 0) num_breaches
 			FROM
-				(				
+				(
 					/* Orgs we're reporting on */
 					SELECT
 						organizations.organizations_uid
@@ -146,7 +155,7 @@ RETURN QUERY
 				reported_orgs.organizations_uid,
 				COALESCE(alerts.num_dw_alerts, 0) AS num_dw_alerts
 			FROM
-				(				
+				(
 					/* Orgs we're reporting on */
 					SELECT
 						organizations.organizations_uid
@@ -176,7 +185,7 @@ RETURN QUERY
 				reported_orgs.organizations_uid,
 				COALESCE(mentions.num_dw_mentions, 0) AS num_dw_mentions
 			FROM
-				(				
+				(
 					/* Orgs we're reporting on */
 					SELECT
 						organizations.organizations_uid
@@ -207,7 +216,7 @@ RETURN QUERY
 				reported_orgs.organizations_uid,
 				COALESCE(threats.num_dw_threats, 0) AS num_dw_threats
 			FROM
-				(				
+				(
 					/* Orgs we're reporting on */
 					SELECT
 						organizations.organizations_uid
@@ -238,7 +247,7 @@ RETURN QUERY
 				reported_orgs.organizations_uid,
 				COALESCE(invites.num_dw_invites, 0) AS num_dw_invites
 			FROM
-				(				
+				(
 					/* Orgs we're reporting on */
 					SELECT
 						organizations.organizations_uid
@@ -259,7 +268,7 @@ RETURN QUERY
 					GROUP BY
 						vw_darkweb_inviteonlymarkets.organizations_uid
 				) invites
-				ON reported_orgs.organizations_uid = invites.organizations_uid	
+				ON reported_orgs.organizations_uid = invites.organizations_uid
 		) dw_invite_metrics
 		ON
 		dw_alert_metrics.organizations_uid = dw_invite_metrics.organizations_uid;
@@ -277,7 +286,7 @@ CREATE FUNCTION public.get_domain_metrics(start_date date, end_date date) RETURN
     AS $$
 BEGIN
 RETURN QUERY
-	SELECT 
+	SELECT
 		domain_sus_metrics.organizations_uid,
 		domain_sus_metrics.num_sus_domain,
 		domain_alert_metrics.num_alert_domain
@@ -287,7 +296,7 @@ RETURN QUERY
 				reported_orgs.organizations_uid,
 				COALESCE(domain_sus.num_sus_domain, 0) num_sus_domain
 			FROM
-				(				
+				(
 					/* Orgs we're reporting on */
 					SELECT
 						organizations.organizations_uid
@@ -310,7 +319,7 @@ RETURN QUERY
 					GROUP BY
 						domain_permutations.organizations_uid
 				) domain_sus
-				ON reported_orgs.organizations_uid = domain_sus.organizations_uid	
+				ON reported_orgs.organizations_uid = domain_sus.organizations_uid
 		) domain_sus_metrics
 		INNER JOIN
 		(
@@ -318,7 +327,7 @@ RETURN QUERY
 				reported_orgs.organizations_uid,
 				COALESCE(domain_alerts.num_alert_domain, 0) num_alert_domain
 			FROM
-				(				
+				(
 					/* Orgs we're reporting on */
 					SELECT
 						organizations.organizations_uid
@@ -368,7 +377,7 @@ RETURN QUERY
 				reported_orgs.organizations_uid,
 				COALESCE(verif_vulns.num_verif_vulns, 0) AS num_verif_vulns
 			FROM
-				(				
+				(
 					/* Orgs we're reporting on */
 					SELECT
 						organizations.organizations_uid
@@ -496,7 +505,7 @@ ALTER FUNCTION public.get_vuln_metrics(start_date date, end_date date) OWNER TO 
 CREATE FUNCTION public.insert_cidr(arg_net inet, arg_org_uid uuid, arg_data_src text, arg_first_seen date, arg_last_seen date) RETURNS uuid
     LANGUAGE plpgsql
     AS $$
-declare 
+declare
     parent_uid uuid := null;
     comp_cidr_uid uuid := null;
     comp_net cidr;
@@ -508,12 +517,12 @@ declare
     new_cidr_uid uuid := null;
     in_cidrs record;
     cidrs_in record;
-begin   
+begin
         select o.parent_org_uid into parent_uid from organizations o where o.organizations_uid = arg_org_uid;
         select ds.data_source_uid into ds_uid from data_source ds where ds.name = arg_data_src;
         -- Check if any cidrs equal the provided cidr
         select ct.cidr_uid, o.organizations_uid , ct.network, o.parent_org_uid, o."cyhy_db_name"  as parent_id from cidrs ct
-        join organizations o on ct.organizations_uid = o.organizations_uid 
+        join organizations o on ct.organizations_uid = o.organizations_uid
         where ct.network = arg_net into comp_cidr_uid, comp_uid, comp_net, comp_parent_uid, comp_cyhy_id;
         if (comp_net is not null) then
             --if the already saved cidr's org is the given cidr's parent org
@@ -524,9 +533,9 @@ begin
                 new_cidr_uid := comp_cidr_uid;
                 save_to_db := false;
             --if the given cidr is the parent to the already saved cidr.
-            --(the cidr exists in the db and has already been assigned to a 
+            --(the cidr exists in the db and has already been assigned to a
             --child org. We know this is true if the provided cidr's org_uid is equal
-            --to the already existing cidr's parent_org_uid) 
+            --to the already existing cidr's parent_org_uid)
             elseif (arg_org_uid = comp_parent_uid) then
             	-- update last_seen
             	update cidrs set last_seen = arg_last_seen
@@ -542,7 +551,7 @@ begin
             save_to_db :=false;
             --if the orgs are not related
             else
-                insert into cidrs (network, organizations_uid, insert_alert, data_source_uid, first_seen, last_seen) 
+                insert into cidrs (network, organizations_uid, insert_alert, data_source_uid, first_seen, last_seen)
                 values (arg_net, arg_org_uid, 'Cidr duplicate between unrelated org. This cidr is also found in the following org. org_cyhy_id:' || comp_cyhy_id || ' org_uid: ' || comp_uid , ds_uid, arg_first_seen, arg_last_seen)
                 on conflict (organizations_uid, network )
                 do update set last_seen = excluded.last_seen
@@ -552,18 +561,18 @@ begin
         end if;
         -- Check if the cidr is contained in an existing cidr block
         if exists(select ct.network from cidrs ct where arg_net << ct.network) then
-            for in_cidrs in select o.organizations_uid , tct.network, o.parent_org_uid, tct.cidr_uid from cidrs tct 
-            join organizations o on o.organizations_uid = tct.organizations_uid where arg_net << tct.network and tct."current" loop 
+            for in_cidrs in select o.organizations_uid , tct.network, o.parent_org_uid, tct.cidr_uid from cidrs tct
+            join organizations o on o.organizations_uid = tct.organizations_uid where arg_net << tct.network and tct."current" loop
                 -- Our cidr is found in an existing cidr for the same org
-                --do nothing 
-                if (in_cidrs.organizations_uid = arg_org_uid) then 
+                --do nothing
+                if (in_cidrs.organizations_uid = arg_org_uid) then
                     raise notice 'This cidr is containeed in another cidr for the same organization';
                     save_to_db := false;
                 -- Our cidr is found in an existing cidr related to our parent org
                 -- add cidr
                 elseif (in_cidrs.organizations_uid = parent_uid) then
                     if (new_cidr_uid is null) then
-                        insert into cidrs (network, organizations_uid , data_source_uid, first_seen, last_seen) 
+                        insert into cidrs (network, organizations_uid , data_source_uid, first_seen, last_seen)
                         values (arg_net, arg_org_uid, ds_uid, arg_first_seen, arg_last_seen)
                         on conflict (organizations_uid, network )
                         do update set last_seen = excluded.last_seen
@@ -571,7 +580,7 @@ begin
                         save_to_db := false;
                     end if;
                     --UPDATE IPS THAT BELONG TO THIS CIDR TO POINT HERE *******************************************
-                    update ips 
+                    update ips
                     set origin_cidr = new_cidr_uid
                     where ip << arg_net
                     and origin_cidr = in_cidrs.cidr_uid;
@@ -582,8 +591,8 @@ begin
                 --Our cidr is found in an existing cidr unrelated to our org
                 -- insert with an insert warning
                 else
-                    insert into cidrs (network, organizations_uid, insert_alert, data_source_uid, first_seen, last_seen) 
-                    values (arg_net, arg_org_uid, 'This cidr range is contained in another cidr owned by the following unrelated org. org_uid:' || in_cidrs.organizations_uid , ds_uid, arg_first_seen, arg_last_seen) 
+                    insert into cidrs (network, organizations_uid, insert_alert, data_source_uid, first_seen, last_seen)
+                    values (arg_net, arg_org_uid, 'This cidr range is contained in another cidr owned by the following unrelated org. org_uid:' || in_cidrs.organizations_uid , ds_uid, arg_first_seen, arg_last_seen)
                     on conflict (organizations_uid, network)
                     DO UPDATE SET insert_alert = cidrs.insert_alert || ', ' || in_cidrs.organizations_uid,
                     last_seen = excluded.last_seen
@@ -593,14 +602,14 @@ begin
             end loop;
         end if;
         -- Check if any cidrs are contained within it
-        if exists(select ct.network from cidrs ct where ct.network << arg_net ) then 
-            for cidrs_in in select cidr_uid, o.organizations_uid , tct.network, o.parent_org_uid, tct.cidr_uid from cidrs tct 
-            join organizations o on o.organizations_uid = tct.organizations_uid where tct.network << arg_net  loop 
+        if exists(select ct.network from cidrs ct where ct.network << arg_net ) then
+            for cidrs_in in select cidr_uid, o.organizations_uid , tct.network, o.parent_org_uid, tct.cidr_uid from cidrs tct
+            join organizations o on o.organizations_uid = tct.organizations_uid where tct.network << arg_net  loop
                 -- an existing cidr is found in our cidr for the same org
                 -- update existing cidr to current cidr
-                if (cidrs_in.organizations_uid = arg_org_uid) then 
+                if (cidrs_in.organizations_uid = arg_org_uid) then
                     if (new_cidr_uid is null) then
-                        insert into cidrs (network, organizations_uid , data_source_uid, first_seen, last_seen) 
+                        insert into cidrs (network, organizations_uid , data_source_uid, first_seen, last_seen)
                         values (arg_net, arg_org_uid, ds_uid, arg_first_seen, arg_last_seen)
                         on conflict (organizations_uid, network )
                         do update set last_seen = excluded.last_seen
@@ -608,56 +617,56 @@ begin
                         save_to_db := false;
                     end if;
                     --update all ips to point to this new cidr block
-                    update ips 
+                    update ips
                     set origin_cidr = new_cidr_uid
                     where ip << arg_net
                     and origin_cidr = cidrs_in.cidr_uid;
                     --delete the old cidr
-                    DELETE FROM cidrs 
+                    DELETE FROM cidrs
                     WHERE network = cidrs_in.network
                     and organizations_uid = arg_org_uid;
-                -- an existing cidr related to our parent org is found in our cidr 
+                -- an existing cidr related to our parent org is found in our cidr
                 -- update existing cidr to our org and cidr
                 elseif (cidrs_in.organizations_uid = parent_uid) then
                     if (new_cidr_uid is null) then
-                        insert into cidrs (network, organizations_uid , data_source_uid, first_seen, last_seen) 
+                        insert into cidrs (network, organizations_uid , data_source_uid, first_seen, last_seen)
                         values (arg_net, arg_org_uid, ds_uid, arg_first_seen, arg_last_seen)
                         on conflict (organizations_uid, network )
-                        do update set last_seen = excluded.last_seen 
+                        do update set last_seen = excluded.last_seen
                         returning cidr_uid into new_cidr_uid;
                         save_to_db := false;
                     end if;
                     --update all ips to point to this new cidr block
-                    update ips 
+                    update ips
                     set origin_cidr = new_cidr_uid
                     where ip << arg_net
                     and origin_cidr = cidrs_in.cidr_uid;
                     --delete the old cidr
-                    DELETE FROM cidrs 
+                    DELETE FROM cidrs
                     WHERE network = cidrs_in.network
                     and organizations_uid = arg_org_uid;
                 -- an existing cidr is found in our cidr related to our child org
                 -- add new cidr to our org
                 elseif (arg_org_uid = cidrs_in.parent_org_uid) then
                     if (new_cidr_uid is null) then
-                        insert into cidrs (network, organizations_uid , data_source_uid, first_seen, last_seen) 
+                        insert into cidrs (network, organizations_uid , data_source_uid, first_seen, last_seen)
                         values (arg_net, arg_org_uid, ds_uid, arg_first_seen, arg_last_seen)
                         on conflict (organizations_uid, network )
                         do update set last_seen = excluded.last_seen
                         returning cidr_uid into new_cidr_uid;
                         save_to_db := false;
                     end if;
-                    update ips 
+                    update ips
                     set origin_cidr = cidrs_in.cidr_uid
                     where ip << cidrs_in.network
                     and origin_cidr = arg_net;
-                --an existing cidr unrelated to our org is found in our cidr 
+                --an existing cidr unrelated to our org is found in our cidr
                 -- insert with an insert warning
                 else
-                    insert into cidrs (network, organizations_uid, insert_alert, data_source_uid, first_seen, last_seen) 
-                    values (arg_net, arg_org_uid, 'another cidr owned by the following unrelated org is contained in this cidr range  . org_uid:' || cidrs_in.organizations_uid , ds_uid, arg_first_seen, arg_last_seen) 
+                    insert into cidrs (network, organizations_uid, insert_alert, data_source_uid, first_seen, last_seen)
+                    values (arg_net, arg_org_uid, 'another cidr owned by the following unrelated org is contained in this cidr range  . org_uid:' || cidrs_in.organizations_uid , ds_uid, arg_first_seen, arg_last_seen)
                     on conflict (organizations_uid, network)
-                    DO UPDATE SET insert_alert = cidrs.insert_alert || ', ' || cidrs_in.organizations_uid, 
+                    DO UPDATE SET insert_alert = cidrs.insert_alert || ', ' || cidrs_in.organizations_uid,
                     last_seen = excluded.last_seen
                     returning cidr_uid into new_cidr_uid;
                     save_to_db := false;
@@ -666,8 +675,8 @@ begin
             save_to_db := false;
         end if;
         if (save_to_db = true) then
-            insert into cidrs (network, organizations_uid , data_source_uid, first_seen, last_seen) 
-            values (arg_net, arg_org_uid, ds_uid, arg_first_seen, arg_last_seen) 
+            insert into cidrs (network, organizations_uid , data_source_uid, first_seen, last_seen)
+            values (arg_net, arg_org_uid, ds_uid, arg_first_seen, arg_last_seen)
             on conflict (organizations_uid, network )
             do update set last_seen = excluded.last_seen
             returning cidr_uid into new_cidr_uid;
@@ -686,48 +695,48 @@ ALTER FUNCTION public.insert_cidr(arg_net inet, arg_org_uid uuid, arg_data_src t
 CREATE FUNCTION public.insert_sub_domain(arg_identified boolean, arg_date date, sub_d text, org_uid uuid, data_src text, root_d text DEFAULT NULL::text, root_d_uid uuid DEFAULT NULL::uuid) RETURNS uuid
     LANGUAGE plpgsql
     AS $$
-declare 
+declare
 	sub_id uuid;
 	ds_uid uuid := null;
 begin
 		-- Try to fetch the domain
-		select sub_domain_uid into sub_id from sub_domains sd 
-		join root_domains rd on rd.root_domain_uid = sd.root_domain_uid 
+		select sub_domain_uid into sub_id from sub_domains sd
+		join root_domains rd on rd.root_domain_uid = sd.root_domain_uid
 		where sd.sub_domain = sub_d
 		and rd.organizations_uid = org_uid;
-		
+
 		-- If the domain does not exist in the databse
 		if (sub_id is null) then
 			-- If the root_domain_uid is not provided, look it up
 			if (root_d_uid is null and root_d is not null) then
 				begin
-					select rd.root_domain_uid into root_d_uid 
-					from root_domains rd 
+					select rd.root_domain_uid into root_d_uid
+					from root_domains rd
 					where rd.root_domain = root_d and rd.organizations_uid = org_uid;
 					raise notice 'uid found: %', root_d_uid;
-				end; 
+				end;
 			else
 					raise notice 'uid provided: %', root_d_uid;
 			end if;
-		
+
 			-- Query the data_source_uid based on the provided data source name
 			select ds.data_source_uid into ds_uid from data_source ds where ds.name = data_src;
-		
+
 			-- If the root_domain_uid is still null create a new root domain and return the root_domain_uid
 			if (root_d_uid is null) then
 				begin
-					insert into root_domains (organizations_uid, root_domain, data_source_uid, enumerate_subs) 
-					values (org_uid, root_d, ds_uid, false) 
+					insert into root_domains (organizations_uid, root_domain, data_source_uid, enumerate_subs)
+					values (org_uid, root_d, ds_uid, false)
 					on conflict (organizations_uid, root_domain) do nothing;
 					-- Get newly created root domain's uid
 					select rd.root_domain_uid into root_d_uid from root_domains rd where rd.root_domain = root_d;
 				end;
 			end if;
-		
+
 			-- Create sub_domain and return uid
-			insert into sub_domains (sub_domain, root_domain_uid, data_source_uid, first_seen, last_seen, identified) 
-			values (sub_d, root_d_uid, ds_uid, arg_date, arg_date, arg_identified) 
-			on conflict (sub_domain, root_domain_uid) 
+			insert into sub_domains (sub_domain, root_domain_uid, data_source_uid, first_seen, last_seen, identified)
+			values (sub_d, root_d_uid, ds_uid, arg_date, arg_date, arg_identified)
+			on conflict (sub_domain, root_domain_uid)
 			do update set last_seen = excluded.last_seen, identified = EXCLUDED.identified
 			returning sub_domain_uid into sub_id;
 			raise notice 'uid out of if: %', root_d_uid;
@@ -746,23 +755,23 @@ ALTER FUNCTION public.insert_sub_domain(arg_identified boolean, arg_date date, s
 CREATE FUNCTION public.link_ips_and_subs(arg_date date, arg_ip_hash text, arg_ip inet, arg_org_uid uuid, arg_sub_domain text, arg_data_src text, arg_root_uid uuid DEFAULT NULL::uuid, arg_root text DEFAULT NULL::text) RETURNS uuid
     LANGUAGE plpgsql
     AS $$
-declare 
+declare
 	sub_id uuid;
 	ip_hash_return text;
 	ds_uid uuid := null;
 	i_s_uid uuid := null;
 begin
 
-		-- Insert ip, if exists then update last_seen	
+		-- Insert ip, if exists then update last_seen
 		insert into ips (ip_hash, ip, first_seen, last_seen, organizations_uid)
 		values (arg_ip_hash, arg_ip, arg_date, arg_date, arg_org_uid)
 		on conflict (ip)
-		do update set 
+		do update set
 			last_seen = EXCLUDED.last_seen,
 			organizations_uid = EXCLUDED.organizations_uid;
-			
-	
-	
+
+
+
 	   -- Get sub domain uid (add it if it doesn't exist)
 	   -- If root is null, don't pass root domain to insert subs
 	   if (arg_root is null) then
@@ -773,16 +782,16 @@ begin
 	   		select insert_sub_domain(arg_identified => true, arg_date=> arg_date, sub_d=> arg_sub_domain, org_uid => arg_org_uid, data_src => arg_data_src, root_d => arg_root)
 	   		into sub_id;
 	   end if;
-	  
-	   
+
+
 	  -- Insert into ip_subs table
 	  insert into ips_subs (ip_hash, sub_domain_uid, first_seen, last_seen)
 	  values (arg_ip_hash, sub_id, arg_date, arg_date)
-	  on conflict(ip_hash, sub_domain_uid) 
+	  on conflict(ip_hash, sub_domain_uid)
 	  do update set
 	  		last_seen = EXCLUDED.last_seen
 	  returning ips_subs_uid into i_s_uid; -- insert both fk ids into the product_order table
-	
+
 	return i_s_uid;
 end;
 $$;
@@ -841,7 +850,7 @@ RETURN QUERY
 			FROM
 				get_vuln_metrics(start_date, end_date)
 		) vuln_metrics
-		ON 
+		ON
 		cred_metrics.organizations_uid = vuln_metrics.organizations_uid
 		INNER JOIN
 		(
@@ -903,7 +912,7 @@ RETURN QUERY
 						UNNEST(vss.potential_vulns) as unverif_cve
 					FROM
 						public.vw_shodanvulns_suspected vss
-					WHERE 
+					WHERE
 						vss."type" != 'Insecure Protocol'
 						AND
 						vss.timestamp BETWEEN start_date AND end_date
@@ -943,7 +952,7 @@ RETURN QUERY
 		) current_cves
 		LEFT JOIN
 		public.cve_info
-		ON 
+		ON
 		current_cves.cve_name = cve_info.cve_name
 	WHERE
 		cve_info.cve_name IS NULL;
@@ -1043,13 +1052,13 @@ RETURN QUERY
 						/* Filter out CVEs that don't have CVSS 2.0 nor 3.0 scores */
 						NOT (cve_info.cvss_2_0 IS NULL AND cve_info.cvss_3_0 IS NULL)
 					ORDER BY
-						reported_orgs.cyhy_db_name		
+						reported_orgs.cyhy_db_name
 				) verif_cves
 			GROUP BY
 				verif_cves.organizations_uid,
 				verif_cves.cyhy_db_name
 		) verif
-		ON 
+		ON
 		reported_orgs.organizations_uid = verif.organizations_uid
 		LEFT JOIN
 		(
@@ -1090,7 +1099,7 @@ RETURN QUERY
 								UNNEST(vss.potential_vulns) as unverif_cve
 							FROM
 								public.vw_shodanvulns_suspected vss
-							WHERE 
+							WHERE
 								vss."type" != 'Insecure Protocol'
 								AND
 								vss.timestamp BETWEEN start_date AND end_date
@@ -1135,7 +1144,7 @@ RETURN QUERY
 		reported_orgs.cyhy_db_name,
 		domain_alerts.date as mod_date
 	FROM
-		(				
+		(
 			/* Orgs we're reporting on */
 			SELECT
 				organizations.organizations_uid,
@@ -1178,7 +1187,7 @@ RETURN QUERY
 		reported_orgs.cyhy_db_name,
 		alerts.date AS mod_date
 	FROM
-		(				
+		(
 			/* Orgs we're reporting on */
 			SELECT
 				organizations.organizations_uid,
@@ -1306,9 +1315,9 @@ BEGIN
    SELECT cb.breach_name, cb.description, cb.exposed_cred_count, cb.breach_date,
    			cb.added_date , cb.modified_date, cb.data_classes, cb.password_included ,
    			cb.is_verified , ds.name-- I added parentheses
-   FROM  credential_breaches cb 
+   FROM  credential_breaches cb
    join data_source ds on ds.data_source_uid = cb.data_source_uid
-   where lower(cb.breach_name) = lower(b_name);                    -- potential ambiguity 
+   where lower(cb.breach_name) = lower(b_name);                    -- potential ambiguity
 END
 $$;
 
@@ -1329,7 +1338,7 @@ BEGIN
    join organizations o on o.organizations_uid = c.organizations_uid
    join data_source d on d.data_source_uid = c.data_source_uid
     where lower(c.breach_name) = lower(b_name)
-    and o.cyhy_db_name = org_id;                    -- potential ambiguity 
+    and o.cyhy_db_name = org_id;                    -- potential ambiguity
 END
 $$;
 
@@ -1361,15 +1370,14 @@ SET default_table_access_method = heap;
 -- Name: Users; Type: TABLE; Schema: public; Owner: pe
 --
 
-CREATE TABLE public."Users"
-(
-    id            uuid NOT NULL,
-    email         character varying(64),
-    username      character varying(64),
-    admin         integer,
-    role          integer,
+CREATE TABLE public."Users" (
+    id uuid NOT NULL,
+    email character varying(64),
+    username character varying(64),
+    admin integer,
+    role integer,
     password_hash character varying(128),
-    api_key       character varying(128)
+    api_key character varying(128)
 );
 
 
@@ -1419,11 +1427,10 @@ ALTER TABLE public.alerts OWNER TO pe;
 -- Name: alias; Type: TABLE; Schema: public; Owner: pe
 --
 
-CREATE TABLE public.alias
-(
-    alias_uid         uuid DEFAULT public.uuid_generate_v1() NOT NULL,
-    organizations_uid uuid                                   NOT NULL,
-    alias             text                                   NOT NULL
+CREATE TABLE public.alias (
+    alias_uid uuid DEFAULT public.uuid_generate_v1() NOT NULL,
+    organizations_uid uuid NOT NULL,
+    alias text NOT NULL
 );
 
 
@@ -1433,18 +1440,17 @@ ALTER TABLE public.alias OWNER TO pe;
 -- Name: asset_headers; Type: TABLE; Schema: public; Owner: pe
 --
 
-CREATE TABLE public.asset_headers
-(
-    _id                uuid DEFAULT public.uuid_generate_v1() NOT NULL,
-    organizations_uid  uuid                                   NOT NULL,
-    sub_url            text                                   NOT NULL,
-    tech_detected      text[]                                 NOT NULL,
-    interesting_header text[]                                 NOT NULL,
-    ssl2               text[],
-    tls1               text[],
-    certificate        json,
-    scanned            boolean,
-    ssl_scanned        boolean
+CREATE TABLE public.asset_headers (
+    _id uuid DEFAULT public.uuid_generate_v1() NOT NULL,
+    organizations_uid uuid NOT NULL,
+    sub_url text NOT NULL,
+    tech_detected text[] NOT NULL,
+    interesting_header text[] NOT NULL,
+    ssl2 text[],
+    tls1 text[],
+    certificate json,
+    scanned boolean,
+    ssl_scanned boolean
 );
 
 
@@ -1642,8 +1648,7 @@ ALTER TABLE public.cidrs OWNER TO pe;
 -- Name: credential_breaches; Type: TABLE; Schema: public; Owner: pe
 --
 
-CREATE TABLE public.credential_breaches
-(
+CREATE TABLE public.credential_breaches (
     credential_breaches_uid uuid DEFAULT public.uuid_generate_v1() NOT NULL,
     breach_name text NOT NULL,
     description text,
@@ -1668,8 +1673,7 @@ ALTER TABLE public.credential_breaches OWNER TO pe;
 -- Name: credential_exposures; Type: TABLE; Schema: public; Owner: pe
 --
 
-CREATE TABLE public.credential_exposures
-(
+CREATE TABLE public.credential_exposures (
     credential_exposures_uid uuid DEFAULT public.uuid_generate_v1() NOT NULL,
     email text NOT NULL,
     organizations_uid uuid NOT NULL,
@@ -1763,10 +1767,9 @@ ALTER TABLE public.cyhy_contacts OWNER TO pe;
 -- Name: cyhy_db_assets; Type: TABLE; Schema: public; Owner: pe
 --
 
-CREATE TABLE public.cyhy_db_assets
-(
-    _id      uuid DEFAULT public.uuid_generate_v1() NOT NULL,
-    org_id   text,
+CREATE TABLE public.cyhy_db_assets (
+    _id uuid DEFAULT public.uuid_generate_v1() NOT NULL,
+    org_id text,
     org_name text,
     contact text,
     network inet,
@@ -2037,12 +2040,11 @@ ALTER TABLE public."dataAPI_apiuser" ALTER COLUMN id ADD GENERATED BY DEFAULT AS
 -- Name: data_source; Type: TABLE; Schema: public; Owner: pe
 --
 
-CREATE TABLE public.data_source
-(
+CREATE TABLE public.data_source (
     data_source_uid uuid DEFAULT public.uuid_generate_v1() NOT NULL,
-    name            text                                   NOT NULL,
-    description     text                                   NOT NULL,
-    last_run        date                                   NOT NULL
+    name text NOT NULL,
+    description text NOT NULL,
+    last_run date NOT NULL
 );
 
 
@@ -2240,17 +2242,16 @@ ALTER TABLE public.dns_records OWNER TO pe;
 -- Name: domain_alerts; Type: TABLE; Schema: public; Owner: pe
 --
 
-CREATE TABLE public.domain_alerts
-(
-    domain_alert_uid  uuid DEFAULT public.uuid_generate_v1() NOT NULL,
-    sub_domain_uid    uuid                                   NOT NULL,
-    data_source_uid   uuid                                   NOT NULL,
-    organizations_uid uuid                                   NOT NULL,
-    alert_type        text,
-    message           text,
-    previous_value    text,
-    new_value         text,
-    date              date
+CREATE TABLE public.domain_alerts (
+    domain_alert_uid uuid DEFAULT public.uuid_generate_v1() NOT NULL,
+    sub_domain_uid uuid NOT NULL,
+    data_source_uid uuid NOT NULL,
+    organizations_uid uuid NOT NULL,
+    alert_type text,
+    message text,
+    previous_value text,
+    new_value text,
+    date date
 );
 
 
@@ -2260,19 +2261,18 @@ ALTER TABLE public.domain_alerts OWNER TO pe;
 -- Name: domain_permutations; Type: TABLE; Schema: public; Owner: pe
 --
 
-CREATE TABLE public.domain_permutations
-(
-    suspected_domain_uid   uuid DEFAULT public.uuid_generate_v1() NOT NULL,
-    organizations_uid      uuid                                   NOT NULL,
-    domain_permutation     text,
-    ipv4                   text,
-    ipv6                   text,
-    mail_server            text,
-    name_server            text,
-    fuzzer                 text,
-    date_observed          date,
-    ssdeep_score           text,
-    malicious              boolean,
+CREATE TABLE public.domain_permutations (
+    suspected_domain_uid uuid DEFAULT public.uuid_generate_v1() NOT NULL,
+    organizations_uid uuid NOT NULL,
+    domain_permutation text,
+    ipv4 text,
+    ipv6 text,
+    mail_server text,
+    name_server text,
+    fuzzer text,
+    date_observed date,
+    ssdeep_score text,
+    malicious boolean,
     blocklist_attack_count integer,
     blocklist_report_count integer,
     data_source_uid uuid NOT NULL,
@@ -2307,11 +2307,10 @@ ALTER TABLE public.dotgov_domains OWNER TO pe;
 -- Name: executives; Type: TABLE; Schema: public; Owner: pe
 --
 
-CREATE TABLE public.executives
-(
-    executives_uid    uuid DEFAULT public.uuid_generate_v1() NOT NULL,
-    organizations_uid uuid                                   NOT NULL,
-    executives        text                                   NOT NULL
+CREATE TABLE public.executives (
+    executives_uid uuid DEFAULT public.uuid_generate_v1() NOT NULL,
+    organizations_uid uuid NOT NULL,
+    executives text NOT NULL
 );
 
 
@@ -3067,14 +3066,13 @@ ALTER TABLE public.mat_vw_orgs_attacksurface OWNER TO pe;
 -- Name: mentions; Type: TABLE; Schema: public; Owner: pe
 --
 
-CREATE TABLE public.mentions
-(
-    mentions_uid       uuid DEFAULT public.uuid_generate_v1() NOT NULL,
-    category           text,
-    collection_date    text,
-    content            text,
-    creator            text,
-    date               date,
+CREATE TABLE public.mentions (
+    mentions_uid uuid DEFAULT public.uuid_generate_v1() NOT NULL,
+    category text,
+    collection_date text,
+    content text,
+    creator text,
+    date date,
     sixgill_mention_id text,
     post_id text,
     lang text,
@@ -3154,167 +3152,68 @@ ALTER TABLE public.outdated_vw_breach_complete OWNER TO pe;
 -- Name: pshtt_results; Type: TABLE; Schema: public; Owner: pe
 --
 
-CREATE TABLE public.pshtt_results
-(
-    pshtt_results_uid                             uuid DEFAULT public.uuid_generate_v1() NOT NULL,
-    organizations_uid                             uuid                                   NOT NULL,
-    sub_domain_uid                                uuid                                   NOT NULL,
-    data_source_uid                               uuid                                   NOT NULL,
-    sub_domain                                    text                                   NOT NULL,
-    scanned                                       boolean,
-    base_domain                                   text,
-    base_domain_hsts_preloaded                    boolean,
-    canonical_url                                 text,
-    defaults_to_https                             boolean,
-    domain                                        text,
-    domain_enforces_https                         boolean,
-    domain_supports_https                         boolean,
-    domain_uses_strong_hsts                       boolean,
-    downgrades_https                              boolean,
-    htss                                          boolean,
-    hsts_entire_domain                            boolean,
-    hsts_header                                   text,
-    hsts_max_age                                  numeric,
-    hsts_preload_pending                          boolean,
-    hsts_preload_ready                            boolean,
-    hsts_preloaded                                boolean,
-    https_bad_chain                               boolean,
-    https_bad_hostname                            boolean,
-    https_cert_chain_length                       integer,
-    https_client_auth_required                    boolean,
-    https_custom_truststore_trusted               boolean,
-    https_expired_cert                            boolean,
-    https_full_connection                         boolean,
-    https_live                                    boolean,
-    https_probably_missing_intermediate_cert      boolean,
-    https_publicly_trusted                        boolean,
-    https_self_signed_cert                        boolean,
-    ip                                            inet,
-    live                                          boolean,
-    notes                                         text,
-    redirect                                      boolean,
-    redirect_to                                   text,
-    server_header                                 text,
-    server_version                                text,
-    strictly_forces_https                         boolean,
-    unknown_error                                 boolean,
-    valid_https                                   boolean,
-    ep_http_headers                               json,
-    ep_http_ip                                    inet,
-    ep_http_live                                  boolean,
-    ep_http_notes                                 text,
-    ep_http_redirect                              boolean,
-    ep_http_redirect_eventually_to                text,
-    ep_http_redirect_eventually_to_external       boolean,
-    ep_http_redirect_eventually_to_http           boolean,
-    ep_http_redirect_eventually_to_https          boolean,
-    ep_http_redirect_eventually_to_subdomain      boolean,
-    ep_http_redirect_immediately_to               text,
-    ep_http_redirect_immediately_to_external      boolean,
-    ep_http_redirect_immediately_to_http          boolean,
-    ep_http_redirect_immediately_to_https         boolean,
-    ep_http_redirect_immediately_to_subdomain     boolean,
-    ep_http_redirect_immediately_to_www           boolean,
-    ep_http_server_header                         text,
-    ep_http_server_version                        text,
-    ep_http_status                                integer,
-    ep_http_unknown_error                         boolean,
-    ep_http_url                                   text,
-    ep_https_headers                              json,
-    ep_https_hsts                                 boolean,
-    ep_https_hsts_all_subdomains                  boolean,
-    ep_https_hsts_header                          text,
-    ep_https_hsts_max_age                         numeric,
-    ep_https_hsts_preload                         boolean,
-    ep_https_https_bad_chain                      boolean,
-    ep_https_https_bad_hostname                   boolean,
-    ep_https_https_cert_chain_len                 integer,
-    ep_https_https_client_auth_required           boolean,
-    ep_https_https_custom_trusted                 boolean,
-    ep_https_https_expired_cert                   boolean,
-    ep_https_https_vull_connection                boolean,
-    ep_https_https_missing_intermediate_cert      boolean,
-    ep_https_https_public_trusted                 boolean,
-    ep_https_https_self_signed_cert               boolean,
-    ep_https_https_valid                          boolean,
-    ep_https_ip                                   inet,
-    ep_https_live                                 boolean,
-    ep_https_notes                                text,
-    ep_https_redirect                             boolean,
-    ep_https_redireect_eventually_to              text,
-    ep_https_redirect_eventually_to_external      boolean,
-    ep_https_redirect_eventually_to_http          boolean,
-    ep_https_redirect_eventually_to_https         boolean,
-    ep_https_redirect_eventually_to_subdomain     boolean,
-    ep_https_redirect_immediately_to              text,
-    ep_https_redirect_immediately_to_external     boolean,
-    ep_https_redirect_immediately_to_http         boolean,
-    ep_https_redirect_immediately_to_https        boolean,
-    ep_https_redirect_immediately_to_subdomain    boolean,
-    ep_https_redirect_immediately_to_www          boolean,
-    ep_https_server_header                        text,
-    ep_https_server_version                       text,
-    ep_https_status                               integer,
-    ep_https_unknown_error                        boolean,
-    ep_https_url                                  text,
-    ep_httpswww_headers                           json,
-    ep_httpswww_hsts                              boolean,
-    ep_httpswww_hsts_all_subdomains               boolean,
-    ep_httpswww_hsts_header                       text,
-    ep_httpswww_hsts_max_age                      numeric,
-    ep_httpswww_hsts_preload                      boolean,
-    ep_httpswww_https_bad_chain                   boolean,
-    ep_httpswww_https_bad_hostname                boolean,
-    ep_httpswww_https_cert_chain_len              integer,
-    ep_httpswww_https_client_auth_required        boolean,
-    ep_httpswww_https_custom_trusted              boolean,
-    ep_httpswww_https_expired_cert                boolean,
-    ep_httpswww_https_full_connection             boolean,
-    ep_httpswww_https_missing_intermediate_cert   boolean,
-    ep_httpswww_https_public_trusted              boolean,
-    ep_httpswww_https_self_signed_cert            boolean,
-    ep_httpswww_https_valid                       boolean,
-    ep_httpswww_ip                                inet,
-    ep_httpswww_live                              boolean,
-    ep_httpswww_notes                             text,
-    ep_httpswww_redirect                          boolean,
-    ep_httpswww_redirect_eventually_to            text,
-    ep_httpswww_redirect_eventually_to_external   boolean,
-    ep_httpswww_redirect_eventually_to_http       boolean,
-    ep_httpswww_redirect_eventually_to_https      boolean,
-    ep_httpswww_redirect_eventually_to_subdomain  boolean,
-    ep_httpswww_redirect_immediately_to           text,
-    ep_httpswww_redirect_immediately_to_external  boolean,
-    ep_httpswww_redirect_immediately_to_http      boolean,
-    ep_httpswww_redirect_immediately_to_https     boolean,
-    ep_httpswww_redirect_immediately_to_subdomain boolean,
-    ep_httpswww_redirect_immediately_to_www       boolean,
-    ep_httpswww_server_header                     text,
-    ep_httpswww_server_version                    text,
-    ep_httpswww_status                            integer,
-    ep_httpswww_unknown_error                     boolean,
-    ep_httpswww_url                               text,
-    ep_httpwww_headers                            json,
-    ep_httpwww_ip                                 inet,
-    ep_httpwww_live                               boolean,
-    ep_httpwww_notes                              text,
-    ep_httpwww_redirect                           boolean,
-    ep_httpwww_redirect_eventually_to             text,
-    ep_httpwww_redirect_eventually_to_external    boolean,
-    ep_httpwww_redirect_eventually_to_http        boolean,
-    ep_httpwww_redirect_eventually_to_https       boolean,
-    ep_httpwww_redirect_eventually_to_subdomain   boolean,
-    ep_httpwww_redirect_immediately_to            text,
-    ep_httpwww_redirect_immediately_to_external   boolean,
-    ep_httpwww_redirect_immediately_to_http       boolean,
-    ep_httpwww_redirect_immediately_to_https      boolean,
-    ep_httpwww_redirect_immediately_to_subdomain  boolean,
-    ep_httpwww_redirect_immediately_to_www        boolean,
-    ep_httpwww_server_header                      text,
-    ep_httpwww_server_version                     text,
-    ep_httpwww_status                             integer,
-    ep_httpwww_unknown_error                      boolean,
-    ep_httpwww_url                                text
+CREATE TABLE public.pshtt_results (
+    pshtt_results_uid uuid DEFAULT public.uuid_generate_v1() NOT NULL,
+    organizations_uid uuid NOT NULL,
+    sub_domain_uid uuid NOT NULL,
+    data_source_uid uuid NOT NULL,
+    sub_domain text NOT NULL,
+    date_scanned date,
+    base_domain text,
+    base_domain_hsts_preloaded boolean,
+    canonical_url text,
+    defaults_to_https boolean,
+    domain text,
+    domain_enforces_https boolean,
+    domain_supports_https boolean,
+    domain_uses_strong_hsts boolean,
+    downgrades_https boolean,
+    htss boolean,
+    hsts_entire_domain boolean,
+    hsts_header text,
+    hsts_max_age numeric,
+    hsts_preload_pending boolean,
+    hsts_preload_ready boolean,
+    hsts_preloaded boolean,
+    https_bad_chain boolean,
+    https_bad_hostname boolean,
+    https_cert_chain_length integer,
+    https_client_auth_required boolean,
+    https_custom_truststore_trusted boolean,
+    https_expired_cert boolean,
+    https_full_connection boolean,
+    https_live boolean,
+    https_probably_missing_intermediate_cert boolean,
+    https_publicly_trusted boolean,
+    https_self_signed_cert boolean,
+    https_leaf_cert_expiration_date date,
+    https_leaf_cert_issuer text,
+    https_leaf_cert_subject text,
+    https_root_cert_issuer text,
+    ip inet,
+    live boolean,
+    notes text,
+    redirect boolean,
+    redirect_to text,
+    server_header text,
+    server_version text,
+    strictly_forces_https boolean,
+    unknown_error boolean,
+    valid_https boolean,
+    ep_http_headers text,
+    ep_http_server_header text,
+    ep_http_server_version text,
+    ep_https_headers text,
+    ep_https_hsts_header text,
+    ep_https_server_header text,
+    ep_https_server_version text,
+    ep_httpswww_headers text,
+    ep_httpswww_hsts_header text,
+    ep_httpswww_server_header text,
+    ep_httpswww_server_version text,
+    ep_httpwww_headers text,
+    ep_httpwww_server_header text,
+    ep_httpwww_server_version text
 );
 
 
@@ -3480,15 +3379,14 @@ ALTER TABLE public.team_members OWNER TO pe;
 -- Name: top_cves; Type: TABLE; Schema: public; Owner: pe
 --
 
-CREATE TABLE public.top_cves
-(
-    top_cves_uid    uuid DEFAULT public.uuid_generate_v1() NOT NULL,
-    cve_id          text,
-    dynamic_rating  text,
-    nvd_base_score  text,
-    date            date,
-    summary         text,
-    data_source_uid uuid                                   NOT NULL
+CREATE TABLE public.top_cves (
+    top_cves_uid uuid DEFAULT public.uuid_generate_v1() NOT NULL,
+    cve_id text,
+    dynamic_rating text,
+    nvd_base_score text,
+    date date,
+    summary text,
+    data_source_uid uuid NOT NULL
 );
 
 
@@ -3512,10 +3410,9 @@ ALTER TABLE public.topic_totals OWNER TO pe;
 -- Name: unique_software; Type: TABLE; Schema: public; Owner: pe
 --
 
-CREATE TABLE public.unique_software
-(
-    _id           uuid DEFAULT public.uuid_generate_v1() NOT NULL,
-    software_name text                                   NOT NULL
+CREATE TABLE public.unique_software (
+    _id uuid DEFAULT public.uuid_generate_v1() NOT NULL,
+    software_name text NOT NULL
 );
 
 
@@ -4784,6 +4681,60 @@ COMMENT ON VIEW public.vw_orgs_contact_info IS 'Gets the contact info for all PE
 
 
 --
+-- Name: vw_pescore_check_new_cve; Type: VIEW; Schema: public; Owner: pe
+--
+
+CREATE VIEW public.vw_pescore_check_new_cve AS
+ SELECT current_cves.cve_name
+   FROM (( SELECT unverif_vulns.cve_name
+           FROM (public.organizations o
+             JOIN ( SELECT DISTINCT vss.organizations_uid,
+                    unnest(vss.potential_vulns) AS cve_name
+                   FROM public.vw_shodanvulns_suspected vss
+                  WHERE (vss.type <> 'Insecure Protocol'::text)) unverif_vulns ON ((o.organizations_uid = unverif_vulns.organizations_uid)))
+          WHERE (o.report_on = true)
+        UNION
+         SELECT verif_vulns.cve_name
+           FROM (public.organizations o
+             JOIN ( SELECT DISTINCT shodan_vulns.organizations_uid,
+                    shodan_vulns.cve AS cve_name
+                   FROM public.shodan_vulns
+                  WHERE (shodan_vulns.is_verified = true)) verif_vulns ON ((o.organizations_uid = verif_vulns.organizations_uid)))
+          WHERE (o.report_on = true)) current_cves
+     LEFT JOIN public.cve_info ON ((current_cves.cve_name = cve_info.cve_name)))
+  WHERE (cve_info.cve_name IS NULL);
+
+
+ALTER TABLE public.vw_pescore_check_new_cve OWNER TO pe;
+
+--
+-- Name: VIEW vw_pescore_check_new_cve; Type: COMMENT; Schema: public; Owner: pe
+--
+
+COMMENT ON VIEW public.vw_pescore_check_new_cve IS 'View to get any new CVEs that aren''t yet in the cve_info table';
+
+
+--
+-- Name: vw_pshtt_domains_to_run; Type: VIEW; Schema: public; Owner: pe
+--
+
+CREATE VIEW public.vw_pshtt_domains_to_run AS
+ SELECT sd.sub_domain_uid,
+    sd.sub_domain,
+    o.organizations_uid,
+    o.name
+   FROM (((public.sub_domains sd
+     JOIN public.root_domains rd ON ((rd.root_domain_uid = sd.root_domain_uid)))
+     JOIN public.organizations o ON ((o.organizations_uid = rd.organizations_uid)))
+     LEFT JOIN ( SELECT pr_1.sub_domain_uid
+           FROM public.pshtt_results pr_1
+          WHERE (pr_1.date_scanned > (CURRENT_DATE - '15 days'::interval))) pr ON ((pr.sub_domain_uid = sd.sub_domain_uid)))
+  WHERE ((sd.current = true) AND (pr.sub_domain_uid IS NULL));
+
+
+ALTER TABLE public.vw_pshtt_domains_to_run OWNER TO pe;
+
+--
 -- Name: vw_scorecard_orgs; Type: VIEW; Schema: public; Owner: pe
 --
 
@@ -4990,6 +4941,23 @@ CREATE VIEW public.vw_sector_time_to_remediate AS
 ALTER TABLE public.vw_sector_time_to_remediate OWNER TO pe;
 
 --
+-- Name: vw_pshtt_domains_to_run; Type: VIEW; Schema: public; Owner: pe
+--
+
+CREATE VIEW public.vw_pshtt_domains_to_run AS
+SELECT o.organizations_uid, o.name, sd.sub_domain_uid, sd.sub_domain
+FROM sub_domains sd
+JOIN root_domains rd ON rd.root_domain_uid = sd.root_domain_uid
+JOIN organizations o on o.organizations_uid = rd.organizations_uid
+LEFT JOIN (
+    SELECT sub_domain_uid
+    FROM pshtt_results pr where date_scanned > current_date - interval '15 days'
+) pr
+ON pr.sub_domain_uid = sd.sub_domain_uid
+WHERE sd.current = True and pr.sub_domain_uid is NULL
+
+
+--
 -- Name: was_map; Type: TABLE; Schema: public; Owner: pe
 --
 
@@ -5035,40 +5003,6 @@ CREATE TABLE public.was_tracker_customerdata (
 ALTER TABLE public.was_tracker_customerdata OWNER TO pe;
 
 --
--- Name: was_tracker_customerdata; Type: TABLE; Schema: public; Owner: pe
---
-
-CREATE TABLE was_tracker_customerdata
-(
-    customer_id              uuid DEFAULT uuid_generate_v1() NOT NULL
-        constraint was_tracker_customerdata_pk primary key,
-    tag                      text                            NOT NULL,
-    customer_name            text                            NOT NULL,
-    testing_sector           text                            NOT NULL,
-    ci_type                  text                            NOT NULL,
-    jira_ticket              text,
-    ticket                   text                            NOT NULL,
-    next_scheduled           text                            NOT NULL,
-    last_scanned             text                            NOT NULL,
-    frequency                text                            NOT NULL,
-    comments_notes           text                            NOT NULL,
-    was_report_poc           text                            NOT NULL,
-    was_report_email         text                            NOT NULL,
-    onboarding_date          date                            NOT NULL,
-    no_of_web_apps           integer                         NOT NULL,
-    no_web_apps_last_updated text,
-    elections                text,
-    fceb                     text,
-    special_report           text,
-    report_password          text,
-    child_tags               text
-
-);
-
-ALTER TABLE was_tracker_customerdata
-    OWNER TO pe;
-
---
 -- Name: web_assets; Type: TABLE; Schema: public; Owner: pe
 --
 
@@ -5083,7 +5017,7 @@ CREATE TABLE public.web_assets (
     report_on boolean DEFAULT true,
     last_scanned timestamp without time zone,
     report_status_reason text,
-    data_source_uid      uuid                                      NOT NULL
+    data_source_uid uuid NOT NULL
 );
 
 
@@ -5640,14 +5574,6 @@ ALTER TABLE ONLY public.pshtt_results
 
 
 --
--- Name: pshtt_results pshtt_results_pkey; Type: CONSTRAINT; Schema: public; Owner: pe
---
-
-ALTER TABLE ONLY public.pshtt_results
-    ADD CONSTRAINT pshtt_results_pkey PRIMARY KEY (pshtt_results_uid);
-
-
---
 -- Name: report_summary_stats report_summary_stats_pkey; Type: CONSTRAINT; Schema: public; Owner: pe
 --
 
@@ -5700,11 +5626,7 @@ ALTER TABLE ONLY public.sectors
 --
 
 ALTER TABLE ONLY public.shodan_assets
-    ADD CONSTRAINT shodan_assets_organizations_uid_ip_port_protocol_timestamp_key UNIQUE (organizations_uid,
-                                                                                          ip,
-                                                                                          port,
-                                                                                          protocol,
-                                                                                          "timestamp");
+    ADD CONSTRAINT shodan_assets_organizations_uid_ip_port_protocol_timestamp_key UNIQUE (organizations_uid, ip, port, protocol, "timestamp");
 
 
 --
@@ -6111,6 +6033,13 @@ CREATE INDEX django_session_session_key_c0390e0f_like ON public.django_session U
 
 
 --
+-- Name: idx_ips_origin_cidr; Type: INDEX; Schema: public; Owner: pe
+--
+
+CREATE INDEX idx_ips_origin_cidr ON public.ips USING btree (origin_cidr);
+
+
+--
 -- Name: ix_Users_email; Type: INDEX; Schema: public; Owner: pe
 --
 
@@ -6136,7 +6065,7 @@ CREATE TRIGGER set_status_completed_and_week_ending_trigger BEFORE INSERT ON pub
 --
 
 ALTER TABLE ONLY public.alerts
-    ADD CONSTRAINT alerts_data_source_uid_fkey FOREIGN KEY (data_source_uid) REFERENCES public.data_source (data_source_uid) NOT VALID;
+    ADD CONSTRAINT alerts_data_source_uid_fkey FOREIGN KEY (data_source_uid) REFERENCES public.data_source(data_source_uid) NOT VALID;
 
 
 --
@@ -6144,7 +6073,7 @@ ALTER TABLE ONLY public.alerts
 --
 
 ALTER TABLE ONLY public.alerts
-    ADD CONSTRAINT alerts_organizations_uid_fkey FOREIGN KEY (organizations_uid) REFERENCES public.organizations (organizations_uid) NOT VALID;
+    ADD CONSTRAINT alerts_organizations_uid_fkey FOREIGN KEY (organizations_uid) REFERENCES public.organizations(organizations_uid) NOT VALID;
 
 
 --
@@ -6152,7 +6081,7 @@ ALTER TABLE ONLY public.alerts
 --
 
 ALTER TABLE ONLY public.alias
-    ADD CONSTRAINT alias_organizations_uid_fkey FOREIGN KEY (organizations_uid) REFERENCES public.organizations (organizations_uid) NOT VALID;
+    ADD CONSTRAINT alias_organizations_uid_fkey FOREIGN KEY (organizations_uid) REFERENCES public.organizations(organizations_uid) NOT VALID;
 
 
 --
@@ -6232,7 +6161,7 @@ ALTER TABLE ONLY public.cidrs
 --
 
 ALTER TABLE ONLY public.credential_breaches
-    ADD CONSTRAINT credential_breaches_data_source_uid_fkey FOREIGN KEY (data_source_uid) REFERENCES public.data_source (data_source_uid) NOT VALID;
+    ADD CONSTRAINT credential_breaches_data_source_uid_fkey FOREIGN KEY (data_source_uid) REFERENCES public.data_source(data_source_uid) NOT VALID;
 
 
 --
@@ -6240,7 +6169,7 @@ ALTER TABLE ONLY public.credential_breaches
 --
 
 ALTER TABLE ONLY public.credential_exposures
-    ADD CONSTRAINT credential_exposures_data_source_uid_fkey FOREIGN KEY (data_source_uid) REFERENCES public.data_source (data_source_uid) NOT VALID;
+    ADD CONSTRAINT credential_exposures_data_source_uid_fkey FOREIGN KEY (data_source_uid) REFERENCES public.data_source(data_source_uid) NOT VALID;
 
 
 --
@@ -6360,7 +6289,7 @@ ALTER TABLE ONLY public.django_admin_log
 --
 
 ALTER TABLE ONLY public.domain_permutations
-    ADD CONSTRAINT dnstwist_domain_masq_organizations_uid_fkey FOREIGN KEY (organizations_uid) REFERENCES public.organizations (organizations_uid) NOT VALID;
+    ADD CONSTRAINT dnstwist_domain_masq_organizations_uid_fkey FOREIGN KEY (organizations_uid) REFERENCES public.organizations(organizations_uid) NOT VALID;
 
 
 --
@@ -6368,7 +6297,7 @@ ALTER TABLE ONLY public.domain_permutations
 --
 
 ALTER TABLE ONLY public.domain_alerts
-    ADD CONSTRAINT domain_alerts_data_source_uid_fkey FOREIGN KEY (data_source_uid) REFERENCES public.data_source (data_source_uid) NOT VALID;
+    ADD CONSTRAINT domain_alerts_data_source_uid_fkey FOREIGN KEY (data_source_uid) REFERENCES public.data_source(data_source_uid) NOT VALID;
 
 
 --
@@ -6376,7 +6305,7 @@ ALTER TABLE ONLY public.domain_alerts
 --
 
 ALTER TABLE ONLY public.domain_alerts
-    ADD CONSTRAINT domain_alerts_sub_domain_uid_fkey FOREIGN KEY (sub_domain_uid) REFERENCES public.sub_domains (sub_domain_uid) NOT VALID;
+    ADD CONSTRAINT domain_alerts_sub_domain_uid_fkey FOREIGN KEY (sub_domain_uid) REFERENCES public.sub_domains(sub_domain_uid) NOT VALID;
 
 
 --
@@ -6384,7 +6313,7 @@ ALTER TABLE ONLY public.domain_alerts
 --
 
 ALTER TABLE ONLY public.domain_permutations
-    ADD CONSTRAINT domain_permutations_data_source_uid_fkey FOREIGN KEY (data_source_uid) REFERENCES public.data_source (data_source_uid) NOT VALID;
+    ADD CONSTRAINT domain_permutations_data_source_uid_fkey FOREIGN KEY (data_source_uid) REFERENCES public.data_source(data_source_uid) NOT VALID;
 
 
 --
@@ -6392,7 +6321,7 @@ ALTER TABLE ONLY public.domain_permutations
 --
 
 ALTER TABLE ONLY public.domain_permutations
-    ADD CONSTRAINT domain_permutations_sub_domain_uid_fkey FOREIGN KEY (sub_domain_uid) REFERENCES public.sub_domains (sub_domain_uid) NOT VALID;
+    ADD CONSTRAINT domain_permutations_sub_domain_uid_fkey FOREIGN KEY (sub_domain_uid) REFERENCES public.sub_domains(sub_domain_uid) NOT VALID;
 
 
 --
@@ -6400,7 +6329,7 @@ ALTER TABLE ONLY public.domain_permutations
 --
 
 ALTER TABLE ONLY public.executives
-    ADD CONSTRAINT executives_organizations_uid_fkey FOREIGN KEY (organizations_uid) REFERENCES public.organizations (organizations_uid) NOT VALID;
+    ADD CONSTRAINT executives_organizations_uid_fkey FOREIGN KEY (organizations_uid) REFERENCES public.organizations(organizations_uid) NOT VALID;
 
 
 --
@@ -6416,7 +6345,7 @@ ALTER TABLE ONLY public.ips
 --
 
 ALTER TABLE ONLY public.credential_exposures
-    ADD CONSTRAINT hibp_exposed_credentials_breach_id_fkey FOREIGN KEY (credential_breaches_uid) REFERENCES public.credential_breaches (credential_breaches_uid) NOT VALID;
+    ADD CONSTRAINT hibp_exposed_credentials_breach_id_fkey FOREIGN KEY (credential_breaches_uid) REFERENCES public.credential_breaches(credential_breaches_uid) NOT VALID;
 
 
 --
@@ -6424,7 +6353,7 @@ ALTER TABLE ONLY public.credential_exposures
 --
 
 ALTER TABLE ONLY public.credential_exposures
-    ADD CONSTRAINT hibp_exposed_credentials_organizations_uid_fkey FOREIGN KEY (organizations_uid) REFERENCES public.organizations (organizations_uid) NOT VALID;
+    ADD CONSTRAINT hibp_exposed_credentials_organizations_uid_fkey FOREIGN KEY (organizations_uid) REFERENCES public.organizations(organizations_uid) NOT VALID;
 
 
 --
@@ -6456,7 +6385,7 @@ ALTER TABLE ONLY public.ips_subs
 --
 
 ALTER TABLE ONLY public.mentions
-    ADD CONSTRAINT mentions_data_source_uid_fkey FOREIGN KEY (data_source_uid) REFERENCES public.data_source (data_source_uid) NOT VALID;
+    ADD CONSTRAINT mentions_data_source_uid_fkey FOREIGN KEY (data_source_uid) REFERENCES public.data_source(data_source_uid) NOT VALID;
 
 
 --
@@ -6484,22 +6413,6 @@ ALTER TABLE ONLY public.was_map
 
 
 --
--- Name: pshtt_results pshtt_results_organizations_uid_fkey; Type: FK CONSTRAINT; Schema: public; Owner: pe
---
-
-ALTER TABLE ONLY public.pshtt_results
-    ADD CONSTRAINT pshtt_results_organizations_uid_fkey FOREIGN KEY (organizations_uid) REFERENCES public.organizations (organizations_uid) NOT VALID;
-
-
---
--- Name: pshtt_results pshtt_results_sub_domain_uid_fkey; Type: FK CONSTRAINT; Schema: public; Owner: pe
---
-
-ALTER TABLE ONLY public.pshtt_results
-    ADD CONSTRAINT pshtt_results_sub_domain_uid_fkey FOREIGN KEY (sub_domain_uid) REFERENCES public.sub_domains (sub_domain_uid) NOT VALID;
-
-
---
 -- Name: report_summary_stats report_summary_stats_organizations_uid_fkey; Type: FK CONSTRAINT; Schema: public; Owner: pe
 --
 
@@ -6512,7 +6425,7 @@ ALTER TABLE ONLY public.report_summary_stats
 --
 
 ALTER TABLE ONLY public.root_domains
-    ADD CONSTRAINT root_domains_data_source_uid_fkey FOREIGN KEY (data_source_uid) REFERENCES public.data_source (data_source_uid) NOT VALID;
+    ADD CONSTRAINT root_domains_data_source_uid_fkey FOREIGN KEY (data_source_uid) REFERENCES public.data_source(data_source_uid) NOT VALID;
 
 
 --
@@ -6520,7 +6433,7 @@ ALTER TABLE ONLY public.root_domains
 --
 
 ALTER TABLE ONLY public.root_domains
-    ADD CONSTRAINT root_domains_organizations_uid_fkey FOREIGN KEY (organizations_uid) REFERENCES public.organizations (organizations_uid) NOT VALID;
+    ADD CONSTRAINT root_domains_organizations_uid_fkey FOREIGN KEY (organizations_uid) REFERENCES public.organizations(organizations_uid) NOT VALID;
 
 
 --
@@ -6552,7 +6465,7 @@ ALTER TABLE ONLY public.sectors_orgs
 --
 
 ALTER TABLE ONLY public.shodan_assets
-    ADD CONSTRAINT shodan_assets_data_source_uid_fkey FOREIGN KEY (data_source_uid) REFERENCES public.data_source (data_source_uid) NOT VALID;
+    ADD CONSTRAINT shodan_assets_data_source_uid_fkey FOREIGN KEY (data_source_uid) REFERENCES public.data_source(data_source_uid) NOT VALID;
 
 
 --
@@ -6560,7 +6473,7 @@ ALTER TABLE ONLY public.shodan_assets
 --
 
 ALTER TABLE ONLY public.shodan_assets
-    ADD CONSTRAINT shodan_assets_organizations_uid_fkey FOREIGN KEY (organizations_uid) REFERENCES public.organizations (organizations_uid) NOT VALID;
+    ADD CONSTRAINT shodan_assets_organizations_uid_fkey FOREIGN KEY (organizations_uid) REFERENCES public.organizations(organizations_uid) NOT VALID;
 
 
 --
@@ -6600,7 +6513,7 @@ ALTER TABLE ONLY public.shodan_vulns
 --
 
 ALTER TABLE ONLY public.sub_domains
-    ADD CONSTRAINT sub_domains_data_source_uid_fkey FOREIGN KEY (data_source_uid) REFERENCES public.data_source (data_source_uid) NOT VALID;
+    ADD CONSTRAINT sub_domains_data_source_uid_fkey FOREIGN KEY (data_source_uid) REFERENCES public.data_source(data_source_uid) NOT VALID;
 
 
 --
@@ -6616,7 +6529,7 @@ ALTER TABLE ONLY public.sub_domains
 --
 
 ALTER TABLE ONLY public.sub_domains
-    ADD CONSTRAINT sub_domains_root_domain_uid_fkey FOREIGN KEY (root_domain_uid) REFERENCES public.root_domains (root_domain_uid) NOT VALID;
+    ADD CONSTRAINT sub_domains_root_domain_uid_fkey FOREIGN KEY (root_domain_uid) REFERENCES public.root_domains(root_domain_uid) NOT VALID;
 
 
 --
@@ -6632,7 +6545,7 @@ ALTER TABLE ONLY public.sub_domains
 --
 
 ALTER TABLE ONLY public.top_cves
-    ADD CONSTRAINT top_cves_data_source_uid_fkey FOREIGN KEY (data_source_uid) REFERENCES public.data_source (data_source_uid) NOT VALID;
+    ADD CONSTRAINT top_cves_data_source_uid_fkey FOREIGN KEY (data_source_uid) REFERENCES public.data_source(data_source_uid) NOT VALID;
 
 
 --
@@ -6640,7 +6553,7 @@ ALTER TABLE ONLY public.top_cves
 --
 
 ALTER TABLE ONLY public.web_assets
-    ADD CONSTRAINT web_assets_data_source_uid_fkey FOREIGN KEY (data_source_uid) REFERENCES public.data_source (data_source_uid) NOT VALID;
+    ADD CONSTRAINT web_assets_data_source_uid_fkey FOREIGN KEY (data_source_uid) REFERENCES public.data_source(data_source_uid) NOT VALID;
 
 
 --
@@ -6648,17 +6561,17 @@ ALTER TABLE ONLY public.web_assets
 --
 
 ALTER TABLE ONLY public.web_assets
-    ADD CONSTRAINT web_assets_organizations_uid_fkey FOREIGN KEY (organizations_uid) REFERENCES public.organizations (organizations_uid) NOT VALID;
+    ADD CONSTRAINT web_assets_organizations_uid_fkey FOREIGN KEY (organizations_uid) REFERENCES public.organizations(organizations_uid) NOT VALID;
 
 
 --
 -- Name: SCHEMA public; Type: ACL; Schema: -; Owner: crossfeed
 --
 
+REVOKE USAGE ON SCHEMA public FROM PUBLIC;
 GRANT ALL ON SCHEMA public TO PUBLIC;
 
 
 --
 -- PostgreSQL database dump complete
 --
-

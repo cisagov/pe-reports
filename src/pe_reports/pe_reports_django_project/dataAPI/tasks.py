@@ -1,35 +1,36 @@
-from typing import List
-from celery import shared_task
-from home.models import MatVwOrgsAllIps
-from django.core import serializers
-import json
+"""API tasks."""
+# Standard Python Libraries
 import ast
 import datetime
-from django.db.models import Q
+import json
+from typing import List
 
-from home.models import (
-    # General DB Table Models:
+# Third-Party Libraries
+from celery import shared_task
+from django.core import serializers
+from django.db.models import Q
+from home.models import (  # General DB Table Models:; D-Score View Models:; I-Score View Models:; Misc. Score View Models:
     CyhyKevs,
+    MatVwOrgsAllIps,
     Organizations,
-    # D-Score View Models:
+    VwDscorePEDomain,
+    VwDscorePEIp,
     VwDscoreVSCert,
     VwDscoreVSMail,
-    VwDscorePEIp,
-    VwDscorePEDomain,
     VwDscoreWASWebapp,
-    # I-Score View Models:
-    VwIscoreVSVuln,
-    VwIscoreVSVulnPrev,
-    VwIscorePEVuln,
-    VwIscorePECred,
+    VwIscoreOrgsIpCounts,
     VwIscorePEBreach,
+    VwIscorePECred,
     VwIscorePEDarkweb,
     VwIscorePEProtocol,
+    VwIscorePEVuln,
+    VwIscoreVSVuln,
+    VwIscoreVSVulnPrev,
     VwIscoreWASVuln,
     VwIscoreWASVulnPrev,
-    # Misc. Score View Models:
-    VwIscoreOrgsIpCounts,
+    VwPshttDomainsToRun,
 )
+
 
 # v ---------- Task Helper Functions ---------- v
 def convert_uuid_to_string(uuid):
@@ -51,6 +52,7 @@ def convert_date_to_string(date):
 
 @shared_task(bind=True)
 def get_vs_info(self, cyhy_db_names: List[str]):
+    """Get the Vulnerability Scanning information from the database."""
     vs_data_orm = list(MatVwOrgsAllIps.objects.filter(cyhy_db_name__in=cyhy_db_names))
 
     vs_data = serializers.serialize("json", vs_data_orm)
@@ -68,6 +70,7 @@ def get_vs_info(self, cyhy_db_names: List[str]):
 
 @shared_task
 def get_ve_info(ip_address: List[str]):
+    """Get the VE information from the database."""
     ve_data = MatVwOrgsAllIps.objects.filter(ip_addresses__contains=ip_address)
 
     print(ve_data)  # temporary print for debugging
@@ -79,6 +82,20 @@ def get_ve_info(ip_address: List[str]):
     result = [{"cyhy_db_name": value} for value in cyhy_db_name_values]
 
     return result
+
+
+@shared_task(bind=True)
+def get_vw_pshtt_domains_to_run_info(self):
+    """Get subdomains to run through the PSHTT scan."""
+    # Make database query, then convert to list of dictionaries
+    endpoint_data = list(VwPshttDomainsToRun.objects.all().values())
+
+    # Convert UUID data to string (UUIDs cause issues with formatting)
+    for row in endpoint_data:
+        row["sub_domain_uid"] = str(row["sub_domain_uid"])
+        row["organizations_uid"] = str(row["organizations_uid"])
+    # Return results
+    return endpoint_data
 
 
 # ---------- D-Score View Tasks ----------

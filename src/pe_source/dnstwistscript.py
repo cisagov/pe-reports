@@ -1,11 +1,11 @@
 """Use DNS twist to fuzz domain names and cross check with a blacklist."""
 # Standard Python Libraries
+import contextlib
 import datetime
 import json
 import logging
 import pathlib
 import traceback
-import contextlib
 
 # Third-Party Libraries
 import dnstwist
@@ -17,9 +17,9 @@ from .data.pe_db.db_query_source import (
     addSubdomain,
     connect,
     get_data_source_uid,
+    get_orgs,
     getSubdomain,
     org_root_domains,
-    get_orgs,
 )
 
 date = datetime.datetime.now().strftime("%Y-%m-%d")
@@ -49,7 +49,7 @@ def checkBlocklist(dom, sub_domain_uid, source_uid, pe_org_uid, perm_list):
                 malicious = True
                 attacks = int(str(response).split("attacks: ")[1].split("<")[0])
                 reports = int(str(response).split("reports: ")[1].split("<")[0])
-            except:
+            except Exception:
                 malicious = False
                 dshield_attacks = 0
                 dshield_count = 0
@@ -64,7 +64,7 @@ def checkBlocklist(dom, sub_domain_uid, source_uid, pe_org_uid, perm_list):
             malicious = True
             dshield_attacks = attacks
             dshield_count = len(threats)
-        except:
+        except Exception:
             dshield_attacks = 0
             dshield_count = 0
 
@@ -83,7 +83,7 @@ def checkBlocklist(dom, sub_domain_uid, source_uid, pe_org_uid, perm_list):
                 malicious = True
                 attacks = int(str(response).split("attacks: ")[1].split("<")[0])
                 reports = int(str(response).split("reports: ")[1].split("<")[0])
-            except:
+            except Exception:
                 malicious = False
                 dshield_attacks = 0
                 dshield_count = 0
@@ -96,7 +96,7 @@ def checkBlocklist(dom, sub_domain_uid, source_uid, pe_org_uid, perm_list):
             malicious = True
             dshield_attacks = attacks
             dshield_count = len(threats)
-        except:
+        except Exception:
             dshield_attacks = 0
             dshield_count = 0
 
@@ -149,25 +149,26 @@ def execute_dnstwist(root_domain, test=0):
     if test == 1:
         return dnstwist_result
     finalorglist = dnstwist_result + []
-    for dom in dnstwist_result:
-        if (
-            ("tld-swap" not in dom["fuzzer"])
-            and ("original" not in dom["fuzzer"])
-            and ("replacement" not in dom["fuzzer"])
-            and ("repetition" not in dom["fuzzer"])
-            and ("omission" not in dom["fuzzer"])
-            and ("insertion" not in dom["fuzzer"])
-            and ("transposition" not in dom["fuzzer"])
-        ):
-            LOGGER.info("Running again on %s", dom["domain"])
-            secondlist = dnstwist.run(
-                registered=True,
-                tld=pathtoDict,
-                format="json",
-                threads=8,
-                domain=dom["domain"],
-            )
-            finalorglist += secondlist
+    if root_domain.split(".")[-1] == "gov": 
+        for dom in dnstwist_result:
+            if (
+                ("tld-swap" not in dom["fuzzer"])
+                and ("original" not in dom["fuzzer"])
+                and ("replacement" not in dom["fuzzer"])
+                and ("repetition" not in dom["fuzzer"])
+                and ("omission" not in dom["fuzzer"])
+                and ("insertion" not in dom["fuzzer"])
+                and ("transposition" not in dom["fuzzer"])
+            ):
+                LOGGER.info("Running again on %s", dom["domain"])
+                secondlist = dnstwist.run(
+                    registered=True,
+                    tld=pathtoDict,
+                    format="json",
+                    threads=8,
+                    domain=dom["domain"],
+                )
+                finalorglist += secondlist
     return finalorglist
 
 
@@ -177,15 +178,35 @@ def run_dnstwist(orgs_list):
     source_uid = get_data_source_uid("DNSTwist")
 
     """ Get P&E Orgs """
-    orgs = get_orgs()
+    pe_orgs = get_orgs()
+    pe_orgs_final = []
+    if orgs_list == "all":
+        for pe_org in pe_orgs:
+            if pe_org["report_on"]:
+                pe_orgs_final.append(pe_org)
+            else:
+                continue
+    elif orgs_list == "DEMO":
+        for pe_org in pe_orgs:
+            if pe_org["demo"]:
+                pe_orgs_final.append(pe_org)
+            else:
+                continue
+    else:
+        for pe_org in pe_orgs:
+            if pe_org["cyhy_db_name"] in orgs_list:
+                pe_orgs_final.append(pe_org)
+            else:
+                continue
+
     failures = []
-    for org in orgs:
-        pe_org_uid = org["org_uid"]
-        org_name = org["org_name"]
+    for org in pe_orgs_final:
+        pe_org_uid = org["organizations_uid"]
+        org_name = org["name"]
         pe_org_id = org["cyhy_db_name"]
 
         # Only run on orgs in the org list
-        if pe_org_id in orgs_list or orgs_list == "all":
+        if pe_org_id in orgs_list or orgs_list == "all" or orgs_list == "DEMO":
             LOGGER.info("Running DNSTwist on %s", pe_org_id)
 
             """Collect DNSTwist data from Crossfeed"""

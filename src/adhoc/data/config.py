@@ -18,7 +18,10 @@ def config(
     if parser.has_section(section):
         params = parser.items(section)
         for param in params:
+            if param[0] == "pe_api_key" or param[0] == "pe_api_url":
+                continue
             db[param[0]] = param[1]
+            
     else:
         raise Exception("Section {} not found in the {} file".format(section, filename))
     return db
