@@ -3887,6 +3887,185 @@ async def cred_breach_intelx_status(task_id: str, tokens: dict = Depends(get_api
         return {"message": "No api key was submitted"}
 
 
+# --- insert_sixgill_topCVEs(), Issue 657
+@api_router.put(
+    "/top_cves_insert",
+    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    tags=["Insert multiple records into the top_cves table."],
+)
+def top_cves_insert(
+    data: schemas.TopCVEsInsertInput, tokens: dict = Depends(get_api_key)
+):
+    """API endpoint to insert multiple records into the top_cves table."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            # userapiTokenverify(theapiKey=tokens)
+            # If API key valid, proceed
+            create_ct = 0
+            for record in data.insert_data:
+                # convert to dict
+                record = dict(record)
+                curr_source_inst = DataSource.objects.get(
+                    data_source_uid=record["data_source_uid"]
+                )
+                # Insert each row of data, on conflict do nothing
+                try:
+                    TopCves.objects.get(cve_id=record["cve_id"], date=record["date"])
+                    # If record already exists, do nothing
+                except TopCves.DoesNotExist:
+                    # Otherwise, create new record
+                    TopCves.objects.create(
+                        top_cves_uid=uuid.uuid1(),
+                        cve_id=record["cve_id"],
+                        dynamic_rating=record["dynamic_rating"],
+                        nvd_base_score=record["nvd_base_score"],
+                        date=record["date"],
+                        summary=record["summary"],
+                        data_source_uid=curr_source_inst,
+                    )
+                    create_ct += 1
+            return str(create_ct) + " records created in the top_cves table"
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+
+# --- execute_dnsmonitor_data(), Issue 659
+@api_router.put(
+    "/domain_permu_insert",
+    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    tags=["Insert multiple DNSMonitor records into the domain_permutations table."],
+)
+def domain_permu_insert(
+    data: schemas.DomainPermuInsertInput, tokens: dict = Depends(get_api_key)
+):
+    """API endpoint to insert multiple DNSMonitor records into the domain_permutations table."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            # userapiTokenverify(theapiKey=tokens)
+            # If API key valid, proceed
+            create_ct = 0
+            update_ct = 0
+            for record in data.insert_data:
+                # convert to dict
+                record = dict(record)
+                curr_org_inst = Organizations.objects.get(
+                    organizations_uid=record["organizations_uid"]
+                )
+                curr_source_inst = DataSource.objects.get(
+                    data_source_uid=record["data_source_uid"]
+                )
+                # Insert each row of data, on conflict update existing
+                try:
+                    DomainPermutations.objects.get(
+                        organizations_uid=curr_org_inst,
+                        domain_permutation=record["domain_permutation"],
+                    )
+                    # If record already exists, update
+                    DomainPermutations.objects.filter(
+                        organizations_uid=curr_org_inst,
+                        domain_permutation=record["domain_permutation"],
+                    ).update(
+                        ipv4=record["ipv4"],
+                        ipv6=record["ipv6"],
+                        date_observed=record["date_observed"],
+                        mail_server=record["mail_server"],
+                        name_server=record["name_server"],
+                        sub_domain_uid=record["sub_domain_uid"],
+                        data_source_uid=curr_source_inst,
+                    )
+                    update_ct += 1
+                except DomainPermutations.DoesNotExist:
+                    # Otherwise, create new record
+                    DomainPermutations.objects.create(
+                        organizations_uid=curr_org_inst,
+                        domain_permutation=record["domain_permutation"],
+                        ipv4=record["ipv4"],
+                        ipv6=record["ipv6"],
+                        date_observed=record["date_observed"],
+                        mail_server=record["mail_server"],
+                        name_server=record["name_server"],
+                        sub_domain_uid=record["sub_domain_uid"],
+                        data_source_uid=curr_source_inst,
+                    )
+                    create_ct += 1
+            return (
+                "DNSMonitor records in the domain_permutations table: "
+                + str(create_ct)
+                + " created, "
+                + str(update_ct)
+                + " updated"
+            )
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+
+# --- execute_dnsmonitor_alert_data(), Issue 660
+@api_router.put(
+    "/domain_alerts_insert",
+    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    tags=["Insert multiple DNSMonitor records into the domain_alerts table."],
+)
+def domain_alerts_insert(
+    data: schemas.DomainAlertsInsertInput, tokens: dict = Depends(get_api_key)
+):
+    """API endpoint to insert multiple DNSMonitor records into the domain_alerts table."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            # userapiTokenverify(theapiKey=tokens)
+            # If API key valid, proceed
+            create_ct = 0
+            for record in data.insert_data:
+                # convert to dict
+                record = dict(record)
+                curr_sub_inst = SubDomains.objects.get(
+                    sub_domain_uid=record["sub_domain_uid"]
+                )
+                curr_source_inst = DataSource.objects.get(
+                    data_source_uid=record["data_source_uid"]
+                )
+                # Insert each row of data, on conflict do nothing
+                try:
+                    DomainAlerts.objects.get(
+                        alert_type=record["alert_type"],
+                        sub_domain_uid=record["sub_domain_uid"],
+                        date=record["date"],
+                        new_value=record["new_value"],
+                    )
+                    # If record already exists, do nothing
+                except DomainAlerts.DoesNotExist:
+                    # Otherwise, create new record
+                    DomainAlerts.objects.create(
+                        domain_alert_uid=uuid.uuid1(),
+                        organizations_uid=record["organizations_uid"],
+                        sub_domain_uid=curr_sub_inst,
+                        data_source_uid=curr_source_inst,
+                        alert_type=record["alert_type"],
+                        message=record["message"],
+                        previous_value=record["previous_value"],
+                        new_value=record["new_value"],
+                        date=record["date"],
+                    )
+                    create_ct += 1
+            return (
+                str(create_ct)
+                + " DNSMonitor records created in the domain_alerts table"
+            )
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+
 # --- addRootdomain(), Issue 661 ---
 @api_router.put(
     "/root_domains_single_insert",

@@ -315,33 +315,39 @@ def insert_sixgill_credentials(df):
     cursor.close()
 
 
+# --- 657 ---
 def insert_sixgill_topCVEs(df):
-    """Insert sixgill top CVEs."""
-    conn = connect()
-    table = "top_cves"
-    # Create a list of tuples from the dataframe values
-    tuples = [tuple(x) for x in df.to_numpy()]
-    # Comma-separated dataframe columns
-    cols = ",".join(list(df.columns))
-    # SQL query to execute
-    query = """INSERT INTO {}({}) VALUES %s
-    ON CONFLICT (cve_id, date) DO NOTHING;"""
-    cursor = conn.cursor()
+    """
+    Query API to insert multiple records into the top_cves table.
+
+    Args:
+        df: Dataframe containing top cve data to be inserted
+    """
+    # Endpoint info
+    endpoint_url = pe_api_url + "top_cves_insert"
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": pe_api_key,
+    }
+    # Adjust data types and convert to list of dictionaries
+    df["date"] = df["date"].astype(str)
+    df_dict_list = df.to_dict("records")
+    data = json.dumps({"insert_data": df_dict_list})
     try:
-        extras.execute_values(
-            cursor,
-            query.format(
-                table,
-                cols,
-            ),
-            tuples,
-        )
-        conn.commit()
-        LOGGER.info("Successfully inserted/updated top cve data into PE database.")
-    except (Exception, psycopg2.DatabaseError) as error:
-        LOGGER.info(error)
-        conn.rollback()
-    cursor.close()
+        # Call endpoint
+        result = requests.put(endpoint_url, headers=headers, data=data).json()
+        # Process data and return
+        LOGGER.info(result)
+    except requests.exceptions.HTTPError as errh:
+        LOGGER.error(errh)
+    except requests.exceptions.ConnectionError as errc:
+        LOGGER.error(errc)
+    except requests.exceptions.Timeout as errt:
+        LOGGER.error(errt)
+    except requests.exceptions.RequestException as err:
+        LOGGER.error(err)
+    except json.decoder.JSONDecodeError as err:
+        LOGGER.error(err)
 
 
 def insert_shodan_data(dataframe, table, thread, org_name, failed):
@@ -478,6 +484,76 @@ def get_intelx_breaches(source_uid):
     # Convert result to list of tuples to match original function
     tup_result = [tuple(row.values()) for row in result]
     return tup_result
+
+
+# --- 659 ---
+def execute_dnsmonitor_data(df):
+    """
+    Query API to insert multiple records into the domain_permutations table.
+
+    Args:
+        df: Dataframe containing DNSMonitor data to be inserted
+    """
+    # Endpoint info
+    endpoint_url = pe_api_url + "domain_permu_insert"
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": pe_api_key,
+    }
+    # Adjust data types and convert to list of dictionaries
+    df["date_observed"] = df["date_observed"].astype(str)
+    df_dict_list = df.to_dict("records")
+    data = json.dumps({"insert_data": df_dict_list})
+    try:
+        # Call endpoint
+        result = requests.put(endpoint_url, headers=headers, data=data).json()
+        # Process data and return
+        LOGGER.info(result)
+    except requests.exceptions.HTTPError as errh:
+        LOGGER.error(errh)
+    except requests.exceptions.ConnectionError as errc:
+        LOGGER.error(errc)
+    except requests.exceptions.Timeout as errt:
+        LOGGER.error(errt)
+    except requests.exceptions.RequestException as err:
+        LOGGER.error(err)
+    except json.decoder.JSONDecodeError as err:
+        LOGGER.error(err)
+
+
+# --- 660 ---
+def execute_dnsmonitor_alert_data(df):
+    """
+    Query API to insert multiple records into the domain_alerts table.
+
+    Args:
+        df: Dataframe containing DNSMonitor data to be inserted
+    """
+    # Endpoint info
+    endpoint_url = pe_api_url + "domain_alerts_insert"
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": pe_api_key,
+    }
+    # Adjust data types and convert to list of dictionaries
+    df["date"] = df["date"].astype(str)
+    df_dict_list = df.to_dict("records")
+    data = json.dumps({"insert_data": df_dict_list})
+    try:
+        # Call endpoint
+        result = requests.put(endpoint_url, headers=headers, data=data).json()
+        # Process data and return
+        LOGGER.info(result)
+    except requests.exceptions.HTTPError as errh:
+        LOGGER.error(errh)
+    except requests.exceptions.ConnectionError as errc:
+        LOGGER.error(errc)
+    except requests.exceptions.Timeout as errt:
+        LOGGER.error(errt)
+    except requests.exceptions.RequestException as err:
+        LOGGER.error(err)
+    except json.decoder.JSONDecodeError as err:
+        LOGGER.error(err)
 
 
 # --- Issue 661 ---

@@ -1993,6 +1993,104 @@ class CredBreachIntelXTaskResp(BaseModel):
     error: Optional[str] = None
 
 
+# --- insert_sixgill_topCVEs(), Issue 657 ---
+# Insert multiple records into the top_cves table
+class TopCVEsInsert(BaseModel):
+    """TopCVEsInsert schema class."""
+
+    cve_id: str
+    dynamic_rating: Optional[str] = None
+    nvd_base_score: Optional[str] = None
+    date: str
+    summary: Optional[str] = None
+    data_source_uid: Optional[str] = None
+
+    class Config:
+        """TopCVEsInsert schema config class."""
+
+        orm_mode = True
+
+
+# --- insert_sixgill_topCVEs(), Issue 657 ---
+# Insert multiple records into the top_cves table, input
+class TopCVEsInsertInput(BaseModel):
+    """TopCVEsInsertInput schema class."""
+
+    insert_data: List[TopCVEsInsert]
+
+    class Config:
+        """TopCVEsInsertInput schema config class."""
+
+        orm_mode = True
+
+
+# --- execute_dnsmonitor_data(), Issue 659 ---
+# Insert multiple records into the domain_permutations table
+class DomainPermuInsert(BaseModel):
+    """DomainPermuInsert schema class."""
+
+    organizations_uid: str
+    sub_domain_uid: Optional[str] = None
+    data_source_uid: Optional[str] = None
+    domain_permutation: str
+    ipv4: Optional[str] = None
+    ipv6: Optional[str] = None
+    mail_server: Optional[str] = None
+    name_server: Optional[str] = None
+    date_observed: Optional[str] = None
+
+    class Config:
+        """DomainPermuInsert schema config class."""
+
+        orm_mode = True
+
+
+# --- execute_dnsmonitor_data(), Issue 659 ---
+# Insert multiple records into the domain_permutations table, input
+class DomainPermuInsertInput(BaseModel):
+    """DomainPermuInsertInput schema class."""
+
+    insert_data: List[DomainPermuInsert]
+
+    class Config:
+        """DomainPermuInsertInput schema config class."""
+
+        orm_mode = True
+
+
+# --- execute_dnsmonitor_alert_data(), Issue 660 ---
+# Insert multiple records into the domain_alerts table
+class DomainAlertsInsert(BaseModel):
+    """DomainAlertsInsert schema class."""
+
+    organizations_uid: str
+    sub_domain_uid: Optional[str] = None
+    data_source_uid: Optional[str] = None
+    alert_type: Optional[str] = None
+    message: Optional[str] = None
+    previous_value: Optional[str] = None
+    new_value: Optional[str] = None
+    date: Optional[str] = None
+
+    class Config:
+        """DomainAlertsInsert schema config class."""
+
+        orm_mode = True
+
+
+# --- execute_dnsmonitor_alert_data(), Issue 660 ---
+# Insert multiple records into the domain_alerts table, input
+class DomainAlertsInsertInput(BaseModel):
+    """DomainAlertsInsertInput schema class."""
+
+    insert_data: List[DomainAlertsInsert]
+
+    class Config:
+        """DomainAlertsInsertInput schema config class."""
+
+        orm_mode = True
+
+
 # --- addRootdomain(), Issue 661 ---
 # Insert single root domain into root_domains table, input
 class RootDomainsSingleInsertInput(BaseModel):
