@@ -332,7 +332,7 @@ def query_pe_report_on_orgs(conn):
     sql = """
     SELECT organizations_uid, cyhy_db_name, name, agency_type
     FROM organizations o
-    WHERE report_on or run_scans or fceb or fceb_child
+    WHERE report_on or run_scans or fceb or fceb_child or demo
     """
     df = pd.read_sql(sql, conn)
     return df
@@ -452,6 +452,7 @@ def query_cidrs(conn):
 def execute_ips(conn, df):
     """Insert the ips into the ips table in the database and link them to the associated cidr."""
     try:
+        df = pd.DataFrame([df])
         # Execute insert query
         tpls = [tuple(x) for x in df.to_numpy()]
         cols = ",".join(list(df.columns))
@@ -462,6 +463,7 @@ def execute_ips(conn, df):
         DO UPDATE SET
             origin_cidr = UUID(EXCLUDED.origin_cidr),
             last_seen = EXCLUDED.last_seen,
+            last_reverse_lookup, = EXCLUDED.last_reverse_lookup,
             organizations_uid = EXCLUDED.organizations_uid;
         """
         cursor = conn.cursor()
@@ -536,11 +538,11 @@ def query_subs(org_uid, conn):
 def query_cidrs_by_org(conn, org_id):
     """Get CIDRs by org."""
     sql = """
-    SELECT network, cidr_uid
+    SELECT ct.network, ct.cidr_uid
     FROM cidrs ct
     join organizations o on o.organizations_uid = ct.organizations_uid
     WHERE o.organizations_uid = %(org_id)s
-    and current;
+    and ct.current;
     """
     df = pd.read_sql(sql, conn, params={"org_id": org_id})
     return df
@@ -556,6 +558,7 @@ def update_shodan_ips(conn, df):
         VALUES %s
         ON CONFLICT (ip)
             DO UPDATE SET shodan_results = EXCLUDED.shodan_results,
+            origin_cidr = EXCLUDED.origin_cidr,
             current = EXCLUDED.current"""
     cursor = conn.cursor()
     try:
@@ -577,7 +580,7 @@ def query_floating_ips(conn, org_id):
     join root_domains rd on rd.root_domain_uid = sd.root_domain_uid
     WHERE rd.organizations_uid = %(org_id)s
     AND i.origin_cidr is null
-    and sd.current;
+    and sd.current and i.current;
     """
     df = pd.read_sql(sql, conn, params={"org_id": org_id})
     ips = set(df["ip"])

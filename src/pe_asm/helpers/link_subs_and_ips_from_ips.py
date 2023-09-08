@@ -1,6 +1,8 @@
 """Link sub-domains and IPs from IP lookups."""
 # Standard Python Libraries
 import datetime
+import hashlib
+import ipaddress
 import logging
 import threading
 import time
@@ -11,23 +13,24 @@ import pandas as pd
 import requests
 
 # cisagov Libraries
-from pe_reports.data.config import whois_xml_api_key
 from pe_asm.data.cyhy_db_query import (
+    execute_ips,
     pe_db_connect,
     pe_db_staging_connect,
+    query_cidrs_by_org,
     query_pe_report_on_orgs,
-    query_ips,
 )
+from pe_reports.data.config import whois_xml_api_key
 
 LOGGER = logging.getLogger(__name__)
 WHOIS_KEY = whois_xml_api_key()
 DATE = datetime.datetime.today().date()
 
 
-def reverseLookup(ip, failed_ips, conn, thread):
+def reverseLookup(ip_obj, failed_ips, conn, thread):
     """Take an ip and find all associated subdomains."""
     # Query WHOisXML
-    url = f"https://dns-history.whoisxmlapi.com/api/v1?apiKey={WHOIS_KEY}&ip={ip}"
+    url = f"https://dns-history.whoisxmlapi.com/api/v1?apiKey={WHOIS_KEY}&ip={ip_obj['ip']}"
     payload = {}
     headers = {}
     response = requests.request("GET", url, headers=headers, data=payload).json()
@@ -38,25 +41,15 @@ def reverseLookup(ip, failed_ips, conn, thread):
                 "GET", url, headers=headers, data=payload
             ).json()
             if response.get("code") == 429:
-                failed_ips.append(ip)
+                failed_ips.append(ip_obj["ip"])
 
     found_domains = []
     try:
-        try:
-            # Update last_reverse_lookup field
-            cur = conn.cursor()
-            date = datetime.datetime.today().strftime("%Y-%m-%d")
-            sql = """update ips set last_reverse_lookup = %s
-            where ip = %s;"""
-            cur.execute(sql, (date, str(ip)))
-            conn.commit()
-            cur.close()
-        except Exception as e:
-            LOGGER.error("Failed to update timestamp field")
-            LOGGER.error(e)
-
         # If there is a response, save domain
         if response["size"] > 0:
+            # Insert or update IP
+            execute_ips(conn, ip_obj)
+
             result = response["result"]
             for domain in result:
                 print(domain)
@@ -77,18 +70,18 @@ def reverseLookup(ip, failed_ips, conn, thread):
     return found_domains, failed_ips
 
 
-def link_domain_from_ip(ip_hash, ip, org_uid, data_source, failed_ips, conn, thread):
+def link_domain_from_ip(ip_obj, org_uid, data_source, failed_ips, conn, thread):
     """From a provided ip find domains and link them in the db."""
     # Lookup domains from IP
-    found_domains, failed_ips = reverseLookup(ip, failed_ips, conn, thread)
+    found_domains, failed_ips = reverseLookup(ip_obj, failed_ips, conn, thread)
     for domain in found_domains:
         cur = conn.cursor()
         cur.callproc(
             "link_ips_and_subs",
             (
                 DATE,
-                ip_hash,
-                ip,
+                ip_obj["ip_hash"],
+                ip_obj["ip"],
                 org_uid,
                 domain["sub_domain"],
                 data_source,
@@ -107,7 +100,6 @@ def link_domain_from_ip(ip_hash, ip, org_uid, data_source, failed_ips, conn, thr
 def run_ip_chunk(org_uid, ips_df, thread, conn):
     """Run the provided chunk through the linking process."""
     count = 0
-    start_time = time.time()
     last_100 = time.time()
     failed_ips = []
     for ip_index, ip in ips_df.iterrows():
@@ -122,9 +114,7 @@ def run_ip_chunk(org_uid, ips_df, thread, conn):
 
         # Link domain from IP
         try:
-            found_domains = link_domain_from_ip(
-                ip["ip_hash"], ip["ip"], org_uid, "WhoisXML", failed_ips, conn, thread
-            )
+            link_domain_from_ip(ip, org_uid, "WhoisXML", failed_ips, conn, thread)
         except requests.exceptions.SSLError as e:
             LOGGER.error(e)
             time.sleep(1)
@@ -162,8 +152,27 @@ def connect_subs_from_ips(staging, orgs_df=None):
         # Query IPs
         org_uid = org["organizations_uid"]
         print(org_uid)
-        ips_df = query_ips(org_uid, conn)
-        LOGGER.info("Number of IPs: %d", len(ips_df.index))
+        # ips_df = query_ips(org_uid, conn)
+        cidrs = query_cidrs_by_org(conn, org_uid)
+        ips_list = []
+        for cidr_index, cidr in cidrs.itterows():
+            for ip in list(ipaddress.IPv4Network(cidr).hosts()):
+                hash_object = hashlib.sha256(str(ip).encode("utf-8"))
+                ip_obj = {
+                    "ip_hash": hash_object.hexdigest(),
+                    "ip": str(ip),
+                    "origin_cidr": cidr["cidr_uid"],
+                    "first_seen": DATE,
+                    "last_seen": DATE,
+                    "current": True,
+                    "from_cidr": True,
+                    "last_reverse_lookup": DATE,
+                    "organizations_uid": org_uid,
+                }
+                ips_list.append(ip_obj)
+        ips_df = pd.DataFrame(ips_list)
+
+        LOGGER.info("Number of Cidrs: %d", cidrs.index)
 
         # if no IPS, continue to next org
         if len(ips_df.index) == 0:

@@ -6,10 +6,8 @@ from datetime import date
 from ipaddress import ip_address, ip_network
 import json
 import logging
-import os
 import re
 import socket
-import traceback
 
 # Third-Party Libraries
 from bs4 import BeautifulSoup
@@ -24,29 +22,28 @@ import requests
 import spacy
 
 # cisagov Libraries
+from pe_asm.helpers.fill_cidrs_from_cyhy_assets import fill_cidrs
+from pe_asm.helpers.link_subs_and_ips_from_ips import connect_subs_from_ips
+from pe_asm.helpers.link_subs_and_ips_from_subs import connect_ips_from_subs
+from pe_asm.helpers.shodan_dedupe import dedupe
 from pe_reports.data.config import config
 from pe_reports.data.db_query import execute_values, get_orgs_df
 from pe_reports.helpers.enumerate_subs_from_root import (
     enumerate_and_save_subs,
     query_roots,
 )
-from pe_asm.helpers.fill_cidrs_from_cyhy_assets import fill_cidrs
-from pe_asm.helpers.fill_ips_from_cidrs import fill_ips_from_cidrs
-from pe_asm.helpers.link_subs_and_ips_from_ips import connect_subs_from_ips
-from pe_asm.helpers.link_subs_and_ips_from_subs import connect_ips_from_subs
-from pe_asm.helpers.shodan_dedupe import dedupe
 from pe_reports.stakeholder_full.forms import InfoFormExternal
 
 # If you are getting errors saying that a "en_core_web_lg" is loaded. Run the command " python -m spacy download en_core_web_trf" but might have to chagne the name fo the spacy model
-# nlp = spacy.load("en_core_web_lg")
+nlp = spacy.load("en_core_web_lg")
 
 LOGGER = logging.getLogger(__name__)
 
 # CSG credentials
 # TODO: Insert credentials
-API_Client_ID = ""
-API_Client_secret = ""
-API_WHOIS = ""
+API_Client_ID = config("API_Client_ID")
+API_Client_secret = config("API_Client_secret")
+API_WHOIS = config("API_WHOIS")
 
 conn = None
 cursor = None
@@ -169,7 +166,8 @@ def get_cidrs_and_ips(org_uid):
     conn = psycopg2.connect(**params)
     cur = conn.cursor()
     sql = """SELECT network from cidrs where
-        organizations_uid = %s;"""
+        organizations_uid = %s
+        and current;"""
     cur.execute(sql, [org_uid])
     cidrs = cur.fetchall()
     sql = """
@@ -179,7 +177,8 @@ def get_cidrs_and_ips(org_uid):
     join sub_domains sd on sd.sub_domain_uid = ip_s.sub_domain_uid
     join root_domains rd on rd.root_domain_uid = sd.root_domain_uid
     WHERE rd.organizations_uid = %s
-    AND i.origin_cidr is null;
+    AND i.origin_cidr is null
+    and i.current and sd.current;
     """
     cur.execute(sql, [org_uid])
     ips = cur.fetchall()
@@ -274,7 +273,6 @@ def setCustomerExternalCSG(
         conn = psycopg2.connect(**params)
 
         if conn:
-
             logging.info(
                 "There was a connection made to"
                 " the database and the query was executed "
@@ -429,7 +427,6 @@ def setOrganizationUsers(org_id):
             or userrole == role2
             and user_id != id_role1
         ):
-
             url = (
                 f"https://api.cybersixgill.com/multi-tenant/organization/"
                 f"{org_id}/user/{user_id}?role_id={userrole}"
@@ -441,15 +438,12 @@ def setOrganizationUsers(org_id):
                 "Authorization": f"Bearer {getToken()}",
             }
 
-            response = requests.post(url, headers=headers).json()
+            requests.post(url, headers=headers).json()
             # logging.info(response)
 
 
 def setOrganizationDetails(org_id, orgAliases, orgDomain, orgIP, orgExecs):
-    """Set stakeholder details at newly created.
-
-    stakeholder at CSG portal via API.
-    """
+    """Set stakeholder details at newly created stakeholder at CSG portal via API."""
     logging.info("The following is from setting details")
     logging.info("The org_id is %s", org_id)
     logging.info("The orgAliases is %s", orgAliases)
@@ -489,7 +483,7 @@ stakeholder_full_blueprint = Blueprint(
 
 
 def getNames(url):
-
+    """Get names from url."""
     doc = nlp(getAbout(url))
 
     d = []
@@ -501,6 +495,7 @@ def getNames(url):
 
 
 def getAbout(url):
+    """Get the about page."""
     thepage = requests.get(url).text
 
     soup = BeautifulSoup(thepage, "lxml")
@@ -517,6 +512,7 @@ def getAbout(url):
 
 
 def theExecs(URL):
+    """Check for Executives on the page."""
     mytext = getAbout(URL)
 
     tokens = word_tokenize(mytext)
@@ -536,7 +532,6 @@ def theExecs(URL):
     executives = []
 
     for hy in thereturn:
-
         # print(hy)
 
         if ("PERSON" in hy) and (hy[1] not in executives) and (len(hy[1]) < 50):
@@ -663,6 +658,7 @@ def link_IPs():
 def fill_IPs():
     """Run link IPs script on all orgs that are set to report_on."""
     logging.info("Filling IPS")
-    fill_ips_from_cidrs()
+    """???We don't do this anymore, probably need to rip all this out"""
+    # fill_ips_from_cidrs()
     logging.info("Done Filling IPS")
     return "nothing"

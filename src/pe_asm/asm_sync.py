@@ -30,16 +30,15 @@ from ._version import __version__
 # from .helpers.query_cyhy_port_scans import get_cyhy_port_scans
 from .data.cyhy_db_query import (
     identified_sub_domains,
+    identify_cidr_changes,
     identify_ip_changes,
     identify_ip_sub_changes,
     identify_sub_changes,
-    identify_cidr_changes,
     pe_db_connect,
     pe_db_staging_connect,
 )
 from .helpers.enumerate_subs_from_root import get_subdomains
 from .helpers.fill_cidrs_from_cyhy_assets import fill_cidrs
-from .helpers.fill_ips_from_cidrs import fill_ips_from_cidrs
 from .helpers.get_cyhy_assets import get_cyhy_assets
 from .helpers.get_cyhy_scorecard_data import (
     get_cyhy_https_scan,
@@ -79,11 +78,6 @@ def run_asm_sync(staging, method):
             conn = pe_db_connect()
         identify_cidr_changes(conn)
         conn.close()
-
-        # Enumerate CIDRs for IPs
-        LOGGER.info("Filling IPs from CIDRs.")
-        fill_ips_from_cidrs(staging)
-        LOGGER.info("Finished.")
 
         # Fill root domains from dot gov table
         # TODO

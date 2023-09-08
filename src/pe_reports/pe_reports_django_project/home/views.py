@@ -1,76 +1,85 @@
+"""Django home views."""
 # Built in packages
-import logging
-import csv
-import json
-import socket
+# Standard Python Libraries
 from datetime import datetime, timedelta
-from io import TextIOWrapper
-import re
-import os
+from email.mime.application import MIMEApplication
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 import glob
+import json
+import logging
+import os
+import re
 import traceback
+
+# Third-Party Libraries
+# Third party packages
+import boto3
+from botocore.exceptions import ClientError
+from bs4 import BeautifulSoup
+from decouple import config
+from django.conf import settings
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.core import serializers
+from django.http import (
+    HttpResponse,
+    HttpResponseNotFound,
+    HttpResponseRedirect,
+    JsonResponse,
+)
+from django.shortcuts import render
+from django.template.loader import render_to_string
+from django.urls import reverse_lazy
+from django.views import View
+from django.views.generic import TemplateView
+from django.views.generic.edit import FormView
+
+# from docx import Document
+from docxtpl import DocxTemplate
+import pandas as pd
 import requests
 import spacy
 
-# Third party packages
-from decouple import config
-from django.views.generic import TemplateView
-from django.views.generic.edit import FormView
-from django.views import View
-from django.shortcuts import render
-from django.http import (
-    HttpResponseNotFound,
-    HttpResponseRedirect,
-    HttpResponse,
-    JsonResponse,
+# cisagov Libraries
+from pe_asm.helpers.enumerate_subs_from_root import get_subdomains
+from pe_asm.helpers.fill_cidrs_from_cyhy_assets import fill_cidrs
+from pe_asm.helpers.link_subs_and_ips_from_ips import connect_subs_from_ips
+from pe_asm.helpers.link_subs_and_ips_from_subs import connect_ips_from_subs
+from pe_asm.helpers.shodan_dedupe import dedupe
+from pe_reports.data.db_query import (
+    check_org_exists,
+    get_cidrs_and_ips,
+    insert_roots,
+    query_roots,
+    set_org_to_demo,
+    set_org_to_report_on,
 )
-from django.core.exceptions import ObjectDoesNotExist
-from django.core import serializers
-from django.contrib import messages
-from django.conf import settings
-from django.contrib.auth.decorators import login_required
-from django.contrib.auth.models import User
-from django.urls import reverse_lazy
-from django.contrib.auth import logout
-from django.contrib.auth.mixins import LoginRequiredMixin
-from django.template.loader import render_to_string
-from docx import Document
-from docxtpl import DocxTemplate
-import io
-import pandas as pd
-from bs4 import BeautifulSoup
+from pe_source.data.sixgill.api import setNewCSGOrg
+
+from .forms import (
+    GenerateWeeklyStatusReportingForm,
+    PeBulkUpload,
+    UpdateWeeklyStatusesForm,
+    WeeklyStatusesForm,
+)
 
 # TODO: Figure out circular referance on import
 # from pe_source.data.sixgill.api import setOrganizationUsers, \
 #     setOrganizationDetails
 from .models import Organizations, WeeklyStatuses
-from .forms import GatherStakeholderForm, WeeklyStatusesForm, UpdateWeeklyStatusesForm, GenerateWeeklyStatusReportingForm, PeBulkUpload
-import requests
 
-# cisagov Libraries
-from pe_reports.data.db_query import (
-    check_org_exists,
-    get_cidrs_and_ips,
-    insert_roots,
-    set_org_to_demo,
-    set_org_to_report_on,
-    query_roots,
-    query_org_cidrs
-)
-from pe_asm.helpers.enumerate_subs_from_root import get_subdomains
-from pe_asm.helpers.fill_cidrs_from_cyhy_assets import fill_cidrs
-from pe_asm.helpers.fill_ips_from_cidrs import fill_ips_from_cidrs
-from pe_asm.helpers.link_subs_and_ips_from_ips import connect_subs_from_ips
-from pe_asm.helpers.link_subs_and_ips_from_subs import connect_ips_from_subs
-from pe_asm.helpers.shodan_dedupe import dedupe
-# from pe_source.data.sixgill.api import setNewCSGOrg
 LOGGER = logging.getLogger(__name__)
+
+MAILER_ARN = os.environ.get("MAILER_ARN")
 
 
 # Create your views here.
 
 
 def getUserKey():
+    """Get a users API key."""
     urlIDs = "http://127.0.0.1:8089/apiv1/get_key"
     payload = json.dumps({"refresh_token": f'{config("USER_REFRESH_TOKEN")}'})
     headers = {
@@ -87,10 +96,13 @@ def getUserKey():
 theCurrentUserKey = getUserKey()
 # print(f'The current key is {theCurrentUserKey}')
 theSavedUserKey = config("API_KEY")
+
+
 # # print(f'The saved key is {theSavedUserKey}')
 #
 #
 def updateAPIKey(theSavedUserKey, theCurrentUserKey):
+    """Update API key."""
     if theSavedUserKey == theCurrentUserKey:
         print("The keys match and nothing happened. ")
     else:
@@ -98,7 +110,7 @@ def updateAPIKey(theSavedUserKey, theCurrentUserKey):
             script_directory = os.path.dirname(os.path.realpath(__name__))
             print(script_directory)
             env_file_path = os.path.join(script_directory, ".env")
-            with open(env_file_path, "r") as f:
+            with open(env_file_path) as f:
                 f.seek(0)
                 data = f.read()
                 dataReplaced = data.replace(theSavedUserKey, theCurrentUserKey)
@@ -108,12 +120,13 @@ def updateAPIKey(theSavedUserKey, theCurrentUserKey):
                     print("The apiKey has been updated.")
                     f.write(dataReplaced)
             return theCurrentUserKey
-        except:
+        except Exception:
             print("Failed to open and write new file.")
 
 
 @login_required
 def index(request):
+    """Render index page."""
     allUsers = Organizations.objects.filter(name="EAC")
     # output = '<br>'.join([c.username for c in customers])
     users = {"user": allUsers}
@@ -122,15 +135,15 @@ def index(request):
 
 @login_required
 def home(request):
+    """Render home page."""
     try:
         return render(request, "home.html")
-    except:
+    except Exception:
         return HttpResponseNotFound("Nothing found")
 
 
 def create_word_document(request):
     """Create a word document."""
-
     accomplishments_list = []
     ongoing_tasks_list = []
     upcoming_tasks_list = []
@@ -146,7 +159,7 @@ def create_word_document(request):
     reformatted_week_ending_date = week_ending_date.strftime("%m-%d-%Y")
 
     # Create a Document object
-    doc = Document()
+    # doc = Document()
 
     weeklyInfo = WeeklyStatuses.objects.filter(week_ending=week_ending_date)
 
@@ -166,9 +179,9 @@ def create_word_document(request):
         non_standard_meeting = status["fields"]["non_standard_meeting"]
         deliverables = status["fields"]["deliverables"]
         pto = status["fields"]["pto"]
-        week_ending = status["fields"]["week_ending"]
+        # week_ending = status["fields"]["week_ending"]
         the_current_user = status["fields"]["user_status"]
-        statusComplete = status["fields"]["statusComplete"]
+        # statusComplete = status["fields"]["statusComplete"]
 
         # Append each status to their respective list
         if accomplishments not in accomplishments_list:
@@ -258,13 +271,12 @@ def email_notification(request):
 
 
 class FetchWeeklyStatusesView(View):
-    """Fetch the weekly statuses from the API
-    and pass to Weekly Statuses template"""
+    """Fetch the weekly statuses from the API and pass to Weekly Statuses template."""
 
     updateAPIKey(theSavedUserKey, theCurrentUserKey)
 
     def get(self, request, *args, **kwargs):
-
+        """Get weekly status views."""
         url = "http://127.0.0.1:8089/apiv1/fetch_weekly_statuses"
         headers = {
             "Content-Type": "application/json",
@@ -272,7 +284,6 @@ class FetchWeeklyStatusesView(View):
         }
 
         try:
-
             response = requests.post(url, headers=headers)
             response.raise_for_status()  # Raise an exception if the response contains an HTTP error status
             data = response.json()
@@ -292,63 +303,69 @@ class FetchWeeklyStatusesView(View):
         # Return an error JsonResponse if an exception occurs
         return JsonResponse({"error": "Failed to fetch weekly statuses"}, status=400)
 
-def send_email_with_attachment(subject,
-                               body_text,
-                               from_email,
-                               to_emails,
-                               attachment,
-                               aws_region='us-east-1',
-                               cc_emails=None,
-                               bcc_emails=None,
-                               body_html=None):
+
+def send_email_with_attachment(
+    subject,
+    body_text,
+    from_email,
+    to_emails,
+    attachment,
+    aws_region="us-east-1",
+    cc_emails=None,
+    bcc_emails=None,
+    body_html=None,
+):
+    """Send email with attachment."""
     # Create a new SES resource and specify a region.
-    session = boto3.Session(profile_name='cool-dns-sessendemail-cyber.dhs.gov')
-    client = session.client('ses', region_name=aws_region)
+    session = boto3.Session(profile_name="cool-dns-sessendemail-cyber.dhs.gov")
+    client = session.client("ses", region_name=aws_region)
 
     # Assume role to use mailer
-    sts_client = boto3.client('sts')
+    sts_client = boto3.client("sts")
     assumed_role_object = sts_client.assume_role(
-        RoleArn=MAILER_ARN,
-        RoleSessionName="AssumeRoleSession1"
+        RoleArn=MAILER_ARN, RoleSessionName="AssumeRoleSession1"
     )
-    credentials = assumed_role_object['Credentials']
+    credentials = assumed_role_object["Credentials"]
 
-    ses_client = boto3.client("ses",
-                              region_name="us-east-1",
-                              aws_access_key_id=credentials['AccessKeyId'],
-                              aws_secret_access_key=credentials[
-                                  'SecretAccessKey'],
-                              aws_session_token=credentials['SessionToken']
-                              )
+    ses_client = boto3.client(
+        "ses",
+        region_name="us-east-1",
+        aws_access_key_id=credentials["AccessKeyId"],
+        aws_secret_access_key=credentials["SecretAccessKey"],
+        aws_session_token=credentials["SessionToken"],
+    )
+
+    LOGGER.info(ses_client)
 
     # Create a multipart/mixed parent container.
-    msg = MIMEMultipart('mixed')
+    msg = MIMEMultipart("mixed")
     # Add subject, from and to lines.
-    msg['Subject'] = subject
-    msg['From'] = from_email
-    msg['To'] = to_emails
-    msg['Cc'] = ', '.join(cc_emails) if cc_emails is not None else ''
-    msg['Bcc'] = ', '.join(bcc_emails) if bcc_emails is not None else ''
+    msg["Subject"] = subject
+    msg["From"] = from_email
+    msg["To"] = to_emails
+    msg["Cc"] = ", ".join(cc_emails) if cc_emails is not None else ""
+    msg["Bcc"] = ", ".join(bcc_emails) if bcc_emails is not None else ""
 
     # Create a multipart/alternative child container.
-    msg_body = MIMEMultipart('alternative')
+    msg_body = MIMEMultipart("alternative")
 
     # Encode the text and HTML content and set the character encoding. This step is
     # necessary if you're sending a message with characters outside the ASCII range.
-    textpart = MIMEText(body_text.encode('utf-8'), 'plain', 'utf-8')
+    textpart = MIMEText(body_text.encode("utf-8"), "plain", "utf-8")
     msg_body.attach(textpart)
 
     if body_html is not None:
-        htmlpart = MIMEText(body_html.encode('utf-8'), 'html', 'utf-8')
+        htmlpart = MIMEText(body_html.encode("utf-8"), "html", "utf-8")
         msg_body.attach(htmlpart)
 
     # Define the attachment part and encode it using MIMEApplication.
-    att = MIMEApplication(open(attachment, 'rb').read())
+    att = MIMEApplication(open(attachment, "rb").read())
 
     # Add a header to tell the email client to treat this part as an attachment,
     # and to give the attachment a name.
-    att.add_header('Content-Disposition', 'attachment',
-                   filename=os.path.basename(attachment))
+    att.add_header(
+        "Content-Disposition", "attachment", filename=os.path.basename(attachment)
+    )
 
     # Attach the multipart/alternative child container to the multipart/mixed
     # parent container.
@@ -365,36 +382,39 @@ def send_email_with_attachment(subject,
     try:
         # Provide the contents of the email.
         response = client.send_raw_email(
-            Source=msg['From'],
-            Destinations=[
-                msg['To']
-            ],
+            Source=msg["From"],
+            Destinations=[msg["To"]],
             RawMessage={
-                'Data': msg.as_string(),
-            }
+                "Data": msg.as_string(),
+            },
         )
     # Display an error if something goes wrong.
     except ClientError as e:
-        print(e.response['Error']['Message'] + " The email was not sent.")
+        print(e.response["Error"]["Message"] + " The email was not sent.")
     else:
         print("Email sent! Message ID:"),
-        print(response['MessageId'])
+        print(response["MessageId"])
 
 
 class StatusView(TemplateView):
+    """Status view class."""
+
     template_name = "weeklyStatus.html"
 
 
 class StatusForm(LoginRequiredMixin, FormView):
+    """Status form class."""
+
     form_class = WeeklyStatusesForm
     second_form_class = GenerateWeeklyStatusReportingForm
     template_name = "weeklyStatus.html"
     form_only_template_name = "weeklyStatusFormOnly.html"
-    status_report_archive_dir = os.path.join(settings.BASE_DIR,
-                                             'home/statusReportArchive')
-    print(f'The file dir is {status_report_archive_dir}')
-    filesWSR = glob.glob(os.path.join(status_report_archive_dir, '*.docx'))
-    #Check if the list of files is empty
+    status_report_archive_dir = os.path.join(
+        settings.BASE_DIR, "home/statusReportArchive"
+    )
+    print(f"The file dir is {status_report_archive_dir}")
+    filesWSR = glob.glob(os.path.join(status_report_archive_dir, "*.docx"))
+    # Check if the list of files is empty
     if not filesWSR:
         print("No files in directory")
     else:
@@ -404,16 +424,19 @@ class StatusForm(LoginRequiredMixin, FormView):
     success_url = reverse_lazy("weekly_status")
 
     def get_form_kwargs(self):
-        kwargs = super(StatusForm, self).get_form_kwargs()
+        """Get form arguments."""
+        kwargs = super().get_form_kwargs()
         kwargs["user"] = self.request.user
         return kwargs
 
     def get_context_data(self, **kwargs):
+        """Get context data."""
         context = super().get_context_data(**kwargs)
-        context['second_form'] = self.second_form_class()
+        context["second_form"] = self.second_form_class()
         return context
 
     def get(self, request, *args, **kwargs):
+        """Call get request."""
         if request.headers.get("X-Requested-With") == "XMLHttpRequest":
             form = self.form_class()
             form_html = render_to_string(
@@ -424,6 +447,7 @@ class StatusForm(LoginRequiredMixin, FormView):
             return super().get(request, *args, **kwargs)
 
     def post(self, request, *args, **kwargs):
+        """Call post request."""
         form = self.get_form()
         second_form = self.second_form_class(request.POST)
         if form.is_valid() or second_form.is_valid():
@@ -432,31 +456,32 @@ class StatusForm(LoginRequiredMixin, FormView):
             return self.form_invalid(form, second_form)
 
     def form_valid(self, form, second_form):
+        """Check if form is valid."""
         if form.is_valid():
             current_date = datetime.now()
             days_to_week_end = (4 - current_date.weekday()) % 7
             week_ending_date = current_date + timedelta(days=days_to_week_end)
 
-            key_accomplishments = form.cleaned_data['key_accomplishments'].upper()
-            ongoing_task = form.cleaned_data['ongoing_task'].upper()
-            upcoming_task = form.cleaned_data['upcoming_task'].upper()
-            obstacles = form.cleaned_data['obstacles'].upper()
-            non_standard_meeting = form.cleaned_data['non_standard_meeting'].upper()
-            deliverables = form.cleaned_data['deliverables'].upper()
-            pto = form.cleaned_data['pto_time'].upper()
+            key_accomplishments = form.cleaned_data["key_accomplishments"].upper()
+            ongoing_task = form.cleaned_data["ongoing_task"].upper()
+            upcoming_task = form.cleaned_data["upcoming_task"].upper()
+            obstacles = form.cleaned_data["obstacles"].upper()
+            non_standard_meeting = form.cleaned_data["non_standard_meeting"].upper()
+            deliverables = form.cleaned_data["deliverables"].upper()
+            pto = form.cleaned_data["pto_time"].upper()
 
             weeklyStatus, created = WeeklyStatuses.objects.get_or_create(
                 week_ending=week_ending_date,
                 user_status=self.request.user.first_name,
                 defaults={
-                    'key_accomplishments': key_accomplishments,
-                    'ongoing_task': ongoing_task,
-                    'upcoming_task': upcoming_task,
-                    'obstacles': obstacles,
-                    'non_standard_meeting': non_standard_meeting,
-                    'deliverables': deliverables,
-                    'pto': pto,
-                }
+                    "key_accomplishments": key_accomplishments,
+                    "ongoing_task": ongoing_task,
+                    "upcoming_task": upcoming_task,
+                    "obstacles": obstacles,
+                    "non_standard_meeting": non_standard_meeting,
+                    "deliverables": deliverables,
+                    "pto": pto,
+                },
             )
 
             if not created:
@@ -469,29 +494,34 @@ class StatusForm(LoginRequiredMixin, FormView):
                 weeklyStatus.pto = pto
                 weeklyStatus.save()
 
-            messages.success(self.request,
-                             f'The weekly status was saved successfully.')
+            messages.success(self.request, "The weekly status was saved successfully.")
 
         if second_form.is_valid():
             toemail = "craig.duhn@associates.cisa.dhs.gov"
             fromemail = "pe_automation@cisa.dhs.gov"
-            date = second_form.cleaned_data['date']
+            date = second_form.cleaned_data["date"]
             create_word_document(date, self.request)
-            theawsregion = 'us-east-1'
-            send_email_with_attachment("WSR Attached",
-                                       "The WSR is attached",
-                                       from_email=fromemail,
-                                       to_emails=toemail,
-                                       attachment=self.most_recent_file)
+            # theawsregion = "us-east-1"
+            send_email_with_attachment(
+                "WSR Attached",
+                "The WSR is attached",
+                from_email=fromemail,
+                to_emails=toemail,
+                attachment=self.most_recent_file,
+            )
 
         return super().form_valid(form)
 
 
 class updateStatusView(TemplateView):
+    """Class to update status view."""
+
     template_name = "weeklyStatusFormOnly.html"
 
 
 class updateStatusForm(LoginRequiredMixin, FormView):
+    """Class to update Status form."""
+
     form_class = UpdateWeeklyStatusesForm
     template_name = "weeklyStatusFormOnly.html"
     form_only_template_name = "weeklyStatusFormOnly.html"
@@ -499,11 +529,13 @@ class updateStatusForm(LoginRequiredMixin, FormView):
     success_url = reverse_lazy("weekly_status")
 
     def get_form_kwargs(self):
+        """Get form arguments."""
         kwargs = super(StatusForm, self).get_form_kwargs()
         kwargs["user"] = self.request.user
         return kwargs
 
     def get(self, request, *args, **kwargs):
+        """Call form get method."""
         if request.headers.get("X-Requested-With") == "XMLHttpRequest":
             form = self.form_class()
             form_html = render_to_string(
@@ -514,6 +546,7 @@ class updateStatusForm(LoginRequiredMixin, FormView):
             return super().get(request, *args, **kwargs)
 
     def form_valid(self, form):
+        """Validate form."""
         current_date = datetime.now()
         days_to_week_end = (4 - current_date.weekday()) % 7
         week_ending_date = current_date + timedelta(days=days_to_week_end)
@@ -550,15 +583,17 @@ class updateStatusForm(LoginRequiredMixin, FormView):
             weeklyStatus.pto = pto
             weeklyStatus.save()
 
-        messages.success(self.request, f"The weekly status was saved successfully.")
+        messages.success(self.request, "The weekly status was saved successfully.")
         return super().form_valid(form)
 
 
 class WeeklyStatusesFormOnlyView(updateStatusForm):
+    """Weekly status form only view."""
+
     template_name = "weeklyStatusFormOnly.html"
 
     def get(self, request, *args, **kwargs):
-
+        """Get form view."""
         # Fetch the most recent instance of the model for this user
         weekly_status = WeeklyStatuses.objects.filter(
             user_status=request.user.first_name
@@ -585,6 +620,7 @@ class WeeklyStatusesFormOnlyView(updateStatusForm):
         return JsonResponse({"form_html": form_html})
 
     def post(self, request, *args, **kwargs):
+        """Post Weekly Status."""
         print("Getting to update post at WeeklyStatusesFormOnlyView")
         form = self.form_class(request.POST, user=request.user)
         if form.is_valid():
@@ -599,13 +635,12 @@ class WeeklyStatusesFormOnlyView(updateStatusForm):
 
 
 class FetchUserWeeklyStatusesView(View):
-    """Fetch the weekly statuses from the API
-    and pass to Weekly Statuses template"""
+    """Fetch the weekly statuses from the API and pass to Weekly Statuses template."""
 
     updateAPIKey(theSavedUserKey, theCurrentUserKey)
 
     def get(self, request, *args, **kwargs):
-
+        """Call get method for form."""
         url = "http://127.0.0.1:8089/apiv1/fetch_user_weekly_statuses/"
         headers = {
             "Content-Type": "application/json",
@@ -614,7 +649,6 @@ class FetchUserWeeklyStatusesView(View):
         payload = json.dumps({"user_fname": request.user.first_name})
 
         try:
-
             response = requests.post(url, headers=headers, data=payload)
             response.raise_for_status()  # Raise an exception if the response contains an HTTP error status
             data = response.json()
@@ -633,6 +667,7 @@ class FetchUserWeeklyStatusesView(View):
 
         # Return an error JsonResponse if an exception occurs
         return JsonResponse({"error": "Failed to fetch weekly statuses"}, status=400)
+
 
 def theExecs(URL):
     """Fetch executives from about page."""
@@ -663,11 +698,11 @@ def theExecs(URL):
                     final_exec_list.append(hy[1])
     return final_exec_list
 
+
 def add_stakeholders(request, orgs_df):
     """Add each stakeholder to P&E infrastructure."""
     count = 0
     for org_index, org_row in orgs_df.iterrows():
-
         # Check if org is in the P&E database
         org_exists = check_org_exists(org_row["org_code"])
         if not org_exists:
@@ -702,14 +737,6 @@ def add_stakeholders(request, orgs_df):
             LOGGER.info("Filling all cidrs:")
             fill_cidrs(new_org_df, False)
             LOGGER.info("Finished filling all cidrs.")
-
-            # Fill IPs from CIDRS
-            LOGGER.info("Filling IPs from CIDRs:")
-            LOGGER.info(new_org_df["organizations_uid"].iloc[0])
-            cidrs_df = query_org_cidrs(new_org_df["organizations_uid"].iloc[0])
-            LOGGER.info(cidrs_df)
-            fill_ips_from_cidrs(False, cidrs_df)
-            LOGGER.info("Finished filling IPs from CIDRs.")
 
             # Connect to subs and IPs from subs table (only new orgs)
             LOGGER.info("Connecting IPs from Subs:")
@@ -751,11 +778,11 @@ def add_stakeholders(request, orgs_df):
             dedupe(False, new_org_df)
             LOGGER.info("Finished running shodan dedupe.")
 
-            LOGGER.info("Completely done with %s", org_row['org_code'])
+            LOGGER.info("Completely done with %s", org_row["org_code"])
             count += 1
         except Exception as e:
             LOGGER.info(e)
-            LOGGER.error("%s failed.", org_row['org_code'])
+            LOGGER.error("%s failed.", org_row["org_code"])
             LOGGER.error(traceback.format_exc())
             continue
     LOGGER.info(f"Finished {count} orgs.")
@@ -763,10 +790,11 @@ def add_stakeholders(request, orgs_df):
 
 
 class PeBulkUploadView(TemplateView):
-    """CBV route to bulk upload page"""
+    """CBV route to bulk upload page."""
 
     template_name = "stakeholder/stakeholder.html"
     form_class = PeBulkUpload
+
 
 class PeBulkUploadForm(LoginRequiredMixin, FormView):
     """Upload P&E stakeholders through CSV."""
@@ -777,8 +805,7 @@ class PeBulkUploadForm(LoginRequiredMixin, FormView):
     success_url = reverse_lazy("peBulkUpload")
 
     def form_valid(self, form):
-        """Validate form data"""
-
+        """Validate form data."""
         csv_file = form.cleaned_data["file"]
 
         df = pd.read_csv(csv_file.file)
@@ -793,18 +820,17 @@ class PeBulkUploadForm(LoginRequiredMixin, FormView):
             "exec_url",
             "aliases",
             "premium",
-            "demo"
+            "demo",
         ]
 
         # Check needed columns exist
-        req_col = ""
+        # req_col = ""
 
         incorrect_col = []
         testtheList = [i for i in required_columns if i in uploaded_columns]
         # LOGGER.info(testtheList)
 
         if len(testtheList) == len(uploaded_columns):
-
             messages.success(self.request, "The file was uploaded successfully.")
 
             self.process_item(df)
@@ -826,8 +852,5 @@ class PeBulkUploadForm(LoginRequiredMixin, FormView):
 
     def process_item(self, df):
         """Upload each stakeholder into the P&E infrastructure."""
-
         LOGGER.info(df["org_code"])
         add_stakeholders(self.request, df)
-
-

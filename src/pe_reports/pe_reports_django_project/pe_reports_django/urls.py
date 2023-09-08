@@ -1,4 +1,4 @@
-"""pe_reports_django URL Configuration
+"""pe_reports_django URL Configuration.
 
 The `urlpatterns` list routes URLs to views. For more information please see:
     https://docs.djangoproject.com/en/4.1/topics/http/urls/
@@ -13,21 +13,16 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
+# Third-Party Libraries
 from django.contrib import admin
-from django.urls import path, include
-from django.http import HttpResponse
-
+from django.urls import include, path
 
 urlpatterns = [
-    path('', include('home.urls')),
-    path('login/', include('manage_login.urls')),
-    path('logout/', include('manage_login.urls')),
+    path("", include("home.urls")),
+    path("login/", include("manage_login.urls")),
+    path("logout/", include("manage_login.urls")),
     # path("accounts/", include("django.contrib.auth.urls")),
-    path('report_gen/', include('report_gen.urls')),
+    path("report_gen/", include("report_gen.urls")),
     path("admin/", admin.site.urls),
-    path("stakeholder_lite/", include('stakeholder_lite.urls')),
-    path("bulkupload/", include('bulkupload.urls')),
-
+    path("bulkupload/", include("bulkupload.urls")),
 ]
-
-

@@ -10,16 +10,15 @@ import pandas as pd
 import shodan
 
 # cisagov Libraries
-from pe_reports.data.db_query import execute_values, get_orgs_df
-from pe_source.data.pe_db.config import shodan_api_init
 from pe_asm.data.cyhy_db_query import (
     pe_db_connect,
     pe_db_staging_connect,
-    query_pe_report_on_orgs,
     query_cidrs_by_org,
-    update_shodan_ips,
     query_floating_ips,
+    query_pe_report_on_orgs,
+    update_shodan_ips,
 )
+from pe_source.data.pe_db.config import shodan_api_init
 
 LOGGER = logging.getLogger(__name__)
 
@@ -194,15 +193,7 @@ def ip_dedupe(api, ips, agency_type, conn):
                 hash_object = hashlib.sha256(str(h["ip_str"]).encode("utf-8"))
                 ip_hash = hash_object.hexdigest()
                 if state and agency_type == "FEDERAL":
-                    float_ips.append(
-                        {
-                            "ip_hash": ip_hash,
-                            "ip": h["ip_str"],
-                            "shodan_results": False,
-                            "origin_cidr": None,
-                            "current": True,
-                        }
-                    )
+                    continue
                 else:
                     float_ips.append(
                         {
@@ -218,15 +209,7 @@ def ip_dedupe(api, ips, agency_type, conn):
             hash_object = hashlib.sha256(str(hosts["ip_str"]).encode("utf-8"))
             ip_hash = hash_object.hexdigest()
             if state and agency_type == "FEDERAL":
-                float_ips.append(
-                    {
-                        "ip_hash": ip_hash,
-                        "ip": hosts["ip_str"],
-                        "shodan_results": False,
-                        "origin_cidr": None,
-                        "current": True,
-                    }
-                )
+                continue
             else:
                 float_ips.append(
                     {
@@ -266,15 +249,7 @@ def search(api, query, ip_obj, cidr_uid, org_type):
             hash_object = hashlib.sha256(str(result["ip_str"]).encode("utf-8"))
             ip_hash = hash_object.hexdigest()
             if state and org_type == "FEDERAL":
-                ip_obj.append(
-                    {
-                        "ip_hash": ip_hash,
-                        "ip": result["ip_str"],
-                        "shodan_results": False,
-                        "origin_cidr": cidr_uid,
-                        "current": True,
-                    }
-                )
+                continue
             else:
                 ip_obj.append(
                     {
@@ -305,15 +280,7 @@ def search(api, query, ip_obj, cidr_uid, org_type):
                     hash_object = hashlib.sha256(str(result["ip_str"]).encode("utf-8"))
                     ip_hash = hash_object.hexdigest()
                     if state and org_type == "FEDERAL":
-                        ip_obj.append(
-                            {
-                                "ip_hash": ip_hash,
-                                "ip": result["ip_str"],
-                                "shodan_results": False,
-                                "origin_cidr": cidr_uid,
-                                "current": True,
-                            }
-                        )
+                        continue
                     else:
                         ip_obj.append(
                             {

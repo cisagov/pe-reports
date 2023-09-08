@@ -433,7 +433,8 @@ def get_cidrs_and_ips(org_uid):
     conn = psycopg2.connect(**params)
     cur = conn.cursor()
     sql = """SELECT network from cidrs where
-        organizations_uid = %s;"""
+        organizations_uid = %s
+        and current;"""
     cur.execute(sql, [org_uid])
     cidrs = cur.fetchall()
     sql = """
@@ -443,7 +444,9 @@ def get_cidrs_and_ips(org_uid):
     join sub_domains sd on sd.sub_domain_uid = ip_s.sub_domain_uid
     join root_domains rd on rd.root_domain_uid = sd.root_domain_uid
     WHERE rd.organizations_uid = %s
-    AND i.origin_cidr is null;
+    AND i.origin_cidr is null
+    and i.current
+    and sd.current;
     """
     cur.execute(sql, [org_uid])
     ips = cur.fetchall()
@@ -453,38 +456,6 @@ def get_cidrs_and_ips(org_uid):
     cidrs_ips = validateIP(cidrs_ips)
     LOGGER.info(cidrs_ips)
     return cidrs_ips
-
-
-def query_ips(org_uid):
-    """Get IP data."""
-    conn = connect()
-    sql1 = """SELECT i.ip_hash, i.ip, ct.network FROM ips i
-    JOIN cidrs ct on ct.cidr_uid = i.origin_cidr
-    JOIN organizations o on o.organizations_uid = ct.organizations_uid
-    where o.organizations_uid = %(org_uid)s
-    and i.origin_cidr is not null;"""
-    df1 = pd.read_sql(sql1, conn, params={"org_uid": org_uid})
-    ips1 = list(df1["ip"].values)
-
-    sql2 = """select i.ip_hash, i.ip
-    from ips i
-    join ips_subs is2 ON i.ip_hash = is2.ip_hash
-    join sub_domains sd on sd.sub_domain_uid = is2.sub_domain_uid
-    join root_domains rd on rd.root_domain_uid = sd.root_domain_uid
-    JOIN organizations o on o.organizations_uid = rd.organizations_uid
-    where o.organizations_uid = %(org_uid)s;"""
-    df2 = pd.read_sql(sql2, conn, params={"org_uid": org_uid})
-    ips2 = list(df2["ip"].values)
-
-    in_first = set(ips1)
-    in_second = set(ips2)
-
-    in_second_but_not_in_first = in_second - in_first
-
-    ips = ips1 + list(in_second_but_not_in_first)
-    conn.close()
-
-    return ips
 
 
 def query_extra_ips(org_uid):
@@ -497,7 +468,8 @@ def query_extra_ips(org_uid):
     join sub_domains sd on sd.sub_domain_uid = is2.sub_domain_uid
     join root_domains rd on rd.root_domain_uid = sd.root_domain_uid
     JOIN organizations o on o.organizations_uid = rd.organizations_uid
-    where o.organizations_uid = %(org_uid)s and i.origin_cidr is null;"""
+    where o.organizations_uid = %(org_uid)s and i.origin_cidr is null
+    and i.current and sd.current;"""
     df = pd.read_sql(sql2, conn, params={"org_uid": org_uid})
     ips = list(set(list(df["ip"].values)))
 

@@ -1,54 +1,48 @@
+"""Django Bulkupload views."""
 # Third party imports
-from django.http import HttpResponseRedirect
-from django.views.generic import TemplateView
-from django.views.generic.edit import FormView
-from django.urls import reverse_lazy
-from django.core.validators import FileExtensionValidator, ValidationError
-from django.contrib import messages
-from django.contrib.auth.mixins import LoginRequiredMixin
-from django.db import DataError
-from bs4 import BeautifulSoup
-import spacy
+# Standard Python Libraries
+import csv
+from io import TextIOWrapper
 
 # Standard Python
 import logging
-import csv
-import traceback
-from io import TextIOWrapper
 import re
-import requests
-from datetime import datetime
+import traceback
 
-
-# CISA Imports
-from .forms import CSVUploadForm
+# Third-Party Libraries
+from bs4 import BeautifulSoup
+from django.contrib import messages
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.db import DataError
+from django.urls import reverse_lazy
+from django.views.generic import TemplateView
+from django.views.generic.edit import FormView
 from home.models import WasTrackerCustomerdata
+import pandas as pd
+import requests
+import spacy
+
+# cisagov Libraries
+from pe_asm.data.cyhy_db_query import pe_db_connect, query_roots
+from pe_asm.helpers.enumerate_subs_from_root import enumerate_roots, insert_sub_domains
+from pe_asm.helpers.fill_cidrs_from_cyhy_assets import fill_cidrs
+from pe_asm.helpers.link_subs_and_ips_from_ips import connect_subs_from_ips
+from pe_asm.helpers.link_subs_and_ips_from_subs import connect_ips_from_subs
+from pe_asm.helpers.shodan_dedupe import dedupe
 from pe_reports.data.db_query import (
     get_cidrs_and_ips,
     insert_roots,
     set_org_to_demo,
     set_org_to_report_on,
 )
-
-from pe_asm.helpers.enumerate_subs_from_root import (
-    enumerate_roots,
-    insert_sub_domains,
-)
-from pe_asm.data.cyhy_db_query import (
-    pe_db_connect,
-    query_roots,
-)
-
-from pe_asm.helpers.fill_cidrs_from_cyhy_assets import fill_cidrs
-from pe_asm.helpers.fill_ips_from_cidrs import fill_ips_from_cidrs
-from pe_asm.helpers.link_subs_and_ips_from_ips import connect_subs_from_ips
-from pe_asm.helpers.link_subs_and_ips_from_subs import connect_ips_from_subs
-from pe_asm.helpers.shodan_dedupe import dedupe
 from pe_source.data.sixgill.api import setNewCSGOrg
+
+# CISA Imports
+from .forms import CSVUploadForm
 
 LOGGER = logging.getLogger(__name__)
 
-# nlp = spacy.load("en_core_web_lg")
+nlp = spacy.load("en_core_web_lg")
 
 
 def theExecs(URL):
@@ -149,9 +143,6 @@ def add_stakeholders(orgs_df):
                     allExecutives,
                 )
 
-            # Fill IPs table by enumerating CIDRs (all orgs)
-            fill_ips_from_cidrs()
-
             # Run Shodan dedupe script
             logging.info("Running Shodan dedupe:")
             dedupe(new_org_df)
@@ -168,14 +159,14 @@ def add_stakeholders(orgs_df):
 
 
 class CustomCSVView(TemplateView):
-    """CBV route to bulk upload page"""
+    """CBV route to bulk upload page."""
 
     template_name = "bulk_upload/upload.html"
     form_class = CSVUploadForm
 
 
 class CustomCSVForm(LoginRequiredMixin, FormView):
-    """CBV form bulk upload csv file with file extension and header validation"""
+    """CBV form bulk upload csv file with file extension and header validation."""
 
     form_class = CSVUploadForm
     template_name = "bulk_upload/upload.html"
@@ -183,8 +174,7 @@ class CustomCSVForm(LoginRequiredMixin, FormView):
     success_url = reverse_lazy("bulkupload")
 
     def form_valid(self, form):
-        """Validate form data"""
-
+        """Validate form data."""
         csv_file = form.cleaned_data["file"]
 
         f = TextIOWrapper(csv_file.file)
@@ -217,15 +207,11 @@ class CustomCSVForm(LoginRequiredMixin, FormView):
             "child_tags",
         ]
 
-        # Check needed columns exist
-        req_col = ""
-
         incorrect_col = []
         testtheList = [i for i in required_columns if i in dict_reader2]
         # LOGGER.info(testtheList)
 
         if len(testtheList) == len(dict_reader2):
-
             messages.success(self.request, "The file was uploaded successfully.")
 
             self.process_item(dict_reader)
@@ -247,7 +233,6 @@ class CustomCSVForm(LoginRequiredMixin, FormView):
 
     def process_item(self, dict):
         """Delete all data and replace with the data from the file that is getting uploaded."""
-
         if WasTrackerCustomerdata.objects.exists():
             LOGGER.info("There was data that was deleted from the WAS table.")
             WasTrackerCustomerdata.objects.all().delete()

@@ -3,20 +3,19 @@
 
 # Standard Python Libraries
 import datetime
+import json
 import logging
 import sys
-import requests
-import json
 import time
 
 # Third-Party Libraries
 import pandas as pd
 import psycopg2
-from psycopg2 import OperationalError
+from psycopg2 import OperationalError, sql
 from psycopg2.extensions import AsIs
-from psycopg2 import sql
+import requests
 
-from .config import config, staging_config
+from .config import config
 
 # from pe_reports.data.cyhy_db_query import pe_db_staging_connect as connect
 
@@ -37,7 +36,7 @@ pe_api_url = CONN_PARAMS_DIC.get("pe_api_url")
 
 def task_api_call(task_url, check_url, data={}, retry_time=3):
     """
-    Query tasked endpoint given task_url and check_url
+    Query tasked endpoint given task_url and check_url.
 
     Return:
         Endpoint result
@@ -96,7 +95,6 @@ def connect():
     try:
         conn = psycopg2.connect(**CONN_PARAMS_DIC)
     except OperationalError as err:
-
         show_psycopg2_exception(err)
         conn = None
     return conn
@@ -241,7 +239,10 @@ def query_ips_counts(org_uid_list):
     # discovered_ips_df = pd.read_sql(sql, conn, params={"org_list": tuple(org_uid_list)})
 
     sql = """
-         SELECT * from mat_vw_fceb_total_ips
+         SELECT organizations_uid, cyhy_db_name,
+         cidr_ips as cidr_reported,
+         identified_ips as ip_discovered,
+         num_ips as total_ips from vw_org_total_ips
          where organizations_uid in %(org_list)s
     """
     ips_df = pd.read_sql(sql, conn, params={"org_list": tuple(org_uid_list)})
@@ -2174,6 +2175,7 @@ def api_xl_stakeholders():
 # api functions called in generate_d_score.py and generate_i_score.py to the
 # old query_...() TSQL functions below.
 
+
 # ---------- D-Score SQL Queries ----------
 # ----- VS Cert -----
 def query_dscore_vs_data_cert(org_list):
@@ -2250,11 +2252,11 @@ def query_dscore_pe_data_ip(org_list):
     )
     sql = """
     SELECT
-        sector.organizations_uid, ip.parent_org_uid, ip.num_ident_ip, ip.num_monitor_ip
+        sector.organizations_uid, ip.parent_org_uid, ip.identified_ips as num_ident_ip, ip.identified_ips as num_monitor_ip
     FROM
         (VALUES (%(sector_str)s)) AS sector(organizations_uid)
         LEFT JOIN
-        vw_dscore_pe_ip ip
+        vw_orgs_total_ips ip
         ON sector.organizations_uid = ip.organizations_uid;"""
     dscore_pe_data_ip = pd.read_sql(
         sql,
@@ -2280,9 +2282,9 @@ def query_dscore_pe_data_domain(org_list):
     conn = connect()
     # Build query
     sql = """
-       SELECT  
+       SELECT
             domain.organizations_uid, domain.parent_org_uid, domain.num_ident_domain, domain.num_monitor_domain
-       FROM  
+       FROM
             vw_dscore_pe_domain domain
         Where domain.organizations_uid in %(sector_str)s
     """
@@ -2311,9 +2313,9 @@ def query_dscore_was_data_webapp(org_list):
     conn = connect()
     # Build query
     sql = """
-       SELECT  
+       SELECT
             webapp.organizations_uid, webapp.parent_org_uid, webapp.num_ident_webapp, webapp.num_monitor_webapp
-       FROM  
+       FROM
             vw_dscore_was_webapp webapp
         Where webapp.organizations_uid in %(sector_str)s
     """
@@ -2343,9 +2345,9 @@ def query_iscore_vs_data_vuln(org_list):
     conn = connect()
     # Build query
     sql = """
-       SELECT  
+       SELECT
             vuln.organizations_uid, vuln.parent_org_uid, vuln.cve_name, vuln.cvss_score
-       FROM  
+       FROM
             vw_iscore_vs_vuln vuln
         Where vuln.organizations_uid in %(sector_str)s
     """
@@ -2395,13 +2397,13 @@ def query_iscore_vs_data_vuln_prev(org_list, start_date, end_date):
     conn = connect()
     # Build query
     sql = """
-        SELECT 
+        SELECT
             prev_vuln.organizations_uid, prev_vuln.parent_org_uid, prev_vuln.cve_name, prev_vuln.cvss_score, prev_vuln.time_closed
-        FROM 
+        FROM
             vw_iscore_vs_vuln_prev prev_vuln
-        WHERE 
+        WHERE
             prev_vuln.organizations_uid in %(sector_str)s
-        AND 
+        AND
             prev_vuln.time_closed BETWEEN %(start_date)s AND %(end_date)s;
     """
     # Make query
@@ -2461,7 +2463,7 @@ def query_iscore_pe_data_vuln(org_list, start_date, end_date):
         vw_iscore_pe_vuln vuln
     WHERE
         vuln.organizations_uid in %(sector_str)s
-    AND 
+    AND
         vuln.date BETWEEN %(start_date)s AND %(end_date)s;
     """
     # Make query
@@ -2523,7 +2525,7 @@ def query_iscore_pe_data_cred(org_list, start_date, end_date):
             cred.organizations_uid, cred.parent_org_uid, cred.date, cred.password_creds, cred.total_creds
         FROM
             vw_iscore_pe_cred cred
-        WHERE 
+        WHERE
             cred.organizations_uid in %(sector_str)s
         AND
             date BETWEEN %(start_date)s AND %(end_date)s;
@@ -2579,11 +2581,11 @@ def query_iscore_pe_data_breach(org_list, start_date, end_date):
     conn = connect()
     # Build query
     sql = """
-        SELECT 
+        SELECT
             breach.organizations_uid, breach.parent_org_uid, breach.date, breach.breach_count
         FROM
             vw_iscore_pe_breach breach
-        WHERE 
+        WHERE
             breach.organizations_uid in %(sector_str)s
         AND
             date BETWEEN %(start_date)s AND %(end_date)s;"""
@@ -2636,9 +2638,7 @@ def query_iscore_pe_data_darkweb(org_list, start_date, end_date):
     # Open connection
     conn = connect()
     # Build query
-    sector_str = (
-        "UUID('" + "')), (UUID('".join(org_list["organizations_uid"].tolist()) + "')"
-    )
+
     sql = """
     SELECT
         sector.organizations_uid, darkweb.parent_org_uid, darkweb.alert_type, darkweb.date, darkweb."Count"
@@ -2651,11 +2651,11 @@ def query_iscore_pe_data_darkweb(org_list, start_date, end_date):
         date BETWEEN %(start_date)s AND %(end_date)s OR date = '0001-01-01';"""
 
     sql = """
-        SELECT 
+        SELECT
             darkweb.organizations_uid, darkweb.parent_org_uid, darkweb.alert_type, darkweb.date, darkweb."Count"
         FROM
             vw_iscore_pe_darkweb darkweb
-        WHERE 
+        WHERE
             darkweb.organizations_uid in %(sector_str)s
         AND
         date BETWEEN %(start_date)s AND %(end_date)s OR date = '0001-01-01';"""
@@ -2713,9 +2713,9 @@ def query_iscore_pe_data_protocol(org_list, start_date, end_date):
     sql = """
         SELECT
             protocol.organizations_uid, protocol.parent_org_uid, protocol.port, protocol.ip, protocol.protocol, protocol.protocol_type, protocol.date
-        FROM 
+        FROM
             vw_iscore_pe_protocol protocol
-        WHERE 
+        WHERE
             protocol.organizations_uid in %(sector_str)s
         AND
             date BETWEEN %(start_date)s AND %(end_date)s;
@@ -2834,13 +2834,13 @@ def query_iscore_was_data_vuln_prev(org_list, start_date, end_date):
     conn = connect()
     # Build query
     sql = """
-        SELECT 
+        SELECT
             prev_vuln.organizations_uid, prev_vuln.parent_org_uid, prev_vuln.was_total_vulns_prev, prev_vuln.date
-        FROM 
+        FROM
             vw_iscore_was_vuln_prev prev_vuln
-        WHERE 
+        WHERE
             prev_vuln.organizations_uid in %(sector_str)s
-        AND 
+        AND
             date BETWEEN %(start_date)s AND %(end_date)s;
     """
     # Make query
@@ -2999,7 +2999,7 @@ def query_fceb_status(org_list):
     conn = connect()
     # Build query
     sql = """
-        SELECT 
+        SELECT
             org.organizations_uid, COALESCE(org.fceb, false) as fceb
         FROM organizations org
         WHERE organizations_uid in %(sector_str)s;

@@ -10,7 +10,7 @@ from logging.handlers import RotatingFileHandler
 import os
 
 # Third-Party Libraries
-from celery import Celery
+# from celery import Celery
 from flask import Flask, render_template
 from flask_login import LoginManager
 from flask_migrate import Migrate
@@ -25,7 +25,6 @@ from pe_reports.report_gen.views import report_gen_blueprint
 from pe_reports.stakeholder.views import stakeholder_blueprint
 from pe_reports.stakeholder_bulk_upload.views import stakeholder_bulk_upload_blueprint
 from pe_reports.stakeholder_full.views import stakeholder_full_blueprint
-from pe_reports.stakeholder_lite.views import stakeholder_lite_blueprint
 
 from ._version import __version__  # noqa: F401
 
@@ -84,7 +83,6 @@ __all__ = ["app", "pages", "report_generator", "stylesheet"]
 
 # Register the flask apps
 app.register_blueprint(stakeholder_blueprint)
-app.register_blueprint(stakeholder_lite_blueprint)
 app.register_blueprint(stakeholder_full_blueprint)
 app.register_blueprint(stakeholder_bulk_upload_blueprint)
 app.register_blueprint(report_gen_blueprint)

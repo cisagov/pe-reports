@@ -10,13 +10,16 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.1/ref/settings/
 """
 
-#Python built-in
-from pathlib import Path
-from decouple import config
-import os
-from django.contrib.messages import constants as messages
+# Standard Python Libraries
 import mimetypes
+import os
 
+# Python built-in
+from pathlib import Path
+
+# Third-Party Libraries
+from decouple import config
+from django.contrib.messages import constants as messages
 
 mimetypes.add_type("text/css", ".css", True)
 mimetypes.add_type("text/html", ".html", True)
@@ -29,20 +32,20 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/4.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = config('SECRET_KEY')
+SECRET_KEY = config("SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = ["*"]
 
 MESSAGE_TAGS = {
-        messages.DEBUG: 'alert-secondary',
-        messages.INFO: 'alert-info',
-        messages.SUCCESS: 'alert-success',
-        messages.WARNING: 'alert-warning',
-        messages.ERROR: 'alert-danger',
- }
+    messages.DEBUG: "alert-secondary",
+    messages.INFO: "alert-info",
+    messages.SUCCESS: "alert-success",
+    messages.WARNING: "alert-warning",
+    messages.ERROR: "alert-danger",
+}
 
 
 # Application definition
@@ -59,7 +62,6 @@ INSTALLED_APPS = [
     "home.apps.HomeConfig",
     "manage_login.apps.ManageLoginConfig",
     "report_gen.apps.ReportGenConfig",
-    "stakeholder_lite.apps.StakeholderLiteConfig",
     "crispy_forms",
     "crispy_bootstrap5",
     "whitenoise.runserver_nostatic",
@@ -70,78 +72,67 @@ CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
 
 CRISPY_TEMPLATE_PACK = "bootstrap5"
 
-#When adding more applicaitons be sure to add the new application to the loggers section.
+# When adding more applicaitons be sure to add the new application to the loggers section.
 
 LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'formatters': {
-        'verbose': {
-            'format': '{levelname}'
-                      ' {asctime}'
-                      ' {name}'
-                      ' {funcName}'
-                      ' {process:d}'
-                      ' {thread:d}'
-                      ' {message}',
-            'datefmt': '%Y-%m-%d %I:%M:%S',
-            'style': '{',
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "verbose": {
+            "format": "{levelname}"
+            " {asctime}"
+            " {name}"
+            " {funcName}"
+            " {process:d}"
+            " {thread:d}"
+            " {message}",
+            "datefmt": "%Y-%m-%d %I:%M:%S",
+            "style": "{",
         },
-        'simple': {
-            'format': '{levelname} {message}',
-            'style': '{',
-        },
-    }
-    ,
-    'handlers': {
-        'file': {
-            'level': 'INFO',
-            'class': 'logging.handlers.RotatingFileHandler',
-            'maxBytes': 1024 * 1024 * 15,
-            'backupCount': 10,
-            'filename': './pe_reportsLogFile.log',
-
-            'formatter': 'verbose',
+        "simple": {
+            "format": "{levelname} {message}",
+            "style": "{",
         },
     },
-    'loggers': {
-        'home.views': {
-            'handlers': ['file'],
-            'level': 'INFO',
-            'propagate': True,
+    "handlers": {
+        "file": {
+            "level": "INFO",
+            "class": "logging.handlers.RotatingFileHandler",
+            "maxBytes": 1024 * 1024 * 15,
+            "backupCount": 10,
+            "filename": "./pe_reportsLogFile.log",
+            "formatter": "verbose",
         },
-        'dataAPI.views': {
-            'handlers': ['file'],
-            'level': 'INFO',
-            'propagate': True,
+    },
+    "loggers": {
+        "home.views": {
+            "handlers": ["file"],
+            "level": "INFO",
+            "propagate": True,
         },
-        'stakeholder_lite.views': {
-            'handlers': ['file'],
-            'level': 'INFO',
-            'propagate': True,
+        "dataAPI.views": {
+            "handlers": ["file"],
+            "level": "INFO",
+            "propagate": True,
         },
-        'report_gen.views': {
-            'handlers': ['file'],
-            'level': 'INFO',
-            'propagate': True,
+        "report_gen.views": {
+            "handlers": ["file"],
+            "level": "INFO",
+            "propagate": True,
         },
-        'bulkupload.views': {
-            'handlers': ['file'],
-            'level': 'INFO',
-            'propagate': True,
+        "bulkupload.views": {
+            "handlers": ["file"],
+            "level": "INFO",
+            "propagate": True,
         },
-
     },
 }
 
 ELASTIC_APM = {
-  'SERVICE_NAME': 'PE-ReportsAMP',
-
-  'SECRET_TOKEN': '',
-
-  'SERVER_URL': 'http://localhost:8200',
-
-  'ENVIRONMENT': 'PE-ReportsAccessorEC2',
+    "SERVICE_NAME": "PE-ReportsAMP",
+    "SECRET_TOKEN": "",
+    "SERVER_URL": "http://localhost:8200",
+    "ENVIRONMENT": "PE-ReportsAccessorEC2",
 }
 
 MIDDLEWARE = [
@@ -161,7 +152,7 @@ ROOT_URLCONF = "pe_reports_django.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [os.path.join(BASE_DIR, 'templates')],
+        "DIRS": [os.path.join(BASE_DIR, "templates")],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -183,16 +174,18 @@ WSGI_APPLICATION = "pe_reports_django.wsgi.application"
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql_psycopg2",
-        "NAME": config('database'),
+        "NAME": config("database"),
         "USER": config("user"),
         "PASSWORD": config("password"),
         "HOST": config("host"),
-        "PORT": config("port")
+        "PORT": config("port"),
     }
 }
 
-#Celery settings
-CELERY_BROKER_URL = f"amqp://{config('RABBITMQ_USER')}:{config('RABBITMQ_PASS')}@localhost:5672/"
+# Celery settings
+CELERY_BROKER_URL = (
+    f"amqp://{config('RABBITMQ_USER')}:{config('RABBITMQ_PASS')}@localhost:5672/"
+)
 CELERY_RESULT_BACKEND = "redis://localhost:6379"
 CELERY_RESULT_EXPIRES = 3600
 
@@ -217,7 +210,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LOGIN_URL = "/login/"
 LOGOUT_REDIRECT_URL = "/"
-DJANGO_SETTINGS_MODULE = 'pe_reports_django.settings'
+DJANGO_SETTINGS_MODULE = "pe_reports_django.settings"
 
 
 # Internationalization
@@ -238,15 +231,14 @@ USE_TZ = True
 STATIC_URL = "static/"
 STATICFILES_DIRS = [
     BASE_DIR / "static",
-
 ]
 # STATICFILES_DIRS = (os.path.join(BASE_DIR, 'staticfiles'),)
 # print(STATIC_URL)
 STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_STORAGE = "django.contrib.staticfiles.storage.StaticFilesStorage"
 STATIC_FINDERS = (
-    'django.contrib.staticfiles.finders.FileSystemFinder',
-    'django.contrib.staticfiles.finders.AppDirectoriesFinder',
+    "django.contrib.staticfiles.finders.FileSystemFinder",
+    "django.contrib.staticfiles.finders.AppDirectoriesFinder",
 )
 
 

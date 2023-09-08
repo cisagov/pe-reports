@@ -93,7 +93,8 @@ def get_ips(org_uid):
     JOIN organizations o on o.organizations_uid = rd.organizations_uid
     where o.organizations_uid = %(org_uid)s
     and i.shodan_results is True
-    and sd.current;"""
+    and sd.current
+    and i.current;"""
     df2 = pd.read_sql(sql2, conn, params={"org_uid": org_uid})
     ips2 = list(df2["ip"].values)
 
@@ -135,7 +136,8 @@ def get_ips_dhs(org_uid):
             or o.organizations_uid = '8010f344-f247-11ec-bbbe-02c6a3fe975b'
             or o.organizations_uid = '72e290d8-f247-11ec-ba5a-02c6a3fe975b')
     and i.shodan_results is True
-    and sd.current;"""
+    and sd.current
+    and i.current;"""
     df2 = pd.read_sql(sql2, conn, params={"org_uid": org_uid})
     ips2 = list(df2["ip"].values)
 
@@ -173,7 +175,8 @@ def get_ips_nasa(org_uid):
     where (o.organizations_uid = %(org_uid)s
             or o.organizations_uid = '78aa7d3c-f247-11ec-baf6-02c6a3fe975b')
     and i.shodan_results is True
-    and sd.current;"""
+    and sd.current
+    and i.current;"""
     df2 = pd.read_sql(sql2, conn, params={"org_uid": org_uid})
     ips2 = list(df2["ip"].values)
 
@@ -211,7 +214,8 @@ def get_ips_hhs(org_uid):
     where (o.organizations_uid = %(org_uid)s
             or o.organizations_uid = '8a7d30a4-f247-11ec-bce0-02c6a3fe975b')
     and i.shodan_results is True
-    and sd.current;"""
+    and sd.current
+    and i.current;"""
     df2 = pd.read_sql(sql2, conn, params={"org_uid": org_uid})
     ips2 = list(df2["ip"].values)
 
