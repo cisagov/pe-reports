@@ -1993,6 +1993,82 @@ class CredBreachIntelXTaskResp(BaseModel):
     error: Optional[str] = None
 
 
+# --- insert_sixgill_mentions(), Issue 654 ---
+# Insert multiple records into the mentions table
+class MentionsInsert(BaseModel):
+    """MentionsInsert schema class."""
+
+    organizations_uid: str
+    data_source_uid: str
+    category: str
+    collection_date: str
+    content: str
+    creator: str
+    date: str
+    sixgill_mention_id: str
+    lang: str
+    post_id: str
+    rep_grade: str
+    site: str
+    site_grade: str
+    sub_category: str
+    title: str
+    type: str
+    url: str
+    comments_count: str
+    tags: str
+
+    class Config:
+        """MentionsInsert schema config class."""
+
+        orm_mode = True
+
+
+# --- insert_sixgill_mentions(), Issue 654 ---
+# Insert multiple records into the mentions table, input
+class MentionsInsertInput(BaseModel):
+    """MentionsInsertInput schema class."""
+
+    insert_data: List[MentionsInsert]
+
+    class Config:
+        """MentionsInsertInput schema config class."""
+
+        orm_mode = True
+
+
+# --- insert_sixgill_breaches(), Issue 655 ---
+# Insert multiple records into the credential_breaches table
+class CredBreachesInsert(BaseModel):
+    """CredBreachesInsert schema class."""
+
+    breach_name: str
+    description: str
+    exposed_cred_count: int
+    breach_date: str
+    modified_date: str
+    password_included: bool
+    data_source_uid: str
+
+    class Config:
+        """CredBreachesInsert schema config class."""
+
+        orm_mode = True
+
+
+# --- insert_sixgill_breaches(), Issue 655 ---
+# Insert multiple records into the credential_breaches table, input
+class CredBreachesInsertInput(BaseModel):
+    """CredBreachesInsertInput schema class."""
+
+    insert_data: List[CredBreachesInsert]
+
+    class Config:
+        """CredBreachesInsertInput schema config class."""
+
+        orm_mode = True
+
+
 # --- insert_sixgill_topCVEs(), Issue 657 ---
 # Insert multiple records into the top_cves table
 class TopCVEsInsert(BaseModel):

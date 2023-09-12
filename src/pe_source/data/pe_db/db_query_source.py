@@ -152,118 +152,110 @@ def insert_sixgill_alerts(df):
     cursor.close()
 
 
+# --- 654 ---
 def insert_sixgill_mentions(df):
-    """Insert sixgill mention data."""
-    conn = connect()
+    """
+    Query API to insert multiple records into the mentions table.
+
+    Args:
+        df: Dataframe containing mention data to be inserted
+    """
+    # Endpoint info
+    endpoint_url = pe_api_url + "mentions_insert"
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": pe_api_key,
+    }
+    # Preprocess data and convert to list of dictionaries
+    cols = [
+        "organizations_uid",
+        "data_source_uid",
+        "category",
+        "collection_date",
+        "content",
+        "creator",
+        "date",
+        "sixgill_mention_id",
+        "lang",
+        "post_id",
+        "rep_grade",
+        "site",
+        "site_grade",
+        "sub_category",
+        "title",
+        "type",
+        "url",
+        "comments_count",
+        "tags",
+    ]
     try:
-        df = df[
-            [
-                "organizations_uid",
-                "data_source_uid",
-                "category",
-                "collection_date",
-                "content",
-                "creator",
-                "date",
-                "sixgill_mention_id",
-                "lang",
-                "post_id",
-                "rep_grade",
-                "site",
-                "site_grade",
-                "sub_category",
-                "title",
-                "type",
-                "url",
-                "comments_count",
-                "tags",
-            ]
-        ]
+        df = df[cols]
     except Exception as e:
-        LOGGER.error(e)
-        df = df[
-            [
-                "organizations_uid",
-                "data_source_uid",
-                "category",
-                "collection_date",
-                "content",
-                "creator",
-                "date",
-                "sixgill_mention_id",
-                "lang",
-                "post_id",
-                "rep_grade",
-                "site",
-                "site_grade",
-                "sub_category",
-                "title",
-                "type",
-                "url",
-                "comments_count",
-            ]
-        ]
-    # Remove any "[\x00|NULL]" characters
+        LOGGER.info(e)
+        cols = cols[:-1]
+        df = df[cols]
+        df["tags"] = "NaN"
+    df["collection_date"] = df["collection_date"].astype(str)
+    df["date"] = df["date"].astype(str)
+    # Remove any "[\x00|NULL]" characters if column data type is object
     df = df.apply(
-        lambda col: col.str.replace(r"[\x00|NULL]", "", regex=True)
+        lambda col: col.str.replace(r"(\x00)|(NULL)", "", regex=True)
         if col.dtype == object
         else col
     )
-    table = "mentions"
-    # Create a list of tuples from the dataframe values
-    tuples = [tuple(x) for x in df.to_numpy()]
-    # Comma-separated dataframe columns
-    cols = ",".join(list(df.columns))
-    # SQL query to execute
-    query = """INSERT INTO {}({}) VALUES %s
-    ON CONFLICT (sixgill_mention_id) DO NOTHING;"""
-    cursor = conn.cursor()
+    df_dict_list = df.to_dict("records")
+    data = json.dumps({"insert_data": df_dict_list})
     try:
-        extras.execute_values(
-            cursor,
-            query.format(
-                table,
-                cols,
-            ),
-            tuples,
-        )
-        conn.commit()
-        LOGGER.info("Successfully inserted/updated mention data into PE database.")
-    except (Exception, psycopg2.DatabaseError) as error:
-        LOGGER.error(error)
-        conn.rollback()
-    cursor.close()
+        # Call endpoint
+        result = requests.put(endpoint_url, headers=headers, data=data).json()
+        # Process data and return
+        LOGGER.info(result)
+    except requests.exceptions.HTTPError as errh:
+        LOGGER.error(errh)
+    except requests.exceptions.ConnectionError as errc:
+        LOGGER.error(errc)
+    except requests.exceptions.Timeout as errt:
+        LOGGER.error(errt)
+    except requests.exceptions.RequestException as err:
+        LOGGER.error(err)
+    except json.decoder.JSONDecodeError as err:
+        LOGGER.error(err)
 
 
+# --- 655 ---
 def insert_sixgill_breaches(df):
-    """Insert sixgill breach data."""
-    conn = connect()
-    table = "credential_breaches"
-    # Create a list of tuples from the dataframe values
-    tuples = [tuple(x) for x in df.to_numpy()]
-    # Comma-separated dataframe columns
-    cols = ",".join(list(df.columns))
-    # SQL query to execute
-    query = """INSERT INTO {}({}) VALUES %s
-    ON CONFLICT (breach_name) DO UPDATE SET
-    exposed_cred_count = EXCLUDED.exposed_cred_count,
-    password_included = EXCLUDED.password_included;"""
-    cursor = conn.cursor()
+    """
+    Query API to insert multiple records into the credential_breaches table.
+
+    Args:
+        df: Dataframe containing credential breach data to be inserted
+    """
+    # Endpoint info
+    endpoint_url = pe_api_url + "cred_breaches_insert"
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": pe_api_key,
+    }
+    # Preprocess data and convert to list of dictionaries
+    df["breach_date"] = df["breach_date"].astype(str)
+    df["modified_date"] = df["modified_date"].astype(str)
+    df_dict_list = df.to_dict("records")
+    data = json.dumps({"insert_data": df_dict_list})
     try:
-        extras.execute_values(
-            cursor,
-            query.format(
-                table,
-                cols,
-            ),
-            tuples,
-        )
-        conn.commit()
-        LOGGER.info("Successfully inserted/updated breaches into PE database.")
-    except (Exception, psycopg2.DatabaseError) as error:
-        LOGGER.info(error)
-        conn.rollback()
-    cursor.close()
+        # Call endpoint
+        result = requests.put(endpoint_url, headers=headers, data=data).json()
+        # Process data and return
+        LOGGER.info(result)
+    except requests.exceptions.HTTPError as errh:
+        LOGGER.error(errh)
+    except requests.exceptions.ConnectionError as errc:
+        LOGGER.error(errc)
+    except requests.exceptions.Timeout as errt:
+        LOGGER.error(errt)
+    except requests.exceptions.RequestException as err:
+        LOGGER.error(err)
+    except json.decoder.JSONDecodeError as err:
+        LOGGER.error(err)
 
 
 def get_breaches():

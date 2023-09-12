@@ -3887,6 +3887,128 @@ async def cred_breach_intelx_status(task_id: str, tokens: dict = Depends(get_api
         return {"message": "No api key was submitted"}
 
 
+# --- insert_sixgill_mentions(), Issue 654
+@api_router.put(
+    "/mentions_insert",
+    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    tags=["Insert multiple records into the mentions table."],
+)
+def mentions_insert(
+    data: schemas.MentionsInsertInput, tokens: dict = Depends(get_api_key)
+):
+    """API endpoint to insert multiple records into the mentions table."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # If API key valid, proceed
+            create_ct = 0
+            for record in data.insert_data:
+                # convert to dict
+                record = dict(record)
+                curr_source_inst = DataSource.objects.get(
+                    data_source_uid=record["data_source_uid"]
+                )
+                # Insert each row of data
+                try:
+                    Mentions.objects.get(
+                        sixgill_mention_id=record["sixgill_mention_id"]
+                    )
+                    # If record already exists, do nothing
+                except Mentions.DoesNotExist:
+                    # Otherwise, create new record
+                    Mentions.objects.create(
+                        mentions_uid=uuid.uuid1(),
+                        organizations_uid=record["organizations_uid"],
+                        data_source_uid=curr_source_inst,
+                        category=record["category"],
+                        collection_date=record["collection_date"],
+                        content=record["content"],
+                        creator=record["creator"],
+                        date=record["date"],
+                        sixgill_mention_id=record["sixgill_mention_id"],
+                        lang=record["lang"],
+                        post_id=record["post_id"],
+                        rep_grade=record["rep_grade"],
+                        site=record["site"],
+                        site_grade=record["site_grade"],
+                        sub_category=record["sub_category"],
+                        title=record["title"],
+                        type=record["type"],
+                        url=record["url"],
+                        comments_count=record["comments_count"],
+                        tags=record["tags"],
+                    )
+                    create_ct += 1
+            return str(create_ct) + " records created in the mentions table"
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+
+# --- insert_sixgill_breaches(), Issue 655
+@api_router.put(
+    "/cred_breaches_insert",
+    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    tags=["Insert multiple records into the credential_breaches table."],
+)
+def cred_breaches_insert(
+    data: schemas.CredBreachesInsertInput, tokens: dict = Depends(get_api_key)
+):
+    """API endpoint to insert multiple records into the credential_breaches table."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # If API key valid, proceed
+            create_ct = 0
+            update_ct = 0
+            for record in data.insert_data:
+                # convert to dict
+                record = dict(record)
+                curr_source_inst = DataSource.objects.get(
+                    data_source_uid=record["data_source_uid"]
+                )
+                # Insert each row of data
+                try:
+                    CredentialBreaches.objects.get(breach_name=record["breach_name"])
+                    # If record already exists, update
+                    CredentialBreaches.objects.filter(
+                        breach_name=record["breach_name"]
+                    ).update(
+                        exposed_cred_count=record["exposed_cred_count"],
+                        password_included=record["password_included"],
+                    )
+                    update_ct += 1
+                except CredentialBreaches.DoesNotExist:
+                    # Otherwise, create new record
+                    CredentialBreaches.objects.create(
+                        credential_breaches_uid=uuid.uuid1(),
+                        breach_name=record["breach_name"],
+                        description=record["description"],
+                        exposed_cred_count=record["exposed_cred_count"],
+                        breach_date=record["breach_date"],
+                        modified_date=record["modified_date"],
+                        password_included=record["password_included"],
+                        data_source_uid=curr_source_inst,
+                    )
+                    create_ct += 1
+            return (
+                "Records in the credential_breaches table: "
+                + str(create_ct)
+                + " created, "
+                + str(update_ct)
+                + " updated"
+            )
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+
 # --- insert_sixgill_topCVEs(), Issue 657
 @api_router.put(
     "/top_cves_insert",
