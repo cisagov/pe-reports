@@ -2737,7 +2737,7 @@ def orgs_report_on_false(tokens: dict = Depends(get_api_key)):
 
 
 # --- set_org_to_report_on(), Issue 606 ---
-@api_router.get(
+@api_router.post(
     "/orgs_set_report_on",
     dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
     response_model=List[schemas.OrgsTable],
@@ -2817,7 +2817,7 @@ def orgs_set_report_on(
 
 
 # --- set_org_to_demo(), Issue 607 ---
-@api_router.get(
+@api_router.post(
     "/orgs_set_demo",
     dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
     response_model=List[schemas.OrgsTable],
