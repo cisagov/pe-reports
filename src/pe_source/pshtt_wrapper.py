@@ -98,9 +98,11 @@ def format_pshtt_result(result, sub):
 def run_pshtt(domains, thread):
     """Run pshtt."""
     if len(domains) > 0:
-
+        LOGGER.info("%s has %s subdomains", thread, str(len(domains)))
+        i = 0
         for sub in domains:
-            print(f"{thread}: running for {sub['sub_domain']}")
+            if i % 100 == 0:
+                LOGGER.info("%s: Completed %s/%s", thread, i, len(domains))
             utils.configure_logging(False)
 
             domains = utils.format_domains([sub["sub_domain"]])
@@ -115,22 +117,26 @@ def run_pshtt(domains, thread):
 
             # Do the domain inspections
             try:
-                print(domains)
                 results = inspect_domains(domains, options)
 
                 for result in results:
-                    print(result)
                     formatted_dict = format_pshtt_result(result, sub)
                     api_pshtt_insert(formatted_dict)
 
             except Exception as e:
-                print(e)
-                print(f"failed result {results}")
+                LOGGER.error("%s: %s", thread, e)
+                LOGGER.error("%s: failed result %s", thread, results)
+
+            i += 1
+        LOGGER.info("%s: Completed running PSHTT", thread)
 
 
 def launch_pe_pshtt():
     """Run main."""
+    LOGGER.info("Running the PSHTT scan.")
     subs = api_pshtt_domains_to_run()
+
+    LOGGER.info("Running PSHTT on %s subdomains", len(subs))
 
     subs_array = np.array_split(subs, 3)
     print(len(subs_array))
@@ -172,7 +178,7 @@ def launch_pe_pshtt():
     # t4.join()
     # t5.join()
 
-    print("All threads have finished.")
+    LOGGER.info("All threads have finished.")
 
 
 def main():

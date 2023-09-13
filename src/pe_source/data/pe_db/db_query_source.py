@@ -24,7 +24,7 @@ LOGGER = logging.getLogger(__name__)
 CONN_PARAMS_DIC = config()
 CONN_PARAMS_DIC_STAGING = staging_config()
 
-API_DIC = config(section="pe_api")
+API_DIC = staging_config(section="pe_api")
 pe_api_url = API_DIC.get("pe_api_url")
 pe_api_key = API_DIC.get("pe_api_key")
 
@@ -779,14 +779,17 @@ def api_pshtt_domains_to_run():
         LOGGER.error(err)
 
     # Once task finishes, return result
-    if task_status == "Completed":
-        result_df = pd.DataFrame.from_dict(check_task_resp.get("result"))
-        list_of_dicts = result_df.to_dict("records")
-        return list_of_dicts
-    else:
-        raise Exception(
-            "pshtt_domains_to_run query task failed, details: ", check_task_resp
-        )
+    try:
+        if task_status == "Completed":
+            result_df = pd.DataFrame.from_dict(check_task_resp.get("result"))
+            list_of_dicts = result_df.to_dict("records")
+            return list_of_dicts
+        else:
+            raise Exception(
+                "pshtt_domains_to_run query task failed, details: ", check_task_resp
+            )
+    except Exception as e:
+        raise Exception("pshtt_domains_to_run query task failed, details: ", e)
 
 
 def api_pshtt_insert(pshtt_dict):
@@ -807,9 +810,9 @@ def api_pshtt_insert(pshtt_dict):
         "Content-Type": "application/json",
         "access_token": pe_api_key,
     }
-    data = json.dumps(pshtt_dict)
-    print("printing data")
-    print(data)
+    data = json.dumps(pshtt_dict, default=str)
+
+    LOGGER.info(data)
     try:
         # Call endpoint
         pshtt_insert_result = requests.put(

@@ -721,10 +721,10 @@ def https_check(endpoint):
         endpoint.live = False
         endpoint.https_valid = False
         logging.exception(
-            "%s: Error in sslyze server connectivity check when connecting to %s",
+            "%s: Error in sslyze server connectivity check when connecting to %s: %s",
             endpoint.url,
-            print(err)
-            # err.server_info.hostname,
+            err.server_location.hostname,
+            err,
         )
         utils.debug("%s: %s", endpoint.url, err)
         return
@@ -736,7 +736,9 @@ def https_check(endpoint):
     except Exception as err:
         endpoint.unknown_error = True
         logging.exception(
-            "%s: Unknown exception in sslyze server connectivity check.", endpoint.url
+            "%s: Unknown exception in sslyze server connectivity check.: %s",
+            endpoint.url,
+            err,
         )
         utils.debug("%s: %s", endpoint.url, err)
         return
@@ -808,7 +810,6 @@ def https_check(endpoint):
         custom_trust = True
         public_not_trusted_names = []
         for certificate_deployment in cert_plugin_result.result.certificate_deployments:
-
             validation_results = certificate_deployment.path_validation_results
             for result in validation_results:
                 if result.was_validation_successful:
@@ -1272,7 +1273,10 @@ def is_http_redirect_domain(domain):
     is a redirect, and all other http endpoints are either redirects
     or down.
     """
-    (http, httpwww,) = (
+    (
+        http,
+        httpwww,
+    ) = (
         domain.http,
         domain.httpwww,
     )
