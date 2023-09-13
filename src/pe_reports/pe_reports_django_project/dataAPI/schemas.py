@@ -208,7 +208,7 @@ class PshttInsert(BaseModel):
     https_probably_missing_intermediate_cert: Optional[bool] = None
     https_publicly_trusted: Optional[bool] = None
     https_self_signed_cert: Optional[bool] = None
-    https_leaf_cert_expiration_date: Optional[date] = None
+    https_leaf_cert_expiration_date: Optional[datetime] = None
     https_leaf_cert_issuer: Optional[str] = None
     https_leaf_cert_subject: Optional[str] = None
     https_root_cert_issuer: Optional[str] = None
