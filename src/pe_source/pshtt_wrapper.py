@@ -139,7 +139,6 @@ def launch_pe_pshtt():
     LOGGER.info("Running PSHTT on %s subdomains", len(subs))
 
     subs_array = np.array_split(subs, 3)
-    print(len(subs_array))
     # thread 1
     subs_chunk1 = list(subs_array[0])
     thread1 = "Thread 1:"

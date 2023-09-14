@@ -26,7 +26,7 @@ import requests
 # )
 # import sslyze.synchronous_scanner  # type: ignore
 from sslyze import Scanner, ServerNetworkLocation, ServerScanRequest
-from sslyze.errors import ConnectionToServerFailed
+from sslyze.errors import ConnectionToServerFailed, ServerHostnameCouldNotBeResolved
 from sslyze.plugins.certificate_info.implementation import (
     CertificateInfoExtraArgument,
     CertificateInfoImplementation,
@@ -344,9 +344,6 @@ def basic_check(endpoint):
                 endpoint.https_valid = True
 
     except requests.exceptions.SSLError as err:
-        if "self signed certificate" in str(err):
-            print("Found self signed cert")
-            # TODO possibly track self signed cert here
         if "bad handshake" in str(err) and (
             "sslv3 alert handshake failure" in str(err) or "Unexpected EOF" in str(err)
         ):
@@ -724,6 +721,17 @@ def https_check(endpoint):
             "%s: Error in sslyze server connectivity check when connecting to %s: %s",
             endpoint.url,
             err.server_location.hostname,
+            err,
+        )
+        utils.debug("%s: %s", endpoint.url, err)
+        return
+
+    except ServerHostnameCouldNotBeResolved as err:
+        endpoint.live = False
+        endpoint.https_valid = False
+        logging.exception(
+            "%s: Error in sslyze server connectivity check when connecting: %s",
+            endpoint.url,
             err,
         )
         utils.debug("%s: %s", endpoint.url, err)
@@ -1915,7 +1923,6 @@ def inspect_domains(domains, options):
     """Run inspect() against each of the given domains with the given options."""
     # Override timeout, user agent, preload cache, default CA bundle
     global TIMEOUT, USER_AGENT, THIRD_PARTIES_CACHE, CA_FILE, PT_INT_CA_FILE, STORE
-    print("inspecting_domains")
     if options.get("timeout"):
         TIMEOUT = int(options["timeout"])
     if options.get("user_agent"):
