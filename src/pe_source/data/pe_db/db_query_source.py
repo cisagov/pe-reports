@@ -25,7 +25,7 @@ CONN_PARAMS_DIC = config()
 CONN_PARAMS_DIC_STAGING = staging_config()
 
 API_DIC = staging_config(section="pe_api")
-pe_api_url = "http://127.0.0.1:8000/apiv1/"  # API_DIC.get("pe_api_url")
+pe_api_url = API_DIC.get("pe_api_url")
 pe_api_key = API_DIC.get("pe_api_key")
 
 
