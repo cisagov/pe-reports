@@ -15,7 +15,7 @@ import pe_source.cybersixgill
 import pe_source.data.sixgill.api
 import pe_source.dnstwistscript
 import pe_source.pe_scripts
-import pe_source.shodan
+import pe_source.shodan_wrapper
 
 log_levels = (
     "debug",
@@ -85,7 +85,7 @@ def test_source_log_levels(level):
         ],
     ):
         with patch.object(logging.root, "handlers", []):
-            with patch.object(pe_source.shodan.Shodan, "run_shodan"):
+            with patch.object(pe_source.shodan_wrapper.Get_shodan, "run_shodan"):
                 assert (
                     logging.root.hasHandlers() is False
                 ), "root logger should not have handlers yet"
@@ -137,7 +137,9 @@ def test_source_is_cybersixgill():
         with patch.object(
             pe_source.cybersixgill.Cybersixgill, "run_cybersixgill"
         ) as mock_sixgill:
-            with patch.object(pe_source.shodan.Shodan, "run_shodan") as mock_shodan:
+            with patch.object(
+                pe_source.shodan_wrapper.Get_shodan, "run_shodan"
+            ) as mock_shodan:
                 pe_source.pe_scripts.main()
                 mock_sixgill.assert_called_with(), "cybersixgill should be called"
                 mock_shodan.assert_not_called(), "shodan should not be called"
@@ -156,7 +158,9 @@ def test_source_is_shodan():
         with patch.object(
             pe_source.cybersixgill.Cybersixgill, "run_cybersixgill"
         ) as mock_sixgill:
-            with patch.object(pe_source.shodan.Shodan, "run_shodan") as mock_shodan:
+            with patch.object(
+                pe_source.shodan_wrapper.Get_shodan, "run_shodan"
+            ) as mock_shodan:
                 pe_source.pe_scripts.main()
                 mock_shodan.assert_called_with(), "shodan should be called"
                 mock_sixgill.assert_not_called(), "cybersixgill should not be called"

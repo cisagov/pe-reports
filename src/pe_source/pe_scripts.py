@@ -43,7 +43,7 @@ from .dnsmonitor import DNSMonitor
 from .dnstwistscript import run_dnstwist
 from .intelx_identity import IntelX
 from .pshtt_wrapper import launch_pe_pshtt
-from .shodan import Shodan
+from .shodan_wrapper import Get_shodan
 
 LOGGER = logging.getLogger(__name__)
 
@@ -65,7 +65,7 @@ def run_pe_script(source, orgs_list, cybersix_methods, soc_med_included):
         cybersix = Cybersixgill(orgs_list, cybersix_methods, soc_med_included)
         cybersix.run_cybersixgill()
     elif source == "shodan":
-        shodan = Shodan(orgs_list)
+        shodan = Get_shodan(orgs_list)
         shodan.run_shodan()
     elif source == "dnsmonitor":
         dnsMonitor = DNSMonitor(orgs_list)
