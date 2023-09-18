@@ -1,5 +1,6 @@
 import os
 from celery import Celery
+from django_celery_beat.models import PeriodicTask, CrontabSchedule
 from django.conf import settings
 from django.apps import apps
 from decouple import config
@@ -16,4 +17,4 @@ app = Celery('pe_reports_django',
 app.config_from_object('django.conf:settings', namespace='CELERY')
 app.autodiscover_tasks(lambda: [n.name for n in apps.get_app_configs()])
 
-app.conf.result_expires = 3600
+app.conf.result_expires = 86400
