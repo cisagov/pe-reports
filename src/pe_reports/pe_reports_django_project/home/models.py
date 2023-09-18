@@ -1301,6 +1301,7 @@ class WeeklyStatuses(models.Model):
 
     class Meta:
         """Set WeeklyStatuses model metadata."""
+        unique_together = (('week_ending', 'user_status'),)
 
         managed = True
         db_table = "weekly_statuses"
