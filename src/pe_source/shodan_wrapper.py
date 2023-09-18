@@ -8,10 +8,10 @@ import numpy
 
 from .data.pe_db.config import shodan_api_init
 from .data.pe_db.db_query_source import get_orgs
-from .data.shodan.shodan_search import run_shodan_thread
+from .data.shodan_db.shodan_search import run_shodan_thread
 
 
-class Shodan:
+class Get_shodan:
     """Fetch Shodan data."""
 
     def __init__(self, orgs_list):

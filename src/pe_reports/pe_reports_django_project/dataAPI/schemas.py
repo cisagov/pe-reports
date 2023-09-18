@@ -181,47 +181,47 @@ class PshttInsert(BaseModel):
     sub_domain_uid: Optional[Any]
     sub_domain: str
     date_scanned: str  # date
-    base_domain: str
-    base_domain_hsts_preloaded: bool
-    canonical_url: str
-    defaults_to_https: bool
-    domain: str
-    domain_enforces_https: bool
-    domain_supports_https: bool
+    base_domain: Optional[str] = None
+    base_domain_hsts_preloaded: Optional[bool] = None
+    canonical_url: Optional[str] = None
+    defaults_to_https: Optional[bool] = None
+    domain: Optional[str] = None
+    domain_enforces_https: Optional[bool] = None
+    domain_supports_https: Optional[bool] = None
     domain_uses_strong_hsts: Optional[bool] = None
-    downgrades_https: bool
-    htss: bool
+    downgrades_https: Optional[bool] = None
+    htss: Optional[bool] = None
     hsts_entire_domain: Optional[bool] = None
     hsts_header: Optional[str] = None
     hsts_max_age: Optional[float] = None
-    hsts_preload_pending: bool
-    hsts_preload_ready: bool
-    hsts_preloaded: bool
-    https_bad_chain: bool
-    https_bad_hostname: bool
-    https_cert_chain_length = int
-    https_client_auth_required: bool
-    https_custom_truststore_trusted: bool
-    https_expired_cert: bool
-    https_full_connection: bool
-    https_live: bool
-    https_probably_missing_intermediate_cert: bool
-    https_publicly_trusted: bool
-    https_self_signed_cert: bool
-    https_leaf_cert_expiration_date: Optional[date] = None
+    hsts_preload_pending: Optional[bool] = None
+    hsts_preload_ready: Optional[bool] = None
+    hsts_preloaded: Optional[bool] = None
+    https_bad_chain: Optional[bool] = None
+    https_bad_hostname: Optional[bool] = None
+    https_cert_chain_length: Optional[int] = None
+    https_client_auth_required: Optional[bool] = None
+    https_custom_truststore_trusted: Optional[bool] = None
+    https_expired_cert: Optional[bool] = None
+    https_full_connection: Optional[bool] = None
+    https_live: Optional[bool] = None
+    https_probably_missing_intermediate_cert: Optional[bool] = None
+    https_publicly_trusted: Optional[bool] = None
+    https_self_signed_cert: Optional[bool] = None
+    https_leaf_cert_expiration_date: Optional[datetime] = None
     https_leaf_cert_issuer: Optional[str] = None
     https_leaf_cert_subject: Optional[str] = None
     https_root_cert_issuer: Optional[str] = None
     ip: Optional[str] = None  # Not sure if there is a better type for this
-    live: bool
+    live: Optional[bool] = None
     notes: Optional[str] = None
-    redirect: bool
+    redirect: Optional[bool] = None
     redirect_to: Optional[str] = None
     server_header: Optional[str] = None
     server_version: Optional[str] = None
-    strictly_forces_https: bool
-    unknown_error: bool
-    valid_https: bool
+    strictly_forces_https: Optional[bool] = None
+    unknown_error: Optional[bool] = None
+    valid_https: Optional[bool] = None
     ep_http_headers: Optional[str] = None  # This field type is a guess.
     ep_http_server_header: Optional[str] = None
     ep_http_server_version: Optional[str] = None

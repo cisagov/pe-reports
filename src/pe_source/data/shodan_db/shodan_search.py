@@ -11,13 +11,9 @@ import requests
 import shodan
 
 # cisagov Libraries
-from pe_reports import app
-from pe_source.data.pe_db.db_query_source import (
+from pe_source.data.pe_db.db_query_source import (  # get_ips_dhs,; get_ips_hhs,; get_ips_nasa,
     get_data_source_uid,
     get_ips,
-    get_ips_dhs,
-    get_ips_nasa,
-    get_ips_hhs,
     insert_shodan_data,
 )
 
