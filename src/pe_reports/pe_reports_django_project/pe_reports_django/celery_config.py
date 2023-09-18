@@ -1,7 +1,7 @@
 import os
 from celery import Celery
-from django_celery_beat.models import PeriodicTask, CrontabSchedule
-from django.conf import settings
+# from django_celery_beat.models import PeriodicTask, CrontabSchedule
+# from django.conf import settings
 from django.apps import apps
 from decouple import config
 
