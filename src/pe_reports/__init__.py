@@ -46,6 +46,7 @@ app.config["CELERY_BROKER_URL"] = "redis://localhost:6379/0"
 app.config["CELERY_RESULT_BACKEND"] = "redis://localhost:6379/0"
 
 CENTRAL_LOGGING_FILE = "pe_reports_logging.log"
+PROJECT_ROOT = os.path.abspath(os.path.dirname(__file__))
 DEBUG = False
 # Setup Logging
 """Set up logging and call the run_pe_script function."""

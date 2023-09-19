@@ -170,12 +170,36 @@ def query_breachdetails_view(org_uid, start_date, end_date):
 
 
 def query_domMasq(org_uid, start_date, end_date):
-    """Query domain masquerading table."""
+    """Query domain_permuations associated with a given org."""
     conn = connect()
     try:
-        sql = """SELECT * FROM dnstwist_domain_masq
+        sql = """SELECT * FROM domain_permutations
         WHERE organizations_uid = %(org_uid)s
-        AND date_observed BETWEEN %(start_date)s AND %(end_date)s"""
+        AND date_active BETWEEN %(start_date)s AND %(end_date)s"""
+        df = pd.read_sql(
+            sql,
+            conn,
+            params={
+                "org_uid": org_uid,
+                "start_date": start_date,
+                "end_date": end_date,
+            },
+        )
+        return df
+    except (Exception, psycopg2.DatabaseError) as error:
+        LOGGER.error("There was a problem with your database query %s", error)
+    finally:
+        if conn is not None:
+            close(conn)
+
+
+def query_domMasq_alerts(org_uid, start_date, end_date):
+    """Query domain alerts table."""
+    conn = connect()
+    try:
+        sql = """SELECT * FROM domain_alerts
+        WHERE organizations_uid = %(org_uid)s
+        AND date BETWEEN %(start_date)s AND %(end_date)s"""
         df = pd.read_sql(
             sql,
             conn,
@@ -205,10 +229,15 @@ def query_shodan(org_uid, start_date, end_date, table):
     """Query Shodan table."""
     conn = connect()
     try:
+        df = pd.DataFrame()
+        df_list = []
+        chunk_size = 1000
         sql = """SELECT * FROM %(table)s
         WHERE organizations_uid = %(org_uid)s
         AND timestamp BETWEEN %(start_date)s AND %(end_date)s"""
-        df = pd.read_sql(
+        count = 0
+        # Batch SQL call to reduce memory (https://pythonspeed.com/articles/pandas-sql-chunking/)
+        for chunk_df in pd.read_sql(
             sql,
             conn,
             params={
@@ -217,7 +246,24 @@ def query_shodan(org_uid, start_date, end_date, table):
                 "start_date": start_date,
                 "end_date": end_date,
             },
-        )
+            chunksize=chunk_size,
+        ):
+            count += 1
+            df_list.append(chunk_df)
+
+        if len(df_list) == 0:
+            df = pd.read_sql(
+                sql,
+                conn,
+                params={
+                    "table": AsIs(table),
+                    "org_uid": org_uid,
+                    "start_date": start_date,
+                    "end_date": end_date,
+                },
+            )
+        else:
+            df = pd.concat(df_list, ignore_index=True)
         return df
     except (Exception, psycopg2.DatabaseError) as error:
         LOGGER.error("There was a problem with your database query %s", error)

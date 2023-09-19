@@ -1,7 +1,7 @@
 """cisagov/pe-reports: A tool for creating Posture & Exposure reports.
 
 Usage:
-  pe-reports REPORT_DATE OUTPUT_DIRECTORY [--log-level=LEVEL]
+  pe-reports REPORT_DATE OUTPUT_DIRECTORY [--log-level=LEVEL] [--soc-med-included]
 
 Options:
   -h --help                         Show this message.
@@ -11,6 +11,7 @@ Options:
   -l --log-level=LEVEL              If specified, then the log level will be set to
                                     the specified value.  Valid values are "debug", "info",
                                     "warning", "error", and "critical". [default: info]
+  -s --soc-med-included             Include social media posts from Cybersixgill in the report.
 """
 
 # Standard Python Libraries
@@ -22,9 +23,7 @@ from typing import Any, Dict
 # Third-Party Libraries
 import docopt
 import fitz
-import pandas as pd
 from schema import And, Schema, SchemaError, Use
-from xhtml2pdf import pisa
 
 # cisagov Libraries
 import pe_reports
@@ -32,6 +31,8 @@ import pe_reports
 from ._version import __version__
 from .data.db_query import connect, get_orgs
 from .pages import init
+from .reportlab_core_generator import core_report_gen
+from .reportlab_generator import report_gen
 
 LOGGER = logging.getLogger(__name__)
 
@@ -41,43 +42,69 @@ def embed(
     org_code,
     datestring,
     file,
+    cred_json,
+    da_json,
+    vuln_json,
+    mi_json,
     cred_xlsx,
     da_xlsx,
     vuln_xlsx,
     mi_xlsx,
 ):
-    """Embeds raw data into PDF and encrypts file."""
+    """Embed raw data into PDF and encrypt file."""
     doc = fitz.open(file)
     # Get the summary page of the PDF on page 4
-    page = doc[3]
-    output = (
-        f"{output_directory}/{org_code}/Posture_and_Exposure_Report-{datestring}.pdf"
-    )
+    page = doc[4]
+    output = f"{output_directory}/{org_code}/Posture_and_Exposure_Report-{org_code}-{datestring}.pdf"
+
+    # Open json data as binary
+    cc = open(cred_json, "rb").read()
+    da = open(da_json, "rb").read()
+    ma = open(vuln_json, "rb").read()
+    if mi_json:
+        mi = open(mi_json, "rb").read()
 
     # Open CSV data as binary
-    cc = open(cred_xlsx, "rb").read()
-    da = open(da_xlsx, "rb").read()
-    ma = open(vuln_xlsx, "rb").read()
-    mi = open(mi_xlsx, "rb").read()
+    cc_xl = open(cred_xlsx, "rb").read()
+    da_xl = open(da_xlsx, "rb").read()
+    ma_xl = open(vuln_xlsx, "rb").read()
+    if mi_xlsx:
+        mi_xl = open(mi_xlsx, "rb").read()
 
     # Insert link to CSV data in summary page of PDF.
     # Use coordinates to position them on the bottom.
-    p1 = fitz.Point(110, 695)
-    p2 = fitz.Point(240, 695)
-    p3 = fitz.Point(375, 695)
-    p5 = fitz.Point(500, 695)
+    p1 = fitz.Point(300, 607)
+    p2 = fitz.Point(300, 635)
+    p3 = fitz.Point(300, 663)
+    p4 = fitz.Point(300, 691)
+    p5 = fitz.Point(340, 607)
+    p6 = fitz.Point(340, 635)
+    p7 = fitz.Point(340, 663)
+    p8 = fitz.Point(340, 691)
 
-    # Embed and add push-pin graphic
+    # Embed and add button icon
     page.add_file_annot(
-        p1, cc, "compromised_credentials.xlsx", desc="Open up CSV", icon="PushPin"
+        p1, cc, "compromised_credentials.json", desc="Open JSON", icon="Paperclip"
     )
     page.add_file_annot(
-        p2, da, "domain_alerts.xlsx", desc="Open up CSV", icon="PushPin"
+        p2, da, "domain_alerts.json", desc="Open JSON", icon="Paperclip"
     )
-    page.add_file_annot(p3, ma, "vuln_alerts.xlsx", desc="Open up xlsx", icon="PushPin")
+    page.add_file_annot(p3, ma, "vuln_alerts.json", desc="Open JSON", icon="Paperclip")
+    if mi_json:
+        page.add_file_annot(
+            p4, mi, "mention_incidents.json", desc="Open JSON", icon="Paperclip"
+        )
     page.add_file_annot(
-        p5, mi, "mention_incidents.xlsx", desc="Open up CSV", icon="PushPin"
+        p5, cc_xl, "compromised_credentials.xlsx", desc="Open Excel", icon="Graph"
     )
+    page.add_file_annot(
+        p6, da_xl, "domain_alerts.xlsx", desc="Open Excel", icon="Graph"
+    )
+    page.add_file_annot(p7, ma_xl, "vuln_alerts.xlsx", desc="Open Excel", icon="Graph")
+    if mi_xlsx:
+        page.add_file_annot(
+            p8, mi_xl, "mention_incidents.xlsx", desc="Open Excel", icon="Graph"
+        )
 
     # Save doc and set garbage=4 to reduce PDF size using all 4 methods:
     # Remove unused objects, compact xref table, merge duplicate objects,
@@ -93,27 +120,10 @@ def embed(
     if filesize >= 20000000:
         tooLarge = True
 
-    return filesize, tooLarge
+    return filesize, tooLarge, output
 
 
-def convert_html_to_pdf(source_html, output_filename):
-    """Convert HTML to PDF."""
-    # Open output file for writing (truncated binary)
-    result_file = open(output_filename, "w+b")
-
-    # Convert HTML to PDF
-    pisa_status = pisa.CreatePDF(
-        source_html, dest=result_file  # the HTML to convert
-    )  # file handle to receive result
-
-    # Close output file
-    result_file.close()  # close output file
-
-    # Return False on success and True on errors
-    return pisa_status.err
-
-
-def generate_reports(datestring, output_directory):
+def generate_reports(datestring, output_directory, soc_med_included=False):
     """Process steps for generating report data."""
     # Get PE orgs from PE db
     conn = connect()
@@ -131,6 +141,7 @@ def generate_reports(datestring, output_directory):
             org_uid = org[0]
             org_name = org[1]
             org_code = org[2]
+            premium = org[8]
 
             LOGGER.info("Running on %s", org_code)
 
@@ -141,70 +152,53 @@ def generate_reports(datestring, output_directory):
 
             # Insert Charts and Metrics into PDF
             (
-                source_html,
-                creds_sum,
-                masq_df,
-                insecure_df,
-                vulns_df,
-                assets_df,
-                dark_web_mentions,
-                alerts,
-                top_cves,
+                report_dict,
+                cred_json,
+                da_json,
+                vuln_json,
+                mi_json,
+                cred_xlsx,
+                da_xlsx,
+                vuln_xlsx,
+                mi_xlsx,
             ) = init(
                 datestring,
                 org_name,
+                org_code,
                 org_uid,
+                premium,
+                output_directory,
+                soc_med_included,
             )
 
             # Convert to HTML to PDF
-            output_filename = f"{output_directory}/{org_code}-Posture_and_Exposure_Report-{datestring}.pdf"
-            convert_html_to_pdf(source_html, output_filename)
+            output_filename = f"{output_directory}/Posture_and_Exposure_Report-{org_code}-{datestring}.pdf"
 
-            # Create Credential Exposure Excel file
-            cred_xlsx = f"{output_directory}/{org_code}/compromised_credentials.xlsx"
-            credWriter = pd.ExcelWriter(cred_xlsx, engine="xlsxwriter")
-            creds_sum.to_excel(
-                credWriter, sheet_name="Exposed_Credentials", index=False
-            )
-            credWriter.save()
-
-            # Create Domain Masquerading Excel file
-            da_xlsx = f"{output_directory}/{org_code}/domain_alerts.xlsx"
-            domWriter = pd.ExcelWriter(da_xlsx, engine="xlsxwriter")
-            masq_df.to_excel(domWriter, sheet_name="Suspected Domains", index=False)
-            domWriter.save()
-
-            # Create Suspected vulnerability Excel file
-            vuln_xlsx = f"{output_directory}/{org_code}/vuln_alerts.xlsx"
-            vulnWriter = pd.ExcelWriter(vuln_xlsx, engine="xlsxwriter")
-            assets_df.to_excel(vulnWriter, sheet_name="Assets", index=False)
-            insecure_df.to_excel(vulnWriter, sheet_name="Insecure", index=False)
-            vulns_df.to_excel(vulnWriter, sheet_name="Verified Vulns", index=False)
-            vulnWriter.save()
-
-            # Create dark web Excel file
-            mi_xlsx = f"{output_directory}/{org_code}/mention_incidents.xlsx"
-            miWriter = pd.ExcelWriter(mi_xlsx, engine="xlsxwriter")
-            dark_web_mentions.to_excel(
-                miWriter, sheet_name="Dark Web Mentions", index=False
-            )
-            alerts.to_excel(miWriter, sheet_name="Dark Web Alerts", index=False)
-            top_cves.to_excel(miWriter, sheet_name="Top CVEs", index=False)
-            miWriter.save()
+            report_dict["filename"] = output_filename
+            if premium:
+                report_gen(report_dict, soc_med_included)
+            else:
+                core_report_gen(report_dict)
 
             # Grab the PDF
-            pdf = f"{output_directory}/{org_code}-Posture_and_Exposure_Report-{datestring}.pdf"
+            pdf = f"{output_directory}/Posture_and_Exposure_Report-{org_code}-{datestring}.pdf"
 
-            (filesize, tooLarge) = embed(
+            # Embed Excel and JSON files
+            (filesize, tooLarge, output) = embed(
                 output_directory,
                 org_code,
                 datestring,
                 pdf,
+                cred_json,
+                da_json,
+                vuln_json,
+                mi_json,
                 cred_xlsx,
                 da_xlsx,
                 vuln_xlsx,
                 mi_xlsx,
             )
+
             # Log a message if the report is too large.  Our current mailer
             # cannot send files larger than 20MB.
             if tooLarge:
@@ -218,6 +212,7 @@ def generate_reports(datestring, output_directory):
             "Connection to pe database failed and/or there are 0 organizations stored."
         )
 
+    LOGGER.info("%s reports generated", generated_reports)
     return generated_reports
 
 
@@ -265,12 +260,11 @@ def main():
         os.mkdir(validated_args["OUTPUT_DIRECTORY"])
 
     # Generate reports
-    generated_reports = generate_reports(
+    generate_reports(
         validated_args["REPORT_DATE"],
         validated_args["OUTPUT_DIRECTORY"],
+        validated_args["--soc-med-included"],
     )
-
-    LOGGER.info("%s reports generated", generated_reports)
 
     # Stop logging and clean up
     logging.shutdown()

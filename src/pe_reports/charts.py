@@ -4,8 +4,12 @@
 import os
 
 # Third-Party Libraries
+import matplotlib
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator
+
+matplotlib.use("Agg")
+
 
 # Factor to convert cm to inches
 CM_CONVERSION_FACTOR = 2.54
@@ -161,43 +165,122 @@ class Charts:
         width = self.width
         height = self.height
         name = self.name
-        color = ["#1357BE", "#D0342C"]
+        color = ["#7aa5c1", "#e08493"]
         fig, ax = plt.subplots()
         ax.spines["right"].set_visible(False)
         ax.spines["top"].set_visible(False)
         plt.set_loglevel("WARNING")
-        # Generate lines for chart and add data labels
-        for col in range(len(df.columns)):
+        # Plot first line on chart
+        plt.plot(
+            df.index,
+            df[df.columns[0]],
+            color=color[0],
+            label=df.columns[0],
+            linewidth=3,
+            marker=".",
+            markersize=10,
+        )
+        # If there is another column chart the second line
+        if len(df.columns) == 2:
             plt.plot(
-                df.index, df[df.columns[col]], color=color[col], label=df.columns[col]
+                df.index,
+                df[df.columns[1]],
+                color=color[1],
+                label=df.columns[1],
+                linewidth=3,
+                linestyle="dashed",
+                marker=".",
+                markersize=10,
             )
-            for i, j in df[df.columns[col]].items():
-                if int(j):
-                    plt.annotate(
-                        str(int(j)),
-                        xy=(i, j),
-                        textcoords="offset points",  # how to position the text
-                        xytext=(
-                            0,
-                            5,
-                        ),  # distance from text to points (x,y)
-                        ha="center",  # horizontal alignment can be left, right or center
-                    )
-        # Specify axis attributes
-        plt.ylim(ymin=0, ymax=int(df[df.columns].max().max() * 1.15))
+        # Set the y-max to 110% of the max y value
+        y_max = int(df[df.columns].max().max() * 1.1)
+        plt.ylim(ymin=0, ymax=y_max * 1.10)
+        # Place the legend in the upper right corner
+        plt.legend(loc="upper right")
+        # Set size of the chart
+        plt.gcf().set_size_inches(
+            width / CM_CONVERSION_FACTOR, height / CM_CONVERSION_FACTOR
+        )
+        # Format tick marks and grid layout
         plt.xticks(fontsize=7)
         plt.yticks(fontsize=7)
         plt.gca().set_ylabel(y_label, labelpad=10, fontdict={"size": 8})
         plt.xlabel(x_label, labelpad=10, fontdict={"size": 8})
         plt.xticks(rotation=0)
         plt.grid(axis="y")
-        # Add legend
-        plt.legend(loc="upper right")
-        # Set sizing for image
-        plt.gcf().set_size_inches(
-            width / CM_CONVERSION_FACTOR, height / CM_CONVERSION_FACTOR
-        )
         plt.tight_layout()
+
+        # Add data labels
+        # Loop through the dataframe
+        for row in df.itertuples():
+            # Check if there is only one row of values
+            if len(row) == 2:
+                plt.annotate(
+                    str(int(row[1])),
+                    xy=(row[0], row[1]),
+                    textcoords="offset points",  # Set the manner to position the text
+                    xytext=(
+                        0,
+                        8,
+                    ),  # Distance from text to points (x,y)
+                    ha="center",  # Set horizontal alignment to center
+                    color="#003e67",
+                )
+                # Check if there are two rows of data
+            elif len(row) == 3:
+                # Check if the two values are within 1/10th of the max y value
+                value_diff = abs(row[1] - row[2])
+                if value_diff < y_max / 10:
+                    # If the values are on the bottom quarter of the graph don't label below values
+                    if min(row[1], row[2]) < y_max / 4:
+                        y1 = y2 = max(row[1], row[2])
+                        if row[1] > row[2]:
+                            y1_offset = 18
+                            y2_offset = 8
+                        else:
+                            y1_offset = 8
+                            y2_offset = 18
+                    # If the values are not in the bottom quarter place the lower value below the point
+                    else:
+                        y1 = row[1]
+                        y2 = row[2]
+                        if row[1] > row[2]:
+                            y1_offset = 8
+                            y2_offset = -17
+                        else:
+                            y1_offset = -17
+                            y2_offset = 8
+                # If values are not close to each other put the labels directly above the value
+                else:
+                    y1 = row[1]
+                    y2 = row[2]
+                    y1_offset = 8
+                    y2_offset = 8
+
+                # Annotate the data points
+                plt.annotate(
+                    str(int(row[1])),
+                    xy=(row[0], y1),
+                    textcoords="offset points",  # Set how to position the text
+                    xytext=(
+                        0,
+                        y1_offset,
+                    ),  # Distance from text to points (x,y)
+                    ha="center",  # Horizontal alignment can be left, right or center
+                    color="#005288",
+                )
+                plt.annotate(
+                    str(int(row[2])),
+                    xy=(row[0], y2),
+                    textcoords="offset points",  # Set how to position the text
+                    xytext=(
+                        0,
+                        y2_offset,
+                    ),  # Distance from text to points (x,y)
+                    ha="center",  # Set horizontal alignment to center
+                    # fontsize=2,
+                    color="#c41230",
+                )
         # Save chart to assets directory
         plt.savefig(
             BASE_DIR + "/assets/" + name, transparent=True, dpi=500, bbox_inches="tight"

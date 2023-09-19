@@ -3,6 +3,8 @@
 # Standard Python Libraries
 import datetime
 import logging
+import os
+import shutil
 import sys
 from unittest.mock import patch
 
@@ -11,7 +13,7 @@ import pandas as pd
 import pytest
 
 # cisagov Libraries
-from pe_reports import CENTRAL_LOGGING_FILE
+from pe_reports import CENTRAL_LOGGING_FILE, PROJECT_ROOT
 from pe_reports import app as flask_app
 import pe_reports.data.db_query
 import pe_reports.metrics
@@ -162,30 +164,98 @@ def test_stakeholder_page(client):
 def test_report_generator(mock_db_connect, mock_get_orgs, mock_init, mock_embed):
     """Test report is generated."""
     mock_db_connect.return_value = "connection"
-    mock_get_orgs.return_value = [("pe_org_uid", "Test Org", "TestOrg")]
-    source_html = ""
-    creds_sum = ""
-    creds_sum = pd.DataFrame()
-    masq_df = pd.DataFrame()
-    insecure_df = pd.DataFrame()
-    vulns_df = pd.DataFrame()
-    assets_df = pd.DataFrame()
-    dark_web_mentions = pd.DataFrame()
-    alerts = pd.DataFrame()
-    top_cves = pd.Series(dtype="object")
+    mock_get_orgs.return_value = [
+        ("pe_org_uid", "Test Org", "TestOrg", None, None, None, None, None, True)
+    ]
+    report_dict = {
+        "department": "Test Org",
+        "dateRange": "Start - Stop",
+        "endDate": "01/01/2023",
+        "base_dir": os.path.abspath(os.path.dirname(__file__)),
+        "breach": 10,
+        "creds": 100,
+        "pw_creds": 20,
+        "breach_table": pd.DataFrame(
+            columns=[
+                "Breach Name",
+                "Breach Date",
+                "Date Reported",
+                "Password Included",
+                "Number of Creds",
+            ]
+        ),
+        "breach_appendix": pd.DataFrame(columns=["breach_name", "description"]),
+        "domain_table": pd.DataFrame(
+            columns=[
+                "Domain",
+                "IPv4",
+                "IPv6",
+                "Mail Server",
+                "Name Server",
+            ]
+        ),
+        "domain_alerts_table": pd.DataFrame(columns=["Alert", "Date"]),
+        "suspectedDomains": 7,
+        "domain_alerts": 50,
+        "verif_vulns": pd.DataFrame(columns=["CVE", "IP", "Port"]),
+        "risky_assets": pd.DataFrame(columns=["Protocol", "IP", "Port"]),
+        "riskyPorts": 75,
+        "verifVulns": 12,
+        "unverifVulns": 320,
+        "verif_vulns_summary": pd.DataFrame(columns=["CVE", "IP", "Port", "Summary"]),
+        "darkWeb": 100,
+        "mentions_count": 65,
+        "dark_web_sites": pd.DataFrame(columns=["Site", "count"]),
+        "alerts_threats": pd.DataFrame(columns=["Site", "Threats", "Events"]),
+        "dark_web_actors": pd.DataFrame(columns=["Creator", "Grade"]),
+        "alerts_exec": pd.DataFrame(columns=["Site", "Title", "Events"]),
+        "asset_alerts": pd.DataFrame(columns=["Site", "Title", "Events"]),
+        "dark_web_act": pd.DataFrame(columns=["Title", "Comments Count"]),
+        "social_med_act": pd.DataFrame(columns=["Title", "Comments Count"]),
+        "markets_table": pd.DataFrame(columns=["Site", "Alerts"]),
+        "top_cves": pd.DataFrame(columns=["CVE", "Description", "Cybersixgill"]),
+    }
+    cred_json = ""
+    da_json = ""
+    vuln_json = ""
+    mi_json = ""
+    cred_xlsx = ""
+    da_xlsx = ""
+    vuln_xlsx = ""
+    mi_xlsx = ""
     mock_init.return_value = (
-        source_html,
-        creds_sum,
-        masq_df,
-        insecure_df,
-        vulns_df,
-        assets_df,
-        dark_web_mentions,
-        alerts,
-        top_cves,
+        report_dict,
+        cred_json,
+        da_json,
+        vuln_json,
+        mi_json,
+        cred_xlsx,
+        da_xlsx,
+        vuln_xlsx,
+        mi_xlsx,
     )
-    mock_embed.return_value = 10000000, False
-    return_value = pe_reports.report_generator.generate_reports("2022-09-30", "output")
+    mock_embed.return_value = 10000000, False, "filename"
+
+    shutil.copyfile(
+        PROJECT_ROOT + "/assets/cisa.png",
+        PROJECT_ROOT + "/assets/inc_date_df.png",
+    )
+    shutil.copyfile(
+        PROJECT_ROOT + "/assets/cisa.png",
+        PROJECT_ROOT + "/assets/pro_count.png",
+    )
+    shutil.copyfile(
+        PROJECT_ROOT + "/assets/cisa.png",
+        PROJECT_ROOT + "/assets/unverif_vuln_count.png",
+    )
+    shutil.copyfile(
+        PROJECT_ROOT + "/assets/cisa.png",
+        PROJECT_ROOT + "/assets/web_only_df_2.png",
+    )
+
+    return_value = pe_reports.report_generator.generate_reports(
+        "2022-09-30", "output", True
+    )
     assert return_value == 1
 
 
@@ -215,10 +285,10 @@ def test_credential_metrics(mock_creds_view, mock_creds_byday, mock_breach_detai
 
     # Test by_week output
     expected_output_json = [
-        {"modified_date": "09/03", "No Password": 0.0, "Passwords Included": 0.0},
-        {"modified_date": "09/10", "No Password": 0.0, "Passwords Included": 0.0},
-        {"modified_date": "09/17", "No Password": 0.0, "Passwords Included": 1.0},
-        {"modified_date": "09/24", "No Password": 1.0, "Passwords Included": 2.0},
+        {"modified_date": "Sep 03", "No Password": 0.0, "Passwords Included": 0.0},
+        {"modified_date": "Sep 10", "No Password": 0.0, "Passwords Included": 0.0},
+        {"modified_date": "Sep 17", "No Password": 0.0, "Passwords Included": 1.0},
+        {"modified_date": "Sep 24", "No Password": 1.0, "Passwords Included": 2.0},
     ]
     expected_output = pd.json_normalize(expected_output_json).set_index("modified_date")
     pd.testing.assert_frame_equal(
