@@ -735,7 +735,7 @@ class IpsSubs(models.Model):
 class Mentions(models.Model):
     """Define Mentions model."""
 
-    mentions_uid = models.UUIDField(primary_key=True)
+    mentions_uid = models.UUIDField(primary_key=True, default=uuid.uuid1())
     category = models.TextField(blank=True, null=True)
     collection_date = models.TextField(blank=True, null=True)
     content = models.TextField(blank=True, null=True)

@@ -2737,7 +2737,7 @@ def orgs_report_on_false(tokens: dict = Depends(get_api_key)):
 
 
 # --- set_org_to_report_on(), Issue 606 ---
-@api_router.get(
+@api_router.post(
     "/orgs_set_report_on",
     dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
     response_model=List[schemas.OrgsTable],
@@ -2817,7 +2817,7 @@ def orgs_set_report_on(
 
 
 # --- set_org_to_demo(), Issue 607 ---
-@api_router.get(
+@api_router.post(
     "/orgs_set_demo",
     dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
     response_model=List[schemas.OrgsTable],
@@ -3881,6 +3881,307 @@ async def cred_breach_intelx_status(task_id: str, tokens: dict = Depends(get_api
                 }
             else:
                 return {"task_id": task_id, "status": task.state}
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+
+# --- insert_sixgill_mentions(), Issue 654
+@api_router.put(
+    "/mentions_insert",
+    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    tags=["Insert multiple records into the mentions table."],
+)
+def mentions_insert(
+    data: schemas.MentionsInsertInput, tokens: dict = Depends(get_api_key)
+):
+    """API endpoint to insert multiple records into the mentions table."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # If API key valid, proceed
+            create_ct = 0
+            for record in data.insert_data:
+                # convert to dict
+                record = dict(record)
+                curr_source_inst = DataSource.objects.get(
+                    data_source_uid=record["data_source_uid"]
+                )
+                # Insert each row of data
+                try:
+                    Mentions.objects.get(
+                        sixgill_mention_id=record["sixgill_mention_id"]
+                    )
+                    # If record already exists, do nothing
+                except Mentions.DoesNotExist:
+                    # Otherwise, create new record
+                    Mentions.objects.create(
+                        mentions_uid=uuid.uuid1(),
+                        organizations_uid=record["organizations_uid"],
+                        data_source_uid=curr_source_inst,
+                        category=record["category"],
+                        collection_date=record["collection_date"],
+                        content=record["content"],
+                        creator=record["creator"],
+                        date=record["date"],
+                        sixgill_mention_id=record["sixgill_mention_id"],
+                        lang=record["lang"],
+                        post_id=record["post_id"],
+                        rep_grade=record["rep_grade"],
+                        site=record["site"],
+                        site_grade=record["site_grade"],
+                        sub_category=record["sub_category"],
+                        title=record["title"],
+                        type=record["type"],
+                        url=record["url"],
+                        comments_count=record["comments_count"],
+                        tags=record["tags"],
+                    )
+                    create_ct += 1
+            return str(create_ct) + " records created in the mentions table"
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+
+# --- insert_sixgill_breaches(), Issue 655
+@api_router.put(
+    "/cred_breaches_insert",
+    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    tags=["Insert multiple records into the credential_breaches table."],
+)
+def cred_breaches_insert(
+    data: schemas.CredBreachesInsertInput, tokens: dict = Depends(get_api_key)
+):
+    """API endpoint to insert multiple records into the credential_breaches table."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # If API key valid, proceed
+            create_ct = 0
+            update_ct = 0
+            for record in data.insert_data:
+                # convert to dict
+                record = dict(record)
+                curr_source_inst = DataSource.objects.get(
+                    data_source_uid=record["data_source_uid"]
+                )
+                # Insert each row of data
+                try:
+                    CredentialBreaches.objects.get(breach_name=record["breach_name"])
+                    # If record already exists, update
+                    CredentialBreaches.objects.filter(
+                        breach_name=record["breach_name"]
+                    ).update(
+                        exposed_cred_count=record["exposed_cred_count"],
+                        password_included=record["password_included"],
+                    )
+                    update_ct += 1
+                except CredentialBreaches.DoesNotExist:
+                    # Otherwise, create new record
+                    CredentialBreaches.objects.create(
+                        credential_breaches_uid=uuid.uuid1(),
+                        breach_name=record["breach_name"],
+                        description=record["description"],
+                        exposed_cred_count=record["exposed_cred_count"],
+                        breach_date=record["breach_date"],
+                        modified_date=record["modified_date"],
+                        password_included=record["password_included"],
+                        data_source_uid=curr_source_inst,
+                    )
+                    create_ct += 1
+            return (
+                "Records in the credential_breaches table: "
+                + str(create_ct)
+                + " created, "
+                + str(update_ct)
+                + " updated"
+            )
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+
+# --- insert_sixgill_topCVEs(), Issue 657
+@api_router.put(
+    "/top_cves_insert",
+    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    tags=["Insert multiple records into the top_cves table."],
+)
+def top_cves_insert(
+    data: schemas.TopCVEsInsertInput, tokens: dict = Depends(get_api_key)
+):
+    """API endpoint to insert multiple records into the top_cves table."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            # userapiTokenverify(theapiKey=tokens)
+            # If API key valid, proceed
+            create_ct = 0
+            for record in data.insert_data:
+                # convert to dict
+                record = dict(record)
+                curr_source_inst = DataSource.objects.get(
+                    data_source_uid=record["data_source_uid"]
+                )
+                # Insert each row of data, on conflict do nothing
+                try:
+                    TopCves.objects.get(cve_id=record["cve_id"], date=record["date"])
+                    # If record already exists, do nothing
+                except TopCves.DoesNotExist:
+                    # Otherwise, create new record
+                    TopCves.objects.create(
+                        top_cves_uid=uuid.uuid1(),
+                        cve_id=record["cve_id"],
+                        dynamic_rating=record["dynamic_rating"],
+                        nvd_base_score=record["nvd_base_score"],
+                        date=record["date"],
+                        summary=record["summary"],
+                        data_source_uid=curr_source_inst,
+                    )
+                    create_ct += 1
+            return str(create_ct) + " records created in the top_cves table"
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+
+# --- execute_dnsmonitor_data(), Issue 659
+@api_router.put(
+    "/domain_permu_insert",
+    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    tags=["Insert multiple DNSMonitor records into the domain_permutations table."],
+)
+def domain_permu_insert(
+    data: schemas.DomainPermuInsertInput, tokens: dict = Depends(get_api_key)
+):
+    """API endpoint to insert multiple DNSMonitor records into the domain_permutations table."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            # userapiTokenverify(theapiKey=tokens)
+            # If API key valid, proceed
+            create_ct = 0
+            update_ct = 0
+            for record in data.insert_data:
+                # convert to dict
+                record = dict(record)
+                curr_org_inst = Organizations.objects.get(
+                    organizations_uid=record["organizations_uid"]
+                )
+                curr_source_inst = DataSource.objects.get(
+                    data_source_uid=record["data_source_uid"]
+                )
+                # Insert each row of data, on conflict update existing
+                try:
+                    DomainPermutations.objects.get(
+                        organizations_uid=curr_org_inst,
+                        domain_permutation=record["domain_permutation"],
+                    )
+                    # If record already exists, update
+                    DomainPermutations.objects.filter(
+                        organizations_uid=curr_org_inst,
+                        domain_permutation=record["domain_permutation"],
+                    ).update(
+                        ipv4=record["ipv4"],
+                        ipv6=record["ipv6"],
+                        date_observed=record["date_observed"],
+                        mail_server=record["mail_server"],
+                        name_server=record["name_server"],
+                        sub_domain_uid=record["sub_domain_uid"],
+                        data_source_uid=curr_source_inst,
+                    )
+                    update_ct += 1
+                except DomainPermutations.DoesNotExist:
+                    # Otherwise, create new record
+                    DomainPermutations.objects.create(
+                        organizations_uid=curr_org_inst,
+                        domain_permutation=record["domain_permutation"],
+                        ipv4=record["ipv4"],
+                        ipv6=record["ipv6"],
+                        date_observed=record["date_observed"],
+                        mail_server=record["mail_server"],
+                        name_server=record["name_server"],
+                        sub_domain_uid=record["sub_domain_uid"],
+                        data_source_uid=curr_source_inst,
+                    )
+                    create_ct += 1
+            return (
+                "DNSMonitor records in the domain_permutations table: "
+                + str(create_ct)
+                + " created, "
+                + str(update_ct)
+                + " updated"
+            )
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+
+# --- execute_dnsmonitor_alert_data(), Issue 660
+@api_router.put(
+    "/domain_alerts_insert",
+    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    tags=["Insert multiple DNSMonitor records into the domain_alerts table."],
+)
+def domain_alerts_insert(
+    data: schemas.DomainAlertsInsertInput, tokens: dict = Depends(get_api_key)
+):
+    """API endpoint to insert multiple DNSMonitor records into the domain_alerts table."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            # userapiTokenverify(theapiKey=tokens)
+            # If API key valid, proceed
+            create_ct = 0
+            for record in data.insert_data:
+                # convert to dict
+                record = dict(record)
+                curr_sub_inst = SubDomains.objects.get(
+                    sub_domain_uid=record["sub_domain_uid"]
+                )
+                curr_source_inst = DataSource.objects.get(
+                    data_source_uid=record["data_source_uid"]
+                )
+                # Insert each row of data, on conflict do nothing
+                try:
+                    DomainAlerts.objects.get(
+                        alert_type=record["alert_type"],
+                        sub_domain_uid=record["sub_domain_uid"],
+                        date=record["date"],
+                        new_value=record["new_value"],
+                    )
+                    # If record already exists, do nothing
+                except DomainAlerts.DoesNotExist:
+                    # Otherwise, create new record
+                    DomainAlerts.objects.create(
+                        domain_alert_uid=uuid.uuid1(),
+                        organizations_uid=record["organizations_uid"],
+                        sub_domain_uid=curr_sub_inst,
+                        data_source_uid=curr_source_inst,
+                        alert_type=record["alert_type"],
+                        message=record["message"],
+                        previous_value=record["previous_value"],
+                        new_value=record["new_value"],
+                        date=record["date"],
+                    )
+                    create_ct += 1
+            return (
+                str(create_ct)
+                + " DNSMonitor records created in the domain_alerts table"
+            )
         except ObjectDoesNotExist:
             LOGGER.info("API key expired please try again")
     else:

@@ -1993,6 +1993,180 @@ class CredBreachIntelXTaskResp(BaseModel):
     error: Optional[str] = None
 
 
+# --- insert_sixgill_mentions(), Issue 654 ---
+# Insert multiple records into the mentions table
+class MentionsInsert(BaseModel):
+    """MentionsInsert schema class."""
+
+    organizations_uid: str
+    data_source_uid: str
+    category: str
+    collection_date: str
+    content: str
+    creator: str
+    date: str
+    sixgill_mention_id: str
+    lang: str
+    post_id: str
+    rep_grade: str
+    site: str
+    site_grade: str
+    sub_category: str
+    title: str
+    type: str
+    url: str
+    comments_count: str
+    tags: str
+
+    class Config:
+        """MentionsInsert schema config class."""
+
+        orm_mode = True
+
+
+# --- insert_sixgill_mentions(), Issue 654 ---
+# Insert multiple records into the mentions table, input
+class MentionsInsertInput(BaseModel):
+    """MentionsInsertInput schema class."""
+
+    insert_data: List[MentionsInsert]
+
+    class Config:
+        """MentionsInsertInput schema config class."""
+
+        orm_mode = True
+
+
+# --- insert_sixgill_breaches(), Issue 655 ---
+# Insert multiple records into the credential_breaches table
+class CredBreachesInsert(BaseModel):
+    """CredBreachesInsert schema class."""
+
+    breach_name: str
+    description: str
+    exposed_cred_count: int
+    breach_date: str
+    modified_date: str
+    password_included: bool
+    data_source_uid: str
+
+    class Config:
+        """CredBreachesInsert schema config class."""
+
+        orm_mode = True
+
+
+# --- insert_sixgill_breaches(), Issue 655 ---
+# Insert multiple records into the credential_breaches table, input
+class CredBreachesInsertInput(BaseModel):
+    """CredBreachesInsertInput schema class."""
+
+    insert_data: List[CredBreachesInsert]
+
+    class Config:
+        """CredBreachesInsertInput schema config class."""
+
+        orm_mode = True
+
+
+# --- insert_sixgill_topCVEs(), Issue 657 ---
+# Insert multiple records into the top_cves table
+class TopCVEsInsert(BaseModel):
+    """TopCVEsInsert schema class."""
+
+    cve_id: str
+    dynamic_rating: Optional[str] = None
+    nvd_base_score: Optional[str] = None
+    date: str
+    summary: Optional[str] = None
+    data_source_uid: Optional[str] = None
+
+    class Config:
+        """TopCVEsInsert schema config class."""
+
+        orm_mode = True
+
+
+# --- insert_sixgill_topCVEs(), Issue 657 ---
+# Insert multiple records into the top_cves table, input
+class TopCVEsInsertInput(BaseModel):
+    """TopCVEsInsertInput schema class."""
+
+    insert_data: List[TopCVEsInsert]
+
+    class Config:
+        """TopCVEsInsertInput schema config class."""
+
+        orm_mode = True
+
+
+# --- execute_dnsmonitor_data(), Issue 659 ---
+# Insert multiple records into the domain_permutations table
+class DomainPermuInsert(BaseModel):
+    """DomainPermuInsert schema class."""
+
+    organizations_uid: str
+    sub_domain_uid: Optional[str] = None
+    data_source_uid: Optional[str] = None
+    domain_permutation: str
+    ipv4: Optional[str] = None
+    ipv6: Optional[str] = None
+    mail_server: Optional[str] = None
+    name_server: Optional[str] = None
+    date_observed: Optional[str] = None
+
+    class Config:
+        """DomainPermuInsert schema config class."""
+
+        orm_mode = True
+
+
+# --- execute_dnsmonitor_data(), Issue 659 ---
+# Insert multiple records into the domain_permutations table, input
+class DomainPermuInsertInput(BaseModel):
+    """DomainPermuInsertInput schema class."""
+
+    insert_data: List[DomainPermuInsert]
+
+    class Config:
+        """DomainPermuInsertInput schema config class."""
+
+        orm_mode = True
+
+
+# --- execute_dnsmonitor_alert_data(), Issue 660 ---
+# Insert multiple records into the domain_alerts table
+class DomainAlertsInsert(BaseModel):
+    """DomainAlertsInsert schema class."""
+
+    organizations_uid: str
+    sub_domain_uid: Optional[str] = None
+    data_source_uid: Optional[str] = None
+    alert_type: Optional[str] = None
+    message: Optional[str] = None
+    previous_value: Optional[str] = None
+    new_value: Optional[str] = None
+    date: Optional[str] = None
+
+    class Config:
+        """DomainAlertsInsert schema config class."""
+
+        orm_mode = True
+
+
+# --- execute_dnsmonitor_alert_data(), Issue 660 ---
+# Insert multiple records into the domain_alerts table, input
+class DomainAlertsInsertInput(BaseModel):
+    """DomainAlertsInsertInput schema class."""
+
+    insert_data: List[DomainAlertsInsert]
+
+    class Config:
+        """DomainAlertsInsertInput schema config class."""
+
+        orm_mode = True
+
+
 # --- addRootdomain(), Issue 661 ---
 # Insert single root domain into root_domains table, input
 class RootDomainsSingleInsertInput(BaseModel):

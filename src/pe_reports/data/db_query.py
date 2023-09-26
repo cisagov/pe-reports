@@ -420,7 +420,7 @@ def set_org_to_report_on(cyhy_db_id, premium: bool = False):
     data = json.dumps({"cyhy_db_name": cyhy_db_id, "premium": premium})
     try:
         # Call endpoint
-        result = requests.get(endpoint_url, headers=headers, data=data).json()
+        result = requests.post(endpoint_url, headers=headers, data=data).json()
         # Process data and return
         if result[0].get("organizations_uid") == "NOT FOUND":
             return 0
@@ -473,7 +473,7 @@ def set_org_to_demo(cyhy_db_id, premium):
     data = json.dumps({"cyhy_db_name": cyhy_db_id, "premium": premium})
     try:
         # Call endpoint
-        result = requests.get(endpoint_url, headers=headers, data=data).json()
+        result = requests.post(endpoint_url, headers=headers, data=data).json()
         # Process data and return
         if result[0].get("organizations_uid") == "NOT FOUND":
             return 0
