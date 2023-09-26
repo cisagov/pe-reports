@@ -41,6 +41,10 @@ services:
       - redis_data:/data
     networks:
       - pe_reports_network
+    environment:
+      - REDIS_PASSWORD=${REDIS_PW}
+    env_file:
+      - .env
 networks:
   pe_reports_network:
     driver: bridge

@@ -52,6 +52,7 @@ MESSAGE_TAGS = {
 # Application definition
 
 INSTALLED_APPS = [
+    "django_celery_beat",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -215,7 +216,7 @@ CELERY_BROKER_URL = (
 )
 CELERY_RESULT_BACKEND = f"redis://:{config('REDIS_PW')}@localhost:6379"
 # CELERY_RESULT_BACKEND = f"rediss://:{config('REDIS_PW')}@localhost:6379"
-CELERY_RESULT_EXPIRES = 3600
+CELERY_RESULT_EXPIRES = 86400
 
 # SSL settings for Redis
 # CELERY_REDIS_BACKEND_USE_SSL = {

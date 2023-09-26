@@ -29,6 +29,7 @@ from django.http import (
     HttpResponseRedirect,
     JsonResponse,
 )
+from django.db import IntegrityError
 from django.shortcuts import render
 from django.template.loader import render_to_string
 from django.urls import reverse_lazy
@@ -803,59 +804,63 @@ class StatusForm(LoginRequiredMixin, FormView):
             return self.form_invalid(form, second_form)
 
     def form_valid(self, form, second_form):
-        if form.is_valid():
-            current_date = datetime.now()
-            days_to_week_end = (4 - current_date.weekday()) % 7
-            week_ending_date = current_date + timedelta(days=days_to_week_end)
+        try:
+            if form.is_valid():
+                current_date = datetime.now()
+                days_to_week_end = (4 - current_date.weekday()) % 7
+                week_ending_date = current_date + timedelta(days=days_to_week_end)
 
-            key_accomplishments = form.cleaned_data['key_accomplishments'].upper()
-            ongoing_task = form.cleaned_data['ongoing_task'].upper()
-            upcoming_task = form.cleaned_data['upcoming_task'].upper()
-            obstacles = form.cleaned_data['obstacles'].upper()
-            non_standard_meeting = form.cleaned_data['non_standard_meeting'].upper()
-            deliverables = form.cleaned_data['deliverables'].upper()
-            pto = form.cleaned_data['pto_time'].upper()
+                key_accomplishments = form.cleaned_data['key_accomplishments'].upper()
+                ongoing_task = form.cleaned_data['ongoing_task'].upper()
+                upcoming_task = form.cleaned_data['upcoming_task'].upper()
+                obstacles = form.cleaned_data['obstacles'].upper()
+                non_standard_meeting = form.cleaned_data['non_standard_meeting'].upper()
+                deliverables = form.cleaned_data['deliverables'].upper()
+                pto = form.cleaned_data['pto_time'].upper()
 
-            weeklyStatus, created = WeeklyStatuses.objects.get_or_create(
-                week_ending=week_ending_date,
-                user_status=self.request.user.first_name,
-                defaults={
-                    'key_accomplishments': key_accomplishments,
-                    'ongoing_task': ongoing_task,
-                    'upcoming_task': upcoming_task,
-                    'obstacles': obstacles,
-                    'non_standard_meeting': non_standard_meeting,
-                    'deliverables': deliverables,
-                    'pto': pto,
-                }
-            )
+                weeklyStatus, created = WeeklyStatuses.objects.get_or_create(
+                    week_ending=week_ending_date,
+                    user_status=self.request.user.first_name,
+                    defaults={
+                        'key_accomplishments': key_accomplishments,
+                        'ongoing_task': ongoing_task,
+                        'upcoming_task': upcoming_task,
+                        'obstacles': obstacles,
+                        'non_standard_meeting': non_standard_meeting,
+                        'deliverables': deliverables,
+                        'pto': pto,
+                    }
+                )
 
-            if not created:
-                weeklyStatus.key_accomplishments = key_accomplishments
-                weeklyStatus.ongoing_task = ongoing_task
-                weeklyStatus.upcoming_task = upcoming_task
-                weeklyStatus.obstacles = obstacles
-                weeklyStatus.non_standard_meeting = non_standard_meeting
-                weeklyStatus.deliverables = deliverables
-                weeklyStatus.pto = pto
-                weeklyStatus.save()
+                if not created:
+                    weeklyStatus.key_accomplishments = key_accomplishments
+                    weeklyStatus.ongoing_task = ongoing_task
+                    weeklyStatus.upcoming_task = upcoming_task
+                    weeklyStatus.obstacles = obstacles
+                    weeklyStatus.non_standard_meeting = non_standard_meeting
+                    weeklyStatus.deliverables = deliverables
+                    weeklyStatus.pto = pto
+                    weeklyStatus.save()
 
-            messages.success(self.request,
-                             f'The weekly status was saved successfully.')
+                messages.success(self.request,
+                                 f'The weekly status was saved successfully.')
 
-        if second_form.is_valid():
-            toemail = "craig.duhn@associates.cisa.dhs.gov"
-            fromemail = "pe_automation@cisa.dhs.gov"
-            date = second_form.cleaned_data['date']
-            create_word_document(date, self.request)
-            theawsregion = 'us-east-1'
-            send_email_with_attachment("WSR Attached",
-                                       "The WSR is attached",
-                                       from_email=fromemail,
-                                       to_emails=toemail,
-                                       attachment=self.most_recent_file)
+            if second_form.is_valid():
+                toemail = "craig.duhn@associates.cisa.dhs.gov"
+                fromemail = "pe_automation@cisa.dhs.gov"
+                date = second_form.cleaned_data['date']
+                create_word_document(date, self.request)
+                theawsregion = 'us-east-1'
+                send_email_with_attachment("WSR Attached",
+                                           "The WSR is attached",
+                                           from_email=fromemail,
+                                           to_emails=toemail,
+                                           attachment=self.most_recent_file)
 
-        return super().form_valid(form)
+            return super().form_valid(form)
+        except IntegrityError:
+            messages.error(self.request, 'Duplicate entry. Please try again.')
+            return self.form_invalid(form)
 
 
 class updateStatusView(TemplateView):

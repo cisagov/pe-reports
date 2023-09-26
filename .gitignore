@@ -11,6 +11,7 @@
 output/
 src/pe_reports/*.html
 src/pe_reports/assets/
+.env
 
 ## Python ##
 __pycache__
