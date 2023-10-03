@@ -207,7 +207,7 @@ def get_alerts_content(organization_id, alert_id, org_assets_dict):
 
 def top_cves(size):
     """Top 10 CVEs mentioned in the dark web."""
-    resp = dve_top_cves(size)
+    resp = dve_top_cves()
     return pd.DataFrame(resp)
 
 

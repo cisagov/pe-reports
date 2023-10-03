@@ -26,6 +26,7 @@ def get_sixgill_organizations():
     }
     orgs = requests.get(url, headers=headers).json()
     df_orgs = pd.DataFrame(orgs)
+    df_orgs = df_orgs[["name", "organization_id"]]
     sixgill_dict = df_orgs.set_index("name").agg(list, axis=1).to_dict()
     return sixgill_dict
 
@@ -132,20 +133,52 @@ def alerts_content(auth, organization_id, alert_id):
     return content
 
 
-def dve_top_cves(size):
+# def dve_top_cves(size):
+#     """Get data about a specific CVE."""
+#     url = "https://api.cybersixgill.com/dve_enrich/top_cves"
+#     auth = cybersix_token()
+#     headers = {
+#         "Content-Type": "application/x-www-form-urlencoded",
+#         "Cache-Control": "no-cache",
+#         "Authorization": "Bearer " + auth,
+#     }
+#     payload = {"size": size}
+#     resp = requests.get(url, headers=headers, params=payload).json()
+#     print(resp)
+#     return resp
+
+
+def dve_top_cves():
     """Get data about a specific CVE."""
-    url = "https://api.cybersixgill.com/dve_enrich/top_cves"
+    url = "https://api.cybersixgill.com/dve_enrich/summary"
     auth = cybersix_token()
     headers = {
         "Content-Type": "application/x-www-form-urlencoded",
         "Cache-Control": "no-cache",
         "Authorization": "Bearer " + auth,
     }
-    payload = {"size": size}
-    resp = requests.get(url, headers=headers, params=payload).json()
-    print(resp)
-    return resp
+    resp = requests.get(url, headers=headers).json()
+    sorted_values = sorted(
+        resp["values"],
+        key=lambda x: x["score"]["sixgill"]["current"]
+        if x["score"]["sixgill"]["current"] is not None
+        else float("-inf"),
+        reverse=True,
+    )
+    top_10_cves = sorted_values[:10]
 
+    # Printing the top 10 CVEs
+    clean_top_10_cves = []
+    for cve in top_10_cves:
+        print(cve["id"], "- Current rating:", cve["score"]["sixgill"]["current"])
+        print(cve)
+        clean_cve = {
+            "cve_id": cve["id"],
+            "dynamic_rating": cve["score"]["sixgill"]["current"],
+            "nvd_base_score": cve["score"]["nvd"]["score"],
+        }
+        clean_top_10_cves.append(clean_cve)
+    return clean_top_10_cves
 
 def credential_auth(params):
     """Get data about a specific CVE."""
