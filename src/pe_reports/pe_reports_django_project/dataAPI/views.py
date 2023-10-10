@@ -9,6 +9,9 @@ from datetime import datetime as dt, timedelta
 # from io import TextIOWrapper
 import json
 import logging
+import numpy as np
+import socket
+import uuid
 
 # import re
 # , Dict
@@ -16,6 +19,8 @@ from typing import Any, List, Optional, Union
 
 # Third-Party Libraries
 from dataAPI.tasks import (  # D-Score Task Functions:; I-Score Task Functions:; Misc. Score-Related Task Functions:
+    convert_date_to_string,
+    convert_uuid_to_string,
     get_dscore_pe_domain_info,
     get_dscore_pe_ip_info,
     get_dscore_vs_cert_info,
@@ -40,6 +45,7 @@ from dataAPI.tasks import (  # D-Score Task Functions:; I-Score Task Functions:;
     get_vw_pshtt_domains_to_run_info,
     get_xl_stakeholders_info,
     get_xs_stakeholders_info,
+    sub_domains_by_org_task,
 )
 from decouple import config
 from django.conf import settings
@@ -73,12 +79,16 @@ from fastapi_limiter.depends import RateLimiter
 # from fastapi_limiter import FastAPILimiter
 # from fastapi_limiter.depends import RateLimiter
 from home.models import (  # MatVwOrgsAllIps,
+    CredentialBreaches,
     CyhyDbAssets,
     CyhyPortScans,
     DataSource,
+    Mentions,
     Organizations,
     PshttResults,
+    RootDomains,
     SubDomains,
+    TopCves,
     VwBreachcomp,
     VwBreachcompBreachdetails,
     VwBreachcompCredsbydate,
@@ -156,9 +166,9 @@ def create_access_token(
 ) -> str:
     """Create access token."""
     if expires_delta is not None:
-        expires_date = datetime.utcnow() + expires_delta
+        expires_date = dt.utcnow() + expires_delta
     else:
-        expires_date = datetime.utcnow() + timedelta(
+        expires_date = dt.utcnow() + timedelta(
             minutes=ACCESS_TOKEN_EXPIRE_MINUTES
         )
 
@@ -172,9 +182,9 @@ def create_refresh_token(
 ) -> str:
     """Create a refresh token."""
     if expires_delta is not None:
-        expires_date = datetime.utcnow() + expires_delta
+        expires_date = dt.utcnow() + expires_delta
     else:
-        expires_date = datetime.utcnow() + timedelta(
+        expires_date = dt.utcnow() + timedelta(
             minutes=REFRESH_TOKEN_EXPIRE_MINUTES
         )
 
@@ -499,7 +509,7 @@ def read_orgs(tokens: dict = Depends(get_api_key)):
 )
 def read_weekly_statuses(tokens: dict = Depends(get_api_key)):
     """Call API endpoint to get weekly statuses."""
-    current_date = datetime.now()
+    current_date = dt.now()
     days_to_week_end = (4 - current_date.weekday()) % 7
     week_ending_date = current_date + timedelta(days=days_to_week_end)
     statuses = list(WeeklyStatuses.objects.filter(week_ending=week_ending_date))
@@ -527,7 +537,7 @@ def read_user_weekly_statuses(
     data: schemas.UserStatuses, tokens: dict = Depends(get_api_key)
 ):
     """Call API endpoint to get a user weekly statuses."""
-    current_date = datetime.now()
+    current_date = dt.now()
     days_to_week_end = (4 - current_date.weekday()) % 7
     week_ending_date = current_date + timedelta(days=days_to_week_end)
     statuses = list(
@@ -2472,6 +2482,629 @@ async def get_xl_stakeholders_task_status(
                 }
             else:
                 return {"task_id": task_id, "status": task.state}
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+
+# --- get_new_orgs(), Issue 605 ---
+@api_router.get(
+    "/orgs_report_on_false",
+    dependencies=[
+        Depends(get_api_key)
+    ],  # Depends(RateLimiter(times=200, seconds=60))],
+    response_model=List[schemas.OrgsTable],
+    tags=["Get all data for organizations where report on is false."],
+)
+def orgs_report_on_false(tokens: dict = Depends(get_api_key)):
+    """API endpoint to get all data for organizations where report on is false."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # If API key valid, make query
+            orgs_report_on_false_data = list(
+                Organizations.objects.filter(report_on=False).values()
+            )
+            # Convert uuids to strings
+            for row in orgs_report_on_false_data:
+                row["organizations_uid"] = convert_uuid_to_string(
+                    row["organizations_uid"]
+                )
+                row["org_type_uid_id"] = convert_uuid_to_string(row["org_type_uid_id"])
+                row["date_first_reported"] = convert_date_to_string(
+                    row["date_first_reported"]
+                )
+                row["parent_org_uid_id"] = convert_uuid_to_string(
+                    row["parent_org_uid_id"]
+                )
+                row["cyhy_period_start"] = convert_date_to_string(
+                    row["cyhy_period_start"]
+                )
+            return orgs_report_on_false_data
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+
+# --- set_org_to_report_on(), Issue 606 ---
+@api_router.post(
+    "/orgs_set_report_on",
+    dependencies=[
+        Depends(get_api_key)
+    ],  # Depends(RateLimiter(times=200, seconds=60))],
+    response_model=List[schemas.OrgsTable],
+    tags=["Set report_on to true for the specified organization."],
+)
+def orgs_set_report_on(
+    data: schemas.OrgsSetReportOnInput, tokens: dict = Depends(get_api_key)
+):
+    """API endpoint to set report_on to true for the specified organization."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # If API key valid, make query
+            specified_org = list(
+                Organizations.objects.filter(cyhy_db_name=data.cyhy_db_name).values()
+            )
+            if len(specified_org) != 0:
+                # If org exists, update fields
+                Organizations.objects.filter(cyhy_db_name=data.cyhy_db_name).update(
+                    report_on=True, premium_report=data.premium, demo=False
+                )
+                # Convert uuids to strings
+                for row in specified_org:
+                    row["organizations_uid"] = convert_uuid_to_string(
+                        row["organizations_uid"]
+                    )
+                    row["org_type_uid_id"] = convert_uuid_to_string(
+                        row["org_type_uid_id"]
+                    )
+                    row["date_first_reported"] = convert_date_to_string(
+                        row["date_first_reported"]
+                    )
+                    row["parent_org_uid_id"] = convert_uuid_to_string(
+                        row["parent_org_uid_id"]
+                    )
+                    row["cyhy_period_start"] = convert_date_to_string(
+                        row["cyhy_period_start"]
+                    )
+                return specified_org
+            else:
+                # Otherwise, return empty
+                LOGGER.error("No org found for that cyhy id")
+                return [
+                    {
+                        "organizations_uid": "NOT FOUND",
+                        "name": "",
+                        "cyhy_db_name": "",
+                        "org_type_uid_id": "",
+                        "report_on": False,
+                        "password": "",
+                        "date_first_reported": "",
+                        "parent_org_uid_id": "",
+                        "premium_report": False,
+                        "agency_type": "",
+                        "demo": False,
+                        "scorecard": False,
+                        "fceb": False,
+                        "receives_cyhy_report": False,
+                        "receives_bod_report": False,
+                        "receives_cybex_report": False,
+                        "run_scans": False,
+                        "is_parent": False,
+                        "ignore_roll_up": True,
+                        "retired": True,
+                        "cyhy_period_start": "",
+                        "fceb_child": False,
+                        "election": False,
+                        "scorecard_child": False,
+                    }
+                ]
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+
+# --- set_org_to_demo(), Issue 607 ---
+@api_router.post(
+    "/orgs_set_demo",
+    dependencies=[
+        Depends(get_api_key)
+    ],  # Depends(RateLimiter(times=200, seconds=60))],
+    response_model=List[schemas.OrgsTable],
+    tags=["Set demo to true for the specified organization."],
+)
+def orgs_set_demo(
+    data: schemas.OrgsSetReportOnInput, tokens: dict = Depends(get_api_key)
+):
+    """API endpoint to set demo to true for the specified organization."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # If API key valid, make query
+            specified_org = list(
+                Organizations.objects.filter(cyhy_db_name=data.cyhy_db_name).values()
+            )
+            if len(specified_org) != 0:
+                # If org exists, update fields
+                Organizations.objects.filter(cyhy_db_name=data.cyhy_db_name).update(
+                    report_on=False, premium_report=data.premium, demo=True
+                )
+                # Convert uuids to strings
+                for row in specified_org:
+                    row["organizations_uid"] = convert_uuid_to_string(
+                        row["organizations_uid"]
+                    )
+                    row["org_type_uid_id"] = convert_uuid_to_string(
+                        row["org_type_uid_id"]
+                    )
+                    row["date_first_reported"] = convert_date_to_string(
+                        row["date_first_reported"]
+                    )
+                    row["parent_org_uid_id"] = convert_uuid_to_string(
+                        row["parent_org_uid_id"]
+                    )
+                    row["cyhy_period_start"] = convert_date_to_string(
+                        row["cyhy_period_start"]
+                    )
+                return specified_org
+            else:
+                # Otherwise, return empty
+                LOGGER.error("No org found for that cyhy id")
+                return [
+                    {
+                        "organizations_uid": "NOT FOUND",
+                        "name": "",
+                        "cyhy_db_name": "",
+                        "org_type_uid_id": "",
+                        "report_on": False,
+                        "password": "",
+                        "date_first_reported": "",
+                        "parent_org_uid_id": "",
+                        "premium_report": False,
+                        "agency_type": "",
+                        "demo": False,
+                        "scorecard": False,
+                        "fceb": False,
+                        "receives_cyhy_report": False,
+                        "receives_bod_report": False,
+                        "receives_cybex_report": False,
+                        "run_scans": False,
+                        "is_parent": False,
+                        "ignore_roll_up": True,
+                        "retired": True,
+                        "cyhy_period_start": "",
+                        "fceb_child": False,
+                        "election": False,
+                        "scorecard_child": False,
+                    }
+                ]
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+
+# --- query_cyhy_assets(), Issue 608 ---
+@api_router.post(
+    "/cyhy_assets_by_org",
+    dependencies=[Depends(get_api_key)], #Depends(RateLimiter(times=200, seconds=60))],
+    response_model=List[schemas.CyhyDbAssetsByOrg],
+    tags=["Get all cyhy assets for the specified organization."],
+)
+def cyhy_assets_by_org(
+    data: schemas.GenInputOrgCyhyNameSingle, tokens: dict = Depends(get_api_key)
+):
+    """API endpoint to get all cyhy assets for the specified organization."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # If API key valid, make query
+            cyhy_assets_by_org_data = list(
+                CyhyDbAssets.objects.filter(
+                    org_id=data.org_cyhy_name, currently_in_cyhy=True
+                ).values()
+            )
+            # Convert uuids to strings
+            for row in cyhy_assets_by_org_data:
+                row["field_id"] = convert_uuid_to_string(row["field_id"])
+                row["first_seen"] = convert_date_to_string(row["first_seen"])
+                row["last_seen"] = convert_date_to_string(row["last_seen"])
+            # Catch query no results scenario
+            if not cyhy_assets_by_org_data:
+                cyhy_assets_by_org_data = [{x: None for x in schemas.CyhyDbAssetsByOrg.__fields__}]
+            return cyhy_assets_by_org_data
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+
+# --- query_subs(), Issue 633 (paginated) ---
+@api_router.post(
+    "/sub_domains_by_org",
+    dependencies=[Depends(get_api_key)], #Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.SubDomainPagedTaskResp,
+    tags=["Get all sub domains for a specified organization."],
+)
+def sub_domains_by_org(data: schemas.SubDomainPagedInput, tokens: dict = Depends(get_api_key)):
+    """Call API endpoint to get all sub domains for a specified organization."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # If API key valid, create task for query
+            task = sub_domains_by_org_task.delay(data.org_uid, data.page, data.per_page)
+            # Return the new task id w/ "Processing" status
+            return {"task_id": task.id, "status": "Processing"}
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+
+@api_router.get(
+    "/sub_domains_by_org/task/{task_id}",
+    dependencies=[Depends(get_api_key)], #Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.SubDomainPagedTaskResp,
+    tags=["Check task status for subdomains by org query."],
+)
+async def sub_domains_by_org_task_status(
+    task_id: str, tokens: dict = Depends(get_api_key)
+):
+    """Get task status for sub_domains_by_org."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            # userapiTokenverify(theapiKey=tokens)
+            # Retrieve task status
+            task = sub_domains_by_org_task.AsyncResult(task_id)
+            # Return appropriate message for status
+            if task.state == "SUCCESS":
+                return {
+                    "task_id": task_id,
+                    "status": "Completed",
+                    "result": task.result,
+                }
+            elif task.state == "PENDING":
+                return {"task_id": task_id, "status": "Pending"}
+            elif task.state == "FAILURE":
+                return {
+                    "task_id": task_id,
+                    "status": "Failed",
+                    "error": str(task.result),
+                }
+            else:
+                return {"task_id": task_id, "status": task.state}
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+
+# --- insert_sixgill_mentions(), Issue 654
+@api_router.put(
+    "/mentions_insert",
+    dependencies=[
+        Depends(get_api_key)
+    ],  # Depends(RateLimiter(times=200, seconds=60))],
+    tags=["Insert multiple records into the mentions table."],
+)
+def mentions_insert(
+    data: schemas.MentionsInsertInput, tokens: dict = Depends(get_api_key)
+):
+    """API endpoint to insert multiple records into the mentions table."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # If API key valid, proceed
+            create_ct = 0
+            for record in data.insert_data:
+                # convert to dict
+                record = dict(record)
+                curr_source_inst = DataSource.objects.get(
+                    data_source_uid=record["data_source_uid"]
+                )
+                # Insert each row of data
+                try:
+                    Mentions.objects.get(
+                        sixgill_mention_id=record["sixgill_mention_id"]
+                    )
+                    # If record already exists, do nothing
+                except Mentions.DoesNotExist:
+                    # Otherwise, create new record
+                    Mentions.objects.create(
+                        mentions_uid=uuid.uuid1(),
+                        organizations_uid=record["organizations_uid"],
+                        data_source_uid=curr_source_inst,
+                        category=record["category"],
+                        collection_date=record["collection_date"],
+                        content=record["content"],
+                        creator=record["creator"],
+                        date=record["date"],
+                        sixgill_mention_id=record["sixgill_mention_id"],
+                        lang=record["lang"],
+                        post_id=record["post_id"],
+                        rep_grade=record["rep_grade"],
+                        site=record["site"],
+                        site_grade=record["site_grade"],
+                        sub_category=record["sub_category"],
+                        title=record["title"],
+                        type=record["type"],
+                        url=record["url"],
+                        comments_count=record["comments_count"],
+                        tags=record["tags"],
+                    )
+                    create_ct += 1
+            return str(create_ct) + " records created in the mentions table"
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+
+# --- insert_sixgill_breaches(), Issue 655
+@api_router.put(
+    "/cred_breaches_insert",
+    dependencies=[
+        Depends(get_api_key)
+    ],  # Depends(RateLimiter(times=200, seconds=60))],
+    tags=["Insert multiple records into the credential_breaches table."],
+)
+def cred_breaches_insert(
+    data: schemas.CredBreachesInsertInput, tokens: dict = Depends(get_api_key)
+):
+    """API endpoint to insert multiple records into the credential_breaches table."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # If API key valid, proceed
+            create_ct = 0
+            update_ct = 0
+            for record in data.insert_data:
+                # convert to dict
+                record = dict(record)
+                curr_source_inst = DataSource.objects.get(
+                    data_source_uid=record["data_source_uid"]
+                )
+                # Insert each row of data
+                try:
+                    CredentialBreaches.objects.get(breach_name=record["breach_name"])
+                    # If record already exists, update
+                    CredentialBreaches.objects.filter(
+                        breach_name=record["breach_name"]
+                    ).update(
+                        exposed_cred_count=record["exposed_cred_count"],
+                        password_included=record["password_included"],
+                    )
+                    update_ct += 1
+                except CredentialBreaches.DoesNotExist:
+                    # Otherwise, create new record
+                    CredentialBreaches.objects.create(
+                        credential_breaches_uid=uuid.uuid1(),
+                        breach_name=record["breach_name"],
+                        description=record["description"],
+                        exposed_cred_count=record["exposed_cred_count"],
+                        breach_date=record["breach_date"],
+                        modified_date=record["modified_date"],
+                        password_included=record["password_included"],
+                        data_source_uid=curr_source_inst,
+                    )
+                    create_ct += 1
+            return (
+                "Records in the credential_breaches table: "
+                + str(create_ct)
+                + " created, "
+                + str(update_ct)
+                + " updated"
+            )
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+
+# --- insert_sixgill_topCVEs(), Issue 657
+@api_router.put(
+    "/top_cves_insert",
+    dependencies=[
+        Depends(get_api_key)
+    ],  # Depends(RateLimiter(times=200, seconds=60))],
+    tags=["Insert multiple records into the top_cves table."],
+)
+def top_cves_insert(
+    data: schemas.TopCVEsInsertInput, tokens: dict = Depends(get_api_key)
+):
+    """API endpoint to insert multiple records into the top_cves table."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # If API key valid, proceed
+            create_ct = 0
+            for record in data.insert_data:
+                # convert to dict
+                record = dict(record)
+                curr_source_inst = DataSource.objects.get(
+                    data_source_uid=record["data_source_uid"]
+                )
+                # Insert each row of data, on conflict do nothing
+                try:
+                    TopCves.objects.get(cve_id=record["cve_id"], date=record["date"])
+                    # If record already exists, do nothing
+                except TopCves.DoesNotExist:
+                    # Otherwise, create new record
+                    TopCves.objects.create(
+                        top_cves_uid=uuid.uuid1(),
+                        cve_id=record["cve_id"],
+                        dynamic_rating=record["dynamic_rating"],
+                        nvd_base_score=record["nvd_base_score"],
+                        date=record["date"],
+                        summary=record["summary"],
+                        data_source_uid=curr_source_inst,
+                    )
+                    create_ct += 1
+            return str(create_ct) + " records created in the top_cves table"
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+
+# --- addRootdomain(), Issue 661 ---
+@api_router.put(
+    "/root_domains_single_insert",
+    dependencies=[
+        Depends(get_api_key)
+    ],  # Depends(RateLimiter(times=200, seconds=60))],
+    tags=["Insert a single root domain into the root_domains table."],
+)
+def root_domains_single_insert(
+    data: schemas.RootDomainsSingleInsertInput, tokens: dict = Depends(get_api_key)
+):
+    """API endpoint to insert a single root domain into the root_domains table."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # If API key valid, insert root domain
+            # Check if record already exists
+            domain_results = RootDomains.objects.filter(
+                root_domain=data.root_domain,
+                organizations_uid=data.pe_org_uid,
+                data_source_uid=data.source_uid,
+            )
+            if not domain_results.exists():
+                # If not, insert new record
+                curr_org_inst = Organizations.objects.get(
+                    organizations_uid=data.pe_org_uid
+                )
+                curr_source_inst = DataSource.objects.get(
+                    data_source_uid=data.source_uid
+                )
+                try:
+                    ip = socket.gethostbyname(data.root_domain)
+                except Exception:
+                    ip = np.nan
+                RootDomains.objects.create(
+                    root_domain=data.root_domain,
+                    organizations_uid=curr_org_inst,
+                    data_source_uid=curr_source_inst,
+                    ip_address=ip,
+                )
+                return (
+                    "Root domain has been inserted into root_domains table for "
+                    + data.org_name
+                )
+            return (
+                "Root domain already exists in root_domains table for " + data.org_name
+            )
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+
+# --- addSubdomain(), Issue 662 ---
+@api_router.put(
+    "/sub_domains_single_insert",
+    dependencies=[
+        Depends(get_api_key)
+    ],  # , Depends(RateLimiter(times=200, seconds=60))],
+    tags=["Insert a single sub domain into the sub_domains table."],
+)
+def sub_domains_single_insert(
+    data: schemas.SubDomainsSingleInsertInput, tokens: dict = Depends(get_api_key)
+):
+    """API endpoint to insert a single sub domain into the sub_domains table."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # If API key valid, proceed
+            if data.root:
+                # If sub domain is also a root domain
+                curr_root = data.domain
+            else:
+                # If sub domain is not a root domain
+                curr_root = data.domain.split(".")[-2]
+                curr_root = ".".join(curr_root)
+            curr_date = dt.today().strftime("%Y-%m-%d")
+            org_name = Organizations.objects.filter(
+                organizations_uid=data.pe_org_uid
+            ).values("cyhy_db_name")[0]["cyhy_db_name"]
+            # Check if sub domain already exists in table
+            sub_domain_results = SubDomains.objects.filter(
+                sub_domain=data.domain,
+                root_domain_uid__organizations_uid=data.pe_org_uid,
+            )
+            if not sub_domain_results.exists():
+                # If not, insert new record
+                # Get data_source instance of "findomain"
+                findomain_inst = DataSource.objects.get(name="findomain")
+                # Check if root domain already exists
+                root_results = RootDomains.objects.filter(
+                    organizations_uid=data.pe_org_uid, root_domain=curr_root
+                )
+                if not root_results.exists():
+                    # If root domain does not exist, create a new record
+                    RootDomains.objects.create(
+                        organizations_uid=Organizations.objects.get(
+                            organizations_uid=data.pe_org_uid
+                        ),
+                        root_domain=curr_root,
+                        data_source_uid=findomain_inst,
+                        enumerate_subs=False,
+                    )
+                # Get root_domains instance of specified root domain
+                root_inst = RootDomains.objects.get(
+                    organizations_uid=data.pe_org_uid, root_domain=curr_root
+                )
+                # Create new sub domain record
+                SubDomains.objects.create(
+                    sub_domain=data.domain,
+                    root_domain_uid=root_inst,
+                    data_source_uid=findomain_inst,
+                    first_seen=curr_date,
+                    last_seen=curr_date,
+                    identified=False,
+                )
+                # Return status message
+                return (
+                    "Sub domain has been inserted into sub_domains table for "
+                    + org_name
+                )
+            else:
+                # If sub domain already exists, update last_seen and identified
+                SubDomains.objects.filter(
+                    sub_domain=data.domain,
+                    root_domain_uid__organizations_uid=data.pe_org_uid,
+                ).update(last_seen=curr_date, identified=False)
+                # Return status message
+                return (
+                    "Sub domain record has been updated in the sub_domains table for "
+                    + org_name
+                )
         except ObjectDoesNotExist:
             LOGGER.info("API key expired please try again")
     else:

@@ -1248,3 +1248,356 @@ class VwIscoreOrgsIpCountsTaskResp(BaseModel):
     status: str
     result: Optional[List[VwIscoreOrgsIpCounts]] = None
     error: Optional[str] = None
+
+
+# --- get_new_orgs(), Issue 605, 606, 607 ---
+# Generalized schema for returning all organizations table fields
+class OrgsTable(BaseModel):
+    """OrgsTable schema class."""
+
+    organizations_uid: str
+    name: Optional[str] = None
+    cyhy_db_name: Optional[str] = None
+    org_type_uid_id: Optional[str] = None
+    report_on: Optional[bool] = None
+    password: Optional[str] = None
+    date_first_reported: Optional[str] = None
+    parent_org_uid_id: Optional[str] = None
+    premium_report: Optional[bool] = None
+    agency_type: Optional[str] = None
+    demo: Optional[bool] = None
+    scorecard: Optional[bool] = None
+    fceb: Optional[bool] = None
+    receives_cyhy_report: Optional[bool] = None
+    receives_bod_report: Optional[bool] = None
+    receives_cybex_report: Optional[bool] = None
+    run_scans: Optional[bool] = None
+    is_parent: Optional[bool] = None
+    ignore_roll_up: Optional[bool] = None
+    retired: Optional[bool] = None
+    cyhy_period_start: Optional[str] = None
+    fceb_child: Optional[bool] = None
+    election: Optional[bool] = None
+    scorecard_child: Optional[bool] = None
+
+    class Config:
+        """OrgsTable schema config class."""
+
+        orm_mode = True
+
+
+# --- set_org_to_report_on(), Issue 606, 607 ---
+# Set specified organization to report_on
+class OrgsSetReportOnInput(BaseModel):
+    """OrgsSetReportOnInput schema class."""
+
+    cyhy_db_name: str
+    premium: bool
+
+    class Config:
+        """OrgsSetReportOnInput schema config class."""
+
+
+# --- query_cyhy_assets(), Issue 608 ---
+# Get CyHy database assets for an org (cyhy_db_name)
+class CyhyDbAssetsByOrg(BaseModel):
+    """CyhyDbAssetsByOrg schema class."""
+
+    field_id: Optional[str] = None
+    org_id: Optional[str] = None
+    org_name: Optional[str] = None
+    contact: Optional[str] = None
+    network: Optional[str] = None
+    type: Optional[str] = None
+    first_seen: Optional[str] = None
+    last_seen: Optional[str] = None
+    currently_in_cyhy: Optional[bool] = None
+
+    class Config:
+        """CyhyDbAssetsByOrg schema config class."""
+
+        orm_mode = True
+
+
+# --- query_subs(), Issue 633, 560 ---
+# Get entire sub_domains table, single output
+class SubDomainTable(BaseModel):
+    """SubDomainTable schema class."""
+
+    sub_domain_uid: Optional[str] = None
+    sub_domain: Optional[str] = None
+    root_domain_uid_id: Optional[str] = None
+    data_source_uid_id: Optional[str] = None
+    dns_record_uid_id: Optional[str] = None
+    status: Optional[bool] = None
+    first_seen: Optional[str] = None
+    last_seen: Optional[str] = None
+    current: Optional[bool] = None
+    identified: Optional[bool] = None
+
+    class Config:
+        """SubDomainTable schema config class."""
+
+        orm_mode = True
+        validate_assignment = True
+
+
+# --- query_all_subs(), Issue 633 ---
+# Get entire sub_domains table, paged input
+class SubDomainPagedInput(BaseModel):
+    """SubDomainPagedInput schema class."""
+
+    org_uid: str
+    page: int
+    per_page: int
+
+    class Config:
+        """SubDomainPagedInput schema config class."""
+
+        orm_mode = True
+
+
+# --- query_subs(), Issue 633, 560 ---
+# Get entire sub_domains table, paged output
+class SubDomainPagedResult(BaseModel):
+    """SubDomainPagedResult schema class."""
+
+    total_pages: int
+    current_page: int
+    data: List[SubDomainTable]
+
+
+# --- query_all_subs(), Issue 633, 560 ---
+# Get entire sub_domains table, paged task resp
+class SubDomainPagedTaskResp(BaseModel):
+    """SubDomainPagedTaskResp schema class."""
+
+    task_id: str
+    status: str
+    result: Optional[SubDomainPagedResult] = None
+    error: Optional[str] = None
+
+
+# --- insert_sixgill_mentions(), Issue 654 ---
+# Insert multiple records into the mentions table
+class MentionsInsert(BaseModel):
+    """MentionsInsert schema class."""
+
+    organizations_uid: str
+    data_source_uid: str
+    category: str
+    collection_date: str
+    content: str
+    creator: str
+    date: str
+    sixgill_mention_id: str
+    lang: str
+    post_id: str
+    rep_grade: str
+    site: str
+    site_grade: str
+    sub_category: str
+    title: str
+    type: str
+    url: str
+    comments_count: str
+    tags: str
+
+    class Config:
+        """MentionsInsert schema config class."""
+
+        orm_mode = True
+
+
+# --- insert_sixgill_mentions(), Issue 654 ---
+# Insert multiple records into the mentions table, input
+class MentionsInsertInput(BaseModel):
+    """MentionsInsertInput schema class."""
+
+    insert_data: List[MentionsInsert]
+
+    class Config:
+        """MentionsInsertInput schema config class."""
+
+        orm_mode = True
+
+
+# --- insert_sixgill_breaches(), Issue 655 ---
+# Insert multiple records into the credential_breaches table
+class CredBreachesInsert(BaseModel):
+    """CredBreachesInsert schema class."""
+
+    breach_name: str
+    description: str
+    exposed_cred_count: int
+    breach_date: str
+    modified_date: str
+    password_included: bool
+    data_source_uid: str
+
+    class Config:
+        """CredBreachesInsert schema config class."""
+
+        orm_mode = True
+
+
+# --- insert_sixgill_breaches(), Issue 655 ---
+# Insert multiple records into the credential_breaches table, input
+class CredBreachesInsertInput(BaseModel):
+    """CredBreachesInsertInput schema class."""
+
+    insert_data: List[CredBreachesInsert]
+
+    class Config:
+        """CredBreachesInsertInput schema config class."""
+
+        orm_mode = True
+
+
+# --- insert_sixgill_topCVEs(), Issue 657 ---
+# Insert multiple records into the top_cves table
+class TopCVEsInsert(BaseModel):
+    """TopCVEsInsert schema class."""
+
+    cve_id: str
+    dynamic_rating: Optional[str] = None
+    nvd_base_score: Optional[str] = None
+    date: str
+    summary: Optional[str] = None
+    data_source_uid: Optional[str] = None
+
+    class Config:
+        """TopCVEsInsert schema config class."""
+
+        orm_mode = True
+
+
+# --- insert_sixgill_topCVEs(), Issue 657 ---
+# Insert multiple records into the top_cves table, input
+class TopCVEsInsertInput(BaseModel):
+    """TopCVEsInsertInput schema class."""
+
+    insert_data: List[TopCVEsInsert]
+
+    class Config:
+        """TopCVEsInsertInput schema config class."""
+
+        orm_mode = True
+
+
+# --- addRootdomain(), Issue 661 ---
+# Insert single root domain into root_domains table, input
+class RootDomainsSingleInsertInput(BaseModel):
+    """RootDomainsSingleInsertInput schema class."""
+
+    root_domain: str
+    pe_org_uid: str
+    source_uid: str
+    org_name: str
+
+    class Config:
+        """RootDomainsSingleInsertInput schema config class."""
+
+        orm_mode = True
+
+
+# --- addSubdomain(), Issue 662 ---
+# Insert single sub domain into sub_domains table, input
+class SubDomainsSingleInsertInput(BaseModel):
+    """SubDomainsSingleInsertInput schema class."""
+
+    domain: str
+    pe_org_uid: str
+    root: Optional[bool] = None
+
+    class Config:
+        """SubDomainsSingleInsertInput schema config class."""
+
+        orm_mode = True
+
+
+# ---------- Generalized Schemas ----------
+# Generalized 1 org_uid input schema
+class GenInputOrgUIDSingle(BaseModel):
+    """GenInputOrgUIDSingle schema class."""
+
+    org_uid: str
+
+    class Config:
+        """GenInputOrgUIDSingle schema config class."""
+
+        orm_mode = True
+
+
+# Generalized 1 org cyhy_db_name input schema
+class GenInputOrgCyhyNameSingle(BaseModel):
+    """GenInputOrgCyhyNameSingle schema class."""
+
+    org_cyhy_name: str
+
+    class Config:
+        """GenInputOrgCyhyNameSingle schema config class."""
+
+        orm_mode = True
+
+
+# Generalized 1 org_uid, 1 date input schema
+class GenInputOrgUIDDateSingle(BaseModel):
+    """GenInputOrgUIDDateSingle schema class."""
+
+    org_uid: str
+    date: str
+
+    class Config:
+        """GenInputOrgUIDDateSingle schema config class."""
+
+        orm_mode = True
+
+
+# Generalized list of org_uids input schema
+class GenInputOrgUIDList(BaseModel):
+    "GenInputOrgUIDList schema class."
+    org_uid_list: List[str]
+
+    class Config:
+        """GenInputOrgUIDList"""
+
+        orm_mode = True
+
+
+class GenInputOrgUIDDateRange(BaseModel):
+    """GenInputOrgUIDDateRange schema class."""
+
+    org_uid: str
+    start_date: str
+    end_date: str
+
+    class Config:
+        """GenInputOrgUIDDateRange schema config class."""
+
+
+# Generalized start/end date input schema
+class GenInputDateRange(BaseModel):
+    """GenInputDateRange schema class."""
+
+    start_date: str
+    end_date: str
+
+    class Config:
+        """GenInputDateRange schema config class."""
+
+        orm_mode = True
+
+
+# Generalized list of org_uids and start/end date input schema
+class GenInputOrgUIDListDateRange(BaseModel):
+    """GenInputOrgUIDListDateRange schema class."""
+
+    org_uid_list: List[str]
+    start_date: str
+    end_date: str
+
+    class Config:
+        """GenInputOrgUIDListDateRange schema config class."""
+
+        orm_mode = True

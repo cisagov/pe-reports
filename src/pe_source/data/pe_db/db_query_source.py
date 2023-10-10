@@ -25,8 +25,8 @@ CONN_PARAMS_DIC = config()
 CONN_PARAMS_DIC_STAGING = staging_config()
 
 API_DIC = staging_config(section="pe_api")
-pe_api_url = API_DIC.get("pe_api_url")
-pe_api_key = API_DIC.get("pe_api_key")
+pe_api_url = "http://127.0.0.1:8089/apiv1/" #API_DIC.get("pe_api_url")
+pe_api_key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE2NzMwNDAzNDUsInN1YiI6ImNkdWhuNzUifQ.Gx8loA6ZtWe7MA4eqlDzWUPzc_j9vJjOLYOxg2aBZxQ"#API_DIC.get("pe_api_key")
 
 
 def show_psycopg2_exception(err):
@@ -306,97 +306,6 @@ def insert_sixgill_alerts(df):
     cursor.close()
 
 
-def insert_sixgill_mentions(df):
-    """Insert sixgill mention data."""
-    conn = connect()
-    columns_to_subset = [
-        "organizations_uid",
-        "data_source_uid",
-        "category",
-        "collection_date",
-        "content",
-        "creator",
-        "date",
-        "sixgill_mention_id",
-        "lang",
-        "post_id",
-        "rep_grade",
-        "site",
-        "site_grade",
-        "sub_category",
-        "title",
-        "type",
-        "url",
-        "comments_count",
-        "tags",
-    ]
-    try:
-        df = df.loc[:, df.columns.isin(columns_to_subset)]
-    except Exception as e:
-        logging.error(e)
-
-    # Remove any "[\x00|NULL]" characters
-    df = df.apply(
-        lambda col: col.str.replace(r"[\x00|NULL]", "", regex=True)
-        if col.dtype == object
-        else col
-    )
-    table = "mentions"
-    # Create a list of tuples from the dataframe values
-    tuples = [tuple(x) for x in df.to_numpy()]
-    # Comma-separated dataframe columns
-    cols = ",".join(list(df.columns))
-    # SQL query to execute
-    query = """INSERT INTO {}({}) VALUES %s
-    ON CONFLICT (sixgill_mention_id) DO NOTHING;"""
-    cursor = conn.cursor()
-    try:
-        extras.execute_values(
-            cursor,
-            query.format(
-                table,
-                cols,
-            ),
-            tuples,
-        )
-        conn.commit()
-        logging.info("Successfully inserted/updated mention data into PE database.")
-    except (Exception, psycopg2.DatabaseError) as error:
-        logging.error(error)
-        conn.rollback()
-    cursor.close()
-
-
-def insert_sixgill_breaches(df):
-    """Insert sixgill breach data."""
-    conn = connect()
-    table = "credential_breaches"
-    # Create a list of tuples from the dataframe values
-    tuples = [tuple(x) for x in df.to_numpy()]
-    # Comma-separated dataframe columns
-    cols = ",".join(list(df.columns))
-    # SQL query to execute
-    query = """INSERT INTO {}({}) VALUES %s
-    ON CONFLICT (breach_name) DO UPDATE SET
-    password_included = EXCLUDED.password_included;"""
-    cursor = conn.cursor()
-    try:
-        extras.execute_values(
-            cursor,
-            query.format(
-                table,
-                cols,
-            ),
-            tuples,
-        )
-        conn.commit()
-        logging.info("Successfully inserted/updated breaches into PE database.")
-    except (Exception, psycopg2.DatabaseError) as error:
-        logging.info(error)
-        conn.rollback()
-    cursor.close()
-
-
 def get_breaches():
     """Get credential breaches."""
     conn = connect()
@@ -440,35 +349,6 @@ def insert_sixgill_credentials(df):
         logging.info(
             "Successfully inserted/updated exposed credentials into PE database."
         )
-    except (Exception, psycopg2.DatabaseError) as error:
-        logging.info(error)
-        conn.rollback()
-    cursor.close()
-
-
-def insert_sixgill_topCVEs(df):
-    """Insert sixgill top CVEs."""
-    conn = connect()
-    table = "top_cves"
-    # Create a list of tuples from the dataframe values
-    tuples = [tuple(x) for x in df.to_numpy()]
-    # Comma-separated dataframe columns
-    cols = ",".join(list(df.columns))
-    # SQL query to execute
-    query = """INSERT INTO {}({}) VALUES %s
-    ON CONFLICT (cve_id, date) DO NOTHING;"""
-    cursor = conn.cursor()
-    try:
-        extras.execute_values(
-            cursor,
-            query.format(
-                table,
-                cols,
-            ),
-            tuples,
-        )
-        conn.commit()
-        logging.info("Successfully inserted/updated top cve data into PE database.")
     except (Exception, psycopg2.DatabaseError) as error:
         logging.info(error)
         conn.rollback()
@@ -558,37 +438,6 @@ def getRootdomain(domain):
     root = cur.fetchone()
     cur.close()
     return root
-
-
-def addRootdomain(root_domain, pe_org_uid, source_uid, org_name):
-    """Add root domain."""
-    conn = connect()
-    ip_address = str(socket.gethostbyname(root_domain))
-    sql = """insert into root_domains(root_domain, organizations_uid, organization_name, data_source_uid, ip_address)
-            values ('{}', '{}', '{}', '{}', '{}');"""
-    cur = conn.cursor()
-    cur.execute(sql.format(root_domain, pe_org_uid, org_name, source_uid, ip_address))
-    conn.commit()
-    cur.close()
-
-
-def addSubdomain(conn, domain, pe_org_uid, root):
-    """Add a subdomain into the database."""
-    conn = connect()
-    if root:
-        root_domain = domain
-    else:
-        root_domain = domain.split(".")[-2:]
-        root_domain = ".".join(root_domain)
-    cur = conn.cursor()
-    date = datetime.today().strftime("%Y-%m-%d")
-    cur.callproc(
-        "insert_sub_domain",
-        (False, date, domain, pe_org_uid, "findomain", root_domain, None),
-    )
-    LOGGER.info("Success adding domain %s to subdomains table.", domain)
-    conn.commit()
-    close(conn)
 
 
 def org_root_domains(conn, org_uid):
@@ -859,3 +708,383 @@ def getDataSource(conn, source):
     source = cur.fetchone()
     cur.close()
     return source
+
+
+# --- 654 ---
+def insert_sixgill_mentions_api(df):
+    """
+    Query API to insert multiple records into the mentions table.
+
+    Args:
+        df: Dataframe containing mention data to be inserted
+    """
+    # Endpoint info
+    endpoint_url = pe_api_url + "mentions_insert"
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": pe_api_key,
+    }
+    # Preprocess data and convert to list of dictionaries
+    cols = [
+        "organizations_uid",
+        "data_source_uid",
+        "category",
+        "collection_date",
+        "content",
+        "creator",
+        "date",
+        "sixgill_mention_id",
+        "lang",
+        "post_id",
+        "rep_grade",
+        "site",
+        "site_grade",
+        "sub_category",
+        "title",
+        "type",
+        "url",
+        "comments_count",
+        "tags",
+    ]
+    try:
+        df = df[cols]
+    except Exception as e:
+        LOGGER.info(e)
+        cols = cols[:-1]
+        df = df[cols]
+        df["tags"] = "NaN"
+    df["collection_date"] = df["collection_date"].astype(str)
+    df["date"] = df["date"].astype(str)
+    # Remove any "[\x00|NULL]" characters if column data type is object
+    df = df.apply(
+        lambda col: col.str.replace(r"(\x00)|(NULL)", "", regex=True)
+        if col.dtype == object
+        else col
+    )
+    df_dict_list = df.to_dict("records")
+    data = json.dumps({"insert_data": df_dict_list})
+    try:
+        # Call endpoint
+        result = requests.put(endpoint_url, headers=headers, data=data).json()
+        # Process data and return
+        LOGGER.info(result)
+    except requests.exceptions.HTTPError as errh:
+        LOGGER.error(errh)
+    except requests.exceptions.ConnectionError as errc:
+        LOGGER.error(errc)
+    except requests.exceptions.Timeout as errt:
+        LOGGER.error(errt)
+    except requests.exceptions.RequestException as err:
+        LOGGER.error(err)
+    except json.decoder.JSONDecodeError as err:
+        LOGGER.error(err)
+
+
+# --- 655 ---
+def insert_sixgill_breaches_api(df):
+    """
+    Query API to insert multiple records into the credential_breaches table.
+
+    Args:
+        df: Dataframe containing credential breach data to be inserted
+    """
+    # Endpoint info
+    endpoint_url = pe_api_url + "cred_breaches_insert"
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": pe_api_key,
+    }
+    # Preprocess data and convert to list of dictionaries
+    df["breach_date"] = df["breach_date"].astype(str)
+    df["modified_date"] = df["modified_date"].astype(str)
+    df_dict_list = df.to_dict("records")
+    data = json.dumps({"insert_data": df_dict_list})
+    try:
+        # Call endpoint
+        result = requests.put(endpoint_url, headers=headers, data=data).json()
+        # Process data and return
+        LOGGER.info(result)
+    except requests.exceptions.HTTPError as errh:
+        LOGGER.error(errh)
+    except requests.exceptions.ConnectionError as errc:
+        LOGGER.error(errc)
+    except requests.exceptions.Timeout as errt:
+        LOGGER.error(errt)
+    except requests.exceptions.RequestException as err:
+        LOGGER.error(err)
+    except json.decoder.JSONDecodeError as err:
+        LOGGER.error(err)
+
+
+# --- 657 ---
+def insert_sixgill_topCVEs_api(df):
+    """
+    Query API to insert multiple records into the top_cves table.
+
+    Args:
+        df: Dataframe containing top cve data to be inserted
+    """
+    # Endpoint info
+    endpoint_url = pe_api_url + "top_cves_insert"
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": pe_api_key,
+    }
+    # Adjust data types and convert to list of dictionaries
+    df["date"] = df["date"].astype(str)
+    df_dict_list = df.to_dict("records")
+    data = json.dumps({"insert_data": df_dict_list})
+    try:
+        # Call endpoint
+        result = requests.put(endpoint_url, headers=headers, data=data).json()
+        # Process data and return
+        LOGGER.info(result)
+    except requests.exceptions.HTTPError as errh:
+        LOGGER.error(errh)
+    except requests.exceptions.ConnectionError as errc:
+        LOGGER.error(errc)
+    except requests.exceptions.Timeout as errt:
+        LOGGER.error(errt)
+    except requests.exceptions.RequestException as err:
+        LOGGER.error(err)
+    except json.decoder.JSONDecodeError as err:
+        LOGGER.error(err)
+        
+
+# --- Issue 661 ---
+def addRootdomain_api(root_domain, pe_org_uid, source_uid, org_name):
+    """
+    Query API to insert a single root domain into the root_domains table.
+
+    Args:
+        root_domain: The root domain associated with the new record
+        pe_org_uid: The organizations_uid associated with the new record
+        source_uid: The data_source_uid associated with the new record
+        org_name: The name of the organization associated with the new record
+    """
+    # Endpoint info
+    endpoint_url = pe_api_path + "root_domains_single_insert"
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": pe_api_key,
+    }
+    data = json.dumps(
+        {
+            "root_domain": root_domain,
+            "pe_org_uid": pe_org_uid,
+            "source_uid": source_uid,
+            "org_name": org_name,
+        }
+    )
+    try:
+        # Call endpoint
+        result = requests.put(endpoint_url, headers=headers, data=data).json()
+        # Process data and return
+        LOGGER.info(result)
+    except requests.exceptions.HTTPError as errh:
+        LOGGER.error(errh)
+    except requests.exceptions.ConnectionError as errc:
+        LOGGER.error(errc)
+    except requests.exceptions.Timeout as errt:
+        LOGGER.error(errt)
+    except requests.exceptions.RequestException as err:
+        LOGGER.error(err)
+    except json.decoder.JSONDecodeError as err:
+        LOGGER.error(err)
+        
+
+# --- Issue 662 ---
+def addSubdomain_api(domain, pe_org_uid, root):
+    """
+    Query API to insert a single sub domain into the sub_domains table.
+
+    Args:
+        domain: The sub domain associated with the new record
+        pe_org_uid: The organizations_uid associated with the new record
+        root: Boolean whether or not specified domain is also a root domain
+    """
+    # Endpoint info
+    endpoint_url = pe_api_url + "sub_domains_single_insert"
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": pe_api_key,
+    }
+    data = json.dumps(
+        {
+            "domain": domain,
+            "pe_org_uid": pe_org_uid,
+            "root": root,
+        }
+    )
+    try:
+        # Call endpoint
+        result = requests.put(endpoint_url, headers=headers, data=data).json()
+        # Process data and return
+        LOGGER.info(result)
+    except requests.exceptions.HTTPError as errh:
+        LOGGER.error(errh)
+    except requests.exceptions.ConnectionError as errc:
+        LOGGER.error(errc)
+    except requests.exceptions.Timeout as errt:
+        LOGGER.error(errt)
+    except requests.exceptions.RequestException as err:
+        LOGGER.error(err)
+    except json.decoder.JSONDecodeError as err:
+        LOGGER.error(err)
+        
+
+# v ===== OLD TSQL VERSIONS OF FUNCTIONS ===== v
+# --- 654 OLD TSQL ---
+def insert_sixgill_mentions(df):
+    """Insert sixgill mention data."""
+    conn = connect()
+    columns_to_subset = [
+        "organizations_uid",
+        "data_source_uid",
+        "category",
+        "collection_date",
+        "content",
+        "creator",
+        "date",
+        "sixgill_mention_id",
+        "lang",
+        "post_id",
+        "rep_grade",
+        "site",
+        "site_grade",
+        "sub_category",
+        "title",
+        "type",
+        "url",
+        "comments_count",
+        "tags",
+    ]
+    try:
+        df = df.loc[:, df.columns.isin(columns_to_subset)]
+    except Exception as e:
+        logging.error(e)
+
+    # Remove any "[\x00|NULL]" characters
+    df = df.apply(
+        lambda col: col.str.replace(r"[\x00|NULL]", "", regex=True)
+        if col.dtype == object
+        else col
+    )
+    table = "mentions"
+    # Create a list of tuples from the dataframe values
+    tuples = [tuple(x) for x in df.to_numpy()]
+    # Comma-separated dataframe columns
+    cols = ",".join(list(df.columns))
+    # SQL query to execute
+    query = """INSERT INTO {}({}) VALUES %s
+    ON CONFLICT (sixgill_mention_id) DO NOTHING;"""
+    cursor = conn.cursor()
+    try:
+        extras.execute_values(
+            cursor,
+            query.format(
+                table,
+                cols,
+            ),
+            tuples,
+        )
+        conn.commit()
+        logging.info("Successfully inserted/updated mention data into PE database.")
+    except (Exception, psycopg2.DatabaseError) as error:
+        logging.error(error)
+        conn.rollback()
+    cursor.close()
+
+
+# --- 655 OLD TSQL ---
+def insert_sixgill_breaches(df):
+    """Insert sixgill breach data."""
+    conn = connect()
+    table = "credential_breaches"
+    # Create a list of tuples from the dataframe values
+    tuples = [tuple(x) for x in df.to_numpy()]
+    # Comma-separated dataframe columns
+    cols = ",".join(list(df.columns))
+    # SQL query to execute
+    query = """INSERT INTO {}({}) VALUES %s
+    ON CONFLICT (breach_name) DO UPDATE SET
+    password_included = EXCLUDED.password_included;"""
+    cursor = conn.cursor()
+    try:
+        extras.execute_values(
+            cursor,
+            query.format(
+                table,
+                cols,
+            ),
+            tuples,
+        )
+        conn.commit()
+        logging.info("Successfully inserted/updated breaches into PE database.")
+    except (Exception, psycopg2.DatabaseError) as error:
+        logging.info(error)
+        conn.rollback()
+    cursor.close()
+
+
+# --- 657 OLD TSQL ---
+def insert_sixgill_topCVEs(df):
+    """Insert sixgill top CVEs."""
+    conn = connect()
+    table = "top_cves"
+    # Create a list of tuples from the dataframe values
+    tuples = [tuple(x) for x in df.to_numpy()]
+    # Comma-separated dataframe columns
+    cols = ",".join(list(df.columns))
+    # SQL query to execute
+    query = """INSERT INTO {}({}) VALUES %s
+    ON CONFLICT (cve_id, date) DO NOTHING;"""
+    cursor = conn.cursor()
+    try:
+        extras.execute_values(
+            cursor,
+            query.format(
+                table,
+                cols,
+            ),
+            tuples,
+        )
+        conn.commit()
+        logging.info("Successfully inserted/updated top cve data into PE database.")
+    except (Exception, psycopg2.DatabaseError) as error:
+        logging.info(error)
+        conn.rollback()
+    cursor.close()
+
+
+# --- 661 OLD TSQL ---
+def addRootdomain(root_domain, pe_org_uid, source_uid, org_name):
+    """Add root domain."""
+    conn = connect()
+    ip_address = str(socket.gethostbyname(root_domain))
+    sql = """insert into root_domains(root_domain, organizations_uid, organization_name, data_source_uid, ip_address)
+            values ('{}', '{}', '{}', '{}', '{}');"""
+    cur = conn.cursor()
+    cur.execute(sql.format(root_domain, pe_org_uid, org_name, source_uid, ip_address))
+    conn.commit()
+    cur.close()
+
+
+# --- 662 OLD TSQL ---
+def addSubdomain(conn, domain, pe_org_uid, root):
+    """Add a subdomain into the database."""
+    conn = connect()
+    if root:
+        root_domain = domain
+    else:
+        root_domain = domain.split(".")[-2:]
+        root_domain = ".".join(root_domain)
+    cur = conn.cursor()
+    date = datetime.today().strftime("%Y-%m-%d")
+    cur.callproc(
+        "insert_sub_domain",
+        (False, date, domain, pe_org_uid, "findomain", root_domain, None),
+    )
+    LOGGER.info("Success adding domain %s to subdomains table.", domain)
+    conn.commit()
+    close(conn)

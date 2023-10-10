@@ -245,7 +245,7 @@ class Cidrs(models.Model):
 class CredentialBreaches(models.Model):
     """Define CredentialBreaches model."""
 
-    credential_breaches_uid = models.UUIDField(primary_key=True)
+    credential_breaches_uid = models.UUIDField(primary_key=True, default=uuid.uuid1())
     breach_name = models.TextField(unique=True)
     description = models.TextField(blank=True, null=True)
     exposed_cred_count = models.BigIntegerField(blank=True, null=True)
@@ -815,6 +815,19 @@ class Organizations(models.Model):
     premium_report = models.BooleanField(blank=True, null=True)
     agency_type = models.TextField(blank=True, null=True)
     demo = models.BooleanField(blank=True, null=True)
+    scorecard = models.BooleanField(blank=True, null=True)
+    fceb = models.BooleanField(blank=True, null=True)
+    receives_cyhy_report = models.BooleanField(blank=True, null=True)
+    receives_bod_report = models.BooleanField(blank=True, null=True)
+    receives_cybex_report = models.BooleanField(blank=True, null=True)
+    run_scans = models.BooleanField(blank=True, null=True)
+    is_parent = models.BooleanField(blank=True, null=True)
+    ignore_roll_up = models.BooleanField(blank=True, null=True)
+    retired = models.BooleanField(blank=True, null=True)
+    cyhy_period_start = models.DateField(blank=True, null=True)
+    fceb_child = models.BooleanField(blank=True, null=True)
+    election = models.BooleanField(blank=True, null=True)
+    scorecard_child = models.BooleanField(blank=True, null=True)
 
     class Meta:
         """Set Organizations model metadata."""

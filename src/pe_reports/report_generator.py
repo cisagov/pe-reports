@@ -192,10 +192,13 @@ def generate_reports(datestring, output_directory, soc_med_included=False, demo=
             org_code = org[2]
             premium = org[8]
 
-            # if org_code not in ["FRB"]:
+            # Uncomment this to only run specified orgs
+            # if org_code not in ["NASA"]:
             #     continue
 
-            # DOL, USDA
+            # Uncomment this to skip specified orgs
+            # if org_code in ["GSA"]:
+            #     continue
 
             # if org_code == "HHS_FDA":
             #     go = 1
