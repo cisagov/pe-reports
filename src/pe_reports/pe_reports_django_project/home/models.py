@@ -1301,7 +1301,8 @@ class WeeklyStatuses(models.Model):
 
     class Meta:
         """Set WeeklyStatuses model metadata."""
-        unique_together = (('week_ending', 'user_status'),)
+
+        unique_together = (("week_ending", "user_status"),)
 
         managed = True
         db_table = "weekly_statuses"
@@ -2011,3 +2012,106 @@ class VwIscoreOrgsIpCounts(models.Model):
 
         managed = False
         db_table = "vw_iscore_orgs_ip_counts"
+
+
+class Cves(models.Model):
+    """Define Cves model."""
+
+    cve_uid = models.UUIDField(primary_key=True, default=uuid.uuid1)
+    cve_name = models.TextField(unique=True, blank=True, null=True)
+    published_date = models.DateTimeField(blank=True, null=True)
+    last_modified_date = models.DateTimeField(blank=True, null=True)
+    vuln_status = models.TextField(blank=True, null=True)
+    description = models.TextField(blank=True, null=True)
+    cvss_v2_source = models.TextField(blank=True, null=True)
+    cvss_v2_type = models.TextField(blank=True, null=True)
+    cvss_v2_version = models.TextField(blank=True, null=True)
+    cvss_v2_vector_string = models.TextField(blank=True, null=True)
+    cvss_v2_base_score = models.FloatField(blank=True, null=True)
+    cvss_v2_base_severity = models.TextField(blank=True, null=True)
+    cvss_v2_exploitability_score = models.FloatField(blank=True, null=True)
+    cvss_v2_impact_score = models.FloatField(blank=True, null=True)
+    cvss_v3_source = models.TextField(blank=True, null=True)
+    cvss_v3_type = models.TextField(blank=True, null=True)
+    cvss_v3_version = models.TextField(blank=True, null=True)
+    cvss_v3_vector_string = models.TextField(blank=True, null=True)
+    cvss_v3_base_score = models.FloatField(blank=True, null=True)
+    cvss_v3_base_severity = models.TextField(blank=True, null=True)
+    cvss_v3_exploitability_score = models.FloatField(blank=True, null=True)
+    cvss_v3_impact_score = models.FloatField(blank=True, null=True)
+    cvss_v4_source = models.TextField(blank=True, null=True)
+    cvss_v4_type = models.TextField(blank=True, null=True)
+    cvss_v4_version = models.TextField(blank=True, null=True)
+    cvss_v4_vector_string = models.TextField(blank=True, null=True)
+    cvss_v4_base_score = models.FloatField(blank=True, null=True)
+    cvss_v4_base_severity = models.TextField(blank=True, null=True)
+    cvss_v4_exploitability_score = models.FloatField(blank=True, null=True)
+    cvss_v4_impact_score = models.FloatField(blank=True, null=True)
+    weaknesses = ArrayField(
+        models.TextField(blank=True, null=True), blank=True, null=True
+    )
+    reference_urls = ArrayField(
+        models.TextField(blank=True, null=True), blank=True, null=True
+    )
+    cpe_list = ArrayField(
+        models.TextField(blank=True, null=True), blank=True, null=True
+    )
+
+    class Meta:
+        """Set Cves model metadata."""
+
+        managed = False
+        db_table = "cves"
+
+
+class CpeVender(models.Model):
+    """Define CpeVender model."""
+
+    cpe_vender_uid = models.UUIDField(primary_key=True, default=uuid.uuid1)
+    vender_name = models.TextField(unique=True, blank=True, null=True)
+
+    class Meta:
+        """Set CpeVender model metadata."""
+
+        managed = False
+        db_table = "cpe_vender"
+
+
+class CpeProduct(models.Model):
+    """Define CpeProduct model."""
+
+    cpe_product_uid = models.UUIDField(primary_key=True, default=uuid.uuid1)
+    cpe_product_name = models.TextField(blank=True, null=True)
+    version_number = models.TextField(blank=True, null=True)
+    cpe_vender_uid = models.ForeignKey(
+        "CpeVender", on_delete=models.CASCADE, db_column="cpe_vender_uid", default=None
+    )
+
+    # Create linking table for many to many relationship
+    cves = models.ManyToManyField(Cves, related_name="products")
+
+    class Meta:
+        """Set CpeProduct model metadata."""
+
+        managed = True
+        db_table = "cpe_product"
+        unique_together = (("cpe_product_name", "version_number"),)
+
+
+# class CveCpeProduct(models.Model):
+#     """Define CveCpeProduct model."""
+
+#     cve_cpe_product_uid = models.UUIDField(primary_key=True)
+#     cpe_product_uid = models.ForeignKey(
+#         "CpeProduct", on_delete=models.CASCADE, db_column="cpe_product_uid"
+#     )
+#     cve_uid = models.ForeignKey(
+#         "Cves", on_delete=models.CASCADE, db_column="cve_uid"
+#     )
+
+#     class Meta:
+#         """Set CveCpeProduct model metadata."""
+
+#         managed = False
+#         db_table = "cve_cpe_product"
+#         unique_together = (("cpe_product_uid", "cve_uid"),)

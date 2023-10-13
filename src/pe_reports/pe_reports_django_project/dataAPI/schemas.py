@@ -5,7 +5,7 @@
 from datetime import date, datetime
 
 # from pydantic.types import UUID1, UUID
-from typing import Any, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 from uuid import UUID
 
 # Third-Party Libraries
@@ -1248,3 +1248,54 @@ class VwIscoreOrgsIpCountsTaskResp(BaseModel):
     status: str
     result: Optional[List[VwIscoreOrgsIpCounts]] = None
     error: Optional[str] = None
+
+
+class CveInsert(BaseModel):
+    """CveInsert schema class."""
+
+    cve_uid: Optional[Any]
+    cve_name: str
+    published_date: Optional[datetime] = None
+    last_modified_date: Optional[datetime] = None
+    vuln_status: Optional[str] = None
+    description: Optional[str] = None
+    cvss_v2_source: Optional[str] = None
+    cvss_v2_type: Optional[str] = None
+    cvss_v2_version: Optional[str] = None
+    cvss_v2_vector_string: Optional[str] = None
+    cvss_v2_base_score: Optional[float] = None
+    cvss_v2_base_severity: Optional[str] = None
+    cvss_v2_exploitability_score: Optional[float] = None
+    cvss_v2_impact_score: Optional[float] = None
+    cvss_v3_source: Optional[str] = None
+    cvss_v3_type: Optional[str] = None
+    cvss_v3_version: Optional[str] = None
+    cvss_v3_vector_string: Optional[str] = None
+    cvss_v3_base_score: Optional[float] = None
+    cvss_v3_base_severity: Optional[str] = None
+    cvss_v3_exploitability_score: Optional[float] = None
+    cvss_v3_impact_score: Optional[float] = None
+    cvss_v4_source: Optional[str] = None
+    cvss_v4_type: Optional[str] = None
+    cvss_v4_version: Optional[str] = None
+    cvss_v4_vector_string: Optional[str] = None
+    cvss_v4_base_score: Optional[float] = None
+    cvss_v4_base_severity: Optional[str] = None
+    cvss_v4_exploitability_score: Optional[float] = None
+    cvss_v4_impact_score: Optional[float] = None
+    weaknesses: List[str] = []
+    reference_urls: List[str] = []
+    cpe_list: List[str] = []
+
+    vender_product: Dict[str, List[Tuple]]
+
+
+class GetCveCall(BaseModel):
+    """Get CVE Call schema."""
+
+    cve_name: str
+
+    class Config:
+        """GetCveCall schema config class."""
+
+        orm_mode = True

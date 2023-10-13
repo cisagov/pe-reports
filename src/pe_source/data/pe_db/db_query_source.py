@@ -859,3 +859,81 @@ def getDataSource(conn, source):
     source = cur.fetchone()
     cur.close()
     return source
+
+
+def api_cve_insert(cve_dict):
+    """
+    Insert a cve record for  into the cve table with linked products and venders.
+
+    On conflict, update the old record with the new data
+
+    Args:
+        cve_dict: Dictionary of column names and values to be inserted
+
+    Return:
+        Status on if the record was inserted successfully
+    """
+    # Endpoint info
+    endpoint_url = pe_api_url + "cve_insert_or_update"
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": pe_api_key,
+    }
+    data = json.dumps(cve_dict, default=str)
+
+    LOGGER.info(data)
+    try:
+        # Call endpoint
+        cve_insert_result = requests.put(
+            endpoint_url, headers=headers, data=data
+        ).json()
+        print(cve_insert_result)
+        LOGGER.info(
+            "Successfully inserted new record in cves table with associated cpe products and venders"
+        )
+        return cve_insert_result
+    except requests.exceptions.HTTPError as errh:
+        LOGGER.error(errh)
+    except requests.exceptions.ConnectionError as errc:
+        LOGGER.error(errc)
+    except requests.exceptions.Timeout as errt:
+        LOGGER.error(errt)
+    except requests.exceptions.RequestException as err:
+        LOGGER.error(err)
+    except json.decoder.JSONDecodeError as err:
+        LOGGER.error(err)
+
+
+def get_cve_and_products(cve_name):
+    """
+    Query API to retrieve a CVE and its associated products data for the specified CVE.
+
+    Args:
+        cve_name: The CVE name or code
+
+    Return:
+        CVE data and a dictionary of venders and products
+    """
+    # Endpoint info
+    endpoint_url = pe_api_url + "get_cve"
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": pe_api_key,
+    }
+    data = json.dumps({"cve_name": cve_name})
+    try:
+        # Call endpoint
+        result = requests.post(endpoint_url, headers=headers, data=data).json()
+        # Process data and return
+
+        return result
+    except requests.exceptions.HTTPError as errh:
+        LOGGER.info(errh)
+    except requests.exceptions.ConnectionError as errc:
+        LOGGER.info(errc)
+    except requests.exceptions.Timeout as errt:
+        LOGGER.info(errt)
+    except requests.exceptions.RequestException as err:
+        LOGGER.info(err)
+    except json.decoder.JSONDecodeError as err:
+        LOGGER.info(err)
