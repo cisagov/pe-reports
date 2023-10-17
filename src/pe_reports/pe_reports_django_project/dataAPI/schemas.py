@@ -1250,6 +1250,45 @@ class VwIscoreOrgsIpCountsTaskResp(BaseModel):
     error: Optional[str] = None
 
 
+# --- execute_ips(), Issue 559 ---
+# Insert record into Ips
+class IpsInsert(BaseModel):
+    """IpsInsert schema class."""
+
+    ip_hash: str
+    ip: str
+    origin_cidr: str
+
+    class Config:
+        """IpsInsert schema config class."""
+
+        orm_mode = True
+
+
+# --- execute_ips(), Issue 559 ---
+# Insert record into Ips, input
+class IpsInsertInput(BaseModel):
+    """IpsInsertInput schema class."""
+
+    new_ips: List[IpsInsert]
+
+    class Config:
+        """IpsInsertInput schema config class."""
+
+        orm_mode = True
+
+
+# --- execute_ips(), Issue 559 ---
+# Insert record into Ips, task resp
+class IpsInsertTaskResp(BaseModel):
+    """IpsInsertTaskResp schema class."""
+
+    task_id: str
+    status: str
+    result: Optional[str] = None
+    error: Optional[str] = None
+
+
 # --- get_new_orgs(), Issue 605, 606, 607 ---
 # Generalized schema for returning all organizations table fields
 class OrgsTable(BaseModel):
@@ -1319,7 +1358,42 @@ class CyhyDbAssetsByOrg(BaseModel):
         orm_mode = True
 
 
-# --- query_subs(), Issue 633, 560 ---
+# --- execute_scorecard(), Issue 632 ---
+# Insert record into report_summary_stats, input
+class RSSInsertInput(BaseModel):
+    """RSSInsertInput schema class."""
+
+    organizations_uid: str
+    start_date: str
+    end_date: str
+    ip_count: int
+    root_count: int
+    sub_count: int
+    ports_count: int
+    creds_count: int
+    breach_count: int
+    cred_password_count: int
+    domain_alert_count: int
+    suspected_domain_count: int
+    insecure_port_count: int
+    verified_vuln_count: int
+    suspected_vuln_count: int
+    suspected_vuln_addrs_count: int
+    threat_actor_count: int
+    dark_web_alerts_count: int
+    dark_web_mentions_count: int
+    dark_web_executive_alerts_count: int
+    dark_web_asset_alerts_count: int
+    pe_number_score: int
+    pe_letter_grade: str
+
+    class Config:
+        """RSSInsertInput schema config class."""
+
+        orm_mode = True
+
+
+# --- query_all_subs()/query_subs(), Issue 560, 633 ---
 # Get entire sub_domains table, single output
 class SubDomainTable(BaseModel):
     """SubDomainTable schema class."""
@@ -1342,6 +1416,16 @@ class SubDomainTable(BaseModel):
         validate_assignment = True
 
 
+# --- query_all_subs()/query_subs(), Issue 560, 633 ---
+# Get entire sub_domains table, paged output
+class SubDomainPagedResult(BaseModel):
+    """SubDomainPagedResult schema class."""
+
+    total_pages: int
+    current_page: int
+    data: List[SubDomainTable]
+
+
 # --- query_all_subs(), Issue 633 ---
 # Get entire sub_domains table, paged input
 class SubDomainPagedInput(BaseModel):
@@ -1357,17 +1441,7 @@ class SubDomainPagedInput(BaseModel):
         orm_mode = True
 
 
-# --- query_subs(), Issue 633, 560 ---
-# Get entire sub_domains table, paged output
-class SubDomainPagedResult(BaseModel):
-    """SubDomainPagedResult schema class."""
-
-    total_pages: int
-    current_page: int
-    data: List[SubDomainTable]
-
-
-# --- query_all_subs(), Issue 633, 560 ---
+# --- query_all_subs()/query_subs, Issue 560, 633 ---
 # Get entire sub_domains table, paged task resp
 class SubDomainPagedTaskResp(BaseModel):
     """SubDomainPagedTaskResp schema class."""
@@ -1378,6 +1452,84 @@ class SubDomainPagedTaskResp(BaseModel):
     error: Optional[str] = None
 
 
+# --- query_previous_period(), Issue 634 ---
+# Get prev. report period data from report_summary_stats
+class RSSPrevPeriod(BaseModel):
+    """RSSPrevPeriod schema class."""
+
+    ip_count: Optional[int] = None
+    root_count: Optional[int] = None
+    sub_count: Optional[int] = None
+    cred_password_count: Optional[int] = None
+    suspected_vuln_addrs_count: Optional[int] = None
+    suspected_vuln_count: Optional[int] = None
+    insecure_port_count: Optional[int] = None
+    threat_actor_count: Optional[int] = None
+
+    class Config:
+        """RSSPrevPeriod schema config class."""
+
+        orm_mode = True
+
+
+# --- query_previous_period(), Issue 634 ---
+# Get prev. report period data from report_summary_stats, input
+class RSSPrevPeriodInput(BaseModel):
+    """RSSPrevPeriodInput schema class."""
+
+    org_uid: str
+    prev_end_date: str
+
+    class Config:
+        """RSSPrevPeriodInput schema config class."""
+
+        orm_mode = True
+
+
+# --- upsert_new_cves(), Issue 637 ---
+# Upsert new CVEs into cve_info
+class CVEInfoInsert(BaseModel):
+    """CVEInfoInsert schema class."""
+
+    cve_name: str
+    cvss_2_0: float
+    cvss_2_0_severity: str
+    cvss_2_0_vector: str
+    cvss_3_0: float
+    cvss_3_0_severity: str
+    cvss_3_0_vector: str
+    dve_score: float
+
+    class Config:
+        """CVEInfoInsert schema config class."""
+
+        orm_mode = True
+
+
+# --- upsert_new_cves(), Issue 637 ---
+# Upsert new CVEs into cve_info, input
+class CVEInfoInsertInput(BaseModel):
+    """CVEInfoInsertInput schema class."""
+
+    new_cves: List[CVEInfoInsert]
+
+    class Config:
+        """CVEInfoInsertInput schema config class."""
+
+        orm_mode = True
+
+
+# --- upsert_new_cves(), Issue 637 ---
+# Upsert new CVEs into cve_info, task resp
+class CVEInfoInsertTaskResp(BaseModel):
+    """CVEInfoInsertTaskResp schema class."""
+
+    task_id: str
+    status: str
+    result: Optional[str] = None
+    error: Optional[str] = None
+
+    
 # --- insert_sixgill_mentions(), Issue 654 ---
 # Insert multiple records into the mentions table
 class MentionsInsert(BaseModel):

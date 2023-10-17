@@ -21,6 +21,7 @@ from typing import Any, List, Optional, Union
 from dataAPI.tasks import (  # D-Score Task Functions:; I-Score Task Functions:; Misc. Score-Related Task Functions:
     convert_date_to_string,
     convert_uuid_to_string,
+    cve_info_insert_task,
     get_dscore_pe_domain_info,
     get_dscore_pe_ip_info,
     get_dscore_vs_cert_info,
@@ -45,7 +46,9 @@ from dataAPI.tasks import (  # D-Score Task Functions:; I-Score Task Functions:;
     get_vw_pshtt_domains_to_run_info,
     get_xl_stakeholders_info,
     get_xs_stakeholders_info,
+    ips_insert_task,
     sub_domains_by_org_task,
+    sub_domains_table_task,
 )
 from decouple import config
 from django.conf import settings
@@ -87,6 +90,7 @@ from home.models import (  # MatVwOrgsAllIps,
     Organizations,
     PshttResults,
     RootDomains,
+    ReportSummaryStats,
     SubDomains,
     TopCves,
     VwBreachcomp,
@@ -1097,8 +1101,8 @@ def cyhy_ports_scan_info_update(
         return {"message": "No api key was submitted"}
 
 
-# ---------- D-Score View Endpoints ----------
-# --- Endpoint functions for vw_dscore_vs_cert view ---
+# ---------- D-Score Endpoints ----------
+# --- Endpoints for vw_dscore_vs_cert view ---
 @api_router.post(
     "/dscore_vs_cert",
     dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
@@ -1164,7 +1168,7 @@ async def get_dscore_vs_cert_task_status(
         return {"message": "No api key was submitted"}
 
 
-# --- Endpoint functions for vw_dscore_vs_mail view ---
+# --- Endpoints for vw_dscore_vs_mail view ---
 @api_router.post(
     "/dscore_vs_mail",
     dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
@@ -1230,7 +1234,7 @@ async def get_dscore_vs_mail_task_status(
         return {"message": "No api key was submitted"}
 
 
-# --- Endpoint functions for vw_dscore_pe_ip view ---
+# --- Endpoints for vw_dscore_pe_ip view ---
 @api_router.post(
     "/dscore_pe_ip",
     dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
@@ -1296,7 +1300,7 @@ async def get_dscore_pe_ip_task_status(
         return {"message": "No api key was submitted"}
 
 
-# --- Endpoint functions for vw_dscore_pe_domain view ---
+# --- Endpoints for vw_dscore_pe_domain view ---
 @api_router.post(
     "/dscore_pe_domain",
     dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
@@ -1362,7 +1366,7 @@ async def get_dscore_pe_domain_task_status(
         return {"message": "No api key was submitted"}
 
 
-# --- Endpoint functions for vw_dscore_was_webapp view ---
+# --- Endpoints for vw_dscore_was_webapp view ---
 @api_router.post(
     "/dscore_was_webapp",
     dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
@@ -1428,7 +1432,7 @@ async def get_dscore_was_webapp_task_status(
         return {"message": "No api key was submitted"}
 
 
-# --- Endpoint function for FCEB status query (no view) ---
+# --- Endpoints for FCEB status query (no view) ---
 @api_router.post(
     "/fceb_status",
     dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
@@ -1494,8 +1498,8 @@ async def get_fceb_status_task_status(
         return {"message": "No api key was submitted"}
 
 
-# ---------- I-Score View Endpoints ----------
-# --- Endpoint functions for vw_iscore_vs_vuln view ---
+# ---------- I-Score Endpoints ----------
+# --- Endpoints for vw_iscore_vs_vuln view ---
 @api_router.post(
     "/iscore_vs_vuln",
     dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
@@ -1561,7 +1565,7 @@ async def get_iscore_vs_vuln_task_status(
         return {"message": "No api key was submitted"}
 
 
-# --- Endpoint functions for vw_iscore_vs_vuln_prev view ---
+# --- Endpoints for vw_iscore_vs_vuln_prev view ---
 @api_router.post(
     "/iscore_vs_vuln_prev",
     dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
@@ -1629,7 +1633,7 @@ async def get_iscore_vs_vuln_prev_task_status(
         return {"message": "No api key was submitted"}
 
 
-# --- Endpoint functions for vw_iscore_pe_vuln view ---
+# --- Endpoints for vw_iscore_pe_vuln view ---
 @api_router.post(
     "/iscore_pe_vuln",
     dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
@@ -1697,7 +1701,7 @@ async def get_iscore_pe_vuln_task_status(
         return {"message": "No api key was submitted"}
 
 
-# --- Endpoint functions for vw_iscore_pe_cred view ---
+# --- Endpoints for vw_iscore_pe_cred view ---
 @api_router.post(
     "/iscore_pe_cred",
     dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
@@ -1765,7 +1769,7 @@ async def get_iscore_pe_cred_task_status(
         return {"message": "No api key was submitted"}
 
 
-# --- Endpoint functions for vw_iscore_pe_breach view ---
+# --- Endpoints for vw_iscore_pe_breach view ---
 @api_router.post(
     "/iscore_pe_breach",
     dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
@@ -1833,7 +1837,7 @@ async def get_iscore_pe_breach_task_status(
         return {"message": "No api key was submitted"}
 
 
-# --- Endpoint functions for vw_iscore_pe_darkweb view ---
+# --- Endpoints for vw_iscore_pe_darkweb view ---
 @api_router.post(
     "/iscore_pe_darkweb",
     dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
@@ -1901,7 +1905,7 @@ async def get_iscore_pe_darkweb_task_status(
         return {"message": "No api key was submitted"}
 
 
-# --- Endpoint functions for vw_iscore_pe_protocol view ---
+# --- Endpoints for vw_iscore_pe_protocol view ---
 @api_router.post(
     "/iscore_pe_protocol",
     dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
@@ -1969,7 +1973,7 @@ async def get_iscore_pe_protocol_task_status(
         return {"message": "No api key was submitted"}
 
 
-# --- Endpoint functions for vw_iscore_was_vuln view ---
+# --- Endpoints for vw_iscore_was_vuln view ---
 @api_router.post(
     "/iscore_was_vuln",
     dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
@@ -2037,7 +2041,7 @@ async def get_iscore_was_vuln_task_status(
         return {"message": "No api key was submitted"}
 
 
-# --- Endpoint functions for vw_iscore_was_vuln_prev view ---
+# --- Endpoints for vw_iscore_was_vuln_prev view ---
 @api_router.post(
     "/iscore_was_vuln_prev",
     dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
@@ -2105,7 +2109,7 @@ async def get_iscore_was_vuln_prev_task_status(
         return {"message": "No api key was submitted"}
 
 
-# --- Endpoint function for KEV list query (no view) ---
+# --- Endpoint for KEV list query (no view) ---
 @api_router.post(
     "/kev_list",
     dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
@@ -2167,8 +2171,8 @@ async def get_kev_list_task_status(task_id: str, tokens: dict = Depends(get_api_
         return {"message": "No api key was submitted"}
 
 
-# ---------- Misc. Score View Endpoints ----------
-# --- Endpoint function for XS stakeholder list query ---
+# ---------- General Score Endpoints ----------
+# --- Endpoints for XS stakeholder list query ---
 @api_router.post(
     "/xs_stakeholders",
     dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
@@ -2232,7 +2236,7 @@ async def get_xs_stakeholders_task_status(
         return {"message": "No api key was submitted"}
 
 
-# --- Endpoint function for S stakeholder list query ---
+# --- Endpoints for S stakeholder list query ---
 @api_router.post(
     "/s_stakeholders",
     dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
@@ -2296,7 +2300,7 @@ async def get_s_stakeholders_task_status(
         return {"message": "No api key was submitted"}
 
 
-# --- Endpoint function for M stakeholder list query ---
+# --- Endpoints for M stakeholder list query ---
 @api_router.post(
     "/m_stakeholders",
     dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
@@ -2360,7 +2364,7 @@ async def get_m_stakeholders_task_status(
         return {"message": "No api key was submitted"}
 
 
-# --- Endpoint function for L stakeholder list query ---
+# --- Endpoints for L stakeholder list query ---
 @api_router.post(
     "/l_stakeholders",
     dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
@@ -2424,7 +2428,7 @@ async def get_l_stakeholders_task_status(
         return {"message": "No api key was submitted"}
 
 
-# --- Endpoint function for XL stakeholder list query ---
+# --- Endpoints for XL stakeholder list query ---
 @api_router.post(
     "/xl_stakeholders",
     dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
@@ -2465,6 +2469,135 @@ async def get_xl_stakeholders_task_status(
             userapiTokenverify(theapiKey=tokens)
             # Retrieve task status
             task = get_xl_stakeholders_info.AsyncResult(task_id)
+            # Return appropriate message for status
+            if task.state == "SUCCESS":
+                return {
+                    "task_id": task_id,
+                    "status": "Completed",
+                    "result": task.result,
+                }
+            elif task.state == "PENDING":
+                return {"task_id": task_id, "status": "Pending"}
+            elif task.state == "FAILURE":
+                return {
+                    "task_id": task_id,
+                    "status": "Failed",
+                    "error": str(task.result),
+                }
+            else:
+                return {"task_id": task_id, "status": task.state}
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+
+# ---------- Misc. Endpoints ----------
+# --- execute_ips(), Issue 559 ---
+@api_router.post(
+    "/ips_insert",
+    dependencies=[Depends(get_api_key)], # Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.IpsInsertTaskResp,
+    tags=["Insert new ip records into the ips table"],
+)
+def ips_insert(data: schemas.IpsInsertInput, tokens: dict = Depends(get_api_key)):
+    """Call API endpoint to insert new ip records into the ips table."""
+    # Convert list of input models to list of dictionaries
+    new_ips = [dict(input_dict) for input_dict in data.new_ips]
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # If API key valid, create task for query
+            task = ips_insert_task.delay(new_ips)
+            # Return the new task id w/ "Processing" status
+            return {"task_id": task.id, "status": "Processing"}
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+
+@api_router.get(
+    "/ips_insert/task/{task_id}",
+    dependencies=[Depends(get_api_key)], #Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.IpsInsertTaskResp,
+    tags=["Check task status for ips_insert endpoint task."],
+)
+async def ips_insert_status(task_id: str, tokens: dict = Depends(get_api_key)):
+    """Call API endpoint to get status of ips_insert task."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            # userapiTokenverify(theapiKey=tokens)
+            # Retrieve task status
+            task = ips_insert_task.AsyncResult(task_id)
+            # Return appropriate message for status
+            if task.state == "SUCCESS":
+                return {
+                    "task_id": task_id,
+                    "status": "Completed",
+                    "result": task.result,
+                }
+            elif task.state == "PENDING":
+                return {"task_id": task_id, "status": "Pending"}
+            elif task.state == "FAILURE":
+                return {
+                    "task_id": task_id,
+                    "status": "Failed",
+                    "error": str(task.result),
+                }
+            else:
+                return {"task_id": task_id, "status": task.state}
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+
+# --- query_all_subs(), Issue 560 ---
+@api_router.post(
+    "/sub_domains_table",
+    dependencies=[Depends(get_api_key)], #Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.SubDomainPagedTaskResp,
+    tags=["Get all data from the sub_domains table"],
+)
+def sub_domains_table(
+    data: schemas.SubDomainPagedInput, tokens: dict = Depends(get_api_key)
+):
+    """Call API endpoint to get all data from the sub_domains table."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # If API key valid, create task for query
+            task = sub_domains_table_task.delay(data.page, data.per_page)
+            # Return the new task id w/ "Processing" status
+            return {"task_id": task.id, "status": "Processing"}
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+
+@api_router.get(
+    "/sub_domains_table/task/{task_id}",
+    dependencies=[Depends(get_api_key)], #Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.SubDomainPagedTaskResp,
+    tags=["Check task status for sub_domains_table endpoint task."],
+)
+async def sub_domains_table_status(task_id: str, tokens: dict = Depends(get_api_key)):
+    """Call API endpoint to get status of sub_domains_table task."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            # userapiTokenverify(theapiKey=tokens)
+            # Retrieve task status
+            task = sub_domains_table_task.AsyncResult(task_id)
             # Return appropriate message for status
             if task.state == "SUCCESS":
                 return {
@@ -2634,6 +2767,7 @@ def orgs_set_demo(
             specified_org = list(
                 Organizations.objects.filter(cyhy_db_name=data.cyhy_db_name).values()
             )
+            LOGGER.info(specified_org)
             if len(specified_org) != 0:
                 # If org exists, update fields
                 Organizations.objects.filter(cyhy_db_name=data.cyhy_db_name).update(
@@ -2731,6 +2865,61 @@ def cyhy_assets_by_org(
         return {"message": "No api key was submitted"}
 
 
+# --- execute_scorecard(), Issue 632 ---
+@api_router.put(
+    "/rss_insert",
+    dependencies=[Depends(get_api_key)], #Depends(RateLimiter(times=200, seconds=60))],
+    # response_model=None (nothing returned)
+    tags=["Insert an organization's record into the report_summary_stats table"],
+)
+def rss_insert(data: schemas.RSSInsertInput, tokens: dict = Depends(get_api_key)):
+    """Call API endpoint to insert an organization's record into the report_summary_stats table."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # If API key valid
+            # Get Organizations.organization_uid object for the specified org
+            specified_org_uid = Organizations.objects.get(
+                organizations_uid=data.organizations_uid
+            )
+            # Insert new record. If record already exists, update that record
+            ReportSummaryStats.objects.update_or_create(
+                organizations_uid=specified_org_uid,
+                start_date=data.start_date,
+                defaults={
+                    "organizations_uid": specified_org_uid,
+                    "start_date": data.start_date,
+                    "end_date": data.end_date,
+                    "ip_count": data.ip_count,
+                    "root_count": data.root_count,
+                    "sub_count": data.sub_count,
+                    "ports_count": data.ports_count,
+                    "creds_count": data.creds_count,
+                    "breach_count": data.breach_count,
+                    "cred_password_count": data.cred_password_count,
+                    "domain_alert_count": data.domain_alert_count,
+                    "suspected_domain_count": data.suspected_domain_count,
+                    "insecure_port_count": data.insecure_port_count,
+                    "verified_vuln_count": data.verified_vuln_count,
+                    "suspected_vuln_count": data.suspected_vuln_count,
+                    "suspected_vuln_addrs_count": data.suspected_vuln_addrs_count,
+                    "threat_actor_count": data.threat_actor_count,
+                    "dark_web_alerts_count": data.dark_web_alerts_count,
+                    "dark_web_mentions_count": data.dark_web_mentions_count,
+                    "dark_web_executive_alerts_count": data.dark_web_executive_alerts_count,
+                    "dark_web_asset_alerts_count": data.dark_web_asset_alerts_count,
+                    "pe_number_score": data.pe_number_score,
+                    "pe_letter_grade": data.pe_letter_grade,
+                },
+            )
+        except Exception:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+
 # --- query_subs(), Issue 633 (paginated) ---
 @api_router.post(
     "/sub_domains_by_org",
@@ -2772,6 +2961,113 @@ async def sub_domains_by_org_task_status(
             # userapiTokenverify(theapiKey=tokens)
             # Retrieve task status
             task = sub_domains_by_org_task.AsyncResult(task_id)
+            # Return appropriate message for status
+            if task.state == "SUCCESS":
+                return {
+                    "task_id": task_id,
+                    "status": "Completed",
+                    "result": task.result,
+                }
+            elif task.state == "PENDING":
+                return {"task_id": task_id, "status": "Pending"}
+            elif task.state == "FAILURE":
+                return {
+                    "task_id": task_id,
+                    "status": "Failed",
+                    "error": str(task.result),
+                }
+            else:
+                return {"task_id": task_id, "status": task.state}
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+
+# --- query_previous_period(), Issue 634 ---
+@api_router.post(
+    "/rss_prev_period",
+    dependencies=[Depends(get_api_key)], #Depends(RateLimiter(times=200, seconds=60))],
+    response_model=List[schemas.RSSPrevPeriod],
+    tags=[
+        "Get previous report period report_summary_stats data for the specified organization"
+    ],
+)
+def rss_prev_period(
+    data: schemas.RSSPrevPeriodInput, tokens: dict = Depends(get_api_key)
+):
+    """Call API endpoint to get previous period report_summary_stats data for the specified organization."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # If API key valid
+            # Make query
+            rss_prev_period_data = list(
+                ReportSummaryStats.objects.filter(
+                    organizations_uid=data.org_uid, end_date=data.prev_end_date
+                ).values(
+                    "ip_count",
+                    "root_count",
+                    "sub_count",
+                    "cred_password_count",
+                    "suspected_vuln_addrs_count",
+                    "suspected_vuln_count",
+                    "insecure_port_count",
+                    "threat_actor_count",
+                )
+            )
+            return rss_prev_period_data
+        except Exception:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+
+# --- upsert_new_cves(), Issue 637 ---
+@api_router.post(
+    "/cve_info_insert",
+    dependencies=[Depends(get_api_key)], #Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.CVEInfoInsertTaskResp,
+    tags=["Upsert new CVEs into the cve_info table"],
+)
+def cve_info_insert(
+    data: schemas.CVEInfoInsertInput, tokens: dict = Depends(get_api_key)
+):
+    """Call API endpoint to insert new CVEs into the cve_info table."""
+    # Convert list of input models to list of dictionaries
+    new_cves = [dict(input_dict) for input_dict in data.new_cves]
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # If API key valid, create task for query
+            task = cve_info_insert_task.delay(new_cves)
+            # Return the new task id w/ "Processing" status
+            return {"task_id": task.id, "status": "Processing"}
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+
+@api_router.get(
+    "/cve_info_insert/task/{task_id}",
+    dependencies=[Depends(get_api_key)], #Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.CVEInfoInsertTaskResp,
+    tags=["Check task status for cve_info_insert endpoint task."],
+)
+async def cve_info_insert_status(task_id: str, tokens: dict = Depends(get_api_key)):
+    """Call API endpoint to get status of cve_info_insert task."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            # userapiTokenverify(theapiKey=tokens)
+            # Retrieve task status
+            task = cve_info_insert_task.AsyncResult(task_id)
             # Return appropriate message for status
             if task.state == "SUCCESS":
                 return {

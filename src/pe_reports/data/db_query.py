@@ -823,145 +823,6 @@ def query_cyberSix_creds(org_uid, start_date, end_date):
             close(conn)
 
 
-def query_all_subs(conn):
-    """Query sub domains table."""
-    try:
-        cur = conn.cursor()
-        sql = """SELECT * FROM sub_domains"""
-        cur.execute(sql)
-        pe_orgs = cur.fetchall()
-        cur.close()
-        return pe_orgs
-    except (Exception, psycopg2.DatabaseError) as error:
-        LOGGER.error("There was a problem with your database query %s", error)
-    finally:
-        if conn is not None:
-            close(conn)
-
-
-def execute_scorecard(summary_dict):
-    """Save summary statistics for an organization to the database."""
-    try:
-        conn = connect()
-        cur = conn.cursor()
-        sql = """
-        INSERT INTO report_summary_stats(
-            organizations_uid, start_date, end_date, ip_count, root_count, sub_count, ports_count,
-            creds_count, breach_count, cred_password_count, domain_alert_count,
-            suspected_domain_count, insecure_port_count, verified_vuln_count,
-            suspected_vuln_count, suspected_vuln_addrs_count, threat_actor_count, dark_web_alerts_count,
-            dark_web_mentions_count, dark_web_executive_alerts_count, dark_web_asset_alerts_count,
-            pe_number_score, pe_letter_grade, cidr_count, port_protocol_count, software_count, foreign_ips_count
-        )
-        VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
-        ON CONFLICT(organizations_uid, start_date)
-        DO
-        UPDATE SET
-            ip_count = EXCLUDED.ip_count,
-            root_count = EXCLUDED.root_count,
-            sub_count = EXCLUDED.sub_count,
-            ports_count = EXCLUDED.ports_count,
-            creds_count = EXCLUDED.creds_count,
-            breach_count = EXCLUDED.breach_count,
-            cred_password_count = EXCLUDED.cred_password_count,
-            domain_alert_count = EXCLUDED.domain_alert_count,
-            suspected_domain_count = EXCLUDED.suspected_domain_count,
-            insecure_port_count = EXCLUDED.insecure_port_count,
-            verified_vuln_count = EXCLUDED.verified_vuln_count,
-            suspected_vuln_count = EXCLUDED.suspected_vuln_count,
-            suspected_vuln_addrs_count = EXCLUDED.suspected_vuln_addrs_count,
-            threat_actor_count = EXCLUDED.threat_actor_count,
-            dark_web_alerts_count = EXCLUDED.dark_web_alerts_count,
-            dark_web_mentions_count = EXCLUDED.dark_web_mentions_count,
-            dark_web_executive_alerts_count = EXCLUDED.dark_web_executive_alerts_count,
-            dark_web_asset_alerts_count = EXCLUDED.dark_web_asset_alerts_count,
-            pe_number_score = EXCLUDED.pe_number_score,
-            pe_letter_grade = EXCLUDED.pe_letter_grade,
-            cidr_count = EXCLUDED.cidr_count,
-            port_protocol_count = EXCLUDED.port_protocol_count,
-            software_count = EXCLUDED.software_count,
-            foreign_ips_count = EXCLUDED.foreign_ips_count;
-        """
-        cur.execute(
-            sql,
-            (
-                summary_dict["organizations_uid"],
-                summary_dict["start_date"],
-                summary_dict["end_date"],
-                AsIs(summary_dict["ip_count"]),
-                AsIs(summary_dict["root_count"]),
-                AsIs(summary_dict["sub_count"]),
-                AsIs(summary_dict["num_ports"]),
-                AsIs(summary_dict["creds_count"]),
-                AsIs(summary_dict["breach_count"]),
-                AsIs(summary_dict["cred_password_count"]),
-                AsIs(summary_dict["domain_alert_count"]),
-                AsIs(summary_dict["suspected_domain_count"]),
-                AsIs(summary_dict["insecure_port_count"]),
-                AsIs(summary_dict["verified_vuln_count"]),
-                AsIs(summary_dict["suspected_vuln_count"]),
-                AsIs(summary_dict["suspected_vuln_addrs_count"]),
-                AsIs(summary_dict["threat_actor_count"]),
-                AsIs(summary_dict["dark_web_alerts_count"]),
-                AsIs(summary_dict["dark_web_mentions_count"]),
-                AsIs(summary_dict["dark_web_executive_alerts_count"]),
-                AsIs(summary_dict["dark_web_asset_alerts_count"]),
-                summary_dict["pe_number_score"],
-                summary_dict["pe_letter_grade"],
-                AsIs(summary_dict["cidr_count"]),
-                AsIs(summary_dict["port_protocol_count"]),
-                AsIs(summary_dict["software_count"]),
-                AsIs(summary_dict["foreign_ips_count"]),
-            ),
-        )
-        conn.commit()
-        conn.close()
-    except (Exception, psycopg2.DatabaseError) as err:
-        show_psycopg2_exception(err)
-        cur.close()
-
-
-def query_previous_period(org_uid, previous_end_date):
-    """Get summary statistics for the previous period."""
-    conn = connect()
-    cur = conn.cursor()
-    sql = """select
-                sum.ip_count, sum.root_count, sum.sub_count, cred_password_count,
-                sum.suspected_vuln_addrs_count, sum.suspected_vuln_count, sum.insecure_port_count,
-                sum.threat_actor_count
-
-            from report_summary_stats sum
-            where sum.organizations_uid = %s and sum.end_date = %s"""
-    cur.execute(sql, [org_uid, previous_end_date])
-    source = cur.fetchone()
-    cur.close()
-    conn.close()
-    if source:
-        assets_dict = {
-            "last_ip_count": source[0],
-            "last_root_domain_count": source[1],
-            "last_sub_domain_count": source[2],
-            "last_cred_password_count": source[3],
-            "last_sus_vuln_addrs_count": source[4],
-            "last_suspected_vuln_count": source[5],
-            "last_insecure_port_count": source[6],
-            "last_actor_activity_count": source[7],
-        }
-    else:
-        assets_dict = {
-            "last_ip_count": 0,
-            "last_root_domain_count": 0,
-            "last_sub_domain_count": 0,
-            "last_cred_password_count": 0,
-            "last_sus_vuln_addrs_count": 0,
-            "last_suspected_vuln_count": 0,
-            "last_insecure_port_count": 0,
-            "last_actor_activity_count": 0,
-        }
-
-    return assets_dict
-
-
 def query_score_data(start, end, sql):
     """Query data necessary to generate organization scores."""
     conn = connect()
@@ -1000,55 +861,66 @@ def get_new_cves_list(start, end):
             close(conn)
 
 
-def upsert_new_cves(new_cves):
+# --- Issue 559 ---
+def execute_ips(new_ips):
     """
-    Upsert dataframe of new CVE data into the cve_info table in the database.
-
-    Required dataframe columns:
-        cve_name, cvss_2_0, cvss_2_0_severity, cvss_2_0_vector,
-        cvss_3_0, cvss_3_0_severity, cvss_3_0_vector, dve_score
+    Query API to insert new IP record into ips table.
+    On ip conflict, update the old record with the new data
 
     Args:
-        new_cves: Dataframe containing the new CVEs and their CVSS2.0/3.1/DVE data
+        new_ips: Dataframe containing the new IPs and their ip_hash/ip/origin_cidr data
     """
-    try:
-        # Drop duplicates in dataframe
-        new_cves = new_cves.drop_duplicates()
+    # Convert dataframe to list of dictionaries
+    new_ips = new_ips[["ip_hash", "ip", "origin_cidr"]]
+    new_ips = new_ips.to_dict("records")
+    # Endpoint info
+    task_url = "ips_insert"
+    status_url = "ips_insert/task/"
+    data = json.dumps({"new_ips": new_ips})
+    # Make API call
+    result = task_api_call(task_url, status_url, data, 3)
+    # Process data and return
+    LOGGER.info("Successfully inserted new IPs into ips table using execute_ips()")
 
-        # Execute insert query
-        conn = connect()
-        tpls = [tuple(x) for x in new_cves.to_numpy()]
-        cols = ",".join(list(new_cves.columns))
-        table = "cve_info"
-        sql = """INSERT INTO {}({}) VALUES %s
-        ON CONFLICT (cve_name)
-        DO UPDATE SET
-            cve_name=EXCLUDED.cve_name,
-            cvss_2_0=EXCLUDED.cvss_2_0,
-            cvss_2_0_severity=EXCLUDED.cvss_2_0_severity,
-            cvss_2_0_vector=EXCLUDED.cvss_2_0_vector,
-            cvss_3_0=EXCLUDED.cvss_3_0,
-            cvss_3_0_severity=EXCLUDED.cvss_3_0_severity,
-            cvss_3_0_vector=EXCLUDED.cvss_3_0_vector,
-            dve_score=EXCLUDED.dve_score;
-        """
-        cursor = conn.cursor()
-        extras.execute_values(
-            cursor,
-            sql.format(table, cols),
-            tpls,
-        )
-        conn.commit()
-        LOGGER.info(
-            "%s new CVEs successfully upserted into cve_info table...", len(new_cves)
-        )
-    except (Exception, psycopg2.DatabaseError) as err:
-        # Show error and close connection if failed
-        LOGGER.error("There was a problem with your database query %s", err)
-        cursor.close()
-    finally:
-        if conn is not None:
-            close(conn)
+
+# --- Issue 560 ---
+def query_all_subs():
+    """
+    Query API for the entire sub_domains table.
+
+    Return:
+        The sub_domains table as a dataframe
+    """
+    start_time = time.time()
+    total_num_pages = 1
+    page_num = 1
+    total_data = []
+    # Retrieve data for each page
+    while page_num <= total_num_pages:
+        # Endpoint info
+        create_task_url = "sub_domains_table"
+        check_task_url = "sub_domains_table/task/"
+        headers = {
+            "Content-Type": "application/json",
+            "access_token": pe_api_key,
+        }
+        data = json.dumps({"org_uid": "n/a", "page": page_num, "per_page": 50000})
+        # Make API call
+        result = task_api_call(create_task_url, check_task_url, data, 3)
+        # Once task finishes, append result to total list
+        total_data += result.get("data")
+        total_num_pages = result.get("total_pages")
+        LOGGER.info("Retrieved page: " + str(page_num) + " of " + str(total_num_pages))
+        page_num += 1
+    # Once all data has been retrieved, return overall tuple list
+    # total_data = pd.DataFrame.from_dict(total_data)
+    total_data = [tuple(dic.values()) for dic in total_data]
+    LOGGER.info(
+        "Total time to retrieve entire sub_domains table:", (time.time() - start_time)
+    )
+    # total_data["first_seen"] = pd.to_datetime(total_data["first_seen"]).dt.date
+    # total_data["last_seen"] = pd.to_datetime(total_data["last_seen"]).dt.date
+    return total_data
 
 
 # --- Issue 605 ---
@@ -1180,6 +1052,7 @@ def set_org_to_demo(cyhy_db_id, premium):
     data = json.dumps({"cyhy_db_name": cyhy_db_id, "premium": premium})
     try:
         # Call endpoint
+        LOGGER.info("Sending demo org request")
         result = requests.post(endpoint_url, headers=headers, data=data).json()
         # Process data and return
         if result[0].get("organizations_uid") == "NOT FOUND":
@@ -1260,6 +1133,48 @@ def query_cyhy_assets(org_cyhy_name):
         LOGGER.info(err)
 
 
+# --- Issue 632 ---
+def execute_scorecard(summary_dict):
+    """
+    Insert a record for an organization into the report_summary_stats table.
+    On org_uid/star_date conflict, update the old record with the new data
+
+    Args:
+        summary_dict: Dictionary of column names and values to be inserted
+    """
+    input_dict = summary_dict.copy()
+    input_dict["start_date"] = input_dict["start_date"].strftime("%Y-%m-%d")
+    input_dict["end_date"] = input_dict["end_date"].strftime("%Y-%m-%d")
+    input_dict["insecure_port_count"] = int(input_dict["insecure_port_count"])
+    if "dns" in input_dict:
+        input_dict.pop("dns")
+    if "circles_df" in input_dict:
+        input_dict.pop("circles_df")
+    # Endpoint info
+    endpoint_url = pe_api_url + "rss_insert"
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": pe_api_key,
+    }
+    data = json.dumps(input_dict)
+    try:
+        # Call endpoint
+        rss_insert_result = requests.put(
+            endpoint_url, headers=headers, data=data
+        ).json()
+        LOGGER.info("Successfully inserted new record in report_summary_stats table")
+    except requests.exceptions.HTTPError as errh:
+        LOGGER.error(errh)
+    except requests.exceptions.ConnectionError as errc:
+        LOGGER.error(errc)
+    except requests.exceptions.Timeout as errt:
+        LOGGER.error(errt)
+    except requests.exceptions.RequestException as err:
+        LOGGER.error(err)
+    except json.decoder.JSONDecodeError as err:
+        LOGGER.error(err)
+
+
 # --- Issue 633 (paginated) ---
 def query_subs(org_uid):
     """
@@ -1314,7 +1229,140 @@ def query_subs(org_uid):
     return total_data
     
 
+# --- Issue 634 ---
+def query_previous_period(org_uid, prev_end_date):
+    """
+    Query API for previous period report_summary_stats data for a specific org.
+
+    Args:
+        org_uid: The organizations_uid of the specified organization
+        prev_end_date: The end_date of the previous report period
+
+    Return:
+        Report_summary_stats data from the previous report period for a specific org as a dataframe
+    """
+    prev_end_date = prev_end_date.strftime("%Y-%m-%d")
+    # Endpoint info
+    endpoint_url = pe_api_url + "rss_prev_period"
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": pe_api_key,
+    }
+    data = json.dumps(
+        {
+            "org_uid": org_uid,
+            "prev_end_date": prev_end_date,
+        }
+    )
+    try:
+        # Call endpoint
+        rss_prev_period_result = requests.post(
+            endpoint_url, headers=headers, data=data
+        ).json()
+    except requests.exceptions.HTTPError as errh:
+        LOGGER.info(errh)
+    except requests.exceptions.ConnectionError as errc:
+        LOGGER.info(errc)
+    except requests.exceptions.Timeout as errt:
+        LOGGER.info(errt)
+    except requests.exceptions.RequestException as err:
+        LOGGER.info(err)
+    except json.decoder.JSONDecodeError as err:
+        LOGGER.info(err)
+
+    
+    # Once task finishes, return result
+    if rss_prev_period_result:
+        rss_prev_period_result = rss_prev_period_result[0]
+        # Return results if valid
+        assets_dict = {
+            "last_ip_count": rss_prev_period_result["ip_count"],
+            "last_root_domain_count": rss_prev_period_result["root_count"],
+            "last_sub_domain_count": rss_prev_period_result["sub_count"],
+            "last_cred_password_count": rss_prev_period_result["cred_password_count"],
+            "last_sus_vuln_addrs_count": rss_prev_period_result[
+                "suspected_vuln_addrs_count"
+            ],
+            "last_suspected_vuln_count": rss_prev_period_result["suspected_vuln_count"],
+            "last_insecure_port_count": rss_prev_period_result["insecure_port_count"],
+            "last_actor_activity_count": rss_prev_period_result["threat_actor_count"],
+        }
+    else:
+        # If no results, return all 0 dict
+        assets_dict = {
+            "last_ip_count": 0,
+            "last_root_domain_count": 0,
+            "last_sub_domain_count": 0,
+            "last_cred_password_count": 0,
+            "last_sus_vuln_addrs_count": 0,
+            "last_suspected_vuln_count": 0,
+            "last_insecure_port_count": 0,
+            "last_actor_activity_count": 0,
+        }
+    return assets_dict
+
+
+# --- Issue 637 ---
+def upsert_new_cves(new_cves):
+    """
+    Query API to upsert new CVE records into cve_info.
+    On cve_name conflict, update the old record with the new data
+
+    Args:
+        new_cves: Dataframe containing the new CVEs and their CVSS2.0/3.1/DVE data
+    """
+    # Convert dataframe to list of dictionaries
+    new_cves = new_cves.to_dict("records")
+    # Endpoint info
+    task_url = "cve_info_insert"
+    status_url = "cve_info_insert/task/"
+    data = json.dumps({"new_cves": new_cves})
+    # Make API call
+    result = task_api_call(task_url, status_url, data, 3)
+    # Process data and return
+    LOGGER.info(
+        "Successfully inserted new CVEs into cve_info table using upsert_new_cves()"
+    )
+
+
 # v ===== OLD TSQL VERSIONS OF FUNCTIONS ===== v
+# --- 559 OLD TSQL ---
+def execute_ips_tsql(conn, dataframe):
+    """Insert the ips into the ips table in the database and link them to the associated cidr."""
+    for i, row in dataframe.iterrows():
+        try:
+            cur = conn.cursor()
+            sql = """
+            INSERT INTO ips(ip_hash, ip, origin_cidr) VALUES (%s, %s, %s)
+            ON CONFLICT (ip)
+                    DO
+                    UPDATE SET origin_cidr = UUID(EXCLUDED.origin_cidr); """
+            cur.execute(sql, (row["ip_hash"], row["ip"], row["origin_cidr"]))
+            conn.commit()
+        except (Exception, psycopg2.DatabaseError) as err:
+            show_psycopg2_exception(err)
+            cur.close()
+            continue
+    print("IPs inserted using execute_values() successfully..")
+
+
+# --- 560 OLD TSQL ---
+def query_all_subs_tsql(conn):
+    """Query sub domains table."""
+    try:
+        cur = conn.cursor()
+        sql = """SELECT * FROM sub_domains"""
+        cur.execute(sql)
+        pe_orgs = cur.fetchall()
+        cur.close()
+        return pe_orgs
+    except (Exception, psycopg2.DatabaseError) as error:
+        LOGGER.error("There was a problem with your database query %s", error)
+    finally:
+        if conn is not None:
+            close(conn)
+
+
 # --- 605 OLD TSQL ---
 def get_new_orgs_tsql():
     """Query organizations table for new orgs."""
@@ -1411,6 +1459,89 @@ def query_cyhy_assets_tsql(cyhy_db_id, conn):
     return df
 
 
+# --- 632 OLD TSQL ---
+def execute_scorecard_tsql(summary_dict):
+    """Save summary statistics for an organization to the database."""
+    try:
+        conn = connect()
+        cur = conn.cursor()
+        sql = """
+        INSERT INTO report_summary_stats(
+            organizations_uid, start_date, end_date, ip_count, root_count, sub_count, ports_count,
+            creds_count, breach_count, cred_password_count, domain_alert_count,
+            suspected_domain_count, insecure_port_count, verified_vuln_count,
+            suspected_vuln_count, suspected_vuln_addrs_count, threat_actor_count, dark_web_alerts_count,
+            dark_web_mentions_count, dark_web_executive_alerts_count, dark_web_asset_alerts_count,
+            pe_number_score, pe_letter_grade, cidr_count, port_protocol_count, software_count, foreign_ips_count
+        )
+        VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+        ON CONFLICT(organizations_uid, start_date)
+        DO
+        UPDATE SET
+            ip_count = EXCLUDED.ip_count,
+            root_count = EXCLUDED.root_count,
+            sub_count = EXCLUDED.sub_count,
+            ports_count = EXCLUDED.ports_count,
+            creds_count = EXCLUDED.creds_count,
+            breach_count = EXCLUDED.breach_count,
+            cred_password_count = EXCLUDED.cred_password_count,
+            domain_alert_count = EXCLUDED.domain_alert_count,
+            suspected_domain_count = EXCLUDED.suspected_domain_count,
+            insecure_port_count = EXCLUDED.insecure_port_count,
+            verified_vuln_count = EXCLUDED.verified_vuln_count,
+            suspected_vuln_count = EXCLUDED.suspected_vuln_count,
+            suspected_vuln_addrs_count = EXCLUDED.suspected_vuln_addrs_count,
+            threat_actor_count = EXCLUDED.threat_actor_count,
+            dark_web_alerts_count = EXCLUDED.dark_web_alerts_count,
+            dark_web_mentions_count = EXCLUDED.dark_web_mentions_count,
+            dark_web_executive_alerts_count = EXCLUDED.dark_web_executive_alerts_count,
+            dark_web_asset_alerts_count = EXCLUDED.dark_web_asset_alerts_count,
+            pe_number_score = EXCLUDED.pe_number_score,
+            pe_letter_grade = EXCLUDED.pe_letter_grade,
+            cidr_count = EXCLUDED.cidr_count,
+            port_protocol_count = EXCLUDED.port_protocol_count,
+            software_count = EXCLUDED.software_count,
+            foreign_ips_count = EXCLUDED.foreign_ips_count;
+        """
+        cur.execute(
+            sql,
+            (
+                summary_dict["organizations_uid"],
+                summary_dict["start_date"],
+                summary_dict["end_date"],
+                AsIs(summary_dict["ip_count"]),
+                AsIs(summary_dict["root_count"]),
+                AsIs(summary_dict["sub_count"]),
+                AsIs(summary_dict["num_ports"]),
+                AsIs(summary_dict["creds_count"]),
+                AsIs(summary_dict["breach_count"]),
+                AsIs(summary_dict["cred_password_count"]),
+                AsIs(summary_dict["domain_alert_count"]),
+                AsIs(summary_dict["suspected_domain_count"]),
+                AsIs(summary_dict["insecure_port_count"]),
+                AsIs(summary_dict["verified_vuln_count"]),
+                AsIs(summary_dict["suspected_vuln_count"]),
+                AsIs(summary_dict["suspected_vuln_addrs_count"]),
+                AsIs(summary_dict["threat_actor_count"]),
+                AsIs(summary_dict["dark_web_alerts_count"]),
+                AsIs(summary_dict["dark_web_mentions_count"]),
+                AsIs(summary_dict["dark_web_executive_alerts_count"]),
+                AsIs(summary_dict["dark_web_asset_alerts_count"]),
+                summary_dict["pe_number_score"],
+                summary_dict["pe_letter_grade"],
+                AsIs(summary_dict["cidr_count"]),
+                AsIs(summary_dict["port_protocol_count"]),
+                AsIs(summary_dict["software_count"]),
+                AsIs(summary_dict["foreign_ips_count"]),
+            ),
+        )
+        conn.commit()
+        conn.close()
+    except (Exception, psycopg2.DatabaseError) as err:
+        show_psycopg2_exception(err)
+        cur.close()
+
+
 # --- 633 OLD TSQL ---
 def query_subs_tsql(org_uid):
     """Query all subs for an organization."""
@@ -1423,3 +1554,97 @@ def query_subs_tsql(org_uid):
     df = pd.read_sql(sql, conn, params={"org_uid": org_uid})
     conn.close()
     return df
+
+
+# --- 634 OLD TSQL ---
+def query_previous_period_tsql(org_uid, previous_end_date):
+    """Get summary statistics for the previous period."""
+    conn = connect()
+    cur = conn.cursor()
+    sql = """select
+                sum.ip_count, sum.root_count, sum.sub_count, cred_password_count,
+                sum.suspected_vuln_addrs_count, sum.suspected_vuln_count, sum.insecure_port_count,
+                sum.threat_actor_count
+
+            from report_summary_stats sum
+            where sum.organizations_uid = %s and sum.end_date = %s"""
+    cur.execute(sql, [org_uid, previous_end_date])
+    source = cur.fetchone()
+    cur.close()
+    conn.close()
+    if source:
+        assets_dict = {
+            "last_ip_count": source[0],
+            "last_root_domain_count": source[1],
+            "last_sub_domain_count": source[2],
+            "last_cred_password_count": source[3],
+            "last_sus_vuln_addrs_count": source[4],
+            "last_suspected_vuln_count": source[5],
+            "last_insecure_port_count": source[6],
+            "last_actor_activity_count": source[7],
+        }
+    else:
+        assets_dict = {
+            "last_ip_count": 0,
+            "last_root_domain_count": 0,
+            "last_sub_domain_count": 0,
+            "last_cred_password_count": 0,
+            "last_sus_vuln_addrs_count": 0,
+            "last_suspected_vuln_count": 0,
+            "last_insecure_port_count": 0,
+            "last_actor_activity_count": 0,
+        }
+
+    return assets_dict
+
+
+# --- 637 OLD TSQL ---
+def upsert_new_cves_tsql(new_cves):
+    """
+    Upsert dataframe of new CVE data into the cve_info table in the database.
+
+    Required dataframe columns:
+        cve_name, cvss_2_0, cvss_2_0_severity, cvss_2_0_vector,
+        cvss_3_0, cvss_3_0_severity, cvss_3_0_vector, dve_score
+
+    Args:
+        new_cves: Dataframe containing the new CVEs and their CVSS2.0/3.1/DVE data
+    """
+    try:
+        # Drop duplicates in dataframe
+        new_cves = new_cves.drop_duplicates()
+
+        # Execute insert query
+        conn = connect()
+        tpls = [tuple(x) for x in new_cves.to_numpy()]
+        cols = ",".join(list(new_cves.columns))
+        table = "cve_info"
+        sql = """INSERT INTO {}({}) VALUES %s
+        ON CONFLICT (cve_name)
+        DO UPDATE SET
+            cve_name=EXCLUDED.cve_name,
+            cvss_2_0=EXCLUDED.cvss_2_0,
+            cvss_2_0_severity=EXCLUDED.cvss_2_0_severity,
+            cvss_2_0_vector=EXCLUDED.cvss_2_0_vector,
+            cvss_3_0=EXCLUDED.cvss_3_0,
+            cvss_3_0_severity=EXCLUDED.cvss_3_0_severity,
+            cvss_3_0_vector=EXCLUDED.cvss_3_0_vector,
+            dve_score=EXCLUDED.dve_score;
+        """
+        cursor = conn.cursor()
+        extras.execute_values(
+            cursor,
+            sql.format(table, cols),
+            tpls,
+        )
+        conn.commit()
+        LOGGER.info(
+            "%s new CVEs successfully upserted into cve_info table...", len(new_cves)
+        )
+    except (Exception, psycopg2.DatabaseError) as err:
+        # Show error and close connection if failed
+        LOGGER.error("There was a problem with your database query %s", err)
+        cursor.close()
+    finally:
+        if conn is not None:
+            close(conn)

@@ -700,6 +700,11 @@ class Ips(models.Model):
     live = models.BooleanField(blank=True, null=True)
     date_last_live = models.DateTimeField(blank=True, null=True)
     last_reverse_lookup = models.DateTimeField(blank=True, null=True)
+    first_seen = models.DateField(blank=True, null=True)
+    last_seen = models.DateField(blank=True, null=True)
+    current = models.BooleanField(blank=True, null=True)
+    from_cidr = models.BooleanField(blank=True, null=True)  # varchar type in db???
+    organizations_uid = models.UUIDField(blank=True, null=True)
 
     class Meta:
         """Set Ips model metadata."""

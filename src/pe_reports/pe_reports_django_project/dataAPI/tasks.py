@@ -4,6 +4,7 @@ import ast
 import datetime
 import json
 from typing import List
+import uuid
 
 # Third-Party Libraries
 from celery import shared_task
@@ -11,8 +12,11 @@ from django.core import serializers
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.db.models import Q
 from . import schemas
-from home.models import (  # General DB Table Models:; D-Score View Models:; I-Score View Models:; Misc. Score View Models:
+from home.models import (
+    Cidrs,
+    CveInfo,
     CyhyKevs,
+    Ips,
     MatVwOrgsAllIps,
     Organizations,
     SubDomains,
@@ -50,9 +54,7 @@ def convert_date_to_string(date):
     return date
 
 
-# ^ ---------- Task Helper Functions ---------- ^
-
-
+# v ---------- Task Functions ---------- v
 @shared_task(bind=True)
 def get_vs_info(self, cyhy_db_names: List[str]):
     """Get the Vulnerability Scanning information from the database."""
@@ -101,7 +103,7 @@ def get_vw_pshtt_domains_to_run_info(self):
     return endpoint_data
 
 
-# ---------- D-Score View Tasks ----------
+# ---------- D-Score Tasks ----------
 @shared_task(bind=True)
 def get_dscore_vs_cert_info(self, specified_orgs: List[str]):
     """Task function for the dscore_vs_cert API endpoint."""
@@ -187,7 +189,7 @@ def get_fceb_status_info(self, specified_orgs: List[str]):
     return fceb_status
 
 
-# ---------- I-Score View Tasks ----------
+# ---------- I-Score Tasks ----------
 @shared_task(bind=True)
 def get_iscore_vs_vuln_info(self, specified_orgs: List[str]):
     """Task function for the iscore_vs_vuln API endpoint."""
@@ -372,7 +374,7 @@ def get_kev_list_info(self):
     return kev_list
 
 
-# ---------- Misc. Score View Tasks ----------
+# ---------- General Score Tasks ----------
 @shared_task(bind=True)
 def get_xs_stakeholders_info(self):
     """Task function for the XS stakeholder list query API endpoint."""
@@ -452,7 +454,73 @@ def get_xl_stakeholders_info(self):
     return xl_stakeholders
 
 
-# --- 633 ---
+# ---------- Misc. Tasks ----------
+# --- execute_ips(), Issue 559 ---
+@shared_task(bind=True)
+def ips_insert_task(self, new_ips: List[dict]):
+    """Task function for the ips_insert API endpoint."""
+    # Go through each new ip
+    for new_ip in new_ips:
+        # Get Cidrs.origin_cidr object for this ip
+        curr_ip_origin_cidr = Cidrs.objects.get(cidr_uid=new_ip["origin_cidr"])
+        try:
+            Ips.objects.get(ip=new_ip["ip"])
+        except Ips.DoesNotExist:
+            # If ip record doesn't exist yet, create one
+            from_cidr_state = False
+            if curr_ip_origin_cidr:
+                from_cidr_state = True
+            Ips.objects.create(
+                ip_hash=new_ip["ip_hash"],
+                ip=new_ip["ip"],
+                origin_cidr=curr_ip_origin_cidr,
+                from_cidr=from_cidr_state,
+            )
+        else:
+            # If ip record does exits, update it
+            Ips.objects.filter(ip=new_ip["ip"]).update(
+                origin_cidr=new_ip["origin_cidr"],
+            )
+    # Return success message
+    return "New ip records have been inserted into ips table"
+
+
+# --- query_all_subs(), Issue 560 ---
+@shared_task(bind=True)
+def sub_domains_table_task(self, page: int, per_page: int):
+    """Task function for the sub_domains_table API endpoint."""
+    # Make database query and grab all data
+    total_data = list(SubDomains.objects.all().values())
+    # Divide up data w/ specified num records per page
+    paged_data = Paginator(total_data, per_page)
+    # Attempt to retrieve specified page
+    try:
+        single_page_data = paged_data.page(page)
+    except PageNotAnInteger:
+        # If page is not an integer, deliver first page.
+        single_page_data = paged_data.page(1)
+    except EmptyPage:
+        # If page is out of range (e.g. 9999), deliver last page of results.
+        single_page_data = paged_data.page(paged_data.num_pages)
+    # Serialize specified page
+    single_page_data = list(single_page_data)
+    # Convert uuids to strings
+    for row in single_page_data:
+        row["sub_domain_uid"] = convert_uuid_to_string(row["sub_domain_uid"])
+        row["root_domain_uid_id"] = convert_uuid_to_string(row["root_domain_uid_id"])
+        row["data_source_uid_id"] = convert_uuid_to_string(row["data_source_uid_id"])
+        row["dns_record_uid_id"] = convert_uuid_to_string(row["dns_record_uid_id"])
+        row["first_seen"] = convert_date_to_string(row["first_seen"])
+        row["last_seen"] = convert_date_to_string(row["last_seen"])
+    result = {
+        "total_pages": paged_data.num_pages,
+        "current_page": page,
+        "data": single_page_data,
+    }
+    return result
+
+
+# --- query_subs(), Issue 633 ---
 @shared_task(bind=True)
 def sub_domains_by_org_task(self, org_uid: str, page: int, per_page: int):
     """Task function for the subdomains by org query API endpoint."""
@@ -503,3 +571,41 @@ def sub_domains_by_org_task(self, org_uid: str, page: int, per_page: int):
         "data": single_page_data,
     }
     return result
+
+
+# --- upsert_new_cves(), Issue 637 ---
+@shared_task(bind=True)
+def cve_info_insert_task(self, new_cves: List[dict]):
+    """Task function for the cve_info_insert API endpoint."""
+    # Go through each new cve
+    for cve in new_cves:
+        try:
+            CveInfo.objects.get(cve_name=cve["cve_name"])
+        except CveInfo.DoesNotExist:
+            # If CVE record doesn't exist yet, create one
+            CveInfo.objects.create(
+                # generate new uuid
+                cve_uuid=uuid.uuid1(),
+                cve_name=cve["cve_name"],
+                cvss_2_0=cve["cvss_2_0"],
+                cvss_2_0_severity=cve["cvss_2_0_severity"],
+                cvss_2_0_vector=cve["cvss_2_0_vector"],
+                cvss_3_0=cve["cvss_3_0"],
+                cvss_3_0_severity=cve["cvss_3_0_severity"],
+                cvss_3_0_vector=cve["cvss_3_0_vector"],
+                dve_score=cve["dve_score"],
+            )
+        else:
+            # If CVE record does exits, update it
+            CveInfo.objects.filter(cve_name=cve["cve_name"]).update(
+                # use existing uuid
+                cvss_2_0=cve["cvss_2_0"],
+                cvss_2_0_severity=cve["cvss_2_0_severity"],
+                cvss_2_0_vector=cve["cvss_2_0_vector"],
+                cvss_3_0=cve["cvss_3_0"],
+                cvss_3_0_severity=cve["cvss_3_0_severity"],
+                cvss_3_0_vector=cve["cvss_3_0_vector"],
+                dve_score=cve["dve_score"],
+            )
+    # Return success message
+    return "New CVE records have been inserted into cve_info table"
