@@ -1358,6 +1358,96 @@ class CyhyDbAssetsByOrg(BaseModel):
         orm_mode = True
 
 
+# --- query_cidrs_by_org(), Issue 618 ---
+# Get all CIDRs for specified org
+class CidrsByOrg(BaseModel):
+    """CidrsByOrg schema class."""
+
+    cidr_uid: Optional[str] = None
+    network: Optional[str] = None
+    organizations_uid_id: Optional[str] = None
+    data_source_uid_id: Optional[str] = None
+    insert_alert: Optional[str] = None
+    first_seen: Optional[str] = None
+    last_seen: Optional[str] = None
+    current: Optional[bool] = None
+
+    class Config:
+        """CidrsByOrg schema config class."""
+
+        orm_mode = True
+
+
+# --- query_ports_protocols(), Issue 619 ---
+# Get distinct ports/protocols for specified org
+class PortsProtocolsByOrg(BaseModel):
+    """PortsProtocolsByOrg schema class."""
+
+    port: Optional[int] = None
+    protocol: Optional[str] = None
+
+    class Config:
+        """PortsProtocolsByOrg schema config class."""
+
+        orm_mode = True
+
+
+# --- query_software(), Issue 620 ---
+# Get distinct software for specified org
+class SoftwareByOrg(BaseModel):
+    """SoftwareByOrg schema class."""
+
+    product: Optional[str] = None
+
+    class Config:
+        """SoftwareByOrg schema config class."""
+
+        orm_mode = True
+
+
+# --- query_foreign_ips(), Issue 621 ---
+# Get assets outside the US for specified org
+class ForeignIpsByOrg(BaseModel):
+    """ForeignIpsByOrg schema class."""
+
+    shodan_asset_uid: Optional[str] = None
+    organizations_uid_id: Optional[str] = None
+    organization: Optional[str] = None
+    ip: Optional[str] = None
+    port: Optional[int] = None
+    protocol: Optional[str] = None
+    timestamp: Optional[str] = None
+    product: Optional[str] = None
+    server: Optional[str] = None
+    tags: Optional[List[str]] = None  # List
+    domains: Optional[List[str]] = None  # List
+    hostnames: Optional[List[str]] = None  # List
+    isn: Optional[str] = None
+    asn: Optional[int] = None
+    data_source_uid_id: Optional[str] = None
+    country_code: Optional[str] = None
+    location: Optional[str] = None
+
+    class Config:
+        """ForeignIpsByOrg schema config class."""
+
+        orm_mode = True
+
+
+# --- query_roots(), Issue 622 ---
+# Get root domains for specified org
+class RootDomainsByOrg(BaseModel):
+    """RootDomainsByOrg schema class."""
+
+    root_domain_uid: Optional[str] = None
+    root_domain: Optional[str] = None
+
+    class Config:
+        """RootDomainsByOrg schema config class."""
+
+        orm_mode = True
+        
+
 # --- execute_scorecard(), Issue 632 ---
 # Insert record into report_summary_stats, input
 class RSSInsertInput(BaseModel):

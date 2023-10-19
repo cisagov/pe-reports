@@ -233,6 +233,9 @@ class Cidrs(models.Model):
         null=True,
     )
     insert_alert = models.TextField(blank=True, null=True)
+    first_seen = models.DateField(blank=True, null=True)
+    last_seen = models.DateField(blank=True, null=True)
+    current = models.BooleanField(blank=True, null=True)
 
     class Meta:
         """Set Cidrs model metadata."""
@@ -1051,6 +1054,8 @@ class ShodanAssets(models.Model):
     data_source_uid = models.ForeignKey(
         DataSource, on_delete=models.CASCADE, db_column="data_source_uid"
     )
+    country_code = models.TextField(blank=True, null=True)
+    location = models.TextField(blank=True, null=True)
 
     class Meta:
         """Set ShodanAssets model metadata."""

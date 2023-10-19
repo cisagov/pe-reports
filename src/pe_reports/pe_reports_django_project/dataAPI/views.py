@@ -82,6 +82,7 @@ from fastapi_limiter.depends import RateLimiter
 # from fastapi_limiter import FastAPILimiter
 # from fastapi_limiter.depends import RateLimiter
 from home.models import (  # MatVwOrgsAllIps,
+    Cidrs,
     CredentialBreaches,
     CyhyDbAssets,
     CyhyPortScans,
@@ -91,6 +92,7 @@ from home.models import (  # MatVwOrgsAllIps,
     PshttResults,
     RootDomains,
     ReportSummaryStats,
+    ShodanAssets,
     SubDomains,
     TopCves,
     VwBreachcomp,
@@ -2864,6 +2866,196 @@ def cyhy_assets_by_org(
     else:
         return {"message": "No api key was submitted"}
 
+
+# --- query_cidrs_by_org(), Issue 618 ---
+@api_router.post(
+    "/cidrs_by_org",
+    dependencies=[Depends(get_api_key)], #Depends(RateLimiter(times=200, seconds=60))],
+    response_model=List[schemas.CidrsByOrg],
+    tags=["Get all CIDRs for a specified organization."],
+)
+def cidrs_by_org(
+    data: schemas.GenInputOrgUIDSingle, tokens: dict = Depends(get_api_key)
+):
+    """API endpoint to get all CIDRs for a specified organization."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # If API key valid, make query
+            cidrs_by_org_data = list(
+                Cidrs.objects.filter(
+                    organizations_uid=data.org_uid, current=True
+                ).values()
+            )
+            # Convert uuids to strings
+            for row in cidrs_by_org_data:
+                row["cidr_uid"] = convert_uuid_to_string(row["cidr_uid"])
+                row["organizations_uid_id"] = convert_uuid_to_string(
+                    row["organizations_uid_id"]
+                )
+                row["data_source_uid_id"] = convert_uuid_to_string(
+                    row["data_source_uid_id"]
+                )
+                row["first_seen"] = convert_date_to_string(row["first_seen"])
+                row["last_seen"] = convert_date_to_string(row["last_seen"])
+            # Catch query no results scenario
+            if not cidrs_by_org_data:
+                cidrs_by_org_data = [{x: None for x in schemas.CidrsByOrg.__fields__}]
+            return cidrs_by_org_data
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+
+# --- query_ports_protocols(), Issue 619 ---
+@api_router.post(
+    "/ports_protocols_by_org",
+    dependencies=[Depends(get_api_key)], #Depends(RateLimiter(times=200, seconds=60))],
+    response_model=List[schemas.PortsProtocolsByOrg],
+    tags=["Get all distinct ports/protocols for a specified organization."],
+)
+def ports_protocols_by_org(
+    data: schemas.GenInputOrgUIDSingle, tokens: dict = Depends(get_api_key)
+):
+    """API endpoint to get all distinct ports/protocols for a specified organization."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # If API key valid, make query
+            ports_protocols_by_org_data = list(
+                ShodanAssets.objects.filter(organizations_uid=data.org_uid)
+                .values("port", "protocol")
+                .distinct()
+            )
+            # Catch query no results scenario
+            if not ports_protocols_by_org_data:
+                ports_protocols_by_org_data = [{x: None for x in schemas.PortsProtocolsByOrg.__fields__}]
+            return ports_protocols_by_org_data
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+
+# --- query_software(), Issue 620 ---
+@api_router.post(
+    "/software_by_org",
+    dependencies=[Depends(get_api_key)], #Depends(RateLimiter(times=200, seconds=60))],
+    response_model=List[schemas.SoftwareByOrg],
+    tags=["Get all distinct software products for a specified organization."],
+)
+def software_by_org(
+    data: schemas.GenInputOrgUIDSingle, tokens: dict = Depends(get_api_key)
+):
+    """API endpoint to get all distinct software products for a specified organization."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # If API key valid, make query
+            software_by_org_data = list(
+                ShodanAssets.objects.filter(
+                    organizations_uid=data.org_uid, product__isnull=False
+                )
+                .values("product")
+                .distinct()
+            )
+            # Catch query no results scenario
+            if not software_by_org_data:
+                software_by_org_data = [{x: None for x in schemas.SoftwareByOrg.__fields__}]
+            return software_by_org_data
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+
+# --- query_foreign_IPs(), Issue 621 ---
+@api_router.post(
+    "/foreign_ips_by_org",
+    dependencies=[Depends(get_api_key)], #Depends(RateLimiter(times=200, seconds=60))],
+    response_model=List[schemas.ForeignIpsByOrg],
+    tags=["Get all foreign IPs for a specified organization."],
+)
+def foreign_ips_by_org(
+    data: schemas.GenInputOrgUIDSingle, tokens: dict = Depends(get_api_key)
+):
+    """API endpoint to get all foreign IPs for a specified organization."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # If API key valid, make query
+            foreign_ips_by_org_data = list(
+                ShodanAssets.objects.filter(
+                    organizations_uid=data.org_uid, country_code__isnull=False
+                )
+                .exclude(country_code="US")
+                .values()
+            )
+            # Convert uuids to strings
+            for row in foreign_ips_by_org_data:
+                row["shodan_asset_uid"] = convert_uuid_to_string(
+                    row["shodan_asset_uid"]
+                )
+                row["organizations_uid_id"] = convert_uuid_to_string(
+                    row["organizations_uid_id"]
+                )
+                row["timestamp"] = convert_date_to_string(row["timestamp"])
+                row["data_source_uid_id"] = convert_uuid_to_string(
+                    row["data_source_uid_id"]
+                )
+            # Catch query no results scenario
+            if not foreign_ips_by_org_data:
+                foreign_ips_by_org_data = [{x: None for x in schemas.ForeignIpsByOrg.__fields__}]
+            return foreign_ips_by_org_data
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+
+# --- query_roots(), Issue 622 ---
+@api_router.post(
+    "/root_domains_by_org",
+    dependencies=[Depends(get_api_key)], #Depends(RateLimiter(times=200, seconds=60))],
+    response_model=List[schemas.RootDomainsByOrg],
+    tags=["Get all root domains for a specified organization."],
+)
+def root_domains_by_org(
+    data: schemas.GenInputOrgUIDSingle, tokens: dict = Depends(get_api_key)
+):
+    """API endpoint to get all root domains for a specified organization."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # If API key valid, make query
+            root_domains_by_org_data = list(
+                RootDomains.objects.filter(
+                    organizations_uid=data.org_uid, enumerate_subs=True
+                ).values("root_domain_uid", "root_domain")
+            )
+            # Convert uuids to strings
+            for row in root_domains_by_org_data:
+                row["root_domain_uid"] = convert_uuid_to_string(row["root_domain_uid"])
+            # Catch query no results scenario
+            if not root_domains_by_org_data:
+                root_domains_by_org_data = [{x: None for x in schemas.RootDomainsByOrg.__fields__}]
+            return root_domains_by_org_data
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+        
 
 # --- execute_scorecard(), Issue 632 ---
 @api_router.put(

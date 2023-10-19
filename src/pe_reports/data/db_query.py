@@ -498,56 +498,6 @@ def refresh_asset_counts_vw():
     conn.commit()
 
 
-def query_cidrs_by_org(org_uid):
-    """Query all CIDRs for a specific org."""
-    conn = connect()
-    sql = """select *
-            from cidrs c
-            where c.organizations_uid  = %(org_uid)s and c.current;
-            """
-    df = pd.read_sql(sql, conn, params={"org_uid": org_uid})
-    conn.close()
-    return df
-
-
-def query_ports_protocols(org_uid):
-    """Query distinct ports and protocols by org."""
-    conn = connect()
-    sql = """select distinct sa.port,sa.protocol
-            from shodan_assets sa
-            where sa.organizations_uid  = %(org_uid)s;
-            """
-    df = pd.read_sql(sql, conn, params={"org_uid": org_uid})
-    conn.close()
-    return df
-
-
-def query_software(org_uid):
-    """Query distinct software by org."""
-    conn = connect()
-    sql = """select distinct sa.product
-            from shodan_assets sa
-            where sa.organizations_uid  = %(org_uid)s
-            and sa.product notnull;
-            """
-    df = pd.read_sql(sql, conn, params={"org_uid": org_uid})
-    conn.close()
-    return df
-
-
-def query_foreign_IPs(org_uid):
-    """Query distinct software by org."""
-    conn = connect()
-    sql = """select * from
-            shodan_assets sa
-            where (sa.country_code != 'US' and sa.country_code notnull)
-            and sa.organizations_uid  = %(org_uid)s;
-            """
-    df = pd.read_sql(sql, conn, params={"org_uid": org_uid})
-    conn.close()
-    return df
-
-
 def insert_roots(org, domain_list):
     """Insert root domains into the database."""
     source_uid = get_data_source_uid("P&E")
@@ -572,18 +522,6 @@ def insert_roots(org, domain_list):
     params = config()
     conn = psycopg2.connect(**params)
     execute_values(conn, roots, "public.root_domains", except_clause)
-
-
-def query_roots(org_uid):
-    """Query all ips that link to a cidr related to a specific org."""
-    conn = connect()
-    sql = """SELECT r.root_domain_uid, r.root_domain FROM root_domains r
-            where r.organizations_uid = %(org_uid)s
-            and r.enumerate_subs = True
-            """
-    df = pd.read_sql(sql, conn, params={"org_uid": org_uid})
-    conn.close()
-    return df
 
 
 def query_creds_view(org_uid, start_date, end_date):
@@ -931,7 +869,6 @@ def get_new_orgs():
     Return:
         All data for organizations where report_on is false as a dataframe
     """
-    print("get_new_orgs() api endpoint used!")
     # Endpoint info
     endpoint_url = pe_api_url + "orgs_report_on_false"
     headers = {
@@ -1096,7 +1033,6 @@ def query_cyhy_assets(org_cyhy_name):
     Return:
         All the cyhy assets belonging to the specified org as a dataframe
     """
-    print("query_cyhy_assets() api endpoint used!")
     # Endpoint info
     endpoint_url = pe_api_url + "cyhy_assets_by_org"
     headers = {
@@ -1131,6 +1067,217 @@ def query_cyhy_assets(org_cyhy_name):
         LOGGER.info(err)
     except json.decoder.JSONDecodeError as err:
         LOGGER.info(err)
+
+
+# --- Issue 618 ---
+def query_cidrs_by_org(org_uid):
+    """
+    Query API to retrieve all CIDRs for an organization.
+
+    Args:
+        org_uid: uid of the specified organization
+
+    Return:
+        All the CIDRs belonging to the specified org as a dataframe
+    """
+    # Endpoint info
+    endpoint_url = pe_api_url + "cidrs_by_org"
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": pe_api_key,
+    }
+    data = json.dumps({"org_uid": org_uid})
+    try:
+        # Call endpoint
+        result = requests.post(endpoint_url, headers=headers, data=data).json()
+        # Process data and return
+        result_df = pd.DataFrame.from_dict(result)
+        result_df.rename(
+            columns={
+                "organizations_uid_id": "organizations_uid",
+                "data_source_uid_id": "data_source_uid",
+            },
+            inplace=True,
+        )
+        result_df["first_seen"] = pd.to_datetime(result_df["first_seen"]).dt.date
+        result_df["last_seen"] = pd.to_datetime(result_df["last_seen"]).dt.date
+        # Return truly empty dataframe if no results
+        if result_df[result_df.columns].isnull().apply(lambda x: all(x), axis=1)[0]:
+            result_df.drop(result_df.index, inplace=True)
+        return result_df
+    except requests.exceptions.HTTPError as errh:
+        LOGGER.error(errh)
+    except requests.exceptions.ConnectionError as errc:
+        LOGGER.error(errc)
+    except requests.exceptions.Timeout as errt:
+        LOGGER.error(errt)
+    except requests.exceptions.RequestException as err:
+        LOGGER.error(err)
+    except json.decoder.JSONDecodeError as err:
+        LOGGER.error(err)
+
+
+# --- Issue 619 ---
+def query_ports_protocols(org_uid):
+    """
+    Query API to retrieve all distinct ports/protocols for an organization.
+
+    Args:
+        org_uid: uid of the specified organization
+
+    Return:
+        All the distinct ports/protocols belonging to the specified org as a dataframe
+    """
+    # Endpoint info
+    endpoint_url = pe_api_url + "ports_protocols_by_org"
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": pe_api_key,
+    }
+    data = json.dumps({"org_uid": org_uid})
+    try:
+        # Call endpoint
+        result = requests.post(endpoint_url, headers=headers, data=data).json()
+        # Process data and return
+        result_df = pd.DataFrame.from_dict(result)
+        # Return truly empty dataframe if no results
+        if result_df[result_df.columns].isnull().apply(lambda x: all(x), axis=1)[0]:
+            result_df.drop(result_df.index, inplace=True)
+        return result_df
+    except requests.exceptions.HTTPError as errh:
+        LOGGER.error(errh)
+    except requests.exceptions.ConnectionError as errc:
+        LOGGER.error(errc)
+    except requests.exceptions.Timeout as errt:
+        LOGGER.error(errt)
+    except requests.exceptions.RequestException as err:
+        LOGGER.error(err)
+    except json.decoder.JSONDecodeError as err:
+        LOGGER.error(err)
+
+
+# --- Issue 620 ---
+def query_software(org_uid):
+    """
+    Query API to retrieve all distinct software products for an organization.
+
+    Args:
+        org_uid: uid of the specified organization
+
+    Return:
+        All the distinct software belonging to the specified org as a dataframe
+    """
+    # Endpoint info
+    endpoint_url = pe_api_url + "software_by_org"
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": pe_api_key,
+    }
+    data = json.dumps({"org_uid": org_uid})
+    try:
+        # Call endpoint
+        result = requests.post(endpoint_url, headers=headers, data=data).json()
+        # Process data and return
+        result_df = pd.DataFrame.from_dict(result)
+        # Return truly empty dataframe if no results
+        if result_df[result_df.columns].isnull().apply(lambda x: all(x), axis=1)[0]:
+            result_df.drop(result_df.index, inplace=True)
+        return result_df
+    except requests.exceptions.HTTPError as errh:
+        LOGGER.error(errh)
+    except requests.exceptions.ConnectionError as errc:
+        LOGGER.error(errc)
+    except requests.exceptions.Timeout as errt:
+        LOGGER.error(errt)
+    except requests.exceptions.RequestException as err:
+        LOGGER.error(err)
+    except json.decoder.JSONDecodeError as err:
+        LOGGER.error(err)
+
+
+# --- Issue 621 ---
+def query_foreign_IPs(org_uid):
+    """
+    Query API to retrieve all foreign ips for an organization.
+
+    Args:
+        org_uid: uid of the specified organization
+
+    Return:
+        All the foreign ips belonging to the specified org as a dataframe
+    """
+    # Endpoint info
+    endpoint_url = pe_api_url + "foreign_ips_by_org"
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": pe_api_key,
+    }
+    data = json.dumps({"org_uid": org_uid})
+    try:
+        # Call endpoint
+        result = requests.post(endpoint_url, headers=headers, data=data).json()
+        # Process data and return
+        result_df = pd.DataFrame.from_dict(result)
+        result_df.rename(
+            columns={
+                "organizations_uid_id": "organizations_uid",
+                "data_source_uid_id": "data_source_uid",
+            },
+            inplace=True,
+        )
+        # Return truly empty dataframe if no results
+        if result_df[result_df.columns].isnull().apply(lambda x: all(x), axis=1)[0]:
+            result_df.drop(result_df.index, inplace=True)
+        return result_df
+    except requests.exceptions.HTTPError as errh:
+        LOGGER.error(errh)
+    except requests.exceptions.ConnectionError as errc:
+        LOGGER.error(errc)
+    except requests.exceptions.Timeout as errt:
+        LOGGER.error(errt)
+    except requests.exceptions.RequestException as err:
+        LOGGER.error(err)
+    except json.decoder.JSONDecodeError as err:
+        LOGGER.error(err)
+
+
+# --- Issue 622 ---
+def query_roots(org_uid):
+    """
+    Query API to retrieve all root domains for an organization.
+
+    Args:
+        org_uid: uid of the specified organization
+
+    Return:
+        All the root domains belonging to the specified org as a dataframe
+    """
+    # Endpoint info
+    endpoint_url = pe_api_url + "root_domains_by_org"
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": pe_api_key,
+    }
+    data = json.dumps({"org_uid": org_uid})
+    try:
+        # Call endpoint
+        result = requests.post(endpoint_url, headers=headers, data=data).json()
+        # Process data and return
+        result_df = pd.DataFrame.from_dict(result)
+        # Return truly empty dataframe if no results
+        if result_df[result_df.columns].isnull().apply(lambda x: all(x), axis=1)[0]:
+            result_df.drop(result_df.index, inplace=True)
+        return result_df
+    except requests.exceptions.HTTPError as errh:
+        LOGGER.error(errh)
+    except requests.exceptions.ConnectionError as errc:
+        LOGGER.error(errc)
+    except requests.exceptions.Timeout as errt:
+        LOGGER.error(errt)
+    except requests.exceptions.RequestException as err:
+        LOGGER.error(err)
+    except json.decoder.JSONDecodeError as err:
+        LOGGER.error(err)
 
 
 # --- Issue 632 ---
@@ -1456,6 +1603,73 @@ def query_cyhy_assets_tsql(cyhy_db_id, conn):
 
     df = pd.read_sql_query(sql, conn, params={"org_id": cyhy_db_id})
 
+    return df
+
+
+# --- 618 OLD TSQL ---
+def query_cidrs_by_org_tsql(org_uid):
+    """Query all CIDRs for a specific org."""
+    conn = connect()
+    sql = """select *
+            from cidrs c
+            where c.organizations_uid  = %(org_uid)s and c.current;
+            """
+    df = pd.read_sql(sql, conn, params={"org_uid": org_uid})
+    conn.close()
+    return df
+
+
+# --- 619 OLD TSQL ---
+def query_ports_protocols_tsql(org_uid):
+    """Query distinct ports and protocols by org."""
+    conn = connect()
+    sql = """select distinct sa.port,sa.protocol
+            from shodan_assets sa
+            where sa.organizations_uid  = %(org_uid)s;
+            """
+    df = pd.read_sql(sql, conn, params={"org_uid": org_uid})
+    conn.close()
+    return df
+
+
+# --- 620 OLD TSQL ---
+def query_software_tsql(org_uid):
+    """Query distinct software by org."""
+    conn = connect()
+    sql = """select distinct sa.product
+            from shodan_assets sa
+            where sa.organizations_uid  = %(org_uid)s
+            and sa.product notnull;
+            """
+    df = pd.read_sql(sql, conn, params={"org_uid": org_uid})
+    conn.close()
+    return df
+
+
+# --- 621 OLD TSQL ---
+def query_foreign_IPs_tsql(org_uid):
+    """Query distinct software by org."""
+    conn = connect()
+    sql = """select * from
+            shodan_assets sa
+            where (sa.country_code != 'US' and sa.country_code notnull)
+            and sa.organizations_uid  = %(org_uid)s;
+            """
+    df = pd.read_sql(sql, conn, params={"org_uid": org_uid})
+    conn.close()
+    return df
+
+
+# --- 622 OLD TSQL ---
+def query_roots_tsql(org_uid):
+    """Query all ips that link to a cidr related to a specific org."""
+    conn = connect()
+    sql = """SELECT r.root_domain_uid, r.root_domain FROM root_domains r
+            where r.organizations_uid = %(org_uid)s
+            and r.enumerate_subs = True
+            """
+    df = pd.read_sql(sql, conn, params={"org_uid": org_uid})
+    conn.close()
     return df
 
 
