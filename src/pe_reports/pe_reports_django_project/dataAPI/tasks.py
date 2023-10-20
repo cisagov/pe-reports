@@ -520,6 +520,15 @@ def sub_domains_table_task(self, page: int, per_page: int):
     return result
 
 
+# -- set_from_cidr(), Issue 616 ---
+@shared_task(bind=True)
+def ips_update_from_cidr_task(self):
+    """Task function for the ips_update_from_cidr API endpoint."""
+    # Make database query and convert to list of dictionaries
+    Ips.objects.filter(origin_cidr__isnull=False).update(from_cidr=True)
+    return "Ips table from_cidr field has been updated."
+
+    
 # --- query_subs(), Issue 633 ---
 @shared_task(bind=True)
 def sub_domains_by_org_task(self, org_uid: str, page: int, per_page: int):

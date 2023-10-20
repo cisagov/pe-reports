@@ -1358,6 +1358,58 @@ class CyhyDbAssetsByOrg(BaseModel):
         orm_mode = True
 
 
+# --- get_cidrs_and_ips(), Issue 610 ---
+# Get CIDRs and IPs data for an org
+class CidrsIpsByOrg(BaseModel):
+    """CidrsIpsByOrg schema class."""
+
+    ip: str
+
+    class Config:
+        """CidrsIpsByOrg schema config class."""
+
+        orm_mode = True
+
+
+# --- query_ips(), Issue 611 ---
+# Get IPs data for an org
+class IpsByOrg(BaseModel):
+    """IpsByOrg schema class."""
+
+    cidr_ip_data: List[CidrsIpsByOrg]
+    sub_root_ip_data: List[CidrsIpsByOrg]
+
+    class Config:
+        """IpsByOrg schema config class."""
+
+        orm_mode = True
+
+
+# --- query_extra_ips(), Issue 612 ---
+# Get "extra" IP data for an org
+class ExtraIpsByOrg(BaseModel):
+    """ExtraIpsByOrg schema class."""
+
+    ip_hash: str
+    ip: str
+
+    class Config:
+        """ExtraIpsByOrg schema config class."""
+
+        orm_mode = True
+
+
+# --- set_from_cidr(), Issue 616 ---
+# Set from_cidr to True for any IPs that have an origin_cidr, task resp
+class IpsUpdateFromCidrTaskResp(BaseModel):
+    """IpsUpdateFromCidrTaskResp schema class."""
+
+    task_id: str
+    status: str
+    result: str = None
+    error: str = None
+    
+
 # --- query_cidrs_by_org(), Issue 618 ---
 # Get all CIDRs for specified org
 class CidrsByOrg(BaseModel):

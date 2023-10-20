@@ -388,70 +388,6 @@ def verifyCIDR(custIP):
         return False
 
 
-def get_cidrs_and_ips(org_uid):
-    """Query all cidrs and ips for an organization."""
-    params = config()
-    conn = psycopg2.connect(**params)
-    cur = conn.cursor()
-    sql = """SELECT network from cidrs where
-        organizations_uid = %s
-        and current;"""
-    cur.execute(sql, [org_uid])
-    cidrs = cur.fetchall()
-    sql = """
-    SELECT i.ip
-    FROM ips i
-    join ips_subs ip_s on ip_s.ip_hash = i.ip_hash
-    join sub_domains sd on sd.sub_domain_uid = ip_s.sub_domain_uid
-    join root_domains rd on rd.root_domain_uid = sd.root_domain_uid
-    WHERE rd.organizations_uid = %s
-    AND i.origin_cidr is null
-    and i.current
-    and sd.current;
-    """
-    cur.execute(sql, [org_uid])
-    ips = cur.fetchall()
-    conn.close()
-    cidrs_ips = cidrs + ips
-    cidrs_ips = [x[0] for x in cidrs_ips]
-    cidrs_ips = validateIP(cidrs_ips)
-    LOGGER.info(cidrs_ips)
-    return cidrs_ips
-
-
-def query_extra_ips(org_uid):
-    """Get IP data."""
-    conn = connect()
-
-    sql2 = """select i.ip_hash, i.ip
-    from ips i
-    join ips_subs is2 ON i.ip_hash = is2.ip_hash
-    join sub_domains sd on sd.sub_domain_uid = is2.sub_domain_uid
-    join root_domains rd on rd.root_domain_uid = sd.root_domain_uid
-    JOIN organizations o on o.organizations_uid = rd.organizations_uid
-    where o.organizations_uid = %(org_uid)s and i.origin_cidr is null
-    and i.current and sd.current;"""
-    df = pd.read_sql(sql2, conn, params={"org_uid": org_uid})
-    ips = list(set(list(df["ip"].values)))
-
-    conn.close()
-
-    return ips
-
-
-def set_from_cidr():
-    """Set the from_cidr flag in the IPs table."""
-    conn = connect()
-    sql = """
-        update ips
-        set from_cidr = True
-        where origin_cidr is not null;
-    """
-    cur = conn.cursor()
-    cur.execute(sql)
-    conn.commit()
-
-
 def refresh_asset_counts_vw():
     """Refresh asset count materialized views."""
     conn = connect()
@@ -1069,6 +1005,136 @@ def query_cyhy_assets(org_cyhy_name):
         LOGGER.info(err)
 
 
+# --- Issue 610 ---
+def get_cidrs_and_ips(org_uid):
+    """
+    Query API to retrieve all CIDRs and IPs for an organization.
+
+    Args:
+        org_uid: uid of the specified organization
+
+    Return:
+        All the CIDRs and IPs belonging to the specified org as a dataframe
+    """
+    # Endpoint info
+    endpoint_url = pe_api_url + "cidrs_ips_by_org"
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": pe_api_key,
+    }
+    data = json.dumps({"org_uid": org_uid})
+    try:
+        # Call endpoint
+        result = requests.post(endpoint_url, headers=headers, data=data).json()
+        result_list = [d["ip"] for d in result]
+        # validate IPs
+        validateIP(result_list)
+        LOGGER.info(result_list)
+        # Process data and return
+        return result_list
+    except requests.exceptions.HTTPError as errh:
+        LOGGER.info(errh)
+    except requests.exceptions.ConnectionError as errc:
+        LOGGER.info(errc)
+    except requests.exceptions.Timeout as errt:
+        LOGGER.info(errt)
+    except requests.exceptions.RequestException as err:
+        LOGGER.info(err)
+    except json.decoder.JSONDecodeError as err:
+        LOGGER.info(err)
+
+
+# --- Issue 611 ---
+def query_ips(org_uid):
+    """
+    Query API to retrieve all IPs for an organization.
+
+    Args:
+        org_uid: uid of the specified organization
+
+    Return:
+        All the IPs belonging to the specified org as a dataframe
+    """
+    # Endpoint info
+    endpoint_url = pe_api_url + "ips_by_org"
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": pe_api_key,
+    }
+    data = json.dumps({"org_uid": org_uid})
+    try:
+        # Call endpoint
+        result = requests.post(endpoint_url, headers=headers, data=data).json()
+        # Process data and return
+        cidr_ip_list = [d["ip"] for d in result["cidr_ip_data"]]
+        sub_root_ip_list = [d["ip"] for d in result["sub_root_ip_data"]]
+        cidr_ip_set = set(cidr_ip_list)
+        sub_root_ip_set = set(sub_root_ip_list)
+        diff_set = sub_root_ip_set - cidr_ip_set
+        final_ip_list = cidr_ip_list + list(diff_set)
+        return final_ip_list
+    except requests.exceptions.HTTPError as errh:
+        LOGGER.info(errh)
+    except requests.exceptions.ConnectionError as errc:
+        LOGGER.info(errc)
+    except requests.exceptions.Timeout as errt:
+        LOGGER.info(errt)
+    except requests.exceptions.RequestException as err:
+        LOGGER.info(err)
+    except json.decoder.JSONDecodeError as err:
+        LOGGER.info(err)
+
+
+# --- Issue 612 ---
+def query_extra_ips(org_uid):
+    """
+    Query API to retrieve all extra IPs for an organization.
+
+    Args:
+        org_uid: uid of the specified organization
+
+    Return:
+        All the extra IPs belonging to the specified org as a dataframe
+    """
+    # Endpoint info
+    endpoint_url = pe_api_url + "extra_ips_by_org"
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": pe_api_key,
+    }
+    data = json.dumps({"org_uid": org_uid})
+    try:
+        # Call endpoint
+        result = requests.post(endpoint_url, headers=headers, data=data).json()
+        # Process data and return
+        result_list = list(set([d["ip"] for d in result]))
+        return result_list
+    except requests.exceptions.HTTPError as errh:
+        LOGGER.info(errh)
+    except requests.exceptions.ConnectionError as errc:
+        LOGGER.info(errc)
+    except requests.exceptions.Timeout as errt:
+        LOGGER.info(errt)
+    except requests.exceptions.RequestException as err:
+        LOGGER.info(err)
+    except json.decoder.JSONDecodeError as err:
+        LOGGER.info(err)
+
+
+# --- Issue 616 ---
+def set_from_cidr():
+    """
+    Query API to set from_cidr to True for any IPs that have an origin_cidr.
+    """
+    # Endpoint info
+    task_url = "ips_update_from_cidr"
+    status_url = "ips_update_from_cidr/task/"
+    data = None
+    # Make API call
+    result = task_api_call(task_url, status_url, data, 3)
+    LOGGER.info(result)
+
+
 # --- Issue 618 ---
 def query_cidrs_by_org(org_uid):
     """
@@ -1293,6 +1359,7 @@ def execute_scorecard(summary_dict):
     input_dict["start_date"] = input_dict["start_date"].strftime("%Y-%m-%d")
     input_dict["end_date"] = input_dict["end_date"].strftime("%Y-%m-%d")
     input_dict["insecure_port_count"] = int(input_dict["insecure_port_count"])
+    input_dict["verified_vuln_count"] = int(input_dict["verified_vuln_count"])
     if "dns" in input_dict:
         input_dict.pop("dns")
     if "circles_df" in input_dict:
@@ -1604,6 +1671,76 @@ def query_cyhy_assets_tsql(cyhy_db_id, conn):
     df = pd.read_sql_query(sql, conn, params={"org_id": cyhy_db_id})
 
     return df
+
+
+# --- 610 OLD TSQL ---
+def get_cidrs_and_ips_tsql(org_uid):
+    """Query all cidrs and ips for an organization."""
+    params = config()
+    conn = psycopg2.connect(**params)
+    cur = conn.cursor()
+    sql = """SELECT network from cidrs where
+        organizations_uid = %s
+        and current;"""
+    cur.execute(sql, [org_uid])
+    cidrs = cur.fetchall()
+    sql = """
+    SELECT i.ip
+    FROM ips i
+    join ips_subs ip_s on ip_s.ip_hash = i.ip_hash
+    join sub_domains sd on sd.sub_domain_uid = ip_s.sub_domain_uid
+    join root_domains rd on rd.root_domain_uid = sd.root_domain_uid
+    WHERE rd.organizations_uid = %s
+    AND i.origin_cidr is null
+    and i.current
+    and sd.current;
+    """
+    cur.execute(sql, [org_uid])
+    ips = cur.fetchall()
+    conn.close()
+    cidrs_ips = cidrs + ips
+    cidrs_ips = [x[0] for x in cidrs_ips]
+    cidrs_ips = validateIP(cidrs_ips)
+    LOGGER.info(cidrs_ips)
+    return cidrs_ips
+
+
+# --- 611 OLD TSQL ---
+# No old TSQL function?
+
+
+# --- 612 OLD TSQL ---
+def query_extra_ips_tsql(org_uid):
+    """Get IP data."""
+    conn = connect()
+
+    sql2 = """select i.ip_hash, i.ip
+    from ips i
+    join ips_subs is2 ON i.ip_hash = is2.ip_hash
+    join sub_domains sd on sd.sub_domain_uid = is2.sub_domain_uid
+    join root_domains rd on rd.root_domain_uid = sd.root_domain_uid
+    JOIN organizations o on o.organizations_uid = rd.organizations_uid
+    where o.organizations_uid = %(org_uid)s and i.origin_cidr is null
+    and i.current and sd.current;"""
+    df = pd.read_sql(sql2, conn, params={"org_uid": org_uid})
+    ips = list(set(list(df["ip"].values)))
+
+    conn.close()
+
+    return ips
+
+# --- 616 OLD TSQL ---
+def set_from_cidr_tsql():
+    """Set the from_cidr flag in the IPs table."""
+    conn = connect()
+    sql = """
+        update ips
+        set from_cidr = True
+        where origin_cidr is not null;
+    """
+    cur = conn.cursor()
+    cur.execute(sql)
+    conn.commit()
 
 
 # --- 618 OLD TSQL ---

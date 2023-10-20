@@ -47,6 +47,7 @@ from dataAPI.tasks import (  # D-Score Task Functions:; I-Score Task Functions:;
     get_xl_stakeholders_info,
     get_xs_stakeholders_info,
     ips_insert_task,
+    ips_update_from_cidr_task,
     sub_domains_by_org_task,
     sub_domains_table_task,
 )
@@ -57,6 +58,7 @@ from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.db import transaction
+from django.db.models import F
 
 # Third party imports
 from fastapi import (  # Body,; FastAPI,
@@ -99,6 +101,8 @@ from home.models import (  # MatVwOrgsAllIps,
     VwBreachcompBreachdetails,
     VwBreachcompCredsbydate,
     VwCidrs,
+    VwIpsCidrOrgInfo,
+    VwIpsSubRootOrgInfo,
     VwOrgsAttacksurface,
     WasTrackerCustomerdata,
     WeeklyStatuses,
@@ -122,9 +126,6 @@ from .models import apiUser
 
 
 # from uuid import UUID
-
-
-# from django.db.models import Q
 
 
 LOGGER = logging.getLogger(__name__)
@@ -2861,6 +2862,171 @@ def cyhy_assets_by_org(
             if not cyhy_assets_by_org_data:
                 cyhy_assets_by_org_data = [{x: None for x in schemas.CyhyDbAssetsByOrg.__fields__}]
             return cyhy_assets_by_org_data
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+
+# --- get_cidrs_and_ips(), Issue 610 ---
+@api_router.post(
+    "/cidrs_ips_by_org",
+    dependencies=[Depends(get_api_key)], #Depends(RateLimiter(times=200, seconds=60))],
+    response_model=List[schemas.CidrsIpsByOrg],
+    tags=["Get all CIDRs and IPs for the specified organization."],
+)
+def cidrs_ips_by_org(
+    data: schemas.GenInputOrgUIDSingle, tokens: dict = Depends(get_api_key)
+):
+    """API endpoint to get all CIDRs and IPs for the specified organization."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # If API key valid, make query
+            cidr_ip_data = list(
+                Cidrs.objects.filter(organizations_uid=data.org_uid).values(
+                    ip=F("network")
+                )
+            )
+            sub_root_ip_data = list(
+                VwIpsSubRootOrgInfo.objects.filter(
+                    organizations_uid=data.org_uid, 
+                    origin_cidr__isnull=True,
+                    i_current=True,
+                    sd_current=True,
+                ).values("ip")
+            )
+            cidrs_ips_by_org_data = cidr_ip_data + sub_root_ip_data
+            return cidrs_ips_by_org_data
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+
+# --- query_ips(), Issue 611 ---
+@api_router.post(
+    "/ips_by_org",
+    dependencies=[Depends(get_api_key)], #Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.IpsByOrg,
+    tags=["Get all IPs for the specified organization."],
+)
+def ips_by_org(data: schemas.GenInputOrgUIDSingle, tokens: dict = Depends(get_api_key)):
+    """API endpoint to get all IPs for the specified organization."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # If API key valid, make query
+            cidr_ip_data = list(
+                VwIpsCidrOrgInfo.objects.filter(
+                    organizations_uid=data.org_uid, origin_cidr__isnull=False
+                ).values("ip")
+            )
+            sub_root_ip_data = list(
+                VwIpsSubRootOrgInfo.objects.filter(
+                    organizations_uid=data.org_uid
+                ).values("ip")
+            )
+            return {"cidr_ip_data": cidr_ip_data, "sub_root_ip_data": sub_root_ip_data}
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+
+# --- query_extra_ips(), Issue 612 ---
+@api_router.post(
+    "/extra_ips_by_org",
+    dependencies=[Depends(get_api_key)], #Depends(RateLimiter(times=200, seconds=60))],
+    response_model=List[schemas.ExtraIpsByOrg],
+    tags=["Get all extra IPs for the specified organization."],
+)
+def extra_ips_by_org(
+    data: schemas.GenInputOrgUIDSingle, tokens: dict = Depends(get_api_key)
+):
+    """API endpoint to get all extra IPs for the specified organization."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # If API key valid, make query
+            extra_ips_by_org_data = list(
+                VwIpsSubRootOrgInfo.objects.filter(
+                    organizations_uid=data.org_uid, 
+                    origin_cidr__isnull=True, 
+                    i_current=True, 
+                    sd_current=True,
+                ).values("ip_hash", "ip")
+            )
+            return extra_ips_by_org_data
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+
+# --- set_from_cidr(), Issue 616 ---
+@api_router.post(
+    "/ips_update_from_cidr",
+    dependencies=[Depends(get_api_key)], #Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.IpsUpdateFromCidrTaskResp,
+    tags=["Set from_cidr to True for any IPs that have an origin CIDR."],
+)
+def ips_update_from_cidr(tokens: dict = Depends(get_api_key)):
+    """API endpoint to set from_cidr to True for any IPs that have an origin CIDR."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # If API key valid, create task for query
+            task = ips_update_from_cidr_task.delay()
+            # Return the new task id w/ "Processing" status
+            return {"task_id": task.id, "status": "Processing"}
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+
+@api_router.get(
+    "/ips_update_from_cidr/task/{task_id}",
+    dependencies=[Depends(get_api_key)], #Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.IpsUpdateFromCidrTaskResp,
+    tags=["Check task status for ips_update_from_cidr endpoint task."],
+)
+async def ips_update_from_cidr_status(
+    task_id: str, tokens: dict = Depends(get_api_key)
+):
+    """API endpoint to check status of ips_update_from_cidr endpoint task."""
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            # userapiTokenverify(theapiKey=tokens)
+            # Retrieve task status
+            task = ips_update_from_cidr_task.AsyncResult(task_id)
+            # Return appropriate message for status
+            if task.state == "SUCCESS":
+                return {
+                    "task_id": task_id,
+                    "status": "Completed",
+                    "result": task.result,
+                }
+            elif task.state == "PENDING":
+                return {"task_id": task_id, "status": "Pending"}
+            elif task.state == "FAILURE":
+                return {
+                    "task_id": task_id,
+                    "status": "Failed",
+                    "error": str(task.result),
+                }
+            else:
+                return {"task_id": task_id, "status": task.state}
         except ObjectDoesNotExist:
             LOGGER.info("API key expired please try again")
     else:

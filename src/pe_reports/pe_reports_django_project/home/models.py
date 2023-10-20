@@ -1767,6 +1767,39 @@ class VwOrgsTotalPorts(models.Model):
         db_table = "vw_orgs_total_ports"
 
 
+class VwIpsSubRootOrgInfo(models.Model):
+    """VwIpsSubRootOrgInfo model class."""
+
+    ip_hash = models.CharField(blank=True, null=True)
+    ip = models.CharField(blank=True, null=True)
+    origin_cidr = models.UUIDField(blank=True, null=True)
+    organizations_uid = models.UUIDField(blank=True, null=True)
+    i_current = models.BooleanField(blank=True, null=True)
+    sd_current = models.BooleanField(blank=True, null=True)
+
+    class Meta:
+        """VwIpsSubRootOrgInfo model meta class."""
+
+        managed = False
+        db_table = "vw_ips_sub_root_org_info"
+
+
+class VwIpsCidrOrgInfo(models.Model):
+    """VwIpsCidrOrgInfo model class."""
+
+    ip_hash = models.CharField(blank=True, null=True)
+    ip = models.CharField(blank=True, null=True)
+    origin_cidr = models.UUIDField(blank=True, null=True)
+    network = models.CharField(blank=True, null=True)
+    organizations_uid = models.UUIDField(blank=True, null=True)
+
+    class Meta:
+        """VwIpsCidrOrgInfo model meta class."""
+
+        managed = False
+        db_table = "vw_ips_cidr_org_info"
+
+
 # ---------- D-Score View Models ----------
 # D-Score VS Cert View
 class VwDscoreVSCert(models.Model):
