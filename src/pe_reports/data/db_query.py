@@ -207,77 +207,6 @@ def get_orgs_pass(conn, password):
             close(conn)
 
 
-def get_orgs_contacts(conn):
-    """Get all org contacts."""
-    try:
-        cur = conn.cursor()
-        sql = """select email, contact_type, org_id
-        from cyhy_contacts cc
-        join organizations o on cc.org_id = o.cyhy_db_name
-        where o.report_on;"""
-        cur.execute(sql)
-        pe_orgs = cur.fetchall()
-        cur.close()
-        return pe_orgs
-    except (Exception, psycopg2.DatabaseError) as error:
-        LOGGER.error("There was a problem with your database query %s", error)
-    finally:
-        if conn is not None:
-            close(conn)
-
-
-def get_org_assets_count_past(org_uid, date):
-    """Get asset counts for an organization."""
-    conn = connect()
-    sql = """select * from report_summary_stats rss
-                where organizations_uid = %(org_id)s
-                and end_date = %(date)s;"""
-    df = pd.read_sql(sql, conn, params={"org_id": org_uid, "date": date})
-    conn.close()
-    return df
-
-
-def get_org_assets_count(uid):
-    """Get asset counts for an organization."""
-    conn = connect()
-    cur = conn.cursor()
-    sql = """select sur.cyhy_db_name, sur.num_root_domain, sur.num_sub_domain, sur.num_ips, sur.num_ports, sur.num_cidrs, sur.num_ports_protocols , sur.num_software, sur.num_foreign_ips
-            from mat_vw_orgs_attacksurface sur
-            where sur.organizations_uid = %s"""
-    cur.execute(sql, [uid])
-    try:
-        source = cur.fetchone()
-        cur.close()
-        conn.close()
-        assets_dict = {
-            "org_uid": uid,
-            "cyhy_db_name": source[0],
-            "num_root_domain": source[1],
-            "num_sub_domain": source[2],
-            "num_ips": source[3],
-            "num_ports": source[4],
-            "num_cidrs": source[5],
-            "num_ports_protocols": source[6],
-            "num_software": source[7]
-            - 1,  # Subtract 1 to remove the automatic null entry
-            "num_foreign_ips": source[8],
-        }
-    except Exception:
-        assets_dict = {
-            "org_uid": uid,
-            "cyhy_db_name": "N/A",
-            "num_root_domain": 0,
-            "num_sub_domain": 0,
-            "num_ips": 0,
-            "num_ports": 0,
-            "num_cidrs": 0,
-            "num_ports_protocols": 0,
-            "num_software": 0,
-            "num_foreign_ips": 0,
-        }
-    return assets_dict
-
-
 def get_orgs_df(staging=False):
     """Query organizations table for new orgs."""
     if staging:
@@ -434,32 +363,6 @@ def refresh_asset_counts_vw():
     conn.commit()
 
 
-def insert_roots(org, domain_list):
-    """Insert root domains into the database."""
-    source_uid = get_data_source_uid("P&E")
-    roots_list = []
-    for domain in domain_list:
-        try:
-            ip = socket.gethostbyname(domain)
-        except Exception:
-            ip = np.nan
-        root = {
-            "organizations_uid": org["organizations_uid"].iloc[0],
-            "root_domain": domain,
-            "ip_address": ip,
-            "data_source_uid": source_uid,
-            "enumerate_subs": True,
-        }
-        roots_list.append(root)
-
-    roots = pd.DataFrame(roots_list)
-    except_clause = """ ON CONFLICT (root_domain, organizations_uid)
-    DO NOTHING;"""
-    params = config()
-    conn = psycopg2.connect(**params)
-    execute_values(conn, roots, "public.root_domains", except_clause)
-
-
 def query_creds_view(org_uid, start_date, end_date):
     """Query credentials view ."""
     conn = connect()
@@ -512,54 +415,6 @@ def query_breachdetails_view(org_uid, start_date, end_date):
             sql,
             conn,
             params={"org_uid": org_uid, "start_date": start_date, "end_date": end_date},
-        )
-        return df
-    except (Exception, psycopg2.DatabaseError) as error:
-        LOGGER.error("There was a problem with your database query %s", error)
-    finally:
-        if conn is not None:
-            close(conn)
-
-
-def query_domMasq(org_uid, start_date, end_date):
-    """Query domain masquerading table."""
-    conn = connect()
-    try:
-        sql = """SELECT * FROM domain_permutations
-        WHERE organizations_uid = %(org_uid)s
-        AND date_active BETWEEN %(start_date)s AND %(end_date)s"""
-        df = pd.read_sql(
-            sql,
-            conn,
-            params={
-                "org_uid": org_uid,
-                "start_date": start_date,
-                "end_date": end_date,
-            },
-        )
-        return df
-    except (Exception, psycopg2.DatabaseError) as error:
-        LOGGER.error("There was a problem with your database query %s", error)
-    finally:
-        if conn is not None:
-            close(conn)
-
-
-def query_domMasq_alerts(org_uid, start_date, end_date):
-    """Query domain alerts table."""
-    conn = connect()
-    try:
-        sql = """SELECT * FROM domain_alerts
-        WHERE organizations_uid = %(org_uid)s
-        AND date BETWEEN %(start_date)s AND %(end_date)s"""
-        df = pd.read_sql(
-            sql,
-            conn,
-            params={
-                "org_uid": org_uid,
-                "start_date": start_date,
-                "end_date": end_date,
-            },
         )
         return df
     except (Exception, psycopg2.DatabaseError) as error:
@@ -795,6 +650,299 @@ def query_all_subs():
     # total_data["first_seen"] = pd.to_datetime(total_data["first_seen"]).dt.date
     # total_data["last_seen"] = pd.to_datetime(total_data["last_seen"]).dt.date
     return total_data
+
+
+# --- Issue 562, 627? ---
+def query_domMasq_alerts(org_uid, start_date, end_date):
+    """
+    Query API to retrieve all domain_alerts data for the specified org_uid and date range.
+
+    Args:
+        org_uid: The uid of the organization to retrieve data for
+        start_date: The start date of the query's date range
+        end_date: The end date of the query's date range
+
+    Return:
+        All domain_alerts data for the specified org_uid and date range as a dataframe
+    """
+    LOGGER.info("query_domMasq_alert api endpoint was used!")
+    if isinstance(start_date, datetime.datetime) or isinstance(start_date, datetime.date):
+        start_date = start_date.strftime("%Y-%m-%d")
+    if isinstance(end_date, datetime.datetime) or isinstance(end_date, datetime.date):
+        end_date = end_date.strftime("%Y-%m-%d")
+    # Endpoint info
+    endpoint_url = pe_api_url + "domain_alerts_by_org_date"
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": pe_api_key,
+    }
+    data = json.dumps(
+        {"org_uid": org_uid, "start_date": start_date, "end_date": end_date}
+    )
+    try:
+        # Call endpoint
+        result = requests.post(endpoint_url, headers=headers, data=data).json()
+        # Process data and return
+        result_df = pd.DataFrame.from_dict(result)
+        result_df.rename(
+            columns={
+                "sub_domain_uid_id": "sub_domain_uid",
+                "data_source_uid_id": "data_source_uid",
+            },
+            inplace=True,
+        )
+        result_df["date"] = pd.to_datetime(result_df["date"]).dt.date
+        # Return truly empty dataframe if no results
+        if result_df[result_df.columns].isnull().apply(lambda x: all(x), axis=1)[0]:
+            result_df.drop(result_df.index, inplace=True)
+        return result_df
+    except requests.exceptions.HTTPError as errh:
+        LOGGER.error(errh)
+    except requests.exceptions.ConnectionError as errc:
+        LOGGER.error(errc)
+    except requests.exceptions.Timeout as errt:
+        LOGGER.error(errt)
+    except requests.exceptions.RequestException as err:
+        LOGGER.error(err)
+    except json.decoder.JSONDecodeError as err:
+        LOGGER.error(err)
+
+
+# --- Issue 563, 626? ---
+def query_domMasq(org_uid, start_date, end_date):
+    """
+    Query API to retrieve all domain_permutations data for the specified org_uid and date range.
+
+    Args:
+        org_uid: The uid of the organization to retrieve data for
+        start_date: The start date of the query's date range
+        end_date: The end date of the query's date range
+
+    Return:
+        All domain_permutations data for the specified org_uid and date range as a dataframe
+    """
+    LOGGER.info("query_domMasq api endpoint was used!")
+    if isinstance(start_date, datetime.datetime) or isinstance(start_date, datetime.date):
+        start_date = start_date.strftime("%Y-%m-%d")
+    if isinstance(end_date, datetime.datetime) or isinstance(end_date, datetime.date):
+        end_date = end_date.strftime("%Y-%m-%d")
+    # Endpoint info
+    endpoint_url = pe_api_url + "domain_permu_by_org_date"
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": pe_api_key,
+    }
+    data = json.dumps(
+        {"org_uid": org_uid, "start_date": start_date, "end_date": end_date}
+    )
+    try:
+        # Call endpoint
+        result = requests.post(endpoint_url, headers=headers, data=data).json()
+        # Process data and return
+        result_df = pd.DataFrame.from_dict(result)
+        result_df.rename(
+            columns={
+                "organizations_uid_id": "organizations_uid",
+                "data_source_uid_id": "data_source_uid",
+                "sub_domain_uid_id": "sub_domain_uid",
+            },
+            inplace=True,
+        )
+        result_df["date_observed"] = pd.to_datetime(result_df["date_observed"]).dt.date
+        result_df["date_active"] = pd.to_datetime(result_df["date_active"]).dt.date
+        # Return truly empty dataframe if no results
+        if result_df[result_df.columns].isnull().apply(lambda x: all(x), axis=1)[0]:
+            result_df.drop(result_df.index, inplace=True)
+        return result_df
+    except requests.exceptions.HTTPError as errh:
+        LOGGER.error(errh)
+    except requests.exceptions.ConnectionError as errc:
+        LOGGER.error(errc)
+    except requests.exceptions.Timeout as errt:
+        LOGGER.error(errt)
+    except requests.exceptions.RequestException as err:
+        LOGGER.error(err)
+    except json.decoder.JSONDecodeError as err:
+        LOGGER.error(err)
+
+
+# --- Issue 564 ---
+def insert_roots(org, domain_list):
+    """
+    Query API to insert list of new domains for the specified org.
+
+    Args:
+        org: Dataframe of the organization to associate the new domains with
+        domain_list: The list of new domains to insert into the root_domains table
+    """
+    LOGGER.info("insert_roots api endpoint was used!")
+    # Convert org dataframe input into dict
+    org.drop(columns=["password"], inplace=True)
+    org_dict = org.to_dict("records")[0]
+    # Endpoint info
+    endpoint_url = pe_api_url + "root_domains_insert"
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": pe_api_key,
+    }
+    data = json.dumps({"org_dict": org_dict, "domain_list": domain_list})
+    try:
+        # Call endpoint
+        result = requests.post(endpoint_url, headers=headers, data=data).json()
+        # Process data and return
+        LOGGER.info(result)
+    except requests.exceptions.HTTPError as errh:
+        LOGGER.error(errh)
+    except requests.exceptions.ConnectionError as errc:
+        LOGGER.error(errc)
+    except requests.exceptions.Timeout as errt:
+        LOGGER.error(errt)
+    except requests.exceptions.RequestException as err:
+        LOGGER.error(err)
+    except json.decoder.JSONDecodeError as err:
+        LOGGER.error(err)
+
+
+# --- Issue 601 ---
+def get_orgs_contacts():
+    """
+    Query API to retrieve all contact data for orgs where report_on is true.
+
+    Return:
+        All contact data for orgs where report_on is true as a list of tuples
+    """
+    LOGGER.info("get_orgs_contacts api endpoint was used!")
+    # Endpoint info
+    endpoint_url = pe_api_url + "orgs_report_on_contacts"
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": pe_api_key,
+    }
+    try:
+        # Call endpoint
+        result = requests.get(endpoint_url, headers=headers).json()
+        # Process data and return, convert to tuple list
+        return [tuple(dic.values()) for dic in result]
+    except requests.exceptions.HTTPError as errh:
+        LOGGER.error(errh)
+    except requests.exceptions.ConnectionError as errc:
+        LOGGER.error(errc)
+    except requests.exceptions.Timeout as errt:
+        LOGGER.error(errt)
+    except requests.exceptions.RequestException as err:
+        LOGGER.error(err)
+    except json.decoder.JSONDecodeError as err:
+        LOGGER.error(err)
+
+
+# --- Issue 603 ---
+def get_org_assets_count_past(org_uid, date):
+    """
+    Query API to retrieve all report_summary_stats data for the specified org_uid and date.
+
+    Args:
+        org_uid: The organizations_uid of the specified org
+        date: The end date of the specified report period
+
+    Return:
+        All report_summary_stats data for the specified org_uid and date as a dataframe
+    """
+    LOGGER.info("get_org_assets_count_past api endpoint was used!")
+    if isinstance(date, datetime.datetime):
+        date = date.strftime("%Y-%m-%d")
+    # Endpoint info
+    endpoint_url = pe_api_url + "past_asset_counts_by_org"
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": pe_api_key,
+    }
+    data = json.dumps({"org_uid": org_uid, "date": date})
+    try:
+        # Call endpoint
+        result = requests.post(endpoint_url, headers=headers, data=data).json()
+        # Process data and return
+        result_df = pd.DataFrame.from_dict(result)
+        result_df.rename(
+            columns={
+                "organizations_uid_id": "organizations_uid",
+            },
+            inplace=True,
+        )
+        result_df["start_date"] = pd.to_datetime(result_df["start_date"]).dt.date
+        result_df["end_date"] = pd.to_datetime(result_df["end_date"]).dt.date
+        # Return truly empty dataframe if no results
+        if result_df[result_df.columns].isnull().apply(lambda x: all(x), axis=1)[0]:
+            result_df.drop(result_df.index, inplace=True)
+        return result_df
+    except requests.exceptions.HTTPError as errh:
+        LOGGER.info(errh)
+    except requests.exceptions.ConnectionError as errc:
+        LOGGER.info(errc)
+    except requests.exceptions.Timeout as errt:
+        LOGGER.info(errt)
+    except requests.exceptions.RequestException as err:
+        LOGGER.info(err)
+    except json.decoder.JSONDecodeError as err:
+        LOGGER.info(err)
+
+
+# --- Issue 604 ---
+def get_org_assets_count(org_uid):
+    """
+    Query API to retrieve attacksurface data for the specified org_uid.
+
+    Args:
+        org_uid: The organizations_uid of the specified org
+
+    Return:
+        attacksurface data for the specified org_uid as a dataframe
+    """
+    LOGGER.info("get_org_assets_count api endpoint was used!")
+    # Endpoint info
+    endpoint_url = pe_api_url + "asset_counts_by_org"
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": pe_api_key,
+    }
+    data = json.dumps({"org_uid": org_uid})
+    try:
+        # Call endpoint
+        result = requests.post(endpoint_url, headers=headers, data=data).json()
+        if result:
+            # If there are results, return those
+            result_df = pd.DataFrame(result[0], index=[0])
+            result_df.rename(
+                columns={
+                    "organizations_uid": "org_uid",
+                },
+                inplace=True,
+            )
+            assets_dict = result_df.to_dict("records")[0]
+            return assets_dict
+        else:
+            # If no results, return dummy asset dict
+            return {
+                "org_uid": org_uid,
+                "cyhy_db_name": "N/A",
+                "num_root_domain": 0,
+                "num_sub_domain": 0,
+                "num_ips": 0,
+                "num_ports": 0,
+                "num_cidrs": 0,
+                "num_ports_protocols": 0,
+                "num_software": 0,
+                "num_foreign_ips": 0,
+            }
+    except requests.exceptions.HTTPError as errh:
+        LOGGER.info(errh)
+    except requests.exceptions.ConnectionError as errc:
+        LOGGER.info(errc)
+    except requests.exceptions.Timeout as errt:
+        LOGGER.info(errt)
+    except requests.exceptions.RequestException as err:
+        LOGGER.info(err)
+    except json.decoder.JSONDecodeError as err:
+        LOGGER.info(err)
 
 
 # --- Issue 605 ---
@@ -1577,6 +1725,157 @@ def query_all_subs_tsql(conn):
             close(conn)
 
 
+# --- 562 OLD TSQL ---
+def query_domMasq_alerts_tsql(org_uid, start_date, end_date):
+    """Query domain alerts table."""
+    conn = connect()
+    try:
+        sql = """SELECT * FROM domain_alerts
+        WHERE organizations_uid = %(org_uid)s
+        AND date BETWEEN %(start_date)s AND %(end_date)s"""
+        df = pd.read_sql(
+            sql,
+            conn,
+            params={
+                "org_uid": org_uid,
+                "start_date": start_date,
+                "end_date": end_date,
+            },
+        )
+        return df
+    except (Exception, psycopg2.DatabaseError) as error:
+        LOGGER.error("There was a problem with your database query %s", error)
+    finally:
+        if conn is not None:
+            close(conn)
+
+
+# --- 563 OLD TSQL ---
+def query_domMasq_tsql(org_uid, start_date, end_date):
+    """Query domain masquerading table."""
+    conn = connect()
+    try:
+        sql = """SELECT * FROM domain_permutations
+        WHERE organizations_uid = %(org_uid)s
+        AND date_active BETWEEN %(start_date)s AND %(end_date)s"""
+        df = pd.read_sql(
+            sql,
+            conn,
+            params={
+                "org_uid": org_uid,
+                "start_date": start_date,
+                "end_date": end_date,
+            },
+        )
+        return df
+    except (Exception, psycopg2.DatabaseError) as error:
+        LOGGER.error("There was a problem with your database query %s", error)
+    finally:
+        if conn is not None:
+            close(conn)
+
+
+# --- 564 OLD TSQL ---
+def insert_roots_tsql(org, domain_list):
+    """Insert root domains into the database."""
+    source_uid = get_data_source_uid("P&E")
+    roots_list = []
+    for domain in domain_list:
+        try:
+            ip = socket.gethostbyname(domain)
+        except Exception:
+            ip = np.nan
+        root = {
+            "organizations_uid": org["organizations_uid"].iloc[0],
+            "root_domain": domain,
+            "ip_address": ip,
+            "data_source_uid": source_uid,
+            "enumerate_subs": True,
+        }
+        roots_list.append(root)
+
+    roots = pd.DataFrame(roots_list)
+    except_clause = """ ON CONFLICT (root_domain, organizations_uid)
+    DO NOTHING;"""
+    params = config()
+    conn = psycopg2.connect(**params)
+    execute_values(conn, roots, "public.root_domains", except_clause)
+
+
+# --- 601 OLD TSQL ---
+def get_orgs_contacts_tsql(conn):
+    """Get all org contacts."""
+    try:
+        cur = conn.cursor()
+        sql = """select email, contact_type, org_id
+        from cyhy_contacts cc
+        join organizations o on cc.org_id = o.cyhy_db_name
+        where o.report_on;"""
+        cur.execute(sql)
+        pe_orgs = cur.fetchall()
+        cur.close()
+        return pe_orgs
+    except (Exception, psycopg2.DatabaseError) as error:
+        LOGGER.error("There was a problem with your database query %s", error)
+    finally:
+        if conn is not None:
+            close(conn)
+
+
+# --- 603 OLD TSQL ---
+def get_org_assets_count_past_tsql(org_uid, date):
+    """Get asset counts for an organization."""
+    conn = connect()
+    sql = """select * from report_summary_stats rss
+                where organizations_uid = %(org_id)s
+                and end_date = %(date)s;"""
+    df = pd.read_sql(sql, conn, params={"org_id": org_uid, "date": date})
+    conn.close()
+    return df
+
+
+# --- 604 OLD TSQL ---
+def get_org_assets_count_tsql(uid):
+    """Get asset counts for an organization."""
+    conn = connect()
+    cur = conn.cursor()
+    sql = """select sur.cyhy_db_name, sur.num_root_domain, sur.num_sub_domain, sur.num_ips, sur.num_ports, sur.num_cidrs, sur.num_ports_protocols , sur.num_software, sur.num_foreign_ips
+            from mat_vw_orgs_attacksurface sur
+            where sur.organizations_uid = %s"""
+    cur.execute(sql, [uid])
+    try:
+        source = cur.fetchone()
+        cur.close()
+        conn.close()
+        assets_dict = {
+            "org_uid": uid,
+            "cyhy_db_name": source[0],
+            "num_root_domain": source[1],
+            "num_sub_domain": source[2],
+            "num_ips": source[3],
+            "num_ports": source[4],
+            "num_cidrs": source[5],
+            "num_ports_protocols": source[6],
+            "num_software": source[7]
+            - 1,  # Subtract 1 to remove the automatic null entry
+            "num_foreign_ips": source[8],
+        }
+    except Exception:
+        assets_dict = {
+            "org_uid": uid,
+            "cyhy_db_name": "N/A",
+            "num_root_domain": 0,
+            "num_sub_domain": 0,
+            "num_ips": 0,
+            "num_ports": 0,
+            "num_cidrs": 0,
+            "num_ports_protocols": 0,
+            "num_software": 0,
+            "num_foreign_ips": 0,
+        }
+    return assets_dict
+
+    
 # --- 605 OLD TSQL ---
 def get_new_orgs_tsql():
     """Query organizations table for new orgs."""

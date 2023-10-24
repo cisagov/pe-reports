@@ -619,7 +619,7 @@ class DomainAlerts(models.Model):
 class DomainPermutations(models.Model):
     """Define DomainPermutations model."""
 
-    suspected_domain_uid = models.UUIDField(default=uuid.uuid1())
+    suspected_domain_uid = models.UUIDField(primary_key=True, default=uuid.uuid1())
     organizations_uid = models.ForeignKey(
         "Organizations", on_delete=models.CASCADE, db_column="organizations_uid"
     )
@@ -1745,6 +1745,10 @@ class VwOrgsAttacksurface(models.Model):
     num_root_domain = models.BigIntegerField(blank=True, null=True)
     num_sub_domain = models.BigIntegerField(blank=True, null=True)
     num_ips = models.BigIntegerField(blank=True, null=True)
+    num_cidrs = models.BigIntegerField(blank=True, null=True)
+    num_ports_protocols = models.BigIntegerField(blank=True, null=True)
+    num_software = models.BigIntegerField(blank=True, null=True)
+    num_foreign_ips = models.BigIntegerField(blank=True, null=True)
 
     class Meta:
         """Set VwOrgsAttacksurface model metadata."""

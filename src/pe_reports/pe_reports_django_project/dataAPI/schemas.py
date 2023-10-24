@@ -1289,6 +1289,181 @@ class IpsInsertTaskResp(BaseModel):
     error: Optional[str] = None
 
 
+# --- query_domMasq_alerts(), Issue 562
+# Return all the fields of the domain_alerts table
+class DomainAlertsTable(BaseModel):
+    """DomainAlertsTable schema class."""
+
+    domain_alert_uid: Optional[str] = None
+    sub_domain_uid_id: Optional[str] = None
+    data_source_uid_id: Optional[str] = None
+    organizations_uid: Optional[str] = None
+    alert_type: Optional[str] = None
+    message: Optional[str] = None
+    previous_value: Optional[str] = None
+    new_value: Optional[str] = None
+    date: Optional[str] = None
+
+    class Config:
+        """DomainAlertsTable schema config class."""
+
+        orm_mode = True
+
+
+# --- query_domMasq(), Issue 563
+# Return all the fields of the domain_permutation table
+class DomainPermuTable(BaseModel):
+    """DomainPermuTable schema class."""
+
+    suspected_domain_uid: Optional[str] = None
+    organizations_uid_id: Optional[str] = None
+    domain_permutation: Optional[str] = None
+    ipv4: Optional[str] = None
+    ipv6: Optional[str] = None
+    mail_server: Optional[str] = None
+    name_server: Optional[str] = None
+    fuzzer: Optional[str] = None
+    date_observed: Optional[str] = None
+    ssdeep_score: Optional[str] = None
+    malicious: Optional[bool] = None
+    blocklist_attack_count: Optional[int] = None
+    blocklist_report_count: Optional[int] = None
+    data_source_uid_id: Optional[str] = None
+    sub_domain_uid_id: Optional[str] = None
+    dshield_record_count: Optional[int] = None
+    date_active: Optional[str] = None
+
+    class Config:
+        """DomainPermuTable schema config class."""
+
+        orm_mode = True
+
+
+# --- insert_roots(), Issue 564
+# Return all the fields of the domain_permutation table
+class OrganizationsTable(BaseModel):
+    """OrganizationsTable schema class."""
+    organizations_uid: Optional[str] = None
+    name: Optional[str] = None
+    cyhy_db_name: Optional[str] = None
+    org_type_uid_id: Optional[str] = None
+    report_on: Optional[bool] = None
+    # password: Optional[str] = None
+    date_first_reported: Optional[str] = None
+    parent_org_uid_id: Optional[str] = None
+    premium_report: Optional[bool] = None
+    agency_type: Optional[str] = None
+    demo: Optional[bool] = None
+    scorecard: Optional[bool] = None
+    fceb: Optional[bool] = None
+    receives_cyhy_report: Optional[bool] = None
+    receives_bod_report: Optional[bool] = None
+    receives_cybex_report: Optional[bool] = None
+    run_scans: Optional[bool] = None
+    is_parent: Optional[bool] = None
+    ignore_roll_up: Optional[bool] = None
+    retired: Optional[bool] = None
+    cyhy_period_start: Optional[str] = None
+    fceb_child: Optional[bool] = None
+    election: Optional[bool] = None
+    scorecard_child: Optional[bool] = None
+    class Config:
+        """OrganizationsTable schema config class."""
+
+        orm_mode = True
+
+
+# --- insert_roots(), Issue 564
+# Return all the fields of the domain_permutation table, input
+class RootDomainsInsertInput(BaseModel):
+    """RootDomainsInsertInput schema class."""
+
+    org_dict: OrganizationsTable
+    domain_list: list[str]
+
+    class Config:
+        """RootDomainsInsertInput schema config class."""
+
+        orm_mode = True
+
+
+# --- get_orgs_contacts(), Issue 601
+# Get the contact info for all orgs where report_on is true
+class OrgsReportOnContacts(BaseModel):
+    """OrgsReportOnContacts schema class."""
+
+    email: str
+    contact_type: str
+    org_id: str
+
+    class Config:
+        """OrgsReportOnContacts schema config class."""
+
+        orm_mode = True
+
+
+# --- get_org_assets_count_past(), Issue 603 ---
+# Generalized schema for returning all report_summary_stats table fields
+class RSSTable(BaseModel):
+    """RSSTable schema class."""
+
+    report_uid: Optional[str]
+    organizations_uid_id: Optional[str]
+    start_date: Optional[str]
+    end_date: Optional[str]
+    ip_count: Optional[int]
+    root_count: Optional[int]
+    sub_count: Optional[int]
+    ports_count: Optional[int]
+    creds_count: Optional[int]
+    breach_count: Optional[int]
+    creds_password_count: Optional[int]
+    domain_alert_count: Optional[int]
+    suspected_domain_count: Optional[int]
+    insecure_port_count: Optional[int]
+    verified_vuln_count: Optional[int]
+    suspected_vuln_count: Optional[int]
+    threat_actor_count: Optional[int]
+    dark_web_alerts_count: Optional[int]
+    dark_web_mentions_count: Optional[int]
+    dark_web_executive_alerts_count: Optional[int]
+    dark_web_asset_alerts_count: Optional[int]
+    pe_number_score: Optional[str]  # ?
+    pe_letter_grade: Optional[str]
+    pe_percent_score: Optional[float]  # ?
+    cidr_count: Optional[int]
+    port_protocol_count: Optional[int]
+    software_count: Optional[int]
+    foreign_ips_count: Optional[int]
+
+    class Config:
+        """RSSTable schema config class."""
+
+        orm_mode = True
+
+
+# --- get_org_assets_count(), Issue 604 ---
+# Get asset counts for the specified org_uid
+class AssetCountsByOrg(BaseModel):
+    """AssetCountsByOrg schema class."""
+
+    organizations_uid: str
+    cyhy_db_name: str
+    num_root_domain: int
+    num_sub_domain: int
+    num_ips: int
+    num_ports: int
+    num_cidrs: int
+    num_ports_protocols: int
+    num_software: int
+    num_foreign_ips: int
+
+    class Config:
+        """AssetCountsByOrg schema config class."""
+
+        orm_mode = True
+
+
 # --- get_new_orgs(), Issue 605, 606, 607 ---
 # Generalized schema for returning all organizations table fields
 class OrgsTable(BaseModel):
