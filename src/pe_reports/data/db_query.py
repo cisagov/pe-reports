@@ -566,30 +566,6 @@ def query_score_data(start, end, sql):
             close(conn)
 
 
-def get_new_cves_list(start, end):
-    """
-    Get the list of all new CVEs for this report period that are not in the database yet.
-
-    Args:
-        start: The start date of the specified report period
-        end: The end date of the specified report period
-
-    Returns:
-        Dataframe containing all the new CVE names that aren't in the PE database yet
-    """
-    conn = connect()
-    sql = "SELECT * FROM pes_check_new_cve(%(start)s, %(end)s);"
-    try:
-        df = pd.read_sql(sql, conn, params={"start": start, "end": end})
-        conn.close()
-        return df
-    except (Exception, psycopg2.DatabaseError) as error:
-        LOGGER.error("There was a problem with your database query %s", error)
-    finally:
-        if conn is not None:
-            close(conn)
-
-
 # --- Issue 559 ---
 def execute_ips(new_ips):
     """
@@ -665,7 +641,6 @@ def query_domMasq_alerts(org_uid, start_date, end_date):
     Return:
         All domain_alerts data for the specified org_uid and date range as a dataframe
     """
-    LOGGER.info("query_domMasq_alert api endpoint was used!")
     if isinstance(start_date, datetime.datetime) or isinstance(start_date, datetime.date):
         start_date = start_date.strftime("%Y-%m-%d")
     if isinstance(end_date, datetime.datetime) or isinstance(end_date, datetime.date):
@@ -721,7 +696,6 @@ def query_domMasq(org_uid, start_date, end_date):
     Return:
         All domain_permutations data for the specified org_uid and date range as a dataframe
     """
-    LOGGER.info("query_domMasq api endpoint was used!")
     if isinstance(start_date, datetime.datetime) or isinstance(start_date, datetime.date):
         start_date = start_date.strftime("%Y-%m-%d")
     if isinstance(end_date, datetime.datetime) or isinstance(end_date, datetime.date):
@@ -775,7 +749,6 @@ def insert_roots(org, domain_list):
         org: Dataframe of the organization to associate the new domains with
         domain_list: The list of new domains to insert into the root_domains table
     """
-    LOGGER.info("insert_roots api endpoint was used!")
     # Convert org dataframe input into dict
     org.drop(columns=["password"], inplace=True)
     org_dict = org.to_dict("records")[0]
@@ -811,7 +784,6 @@ def get_orgs_contacts():
     Return:
         All contact data for orgs where report_on is true as a list of tuples
     """
-    LOGGER.info("get_orgs_contacts api endpoint was used!")
     # Endpoint info
     endpoint_url = pe_api_url + "orgs_report_on_contacts"
     headers = {
@@ -847,7 +819,6 @@ def get_org_assets_count_past(org_uid, date):
     Return:
         All report_summary_stats data for the specified org_uid and date as a dataframe
     """
-    LOGGER.info("get_org_assets_count_past api endpoint was used!")
     if isinstance(date, datetime.datetime):
         date = date.strftime("%Y-%m-%d")
     # Endpoint info
@@ -897,7 +868,6 @@ def get_org_assets_count(org_uid):
     Return:
         attacksurface data for the specified org_uid as a dataframe
     """
-    LOGGER.info("get_org_assets_count api endpoint was used!")
     # Endpoint info
     endpoint_url = pe_api_url + "asset_counts_by_org"
     headers = {
@@ -1664,6 +1634,330 @@ def query_previous_period(org_uid, prev_end_date):
     return assets_dict
 
 
+# --- Issue 635 ---
+def pescore_hist_domain_alert(start_date, end_date):
+    """
+    Get all historical domain alert data for the PE score.
+
+    Args:
+        start_date: start date of query time range
+        end_date: end date of query time range
+
+    Return:
+        Dataframe of historical domain alert data for the PE score
+    """
+    # LOGGER.info("pescore_hist_domain_alert api endpoint was used!")
+    # Endpoint info
+    task_url = "pescore_hist_domain_alert"
+    status_url = "pescore_hist_domain_alert/task/"
+    data = json.dumps({"start_date": start_date, "end_date": end_date})
+    # Make API call
+    result = task_api_call(task_url, status_url, data, 3)
+    # Process data and return
+    reported_orgs = pd.DataFrame.from_dict(result["reported_orgs"])
+    pescore_hist_domain_alert_data = pd.DataFrame.from_dict(
+        result["hist_domain_alert_data"]
+    )
+    # Combine data and return
+    result_df = pd.merge(
+        reported_orgs,
+        pescore_hist_domain_alert_data,
+        on="organizations_uid",
+        how="left",
+    )
+    result_df.rename(columns={"date": "mod_date"}, inplace=True)
+    result_df["mod_date"] = pd.to_datetime(result_df["mod_date"]).dt.date
+    return result_df
+
+
+# --- Issue 635 ---
+def pescore_hist_darkweb_alert(start_date, end_date):
+    """
+    Get all historical darkweb alert data for the PE score.
+
+    Args:
+        start_date: start date of query time range
+        end_date: end date of query time range
+
+    Return:
+        Dataframe of historical darkweb alert data for the PE score
+    """
+    # LOGGER.info("pescore_hist_darkweb_alert api endpoint was used!")
+    # Endpoint info
+    task_url = "pescore_hist_darkweb_alert"
+    status_url = "pescore_hist_darkweb_alert/task/"
+    data = json.dumps({"start_date": start_date, "end_date": end_date})
+    # Make API call
+    result = task_api_call(task_url, status_url, data, 3)
+    # Process data and return
+    reported_orgs = pd.DataFrame.from_dict(result["reported_orgs"])
+    pescore_hist_darkweb_alert_data = pd.DataFrame.from_dict(
+        result["hist_darkweb_alert_data"]
+    )
+    # Combine data and return
+    result_df = pd.merge(
+        reported_orgs,
+        pescore_hist_darkweb_alert_data,
+        on="organizations_uid",
+        how="left",
+    )
+    result_df.rename(columns={"date": "mod_date"}, inplace=True)
+    result_df["mod_date"] = pd.to_datetime(result_df["mod_date"]).dt.date
+    return result_df
+
+
+# --- Issue 635 ---
+def pescore_hist_darkweb_ment(start_date, end_date):
+    """
+    Get all historical darkweb mention data for the PE score.
+
+    Args:
+        start_date: start date of query time range
+        end_date: end date of query time range
+
+    Return:
+        Dataframe of historical darkweb mention data for the PE score
+    """
+    # LOGGER.info("pescore_hist_darkweb_ment api endpoint was used!")
+    # Endpoint info
+    task_url = "pescore_hist_darkweb_ment"
+    status_url = "pescore_hist_darkweb_ment/task/"
+    data = json.dumps({"start_date": start_date, "end_date": end_date})
+    # Make API call
+    result = task_api_call(task_url, status_url, data, 3)
+    # Process data and return
+    reported_orgs = pd.DataFrame.from_dict(result["reported_orgs"])
+    pescore_hist_darkweb_ment_data = pd.DataFrame.from_dict(
+        result["hist_darkweb_ment_data"]
+    )
+    # Combine data and return
+    result_df = pd.merge(
+        reported_orgs,
+        pescore_hist_darkweb_ment_data,
+        on="organizations_uid",
+        how="left",
+    )
+    result_df["count"].fillna(0, inplace=True)
+    result_df.rename(columns={"count": "num_mentions"}, inplace=True)
+    result_df["date"] = pd.to_datetime(result_df["date"]).dt.date
+    return result_df
+
+
+# --- Issue 635 ---
+def pescore_hist_cred(start_date, end_date):
+    """
+    Get all historical credential data for the PE score.
+
+    Args:
+        start_date: start date of query time range
+        end_date: end date of query time range
+
+    Return:
+        Dataframe of historical credential data for the PE score
+    """
+    # LOGGER.info("pescore_hist_cred api endpoint was used!")
+    # Endpoint info
+    task_url = "pescore_hist_cred"
+    status_url = "pescore_hist_cred/task/"
+    data = json.dumps({"start_date": start_date, "end_date": end_date})
+    # Make API call
+    result = task_api_call(task_url, status_url, data, 3)
+    # Process data and return
+    reported_orgs = pd.DataFrame.from_dict(result["reported_orgs"])
+    pescore_hist_cred_data = pd.DataFrame.from_dict(result["hist_cred_data"])
+    # Combine data and return
+    result_df = pd.merge(
+        reported_orgs,
+        pescore_hist_cred_data,
+        on="organizations_uid",
+        how="left",
+    )
+    result_df["no_password"].fillna(0, inplace=True)
+    result_df["password_included"].fillna(0, inplace=True)
+    result_df["total_creds"] = result_df["no_password"] + result_df["password_included"]
+    result_df["mod_date"] = pd.to_datetime(result_df["mod_date"]).dt.date
+    return result_df
+
+
+# --- Issue 635 ---
+def pescore_base_metrics(start_date, end_date):
+    """
+    Get all base metrics for the PE score.
+
+    Args:
+        start_date: start date of query time range
+        end_date: end date of query time range
+
+    Return:
+        Dataframe of base metrics for the PE score.
+    """
+    # LOGGER.info("pescore_base_metrics api endpoint was used!")
+    # Retrieve PE score base metrics:
+    task_url = "pescore_base_metrics"
+    status_url = "pescore_base_metrics/task/"
+    data = json.dumps({"start_date": start_date, "end_date": end_date})
+    # Make API call
+    result = task_api_call(task_url, status_url, data, 3)
+    # Process reported_orgs list
+    reported_orgs = pd.DataFrame.from_dict(result["reported_orgs"])
+    # Process cred metrics
+    cred_data = pd.DataFrame.from_dict(result["cred_data"]).rename(
+        columns={"password_included": "num_pass_creds"}
+    )
+    cred_data["num_total_creds"] = (
+        cred_data["no_password"] + cred_data["num_pass_creds"]
+    )
+    cred_data.drop(columns="no_password", inplace=True)
+    breach_data = pd.DataFrame.from_dict(result["breach_data"])
+    # Combine all cred metrics
+    cred_df = pd.merge(
+        pd.merge(reported_orgs, cred_data, on="organizations_uid", how="left"),
+        breach_data,
+        on="organizations_uid",
+        how="left",
+    ).fillna(0)
+    # Process domain metrics
+    domain_sus_data = pd.DataFrame.from_dict(result["domain_sus_data"])
+    domain_alert_data = pd.DataFrame.from_dict(result["domain_alert_data"])
+    # Combine all domain metrics
+    domain_df = pd.merge(
+        pd.merge(reported_orgs, domain_sus_data, on="organizations_uid", how="left"),
+        domain_alert_data,
+        on="organizations_uid",
+        how="left",
+    ).fillna(0)
+    # Process vuln metrics
+    vuln_verif_data = pd.DataFrame.from_dict(result["vuln_verif_data"])
+    vuln_unverif_data = pd.DataFrame.from_dict(result["vuln_unverif_data"])
+    vuln_port_data = pd.DataFrame.from_dict(result["vuln_port_data"])
+    vuln_port_data.rename(
+        columns={"num_risky_ports": "num_insecure_ports"}, inplace=True
+    )
+    # Combine all vuln metrics
+    vuln_df = pd.merge(
+        pd.merge(
+            pd.merge(
+                reported_orgs, vuln_verif_data, on="organizations_uid", how="left"
+            ),
+            vuln_unverif_data,
+            on="organizations_uid",
+            how="left",
+        ),
+        vuln_port_data,
+        on="organizations_uid",
+        how="left",
+    ).fillna(0)
+    # Process darkweb metrics
+    darkweb_alert_data = pd.DataFrame.from_dict(result["darkweb_alert_data"])
+    darkweb_ment_data = pd.DataFrame.from_dict(result["darkweb_ment_data"])
+    darkweb_threat_data = pd.DataFrame.from_dict(result["darkweb_threat_data"])
+    darkweb_inv_data = pd.DataFrame.from_dict(result["darkweb_inv_data"])
+    # Combine all darkweb metrics
+    darkweb_df = pd.merge(
+        pd.merge(
+            pd.merge(
+                pd.merge(
+                    reported_orgs,
+                    darkweb_alert_data,
+                    on="organizations_uid",
+                    how="left",
+                ),
+                darkweb_ment_data,
+                on="organizations_uid",
+                how="left",
+            ),
+            darkweb_threat_data,
+            on="organizations_uid",
+            how="left",
+        ),
+        darkweb_inv_data,
+        on="organizations_uid",
+        how="left",
+    ).fillna(0)
+    # Process attacksurface metrics
+    attacksurface_df = pd.DataFrame.from_dict(result["attacksurface_data"])
+    # Combine all data and return
+    result_df = pd.merge(
+        pd.merge(
+            pd.merge(
+                pd.merge(
+                    cred_df,
+                    domain_df,
+                    on="organizations_uid",
+                    how="inner",
+                ),
+                vuln_df,
+                on="organizations_uid",
+                how="inner",
+            ),
+            darkweb_df,
+            on="organizations_uid",
+            how="inner",
+        ),
+        attacksurface_df,
+        on="organizations_uid",
+        how="inner",
+    )
+    # Reorganize columns
+    result_df = result_df[
+        [
+            "organizations_uid",
+            "cyhy_db_name",
+            "num_breaches",
+            "num_total_creds",
+            "num_pass_creds",
+            "num_alert_domain",
+            "num_sus_domain",
+            "num_insecure_ports",
+            "num_verif_vulns",
+            "num_assets_unverif_vulns",
+            "num_dw_alerts",
+            "num_dw_mentions",
+            "num_dw_invites",
+            "num_ports",
+            "num_root_domain",
+            "num_sub_domain",
+            "num_ips",
+        ]
+    ]
+    result_df.sort_values(by="cyhy_db_name", inplace=True)
+    result_df.reset_index(drop=True, inplace=True)
+    return result_df
+
+
+# --- Issue 636 ---
+def get_new_cves_list():
+    """
+    Get any detected CVEs that aren't in the cve_info table yet.
+
+    Return:
+        Dataframe of detected CVE names that aren't in the cve_info table yet
+    """
+    # LOGGER.info("get_new_cves_list api endpoint was used!")
+    # Endpoint info
+    endpoint_url = pe_api_url + "pescore_check_new_cve"
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": pe_api_key,
+    }
+    try:
+        # Call endpoint
+        pescore_check_new_cve_result = requests.get(
+            endpoint_url, headers=headers
+        ).json()
+        return pd.DataFrame.from_dict(pescore_check_new_cve_result)
+    except requests.exceptions.HTTPError as errh:
+        LOGGER.error(errh)
+    except requests.exceptions.ConnectionError as errc:
+        LOGGER.error(errc)
+    except requests.exceptions.Timeout as errt:
+        LOGGER.error(errt)
+    except requests.exceptions.RequestException as err:
+        LOGGER.error(err)
+    except json.decoder.JSONDecodeError as err:
+        LOGGER.error(err)
+
+
 # --- Issue 637 ---
 def upsert_new_cves(new_cves):
     """
@@ -2246,6 +2540,31 @@ def query_previous_period_tsql(org_uid, previous_end_date):
         }
 
     return assets_dict
+
+
+# --- 636 OLD TSQL ---
+def get_new_cves_list_tsql(start, end):
+    """
+    Get the list of all new CVEs for this report period that are not in the database yet.
+
+    Args:
+        start: The start date of the specified report period
+        end: The end date of the specified report period
+
+    Returns:
+        Dataframe containing all the new CVE names that aren't in the PE database yet
+    """
+    conn = connect()
+    sql = "SELECT * FROM pes_check_new_cve(%(start)s, %(end)s);"
+    try:
+        df = pd.read_sql(sql, conn, params={"start": start, "end": end})
+        conn.close()
+        return df
+    except (Exception, psycopg2.DatabaseError) as error:
+        LOGGER.error("There was a problem with your database query %s", error)
+    finally:
+        if conn is not None:
+            close(conn)
 
 
 # --- 637 OLD TSQL ---

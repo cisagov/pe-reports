@@ -1804,6 +1804,18 @@ class VwIpsCidrOrgInfo(models.Model):
         db_table = "vw_ips_cidr_org_info"
 
 
+class VwPEScoreCheckNewCVE(models.Model):
+    """VwPEScoreCheckNewCVE model class."""
+
+    cve_name = models.CharField(blank=True, null=True)
+
+    class Meta:
+        """VwPEScoreCheckNewCVE model meta class."""
+
+        managed = False
+        db_table = "vw_pescore_check_new_cve"
+
+
 # ---------- D-Score View Models ----------
 # D-Score VS Cert View
 class VwDscoreVSCert(models.Model):

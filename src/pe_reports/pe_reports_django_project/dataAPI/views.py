@@ -48,6 +48,11 @@ from dataAPI.tasks import (  # D-Score Task Functions:; I-Score Task Functions:;
     get_xs_stakeholders_info,
     ips_insert_task,
     ips_update_from_cidr_task,
+    pescore_base_metrics_task,
+    pescore_hist_cred_task,
+    pescore_hist_darkweb_alert_task,
+    pescore_hist_darkweb_ment_task,
+    pescore_hist_domain_alert_task,
     sub_domains_by_org_task,
     sub_domains_table_task,
 )
@@ -107,6 +112,7 @@ from home.models import (  # MatVwOrgsAllIps,
     VwIpsCidrOrgInfo,
     VwIpsSubRootOrgInfo,
     VwOrgsAttacksurface,
+    VwPEScoreCheckNewCVE,
     WasTrackerCustomerdata,
     WeeklyStatuses,
 )
@@ -3648,6 +3654,359 @@ def rss_prev_period(
             )
             return rss_prev_period_data
         except Exception:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+
+# --- pescore_hist_domain_alert(), Issue 635 ---
+@api_router.post(
+    "/pescore_hist_domain_alert",
+    dependencies=[Depends(get_api_key)], #Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.PEScoreHistDomainAlertTaskResp,
+    tags=["Get all historical domain alert data for PE score."],
+)
+def pescore_hist_domain_alert(
+    data: schemas.GenInputDateRange, tokens: dict = Depends(get_api_key)
+):
+    """Call API endpoint to get the PE score domain alert data for a specified time period."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # If API key valid, create task for query
+            task = pescore_hist_domain_alert_task.delay(data.start_date, data.end_date)
+            # Return the new task id w/ "Processing" status
+            return {"task_id": task.id, "status": "Processing"}
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+
+@api_router.get(
+    "/pescore_hist_domain_alert/task/{task_id}",
+    dependencies=[Depends(get_api_key)], #Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.PEScoreHistDomainAlertTaskResp,
+    tags=["Check task status for pescore_hist_domain_alert endpoint task."],
+)
+async def pescore_hist_domain_alert_status(
+    task_id: str, tokens: dict = Depends(get_api_key)
+):
+    """Call API endpoint to get status of pescore_hist_domain_alert task."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            # userapiTokenverify(theapiKey=tokens)
+            # Retrieve task status
+            task = pescore_hist_domain_alert_task.AsyncResult(task_id)
+            # Return appropriate message for status
+            if task.state == "SUCCESS":
+                return {
+                    "task_id": task_id,
+                    "status": "Completed",
+                    "result": task.result,
+                }
+            elif task.state == "PENDING":
+                return {"task_id": task_id, "status": "Pending"}
+            elif task.state == "FAILURE":
+                return {
+                    "task_id": task_id,
+                    "status": "Failed",
+                    "error": str(task.result),
+                }
+            else:
+                return {"task_id": task_id, "status": task.state}
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+
+# --- pescore_hist_darkweb_alert(), Issue 635 ---
+@api_router.post(
+    "/pescore_hist_darkweb_alert",
+    dependencies=[Depends(get_api_key)], #Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.PEScoreHistDarkwebAlertTaskResp,
+    tags=["Get all historical darkweb alert data for PE score."],
+)
+def pescore_hist_darkweb_alert(
+    data: schemas.GenInputDateRange, tokens: dict = Depends(get_api_key)
+):
+    """Call API endpoint to get the PE score dark web alert data for a specified time period."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # If API key valid, create task for query
+            task = pescore_hist_darkweb_alert_task.delay(data.start_date, data.end_date)
+            # Return the new task id w/ "Processing" status
+            return {"task_id": task.id, "status": "Processing"}
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+
+@api_router.get(
+    "/pescore_hist_darkweb_alert/task/{task_id}",
+    dependencies=[Depends(get_api_key)], #Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.PEScoreHistDarkwebAlertTaskResp,
+    tags=["Check task status for pescore_hist_darkweb_alert endpoint task."],
+)
+async def pescore_hist_darkweb_alert_status(
+    task_id: str, tokens: dict = Depends(get_api_key)
+):
+    """Call API endpoint to get status of pescore_hist_darkweb_alert task."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            # userapiTokenverify(theapiKey=tokens)
+            # Retrieve task status
+            task = pescore_hist_darkweb_alert_task.AsyncResult(task_id)
+            # Return appropriate message for status
+            if task.state == "SUCCESS":
+                return {
+                    "task_id": task_id,
+                    "status": "Completed",
+                    "result": task.result,
+                }
+            elif task.state == "PENDING":
+                return {"task_id": task_id, "status": "Pending"}
+            elif task.state == "FAILURE":
+                return {
+                    "task_id": task_id,
+                    "status": "Failed",
+                    "error": str(task.result),
+                }
+            else:
+                return {"task_id": task_id, "status": task.state}
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+
+# --- pescore_hist_darkweb_ment(), Issue 635 ---
+@api_router.post(
+    "/pescore_hist_darkweb_ment",
+    dependencies=[Depends(get_api_key)], #Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.PEScoreHistDarkwebMentTaskResp,
+    tags=["Get all historical darkweb mention data for PE score."],
+)
+def pescore_hist_darkweb_ment(
+    data: schemas.GenInputDateRange, tokens: dict = Depends(get_api_key)
+):
+    """Call API endpoint to get the PE score dark web mention data for a specified time period."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # If API key valid, create task for query
+            task = pescore_hist_darkweb_ment_task.delay(data.start_date, data.end_date)
+            # Return the new task id w/ "Processing" status
+            return {"task_id": task.id, "status": "Processing"}
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+
+@api_router.get(
+    "/pescore_hist_darkweb_ment/task/{task_id}",
+    dependencies=[Depends(get_api_key)], #Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.PEScoreHistDarkwebMentTaskResp,
+    tags=["Check task status for pescore_hist_darkweb_ment endpoint task."],
+)
+async def pescore_hist_darkweb_ment_status(
+    task_id: str, tokens: dict = Depends(get_api_key)
+):
+    """Call API endpoint to get status of pescore_hist_darkweb_ment task."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            # userapiTokenverify(theapiKey=tokens)
+            # Retrieve task status
+            task = pescore_hist_darkweb_ment_task.AsyncResult(task_id)
+            # Return appropriate message for status
+            if task.state == "SUCCESS":
+                return {
+                    "task_id": task_id,
+                    "status": "Completed",
+                    "result": task.result,
+                }
+            elif task.state == "PENDING":
+                return {"task_id": task_id, "status": "Pending"}
+            elif task.state == "FAILURE":
+                return {
+                    "task_id": task_id,
+                    "status": "Failed",
+                    "error": str(task.result),
+                }
+            else:
+                return {"task_id": task_id, "status": task.state}
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+
+# --- pescore_hist_cred(), Issue 635 ---
+@api_router.post(
+    "/pescore_hist_cred",
+    dependencies=[Depends(get_api_key)], #Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.PEScoreHistCredTaskResp,
+    tags=["Get all historical credential data for PE score."],
+)
+def pescore_hist_cred(
+    data: schemas.GenInputDateRange, tokens: dict = Depends(get_api_key)
+):
+    """Call API endpoint to get the PE score credential data for a specified time period."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # If API key valid, create task for query
+            task = pescore_hist_cred_task.delay(data.start_date, data.end_date)
+            # Return the new task id w/ "Processing" status
+            return {"task_id": task.id, "status": "Processing"}
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+
+@api_router.get(
+    "/pescore_hist_cred/task/{task_id}",
+    dependencies=[Depends(get_api_key)], #Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.PEScoreHistCredTaskResp,
+    tags=["Check task status for pescore_hist_cred endpoint task."],
+)
+async def pescore_hist_cred_status(task_id: str, tokens: dict = Depends(get_api_key)):
+    """Call API endpoint to get status of pescore_hist_cred task."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            # userapiTokenverify(theapiKey=tokens)
+            # Retrieve task status
+            task = pescore_hist_cred_task.AsyncResult(task_id)
+            # Return appropriate message for status
+            if task.state == "SUCCESS":
+                return {
+                    "task_id": task_id,
+                    "status": "Completed",
+                    "result": task.result,
+                }
+            elif task.state == "PENDING":
+                return {"task_id": task_id, "status": "Pending"}
+            elif task.state == "FAILURE":
+                return {
+                    "task_id": task_id,
+                    "status": "Failed",
+                    "error": str(task.result),
+                }
+            else:
+                return {"task_id": task_id, "status": task.state}
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+
+# --- pescore_base_metrics(), Issue 635 ---
+@api_router.post(
+    "/pescore_base_metrics",
+    dependencies=[Depends(get_api_key)], #Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.PEScoreBaseMetricsTaskResp,
+    tags=["Get all base metric data for PE score."],
+)
+def pescore_base_metrics(
+    data: schemas.GenInputDateRange, tokens: dict = Depends(get_api_key)
+):
+    """Call API endpoint to get the PE score base metric data for a specified time period."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # If API key valid, create task for query
+            task = pescore_base_metrics_task.delay(data.start_date, data.end_date)
+            # Return the new task id w/ "Processing" status
+            return {"task_id": task.id, "status": "Processing"}
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+
+@api_router.get(
+    "/pescore_base_metrics/task/{task_id}",
+    dependencies=[Depends(get_api_key)], #Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.PEScoreBaseMetricsTaskResp,
+    tags=["Check task status for pescore_base_metrics endpoint task."],
+)
+async def pescore_base_metrics_status(
+    task_id: str, tokens: dict = Depends(get_api_key)
+):
+    """Call API endpoint to get status of pescore_base_metrics task."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            # userapiTokenverify(theapiKey=tokens)
+            # Retrieve task status
+            task = pescore_base_metrics_task.AsyncResult(task_id)
+            # Return appropriate message for status
+            if task.state == "SUCCESS":
+                return {
+                    "task_id": task_id,
+                    "status": "Completed",
+                    "result": task.result,
+                }
+            elif task.state == "PENDING":
+                return {"task_id": task_id, "status": "Pending"}
+            elif task.state == "FAILURE":
+                return {
+                    "task_id": task_id,
+                    "status": "Failed",
+                    "error": str(task.result),
+                }
+            else:
+                return {"task_id": task_id, "status": task.state}
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+
+# --- get_new_cves_list(), Issue 636 ---
+@api_router.get(
+    "/pescore_check_new_cve",
+    dependencies=[Depends(get_api_key)], #Depends(RateLimiter(times=200, seconds=60))],
+    response_model=List[schemas.VwPEScoreCheckNewCVE],
+    tags=["Get any detected CVEs that aren't in the cve_info table yet."],
+)
+def pescore_check_new_cve(tokens: dict = Depends(get_api_key)):
+    """Call API endpoint to get any detected CVEs that aren't in the cve_info table yet."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # If API key valid, make query
+            pescore_check_new_cve_data = list(
+                VwPEScoreCheckNewCVE.objects.values("cve_name")
+            )
+            return pescore_check_new_cve_data
+        except ObjectDoesNotExist:
             LOGGER.info("API key expired please try again")
     else:
         return {"message": "No api key was submitted"}

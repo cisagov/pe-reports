@@ -1803,6 +1803,416 @@ class RSSPrevPeriodInput(BaseModel):
         orm_mode = True
 
 
+# ---------- General PE Score Schemas ----------
+# --- reported orgs schema, Issue 635 ---
+# List of reported organizations schema
+class ReportedOrgs(BaseModel):
+    """ReportedOrgs schema class."""
+
+    organizations_uid: str
+
+    class Config:
+        """ReportedOrgs schema config class."""
+
+        orm_mode = True
+
+
+# --- reported orgs schema, Issue 635 ---
+# List of reported organizations w/ cyhy db name schema
+class ReportedOrgsCyhy(BaseModel):
+    """ReportedOrgsCyhy schema class."""
+
+    organizations_uid: str
+    cyhy_db_name: str
+
+    class Config:
+        """ReportedOrgsCyhy schema config class."""
+
+        orm_mode = True
+
+
+# ---------- PE Score Historical Data ----------
+# --- pescore_hist_domain_alert(), Issue 635 ---
+# Get pescore_hist_domain_alert data for the specified period
+class PEScoreHistDomainAlert(BaseModel):
+    """PEScoreHistDomainAlert schema class."""
+
+    organizations_uid: str
+    date: str
+
+    class Config:
+        """PEScoreHistDomainAlert schema config class."""
+
+        orm_mode = True
+
+
+# --- pescore_hist_domain_alert(), Issue 635 ---
+# Get pescore_hist_domain_alert data for the specified period, consolidated resp
+class PEScoreHistDomainAlertResp(BaseModel):
+    """PEScoreHistDomainAlertResp schema class."""
+
+    reported_orgs: List[ReportedOrgsCyhy]
+    hist_domain_alert_data: List[PEScoreHistDomainAlert]
+
+    class Config:
+        """PEScoreHistDomainAlertResp schema config class."""
+
+        orm_mode = True
+
+
+# --- pescore_hist_domain_alert(), Issue 635 ---
+# Get pescore_hist_domain_alert data for the specified period, task resp
+class PEScoreHistDomainAlertTaskResp(BaseModel):
+    """PEScoreHistDomainAlertTaskResp schema class."""
+
+    task_id: str
+    status: str
+    result: Optional[PEScoreHistDomainAlertResp] = None
+    error: Optional[str] = None
+
+
+# --- pescore_hist_darkweb_alert(), Issue 635 ---
+# Get pescore_hist_darkweb_alert data for the specified period
+class PEScoreHistDarkwebAlert(BaseModel):
+    """PEScoreHistDarkwebAlert schema class."""
+
+    organizations_uid: str
+    date: str
+
+    class Config:
+        """PEScoreHistDarkwebALert schema config class."""
+
+        orm_mode = True
+
+
+# --- pescore_hist_darkweb_alert(), Issue 635 ---
+# Get pescore_hist_darkweb_alert data for the specified period, consolidated resp
+class PEScoreHistDarkwebAlertResp(BaseModel):
+    """PEScoreHistDarkwebAlertResp schema class."""
+
+    reported_orgs: List[ReportedOrgsCyhy]
+    hist_darkweb_alert_data: List[PEScoreHistDarkwebAlert]
+
+    class Config:
+        """PEScoreHistDarkwebAlertResp schema config class."""
+
+        orm_mode = True
+
+
+# --- pescore_hist_darkweb_alert(), Issue 635 ---
+# Get pescore_hist_darkweb_alert data for the specified period, task resp
+class PEScoreHistDarkwebAlertTaskResp(BaseModel):
+    """PEScoreHistDarkwebAlertTaskResp schema class."""
+
+    task_id: str
+    status: str
+    result: Optional[PEScoreHistDarkwebAlertResp] = None
+    error: Optional[str] = None
+
+
+# --- pescore_hist_darkweb_ment(), Issue 635 ---
+# Get pescore_hist_darkweb_ment data for the specified period
+class PEScoreHistDarkwebMent(BaseModel):
+    """PEScoreHistDarkwebMent schema class."""
+
+    organizations_uid: str
+    date: str
+    count: int
+
+    class Config:
+        """PEScoreHistDarkwebMent schema config class."""
+
+        orm_mode = True
+
+
+# --- pescore_hist_darkweb_ment(), Issue 635 ---
+# Get pescore_hist_darkweb_ment data for the specified period, consolidated resp
+class PEScoreHistDarkwebMentResp(BaseModel):
+    """PEScoreHistDarkwebMentResp schema class."""
+
+    reported_orgs: List[ReportedOrgsCyhy]
+    hist_darkweb_ment_data: List[PEScoreHistDarkwebMent]
+
+    class Config:
+        """PEScoreHistDarkwebMentResp schema config class."""
+
+        orm_mode = True
+
+
+# --- pescore_hist_darkweb_ment(), Issue 635 ---
+# Get pescore_hist_darkweb_ment data for the specified period, task resp
+class PEScoreHistDarkwebMentTaskResp(BaseModel):
+    """PEScoreHistDarkwebMentTaskResp schema class."""
+
+    task_id: str
+    status: str
+    result: Optional[PEScoreHistDarkwebMentResp] = None
+    error: Optional[str] = None
+
+
+# --- pescore_hist_cred(), Issue 635 ---
+# Get pescore_hist_cred data for the specified period
+class PEScoreHistCred(BaseModel):
+    """PEScoreHistCred schema class."""
+
+    organizations_uid: str
+    mod_date: str
+    no_password: int
+    password_included: int
+
+    class Config:
+        """PEScoreHistCred schema config class."""
+
+        orm_mode = True
+
+
+# --- pescore_hist_cred(), Issue 635 ---
+# Get pescore_hist_cred data for the specified period, consolidated resp
+class PEScoreHistCredResp(BaseModel):
+    """PEScoreHistCredResp schema class."""
+
+    reported_orgs: List[ReportedOrgsCyhy]
+    hist_cred_data: List[PEScoreHistCred]
+
+    class Config:
+        """PEScoreHistCredResp schema config class."""
+
+        orm_mode = True
+
+
+# --- pescore_hist_cred(), Issue 635 ---
+# Get pescore_hist_cred data for the specified period, task resp
+class PEScoreHistCredTaskResp(BaseModel):
+    """PEScoreHistCredTaskResp schema class."""
+
+    task_id: str
+    status: str
+    result: Optional[PEScoreHistCredResp] = None
+    error: Optional[str] = None
+
+
+# ---------- PE Score Base Metrics Data ----------
+# --- pescore_base_metrics(), Issue 635 ---
+# Get data for CRED component of pescore_base_metrics
+class PEScoreCred(BaseModel):
+    """PEScoreCred schema class."""
+
+    organizations_uid: str
+    password_included: int
+    no_password: int
+
+    class Config:
+        """PEScoreCred schema config class."""
+
+        orm_mode = True
+
+
+# --- pescore_base_metrics(), Issue 635 ---
+# Get data for BREACH component of pescore_base_metrics
+class PEScoreBreach(BaseModel):
+    """PEScoreBreach schema class."""
+
+    organizations_uid: str
+    num_breaches: int
+
+    class Config:
+        """PEScoreBreach schema config class."""
+
+        orm_mode = True
+
+
+# --- pescore_base_metrics(), Issue 635 ---
+# Get data for DOMAIN SUSPECTED component of pescore_base_metrics
+class PEScoreDomainSus(BaseModel):
+    """PEScoreDomainSus schema class."""
+
+    organizations_uid: str
+    num_sus_domain: int
+
+    class Config:
+        """PEScoreDomainSus schema config class."""
+
+        orm_mode = True
+
+
+# --- pescore_base_metrics(), Issue 635 ---
+# Get data for DOMAIN ALERT component of pescore_base_metrics
+class PEScoreDomainAlert(BaseModel):
+    """PEScoreDomainAlert schema class."""
+
+    organizations_uid: str
+    num_alert_domain: int
+
+    class Config:
+        """PEscoreDomainAlert schema config class."""
+
+        orm_mode = True
+
+
+# --- pescore_base_metrics(), Issue 635 ---
+# Get data for VERIF VULN component of pescore_base_metrics
+class PEScoreVulnVerif(BaseModel):
+    """PEScoreVulnVerif schema class."""
+
+    organizations_uid: str
+    num_verif_vulns: int
+
+    class Config:
+        """PESCoreVulnVerif schema config class."""
+
+        orm_mode = True
+
+
+# --- pescore_base_metrics(), Issue 635 ---
+# Get data for UNVERIF VULN component of pescore_base_metrics
+class PEScoreVulnUnverif(BaseModel):
+    """PEScoreVulnUnverif schema class."""
+
+    organizations_uid: str
+    num_assets_unverif_vulns: int
+
+    class Config:
+        """PEScoreVulnUnverif schema config class."""
+
+        orm_mode = True
+
+
+# --- pescore_base_metrics(), Issue 635 ---
+# Get data for PORT component of pescore_base_metrics
+class PEScoreVulnPort(BaseModel):
+    """PEScoreVulnPort schema class."""
+
+    organizations_uid: str
+    num_risky_ports: int
+
+    class Config:
+        """PEscoreVulnPort schema config class."""
+
+        orm_mode = True
+
+
+# --- pescore_base_metrics(), Issue 635 ---
+# Get data for DARKWEB ALERT component of pescore_base_metrics
+class PEScoreDarkwebAlert(BaseModel):
+    """PEScoreDarkwebAlert schema class."""
+
+    organizations_uid: str
+    num_dw_alerts: int
+
+    class Config:
+        """PEScoreDarkwebAlert schema config class."""
+
+        orm_mode = True
+
+
+# --- pescore_base_metrics(), Issue 635 ---
+# Get data for DARKWEB MENTION component of pescore_base_metrics
+class PEScoreDarkwebMent(BaseModel):
+    """PEScoreDarkwebMent schema class."""
+
+    organizations_uid: str
+    num_dw_mentions: int
+
+    class Config:
+        """PEScoreDarkwebMent schema config class."""
+
+        orm_mode = True
+
+
+# --- pescore_base_metrics(), Issue 635 ---
+# Get data for DARKWEB THREAT component of pescore_base_metrics
+class PEScoreDarkwebThreat(BaseModel):
+    """PEScoreDarkwebThreat schema class."""
+
+    organizations_uid: str
+    num_dw_threats: int
+
+    class Config:
+        """PEScoreDarkwebThreat schema config class."""
+
+        orm_mode = True
+
+
+# --- pescore_base_metrics(), Issue 635 ---
+# Get data for DARKWEB INVITE component of pescore_base_metrics
+class PEScoreDarkwebInv(BaseModel):
+    """PEScoreDarkwebInv schema class."""
+
+    organizations_uid: str
+    num_dw_invites: int
+
+    class Config:
+        """PEScoreDarwkebInv schema config class."""
+
+        orm_mode = True
+
+
+# --- pescore_base_metrics(), Issue 635 ---
+# Get data for ATTACKSURFACE component of pescore_base_metrics
+class PEScoreAttackSurface(BaseModel):
+    """PEScoreAttackSurface schema class."""
+
+    organizations_uid: str
+    cyhy_db_name: Optional[str] = None
+    num_ports: Optional[int] = None
+    num_root_domain: Optional[int] = None
+    num_sub_domain: Optional[int] = None
+    num_ips: Optional[int] = None
+    num_cidrs: Optional[int] = None
+    num_ports_protocols: Optional[int] = None
+    num_software: Optional[int] = None
+    num_foreign_ips: Optional[int] = None
+
+    class Config:
+        """PEScoreAttackSurface schema config class."""
+
+        orm_mode = True
+
+
+# --- pescore_base_metrics(), Issue 635 ---
+# Get all base metric data for PE score
+class PEScoreBaseMetrics(BaseModel):
+    """PEScoreBaseMetrics schema class."""
+
+    reported_orgs: List[ReportedOrgs]
+    cred_data: List[PEScoreCred]
+    breach_data: List[PEScoreBreach]
+    domain_sus_data: List[PEScoreDomainSus]
+    domain_alert_data: List[PEScoreDomainAlert]
+    vuln_verif_data: List[PEScoreVulnVerif]
+    vuln_unverif_data: List[PEScoreVulnUnverif]
+    vuln_port_data: List[PEScoreVulnPort]
+    darkweb_alert_data: List[PEScoreDarkwebAlert]
+    darkweb_ment_data: List[PEScoreDarkwebMent]
+    darkweb_threat_data: List[PEScoreDarkwebThreat]
+    darkweb_inv_data: List[PEScoreDarkwebInv]
+    attacksurface_data: List[PEScoreAttackSurface]
+
+
+# --- pescore_base_metrics(), Issue 635 ---
+# Get all base metric data for PE score, task resp
+class PEScoreBaseMetricsTaskResp(BaseModel):
+    """PEScoreBaseMetricsTaskResp schema class."""
+
+    task_id: str
+    status: str
+    result: Optional[PEScoreBaseMetrics] = None
+    error: Optional[str] = None
+    
+
+# --- get_new_cves_list(), Issue 636 ---
+# Get any detected CVEs that aren't in the cve_info table yet
+class VwPEScoreCheckNewCVE(BaseModel):
+    """VwPEScoreCheckNewCVE schema class."""
+
+    cve_name: str
+
+    class Config:
+        """VwPEScoreCheckNewCVE schema config class."""
+
+        orm_mode = True
+
+
 # --- upsert_new_cves(), Issue 637 ---
 # Upsert new CVEs into cve_info
 class CVEInfoInsert(BaseModel):
