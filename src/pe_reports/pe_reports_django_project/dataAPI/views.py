@@ -12,6 +12,7 @@ import logging
 import numpy as np
 import socket
 import uuid
+from typing import Union
 
 # import re
 # , Dict
@@ -22,6 +23,7 @@ from dataAPI.tasks import (  # D-Score Task Functions:; I-Score Task Functions:;
     convert_date_to_string,
     convert_uuid_to_string,
     cve_info_insert_task,
+    darkweb_cves_task,
     get_dscore_pe_domain_info,
     get_dscore_pe_ip_info,
     get_dscore_vs_cert_info,
@@ -89,6 +91,7 @@ from fastapi_limiter.depends import RateLimiter
 # from fastapi_limiter import FastAPILimiter
 # from fastapi_limiter.depends import RateLimiter
 from home.models import (  # MatVwOrgsAllIps,
+    Alerts,
     Cidrs,
     CredentialBreaches,
     CyhyContacts,
@@ -109,6 +112,15 @@ from home.models import (  # MatVwOrgsAllIps,
     VwBreachcompBreachdetails,
     VwBreachcompCredsbydate,
     VwCidrs,
+    VwDarkwebAssetalerts,
+    VwDarkwebExecalerts,
+    VwDarkwebInviteonlymarkets,
+    VwDarkwebMentionsbydate,
+    VwDarkwebMostactposts,
+    VwDarkwebPotentialthreats,
+    VwDarkwebSites,
+    VwDarkwebSocmediaMostactposts,
+    VwDarkwebThreatactors,
     VwIpsCidrOrgInfo,
     VwIpsSubRootOrgInfo,
     VwOrgsAttacksurface,
@@ -1117,7 +1129,7 @@ def cyhy_ports_scan_info_update(
 # --- Endpoints for vw_dscore_vs_cert view ---
 @api_router.post(
     "/dscore_vs_cert",
-    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    dependencies=[Depends(get_api_key)], #Depends(RateLimiter(times=200, seconds=60))],
     response_model=schemas.VwDscoreVSCertTaskResp,
     tags=["Get all VS cert data needed for D-Score"],
 )
@@ -1142,7 +1154,7 @@ def read_dscore_vs_cert(
 
 @api_router.get(
     "/dscore_vs_cert/task/{task_id}",
-    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    dependencies=[Depends(get_api_key)], #Depends(RateLimiter(times=200, seconds=60))],
     response_model=schemas.VwDscoreVSCertTaskResp,
     tags=["Check task status for D-Score VS cert view."],
 )
@@ -1154,7 +1166,7 @@ async def get_dscore_vs_cert_task_status(
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
         try:
-            userapiTokenverify(theapiKey=tokens)
+            # userapiTokenverify(theapiKey=tokens)
             # Retrieve task status
             task = get_dscore_vs_cert_info.AsyncResult(task_id)
             # Return appropriate message for status
@@ -1183,7 +1195,7 @@ async def get_dscore_vs_cert_task_status(
 # --- Endpoints for vw_dscore_vs_mail view ---
 @api_router.post(
     "/dscore_vs_mail",
-    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    dependencies=[Depends(get_api_key)], #Depends(RateLimiter(times=200, seconds=60))],
     response_model=schemas.VwDscoreVSMailTaskResp,
     tags=["Get all VS mail data needed for D-Score"],
 )
@@ -1208,7 +1220,7 @@ def read_dscore_vs_mail(
 
 @api_router.get(
     "/dscore_vs_mail/task/{task_id}",
-    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    dependencies=[Depends(get_api_key)], #Depends(RateLimiter(times=200, seconds=60))],
     response_model=schemas.VwDscoreVSMailTaskResp,
     tags=["Check task status for D-Score VS mail view."],
 )
@@ -1220,7 +1232,7 @@ async def get_dscore_vs_mail_task_status(
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
         try:
-            userapiTokenverify(theapiKey=tokens)
+            # userapiTokenverify(theapiKey=tokens)
             # Retrieve task status
             task = get_dscore_vs_mail_info.AsyncResult(task_id)
             # Return appropriate message for status
@@ -1249,7 +1261,7 @@ async def get_dscore_vs_mail_task_status(
 # --- Endpoints for vw_dscore_pe_ip view ---
 @api_router.post(
     "/dscore_pe_ip",
-    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    dependencies=[Depends(get_api_key)], #Depends(RateLimiter(times=200, seconds=60))],
     response_model=schemas.VwDscorePEIpTaskResp,
     tags=["Get all PE IP data needed for D-Score"],
 )
@@ -1274,7 +1286,7 @@ def read_dscore_pe_ip(
 
 @api_router.get(
     "/dscore_pe_ip/task/{task_id}",
-    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    dependencies=[Depends(get_api_key)], #Depends(RateLimiter(times=200, seconds=60))],
     response_model=schemas.VwDscorePEIpTaskResp,
     tags=["Check task status for D-Score PE IP view."],
 )
@@ -1286,7 +1298,7 @@ async def get_dscore_pe_ip_task_status(
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
         try:
-            userapiTokenverify(theapiKey=tokens)
+            # userapiTokenverify(theapiKey=tokens)
             # Retrieve task status
             task = get_dscore_pe_ip_info.AsyncResult(task_id)
             # Return appropriate message for status
@@ -1315,7 +1327,7 @@ async def get_dscore_pe_ip_task_status(
 # --- Endpoints for vw_dscore_pe_domain view ---
 @api_router.post(
     "/dscore_pe_domain",
-    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    dependencies=[Depends(get_api_key)], #Depends(RateLimiter(times=200, seconds=60))],
     response_model=schemas.VwDscorePEDomainTaskResp,
     tags=["Get all PE domain data needed for D-Score"],
 )
@@ -1340,7 +1352,7 @@ def read_dscore_pe_domain(
 
 @api_router.get(
     "/dscore_pe_domain/task/{task_id}",
-    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    dependencies=[Depends(get_api_key)], #Depends(RateLimiter(times=200, seconds=60))],
     response_model=schemas.VwDscorePEDomainTaskResp,
     tags=["Check task status for D-Score PE domain view."],
 )
@@ -1352,7 +1364,7 @@ async def get_dscore_pe_domain_task_status(
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
         try:
-            userapiTokenverify(theapiKey=tokens)
+            # userapiTokenverify(theapiKey=tokens)
             # Retrieve task status
             task = get_dscore_pe_domain_info.AsyncResult(task_id)
             # Return appropriate message for status
@@ -1381,7 +1393,7 @@ async def get_dscore_pe_domain_task_status(
 # --- Endpoints for vw_dscore_was_webapp view ---
 @api_router.post(
     "/dscore_was_webapp",
-    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    dependencies=[Depends(get_api_key)], #Depends(RateLimiter(times=200, seconds=60))],
     response_model=schemas.VwDscoreWASWebappTaskResp,
     tags=["Get all WAS webapp data needed for D-Score"],
 )
@@ -1406,7 +1418,7 @@ def read_dscore_was_webapp(
 
 @api_router.get(
     "/dscore_was_webapp/task/{task_id}",
-    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    dependencies=[Depends(get_api_key)], #Depends(RateLimiter(times=200, seconds=60))],
     response_model=schemas.VwDscoreWASWebappTaskResp,
     tags=["Check task status for D-Score WAS webapp view."],
 )
@@ -1418,7 +1430,7 @@ async def get_dscore_was_webapp_task_status(
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
         try:
-            userapiTokenverify(theapiKey=tokens)
+            # userapiTokenverify(theapiKey=tokens)
             # Retrieve task status
             task = get_dscore_was_webapp_info.AsyncResult(task_id)
             # Return appropriate message for status
@@ -1447,7 +1459,7 @@ async def get_dscore_was_webapp_task_status(
 # --- Endpoints for FCEB status query (no view) ---
 @api_router.post(
     "/fceb_status",
-    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    dependencies=[Depends(get_api_key)], #Depends(RateLimiter(times=200, seconds=60))],
     response_model=schemas.FCEBStatusTaskResp,
     tags=["Get the FCEB status of a specified list of organizations."],
 )
@@ -1472,7 +1484,7 @@ def read_fceb_status(
 
 @api_router.get(
     "/fceb_status/task/{task_id}",
-    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    dependencies=[Depends(get_api_key)], #Depends(RateLimiter(times=200, seconds=60))],
     response_model=schemas.FCEBStatusTaskResp,
     tags=["Check task status for FCEB status query."],
 )
@@ -1484,7 +1496,7 @@ async def get_fceb_status_task_status(
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
         try:
-            userapiTokenverify(theapiKey=tokens)
+            # userapiTokenverify(theapiKey=tokens)
             # Retrieve task status
             task = get_fceb_status_info.AsyncResult(task_id)
             # Return appropriate message for status
@@ -1514,7 +1526,7 @@ async def get_fceb_status_task_status(
 # --- Endpoints for vw_iscore_vs_vuln view ---
 @api_router.post(
     "/iscore_vs_vuln",
-    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    dependencies=[Depends(get_api_key)], #Depends(RateLimiter(times=200, seconds=60))],
     response_model=schemas.VwIscoreVSVulnTaskResp,
     tags=["Get all VS vuln data needed for I-Score"],
 )
@@ -1539,7 +1551,7 @@ def read_iscore_vs_vuln(
 
 @api_router.get(
     "/iscore_vs_vuln/task/{task_id}",
-    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    dependencies=[Depends(get_api_key)], #Depends(RateLimiter(times=200, seconds=60))],
     response_model=schemas.VwIscoreVSVulnTaskResp,
     tags=["Check task status for I-Score VS vuln view."],
 )
@@ -1551,7 +1563,7 @@ async def get_iscore_vs_vuln_task_status(
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
         try:
-            userapiTokenverify(theapiKey=tokens)
+            # userapiTokenverify(theapiKey=tokens)
             # Retrieve task status
             task = get_iscore_vs_vuln_info.AsyncResult(task_id)
             # Return appropriate message for status
@@ -1580,7 +1592,7 @@ async def get_iscore_vs_vuln_task_status(
 # --- Endpoints for vw_iscore_vs_vuln_prev view ---
 @api_router.post(
     "/iscore_vs_vuln_prev",
-    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    dependencies=[Depends(get_api_key)], #Depends(RateLimiter(times=200, seconds=60))],
     response_model=schemas.VwIscoreVSVulnPrevTaskResp,
     tags=["Get all previous VS vuln data needed for I-Score"],
 )
@@ -1607,7 +1619,7 @@ def read_iscore_vs_vuln_prev(
 
 @api_router.get(
     "/iscore_vs_vuln_prev/task/{task_id}",
-    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    dependencies=[Depends(get_api_key)], #Depends(RateLimiter(times=200, seconds=60))],
     response_model=schemas.VwIscoreVSVulnPrevTaskResp,
     tags=["Check task status for I-Score previous VS vuln view."],
 )
@@ -1619,7 +1631,7 @@ async def get_iscore_vs_vuln_prev_task_status(
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
         try:
-            userapiTokenverify(theapiKey=tokens)
+            # userapiTokenverify(theapiKey=tokens)
             # Retrieve task status
             task = get_iscore_vs_vuln_prev_info.AsyncResult(task_id)
             # Return appropriate message for status
@@ -1648,7 +1660,7 @@ async def get_iscore_vs_vuln_prev_task_status(
 # --- Endpoints for vw_iscore_pe_vuln view ---
 @api_router.post(
     "/iscore_pe_vuln",
-    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    dependencies=[Depends(get_api_key)], #Depends(RateLimiter(times=200, seconds=60))],
     response_model=schemas.VwIscorePEVulnTaskResp,
     tags=["Get all PE vuln data needed for I-Score"],
 )
@@ -1675,7 +1687,7 @@ def read_iscore_pe_vuln(
 
 @api_router.get(
     "/iscore_pe_vuln/task/{task_id}",
-    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    dependencies=[Depends(get_api_key)], #Depends(RateLimiter(times=200, seconds=60))],
     response_model=schemas.VwIscorePEVulnTaskResp,
     tags=["Check task status for I-Score PE vuln view."],
 )
@@ -1687,7 +1699,7 @@ async def get_iscore_pe_vuln_task_status(
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
         try:
-            userapiTokenverify(theapiKey=tokens)
+            # userapiTokenverify(theapiKey=tokens)
             # Retrieve task status
             task = get_iscore_pe_vuln_info.AsyncResult(task_id)
             # Return appropriate message for status
@@ -1716,7 +1728,7 @@ async def get_iscore_pe_vuln_task_status(
 # --- Endpoints for vw_iscore_pe_cred view ---
 @api_router.post(
     "/iscore_pe_cred",
-    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    dependencies=[Depends(get_api_key)], #Depends(RateLimiter(times=200, seconds=60))],
     response_model=schemas.VwIscorePECredTaskResp,
     tags=["Get all PE cred data needed for I-Score"],
 )
@@ -1743,7 +1755,7 @@ def read_iscore_pe_cred(
 
 @api_router.get(
     "/iscore_pe_cred/task/{task_id}",
-    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    dependencies=[Depends(get_api_key)], #Depends(RateLimiter(times=200, seconds=60))],
     response_model=schemas.VwIscorePECredTaskResp,
     tags=["Check task status for I-Score PE cred view."],
 )
@@ -1755,7 +1767,7 @@ async def get_iscore_pe_cred_task_status(
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
         try:
-            userapiTokenverify(theapiKey=tokens)
+            # userapiTokenverify(theapiKey=tokens)
             # Retrieve task status
             task = get_iscore_pe_cred_info.AsyncResult(task_id)
             # Return appropriate message for status
@@ -1784,7 +1796,7 @@ async def get_iscore_pe_cred_task_status(
 # --- Endpoints for vw_iscore_pe_breach view ---
 @api_router.post(
     "/iscore_pe_breach",
-    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    dependencies=[Depends(get_api_key)], #Depends(RateLimiter(times=200, seconds=60))],
     response_model=schemas.VwIscorePEBreachTaskResp,
     tags=["Get all PE breach data needed for I-Score"],
 )
@@ -1811,7 +1823,7 @@ def read_iscore_pe_breach(
 
 @api_router.get(
     "/iscore_pe_breach/task/{task_id}",
-    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    dependencies=[Depends(get_api_key)], #Depends(RateLimiter(times=200, seconds=60))],
     response_model=schemas.VwIscorePEBreachTaskResp,
     tags=["Check task status for I-Score PE breach view."],
 )
@@ -1823,7 +1835,7 @@ async def get_iscore_pe_breach_task_status(
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
         try:
-            userapiTokenverify(theapiKey=tokens)
+            # userapiTokenverify(theapiKey=tokens)
             # Retrieve task status
             task = get_iscore_pe_breach_info.AsyncResult(task_id)
             # Return appropriate message for status
@@ -1852,7 +1864,7 @@ async def get_iscore_pe_breach_task_status(
 # --- Endpoints for vw_iscore_pe_darkweb view ---
 @api_router.post(
     "/iscore_pe_darkweb",
-    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    dependencies=[Depends(get_api_key)], #Depends(RateLimiter(times=200, seconds=60))],
     response_model=schemas.VwIscorePEDarkwebTaskResp,
     tags=["Get all PE darkweb data needed for I-Score"],
 )
@@ -1879,7 +1891,7 @@ def read_iscore_pe_darkweb(
 
 @api_router.get(
     "/iscore_pe_darkweb/task/{task_id}",
-    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    dependencies=[Depends(get_api_key)], #Depends(RateLimiter(times=200, seconds=60))],
     response_model=schemas.VwIscorePEDarkwebTaskResp,
     tags=["Check task status for I-Score PE darkweb view."],
 )
@@ -1891,7 +1903,7 @@ async def get_iscore_pe_darkweb_task_status(
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
         try:
-            userapiTokenverify(theapiKey=tokens)
+            # userapiTokenverify(theapiKey=tokens)
             # Retrieve task status
             task = get_iscore_pe_darkweb_info.AsyncResult(task_id)
             # Return appropriate message for status
@@ -1920,7 +1932,7 @@ async def get_iscore_pe_darkweb_task_status(
 # --- Endpoints for vw_iscore_pe_protocol view ---
 @api_router.post(
     "/iscore_pe_protocol",
-    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    dependencies=[Depends(get_api_key)], #Depends(RateLimiter(times=200, seconds=60))],
     response_model=schemas.VwIscorePEProtocolTaskResp,
     tags=["Get all PE protocol data needed for I-Score"],
 )
@@ -1947,7 +1959,7 @@ def read_iscore_pe_protocol(
 
 @api_router.get(
     "/iscore_pe_protocol/task/{task_id}",
-    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    dependencies=[Depends(get_api_key)], #Depends(RateLimiter(times=200, seconds=60))],
     response_model=schemas.VwIscorePEProtocolTaskResp,
     tags=["Check task status for I-Score PE protocol view."],
 )
@@ -1959,7 +1971,7 @@ async def get_iscore_pe_protocol_task_status(
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
         try:
-            userapiTokenverify(theapiKey=tokens)
+            # userapiTokenverify(theapiKey=tokens)
             # Retrieve task status
             task = get_iscore_pe_protocol_info.AsyncResult(task_id)
             # Return appropriate message for status
@@ -1988,7 +2000,7 @@ async def get_iscore_pe_protocol_task_status(
 # --- Endpoints for vw_iscore_was_vuln view ---
 @api_router.post(
     "/iscore_was_vuln",
-    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    dependencies=[Depends(get_api_key)], #Depends(RateLimiter(times=200, seconds=60))],
     response_model=schemas.VwIscoreWASVulnTaskResp,
     tags=["Get all WAS vuln data needed for I-Score"],
 )
@@ -2015,7 +2027,7 @@ def read_iscore_was_vuln(
 
 @api_router.get(
     "/iscore_was_vuln/task/{task_id}",
-    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    dependencies=[Depends(get_api_key)], #Depends(RateLimiter(times=200, seconds=60))],
     response_model=schemas.VwIscoreWASVulnTaskResp,
     tags=["Check task status for I-Score WAS vuln view."],
 )
@@ -2027,7 +2039,7 @@ async def get_iscore_was_vuln_task_status(
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
         try:
-            userapiTokenverify(theapiKey=tokens)
+            # userapiTokenverify(theapiKey=tokens)
             # Retrieve task status
             task = get_iscore_was_vuln_info.AsyncResult(task_id)
             # Return appropriate message for status
@@ -2056,7 +2068,7 @@ async def get_iscore_was_vuln_task_status(
 # --- Endpoints for vw_iscore_was_vuln_prev view ---
 @api_router.post(
     "/iscore_was_vuln_prev",
-    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    dependencies=[Depends(get_api_key)], #Depends(RateLimiter(times=200, seconds=60))],
     response_model=schemas.VwIscoreWASVulnPrevTaskResp,
     tags=["Get all previous WAS vuln data needed for I-Score"],
 )
@@ -2083,7 +2095,7 @@ def read_iscore_was_vuln_prev(
 
 @api_router.get(
     "/iscore_was_vuln_prev/task/{task_id}",
-    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    dependencies=[Depends(get_api_key)], #Depends(RateLimiter(times=200, seconds=60))],
     response_model=schemas.VwIscoreWASVulnPrevTaskResp,
     tags=["Check task status for I-Score previous WAS vuln view."],
 )
@@ -2095,7 +2107,7 @@ async def get_iscore_was_vuln_prev_task_status(
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
         try:
-            userapiTokenverify(theapiKey=tokens)
+            # userapiTokenverify(theapiKey=tokens)
             # Retrieve task status
             task = get_iscore_was_vuln_prev_info.AsyncResult(task_id)
             # Return appropriate message for status
@@ -2124,7 +2136,7 @@ async def get_iscore_was_vuln_prev_task_status(
 # --- Endpoint for KEV list query (no view) ---
 @api_router.post(
     "/kev_list",
-    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    dependencies=[Depends(get_api_key)], #Depends(RateLimiter(times=200, seconds=60))],
     response_model=schemas.KEVListTaskResp,
     tags=["Get list of all KEVs."],
 )
@@ -2147,7 +2159,7 @@ def read_kev_list(tokens: dict = Depends(get_api_key)):
 
 @api_router.get(
     "/kev_list/task/{task_id}",
-    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    dependencies=[Depends(get_api_key)], #Depends(RateLimiter(times=200, seconds=60))],
     response_model=schemas.KEVListTaskResp,
     tags=["Check task status for KEV list query."],
 )
@@ -2157,7 +2169,7 @@ async def get_kev_list_task_status(task_id: str, tokens: dict = Depends(get_api_
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
         try:
-            userapiTokenverify(theapiKey=tokens)
+            # userapiTokenverify(theapiKey=tokens)
             # Retrieve task status
             task = get_kev_list_info.AsyncResult(task_id)
             # Return appropriate message for status
@@ -2187,7 +2199,7 @@ async def get_kev_list_task_status(task_id: str, tokens: dict = Depends(get_api_
 # --- Endpoints for XS stakeholder list query ---
 @api_router.post(
     "/xs_stakeholders",
-    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    dependencies=[Depends(get_api_key)], #Depends(RateLimiter(times=200, seconds=60))],
     response_model=schemas.VwIscoreOrgsIpCountsTaskResp,
     tags=["Get list of all XS stakeholders."],
 )
@@ -2210,7 +2222,7 @@ def read_xs_stakeholders(tokens: dict = Depends(get_api_key)):
 
 @api_router.get(
     "/xs_stakeholders/task/{task_id}",
-    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    dependencies=[Depends(get_api_key)], #Depends(RateLimiter(times=200, seconds=60))],
     response_model=schemas.VwIscoreOrgsIpCountsTaskResp,
     tags=["Check task status for XS stakeholder query."],
 )
@@ -2222,7 +2234,7 @@ async def get_xs_stakeholders_task_status(
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
         try:
-            userapiTokenverify(theapiKey=tokens)
+            # userapiTokenverify(theapiKey=tokens)
             # Retrieve task status
             task = get_xs_stakeholders_info.AsyncResult(task_id)
             # Return appropriate message for status
@@ -2251,7 +2263,7 @@ async def get_xs_stakeholders_task_status(
 # --- Endpoints for S stakeholder list query ---
 @api_router.post(
     "/s_stakeholders",
-    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    dependencies=[Depends(get_api_key)], #Depends(RateLimiter(times=200, seconds=60))],
     response_model=schemas.VwIscoreOrgsIpCountsTaskResp,
     tags=["Get list of all S stakeholders."],
 )
@@ -2274,7 +2286,7 @@ def read_s_stakeholders(tokens: dict = Depends(get_api_key)):
 
 @api_router.get(
     "/s_stakeholders/task/{task_id}",
-    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    dependencies=[Depends(get_api_key)], #Depends(RateLimiter(times=200, seconds=60))],
     response_model=schemas.VwIscoreOrgsIpCountsTaskResp,
     tags=["Check task status for S stakeholder query."],
 )
@@ -2286,7 +2298,7 @@ async def get_s_stakeholders_task_status(
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
         try:
-            userapiTokenverify(theapiKey=tokens)
+            # userapiTokenverify(theapiKey=tokens)
             # Retrieve task status
             task = get_s_stakeholders_info.AsyncResult(task_id)
             # Return appropriate message for status
@@ -2315,7 +2327,7 @@ async def get_s_stakeholders_task_status(
 # --- Endpoints for M stakeholder list query ---
 @api_router.post(
     "/m_stakeholders",
-    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    dependencies=[Depends(get_api_key)], #Depends(RateLimiter(times=200, seconds=60))],
     response_model=schemas.VwIscoreOrgsIpCountsTaskResp,
     tags=["Get list of all M stakeholders."],
 )
@@ -2338,7 +2350,7 @@ def read_m_stakeholders(tokens: dict = Depends(get_api_key)):
 
 @api_router.get(
     "/m_stakeholders/task/{task_id}",
-    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    dependencies=[Depends(get_api_key)], #Depends(RateLimiter(times=200, seconds=60))],
     response_model=schemas.VwIscoreOrgsIpCountsTaskResp,
     tags=["Check task status for M stakeholder query."],
 )
@@ -2350,7 +2362,7 @@ async def get_m_stakeholders_task_status(
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
         try:
-            userapiTokenverify(theapiKey=tokens)
+            # userapiTokenverify(theapiKey=tokens)
             # Retrieve task status
             task = get_m_stakeholders_info.AsyncResult(task_id)
             # Return appropriate message for status
@@ -2379,7 +2391,7 @@ async def get_m_stakeholders_task_status(
 # --- Endpoints for L stakeholder list query ---
 @api_router.post(
     "/l_stakeholders",
-    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    dependencies=[Depends(get_api_key)], #Depends(RateLimiter(times=200, seconds=60))],
     response_model=schemas.VwIscoreOrgsIpCountsTaskResp,
     tags=["Get list of all L stakeholders."],
 )
@@ -2402,7 +2414,7 @@ def read_l_stakeholders(tokens: dict = Depends(get_api_key)):
 
 @api_router.get(
     "/l_stakeholders/task/{task_id}",
-    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    dependencies=[Depends(get_api_key)], #Depends(RateLimiter(times=200, seconds=60))],
     response_model=schemas.VwIscoreOrgsIpCountsTaskResp,
     tags=["Check task status for L stakeholder query."],
 )
@@ -2414,7 +2426,7 @@ async def get_l_stakeholders_task_status(
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
         try:
-            userapiTokenverify(theapiKey=tokens)
+            # userapiTokenverify(theapiKey=tokens)
             # Retrieve task status
             task = get_l_stakeholders_info.AsyncResult(task_id)
             # Return appropriate message for status
@@ -2443,7 +2455,7 @@ async def get_l_stakeholders_task_status(
 # --- Endpoints for XL stakeholder list query ---
 @api_router.post(
     "/xl_stakeholders",
-    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    dependencies=[Depends(get_api_key)], #Depends(RateLimiter(times=200, seconds=60))],
     response_model=schemas.VwIscoreOrgsIpCountsTaskResp,
     tags=["Get list of all XL stakeholders."],
 )
@@ -2466,7 +2478,7 @@ def read_xl_stakeholders(tokens: dict = Depends(get_api_key)):
 
 @api_router.get(
     "/xl_stakeholders/task/{task_id}",
-    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    dependencies=[Depends(get_api_key)], #Depends(RateLimiter(times=200, seconds=60))],
     response_model=schemas.VwIscoreOrgsIpCountsTaskResp,
     tags=["Check task status for XL stakeholder query."],
 )
@@ -2478,7 +2490,7 @@ async def get_xl_stakeholders_task_status(
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
         try:
-            userapiTokenverify(theapiKey=tokens)
+            # userapiTokenverify(theapiKey=tokens)
             # Retrieve task status
             task = get_xl_stakeholders_info.AsyncResult(task_id)
             # Return appropriate message for status
@@ -3498,6 +3510,297 @@ def root_domains_by_org(
     else:
         return {"message": "No api key was submitted"}
         
+
+# --- query_darkweb(), Issue 629 ---
+@api_router.post(
+    "/darkweb_data",
+    # response_model=Union[
+    #     #schemas.MentionsTable,
+    #     List[schemas.AlertsTable],
+    #     List[schemas.VwDarkwebMentionsbydate],
+    #     #schemas.VwDarkwebInviteonlymarkets,
+    #     #schemas.VwDarkwebSocmediaMostactposts,
+    #     #List[schemas.VwDarkwebMostactposts],
+    #     #schemas.VwDarkwebExecalerts,
+    #     #schemas.VwDarkwebAssetalerts,
+    #     #schemas.VwDarkwebThreatactors,
+    #     #schemas.VwDarkwebPotentialthreats,
+    #     #schemas.VwDarkwebSites,
+    # ],
+    tags=["Get darkweb data from various tables"],
+)
+def darkweb_data(data: schemas.DarkWebDataInput, tokens: dict = Depends(get_api_key)):
+    """API Endpoint to query the darkweb data from various tables."""
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            sdate = data.start_date
+            edate = data.end_date
+            if data.table == "mentions":
+                mentions = list(
+                        Mentions.objects.filter(
+                            organizations_uid=data.org_uid, date__range=(sdate, edate)
+                        ).values()
+                    )[:10]
+                # Make fields serializable
+                for row in mentions:
+                    row["mentions_uid"] = convert_uuid_to_string(
+                        row["mentions_uid"]
+                    )
+                    row["date"] = convert_date_to_string(
+                        row["date"]
+                    )
+                    row["organizations_uid"] = convert_uuid_to_string(
+                        row["organizations_uid"]
+                    )
+                    row["data_source_uid_id"] = convert_uuid_to_string(
+                        row["data_source_uid_id"]
+                    )
+                if not mentions:
+                    mentions = [{x: None for x in schemas.MentionsTable.__fields__}]
+                return mentions
+            elif data.table == "alerts":
+                alerts = list(
+                    Alerts.objects.filter(
+                        organizations_uid=data.org_uid, date__range=(sdate, edate)
+                    ).values()
+                )
+                # Make fields serializable
+                for row in alerts:
+                    row["organizations_uid_id"] = convert_uuid_to_string(
+                        row["organizations_uid_id"]
+                    )
+                    row["date"] = convert_date_to_string(
+                        row["date"]
+                    )
+                    row["alerts_uid"] = convert_uuid_to_string(
+                        row["alerts_uid"]
+                    )
+                    row["data_source_uid_id"] = convert_uuid_to_string(
+                        row["data_source_uid_id"]
+                    )
+                if not alerts:
+                    alerts = [{x: None for x in schemas.AlertsTable.__fields__}]
+                return alerts
+            elif data.table == "vw_darkweb_mentionsbydate":
+                mentionsbydate = list(
+                    VwDarkwebMentionsbydate.objects.filter(
+                        organizations_uid=data.org_uid, date__range=(sdate, edate)
+                    ).values()
+                )
+                # Make fields serializable
+                for row in mentionsbydate:
+                    row["organizations_uid"] = convert_uuid_to_string(
+                        row["organizations_uid"]
+                    )
+                    row["date"] = convert_date_to_string(
+                        row["date"]
+                    )
+                if not mentionsbydate:
+                    mentionsbydate = [{x: None for x in schemas.VwDarkwebMentionsbydate.__fields__}]
+                return mentionsbydate
+            elif data.table == "vw_darkweb_inviteonlymarkets":
+                inviteonlymarkets = list(
+                    VwDarkwebInviteonlymarkets.objects.filter(
+                        organizations_uid=data.org_uid, date__range=(sdate, edate)
+                    ).values()
+                )
+                # Make fields serializable
+                for row in inviteonlymarkets:
+                    row["organizations_uid"] = convert_uuid_to_string(
+                        row["organizations_uid"]
+                    )
+                    row["date"] = convert_date_to_string(
+                        row["date"]
+                    )
+                if not inviteonlymarkets:
+                    inviteonlymarkets = [{x: None for x in schemas.VwDarkwebInviteonlymarkets.__fields__}]
+                return inviteonlymarkets
+            elif data.table == "vw_darkweb_socmedia_mostactposts":
+                socmedia_mostactposts = list(
+                    VwDarkwebSocmediaMostactposts.objects.filter(
+                        organizations_uid=data.org_uid, date__range=(sdate, edate)
+                    ).values()
+                )
+                # Make fields serializable
+                for row in socmedia_mostactposts:
+                    row["organizations_uid"] = convert_uuid_to_string(
+                        row["organizations_uid"]
+                    )
+                    row["date"] = convert_date_to_string(
+                        row["date"]
+                    )
+                if not socmedia_mostactposts:
+                    socmedia_mostactposts = [{x: None for x in schemas.VwDarkwebSocmediaMostactposts.__fields__}]
+                return socmedia_mostactposts
+            elif data.table == "vw_darkweb_mostactposts":
+                mostactposts = list(
+                    VwDarkwebMostactposts.objects.filter(
+                        organizations_uid=data.org_uid, date__range=(sdate, edate)
+                    ).values()
+                )
+                # Make fields serializable
+                for row in mostactposts:
+                    row["organizations_uid"] = convert_uuid_to_string(
+                        row["organizations_uid"]
+                    )
+                    row["date"] = convert_date_to_string(
+                        row["date"]
+                    )
+                if not mostactposts:
+                    mostactposts = [{x: None for x in schemas.VwDarkwebMostactposts.__fields__}]
+                return mostactposts
+            elif data.table == "vw_darkweb_execalerts":
+                execalerts = list(
+                    VwDarkwebExecalerts.objects.filter(
+                        organizations_uid=data.org_uid, date__range=(sdate, edate)
+                    ).values()
+                )
+                # Make fields serializable
+                for row in execalerts:
+                    row["organizations_uid"] = convert_uuid_to_string(
+                        row["organizations_uid"]
+                    )
+                    row["date"] = convert_date_to_string(
+                        row["date"]
+                    )
+                if not execalerts:
+                    execalerts = [{x: None for x in schemas.VwDarkwebExecalerts.__fields__}]
+                return execalerts
+            elif data.table == "vw_darkweb_assetalerts":
+                assetalerts = list(
+                    VwDarkwebAssetalerts.objects.filter(
+                        organizations_uid=data.org_uid, date__range=(sdate, edate)
+                    ).values()
+                )
+                # Make fields serializable
+                for row in assetalerts:
+                    row["organizations_uid"] = convert_uuid_to_string(
+                        row["organizations_uid"]
+                    )
+                    row["date"] = convert_date_to_string(
+                        row["date"]
+                    )
+                if not assetalerts:
+                    assetalerts = [{x: None for x in schemas.VwDarkwebAssetalerts.__fields__}]
+                return assetalerts
+            elif data.table == "vw_darkweb_threatactors":
+                threatactors = list(
+                    VwDarkwebThreatactors.objects.filter(
+                        organizations_uid=data.org_uid, date__range=(sdate, edate)
+                    ).values()
+                )
+                # Make fields serializable
+                for row in threatactors:
+                    row["organizations_uid"] = convert_uuid_to_string(
+                        row["organizations_uid"]
+                    )
+                    row["date"] = convert_date_to_string(
+                        row["date"]
+                    )
+                if not threatactors:
+                    threatactors = [{x: None for x in schemas.VwDarkwebThreatactors.__fields__}]
+                return threatactors
+            elif data.table == "vw_darkweb_potentialthreats":
+                potentialthreats = list(
+                    VwDarkwebPotentialthreats.objects.filter(
+                        organizations_uid=data.org_uid, date__range=(sdate, edate)
+                    ).values()
+                )
+                # Make fields serializable
+                for row in potentialthreats:
+                    row["organizations_uid"] = convert_uuid_to_string(
+                        row["organizations_uid"]
+                    )
+                    row["date"] = convert_date_to_string(
+                        row["date"]
+                    )
+                if not potentialthreats:
+                    potentialthreats = [{x: None for x in schemas.VwDarkwebPotentialthreats.__fields__}]
+                return potentialthreats
+            elif data.table == "vw_darkweb_sites":
+                sites = list(
+                    VwDarkwebSites.objects.filter(
+                        organizations_uid=data.org_uid, date__range=(sdate, edate)
+                    ).values()
+                )
+                # Make fields serializable
+                for row in sites:
+                    row["organizations_uid"] = convert_uuid_to_string(
+                        row["organizations_uid"]
+                    )
+                    row["date"] = convert_date_to_string(
+                        row["date"]
+                    )
+                if not sites:
+                    sites = [{x: None for x in schemas.VwDarkwebSites.__fields__}]
+                return sites
+        except:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+
+# --- query_darkweb_cves(), Issue 630 ---
+@api_router.post(
+    "/darkweb_cves",
+    dependencies=[Depends(get_api_key)], #Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.DarkWebCvesTaskResp,
+    tags=["Get all darkweb cve data"],
+)
+def darkweb_cves(tokens: dict = Depends(get_api_key)):
+    """API endpoint to get all darkweb cve data"""
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # If API key valid, create task for query
+            task = darkweb_cves_task.delay()
+            # Return the new task id w/ "Processing" status
+            return {"task_id": task.id, "status": "Processing"}
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+
+@api_router.get(
+    "/darkweb_cves/task/{task_id}",
+    dependencies=[Depends(get_api_key)], #Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.DarkWebCvesTaskResp,
+    tags=["Check task status for darkweb_cves endpoint task."],
+)
+async def darkweb_cves_status(task_id: str, tokens: dict = Depends(get_api_key)):
+    """API endpoint to check status of darkweb_cves endpoint task."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            # userapiTokenverify(theapiKey=tokens)
+            # Retrieve task status
+            task = darkweb_cves_task.AsyncResult(task_id)
+            # Return appropriate message for status
+            if task.state == "SUCCESS":
+                return {
+                    "task_id": task_id,
+                    "status": "Completed",
+                    "result": task.result,
+                }
+            elif task.state == "PENDING":
+                return {"task_id": task_id, "status": "Pending"}
+            elif task.state == "FAILURE":
+                return {
+                    "task_id": task_id,
+                    "status": "Failed",
+                    "error": str(task.result),
+                }
+            else:
+                return {"task_id": task_id, "status": task.state}
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
 
 # --- execute_scorecard(), Issue 632 ---
 @api_router.put(

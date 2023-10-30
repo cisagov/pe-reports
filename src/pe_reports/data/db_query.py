@@ -479,49 +479,6 @@ def query_shodan(org_uid, start_date, end_date, table):
             close(conn)
 
 
-def query_darkweb(org_uid, start_date, end_date, table):
-    """Query Dark Web table."""
-    conn = connect()
-    try:
-        sql = """SELECT * FROM %(table)s
-        WHERE organizations_uid = %(org_uid)s
-        AND date BETWEEN %(start_date)s AND %(end_date)s"""
-        df = pd.read_sql(
-            sql,
-            conn,
-            params={
-                "table": AsIs(table),
-                "org_uid": org_uid,
-                "start_date": start_date,
-                "end_date": end_date,
-            },
-        )
-        return df
-    except (Exception, psycopg2.DatabaseError) as error:
-        LOGGER.error("There was a problem with your database query %s", error)
-    finally:
-        if conn is not None:
-            close(conn)
-
-
-def query_darkweb_cves(table):
-    """Query Dark Web CVE table."""
-    conn = connect()
-    try:
-        sql = """SELECT * FROM %(table)s"""
-        df = pd.read_sql(
-            sql,
-            conn,
-            params={"table": AsIs(table)},
-        )
-        return df
-    except (Exception, psycopg2.DatabaseError) as error:
-        LOGGER.error("There was a problem with your database query %s", error)
-    finally:
-        if conn is not None:
-            close(conn)
-
-
 def query_cyberSix_creds(org_uid, start_date, end_date):
     """Query cybersix_exposed_credentials table."""
     conn = connect()
@@ -1464,6 +1421,116 @@ def query_roots(org_uid):
         LOGGER.error(err)
 
 
+# --- Issue 629 ---
+def query_darkweb(org_uid, start_date, end_date, table):
+    """
+    Query API to retrieve darkweb data for an organization.
+
+    Args:
+        org_uid: uid of the specified organization
+        start_date: start date of the report period
+        end_date: end date of the report period
+        table: darkweb related table to query
+
+    Return:
+        Darkweb data belonging to the specified org as a dataframe
+    """
+    if isinstance(start_date, datetime.date):
+        start_date = start_date.strftime("%Y-%m-%d")
+    if isinstance(end_date, datetime.date):
+        end_date = end_date.strftime("%Y-%m-%d")
+    # Endpoint info
+    endpoint_url = pe_api_url + "darkweb_data"
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": pe_api_key,
+    }
+    # Check table name is valid
+    if table in [
+            "mentions",
+            "alerts",
+            "vw_darkweb_mentionsbydate",
+            "vw_darkweb_inviteonlymarkets",
+            "vw_darkweb_socmedia_mostactposts",
+            "vw_darkweb_mostactposts",
+            "vw_darkweb_execalerts",
+            "vw_darkweb_assetalerts",
+            "vw_darkweb_threatactors",
+            "vw_darkweb_potentialthreats",
+            "vw_darkweb_sites",
+        ]:
+        data = json.dumps(
+            {
+                "org_uid": org_uid,
+                "start_date": start_date,
+                "end_date": end_date,
+                "table": table,
+            }
+        )
+        try:
+            # Call endpoint
+            result = requests.post(endpoint_url, headers=headers, data=data).json()
+            # Process data and return
+            result_df = pd.DataFrame.from_dict(result)
+            result_df.rename(
+                columns={
+                    "organizations_uid_id": "organizations_uid",
+                    "data_source_uid_id": "data_source_uid",
+                    "count": "Count",
+                    "creator": "Creator",
+                    "grade": "Grade",
+                    "events": "Events",
+                    "title": "Title",
+                    "comments_count": "Comments Count",
+                    "site": "Site",
+                    "threats": "Threats",
+                },
+                inplace=True,
+            )
+            result_df["date"] = pd.to_datetime(result_df["date"]).dt.date
+            # Return truly empty dataframe if no results
+            if result_df[result_df.columns].isnull().apply(lambda x: all(x), axis=1)[0]:
+                result_df.drop(result_df.index, inplace=True)
+            return result_df
+        except requests.exceptions.HTTPError as errh:
+            LOGGER.info(errh)
+        except requests.exceptions.ConnectionError as errc:
+            LOGGER.info(errc)
+        except requests.exceptions.Timeout as errt:
+            LOGGER.info(errt)
+        except requests.exceptions.RequestException as err:
+            LOGGER.info(err)
+        except json.decoder.JSONDecodeError as err:
+            LOGGER.info(err)
+    else:
+        LOGGER.error("query_darkweb() error, invalid table")
+
+
+# --- Issue 630 ---
+def query_darkweb_cves(table):
+    """
+    Query API to retrieve the entire top_cves table.
+
+    Return:
+        top_cve table as a dataframe
+    """
+    # Endpoint info
+    task_url = "darkweb_cves"
+    status_url = "darkweb_cves/task/"
+    # Make API call
+    result = task_api_call(task_url, status_url)
+    # Process data and return
+    result_df = pd.DataFrame.from_dict(result)
+    result_df.rename(
+        columns={
+            "data_source_uid_id": "data_source_uid",
+        },
+        inplace=True,
+    )
+    result_df["date"] = pd.to_datetime(result_df["date"]).dt.date
+    return result_df
+
+    
 # --- Issue 632 ---
 def execute_scorecard(summary_dict):
     """
@@ -2401,6 +2468,51 @@ def query_roots_tsql(org_uid):
     df = pd.read_sql(sql, conn, params={"org_uid": org_uid})
     conn.close()
     return df
+
+
+# --- 629 OLD TSQL ---
+def query_darkweb_tsql(org_uid, start_date, end_date, table):
+    """Query Dark Web table."""
+    conn = connect()
+    try:
+        sql = """SELECT * FROM %(table)s
+        WHERE organizations_uid = %(org_uid)s
+        AND date BETWEEN %(start_date)s AND %(end_date)s"""
+        df = pd.read_sql(
+            sql,
+            conn,
+            params={
+                "table": AsIs(table),
+                "org_uid": org_uid,
+                "start_date": start_date,
+                "end_date": end_date,
+            },
+        )
+        return df
+    except (Exception, psycopg2.DatabaseError) as error:
+        LOGGER.error("There was a problem with your database query %s", error)
+    finally:
+        if conn is not None:
+            close(conn)
+
+
+# --- 630 OLD TSQL ---
+def query_darkweb_cves_tsql(table):
+    """Query Dark Web CVE table."""
+    conn = connect()
+    try:
+        sql = """SELECT * FROM %(table)s"""
+        df = pd.read_sql(
+            sql,
+            conn,
+            params={"table": AsIs(table)},
+        )
+        return df
+    except (Exception, psycopg2.DatabaseError) as error:
+        LOGGER.error("There was a problem with your database query %s", error)
+    finally:
+        if conn is not None:
+            close(conn)
 
 
 # --- 632 OLD TSQL ---

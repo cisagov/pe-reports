@@ -19,20 +19,20 @@ from pe_scorecard.scores.score_helper_functions import (
 )
 from pe_scorecard.data.db_query import (
     # VS queries
-    api_dscore_vs_cert,
-    api_dscore_vs_mail,
+    dscore_vs_cert,
+    dscore_vs_mail,
     # PE queries
-    api_dscore_pe_ip,
-    api_dscore_pe_domain,
+    dscore_pe_ip,
+    dscore_pe_domain,
     # WAS queries
-    api_dscore_was_webapp,
+    dscore_was_webapp,
     # FCEB Stakeholder sectors by size
-    api_fceb_status,
-    api_xs_stakeholders,
-    api_s_stakeholders,
-    api_m_stakeholders,
-    api_l_stakeholders,
-    api_xl_stakeholders,
+    fceb_status,
+    xs_stakeholders,
+    s_stakeholders,
+    m_stakeholders,
+    l_stakeholders,
+    xl_stakeholders,
 )
 
 # Setup logging to central file
@@ -60,28 +60,28 @@ def import_discov_data(curr_start, curr_end, stakeholder_list):
     # Retrieve all the data needed from the database
     # ----- Retrieve VS data: -----
     LOGGER.info("Retrieving VS certificate data for D-Score...")
-    vs_data_cert = api_dscore_vs_cert(stakeholder_list)
+    vs_data_cert = dscore_vs_cert(stakeholder_list)
     LOGGER.info("\tDone!")
     LOGGER.info("Retrieving VS mail data for D-Score...")
-    vs_data_mail = api_dscore_vs_mail(stakeholder_list)
+    vs_data_mail = dscore_vs_mail(stakeholder_list)
     LOGGER.info("\tDone!")
     # ----- Retrieve PE data: -----
     LOGGER.info("Retrieving PE IP data for D-Score...")
-    pe_data_ip = api_dscore_pe_ip(stakeholder_list)
+    pe_data_ip = dscore_pe_ip(stakeholder_list)
     LOGGER.info("\tDone!")
     LOGGER.info("Retrieving PE domain data for D-Score...")
-    pe_data_domain = api_dscore_pe_domain(stakeholder_list)
+    pe_data_domain = dscore_pe_domain(stakeholder_list)
     LOGGER.info("\tDone!")
     # ----- Retrieve WAS data: -----
     LOGGER.info("Retrieving WAS domain data for D-Score...")
-    was_data_webapp = api_dscore_was_webapp(stakeholder_list)
+    was_data_webapp = dscore_was_webapp(stakeholder_list)
     LOGGER.info("\tDone!")
 
     # --------------- Import Other Data from Database: ---------------
     # Retrieve any other necessary data from the database
     # ----- FCEB status of each org in this sector: -----
     LOGGER.info("Retrieving FCEB status data for D-Score...")
-    fceb_status = api_fceb_status(stakeholder_list)
+    fceb_status = fceb_status(stakeholder_list)
     LOGGER.info("\tDone!")
     # ----- List of orgs for this sector: -----
     org_list = stakeholder_list

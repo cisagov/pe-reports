@@ -1509,8 +1509,8 @@ def insert_scores(start_date, org_uid, score, score_name, sector):
             close(conn)
 
 
-# v ---------- D-Score API Queries ---------- v
-def api_dscore_vs_cert(org_list):
+# v ---------- D-Score API Queries, 570 ---------- v
+def dscore_vs_cert(org_list):
     """
     Query API for all VS certificate data needed for D-Score calculation.
 
@@ -1530,7 +1530,7 @@ def api_dscore_vs_cert(org_list):
     return result_df
 
 
-def api_dscore_vs_mail(org_list):
+def dscore_vs_mail(org_list):
     """
     Query API for all VS mail data needed for D-Score calculation.
 
@@ -1550,7 +1550,7 @@ def api_dscore_vs_mail(org_list):
     return result_df
 
 
-def api_dscore_pe_ip(org_list):
+def dscore_pe_ip(org_list):
     """
     Query API for all PE IP data needed for D-Score calculation.
 
@@ -1570,7 +1570,7 @@ def api_dscore_pe_ip(org_list):
     return result_df
 
 
-def api_dscore_pe_domain(org_list):
+def dscore_pe_domain(org_list):
     """
     Query API for all PE domain data needed for D-Score calculation.
 
@@ -1590,7 +1590,7 @@ def api_dscore_pe_domain(org_list):
     return result_df
 
 
-def api_dscore_was_webapp(org_list):
+def dscore_was_webapp(org_list):
     """
     Query API for all WAS webapp data needed for D-Score calculation.
 
@@ -1610,7 +1610,7 @@ def api_dscore_was_webapp(org_list):
     return result_df
 
 
-def api_fceb_status(org_list):
+def fceb_status(org_list):
     """
     Query API for the FCEB status of a list of organizations.
 
@@ -1630,8 +1630,8 @@ def api_fceb_status(org_list):
     return result_df
 
 
-# v ---------- I-Score API Queries ---------- v
-def api_iscore_vs_vuln(org_list):
+# v ---------- I-Score API Queries, 571 ---------- v
+def iscore_vs_vuln(org_list):
     """
     Query API for all VS vuln data needed for I-Score calculation.
 
@@ -1668,7 +1668,7 @@ def api_iscore_vs_vuln(org_list):
     return result_df
 
 
-def api_iscore_vs_vuln_prev(org_list, start_date, end_date):
+def iscore_vs_vuln_prev(org_list, start_date, end_date):
     """
     Query API for all previous VS vuln data needed for I-Score calculation.
 
@@ -1717,7 +1717,7 @@ def api_iscore_vs_vuln_prev(org_list, start_date, end_date):
     return result_df
 
 
-def api_iscore_pe_vuln(org_list, start_date, end_date):
+def iscore_pe_vuln(org_list, start_date, end_date):
     """
     Query API for all PE vuln data needed for I-Score calculation.
 
@@ -1766,7 +1766,7 @@ def api_iscore_pe_vuln(org_list, start_date, end_date):
     return result_df
 
 
-def api_iscore_pe_cred(org_list, start_date, end_date):
+def iscore_pe_cred(org_list, start_date, end_date):
     """
     Query API for all PE cred data needed for I-Score calculation.
 
@@ -1815,7 +1815,7 @@ def api_iscore_pe_cred(org_list, start_date, end_date):
     return result_df
 
 
-def api_iscore_pe_breach(org_list, start_date, end_date):
+def iscore_pe_breach(org_list, start_date, end_date):
     """
     Query API for all PE breach data needed for I-Score calculation.
 
@@ -1863,7 +1863,7 @@ def api_iscore_pe_breach(org_list, start_date, end_date):
     return result_df
 
 
-def api_iscore_pe_darkweb(org_list, start_date, end_date):
+def iscore_pe_darkweb(org_list, start_date, end_date):
     """
     Query API for all PE darkweb data needed for I-Score calculation.
 
@@ -1912,7 +1912,7 @@ def api_iscore_pe_darkweb(org_list, start_date, end_date):
     return result_df
 
 
-def api_iscore_pe_protocol(org_list, start_date, end_date):
+def iscore_pe_protocol(org_list, start_date, end_date):
     """
     Query API for all PE protocol data needed for I-Score calculation.
 
@@ -1963,7 +1963,7 @@ def api_iscore_pe_protocol(org_list, start_date, end_date):
     return result_df
 
 
-def api_iscore_was_vuln(org_list, start_date, end_date):
+def iscore_was_vuln(org_list, start_date, end_date):
     """
     Query API for all WAS vuln data needed for I-Score calculation.
 
@@ -2013,7 +2013,7 @@ def api_iscore_was_vuln(org_list, start_date, end_date):
     return result_df
 
 
-def api_iscore_was_vuln_prev(org_list, start_date, end_date):
+def iscore_was_vuln_prev(org_list, start_date, end_date):
     """
     Query API for all previous WAS vuln data needed for I-Score calculation.
 
@@ -2061,7 +2061,7 @@ def api_iscore_was_vuln_prev(org_list, start_date, end_date):
     return result_df
 
 
-def api_kev_list():
+def kev_list():
     """
     Query API for list of all KEVs.
 
@@ -2080,7 +2080,7 @@ def api_kev_list():
 
 
 # ---------- Misc. Score Related API Queries ----------
-def api_xs_stakeholders():
+def xs_stakeholders():
     """
     Query API for list of all XS stakeholders.
 
@@ -2097,7 +2097,7 @@ def api_xs_stakeholders():
     return result_df
 
 
-def api_s_stakeholders():
+def s_stakeholders():
     """
     Query API for list of all S stakeholders.
 
@@ -2115,7 +2115,7 @@ def api_s_stakeholders():
     return result_df
 
 
-def api_m_stakeholders():
+def m_stakeholders():
     """
     Query API for list of all M stakeholders.
 
@@ -2133,7 +2133,7 @@ def api_m_stakeholders():
     return result_df
 
 
-def api_l_stakeholders():
+def l_stakeholders():
     """
     Query API for list of all L stakeholders.
 
@@ -2151,7 +2151,7 @@ def api_l_stakeholders():
     return result_df
 
 
-def api_xl_stakeholders():
+def xl_stakeholders():
     """
     Query API for list of all XL stakeholders.
 
@@ -2176,9 +2176,9 @@ def api_xl_stakeholders():
 # old query_...() TSQL functions below.
 
 
-# ---------- D-Score SQL Queries ----------
+# ---------- D-Score TSQL Queries, 570 ----------
 # ----- VS Cert -----
-def query_dscore_vs_data_cert(org_list):
+def dscore_vs_cert_tsql(org_list):
     """
     Query all VS certificate data needed for D-Score calculation.
 
@@ -2207,7 +2207,7 @@ def query_dscore_vs_data_cert(org_list):
 
 
 # ----- VS Mail -----
-def query_dscore_vs_data_mail(org_list):
+def dscore_vs_mail_tsql(org_list):
     """
     Query all VS mail data needed for D-Score calculation.
 
@@ -2235,7 +2235,7 @@ def query_dscore_vs_data_mail(org_list):
 
 
 # ----- PE IP -----
-def query_dscore_pe_data_ip(org_list):
+def dscore_pe_ip_tsql(org_list):
     """
     Query all PE IP data needed for D-Score calculation.
 
@@ -2269,7 +2269,7 @@ def query_dscore_pe_data_ip(org_list):
 
 
 # ----- PE Domain -----
-def query_dscore_pe_data_domain(org_list):
+def dscore_pe_domain_tsql(org_list):
     """
     Query all PE domain data needed for D-Score calculation.
 
@@ -2300,7 +2300,7 @@ def query_dscore_pe_data_domain(org_list):
 
 
 # ----- WAS Webapp -----
-def query_dscore_was_data_webapp(org_list):
+def dscore_was_webapp_tsql(org_list):
     """
     Query all WAS webapp data needed for D-Score calculation.
 
@@ -2330,9 +2330,9 @@ def query_dscore_was_data_webapp(org_list):
     return dscore_was_data_webapp
 
 
-# ---------- I-Score SQL Queries ----------
+# ---------- I-Score TSQL Queries, 571 ----------
 # ----- VS Vulns -----
-def query_iscore_vs_data_vuln(org_list):
+def iscore_vs_vuln_tsql(org_list):
     """
     Query all VS vuln data needed for I-Score calculation.
 
@@ -2382,7 +2382,7 @@ def query_iscore_vs_data_vuln(org_list):
 
 
 # ----- VS Vulns Previous -----
-def query_iscore_vs_data_vuln_prev(org_list, start_date, end_date):
+def iscore_vs_vuln_prev_tsql(org_list, start_date, end_date):
     """
     Query all VS prev vuln data needed for I-Score calculation.
 
@@ -2442,7 +2442,7 @@ def query_iscore_vs_data_vuln_prev(org_list, start_date, end_date):
 
 
 # ----- PE Vulns -----
-def query_iscore_pe_data_vuln(org_list, start_date, end_date):
+def iscore_pe_vuln_tsql(org_list, start_date, end_date):
     """
     Query all PE vuln data needed for I-Score calculation.
 
@@ -2506,7 +2506,7 @@ def query_iscore_pe_data_vuln(org_list, start_date, end_date):
 
 
 # ----- PE Creds -----
-def query_iscore_pe_data_cred(org_list, start_date, end_date):
+def iscore_pe_cred_tsql(org_list, start_date, end_date):
     """
     Query all PE cred data needed for I-Score calculation.
 
@@ -2566,7 +2566,7 @@ def query_iscore_pe_data_cred(org_list, start_date, end_date):
 
 
 # ----- PE Breaches -----
-def query_iscore_pe_data_breach(org_list, start_date, end_date):
+def iscore_pe_breach_tsql(org_list, start_date, end_date):
     """
     Query all PE breach data needed for I-Score calculation.
 
@@ -2624,7 +2624,7 @@ def query_iscore_pe_data_breach(org_list, start_date, end_date):
 
 
 # ----- PE DarkWeb -----
-def query_iscore_pe_data_darkweb(org_list, start_date, end_date):
+def iscore_pe_darkweb_tsql(org_list, start_date, end_date):
     """
     Query all PE dark web data needed for I-Score calculation.
 
@@ -2696,7 +2696,7 @@ def query_iscore_pe_data_darkweb(org_list, start_date, end_date):
 
 
 # ----- PE Protocol -----
-def query_iscore_pe_data_protocol(org_list, start_date, end_date):
+def iscore_pe_protocol_tsql(org_list, start_date, end_date):
     """
     Query all PE protocol data needed for I-Score calculation.
 
@@ -2758,7 +2758,7 @@ def query_iscore_pe_data_protocol(org_list, start_date, end_date):
 
 
 # ----- WAS Vulns -----
-def query_iscore_was_data_vuln(org_list, start_date, end_date):
+def iscore_was_vuln_tsql(org_list, start_date, end_date):
     """
     Query all WAS vuln data needed for I-Score calculation.
 
@@ -2819,7 +2819,7 @@ def query_iscore_was_data_vuln(org_list, start_date, end_date):
 
 
 # ----- WAS Vulns Previous -----
-def query_iscore_was_data_vuln_prev(org_list, start_date, end_date):
+def iscore_was_vuln_prev_tsql(org_list, start_date, end_date):
     """
     Query all WAS prev vuln data needed for I-Score calculation.
 
@@ -2877,8 +2877,8 @@ def query_iscore_was_data_vuln_prev(org_list, start_date, end_date):
     return iscore_was_vuln_prev_data
 
 
-# ----- KEV List -----
-def query_kev_list():
+# ----- KEV List ----- # formerly query_kev_list()
+def kev_list_tsql():
     """Query list of all CVE names that are considered KEVs."""
     # Open connection
     conn = connect()
@@ -2892,7 +2892,7 @@ def query_kev_list():
 
 # v ---------- Misc. Score SQL Queries ---------- v
 # ----- All FCEB Parents List -----
-def query_fceb_parent_list():
+def fceb_parent_list_tsql():
     """Query list of all FCEB parent stakeholders (all FCEB excluding child orgs)."""
     # Open connection
     conn = connect()
@@ -2905,7 +2905,7 @@ def query_fceb_parent_list():
 
 
 # ----- XS Stakeholder List -----
-def query_xs_stakeholder_list():
+def xs_stakeholders_tsql():
     """Query list of all stakeholders that fall in the XS group/sector."""
     # Open connection
     conn = connect()
@@ -2918,7 +2918,7 @@ def query_xs_stakeholder_list():
 
 
 # ----- S Stakeholder List -----
-def query_s_stakeholder_list():
+def s_stakeholders_tsql():
     """Query list of all stakeholders that fall in the S group/sector."""
     # Open connection
     conn = connect()
@@ -2931,7 +2931,7 @@ def query_s_stakeholder_list():
 
 
 # ----- M Stakeholder List -----
-def query_m_stakeholder_list():
+def m_stakeholders_tsql():
     """Query list of all stakeholders that fall in the M group/sector."""
     # Open connection
     conn = connect()
@@ -2947,7 +2947,7 @@ def query_m_stakeholder_list():
 
 
 # ----- L Stakeholder List -----
-def query_l_stakeholder_list():
+def l_stakeholders_tsql():
     """Query list of all stakeholders that fall in the L group/sector."""
     # Open connection
     conn = connect()
@@ -2960,7 +2960,7 @@ def query_l_stakeholder_list():
 
 
 # ----- XL Stakeholder List -----
-def query_xl_stakeholder_list():
+def xl_stakeholders_tsql():
     """Query list of all stakeholders that fall in the XL group/sector."""
     # Open connection
     conn = connect()
@@ -2973,7 +2973,7 @@ def query_xl_stakeholder_list():
 
 
 # ----- PE Stakeholder List -----
-def query_pe_stakeholder_list():
+def pe_stakeholders_tsql():
     """Query list of all stakeholders PE reports on."""
     # Open connection
     conn = connect()
@@ -2986,7 +2986,7 @@ def query_pe_stakeholder_list():
 
 
 # ----- FCEB Status -----
-def query_fceb_status(org_list):
+def fceb_status_tsql(org_list):
     """
     Check if each organization in the list is FCEB or non-FCEB.
 
@@ -3013,3 +3013,4 @@ def query_fceb_status(org_list):
     # Close connection
     conn.close()
     return orgs_fceb_status
+

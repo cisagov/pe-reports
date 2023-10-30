@@ -23,6 +23,7 @@ from home.models import (
     MatVwOrgsAllIps,
     Organizations,
     SubDomains,
+    TopCves,
     VwBreachcomp,
     VwBreachcompCredsbydate,
     VwDarkwebInviteonlymarkets,
@@ -540,6 +541,19 @@ def ips_update_from_cidr_task(self):
     return "Ips table from_cidr field has been updated."
 
     
+# --- darkweb_cves(), Issue 630 ---
+@shared_task(bind=True)
+def darkweb_cves_task(self):
+    """Task function for the darkweb_cves API endpoint."""
+    # Make database query and convert to list of dictionaries
+    all_data = list(TopCves.objects.all().values())
+    for row in all_data:
+        row["top_cves_uid"] = convert_uuid_to_string(row["top_cves_uid"])
+        row["data_source_uid_id"] = convert_uuid_to_string(row["data_source_uid_id"])
+        row["date"] = convert_date_to_string(row["date"])
+    return all_data
+
+
 # --- query_subs(), Issue 633 ---
 @shared_task(bind=True)
 def sub_domains_by_org_task(self, org_uid: str, page: int, per_page: int):

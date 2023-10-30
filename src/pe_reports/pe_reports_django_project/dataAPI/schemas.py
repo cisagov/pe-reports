@@ -1675,6 +1675,222 @@ class RootDomainsByOrg(BaseModel):
         orm_mode = True
         
 
+# --- query_darkweb(), Issue 629 ---
+class DarkWebDataInput(BaseModel):
+    """DarkWebDataInput schema class."""
+    org_uid: str
+    start_date: str
+    end_date: str
+    table: str
+
+    class Config:
+        """DarkWebDataInput schema config class."""
+        orm_mode = True
+
+
+# --- query_darkweb(), Issue 629 ---
+class MentionsTable(BaseModel):
+    """MentionsTable schema class."""
+    mentions_uid: Optional[str] = None
+    category: Optional[str] = None
+    collection_date: Optional[str] = None
+    content: Optional[str] = None
+    creator: Optional[str] = None
+    date: Optional[str] = None
+    sixgill_mention_id: Optional[str] = None
+    post_id: Optional[str] = None
+    lang: Optional[str] = None
+    rep_grade: Optional[str] = None
+    site: Optional[str] = None
+    site_grade: Optional[str] = None
+    title: Optional[str] = None
+    type: Optional[str] = None
+    url: Optional[str] = None
+    comments_count: Optional[str] = None
+    sub_category: Optional[str] = None
+    tags: Optional[str] = None
+    organizations_uid: Optional[str] = None
+    data_source_uid: Optional[str] = None
+    title_translated: Optional[str] = None
+    content_translated: Optional[str] = None
+    detected_lang: Optional[str] = None
+
+    class Config:
+        """MentionsTable schema config class."""
+        orm_mode = True
+
+
+# --- query_darkweb(), Issue 629 ---
+class AlertsTable(BaseModel):
+    """AlertsTable schema class."""
+    alerts_uid: Optional[str] = None
+    alert_name: Optional[str] = None
+    content: Optional[str] = None
+    date: Optional[str] = None
+    sixgill_id: Optional[str] = None
+    read: Optional[str] = None
+    severity: Optional[str] = None
+    site: Optional[str] = None
+    threat_level: Optional[str] = None
+    threats: Optional[str] = None
+    title: Optional[str] = None
+    user_id: Optional[str] = None
+    category: Optional[str] = None
+    lang: Optional[str] = None
+    organizations_uid_id: Optional[str] = None
+    data_source_uid_id: Optional[str] = None
+    content_snip: Optional[str] = None
+    asset_mentioned: Optional[str] = None
+    asset_type: Optional[str] = None
+
+    class Config:
+        """AlertsTable schema config class."""
+        orm_mode = True
+
+
+# --- query_darkweb(), Issue 629 ---
+class VwDarkwebMentionsbydate(BaseModel):
+    """VwDarkwebMentionsbydate schema class."""
+    organizations_uid: Optional[str] = None
+    date: Optional[str] = None
+    count: Optional[int] = None
+
+    class Config:
+        """VwDarkwebMentionsbydate schema config class."""
+        orm_mode = True
+
+
+# --- query_darkweb(), Issue 629 ---
+class VwDarkwebInviteonlymarkets(BaseModel):
+    """VwDarkwebInviteonlymarkets schema class."""
+    organizations_uid: Optional[str] = None
+    date: Optional[str] = None
+    Site: Optional[str] = None
+
+    class Config:
+        """VwDarkwebInviteonlymarkets schema config class."""
+        orm_mode = True
+
+
+# --- query_darkweb(), Issue 629 ---
+class VwDarkwebSocmediaMostactposts(BaseModel):
+    """VwDarkwebSocmediaMostactposts schema class."""
+    organizations_uid: Optional[str] = None
+    date: Optional[str] = None
+    Title: Optional[str] = None
+    comments_count: Optional[int] = None
+
+    class Config:
+        """VwDarkwebSocmediaMostactposts schema config class."""
+        orm_mode = True
+
+
+# --- query_darkweb(), Issue 629 ---
+class VwDarkwebMostactposts(BaseModel):
+    """VwDarkwebMostactposts schema class."""
+    organizations_uid: Optional[str] = None
+    date: Optional[str] = None
+    Title: Optional[str] = None
+    comments_count: Optional[int] = None
+
+    class Config:
+        """VwDarkwebMostactposts schema config class."""
+        orm_mode = True
+
+
+# --- query_darkweb(), Issue 629 ---
+class VwDarkwebExecalerts(BaseModel):
+    """VwDarkwebExecalerts schema class."""
+    organizations_uid: Optional[str] = None
+    date: Optional[str] = None
+    Site: Optional[str] = None
+    Title: Optional[str] = None
+    Events: Optional[int] = None
+
+    class Config:
+        """VwDarkwebExecalerts schema config class."""
+        orm_mode = True
+
+
+# --- query_darkweb(), Issue 629 ---
+class VwDarkwebAssetalerts(BaseModel):
+    """VwDarkwebAssetalerts schema class."""
+    organizations_uid: Optional[str] = None
+    date: Optional[str] = None
+    Site: Optional[str] = None
+    Title: Optional[str] = None
+    Events: Optional[int] = None
+
+
+    class Config:
+        """VwDarkwebAssetalerts schema config class."""
+        orm_mode = True
+
+
+# --- query_darkweb(), Issue 629 ---
+class VwDarkwebThreatactors(BaseModel):
+    """VwDarkwebThreatactors schema class."""
+    organizations_uid: Optional[str] = None
+    date: Optional[str] = None
+    Creator: Optional[str] = None
+    Grade: Optional[float] = None
+
+    class Config:
+        """VwDarkwebThreatactors schema config class."""
+        orm_mode = True
+
+
+# --- query_darkweb(), Issue 629 ---
+class VwDarkwebPotentialthreats(BaseModel):
+    """VwDarkwebPotentialthreats schema class."""
+    organizations_uid: Optional[str] = None
+    date: Optional[str] = None
+    Site: Optional[str] = None
+    Threats: Optional[str] = None
+
+    class Config:
+        """VwDarkwebPotentialthreats schema config class."""
+        orm_mode = True
+
+
+# --- query_darkweb(), Issue 629 ---
+class VwDarkwebSites(BaseModel):
+    """VwDarkwebSites schema class."""
+    organizations_uid: Optional[str] = None
+    date: Optional[str] = None
+    Site: Optional[str] = None
+
+    class Config:
+        """VwDarkwebSites schema config class."""
+        orm_mode = True
+
+
+# --- query_darkweb_cves(), Issue 630 ---
+class TopCvesTable(BaseModel):
+    """TopCvesRecord schema class."""
+    top_cves_uid: str
+    cve_id: str
+    dynamic_rating: str
+    nvd_base_score: str
+    date: str
+    summary: str
+    data_source_uid_id: str
+
+    class Config:
+        """TopCvesRecord schema config class."""
+
+        orm_mode = True
+
+
+# --- query_darkweb_cves(), Issue 630 ---
+class DarkWebCvesTaskResp(BaseModel):
+    """DarkWebCvesTaskResp schema class."""
+    task_id: str
+    status: str
+    result: List[TopCvesTable] = None
+    error: str = None
+
+
 # --- execute_scorecard(), Issue 632 ---
 # Insert record into report_summary_stats, input
 class RSSInsertInput(BaseModel):

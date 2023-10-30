@@ -19,7 +19,7 @@ from .data.db_query import (
     query_domain_counts,
     query_https_scan,
     query_ips_counts,
-    query_kev_list,
+    kev_list,
     query_open_vulns,
     query_profiling_views,
     query_software_scans,
@@ -103,7 +103,7 @@ class Scorecard:
         self.vs_fceb_results = vs_fceb_results
 
         self.vs_open_vulns = query_open_vulns(org_uid_list)
-        self.kev_list = query_kev_list()
+        self.kev_list = kev_list()
 
         self.was_fceb_ttr = was_fceb_ttr
         # # TODO adjust queries parameters
