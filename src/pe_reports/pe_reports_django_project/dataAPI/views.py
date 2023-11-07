@@ -125,6 +125,8 @@ from home.models import (  # MatVwOrgsAllIps,
     VwIpsSubRootOrgInfo,
     VwOrgsAttacksurface,
     VwPEScoreCheckNewCVE,
+    VwShodanvulnsSuspected,
+    VwShodanvulnsVerified,
     WasTrackerCustomerdata,
     WeeklyStatuses,
 )
@@ -3509,7 +3511,246 @@ def root_domains_by_org(
             LOGGER.info("API key expired please try again")
     else:
         return {"message": "No api key was submitted"}
+
+
+# --- query_creds_view(), Issue 623 ---
+@api_router.post(
+    "/breachcomp_by_org",
+    dependencies=[Depends(get_api_key)], #Depends(RateLimiter(times=200, seconds=60))],
+    response_model=List[schemas.VwBreachcomp],
+    tags=["Get vw_breachcomp data for specified org and date range."],
+)
+def breachcomp_by_org(
+    data: schemas.GenInputOrgUIDDateRange, tokens: dict = Depends(get_api_key)
+):
+    """API endpoint to get vw_breachcomp data for specified org and date range."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # If API key valid, make query
+            breachcomp_by_org_data = list(
+                VwBreachcomp.objects.filter(
+                    organizations_uid=data.org_uid, modified_date__range=(data.start_date, data.end_date)
+                ).values()
+            )
+            # Convert uuids to strings
+            for row in breachcomp_by_org_data:
+                row["credential_exposures_uid"] = convert_uuid_to_string(row["credential_exposures_uid"])
+                row["organizations_uid"] = convert_uuid_to_string(row["organizations_uid"])
+                row["data_source_uid"] = convert_uuid_to_string(row["data_source_uid"])
+                row["breach_date"] = convert_date_to_string(row["breach_date"])
+                row["added_date"] = convert_date_to_string(row["added_date"])
+                row["modified_date"] = convert_date_to_string(row["modified_date"])
+            # Catch query no results scenario
+            if not breachcomp_by_org_data:
+                breachcomp_by_org_data = [{x: None for x in schemas.VwBreachcomp.__fields__}]
+            return breachcomp_by_org_data
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
         
+
+# --- query_credsbyday_view(), Issue 624 ---
+@api_router.post(
+    "/credsbydate_by_org",
+    dependencies=[Depends(get_api_key)], #Depends(RateLimiter(times=200, seconds=60))],
+    response_model=List[schemas.CredsbydateByOrg],
+    tags=["Get vw_breachcomp_credsbydate data for specified org and date range."],
+)
+def credsbydate_by_org(
+    data: schemas.GenInputOrgUIDDateRange, tokens: dict = Depends(get_api_key)
+):
+    """API endpoint to get vw_breachcomp_credsbydate data for specified org and date range."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # If API key valid, make query
+            credsbydate_by_org_data = list(
+                VwBreachcompCredsbydate.objects.filter(
+                    organizations_uid=data.org_uid, mod_date__range=(data.start_date, data.end_date)
+                ).values("mod_date", "no_password", "password_included")
+            )
+            # Convert uuids to strings
+            for row in credsbydate_by_org_data:
+                row["mod_date"] = convert_date_to_string(row["mod_date"])
+            # Catch query no results scenario
+            if not credsbydate_by_org_data:
+                credsbydate_by_org_data = [{x: None for x in schemas.CredsbydateByOrg.__fields__}]
+            return credsbydate_by_org_data
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+
+# --- query_breachdetails_view(), Issue 625 ---
+@api_router.post(
+    "/breachdetails_by_org",
+    dependencies=[Depends(get_api_key)], #Depends(RateLimiter(times=200, seconds=60))],
+    response_model=List[schemas.BreachdetailsByOrg],
+    tags=["Get vw_breachcomp_breachdetails data for specified org and date range."],
+)
+def breachdetails_by_org(
+    data: schemas.GenInputOrgUIDDateRange, tokens: dict = Depends(get_api_key)
+):
+    """API endpoint to get vw_breachcomp_breachdetails data for specified org and date range."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # If API key valid, make query
+            breachdetails_by_org_data = list(
+                VwBreachcompBreachdetails.objects.filter(
+                    organizations_uid=data.org_uid, mod_date__range=(data.start_date, data.end_date)
+                ).values("breach_name", "mod_date", "breach_date", "password_included", "number_of_creds")
+            )
+            # Convert uuids to strings
+            for row in breachdetails_by_org_data:
+                row["mod_date"] = convert_date_to_string(row["mod_date"])
+                row["breach_date"] = convert_date_to_string(row["breach_date"])
+            # Catch query no results scenario
+            if not breachdetails_by_org_data:
+                breachdetails_by_org_data = [{x: None for x in schemas.BreachdetailsByOrg.__fields__}]
+            return breachdetails_by_org_data
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+
+# --- query_shodan(), Issue 628 ---
+# GenInputOrgUIDListDateRange
+# vw_shodanvulns_suspected
+@api_router.post(
+    "/shodanvulns_suspected_view",
+    dependencies=[Depends(get_api_key)],
+    response_model=List[schemas.VwShodanvulnsSuspectedSchema],
+    tags=["Get all records for view shodanvulns_suspected_view"],
+)
+def shodanvulns_suspected_view(
+    data: schemas.GenInputOrgUIDDateRange, tokens: dict = Depends(get_api_key)
+):
+    """API endpoint for shodanvulns_suspected_view """
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens: # if 1: 
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # If API key valid, make query
+            shodanvulns_suspected_data = list(
+                VwShodanvulnsSuspected.objects.filter(
+                    organizations_uid=data.org_uid,
+                    timestamp__range=[data.start_date, data.end_date],
+                ).values()
+            )
+            # Convert uuids to strings
+            for row in shodanvulns_suspected_data:
+                row["organizations_uid"] = convert_uuid_to_string(
+                    row["organizations_uid"]
+                )
+                row["timestamp"] = convert_date_to_string(row["timestamp"])
+            # Catch query no results scenario
+            if not shodanvulns_suspected_data:
+                shodanvulns_suspected_data = [{x: None for x in schemas.VwShodanvulnsSuspectedSchema.__fields__}]
+            return shodanvulns_suspected_data
+            #return {"Type": org_data[0]}
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+
+# --- query_shodan(), Issue 628 ---
+# vw_shodanvulns_verified
+@api_router.post(
+    "/shodanvulns_verified_view",
+    dependencies=[Depends(get_api_key)],
+    response_model=List[schemas.VwShodanvulnsVerifiedSchema],
+    tags=["Get all records for view shodanvulns_verified_view"],
+)
+def shodanvulns_verified_view(
+    data: schemas.GenInputOrgUIDDateRange, tokens: dict = Depends(get_api_key)
+):
+    """API endpoint for shodanvulns_verified_view """
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens: # if 1:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # If API key valid, make query
+            shodanvulns_verified_data = list(
+                VwShodanvulnsVerified.objects.filter(
+                    organizations_uid=data.org_uid,
+                    timestamp__range=[data.start_date, data.end_date],
+                ).values()
+            )
+            # Convert uuids to strings
+            for row in shodanvulns_verified_data:
+                row["organizations_uid"] = convert_uuid_to_string(
+                    row["organizations_uid"]
+                )
+                row["timestamp"] = convert_date_to_string(row["timestamp"])
+            # Catch query no results scenario
+            if not shodanvulns_verified_data:
+                shodanvulns_verified_data = [{x: None for x in schemas.VwShodanvulnsVerifiedSchema.__fields__}]
+            return shodanvulns_verified_data
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+
+# --- query_shodan(), Issue 628 ---
+# shodan_assets
+@api_router.post(
+    "/shodan_assets",
+    dependencies=[Depends(get_api_key)],
+    response_model=List[schemas.ShodanAssetsSchema],
+    tags=["Get all records for view shodan_assets"],
+)
+def shodan_assets(
+    data: schemas.GenInputOrgUIDDateRange, tokens: dict = Depends(get_api_key)
+):
+    """API endpoint for shodan_assets"""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens: # if 1: 
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # If API key valid, make query
+            shodan_assets_data = list(
+                ShodanAssets.objects.filter(
+                    organizations_uid=data.org_uid,
+                    timestamp__range=[data.start_date, data.end_date],
+                ).values()
+            )
+            # Convert uuids to strings
+            for row in shodan_assets_data:
+                row["shodan_asset_uid"] = convert_uuid_to_string(
+                    row["shodan_asset_uid"]
+                )
+                row["organizations_uid_id"] = convert_uuid_to_string(
+                    row["organizations_uid_id"]
+                )
+                row["timestamp"] = convert_date_to_string(row["timestamp"])
+                row["data_source_uid_id"] = convert_uuid_to_string(
+                    row["data_source_uid_id"]
+                )
+            # Catch query no results scenario
+            if not shodan_assets_data:
+                shodan_assets_data = [{x: None for x in schemas.ShodanAssetsSchema.__fields__}]
+            return shodan_assets_data
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
 
 # --- query_darkweb(), Issue 629 ---
 @api_router.post(

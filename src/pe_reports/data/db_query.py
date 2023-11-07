@@ -363,67 +363,6 @@ def refresh_asset_counts_vw():
     conn.commit()
 
 
-def query_creds_view(org_uid, start_date, end_date):
-    """Query credentials view ."""
-    conn = connect()
-    try:
-        sql = """SELECT * FROM mat_vw_breachcomp
-        WHERE organizations_uid = %(org_uid)s
-        AND modified_date BETWEEN %(start_date)s AND %(end_date)s"""
-        df = pd.read_sql(
-            sql,
-            conn,
-            params={"org_uid": org_uid, "start_date": start_date, "end_date": end_date},
-        )
-        return df
-    except (Exception, psycopg2.DatabaseError) as error:
-        LOGGER.error("There was a problem with your database query %s", error)
-    finally:
-        if conn is not None:
-            close(conn)
-
-
-def query_credsbyday_view(org_uid, start_date, end_date):
-    """Query credentials by date view ."""
-    conn = connect()
-    try:
-        sql = """SELECT mod_date, no_password, password_included FROM mat_vw_breachcomp_credsbydate
-        WHERE organizations_uid = %(org_uid)s
-        AND mod_date BETWEEN %(start_date)s AND %(end_date)s"""
-        df = pd.read_sql(
-            sql,
-            conn,
-            params={"org_uid": org_uid, "start_date": start_date, "end_date": end_date},
-        )
-        return df
-    except (Exception, psycopg2.DatabaseError) as error:
-        LOGGER.error("There was a problem with your database query %s", error)
-    finally:
-        if conn is not None:
-            close(conn)
-
-
-def query_breachdetails_view(org_uid, start_date, end_date):
-    """Query credentials by date view ."""
-    conn = connect()
-    try:
-        sql = """SELECT breach_name, mod_date modified_date, breach_date, password_included, number_of_creds
-        FROM mat_vw_breachcomp_breachdetails
-        WHERE organizations_uid = %(org_uid)s
-        AND mod_date BETWEEN %(start_date)s AND %(end_date)s"""
-        df = pd.read_sql(
-            sql,
-            conn,
-            params={"org_uid": org_uid, "start_date": start_date, "end_date": end_date},
-        )
-        return df
-    except (Exception, psycopg2.DatabaseError) as error:
-        LOGGER.error("There was a problem with your database query %s", error)
-    finally:
-        if conn is not None:
-            close(conn)
-
-
 # The 'table' parameter is used in query_shodan, query_darkweb and
 # query_darkweb_cves functions to call specific tables that relate to the
 # function name.  The result of this implementation reduces the code base,
@@ -432,6 +371,7 @@ def query_breachdetails_view(org_uid, start_date, end_date):
 # the database.
 
 
+# --- Issue 628 ---
 def query_shodan(org_uid, start_date, end_date, table):
     """Query Shodan table."""
     conn = connect()
@@ -1405,6 +1345,173 @@ def query_roots(org_uid):
         result = requests.post(endpoint_url, headers=headers, data=data).json()
         # Process data and return
         result_df = pd.DataFrame.from_dict(result)
+        # Return truly empty dataframe if no results
+        if result_df[result_df.columns].isnull().apply(lambda x: all(x), axis=1)[0]:
+            result_df.drop(result_df.index, inplace=True)
+        return result_df
+    except requests.exceptions.HTTPError as errh:
+        LOGGER.error(errh)
+    except requests.exceptions.ConnectionError as errc:
+        LOGGER.error(errc)
+    except requests.exceptions.Timeout as errt:
+        LOGGER.error(errt)
+    except requests.exceptions.RequestException as err:
+        LOGGER.error(err)
+    except json.decoder.JSONDecodeError as err:
+        LOGGER.error(err)
+
+
+# --- Issue 623 ---
+def query_creds_view(org_uid, start_date, end_date):
+    """
+    Query API to retrieve vw_breachcomp data for an org and date range.
+
+    Args:
+        org_uid: uid of the specified organization
+        start_date: start date of report period
+        end_date: end date of report period
+
+    Return:
+        vw_breachcomp data for the specified org  and date range as a dataframe
+    """
+    if isinstance(start_date, datetime.date):
+        start_date = start_date.strftime("%Y-%m-%d")
+    if isinstance(end_date, datetime.date):
+        end_date = end_date.strftime("%Y-%m-%d")
+    # Endpoint info
+    endpoint_url = pe_api_url + "breachcomp_by_org"
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": pe_api_key,
+    }
+    data = json.dumps(
+        {
+            "org_uid": org_uid,
+            "start_date": start_date,
+            "end_date": end_date,
+        }
+    )
+    try:
+        # Call endpoint
+        result = requests.post(endpoint_url, headers=headers, data=data).json()
+        # Process data and return
+        result_df = pd.DataFrame.from_dict(result)
+        result_df["breach_date"] = pd.to_datetime(result_df["breach_date"]).dt.date
+        # result_df["added_date"] = pd.to_datetime(result_df["added_date"]).dt.date
+        # result_df["modified_date"] = pd.to_datetime(result_df["modified_date"]).dt.date
+        result_df["added_date"] = pd.to_datetime(result_df["added_date"])
+        result_df["modified_date"] = pd.to_datetime(result_df["modified_date"])
+        # Return truly empty dataframe if no results
+        if result_df[result_df.columns].isnull().apply(lambda x: all(x), axis=1)[0]:
+            result_df.drop(result_df.index, inplace=True)
+        return result_df
+    except requests.exceptions.HTTPError as errh:
+        LOGGER.error(errh)
+    except requests.exceptions.ConnectionError as errc:
+        LOGGER.error(errc)
+    except requests.exceptions.Timeout as errt:
+        LOGGER.error(errt)
+    except requests.exceptions.RequestException as err:
+        LOGGER.error(err)
+    except json.decoder.JSONDecodeError as err:
+        LOGGER.error(err)
+
+
+# --- Issue 624 ---
+def query_credsbyday_view(org_uid, start_date, end_date):
+    """
+    Query API to retrieve vw_breachcomp_credsbydate data for an org and date range.
+
+    Args:
+        org_uid: uid of the specified organization
+        start_date: start date of report period
+        end_date: end date of report period
+
+    Return:
+        vw_breachcomp_credsbydate data for the specified org  and date range as a dataframe
+    """
+    if isinstance(start_date, datetime.date):
+        start_date = start_date.strftime("%Y-%m-%d")
+    if isinstance(end_date, datetime.date):
+        end_date = end_date.strftime("%Y-%m-%d")
+    # Endpoint info
+    endpoint_url = pe_api_url + "credsbydate_by_org"
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": pe_api_key,
+    }
+    data = json.dumps(
+        {
+            "org_uid": org_uid,
+            "start_date": start_date,
+            "end_date": end_date,
+        }
+    )
+    try:
+        # Call endpoint
+        result = requests.post(endpoint_url, headers=headers, data=data).json()
+        # Process data and return
+        result_df = pd.DataFrame.from_dict(result)
+        result_df["mod_date"] = pd.to_datetime(result_df["mod_date"]).dt.date
+        # Return truly empty dataframe if no results
+        if result_df[result_df.columns].isnull().apply(lambda x: all(x), axis=1)[0]:
+            result_df.drop(result_df.index, inplace=True)
+        return result_df
+    except requests.exceptions.HTTPError as errh:
+        LOGGER.error(errh)
+    except requests.exceptions.ConnectionError as errc:
+        LOGGER.error(errc)
+    except requests.exceptions.Timeout as errt:
+        LOGGER.error(errt)
+    except requests.exceptions.RequestException as err:
+        LOGGER.error(err)
+    except json.decoder.JSONDecodeError as err:
+        LOGGER.error(err)
+
+
+# --- Issue 625 ---
+def query_breachdetails_view(org_uid, start_date, end_date):
+    """
+    Query API to retrieve vw_breachcomp_breachdetails data for an org and date range.
+
+    Args:
+        org_uid: uid of the specified organization
+        start_date: start date of report period
+        end_date: end date of report period
+
+    Return:
+        vw_breachcomp_breachdetails data for the specified org  and date range as a dataframe
+    """
+    if isinstance(start_date, datetime.date):
+        start_date = start_date.strftime("%Y-%m-%d")
+    if isinstance(end_date, datetime.date):
+        end_date = end_date.strftime("%Y-%m-%d")
+    # Endpoint info
+    endpoint_url = pe_api_url + "breachdetails_by_org"
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": pe_api_key,
+    }
+    data = json.dumps(
+        {
+            "org_uid": org_uid,
+            "start_date": start_date,
+            "end_date": end_date,
+        }
+    )
+    try:
+        # Call endpoint
+        result = requests.post(endpoint_url, headers=headers, data=data).json()
+        # Process data and return
+        result_df = pd.DataFrame.from_dict(result)
+        result_df["mod_date"] = pd.to_datetime(result_df["mod_date"]).dt.date
+        result_df["breach_date"] = pd.to_datetime(result_df["breach_date"]).dt.date
+        result_df.rename(
+                columns={
+                    "mod_date": "modified_date"
+                },
+                inplace=True,
+            )
         # Return truly empty dataframe if no results
         if result_df[result_df.columns].isnull().apply(lambda x: all(x), axis=1)[0]:
             result_df.drop(result_df.index, inplace=True)
@@ -2468,6 +2575,70 @@ def query_roots_tsql(org_uid):
     df = pd.read_sql(sql, conn, params={"org_uid": org_uid})
     conn.close()
     return df
+
+
+# --- 623 OLD TSQL ---
+def query_creds_view_tsql(org_uid, start_date, end_date):
+    """Query credentials view ."""
+    conn = connect()
+    try:
+        sql = """SELECT * FROM mat_vw_breachcomp
+        WHERE organizations_uid = %(org_uid)s
+        AND modified_date BETWEEN %(start_date)s AND %(end_date)s"""
+        df = pd.read_sql(
+            sql,
+            conn,
+            params={"org_uid": org_uid, "start_date": start_date, "end_date": end_date},
+        )
+        return df
+    except (Exception, psycopg2.DatabaseError) as error:
+        LOGGER.error("There was a problem with your database query %s", error)
+    finally:
+        if conn is not None:
+            close(conn)
+
+
+# --- 624 OLD TSQL ---
+def query_credsbyday_view_tsql(org_uid, start_date, end_date):
+    """Query credentials by date view ."""
+    conn = connect()
+    try:
+        sql = """SELECT mod_date, no_password, password_included FROM mat_vw_breachcomp_credsbydate
+        WHERE organizations_uid = %(org_uid)s
+        AND mod_date BETWEEN %(start_date)s AND %(end_date)s"""
+        df = pd.read_sql(
+            sql,
+            conn,
+            params={"org_uid": org_uid, "start_date": start_date, "end_date": end_date},
+        )
+        return df
+    except (Exception, psycopg2.DatabaseError) as error:
+        LOGGER.error("There was a problem with your database query %s", error)
+    finally:
+        if conn is not None:
+            close(conn)
+
+
+# --- 625 OLD TSQL ---
+def query_breachdetails_view_tsql(org_uid, start_date, end_date):
+    """Query credentials by date view ."""
+    conn = connect()
+    try:
+        sql = """SELECT breach_name, mod_date modified_date, breach_date, password_included, number_of_creds
+        FROM mat_vw_breachcomp_breachdetails
+        WHERE organizations_uid = %(org_uid)s
+        AND mod_date BETWEEN %(start_date)s AND %(end_date)s"""
+        df = pd.read_sql(
+            sql,
+            conn,
+            params={"org_uid": org_uid, "start_date": start_date, "end_date": end_date},
+        )
+        return df
+    except (Exception, psycopg2.DatabaseError) as error:
+        LOGGER.error("There was a problem with your database query %s", error)
+    finally:
+        if conn is not None:
+            close(conn)
 
 
 # --- 629 OLD TSQL ---

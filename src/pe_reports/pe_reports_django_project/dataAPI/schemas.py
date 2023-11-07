@@ -3,6 +3,7 @@
 
 # Standard Python Libraries
 from datetime import date, datetime
+from decimal import Decimal
 
 # from pydantic.types import UUID1, UUID
 from typing import Any, List, Optional
@@ -241,29 +242,29 @@ class PshttInsert(BaseModel):
 class VwBreachcomp(BaseModel):
     """VwBreachcomp schema class."""
 
-    credential_exposures_uid: str
-    email: str
-    breach_name: str
-    organizations_uid: str
-    root_domain: str
-    sub_domain: str
-    hash_type: str
-    name: str
-    login_id: str
-    password: str
-    phone: str
-    data_source_uid: str
-    description: str
-    breach_date: str
-    added_date: str
-    modified_date: str
-    data_classes: str
-    password_included: str
-    is_verified: str
-    is_fabricated: str
-    is_sensitive: str
-    is_retired: str
-    is_spam_list: str
+    credential_exposures_uid: Optional[str] = None
+    email: Optional[str] = None
+    breach_name: Optional[str] = None
+    organizations_uid: Optional[str] = None
+    root_domain: Optional[str] = None
+    sub_domain: Optional[str] = None
+    hash_type: Optional[str] = None
+    name: Optional[str] = None
+    login_id: Optional[str] = None
+    password: Optional[str] = None
+    phone: Optional[str] = None
+    data_source_uid: Optional[str] = None
+    description: Optional[str] = None
+    breach_date: Optional[str] = None
+    added_date: Optional[str] = None
+    modified_date: Optional[str] = None
+    data_classes: Optional[List[str]] = None
+    password_included: Optional[bool] = None
+    is_verified: Optional[bool] = None
+    is_fabricated: Optional[bool] = None
+    is_sensitive: Optional[bool] = None
+    is_retired: Optional[bool] = None
+    is_spam_list: Optional[bool] = None
 
 
 class VwBreachDetails(BaseModel):
@@ -1673,7 +1674,138 @@ class RootDomainsByOrg(BaseModel):
         """RootDomainsByOrg schema config class."""
 
         orm_mode = True
-        
+    
+
+# --- query_creds_view(), Issue 623 ---
+# Uses VwBreachcomp schema
+
+
+# --- query_credsbyday_view(), Issue 624 ---
+class CredsbydateByOrg(BaseModel):
+    """CredsbydateByOrg schema class."""
+
+    mod_date: Optional[str] = None
+    no_password: Optional[int] = None
+    password_included: Optional[int] = None
+
+    class Config:
+        """CredsbydateByOrg schema config class."""
+
+        orm_mode = True
+
+
+# --- query_breachdetails_view(), Issue 625 ---
+class BreachdetailsByOrg(BaseModel):
+    """BreachdetailsByOrg schema class."""
+
+    breach_name: Optional[str] = None
+    mod_date: Optional[str] = None
+    breach_date: Optional[str] = None
+    password_included: Optional[int] = None
+    number_of_creds: Optional[int] = None
+
+    class Config:
+        """BreachdetailsByOrg schema config class."""
+
+        orm_mode = True
+
+
+# --- query_shodan(), Issue 628 ---
+class VwShodanvulnsSuspectedSchema(BaseModel):
+    """VwShodanvulnsSuspectedSchema schema class."""
+    organizations_uid: Optional[str]
+    organization: Optional[str]
+    ip: Optional[str]
+    port: Optional[str]
+    protocol: Optional[str]
+    type: Optional[str]
+    name: Optional[str]
+    # potential_vulns: List[Optional[str]]
+    potential_vulns: Optional[List[str]]
+    mitigation: Optional[str]
+    timestamp: Optional[str]
+    product: Optional[str]
+    server: Optional[str]
+    # tags: List[Optional[str]]
+    # domains: List[Optional[str]]
+    # hostnames: List[Optional[str]]
+    tags: Optional[List[str]]
+    domains: Optional[List[str]]
+    hostnames: Optional[List[str]]
+    isn: Optional[str]
+    asn: Optional[int]
+    data_source: Optional[str]
+
+    class Config:
+        """VwShodanvulnsSuspectedSchema schema config class."""
+        orm_mode = True
+
+
+# --- query_shodan(), Issue 628 ---   
+class VwShodanvulnsVerifiedSchema(BaseModel):
+    """VwShodanvulnsVerifiedSchema schema class."""
+    organizations_uid: Optional[str]
+    organization: Optional[str]
+    ip: Optional[str]
+    port: Optional[str]
+    protocol: Optional[str]
+    timestamp: Optional[str]
+    cve: Optional[str]
+    severity: Optional[str]
+    cvss: Optional[Decimal]
+    summary: Optional[str]
+    product: Optional[str]
+    attack_vector: Optional[str]
+    av_description: Optional[str]
+    attack_complexity: Optional[str]
+    ac_description: Optional[str]
+    confidentiality_impact: Optional[str]
+    ci_description: Optional[str]
+    integrity_impact: Optional[str]
+    ii_description: Optional[str]
+    availability_impact: Optional[str]
+    ai_description: Optional[str]
+    # tags: List[Optional[str]]
+    # domains: List[Optional[str]]
+    # hostnames: List[Optional[str]]
+    tags: Optional[List[str]]
+    domains: Optional[List[str]]
+    hostnames: Optional[List[str]]
+    isn: Optional[str]
+    asn: Optional[int]
+    data_source: Optional[str]
+
+    class Config:
+        """VwShodanvulnsVerifiedSchema schema config class."""
+        orm_mode = True
+
+
+# --- query_shodan(), Issue 628 ---  
+class ShodanAssetsSchema(BaseModel):
+    """ShodanAssetsSchema schema class."""
+    shodan_asset_uid: Optional[str]
+    organizations_uid_id: Optional[str]
+    organization: Optional[str]
+    ip: Optional[str]
+    port: Optional[int]
+    protocol: Optional[str]
+    timestamp: Optional[str]
+    product: Optional[str]
+    server: Optional[str]
+    # tags: List[Optional[str]]
+    # domains: List[Optional[str]]
+    # hostnames: List[Optional[str]]
+    tags: Optional[List[str]]
+    domains: Optional[List[str]]
+    hostnames: Optional[List[str]]
+    isn: Optional[str]
+    asn: Optional[int]
+    data_source_uid_id: Optional[str]
+
+    class Config:
+        """ShodanAssetsSchema schema config class."""
+        orm_mode = True
+
 
 # --- query_darkweb(), Issue 629 ---
 class DarkWebDataInput(BaseModel):
