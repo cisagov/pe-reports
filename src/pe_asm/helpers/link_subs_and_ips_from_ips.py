@@ -155,13 +155,13 @@ def connect_subs_from_ips(staging, orgs_df=None):
         # ips_df = query_ips(org_uid, conn)
         cidrs = query_cidrs_by_org(conn, org_uid)
         ips_list = []
-        for cidr_index, cidr in cidrs.itterows():
-            for ip in list(ipaddress.IPv4Network(cidr).hosts()):
+        for cidr_index, cidr_row in cidrs.iterrows():
+            for ip in list(ipaddress.IPv4Network(cidr_row["network"]).hosts()):
                 hash_object = hashlib.sha256(str(ip).encode("utf-8"))
                 ip_obj = {
                     "ip_hash": hash_object.hexdigest(),
                     "ip": str(ip),
-                    "origin_cidr": cidr["cidr_uid"],
+                    "origin_cidr": cidr_row["cidr_uid"],
                     "first_seen": DATE,
                     "last_seen": DATE,
                     "current": True,
@@ -181,7 +181,7 @@ def connect_subs_from_ips(staging, orgs_df=None):
             continue
 
         # Split IPs into 8 threads, then call run_ip_chunk function
-        num_chunks = 8
+        num_chunks = 5
         ips_split = np.array_split(ips_df, num_chunks)
         thread_num = 0
         thread_list = []

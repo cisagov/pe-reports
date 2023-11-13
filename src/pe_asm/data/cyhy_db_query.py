@@ -463,7 +463,7 @@ def execute_ips(conn, df):
         DO UPDATE SET
             origin_cidr = UUID(EXCLUDED.origin_cidr),
             last_seen = EXCLUDED.last_seen,
-            last_reverse_lookup, = EXCLUDED.last_reverse_lookup,
+            last_reverse_lookup = EXCLUDED.last_reverse_lookup,
             organizations_uid = EXCLUDED.organizations_uid;
         """
         cursor = conn.cursor()

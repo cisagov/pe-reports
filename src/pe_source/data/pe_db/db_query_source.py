@@ -249,63 +249,6 @@ def get_data_source_uid(source):
     return source
 
 
-def insert_sixgill_alerts(df):
-    """Insert sixgill alert data."""
-    conn = connect()
-    columns_to_subset = [
-        "alert_name",
-        "content",
-        "date",
-        "sixgill_id",
-        "read",
-        "severity",
-        "site",
-        "threat_level",
-        "threats",
-        "title",
-        "user_id",
-        "category",
-        "lang",
-        "organizations_uid",
-        "data_source_uid",
-        "content_snip",
-        "asset_mentioned",
-        "asset_type",
-    ]
-    try:
-        df = df.loc[:, df.columns.isin(columns_to_subset)]
-    except Exception as e:
-        logging.error(e)
-    table = "alerts"
-    # Create a list of tuples from the dataframe values
-    tuples = [tuple(x) for x in df.to_numpy()]
-    # Comma-separated dataframe columns
-    cols = ",".join(list(df.columns))
-    # SQL query to execute
-    query = """INSERT INTO {}({}) VALUES %s
-    ON CONFLICT (sixgill_id) DO UPDATE SET
-    content = EXCLUDED.content,
-    content_snip = EXCLUDED.content_snip,
-    asset_mentioned = EXCLUDED.asset_mentioned,
-    asset_type = EXCLUDED.asset_type;"""
-    cursor = conn.cursor()
-    try:
-        extras.execute_values(
-            cursor,
-            query.format(
-                table,
-                cols,
-            ),
-            tuples,
-        )
-        conn.commit()
-        logging.info("Successfully inserted/updated alert data into PE database.")
-    except (Exception, psycopg2.DatabaseError) as error:
-        logging.error(error)
-        conn.rollback()
-    cursor.close()
-
-
 def get_breaches():
     """Get credential breaches."""
     conn = connect()
@@ -321,38 +264,6 @@ def get_breaches():
     finally:
         if conn is not None:
             close(conn)
-
-
-def insert_sixgill_credentials(df):
-    """Insert sixgill credential data."""
-    conn = connect()
-    table = "credential_exposures"
-    # Create a list of tuples from the dataframe values
-    tuples = [tuple(x) for x in df.to_numpy()]
-    # Comma-separated dataframe columns
-    cols = ",".join(list(df.columns))
-    # SQL query to execute
-    query = """INSERT INTO {}({}) VALUES %s
-    ON CONFLICT (breach_name, email) DO UPDATE SET
-    modified_date = EXCLUDED.modified_date;"""
-    cursor = conn.cursor()
-    try:
-        extras.execute_values(
-            cursor,
-            query.format(
-                table,
-                cols,
-            ),
-            tuples,
-        )
-        conn.commit()
-        logging.info(
-            "Successfully inserted/updated exposed credentials into PE database."
-        )
-    except (Exception, psycopg2.DatabaseError) as error:
-        logging.info(error)
-        conn.rollback()
-    cursor.close()
 
 
 def insert_shodan_data(dataframe, table, thread, org_name, failed):
@@ -516,23 +427,6 @@ def insert_intelx_breaches(df):
         logging.info(error)
         conn.rollback()
     cursor.close()
-
-
-def get_intelx_breaches(source_uid):
-    """Get IntelX credential breaches."""
-    conn = connect()
-    try:
-        cur = conn.cursor()
-        sql = """SELECT breach_name, credential_breaches_uid FROM credential_breaches where data_source_uid = %s"""
-        cur.execute(sql, [source_uid])
-        all_breaches = cur.fetchall()
-        cur.close()
-        return all_breaches
-    except (Exception, psycopg2.DatabaseError) as error:
-        logging.error("There was a problem with your database query %s", error)
-    finally:
-        if conn is not None:
-            close(conn)
 
 
 def insert_intelx_credentials(df):
@@ -710,21 +604,80 @@ def getDataSource(conn, source):
     return source
 
 
+# --- Issue 641 ---
+def get_intelx_breaches_api(source_uid):
+    """
+    Query API for all IntelX credential breaches.
+
+    Args:
+        source_uid: The data source uid to filter credential breaches by
+
+    Return:
+        Credential breach data that have the specified data_source_uid as a list of tuples
+    """
+    # Endpoint info
+    task_url = "cred_breach_intelx"
+    status_url = "cred_breach_intelx/task/"
+    data = json.dumps({"source_uid": source_uid})
+    # Make API call
+    result = task_api_call(task_url, status_url, data, 3)
+    # Process data and return
+    # Convert result to list of tuples to match original function
+    tup_result = [tuple(row.values()) for row in result]
+    return tup_result
+    
+
+# --- Issue 653 ---
+def insert_sixgill_alerts_api(new_alerts):
+    """
+    Query API to insert multiple records into alerts table.
+
+    Args:
+        new_alerts: Dataframe containing the new alerts
+    """
+    # Convert dataframe to list of dictionaries
+    new_alerts = new_alerts[
+        [
+            "alert_name",
+            "content",
+            "date",
+            "sixgill_id",
+            "read",
+            "severity",
+            "site",
+            "threat_level",
+            "threats",
+            "title",
+            "user_id",
+            "category",
+            "lang",
+            "organizations_uid",
+            "data_source_uid",
+            "content_snip",
+            "asset_mentioned",
+            "asset_type",
+        ]
+    ]
+    new_alerts = new_alerts.to_dict("records")
+    # Endpoint info
+    task_url = "alerts_insert"
+    status_url = "alerts_insert/task/"
+    data = json.dumps({"new_alerts": new_alerts})
+    # Make API call
+    result = task_api_call(task_url, status_url, data, 3)
+    # Process data and return
+    LOGGER.info(result)
+
+
 # --- 654 ---
-def insert_sixgill_mentions_api(df):
+def insert_sixgill_mentions_api(new_mentions):
     """
     Query API to insert multiple records into the mentions table.
 
     Args:
         df: Dataframe containing mention data to be inserted
     """
-    # Endpoint info
-    endpoint_url = pe_api_url + "mentions_insert"
-    headers = {
-        "Content-Type": "application/json",
-        "access_token": pe_api_key,
-    }
-    # Preprocess data and convert to list of dictionaries
+    # Convert dataframe to list of dictionaries
     cols = [
         "organizations_uid",
         "data_source_uid",
@@ -747,109 +700,93 @@ def insert_sixgill_mentions_api(df):
         "tags",
     ]
     try:
-        df = df[cols]
+        new_mentions = new_mentions[cols]
     except Exception as e:
         LOGGER.info(e)
         cols = cols[:-1]
-        df = df[cols]
-        df["tags"] = "NaN"
-    df["collection_date"] = df["collection_date"].astype(str)
-    df["date"] = df["date"].astype(str)
+        new_mentions = new_mentions[cols]
+        new_mentions["tags"] = "NaN"
+    new_mentions["collection_date"] = new_mentions["collection_date"].astype(str)
+    new_mentions["date"] = new_mentions["date"].astype(str)
     # Remove any "[\x00|NULL]" characters if column data type is object
-    df = df.apply(
+    new_mentions = new_mentions.apply(
         lambda col: col.str.replace(r"(\x00)|(NULL)", "", regex=True)
         if col.dtype == object
         else col
     )
-    df_dict_list = df.to_dict("records")
-    data = json.dumps({"insert_data": df_dict_list})
-    try:
-        # Call endpoint
-        result = requests.put(endpoint_url, headers=headers, data=data).json()
-        # Process data and return
-        LOGGER.info(result)
-    except requests.exceptions.HTTPError as errh:
-        LOGGER.error(errh)
-    except requests.exceptions.ConnectionError as errc:
-        LOGGER.error(errc)
-    except requests.exceptions.Timeout as errt:
-        LOGGER.error(errt)
-    except requests.exceptions.RequestException as err:
-        LOGGER.error(err)
-    except json.decoder.JSONDecodeError as err:
-        LOGGER.error(err)
+    new_mentions = new_mentions.to_dict("records")
+    # Endpoint info
+    task_url = "mentions_insert"
+    status_url = "mentions_insert/task/"
+    data = json.dumps({"new_mentions": new_mentions})
+    # Make API call
+    result = task_api_call(task_url, status_url, data, 3)
+    # Process data and return
+    LOGGER.info(result)
 
 
 # --- 655 ---
-def insert_sixgill_breaches_api(df):
+def insert_sixgill_breaches_api(new_breaches):
     """
     Query API to insert multiple records into the credential_breaches table.
 
     Args:
         df: Dataframe containing credential breach data to be inserted
     """
+    # Convert dataframe to list of dictionaries
+    new_breaches["breach_date"] = new_breaches["breach_date"].astype(str)
+    new_breaches["modified_date"] = new_breaches["modified_date"].astype(str)
+    new_breaches = new_breaches.to_dict("records")
     # Endpoint info
-    endpoint_url = pe_api_url + "cred_breaches_insert"
-    headers = {
-        "Content-Type": "application/json",
-        "access_token": pe_api_key,
-    }
-    # Preprocess data and convert to list of dictionaries
-    df["breach_date"] = df["breach_date"].astype(str)
-    df["modified_date"] = df["modified_date"].astype(str)
-    df_dict_list = df.to_dict("records")
-    data = json.dumps({"insert_data": df_dict_list})
-    try:
-        # Call endpoint
-        result = requests.put(endpoint_url, headers=headers, data=data).json()
-        # Process data and return
-        LOGGER.info(result)
-    except requests.exceptions.HTTPError as errh:
-        LOGGER.error(errh)
-    except requests.exceptions.ConnectionError as errc:
-        LOGGER.error(errc)
-    except requests.exceptions.Timeout as errt:
-        LOGGER.error(errt)
-    except requests.exceptions.RequestException as err:
-        LOGGER.error(err)
-    except json.decoder.JSONDecodeError as err:
-        LOGGER.error(err)
+    task_url = "cred_breaches_insert"
+    status_url = "cred_breaches_insert/task/"
+    data = json.dumps({"new_breaches": new_breaches})
+    # Make API call
+    result = task_api_call(task_url, status_url, data, 3)
+    # Process data and return
+    LOGGER.info(result)
+
+
+# --- Issue 656 ---
+def insert_sixgill_credentials_api(new_exposures):
+    """
+    Query API to insert multiple records into credential_exposures table.
+
+    Args:
+        new_exposures: Dataframe containing the new credential exposures
+    """
+    # Convert dataframe to list of dictionaries
+    new_exposures = new_exposures.to_dict("records")
+    # Endpoint info
+    task_url = "credexp_insert"
+    status_url = "credexp_insert/task/"
+    data = json.dumps({"new_exposures": new_exposures})
+    # Make API call
+    result = task_api_call(task_url, status_url, data, 3)
+    # Process data and return
+    LOGGER.info(result)
 
 
 # --- 657 ---
-def insert_sixgill_topCVEs_api(df):
+def insert_sixgill_topCVEs_api(new_topcves):
     """
     Query API to insert multiple records into the top_cves table.
 
     Args:
         df: Dataframe containing top cve data to be inserted
     """
+    # Convert dataframe to list of dictionaries
+    new_topcves["date"] = new_topcves["date"].astype(str)
+    new_topcves = new_topcves.to_dict("records")
     # Endpoint info
-    endpoint_url = pe_api_url + "top_cves_insert"
-    headers = {
-        "Content-Type": "application/json",
-        "access_token": pe_api_key,
-    }
-    # Adjust data types and convert to list of dictionaries
-    df["date"] = df["date"].astype(str)
-    df_dict_list = df.to_dict("records")
-    data = json.dumps({"insert_data": df_dict_list})
-    try:
-        # Call endpoint
-        result = requests.put(endpoint_url, headers=headers, data=data).json()
-        # Process data and return
-        LOGGER.info(result)
-    except requests.exceptions.HTTPError as errh:
-        LOGGER.error(errh)
-    except requests.exceptions.ConnectionError as errc:
-        LOGGER.error(errc)
-    except requests.exceptions.Timeout as errt:
-        LOGGER.error(errt)
-    except requests.exceptions.RequestException as err:
-        LOGGER.error(err)
-    except json.decoder.JSONDecodeError as err:
-        LOGGER.error(err)
-
+    task_url = "top_cves_insert"
+    status_url = "top_cves_insert/task/"
+    data = json.dumps({"new_topcves": new_topcves})
+    # Make API call
+    result = task_api_call(task_url, status_url, data, 3)
+    # Process data and return
+    LOGGER.info(result)
+        
 
 # --- Issue 661 ---
 def addRootdomain_api(root_domain, pe_org_uid, source_uid, org_name):
@@ -934,6 +871,82 @@ def addSubdomain_api(domain, pe_org_uid, root):
 
 
 # v ===== OLD TSQL VERSIONS OF FUNCTIONS ===== v
+# --- 641 OLD TSQL ---
+def get_intelx_breaches(source_uid):
+    """Get IntelX credential breaches."""
+    conn = connect()
+    try:
+        cur = conn.cursor()
+        sql = """SELECT breach_name, credential_breaches_uid FROM credential_breaches where data_source_uid = %s"""
+        cur.execute(sql, [source_uid])
+        all_breaches = cur.fetchall()
+        cur.close()
+        return all_breaches
+    except (Exception, psycopg2.DatabaseError) as error:
+        logging.error("There was a problem with your database query %s", error)
+    finally:
+        if conn is not None:
+            close(conn)
+
+
+# --- 653 OLD TSQL ---
+def insert_sixgill_alerts(df):
+    """Insert sixgill alert data."""
+    conn = connect()
+    columns_to_subset = [
+        "alert_name",
+        "content",
+        "date",
+        "sixgill_id",
+        "read",
+        "severity",
+        "site",
+        "threat_level",
+        "threats",
+        "title",
+        "user_id",
+        "category",
+        "lang",
+        "organizations_uid",
+        "data_source_uid",
+        "content_snip",
+        "asset_mentioned",
+        "asset_type",
+    ]
+    try:
+        df = df.loc[:, df.columns.isin(columns_to_subset)]
+    except Exception as e:
+        logging.error(e)
+    table = "alerts"
+    # Create a list of tuples from the dataframe values
+    tuples = [tuple(x) for x in df.to_numpy()]
+    # Comma-separated dataframe columns
+    cols = ",".join(list(df.columns))
+    # SQL query to execute
+    query = """INSERT INTO {}({}) VALUES %s
+    ON CONFLICT (sixgill_id) DO UPDATE SET
+    content = EXCLUDED.content,
+    content_snip = EXCLUDED.content_snip,
+    asset_mentioned = EXCLUDED.asset_mentioned,
+    asset_type = EXCLUDED.asset_type;"""
+    cursor = conn.cursor()
+    try:
+        extras.execute_values(
+            cursor,
+            query.format(
+                table,
+                cols,
+            ),
+            tuples,
+        )
+        conn.commit()
+        logging.info("Successfully inserted/updated alert data into PE database.")
+    except (Exception, psycopg2.DatabaseError) as error:
+        logging.error(error)
+        conn.rollback()
+    cursor.close()
+
+
 # --- 654 OLD TSQL ---
 def insert_sixgill_mentions(df):
     """Insert sixgill mention data."""
@@ -1051,6 +1064,39 @@ def insert_sixgill_topCVEs(df):
         )
         conn.commit()
         logging.info("Successfully inserted/updated top cve data into PE database.")
+    except (Exception, psycopg2.DatabaseError) as error:
+        logging.info(error)
+        conn.rollback()
+    cursor.close()
+
+
+# --- 656 OLD TSQL ---
+def insert_sixgill_credentials(df):
+    """Insert sixgill credential data."""
+    conn = connect()
+    table = "credential_exposures"
+    # Create a list of tuples from the dataframe values
+    tuples = [tuple(x) for x in df.to_numpy()]
+    # Comma-separated dataframe columns
+    cols = ",".join(list(df.columns))
+    # SQL query to execute
+    query = """INSERT INTO {}({}) VALUES %s
+    ON CONFLICT (breach_name, email) DO UPDATE SET
+    modified_date = EXCLUDED.modified_date;"""
+    cursor = conn.cursor()
+    try:
+        extras.execute_values(
+            cursor,
+            query.format(
+                table,
+                cols,
+            ),
+            tuples,
+        )
+        conn.commit()
+        logging.info(
+            "Successfully inserted/updated exposed credentials into PE database."
+        )
     except (Exception, psycopg2.DatabaseError) as error:
         logging.info(error)
         conn.rollback()

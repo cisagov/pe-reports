@@ -357,8 +357,8 @@ def insertFindingData(findingList):
     """Insert finding data into database."""
     # TODO: Dont use was_ord_id to reference orgs, use customer_id once was data become available
     conn = connect("")
-    sql = """INSERT INTO was_findings (finding_uid, finding_type, webapp_id, was_org_id, owasp_category, severity, times_detected, base_score, temporal_score, fstatus, last_detected, first_detected)
-            VALUES ('{}','{}','{}','{}','{}','{}','{}','{}','{}','{}','{}','{}')
+    sql = """INSERT INTO was_findings (finding_uid, finding_type, webapp_id, was_org_id, owasp_category, severity, times_detected, base_score, temporal_score, fstatus, last_detected, first_detected, potential)
+            VALUES ('{}','{}','{}','{}','{}','{}','{}','{}','{}','{}','{}','{}','{}')
             ON CONFLICT (finding_uid) DO UPDATE 
             SET is_remidiated = CASE
                 WHEN was_findings.fstatus != 'FIXED' AND excluded.fstatus = 'FIXED' THEN TRUE
@@ -366,7 +366,8 @@ def insertFindingData(findingList):
             END,
             fstatus = excluded.fstatus,
             times_detected = excluded.times_detected,
-            last_detected = excluded.last_detected;"""
+            last_detected = excluded.last_detected,
+            potential = excluded.potential;"""
     cur = conn.cursor()
     for finding in findingList:
         try:
@@ -384,6 +385,7 @@ def insertFindingData(findingList):
                     finding["fstatus"],
                     finding["last_detected"],
                     finding["first_detected"],
+                    finding["potential"],
                 )
             )
         except KeyError:
@@ -449,6 +451,19 @@ def getPreviousFindingsHistorical(org_id,monthsAgo):
     close(conn)
     return ret
 
+def getPotential(org_id):
+    """Get findings for specific time period in months."""
+    conn = connect("")
+    cur = conn.cursor()
+    sql = """   SELECT COUNT(*) FROM was_findings 
+                WHERE was_org_id = '{}' AND potential IS TRUE;
+                """
+    cur.execute(sql.format(org_id), conn)
+    ret = cur.fetchall()
+    cur.close()
+    close(conn)
+    return ret
+
 def queryVulnCountSeverity(org_id,severity):
     """Query the amount of webapps with vulnerabilities."""
     # TODO: Dont use was_ord_id to reference orgs, use customer_id once was data become available
@@ -498,8 +513,8 @@ def insertWASVulnData(data):
     """Insert WAS vulnerability data into database."""
     conn = connect("")
     cur = conn.cursor()
-    sql = """   INSERT INTO was_history (was_org_ID,date_scanned,vuln_cnt,vuln_webapp_cnt,web_app_cnt,high_rem_time,crit_rem_time,report_period,high_vuln_cnt,crit_vuln_cnt,crit_rem_cnt,high_rem_cnt)
-                VALUES ('{}','{}',{},{},{}, (CASE WHEN {} = 0 THEN NULL ELSE {} END), (CASE WHEN {} = 0 THEN NULL ELSE {} END),'{}',{},{},{},{}) """
+    sql = """   INSERT INTO was_history (was_org_ID,date_scanned,vuln_cnt,vuln_webapp_cnt,web_app_cnt,high_rem_time,crit_rem_time,report_period,high_vuln_cnt,crit_vuln_cnt,crit_rem_cnt,high_rem_cnt,total_potential)
+                VALUES ('{}','{}',{},{},{}, (CASE WHEN {} = 0 THEN NULL ELSE {} END), (CASE WHEN {} = 0 THEN NULL ELSE {} END),'{}',{},{},{},{},{}) """
     cur.execute(
         sql.format(
             data['was_org_id'],
@@ -515,7 +530,8 @@ def insertWASVulnData(data):
             data['high_vuln_cnt'],
             data['crit_vuln_cnt'],
             data['high_rem_cnt'],
-            data['crit_rem_cnt']
+            data['crit_rem_cnt'],
+            data['total_potential'],
             )
         )
     conn.commit()

@@ -14,12 +14,16 @@ from django.db.models import Count, Q, Sum
 from home.models import (
     Alerts,
     Cidrs,
+    CredentialBreaches,
+    CredentialExposures,
     CveInfo,
     CyhyKevs,
+    DataSource,
     DomainAlerts,
     DomainPermutations,
     Ips,
     MatVwOrgsAllIps,
+    Mentions,
     Organizations,
     SubDomains,
     TopCves,
@@ -1035,3 +1039,236 @@ def get_xpanse_vulns(
         vulns.append(vuln_dict)
 
     return vulns
+# --- get_intelx_breaches(), Issue 641 ---
+@shared_task(bind=True)
+def cred_breach_intelx_task(self, source_uid: str):
+    """Task function for the cred_breach_intelx API endpoint."""
+    # Make database query and convert to list of dictionaries
+    cred_breach_intelx_data = list(
+        CredentialBreaches.objects.filter(data_source_uid=source_uid).values(
+            "breach_name", "credential_breaches_uid"
+        )
+    )
+    # Convert uuids to strings
+    for row in cred_breach_intelx_data:
+        row["credential_breaches_uid"] = convert_uuid_to_string(
+            row["credential_breaches_uid"]
+        )
+    return cred_breach_intelx_data
+
+
+# --- insert_sixgill_alerts(), Issue 653 ---
+@shared_task(bind=True)
+def alerts_insert_task(self, new_alerts: List[dict]):
+    """Task function for the alerts_insert API endpoint."""
+    # Go through each new alert
+    update_ct = 0
+    create_ct = 0
+    for new_alert in new_alerts:
+        try:
+            Alerts.objects.get(sixgill_id=new_alert["sixgill_id"])
+        except Alerts.DoesNotExist:
+            # If alert record doesn't exist yet, create one
+            curr_org_inst = Organizations.objects.get(
+                organizations_uid=new_alert["organizations_uid"]
+            )
+            curr_source_inst = DataSource.objects.get(
+                data_source_uid=new_alert["data_source_uid"]
+            )
+            Alerts.objects.create(
+                alerts_uid=uuid.uuid1(),
+                alert_name=new_alert["alert_name"],
+                content=new_alert["content"],
+                date=new_alert["date"],
+                sixgill_id=new_alert["sixgill_id"],
+                read=new_alert["read"],
+                severity=new_alert["severity"],
+                site=new_alert["site"],
+                threat_level=new_alert["threat_level"],
+                threats=new_alert["threats"],
+                title=new_alert["title"],
+                user_id=new_alert["user_id"],
+                category=new_alert["category"],
+                lang=new_alert["lang"],
+                organizations_uid=curr_org_inst,
+                data_source_uid=curr_source_inst,
+                content_snip=new_alert["content_snip"],
+                asset_mentioned=new_alert["asset_mentioned"],
+                asset_type=new_alert["asset_type"],
+            )
+            create_ct += 1
+        else:
+            # If alert record does exits, update it
+            Alerts.objects.filter(sixgill_id=new_alert["sixgill_id"]).update(
+                content=new_alert["content"],
+                content_snip=new_alert["content_snip"],
+                asset_mentioned=new_alert["asset_mentioned"],
+                asset_type=new_alert["asset_type"]
+            )
+            update_ct += 1
+    # Return success message
+    return str(create_ct) + " records created, " + str(update_ct) + " records updated in the alerts table"
+
+
+# --- insert_sixgill_mentions(), Issue 654 ---
+@shared_task(bind=True)
+def mentions_insert_task(self, new_mentions: List[dict]):
+    """Task function for the mentions_insert API endpoint."""
+    create_ct = 0
+    for new_mention in new_mentions:
+        try:
+            Mentions.objects.get(
+                sixgill_mention_id=new_mention["sixgill_mention_id"]
+            )
+            # If record already exists, do nothing
+        except Mentions.DoesNotExist:
+            # If mention record doesn't exist yet, create one
+            curr_source_inst = DataSource.objects.get(
+                data_source_uid=new_mention["data_source_uid"]
+            )
+            Mentions.objects.create(
+                mentions_uid=uuid.uuid1(),
+                organizations_uid=new_mention["organizations_uid"],
+                data_source_uid=curr_source_inst,
+                category=new_mention["category"],
+                collection_date=new_mention["collection_date"],
+                content=new_mention["content"],
+                creator=new_mention["creator"],
+                date=new_mention["date"],
+                sixgill_mention_id=new_mention["sixgill_mention_id"],
+                lang=new_mention["lang"],
+                post_id=new_mention["post_id"],
+                rep_grade=new_mention["rep_grade"],
+                site=new_mention["site"],
+                site_grade=new_mention["site_grade"],
+                sub_category=new_mention["sub_category"],
+                title=new_mention["title"],
+                type=new_mention["type"],
+                url=new_mention["url"],
+                comments_count=new_mention["comments_count"],
+                tags=new_mention["tags"],
+            )
+            create_ct += 1
+    # Return success message
+    return str(create_ct) + " records created in the mentions table"
+
+
+# --- insert_sixgill_breaches(), Issue 655 ---
+@shared_task(bind=True)
+def cred_breaches_insert_task(self, new_breaches: List[dict]):
+    """Task function for the cred_breaches_insert API endpoint."""
+    create_ct = 0
+    update_ct = 0
+    for new_breach in new_breaches:
+        # Insert each row of data
+        try:
+            CredentialBreaches.objects.get(breach_name=new_breach["breach_name"])
+            # If record already exists, update
+            CredentialBreaches.objects.filter(
+                breach_name=new_breach["breach_name"]
+            ).update(
+                exposed_cred_count=new_breach["exposed_cred_count"],
+                password_included=new_breach["password_included"],
+            )
+            update_ct += 1
+        except CredentialBreaches.DoesNotExist:
+            # Otherwise, create new record
+            curr_source_inst = DataSource.objects.get(
+                data_source_uid=new_breach["data_source_uid"]
+            )
+            CredentialBreaches.objects.create(
+                credential_breaches_uid=uuid.uuid1(),
+                breach_name=new_breach["breach_name"],
+                description=new_breach["description"],
+                exposed_cred_count=new_breach["exposed_cred_count"],
+                breach_date=new_breach["breach_date"],
+                modified_date=new_breach["modified_date"],
+                password_included=new_breach["password_included"],
+                data_source_uid=curr_source_inst,
+            )
+            create_ct += 1
+    # Return success message
+    return str(create_ct) + " records created, " + str(update_ct) + " records updated in the credential_breaches table"
+
+
+# --- insert_sixgill_credentials(), Issue 656 ---
+@shared_task(bind=True)
+def credexp_insert_task(self, new_exposures: List[dict]):
+    """Task function for the credexp_insert API endpoint."""
+    update_ct = 0
+    create_ct = 0
+    for new_exposure in new_exposures:
+        try:
+            CredentialExposures.objects.get(
+                breach_name=new_exposure["breach_name"],
+                email=new_exposure["email"],
+            )
+        except CredentialExposures.DoesNotExist:
+            # If cred exp record doesn't exist yet, create one
+            curr_org_inst = Organizations.objects.get(
+                organizations_uid=new_exposure["organizations_uid"]
+            )
+            curr_source_inst = DataSource.objects.get(
+                data_source_uid=new_exposure["data_source_uid"]
+            )
+            curr_breach_inst = CredentialBreaches.objects.get(
+                credential_breaches_uid=new_exposure["credential_breaches_uid"]
+            )
+            CredentialExposures.objects.create(
+                credential_exposures_uid=uuid.uuid1(),
+                modified_date=new_exposure["modified_date"],
+                sub_domain=new_exposure["sub_domain"],
+                email=new_exposure["email"],
+                hash_type=new_exposure["hash_type"],
+                name=new_exposure["name"],
+                login_id=new_exposure["login_id"],
+                password=new_exposure["password"],
+                phone=new_exposure["phone"],
+                breach_name=new_exposure["breach_name"],
+                organizations_uid=curr_org_inst,
+                data_source_uid=curr_source_inst,
+                credential_breaches_uid=curr_breach_inst,
+            )
+            create_ct += 1
+        else:
+            # If cred exp record does exits, update it
+            CredentialExposures.objects.filter(
+                breach_name=new_exposure["breach_name"],
+                email=new_exposure["email"],
+            ).update(
+                modified_date=new_exposure["modified_date"],
+            )
+            update_ct += 1
+    # Return success message
+    return str(create_ct) + " records created, " + str(update_ct) + " records updated in the credential_exposures table"
+
+
+# --- insert_sixgill_topCVEs(), Issue 657 ---
+@shared_task(bind=True)
+def top_cves_insert_task(self, new_topcves: List[dict]):
+    """Task function for the top_cves_insert API endpoint."""
+    create_ct = 0
+    for new_topcve in new_topcves:
+        try:
+            TopCves.objects.get(
+                cve_id=new_topcve["cve_id"],
+                date=new_topcve["date"],
+            )
+            # If record already exists, do nothing
+        except TopCves.DoesNotExist:
+            # If record doesn't exist yet, create one
+            curr_source_inst = DataSource.objects.get(
+                data_source_uid=new_topcve["data_source_uid"]
+            )
+            TopCves.objects.create(
+                top_cves_uid=uuid.uuid1(),
+                cve_id=new_topcve["cve_id"],
+                dynamic_rating=new_topcve["dynamic_rating"],
+                nvd_base_score=new_topcve["nvd_base_score"],
+                date=new_topcve["date"],
+                summary=new_topcve["summary"],
+                data_source_uid=curr_source_inst,
+            )
+            create_ct += 1
+    # Return success message
+    return str(create_ct) + " records created in the top_cves table"

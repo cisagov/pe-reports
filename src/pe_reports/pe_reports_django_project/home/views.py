@@ -748,6 +748,7 @@ def add_stakeholders(request, orgs_df):
             connect_subs_from_ips(False, new_org_df)
             LOGGER.info("Finished connecting subs/ips from IPs.")
 
+            # TODO: Fix add to sixgill
             # Check if the org should be added to Cybersixgill
             if org_row["premium"] is True:
                 # Get executives list by passing the about page URL

@@ -19,8 +19,11 @@ import uuid
 
 # Third-Party Libraries
 from dataAPI.tasks import (  # D-Score Task Functions:; I-Score Task Functions:; Misc. Score-Related Task Functions:
+    alerts_insert_task,
     convert_date_to_string,
     convert_uuid_to_string,
+    cred_breaches_insert_task,
+    credexp_insert_task,
     cve_info_insert_task,
     darkweb_cves_task,
     get_dscore_pe_domain_info,
@@ -50,6 +53,7 @@ from dataAPI.tasks import (  # D-Score Task Functions:; I-Score Task Functions:;
     get_xs_stakeholders_info,
     ips_insert_task,
     ips_update_from_cidr_task,
+    mentions_insert_task,
     pescore_base_metrics_task,
     pescore_hist_cred_task,
     pescore_hist_darkweb_alert_task,
@@ -57,6 +61,7 @@ from dataAPI.tasks import (  # D-Score Task Functions:; I-Score Task Functions:;
     pescore_hist_domain_alert_task,
     sub_domains_by_org_task,
     sub_domains_table_task,
+    top_cves_insert_task,
 )
 from decouple import config
 from django.conf import settings
@@ -4830,178 +4835,394 @@ async def cve_info_insert_status(task_id: str, tokens: dict = Depends(get_api_ke
         return {"message": "No api key was submitted"}
 
 
-# --- insert_sixgill_mentions(), Issue 654
-@api_router.put(
+# --- get_intelx_breaches(), Issue 641 ---
+@api_router.post(
+    "/cred_breach_intelx",
+    dependencies=[Depends(get_api_key)], #Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.CredBreachIntelXTaskResp,
+    tags=["Get IntelX credential breaches"],
+)
+def cred_breach_intelx(
+    data: schemas.CredBreachIntelXInput, tokens: dict = Depends(get_api_key)
+):
+    """Call API endpoint to get IntelX credential breaches."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # If API key valid, create task for query
+            task = cred_breach_intelx_task.delay(data.source_uid)
+            # Return the new task id w/ "Processing" status
+            return {"task_id": task.id, "status": "Processing"}
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+
+@api_router.get(
+    "/cred_breach_intelx/task/{task_id}",
+    dependencies=[Depends(get_api_key)], #Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.CredBreachIntelXTaskResp,
+    tags=["Check task status for cred_breach_intelx endpoint task."],
+)
+async def cred_breach_intelx_status(task_id: str, tokens: dict = Depends(get_api_key)):
+    """Call API endpoint to get status of cred_breach_intelx task."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            # userapiTokenverify(theapiKey=tokens)
+            # Retrieve task status
+            task = cred_breach_intelx_task.AsyncResult(task_id)
+            # Return appropriate message for status
+            if task.state == "SUCCESS":
+                return {
+                    "task_id": task_id,
+                    "status": "Completed",
+                    "result": task.result,
+                }
+            elif task.state == "PENDING":
+                return {"task_id": task_id, "status": "Pending"}
+            elif task.state == "FAILURE":
+                return {
+                    "task_id": task_id,
+                    "status": "Failed",
+                    "error": str(task.result),
+                }
+            else:
+                return {"task_id": task_id, "status": task.state}
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+
+# --- insert_sixgill_alerts(), Issue 653 ---
+@api_router.post(
+    "/alerts_insert",
+    dependencies=[Depends(get_api_key)], #Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.AlertsInsertTaskResp,
+    tags=["Insert multiple records into the alerts table."],
+)
+def alerts_insert(
+    data: schemas.AlertsInsertInput, tokens: dict = Depends(get_api_key)
+):
+    """Call API endpoint to insert multiple records into the alerts table."""
+    # Convert list of alert models to list of dictionaries
+    new_alerts = [dict(input_dict) for input_dict in data.new_alerts]
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # If API key valid, create task for query
+            task = alerts_insert_task.delay(new_alerts)
+            # Return the new task id w/ "Processing" status
+            return {"task_id": task.id, "status": "Processing"}
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+
+@api_router.get(
+    "/alerts_insert/task/{task_id}",
+    dependencies=[Depends(get_api_key)], #Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.AlertsInsertTaskResp,
+    tags=["Check task status for alerts_insert endpoint task."],
+)
+async def alerts_insert_status(task_id: str, tokens: dict = Depends(get_api_key)):
+    """Call API endpoint to get status of alerts_insert task."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            # userapiTokenverify(theapiKey=tokens)
+            # Retrieve task status
+            task = alerts_insert_task.AsyncResult(task_id)
+            # Return appropriate message for status
+            if task.state == "SUCCESS":
+                return {
+                    "task_id": task_id,
+                    "status": "Completed",
+                    "result": task.result,
+                }
+            elif task.state == "PENDING":
+                return {"task_id": task_id, "status": "Pending"}
+            elif task.state == "FAILURE":
+                return {
+                    "task_id": task_id,
+                    "status": "Failed",
+                    "error": str(task.result),
+                }
+            else:
+                return {"task_id": task_id, "status": task.state}
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+
+# --- insert_sixgill_mentions(), Issue 654 ---
+@api_router.post(
     "/mentions_insert",
-    dependencies=[
-        Depends(get_api_key)
-    ],  # Depends(RateLimiter(times=200, seconds=60))],
+    dependencies=[Depends(get_api_key)], #Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.MentionsInsertTaskResp,
     tags=["Insert multiple records into the mentions table."],
 )
 def mentions_insert(
     data: schemas.MentionsInsertInput, tokens: dict = Depends(get_api_key)
 ):
-    """Create API endpoint to insert multiple records into the mentions table."""
+    """Call API endpoint to insert multiple records into the mentions table."""
+    # Convert list of alert models to list of dictionaries
+    new_mentions = [dict(input_dict) for input_dict in data.new_mentions]
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
         try:
             userapiTokenverify(theapiKey=tokens)
-            # If API key valid, proceed
-            create_ct = 0
-            for record in data.insert_data:
-                # convert to dict
-                record_dict = dict(record)
-                curr_source_inst = DataSource.objects.get(
-                    data_source_uid=record_dict["data_source_uid"]
-                )
-                # Insert each row of data
-                try:
-                    Mentions.objects.get(
-                        sixgill_mention_id=record_dict["sixgill_mention_id"]
-                    )
-                    # If record already exists, do nothing
-                except Mentions.DoesNotExist:
-                    # Otherwise, create new record
-                    Mentions.objects.create(
-                        mentions_uid=uuid.uuid1(),
-                        organizations_uid=record_dict["organizations_uid"],
-                        data_source_uid=curr_source_inst,
-                        category=record_dict["category"],
-                        collection_date=record_dict["collection_date"],
-                        content=record_dict["content"],
-                        creator=record_dict["creator"],
-                        date=record_dict["date"],
-                        sixgill_mention_id=record_dict["sixgill_mention_id"],
-                        lang=record_dict["lang"],
-                        post_id=record_dict["post_id"],
-                        rep_grade=record_dict["rep_grade"],
-                        site=record_dict["site"],
-                        site_grade=record_dict["site_grade"],
-                        sub_category=record_dict["sub_category"],
-                        title=record_dict["title"],
-                        type=record_dict["type"],
-                        url=record_dict["url"],
-                        comments_count=record_dict["comments_count"],
-                        tags=record_dict["tags"],
-                    )
-                    create_ct += 1
-            return str(create_ct) + " records created in the mentions table"
+            # If API key valid, create task for query
+            task = mentions_insert_task.delay(new_mentions)
+            # Return the new task id w/ "Processing" status
+            return {"task_id": task.id, "status": "Processing"}
         except ObjectDoesNotExist:
             LOGGER.info("API key expired please try again")
     else:
         return {"message": "No api key was submitted"}
 
 
-# --- insert_sixgill_breaches(), Issue 655
-@api_router.put(
+@api_router.get(
+    "/mentions_insert/task/{task_id}",
+    dependencies=[Depends(get_api_key)], #Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.MentionsInsertTaskResp,
+    tags=["Check task status for mentions_insert endpoint task."],
+)
+async def mentions_insert_status(task_id: str, tokens: dict = Depends(get_api_key)):
+    """Call API endpoint to get status of mentions_insert task."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            # userapiTokenverify(theapiKey=tokens)
+            # Retrieve task status
+            task = mentions_insert_task.AsyncResult(task_id)
+            # Return appropriate message for status
+            if task.state == "SUCCESS":
+                return {
+                    "task_id": task_id,
+                    "status": "Completed",
+                    "result": task.result,
+                }
+            elif task.state == "PENDING":
+                return {"task_id": task_id, "status": "Pending"}
+            elif task.state == "FAILURE":
+                return {
+                    "task_id": task_id,
+                    "status": "Failed",
+                    "error": str(task.result),
+                }
+            else:
+                return {"task_id": task_id, "status": task.state}
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+
+# --- insert_sixgill_breaches(), Issue 655 ---
+@api_router.post(
     "/cred_breaches_insert",
-    dependencies=[
-        Depends(get_api_key)
-    ],  # Depends(RateLimiter(times=200, seconds=60))],
+    dependencies=[Depends(get_api_key)], #Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.CredBreachesInsertTaskResp,
     tags=["Insert multiple records into the credential_breaches table."],
 )
 def cred_breaches_insert(
     data: schemas.CredBreachesInsertInput, tokens: dict = Depends(get_api_key)
 ):
-    """Create API endpoint to insert multiple records into the credential_breaches table."""
+    """Call API endpoint to insert multiple records into the credential_breaches table."""
+    # Convert list of alert models to list of dictionaries
+    new_breaches = [dict(input_dict) for input_dict in data.new_breaches]
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
         try:
             userapiTokenverify(theapiKey=tokens)
-            # If API key valid, proceed
-            create_ct = 0
-            update_ct = 0
-            for record in data.insert_data:
-                # convert to dict
-                record_dict = dict(record)
-                curr_source_inst = DataSource.objects.get(
-                    data_source_uid=record_dict["data_source_uid"]
-                )
-                # Insert each row of data
-                try:
-                    CredentialBreaches.objects.get(
-                        breach_name=record_dict["breach_name"]
-                    )
-                    # If record already exists, update
-                    CredentialBreaches.objects.filter(
-                        breach_name=record_dict["breach_name"]
-                    ).update(
-                        exposed_cred_count=record_dict["exposed_cred_count"],
-                        password_included=record_dict["password_included"],
-                    )
-                    update_ct += 1
-                except CredentialBreaches.DoesNotExist:
-                    # Otherwise, create new record
-                    CredentialBreaches.objects.create(
-                        credential_breaches_uid=uuid.uuid1(),
-                        breach_name=record_dict["breach_name"],
-                        description=record_dict["description"],
-                        exposed_cred_count=record_dict["exposed_cred_count"],
-                        breach_date=record_dict["breach_date"],
-                        modified_date=record_dict["modified_date"],
-                        password_included=record_dict["password_included"],
-                        data_source_uid=curr_source_inst,
-                    )
-                    create_ct += 1
-            return (
-                "Records in the credential_breaches table: "
-                + str(create_ct)
-                + " created, "
-                + str(update_ct)
-                + " updated"
-            )
+            # If API key valid, create task for query
+            task = cred_breaches_insert_task.delay(new_breaches)
+            # Return the new task id w/ "Processing" status
+            return {"task_id": task.id, "status": "Processing"}
         except ObjectDoesNotExist:
             LOGGER.info("API key expired please try again")
     else:
         return {"message": "No api key was submitted"}
 
 
-# --- insert_sixgill_topCVEs(), Issue 657
-@api_router.put(
-    "/top_cves_insert",
-    dependencies=[
-        Depends(get_api_key)
-    ],  # Depends(RateLimiter(times=200, seconds=60))],
-    tags=["Insert multiple records into the top_cves table."],
+@api_router.get(
+    "/cred_breaches_insert/task/{task_id}",
+    dependencies=[Depends(get_api_key)], #Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.CredBreachesInsertTaskResp,
+    tags=["Check task status for cred_breaches_insert endpoint task."],
 )
-def top_cves_insert(
-    data: schemas.TopCVEsInsertInput, tokens: dict = Depends(get_api_key)
+async def cred_breaches_insert_status(task_id: str, tokens: dict = Depends(get_api_key)):
+    """Call API endpoint to get status of cred_breaches_insert task."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            # userapiTokenverify(theapiKey=tokens)
+            # Retrieve task status
+            task = cred_breaches_insert_task.AsyncResult(task_id)
+            # Return appropriate message for status
+            if task.state == "SUCCESS":
+                return {
+                    "task_id": task_id,
+                    "status": "Completed",
+                    "result": task.result,
+                }
+            elif task.state == "PENDING":
+                return {"task_id": task_id, "status": "Pending"}
+            elif task.state == "FAILURE":
+                return {
+                    "task_id": task_id,
+                    "status": "Failed",
+                    "error": str(task.result),
+                }
+            else:
+                return {"task_id": task_id, "status": task.state}
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+
+# --- insert_sixgill_credentials(), Issue 656 ---
+@api_router.post(
+    "/credexp_insert",
+    dependencies=[Depends(get_api_key)], #Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.CredExpInsertTaskResp,
+    tags=["Insert multiple records into the credential_exposures table."],
+)
+def credexp_insert(
+    data: schemas.CredExpInsertInput, tokens: dict = Depends(get_api_key)
 ):
-    """Create API endpoint to insert multiple records into the top_cves table."""
+    """Call API endpoint to insert multiple records into the credential_exposures table."""
+    # Convert list of alert models to list of dictionaries
+    new_exposures = [dict(input_dict) for input_dict in data.new_exposures]
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
         try:
             userapiTokenverify(theapiKey=tokens)
-            # If API key valid, proceed
-            create_ct = 0
-            for record in data.insert_data:
-                # convert to dict
-                record_dict = dict(record)
-                curr_source_inst = DataSource.objects.get(
-                    data_source_uid=record_dict["data_source_uid"]
-                )
-                # Insert each row of data, on conflict do nothing
-                try:
-                    TopCves.objects.get(
-                        cve_id=record_dict["cve_id"], date=record_dict["date"]
-                    )
-                    # If record already exists, do nothing
-                except TopCves.DoesNotExist:
-                    # Otherwise, create new record
-                    TopCves.objects.create(
-                        top_cves_uid=uuid.uuid1(),
-                        cve_id=record_dict["cve_id"],
-                        dynamic_rating=record_dict["dynamic_rating"],
-                        nvd_base_score=record_dict["nvd_base_score"],
-                        date=record_dict["date"],
-                        summary=record_dict["summary"],
-                        data_source_uid=curr_source_inst,
-                    )
-                    create_ct += 1
-            return str(create_ct) + " records created in the top_cves table"
+            # If API key valid, create task for query
+            task = credexp_insert_task.delay(new_exposures)
+            # Return the new task id w/ "Processing" status
+            return {"task_id": task.id, "status": "Processing"}
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+
+@api_router.get(
+    "/credexp_insert/task/{task_id}",
+    dependencies=[Depends(get_api_key)], #Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.CredExpInsertTaskResp,
+    tags=["Check task status for credexp_insert endpoint task."],
+)
+async def credexp_insert_status(task_id: str, tokens: dict = Depends(get_api_key)):
+    """Call API endpoint to get status of credexp_insert task."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            # userapiTokenverify(theapiKey=tokens)
+            # Retrieve task status
+            task = credexp_insert_task.AsyncResult(task_id)
+            # Return appropriate message for status
+            if task.state == "SUCCESS":
+                return {
+                    "task_id": task_id,
+                    "status": "Completed",
+                    "result": task.result,
+                }
+            elif task.state == "PENDING":
+                return {"task_id": task_id, "status": "Pending"}
+            elif task.state == "FAILURE":
+                return {
+                    "task_id": task_id,
+                    "status": "Failed",
+                    "error": str(task.result),
+                }
+            else:
+                return {"task_id": task_id, "status": task.state}
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+
+# --- insert_sixgill_topCVEs(), Issue 657 ---
+@api_router.post(
+    "/top_cves_insert",
+    dependencies=[Depends(get_api_key)], #Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.TopCVEsInsertTaskResp,
+    tags=["Insert multiple records into the top_cves table."],
+)
+def top_cves_insert(
+    data: schemas.TopCVEsInsertInput, tokens: dict = Depends(get_api_key)
+):
+    """Call API endpoint to insert multiple records into the top_cves table."""
+    # Convert list of models to list of dictionaries
+    new_topcves = [dict(input_dict) for input_dict in data.new_topcves]
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # If API key valid, create task for query
+            task = top_cves_insert_task.delay(new_topcves)
+            # Return the new task id w/ "Processing" status
+            return {"task_id": task.id, "status": "Processing"}
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+
+@api_router.get(
+    "/top_cves_insert/task/{task_id}",
+    dependencies=[Depends(get_api_key)], #Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.TopCVEsInsertTaskResp,
+    tags=["Check task status for top_cves_insert endpoint task."],
+)
+async def top_cves_insert_status(task_id: str, tokens: dict = Depends(get_api_key)):
+    """Call API endpoint to get status of top_cves_insert task."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            # userapiTokenverify(theapiKey=tokens)
+            # Retrieve task status
+            task = top_cves_insert_task.AsyncResult(task_id)
+            # Return appropriate message for status
+            if task.state == "SUCCESS":
+                return {
+                    "task_id": task_id,
+                    "status": "Completed",
+                    "result": task.result,
+                }
+            elif task.state == "PENDING":
+                return {"task_id": task_id, "status": "Pending"}
+            elif task.state == "FAILURE":
+                return {
+                    "task_id": task_id,
+                    "status": "Failed",
+                    "error": str(task.result),
+                }
+            else:
+                return {"task_id": task_id, "status": task.state}
         except ObjectDoesNotExist:
             LOGGER.info("API key expired please try again")
     else:

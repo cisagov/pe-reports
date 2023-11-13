@@ -42,7 +42,7 @@ def fill_cidrs(orgs, staging):
     # Loop through P&E organizations and insert current CIDRs
     for org_index, org_row in orgs.iterrows():
         org_id = org_row["organizations_uid"]
-        networks = query_cyhy_assets(org_row["cyhy_db_name"], conn)
+        networks = query_cyhy_assets(org_row["cyhy_db_name"])
         for network_index, network in networks.iterrows():
             network_count += 1
             net = network["network"]

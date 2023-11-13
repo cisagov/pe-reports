@@ -608,7 +608,7 @@ class Cyber_Six:
         )
         if not self.soc_med_included:
             alerts_exec = alerts_exec[~alerts_exec["Site"].isin(self.soc_med_platforms)]
-        alerts_exec.sort_values(by=["Events, Title"], ascending=[False,True], inplace=True)
+        alerts_exec.sort_values(by=["Events", "Title"], ascending=[False,True], inplace=True)
         alerts_exec["Title"] = alerts_exec["Title"].str[:200]
         return alerts_exec
 

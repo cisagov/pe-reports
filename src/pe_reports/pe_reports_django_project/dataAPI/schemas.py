@@ -2638,8 +2638,96 @@ class CVEInfoInsertTaskResp(BaseModel):
     error: Optional[str] = None
 
 
+# --- get_intelx_breaches(), Issue 641 ---
+# Get IntelX breaches
+class CredBreachIntelX(BaseModel):
+    """CredBreachIntelX schema class."""
+
+    breach_name: str
+    credential_breaches_uid: str
+
+    class Config:
+        """CredBreachIntelX schema config class."""
+
+        orm_mode = True
+
+
+# --- get_intelx_breaches(), Issue 641 ---
+# Get IntelX breaches, input
+class CredBreachIntelXInput(BaseModel):
+    """CredBreachIntelXInput schema class."""
+
+    source_uid: str
+
+    class Config:
+        """CredBreachIntelXInput schema config class."""
+
+        orm_mode = True
+
+
+# --- get_intelx_breaches(), Issue 641 ---
+# Get IntelX breaches, task resp
+class CredBreachIntelXTaskResp(BaseModel):
+    """CredBreachIntelXTaskResp schema class."""
+
+    task_id: str
+    status: str
+    result: Optional[List[CredBreachIntelX]] = None
+    error: Optional[str] = None
+
+
+# --- insert_sixgill_alerts(), Issue 653 ---
+class AlertsInsert(BaseModel):
+    """AlertsInsert schema class."""
+
+    alert_name: str
+    content: str
+    date: str
+    sixgill_id: str
+    read: str
+    severity: str
+    site: str
+    threat_level: str
+    threats: str
+    title: str
+    user_id: str
+    category: str
+    lang: str
+    organizations_uid: str
+    data_source_uid: str
+    content_snip: str
+    asset_mentioned: str
+    asset_type: str
+
+    class Config:
+        """AlertsInsert schema config class."""
+        
+        orm_mode = True
+
+
+# --- insert_sixgill_alerts(), Issue 653 ---
+class AlertsInsertInput(BaseModel):
+    """AlertsInsertInput schema class."""
+
+    new_alerts: List[AlertsInsert]
+
+    class Config:
+        """AlertsInsertInput schema config class."""
+
+        orm_mode = True
+
+
+# --- insert_sixgill_alerts(), Issue 653 ---
+class AlertsInsertTaskResp(BaseModel):
+    """AlertsInsertTaskResp schema class."""
+
+    task_id: str
+    status: str
+    result: Optional[str] = None
+    error: Optional[str] = None
+
+    
 # --- insert_sixgill_mentions(), Issue 654 ---
-# Insert multiple records into the mentions table
 class MentionsInsert(BaseModel):
     """MentionsInsert schema class."""
 
@@ -2670,11 +2758,10 @@ class MentionsInsert(BaseModel):
 
 
 # --- insert_sixgill_mentions(), Issue 654 ---
-# Insert multiple records into the mentions table, input
 class MentionsInsertInput(BaseModel):
     """MentionsInsertInput schema class."""
 
-    insert_data: List[MentionsInsert]
+    new_mentions: List[MentionsInsert]
 
     class Config:
         """MentionsInsertInput schema config class."""
@@ -2682,18 +2769,28 @@ class MentionsInsertInput(BaseModel):
         orm_mode = True
 
 
+# --- insert_sixgill_mentions(), Issue 654 ---
+class MentionsInsertTaskResp(BaseModel):
+    """MentionsInsertTaskResp schema class."""
+
+    task_id: str
+    status: str
+    result: Optional[str] = None
+    error: Optional[str] = None
+
+
 # --- insert_sixgill_breaches(), Issue 655 ---
-# Insert multiple records into the credential_breaches table
 class CredBreachesInsert(BaseModel):
     """CredBreachesInsert schema class."""
 
-    breach_name: str
-    description: str
-    exposed_cred_count: int
-    breach_date: str
-    modified_date: str
-    password_included: bool
-    data_source_uid: str
+    breach_name: str # good
+    description: str # good
+    exposed_cred_count: int # good
+    breach_date: str # good
+    modified_date: str # good
+    password_included: bool # used to be password col
+    data_source_uid: str # good
+    # add "password" col?
 
     class Config:
         """CredBreachesInsert schema config class."""
@@ -2702,16 +2799,70 @@ class CredBreachesInsert(BaseModel):
 
 
 # --- insert_sixgill_breaches(), Issue 655 ---
-# Insert multiple records into the credential_breaches table, input
 class CredBreachesInsertInput(BaseModel):
     """CredBreachesInsertInput schema class."""
 
-    insert_data: List[CredBreachesInsert]
+    new_breaches: List[CredBreachesInsert]
 
     class Config:
         """CredBreachesInsertInput schema config class."""
 
         orm_mode = True
+
+
+# --- insert_sixgill_breaches(), Issue 655 ---
+class CredBreachesInsertTaskResp(BaseModel):
+    """CredBreachesInsertTaskResp schema class."""
+
+    task_id: str
+    status: str
+    result: Optional[str] = None
+    error: Optional[str] = None
+
+
+# --- insert_sixgill_credentials(), Issue 656 ---
+class CredExpInsert(BaseModel):
+    """CredExpInsert schema class."""
+
+    modified_date: str
+    sub_domain: str
+    email: str
+    hash_type: str
+    name: str
+    login_id: str
+    password: str
+    phone: str
+    breach_name: str
+    organizations_uid: str
+    data_source_uid: str
+    credential_breaches_uid: str
+
+    class Config:
+        """CredExpInsert schema config class."""
+        
+        orm_mode = True
+
+
+# --- insert_sixgill_credentials(), Issue 656 ---
+class CredExpInsertInput(BaseModel):
+    """CredExpInsertInput schema class."""
+
+    new_exposures: List[CredExpInsert]
+
+    class Config:
+        """CredExpInsertInput schema config class."""
+
+        orm_mode = True
+
+
+# --- insert_sixgill_credentials(), Issue 656 ---
+class CredExpInsertTaskResp(BaseModel):
+    """CredExpInsertTaskResp schema class."""
+
+    task_id: str
+    status: str
+    result: Optional[str] = None
+    error: Optional[str] = None
 
 
 # --- insert_sixgill_topCVEs(), Issue 657 ---
@@ -2737,12 +2888,22 @@ class TopCVEsInsert(BaseModel):
 class TopCVEsInsertInput(BaseModel):
     """TopCVEsInsertInput schema class."""
 
-    insert_data: List[TopCVEsInsert]
+    new_topcves: List[TopCVEsInsert]
 
     class Config:
         """TopCVEsInsertInput schema config class."""
 
         orm_mode = True
+
+
+# --- insert_sixgill_topCVEs(), Issue 657 ---
+class TopCVEsInsertTaskResp(BaseModel):
+    """TopCVEsInsertTaskResp schema class."""
+
+    task_id: str
+    status: str
+    result: Optional[str] = None
+    error: Optional[str] = None
 
 
 # --- addRootdomain(), Issue 661 ---
