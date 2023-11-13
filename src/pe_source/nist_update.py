@@ -12,9 +12,13 @@ from nested_lookup import nested_lookup
 import pytz
 import requests
 
+# cisagov Libraries
+from pe_reports.data.config import staging_config
+
+API_DIC = staging_config(section="nist")
+api_key = API_DIC.get("api_key")
 # Global variables
 nist_url = "https://services.nvd.nist.gov/rest/json/cves/2.0"
-api_key = "0f67be89-e595-419f-9656-f570c8202dce"
 
 LOGGER = logging.getLogger(__name__)
 
