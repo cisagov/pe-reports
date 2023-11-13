@@ -3,14 +3,13 @@
 import ast
 import datetime
 import json
-from typing import List
+from typing import List, Optional
 
 # Third-Party Libraries
 from celery import shared_task
 from django.core import serializers
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.db.models import Q
-from . import schemas
 from home.models import (  # General DB Table Models:; D-Score View Models:; I-Score View Models:; Misc. Score View Models:
     CyhyKevs,
     MatVwOrgsAllIps,
@@ -32,7 +31,10 @@ from home.models import (  # General DB Table Models:; D-Score View Models:; I-S
     VwIscoreWASVuln,
     VwIscoreWASVulnPrev,
     VwPshttDomainsToRun,
+    XpanseAlerts,
 )
+
+from . import schemas
 
 
 # v ---------- Task Helper Functions ---------- v
@@ -458,9 +460,7 @@ def sub_domains_by_org_task(self, org_uid: str, page: int, per_page: int):
     """Task function for the subdomains by org query API endpoint."""
     # Make database query and convert to list of dictionaries
     total_data = list(
-        SubDomains.objects.filter(
-            root_domain_uid__organizations_uid=org_uid
-        ).values()
+        SubDomains.objects.filter(root_domain_uid__organizations_uid=org_uid).values()
     )
     # Divide up data w/ specified num records per page
     paged_data = Paginator(total_data, per_page)
@@ -486,15 +486,9 @@ def sub_domains_by_org_task(self, org_uid: str, page: int, per_page: int):
     # Convert uuids to strings
     for row in single_page_data:
         row["sub_domain_uid"] = convert_uuid_to_string(row["sub_domain_uid"])
-        row["root_domain_uid_id"] = convert_uuid_to_string(
-            row["root_domain_uid_id"]
-        )
-        row["data_source_uid_id"] = convert_uuid_to_string(
-            row["data_source_uid_id"]
-        )
-        row["dns_record_uid_id"] = convert_uuid_to_string(
-            row["dns_record_uid_id"]
-        )
+        row["root_domain_uid_id"] = convert_uuid_to_string(row["root_domain_uid_id"])
+        row["data_source_uid_id"] = convert_uuid_to_string(row["data_source_uid_id"])
+        row["dns_record_uid_id"] = convert_uuid_to_string(row["dns_record_uid_id"])
         row["first_seen"] = convert_date_to_string(row["first_seen"])
         row["last_seen"] = convert_date_to_string(row["last_seen"])
     result = {
@@ -503,3 +497,105 @@ def sub_domains_by_org_task(self, org_uid: str, page: int, per_page: int):
         "data": single_page_data,
     }
     return result
+
+
+@shared_task(bind=True)
+def get_xpanse_vulns(
+    self, business_unit: str, modified_datetime: Optional[datetime.datetime] = None
+):
+    """Task function for the Xpanse Vulns by business_unit and modified_date API endpoint."""
+    # Make database query and convert to list of dictionaries
+
+    xpanse_alerts = XpanseAlerts.objects.filter(
+        business_units__entity_name=business_unit
+    )
+
+    if modified_datetime is not None:
+        xpanse_alerts = xpanse_alerts.filter(
+            Q(local_insert_ts__gte=modified_datetime)
+            | Q(last_modified_ts__gte=modified_datetime)
+        )
+
+    vulns = []
+    for alert in xpanse_alerts:
+        vuln_dict = {
+            "alert_name": alert.alert_name,  # str
+            "description": alert.description,  # str
+            "last_modified_ts": alert.last_modified_ts,  # datetime
+            "local_insert_ts": alert.local_insert_ts,  # datetime
+            "event_timestamp": alert.event_timestamp,  # List[datetime]
+            "host_name": alert.host_name,  # str
+            "alert_action": alert.alert_action,  # str
+            "action_country": alert.action_country,  # List[str]
+            "action_remote_port": alert.action_remote_port,  # List[int]
+            "external_id": alert.external_id,  # str
+            "related_external_id": alert.related_external_id,  # str
+            "alert_occurrence": alert.alert_occurrence,  # int
+            "severity": alert.severity,  # str
+            "matching_status": alert.matching_status,  # str
+            "alert_type": alert.alert_type,  # str
+            "resolution_status": alert.resolution_status,  # str
+            "resolution_comment": alert.resolution_comment,  # str
+            "last_observed": alert.last_observed,  # datetime
+            "country_codes": alert.country_codes,  # List[str]
+            "cloud_providers": alert.cloud_providers,  # List[str]
+            "ipv4_addresses": alert.ipv4_addresses,  # List[str]
+            "domain_names": alert.domain_names,  # List[str]
+            "port_protocol": alert.port_protocol,  # str
+            "time_pulled_from_xpanse": alert.time_pulled_from_xpanse,  # datetime
+            "action_pretty": alert.action_pretty,  # str
+            "attack_surface_rule_name": alert.attack_surface_rule_name,  # str
+            "certificate": alert.certificate,  # Dict
+            "remediation_guidance": alert.remediation_guidance,  # str
+            "asset_identifiers": alert.asset_identifiers,  # List[Dict]
+            "services": [],
+        }
+
+        for service in alert.services.all():
+            service_dict = {
+                "service_id": service.service_id,
+                "service_name": service.service_name,
+                "service_type": service.service_type,
+                "ip_address": service.ip_address,
+                "domain": service.domain,
+                "externally_detected_providers": service.externally_detected_providers,
+                "is_active": service.is_active,
+                "first_observed": service.first_observed,
+                "last_observed": service.last_observed,
+                "port": service.port,
+                "protocol": service.protocol,
+                "active_classifications": service.active_classifications,
+                "inactive_classifications": service.inactive_classifications,
+                "discovery_type": service.discovery_type,
+                "externally_inferred_vulnerability_score": service.externally_inferred_vulnerability_score,
+                "externally_inferred_cves": service.externally_inferred_cves,
+                "service_key": service.service_key,
+                "service_key_type": service.service_key_type,
+                "cves": [],
+            }
+            cve_services = service.xpansecveservice_set.select_related(
+                "xpanse_inferred_cve"
+            )
+            for vuln in cve_services:
+                service_dict["cves"].append(
+                    {
+                        "cve_id": vuln.xpanse_inferred_cve.cve_id,
+                        "cvss_score_v2": vuln.xpanse_inferred_cve.cvss_score_v2,
+                        "cve_severity_v2": vuln.xpanse_inferred_cve.cve_severity_v2,
+                        "cvss_score_v3": vuln.xpanse_inferred_cve.cvss_score_v3,
+                        "cve_severity_v3": vuln.xpanse_inferred_cve.cve_severity_v3,
+                        "inferred_cve_match_type": vuln.inferred_cve_match_type,
+                        "product": vuln.product,
+                        "confidence": vuln.confidence,
+                        "vendor": vuln.vendor,
+                        "version_number": vuln.version_number,
+                        "activity_status": vuln.activity_status,
+                        "first_observed": vuln.first_observed,
+                        "last_observed": vuln.last_observed,
+                    }
+                )
+
+            vuln_dict["services"].append(service_dict)
+        vulns.append(vuln_dict)
+
+    return vulns

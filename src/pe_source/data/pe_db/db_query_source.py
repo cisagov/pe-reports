@@ -25,8 +25,8 @@ CONN_PARAMS_DIC = config()
 CONN_PARAMS_DIC_STAGING = staging_config()
 
 API_DIC = staging_config(section="pe_api")
-pe_api_url = "http://127.0.0.1:8089/apiv1/" #API_DIC.get("pe_api_url")
-pe_api_key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE2NzMwNDAzNDUsInN1YiI6ImNkdWhuNzUifQ.Gx8loA6ZtWe7MA4eqlDzWUPzc_j9vJjOLYOxg2aBZxQ"#API_DIC.get("pe_api_key")
+pe_api_url = API_DIC.get("pe_api_url")
+pe_api_key = API_DIC.get("pe_api_key")
 
 
 def show_psycopg2_exception(err):
@@ -849,7 +849,7 @@ def insert_sixgill_topCVEs_api(df):
         LOGGER.error(err)
     except json.decoder.JSONDecodeError as err:
         LOGGER.error(err)
-        
+
 
 # --- Issue 661 ---
 def addRootdomain_api(root_domain, pe_org_uid, source_uid, org_name):
@@ -863,7 +863,7 @@ def addRootdomain_api(root_domain, pe_org_uid, source_uid, org_name):
         org_name: The name of the organization associated with the new record
     """
     # Endpoint info
-    endpoint_url = pe_api_path + "root_domains_single_insert"
+    endpoint_url = pe_api_url + "root_domains_single_insert"
     headers = {
         "Content-Type": "application/json",
         "access_token": pe_api_key,
@@ -891,7 +891,7 @@ def addRootdomain_api(root_domain, pe_org_uid, source_uid, org_name):
         LOGGER.error(err)
     except json.decoder.JSONDecodeError as err:
         LOGGER.error(err)
-        
+
 
 # --- Issue 662 ---
 def addSubdomain_api(domain, pe_org_uid, root):
@@ -931,7 +931,7 @@ def addSubdomain_api(domain, pe_org_uid, root):
         LOGGER.error(err)
     except json.decoder.JSONDecodeError as err:
         LOGGER.error(err)
-        
+
 
 # v ===== OLD TSQL VERSIONS OF FUNCTIONS ===== v
 # --- 654 OLD TSQL ---
@@ -1088,3 +1088,159 @@ def addSubdomain(conn, domain, pe_org_uid, root):
     LOGGER.info("Success adding domain %s to subdomains table.", domain)
     conn.commit()
     close(conn)
+
+
+def insert_or_update_business_unit(business_unit_dict):
+    """
+    Insert a Xpanse business unit record into the PE databawse .
+
+    On conflict, update the old record with the new data
+
+    Args:
+        business_unit_dict: Dictionary of column names and values to be inserted
+
+    Return:
+        Status on if the record was inserted successfully
+    """
+    # Endpoint info
+    endpoint_url = pe_api_url + "xpanse_business_unit_insert_or_update"
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": pe_api_key,
+    }
+    data = json.dumps(business_unit_dict, default=str)
+
+    LOGGER.info(data)
+    try:
+        # Call endpoint
+        xpanse_business_unit_insert_result = requests.put(
+            endpoint_url, headers=headers, data=data
+        ).json()
+        # print(xpanse_business_unit_insert_result)
+        LOGGER.info("Successfully inserted new record in xpanse_business_units table.")
+        return xpanse_business_unit_insert_result
+    except requests.exceptions.HTTPError as errh:
+        LOGGER.error(errh)
+    except requests.exceptions.ConnectionError as errc:
+        LOGGER.error(errc)
+    except requests.exceptions.Timeout as errt:
+        LOGGER.error(errt)
+    except requests.exceptions.RequestException as err:
+        LOGGER.error(err)
+    except json.decoder.JSONDecodeError as err:
+        LOGGER.error(err)
+
+
+def api_xpanse_alert_insert(xpanse_alert_dict):
+    """
+    Insert an xpanse alert record and connected assets and services.
+
+    On conflict, update the old record with the new data
+
+    Args:
+        xpanse_alert_dict: Dictionary of column names and values to be inserted
+
+    Return:
+        Status on if the record was inserted successfully
+    """
+    # Endpoint info
+    endpoint_url = pe_api_url + "xpanse_alert_insert_or_update"
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": pe_api_key,
+    }
+    data = json.dumps(xpanse_alert_dict, default=str)
+
+    LOGGER.info(data)
+    try:
+        # Call endpoint
+        xpanse_alert_insert_result = requests.put(
+            endpoint_url, headers=headers, data=data
+        ).json()
+
+        LOGGER.info(
+            "Successfully inserted new record in xpanse_alerts table with associated assets and services"
+        )
+        return xpanse_alert_insert_result
+    except requests.exceptions.HTTPError as errh:
+        LOGGER.error(errh)
+    except requests.exceptions.ConnectionError as errc:
+        LOGGER.error(errc)
+    except requests.exceptions.Timeout as errt:
+        LOGGER.error(errt)
+    except requests.exceptions.RequestException as err:
+        LOGGER.error(err)
+    except json.decoder.JSONDecodeError as err:
+        LOGGER.error(err)
+
+
+def api_pull_xpanse_vulns(business_unit, modified_date):
+    """
+    Query API for all domains that have not been recently run through PSHTT.
+
+    Return:
+        All subdomains that haven't been run in the last 15 days
+    """
+    create_task_url = pe_api_url + "xpanse_vulns"
+    check_task_url = pe_api_url + "xpanse_vulns/task/"
+
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": pe_api_key,
+    }
+    data = json.dumps(
+        {"business_unit": business_unit, "modified_datetime": modified_date},
+        default=str,
+    )
+    print(data)
+    try:
+        print("in try")
+        # Create task for query
+        create_task_result = requests.post(
+            create_task_url, headers=headers, data=data
+        ).json()
+
+        print(create_task_result)
+        task_id = create_task_result.get("task_id")
+        LOGGER.info("Created task for xpanse_vuln endpoint query, task_id: %s", task_id)
+        # Once task has been started, keep pinging task status until finished
+        check_task_url += task_id
+        task_status = "Pending"
+
+        while task_status != "Completed" and task_status != "Failed":
+            # Ping task status endpoint and get status
+            check_task_resp = requests.get(check_task_url, headers=headers).json()
+            print(check_task_resp)
+
+            task_status = check_task_resp.get("status")
+            LOGGER.info("\tPinged xpanse_vuln status endpoint, status: %s", task_status)
+            time.sleep(3)
+    except requests.exceptions.HTTPError as errh:
+        print("HTTPError")
+        LOGGER.error(errh)
+    except requests.exceptions.ConnectionError as errc:
+        LOGGER.error(errc)
+        print("ConnectionError")
+    except requests.exceptions.Timeout as errt:
+        LOGGER.error(errt)
+        print("Timeout")
+    except requests.exceptions.RequestException as err:
+        LOGGER.error(err)
+        print("RequestException")
+    except json.decoder.JSONDecodeError as err:
+        print("JSONDecodeError")
+        LOGGER.error(err)
+
+    # Once task finishes, return result
+    try:
+        if task_status == "Completed":
+            print(check_task_resp.get("result"))
+            result_df = pd.DataFrame.from_dict(check_task_resp.get("result"))
+            list_of_dicts = result_df.to_dict("records")
+            return list_of_dicts
+        else:
+            raise Exception(
+                "xpanse_vuln query task failed 1, details: ", check_task_resp
+            )
+    except Exception as e:
+        raise Exception("xpanse_vuln query task failed 2, details: ", e)

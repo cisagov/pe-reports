@@ -216,7 +216,7 @@ class AuthUserUserPermissions(models.Model):
 class Cidrs(models.Model):
     """Define Cidrs model."""
 
-    cidr_uid = models.UUIDField(primary_key=True, default=uuid.uuid1())
+    cidr_uid = models.UUIDField(primary_key=True, default=uuid.uuid1)
     network = models.TextField()  # This field type is a guess.
     organizations_uid = models.ForeignKey(
         "Organizations",
@@ -245,7 +245,7 @@ class Cidrs(models.Model):
 class CredentialBreaches(models.Model):
     """Define CredentialBreaches model."""
 
-    credential_breaches_uid = models.UUIDField(primary_key=True, default=uuid.uuid1())
+    credential_breaches_uid = models.UUIDField(primary_key=True, default=uuid.uuid1)
     breach_name = models.TextField(unique=True)
     description = models.TextField(blank=True, null=True)
     exposed_cred_count = models.BigIntegerField(blank=True, null=True)
@@ -309,7 +309,7 @@ class CredentialExposures(models.Model):
 class CveInfo(models.Model):
     """Define CveInfo model."""
 
-    cve_uuid = models.UUIDField(primary_key=True, default=uuid.uuid1())
+    cve_uuid = models.UUIDField(primary_key=True, default=uuid.uuid1)
     cve_name = models.TextField(unique=True, blank=True, null=True)
     cvss_2_0 = models.DecimalField(
         max_digits=1000, decimal_places=1000, blank=True, null=True
@@ -336,7 +336,7 @@ class CyhyContacts(models.Model):
     """Define CyhyContacts model."""
 
     field_id = models.UUIDField(
-        db_column="_id", primary_key=True, default=uuid.uuid1()
+        db_column="_id", primary_key=True, default=uuid.uuid1
     )  # Field renamed because it started with '_'.
     org_id = models.TextField()
     org_name = models.TextField()
@@ -358,7 +358,7 @@ class CyhyDbAssets(models.Model):
     """Define CyhyDbAssets model."""
 
     field_id = models.UUIDField(
-        db_column="_id", primary_key=True, default=uuid.uuid1()
+        db_column="_id", primary_key=True, default=uuid.uuid1
     )  # Field renamed because it started with '_'.
     org_id = models.TextField(blank=True, null=True)
     org_name = models.TextField(blank=True, null=True)
@@ -423,7 +423,7 @@ class DataapiApiuser(models.Model):
 class DataSource(models.Model):
     """Define DataSource model."""
 
-    data_source_uid = models.UUIDField(primary_key=True, default=uuid.uuid1())
+    data_source_uid = models.UUIDField(primary_key=True, default=uuid.uuid1)
     name = models.TextField()
     description = models.TextField()
     last_run = models.DateField()
@@ -501,7 +501,7 @@ class DjangoSession(models.Model):
 class DnsRecords(models.Model):
     """Define DnsRecords model."""
 
-    dns_record_uid = models.UUIDField(primary_key=True, default=uuid.uuid1())
+    dns_record_uid = models.UUIDField(primary_key=True, default=uuid.uuid1)
     domain_name = models.TextField(blank=True, null=True)
     domain_type = models.TextField(blank=True, null=True)
     created_date = models.DateTimeField(blank=True, null=True)
@@ -591,7 +591,7 @@ class DnsRecords(models.Model):
 class DomainAlerts(models.Model):
     """Define DomainAlerts model."""
 
-    domain_alert_uid = models.UUIDField(primary_key=True, default=uuid.uuid1())
+    domain_alert_uid = models.UUIDField(primary_key=True, default=uuid.uuid1)
     sub_domain_uid = models.ForeignKey(
         "SubDomains", on_delete=models.CASCADE, db_column="sub_domain_uid"
     )
@@ -616,7 +616,7 @@ class DomainAlerts(models.Model):
 class DomainPermutations(models.Model):
     """Define DomainPermutations model."""
 
-    suspected_domain_uid = models.UUIDField(default=uuid.uuid1())
+    suspected_domain_uid = models.UUIDField(default=uuid.uuid1)
     organizations_uid = models.ForeignKey(
         "Organizations", on_delete=models.CASCADE, db_column="organizations_uid"
     )
@@ -656,7 +656,7 @@ class DomainPermutations(models.Model):
 class DotgovDomains(models.Model):
     """Define DotgovDomains model."""
 
-    dotgov_uid = models.UUIDField(primary_key=True, default=uuid.uuid1())
+    dotgov_uid = models.UUIDField(primary_key=True, default=uuid.uuid1)
     domain_name = models.TextField(unique=True)
     domain_type = models.TextField(blank=True, null=True)
     agency = models.TextField(blank=True, null=True)
@@ -1008,7 +1008,7 @@ class RootDomains(models.Model):
 class TeamMembers(models.Model):
     """Define TeamMembers model."""
 
-    team_member_uid = models.UUIDField(primary_key=True, default=uuid.uuid1())
+    team_member_uid = models.UUIDField(primary_key=True, default=uuid.uuid1)
     team_member_fname = models.TextField()
     team_member_lname = models.TextField()
     team_member_email = models.TextField()
@@ -1299,7 +1299,7 @@ class WebAssets(models.Model):
 class WeeklyStatuses(models.Model):
     """Define WeeklyStatuses model."""
 
-    weekly_status_uid = models.UUIDField(primary_key=True, default=uuid.uuid1())
+    weekly_status_uid = models.UUIDField(primary_key=True, default=uuid.uuid1)
     user_status = models.TextField(blank=True)
     key_accomplishments = models.TextField(blank=True, null=True)
     ongoing_task = models.TextField()
@@ -1314,7 +1314,8 @@ class WeeklyStatuses(models.Model):
 
     class Meta:
         """Set WeeklyStatuses model metadata."""
-        unique_together = (('week_ending', 'user_status'),)
+
+        # unique_together = (('week_ending', 'user_status'),)
 
         managed = True
         db_table = "weekly_statuses"
@@ -2024,3 +2025,269 @@ class VwIscoreOrgsIpCounts(models.Model):
 
         managed = False
         db_table = "vw_iscore_orgs_ip_counts"
+
+
+class XpanseBusinessUnits(models.Model):
+    """Define XpanseBusinessUnits model."""
+
+    xpanse_business_unit_uid = models.UUIDField(primary_key=True, default=uuid.uuid1)
+    entity_name = models.TextField(unique=True, blank=True, null=True)
+    state = models.TextField(blank=True, null=True)
+    county = models.TextField(blank=True, null=True)
+    city = models.TextField(blank=True, null=True)
+    sector = models.TextField(blank=True, null=True)
+    entity_type = models.TextField(blank=True, null=True)
+    region = models.TextField(blank=True, null=True)
+    rating = models.IntegerField(blank=True, null=True)
+
+    class Meta:
+        """Set XpanseBusinessUnits metadata."""
+
+        managed = False
+        db_table = "xpanse_business_units"
+
+
+class XpanseAssets(models.Model):
+    """Define XpanseAssets model."""
+
+    xpanse_asset_uid = models.UUIDField(primary_key=True, default=uuid.uuid1)
+    asm_id = models.TextField(unique=True, blank=False, null=False)
+    asset_name = models.TextField(blank=True, null=True)
+    asset_type = models.TextField(blank=True, null=True)
+    last_observed = models.DateTimeField(blank=True, null=True)
+    first_observed = models.DateTimeField(blank=True, null=True)
+    externally_detected_providers = ArrayField(
+        models.TextField(blank=True, null=False), blank=True, null=True
+    )
+    created = models.DateTimeField(blank=True, null=True)
+    ips = ArrayField(models.TextField(blank=True, null=False), blank=True, null=True)
+    active_external_services_types = ArrayField(
+        models.TextField(blank=True, null=False), blank=True, null=True
+    )
+    domain = models.TextField(blank=True, null=True)
+    certificate_issuer = models.TextField(blank=True, null=True)
+    certificate_algorithm = models.TextField(blank=True, null=True)
+    certificate_classifications = ArrayField(
+        models.TextField(blank=True, null=False), blank=True, null=True
+    )
+    resolves = models.BooleanField(blank=True, null=True)
+    # details
+    top_level_asset_mapper_domain = models.TextField(blank=True, null=True)
+    domain_asset_type = models.JSONField(blank=True, null=True)
+    is_paid_level_domain = models.BooleanField(blank=True, null=True)
+    domain_details = models.JSONField(blank=True, null=True)
+    dns_zone = models.TextField(blank=True, null=True)
+    latest_sampled_ip = models.IntegerField(blank=True, null=True)
+
+    recent_ips = models.JSONField(blank=True, null=True)
+    external_services = models.JSONField(blank=True, null=True)
+    externally_inferred_vulnerability_score = models.DecimalField(
+        max_digits=5, decimal_places=2, blank=True, null=True
+    )
+    externally_inferred_cves = ArrayField(
+        models.TextField(blank=True, null=False), blank=True, null=True
+    )
+    explainers = ArrayField(
+        models.TextField(blank=True, null=False), blank=True, null=True
+    )
+    tags = ArrayField(models.TextField(blank=True, null=False), blank=True, null=True)
+
+    class Meta:
+        """Set XpanseAssets metdata."""
+
+        managed = True
+        db_table = "xpanse_assets"
+
+
+class XpanseCves(models.Model):
+    """Define XpanseCves model."""
+
+    xpanse_cve_uid = models.UUIDField(unique=True, primary_key=True, default=uuid.uuid1)
+    cve_id = models.TextField(unique=True, blank=True, null=True)
+    cvss_score_v2 = models.DecimalField(
+        max_digits=5, decimal_places=2, blank=True, null=True
+    )
+    cve_severity_v2 = models.TextField(blank=True, null=True)
+    cvss_score_v3 = models.DecimalField(
+        max_digits=5, decimal_places=2, blank=True, null=True
+    )
+    cve_severity_v3 = models.TextField(blank=True, null=True)
+
+    class Meta:
+        """Set XpanseCves metadata."""
+
+        managed = True
+        db_table = "xpanse_cves"
+
+
+class XpanseServices(models.Model):
+    """Define XpanseServices model."""
+
+    xpanse_service_uid = models.UUIDField(primary_key=True, default=uuid.uuid1)
+    service_id = models.TextField(unique=True, blank=True, null=True)
+    service_name = models.TextField(blank=True, null=True)
+    service_type = models.TextField(blank=True, null=True)
+    ip_address = ArrayField(
+        models.TextField(blank=True, null=False), blank=True, null=True
+    )
+    domain = ArrayField(models.TextField(blank=True, null=False), blank=True, null=True)
+    externally_detected_providers = ArrayField(
+        models.TextField(blank=True, null=False), blank=True, null=True
+    )
+    is_active = models.TextField(blank=True, null=True)
+    first_observed = models.DateTimeField(blank=True, null=True)
+    last_observed = models.DateTimeField(blank=True, null=True)
+    port = models.IntegerField(blank=True, null=True)
+    protocol = models.TextField(blank=True, null=True)
+    active_classifications = ArrayField(
+        models.TextField(blank=True, null=False), blank=True, null=True
+    )
+    inactive_classifications = ArrayField(
+        models.TextField(blank=True, null=False), blank=True, null=True
+    )
+    discovery_type = models.TextField(blank=True, null=True)
+    externally_inferred_vulnerability_score = models.DecimalField(
+        max_digits=5, decimal_places=2, blank=True, null=True
+    )
+    externally_inferred_cves = ArrayField(
+        models.TextField(blank=True, null=False), blank=True, null=True
+    )
+    service_key = models.TextField(blank=True, null=True)
+    service_key_type = models.TextField(blank=True, null=True)
+
+    cves = models.ManyToManyField(XpanseCves, through="XpanseCveService")
+
+    class Meta:
+        """Set XpanseServices metadata."""
+
+        managed = True
+        db_table = "xpanse_services"
+
+
+class XpanseCveService(models.Model):
+    """Define XpanseCves-Service linking table model."""
+
+    xpanse_inferred_cve = models.ForeignKey(XpanseCves, on_delete=models.CASCADE)
+    xpanse_service = models.ForeignKey(XpanseServices, on_delete=models.CASCADE)
+    inferred_cve_match_type = models.TextField(blank=True, null=True)
+    product = models.TextField(blank=True, null=True)
+    confidence = models.TextField(blank=True, null=True)
+    vendor = models.TextField(blank=True, null=True)
+    version_number = models.TextField(blank=True, null=True)
+    activity_status = models.TextField(blank=True, null=True)
+    first_observed = models.DateTimeField(blank=True, null=True)
+    last_observed = models.DateTimeField(blank=True, null=True)
+
+    class Meta:
+        """Set XpanseCveService metadata."""
+
+        managed = True
+        db_table = "xpanse_cve_services"
+        unique_together = (("xpanse_inferred_cve", "xpanse_service"),)
+
+
+class XpanseAlerts(models.Model):
+    """Define XpanseAlerts model."""
+
+    xpanse_alert_uid = models.UUIDField(primary_key=True, default=uuid.uuid1)
+    time_pulled_from_xpanse = models.DateTimeField(blank=True, null=True)
+    alert_id = models.TextField(unique=True, blank=False, null=False)
+    detection_timestamp = models.DateTimeField(blank=True, null=True)
+    alert_name = models.TextField(blank=True, null=True)
+    # endpoint_id ???,
+    description = models.TextField(blank=True, null=True)
+    host_name = models.TextField(blank=True, null=True)
+    alert_action = models.TextField(blank=True, null=True)
+    # user_name ??? null,
+    # mac_addresses ??? null,
+    # source ??? null,
+    action_pretty = models.TextField(blank=True, null=True)
+    # category ??? null,
+    # project ??? null,
+    # cloud_provider ??? null,
+    # resource_sub_type ??? null,
+    # resource_type ??? null,
+    action_country = ArrayField(
+        models.TextField(blank=True, null=False), blank=True, null=True
+    )
+    # event_type ??? null,
+    # is_whitelisted ??? null,
+    # image_name ??? null,
+    # action_local_ip ??? null,
+    # action_local_port ??? null,
+    # action_external_hostname ??? null,
+    # action_remote_ip ??? null,
+    action_remote_port = ArrayField(
+        models.IntegerField(blank=True, null=False), blank=True, null=True
+    )
+    # "matching_service_rule_id ??? null,
+    starred = models.BooleanField(blank=True, null=True)
+    external_id = models.TextField(blank=True, null=True)
+    related_external_id = models.TextField(blank=True, null=True)
+    alert_occurrence = models.IntegerField(blank=True, null=True)
+    severity = models.TextField(blank=True, null=True)
+    matching_status = models.TextField(blank=True, null=True)
+    # end_match_attempt_ts ??? null,
+    local_insert_ts = models.DateTimeField(blank=True, null=True)
+    last_modified_ts = models.DateTimeField(blank=True, null=True)
+    case_id = models.IntegerField(blank=True, null=True)
+    # deduplicate_tokens ??? null,
+    # filter_rule_id ??? null,
+    # event_id ??? null,
+    event_timestamp = ArrayField(
+        models.DateTimeField(blank=True, null=False), blank=True, null=True
+    )
+    # action_local_ip_v6 ??? null,
+    # action_remote_ip_v6 ??? null,
+    alert_type = models.TextField(blank=True, null=True)
+    resolution_status = models.TextField(blank=True, null=True)
+    resolution_comment = models.TextField(blank=True, null=True)
+    # dynamic_fields ??? null,
+    tags = ArrayField(models.TextField(blank=True, null=False), blank=True, null=True)
+    # malicious_urls ??? null,
+    last_observed = models.DateTimeField(blank=True, null=True)
+    country_codes = ArrayField(
+        models.TextField(blank=True, null=False), blank=True, null=True
+    )
+    cloud_providers = ArrayField(
+        models.TextField(blank=True, null=False), blank=True, null=True
+    )
+    ipv4_addresses = ArrayField(
+        models.TextField(blank=True, null=False), blank=True, null=True
+    )
+    # ipv6_addresses ??? null,
+    domain_names = ArrayField(
+        models.TextField(blank=True, null=False), blank=True, null=True
+    )
+    service_ids = ArrayField(
+        models.TextField(blank=True, null=False), blank=True, null=True
+    )
+    website_ids = ArrayField(
+        models.TextField(blank=True, null=False), blank=True, null=True
+    )
+    asset_ids = ArrayField(
+        models.TextField(blank=True, null=False), blank=True, null=True
+    )
+    certificate = models.JSONField(blank=True, null=True)
+    # {
+    #            issuerName": "IOS-Self-Signed-Certificate-782645061",
+    #            subjectName": "IOS-Self-Signed-Certificate-782645061",
+    #            validNotBefore": 1398850008000,
+    #            validNotAfter": 1577836800000,
+    #            serialNumber": "1"
+    # },
+    port_protocol = models.TextField(blank=True, null=True)
+    # business_unit_hierarchies
+    attack_surface_rule_name = models.TextField(blank=True, null=True)
+    remediation_guidance = models.TextField(blank=True, null=True)
+    asset_identifiers = models.JSONField(blank=True, null=True)
+
+    business_units = models.ManyToManyField(XpanseBusinessUnits, related_name="alerts")
+    services = models.ManyToManyField(XpanseServices, related_name="alerts")
+    assets = models.ManyToManyField(XpanseAssets, related_name="alerts")
+
+    class Meta:
+        """Set XpanseAlerts model metadata."""
+
+        managed = True
+        db_table = "xpanse_alerts"

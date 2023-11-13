@@ -4,18 +4,18 @@
 # import asyncio
 import codecs
 import csv
-from datetime import datetime as dt, timedelta
+from datetime import datetime as dt
+from datetime import timedelta
 
 # from io import TextIOWrapper
 import json
 import logging
-import numpy as np
 import socket
-import uuid
 
 # import re
 # , Dict
 from typing import Any, List, Optional, Union
+import uuid
 
 # Third-Party Libraries
 from dataAPI.tasks import (  # D-Score Task Functions:; I-Score Task Functions:; Misc. Score-Related Task Functions:
@@ -44,6 +44,7 @@ from dataAPI.tasks import (  # D-Score Task Functions:; I-Score Task Functions:;
     get_vs_info,
     get_vw_pshtt_domains_to_run_info,
     get_xl_stakeholders_info,
+    get_xpanse_vulns,
     get_xs_stakeholders_info,
     sub_domains_by_org_task,
 )
@@ -96,6 +97,12 @@ from home.models import (  # MatVwOrgsAllIps,
     VwOrgsAttacksurface,
     WasTrackerCustomerdata,
     WeeklyStatuses,
+    XpanseAlerts,
+    XpanseAssets,
+    XpanseBusinessUnits,
+    XpanseCves,
+    XpanseCveService,
+    XpanseServices,
 )
 from jose import exceptions, jwt
 from redis import asyncio as aioredis
@@ -168,9 +175,7 @@ def create_access_token(
     if expires_delta is not None:
         expires_date = dt.utcnow() + expires_delta
     else:
-        expires_date = dt.utcnow() + timedelta(
-            minutes=ACCESS_TOKEN_EXPIRE_MINUTES
-        )
+        expires_date = dt.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
 
     to_encode = {"exp": expires_date, "sub": str(subject)}
     encoded_jwt = jwt.encode(to_encode, JWT_SECRET_KEY, ALGORITHM)
@@ -184,9 +189,7 @@ def create_refresh_token(
     if expires_delta is not None:
         expires_date = dt.utcnow() + expires_delta
     else:
-        expires_date = dt.utcnow() + timedelta(
-            minutes=REFRESH_TOKEN_EXPIRE_MINUTES
-        )
+        expires_date = dt.utcnow() + timedelta(minutes=REFRESH_TOKEN_EXPIRE_MINUTES)
 
     to_encode = {"exp": expires_date, "sub": str(subject)}
     encoded_jwt = jwt.encode(to_encode, JWT_REFRESH_SECRET_KEY, ALGORITHM)
@@ -2498,7 +2501,7 @@ async def get_xl_stakeholders_task_status(
     tags=["Get all data for organizations where report on is false."],
 )
 def orgs_report_on_false(tokens: dict = Depends(get_api_key)):
-    """API endpoint to get all data for organizations where report on is false."""
+    """Create API endpoint to get all data for organizations where report on is false."""
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
@@ -2542,7 +2545,7 @@ def orgs_report_on_false(tokens: dict = Depends(get_api_key)):
 def orgs_set_report_on(
     data: schemas.OrgsSetReportOnInput, tokens: dict = Depends(get_api_key)
 ):
-    """API endpoint to set report_on to true for the specified organization."""
+    """Create API endpoint to set report_on to true for the specified organization."""
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
@@ -2624,7 +2627,7 @@ def orgs_set_report_on(
 def orgs_set_demo(
     data: schemas.OrgsSetReportOnInput, tokens: dict = Depends(get_api_key)
 ):
-    """API endpoint to set demo to true for the specified organization."""
+    """Create API endpoint to set demo to true for the specified organization."""
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
@@ -2697,14 +2700,16 @@ def orgs_set_demo(
 # --- query_cyhy_assets(), Issue 608 ---
 @api_router.post(
     "/cyhy_assets_by_org",
-    dependencies=[Depends(get_api_key)], #Depends(RateLimiter(times=200, seconds=60))],
+    dependencies=[
+        Depends(get_api_key)
+    ],  # Depends(RateLimiter(times=200, seconds=60))],
     response_model=List[schemas.CyhyDbAssetsByOrg],
     tags=["Get all cyhy assets for the specified organization."],
 )
 def cyhy_assets_by_org(
     data: schemas.GenInputOrgCyhyNameSingle, tokens: dict = Depends(get_api_key)
 ):
-    """API endpoint to get all cyhy assets for the specified organization."""
+    """Create API endpoint to get all cyhy assets for the specified organization."""
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
@@ -2723,7 +2728,9 @@ def cyhy_assets_by_org(
                 row["last_seen"] = convert_date_to_string(row["last_seen"])
             # Catch query no results scenario
             if not cyhy_assets_by_org_data:
-                cyhy_assets_by_org_data = [{x: None for x in schemas.CyhyDbAssetsByOrg.__fields__}]
+                cyhy_assets_by_org_data = [
+                    {x: None for x in schemas.CyhyDbAssetsByOrg.__fields__}
+                ]
             return cyhy_assets_by_org_data
         except ObjectDoesNotExist:
             LOGGER.info("API key expired please try again")
@@ -2734,12 +2741,16 @@ def cyhy_assets_by_org(
 # --- query_subs(), Issue 633 (paginated) ---
 @api_router.post(
     "/sub_domains_by_org",
-    dependencies=[Depends(get_api_key)], #Depends(RateLimiter(times=200, seconds=60))],
+    dependencies=[
+        Depends(get_api_key)
+    ],  # Depends(RateLimiter(times=200, seconds=60))],
     response_model=schemas.SubDomainPagedTaskResp,
     tags=["Get all sub domains for a specified organization."],
 )
-def sub_domains_by_org(data: schemas.SubDomainPagedInput, tokens: dict = Depends(get_api_key)):
-    """Call API endpoint to get all sub domains for a specified organization."""
+def sub_domains_by_org(
+    data: schemas.SubDomainPagedInput, tokens: dict = Depends(get_api_key)
+):
+    """Create API endpoint to get all sub domains for a specified organization."""
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
@@ -2757,7 +2768,9 @@ def sub_domains_by_org(data: schemas.SubDomainPagedInput, tokens: dict = Depends
 
 @api_router.get(
     "/sub_domains_by_org/task/{task_id}",
-    dependencies=[Depends(get_api_key)], #Depends(RateLimiter(times=200, seconds=60))],
+    dependencies=[
+        Depends(get_api_key)
+    ],  # Depends(RateLimiter(times=200, seconds=60))],
     response_model=schemas.SubDomainPagedTaskResp,
     tags=["Check task status for subdomains by org query."],
 )
@@ -2806,7 +2819,7 @@ async def sub_domains_by_org_task_status(
 def mentions_insert(
     data: schemas.MentionsInsertInput, tokens: dict = Depends(get_api_key)
 ):
-    """API endpoint to insert multiple records into the mentions table."""
+    """Create API endpoint to insert multiple records into the mentions table."""
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
@@ -2816,39 +2829,39 @@ def mentions_insert(
             create_ct = 0
             for record in data.insert_data:
                 # convert to dict
-                record = dict(record)
+                record_dict = dict(record)
                 curr_source_inst = DataSource.objects.get(
-                    data_source_uid=record["data_source_uid"]
+                    data_source_uid=record_dict["data_source_uid"]
                 )
                 # Insert each row of data
                 try:
                     Mentions.objects.get(
-                        sixgill_mention_id=record["sixgill_mention_id"]
+                        sixgill_mention_id=record_dict["sixgill_mention_id"]
                     )
                     # If record already exists, do nothing
                 except Mentions.DoesNotExist:
                     # Otherwise, create new record
                     Mentions.objects.create(
                         mentions_uid=uuid.uuid1(),
-                        organizations_uid=record["organizations_uid"],
+                        organizations_uid=record_dict["organizations_uid"],
                         data_source_uid=curr_source_inst,
-                        category=record["category"],
-                        collection_date=record["collection_date"],
-                        content=record["content"],
-                        creator=record["creator"],
-                        date=record["date"],
-                        sixgill_mention_id=record["sixgill_mention_id"],
-                        lang=record["lang"],
-                        post_id=record["post_id"],
-                        rep_grade=record["rep_grade"],
-                        site=record["site"],
-                        site_grade=record["site_grade"],
-                        sub_category=record["sub_category"],
-                        title=record["title"],
-                        type=record["type"],
-                        url=record["url"],
-                        comments_count=record["comments_count"],
-                        tags=record["tags"],
+                        category=record_dict["category"],
+                        collection_date=record_dict["collection_date"],
+                        content=record_dict["content"],
+                        creator=record_dict["creator"],
+                        date=record_dict["date"],
+                        sixgill_mention_id=record_dict["sixgill_mention_id"],
+                        lang=record_dict["lang"],
+                        post_id=record_dict["post_id"],
+                        rep_grade=record_dict["rep_grade"],
+                        site=record_dict["site"],
+                        site_grade=record_dict["site_grade"],
+                        sub_category=record_dict["sub_category"],
+                        title=record_dict["title"],
+                        type=record_dict["type"],
+                        url=record_dict["url"],
+                        comments_count=record_dict["comments_count"],
+                        tags=record_dict["tags"],
                     )
                     create_ct += 1
             return str(create_ct) + " records created in the mentions table"
@@ -2869,7 +2882,7 @@ def mentions_insert(
 def cred_breaches_insert(
     data: schemas.CredBreachesInsertInput, tokens: dict = Depends(get_api_key)
 ):
-    """API endpoint to insert multiple records into the credential_breaches table."""
+    """Create API endpoint to insert multiple records into the credential_breaches table."""
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
@@ -2880,31 +2893,33 @@ def cred_breaches_insert(
             update_ct = 0
             for record in data.insert_data:
                 # convert to dict
-                record = dict(record)
+                record_dict = dict(record)
                 curr_source_inst = DataSource.objects.get(
-                    data_source_uid=record["data_source_uid"]
+                    data_source_uid=record_dict["data_source_uid"]
                 )
                 # Insert each row of data
                 try:
-                    CredentialBreaches.objects.get(breach_name=record["breach_name"])
+                    CredentialBreaches.objects.get(
+                        breach_name=record_dict["breach_name"]
+                    )
                     # If record already exists, update
                     CredentialBreaches.objects.filter(
-                        breach_name=record["breach_name"]
+                        breach_name=record_dict["breach_name"]
                     ).update(
-                        exposed_cred_count=record["exposed_cred_count"],
-                        password_included=record["password_included"],
+                        exposed_cred_count=record_dict["exposed_cred_count"],
+                        password_included=record_dict["password_included"],
                     )
                     update_ct += 1
                 except CredentialBreaches.DoesNotExist:
                     # Otherwise, create new record
                     CredentialBreaches.objects.create(
                         credential_breaches_uid=uuid.uuid1(),
-                        breach_name=record["breach_name"],
-                        description=record["description"],
-                        exposed_cred_count=record["exposed_cred_count"],
-                        breach_date=record["breach_date"],
-                        modified_date=record["modified_date"],
-                        password_included=record["password_included"],
+                        breach_name=record_dict["breach_name"],
+                        description=record_dict["description"],
+                        exposed_cred_count=record_dict["exposed_cred_count"],
+                        breach_date=record_dict["breach_date"],
+                        modified_date=record_dict["modified_date"],
+                        password_included=record_dict["password_included"],
                         data_source_uid=curr_source_inst,
                     )
                     create_ct += 1
@@ -2932,7 +2947,7 @@ def cred_breaches_insert(
 def top_cves_insert(
     data: schemas.TopCVEsInsertInput, tokens: dict = Depends(get_api_key)
 ):
-    """API endpoint to insert multiple records into the top_cves table."""
+    """Create API endpoint to insert multiple records into the top_cves table."""
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
@@ -2942,23 +2957,25 @@ def top_cves_insert(
             create_ct = 0
             for record in data.insert_data:
                 # convert to dict
-                record = dict(record)
+                record_dict = dict(record)
                 curr_source_inst = DataSource.objects.get(
-                    data_source_uid=record["data_source_uid"]
+                    data_source_uid=record_dict["data_source_uid"]
                 )
                 # Insert each row of data, on conflict do nothing
                 try:
-                    TopCves.objects.get(cve_id=record["cve_id"], date=record["date"])
+                    TopCves.objects.get(
+                        cve_id=record_dict["cve_id"], date=record_dict["date"]
+                    )
                     # If record already exists, do nothing
                 except TopCves.DoesNotExist:
                     # Otherwise, create new record
                     TopCves.objects.create(
                         top_cves_uid=uuid.uuid1(),
-                        cve_id=record["cve_id"],
-                        dynamic_rating=record["dynamic_rating"],
-                        nvd_base_score=record["nvd_base_score"],
-                        date=record["date"],
-                        summary=record["summary"],
+                        cve_id=record_dict["cve_id"],
+                        dynamic_rating=record_dict["dynamic_rating"],
+                        nvd_base_score=record_dict["nvd_base_score"],
+                        date=record_dict["date"],
+                        summary=record_dict["summary"],
                         data_source_uid=curr_source_inst,
                     )
                     create_ct += 1
@@ -2980,7 +2997,7 @@ def top_cves_insert(
 def root_domains_single_insert(
     data: schemas.RootDomainsSingleInsertInput, tokens: dict = Depends(get_api_key)
 ):
-    """API endpoint to insert a single root domain into the root_domains table."""
+    """Create API endpoint to insert a single root domain into the root_domains table."""
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
@@ -3004,7 +3021,7 @@ def root_domains_single_insert(
                 try:
                     ip = socket.gethostbyname(data.root_domain)
                 except Exception:
-                    ip = np.nan
+                    ip = None
                 RootDomains.objects.create(
                     root_domain=data.root_domain,
                     organizations_uid=curr_org_inst,
@@ -3035,7 +3052,7 @@ def root_domains_single_insert(
 def sub_domains_single_insert(
     data: schemas.SubDomainsSingleInsertInput, tokens: dict = Depends(get_api_key)
 ):
-    """API endpoint to insert a single sub domain into the sub_domains table."""
+    """Create API endpoint to insert a single sub domain into the sub_domains table."""
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
@@ -3105,6 +3122,342 @@ def sub_domains_single_insert(
                     "Sub domain record has been updated in the sub_domains table for "
                     + org_name
                 )
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+
+@api_router.put(
+    "/xpanse_business_unit_insert_or_update",
+    dependencies=[Depends(get_api_key)],
+    # response_model=Dict[schemas.PshttDataBase],
+    tags=["Update or insert CVE data from NIST"],
+)
+# @transaction.atomic
+def xpanse_business_unit_insert_or_update(
+    # tag: str,
+    data: schemas.XpanseBusinessUnitsInsert,
+    tokens: dict = Depends(get_api_key),
+):
+    """Create API endpoint to create a record in database."""
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            LOGGER.info(f"The api key submitted {tokens}")
+
+            (
+                business_unit_object,
+                created,
+            ) = XpanseBusinessUnits.objects.update_or_create(
+                entity_name=data.entity_name,
+                defaults={
+                    "state": data.state,
+                    "county": data.county,
+                    "city": data.city,
+                    "sector": data.sector,
+                    "entity_type": data.entity_type,
+                    "region": data.region,
+                    "rating": data.rating,
+                },
+            )
+            if created:
+                LOGGER.info(
+                    "New Xpanse Business Unit record created for %s", data.entity_name
+                )
+                return {
+                    "message": "New business unit created.",
+                    "business_unit_obj": business_unit_object,
+                }
+            return {
+                "message": "Business unit updated.",
+                "business_unit_obj": business_unit_object,
+            }
+        except Exception as e:
+            print(e)
+            print("failed to insert or update")
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+
+@api_router.put(
+    "/xpanse_alert_insert_or_update",
+    dependencies=[Depends(get_api_key)],
+    # response_model=Dict[schemas.PshttDataBase],
+    tags=["Update or insert CVE data from NIST"],
+)
+# @transaction.atomic
+def xpanse_alert_insert_or_update(
+    # tag: str,
+    data: schemas.XpanseAlertInsert,
+    tokens: dict = Depends(get_api_key),
+):
+    """Create API endpoint to create a record in database."""
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            LOGGER.info(f"The api key submitted {tokens}")
+            LOGGER.info("Got into Xpanse Alert insert")
+
+            # vender_prod_dict = data.vender_product
+            alert_object, created = XpanseAlerts.objects.update_or_create(
+                alert_id=data.alert_id,
+                defaults={
+                    "time_pulled_from_xpanse": data.time_pulled_from_xpanse,
+                    # "alert_id": data.alert_id,
+                    "detection_timestamp": data.detection_timestamp,
+                    "alert_name": data.alert_name,
+                    "description": data.description,
+                    "host_name": data.host_name,
+                    "alert_action": data.alert_action,
+                    "action_pretty": data.action_pretty,
+                    "action_country": data.action_country,
+                    "action_remote_port": data.action_remote_port,
+                    "starred": data.starred,
+                    "external_id": data.external_id,
+                    "related_external_id": data.related_external_id,
+                    "alert_occurrence": data.alert_occurrence,
+                    "severity": data.severity,
+                    "matching_status": data.matching_status,
+                    "local_insert_ts": data.local_insert_ts,
+                    "last_modified_ts": data.last_modified_ts,
+                    "case_id": data.case_id,
+                    "event_timestamp": data.event_timestamp,
+                    "alert_type": data.alert_type,
+                    "resolution_status": data.resolution_status,
+                    "resolution_comment": data.resolution_comment,
+                    "tags": data.tags,
+                    "last_observed": data.last_observed,
+                    "country_codes": data.country_codes,
+                    "cloud_providers": data.cloud_providers,
+                    "ipv4_addresses": data.ipv4_addresses,
+                    "domain_names": data.domain_names,
+                    "service_ids": data.service_ids,
+                    "website_ids": data.website_ids,
+                    "asset_ids": data.asset_ids,
+                    "certificate": data.certificate,
+                    "port_protocol": data.port_protocol,
+                    "attack_surface_rule_name": data.attack_surface_rule_name,
+                    "remediation_guidance": data.remediation_guidance,
+                    "asset_identifiers": data.asset_identifiers
+                    # business_units: Optional[List[str]] = None
+                    # services: Optional[List[XpanseService]] = None
+                    # assets : Optional[List[XpanseAsset]] = None
+                },
+            )
+
+            if created:
+                LOGGER.info("new Xpanse alert record created for %s", data.alert_name)
+
+            business_unit_list = []
+            for b_u in data.business_units:
+                business_unit_list.append(
+                    XpanseBusinessUnits.objects.get(entity_name=b_u)
+                )
+
+            alert_object.business_units.set(business_unit_list)
+
+            asset_list = []
+            for asset_data in data.assets:
+                asset_object, created = XpanseAssets.objects.update_or_create(
+                    asm_id=asset_data.asm_id,
+                    defaults={
+                        "asset_name": asset_data.asset_name,
+                        "asset_type": asset_data.asset_type,
+                        "last_observed": asset_data.last_observed,
+                        "first_observed": asset_data.first_observed,
+                        "externally_detected_providers": asset_data.externally_detected_providers,
+                        "created": asset_data.created,
+                        "ips": asset_data.ips,
+                        "active_external_services_types": asset_data.active_external_services_types,
+                        "domain": asset_data.domain,
+                        "certificate_issuer": asset_data.certificate_issuer,
+                        "certificate_algorithm": asset_data.certificate_algorithm,
+                        "certificate_classifications": asset_data.certificate_classifications,
+                        "resolves": asset_data.resolves,
+                        # details
+                        "top_level_asset_mapper_domain": asset_data.top_level_asset_mapper_domain,
+                        "domain_asset_type": asset_data.domain_asset_type,
+                        "is_paid_level_domain": asset_data.is_paid_level_domain,
+                        "domain_details": asset_data.domain_details,
+                        "dns_zone": asset_data.dns_zone,
+                        "latest_sampled_ip": asset_data.latest_sampled_ip,
+                        "recent_ips": asset_data.recent_ips,
+                        "external_services": asset_data.external_services,
+                        "externally_inferred_vulnerability_score": asset_data.externally_inferred_vulnerability_score,
+                        "externally_inferred_cves": asset_data.externally_inferred_cves,
+                        "explainers": asset_data.explainers,
+                        "tags": asset_data.tags,
+                    },
+                )
+                asset_list.append(asset_object)
+
+            alert_object.assets.set(asset_list)
+
+            services_list = []
+            for service_data in data.services:
+                service_object, created = XpanseServices.objects.update_or_create(
+                    service_id=service_data.service_id,
+                    defaults={
+                        "service_name": service_data.service_name,
+                        "service_type": service_data.service_type,
+                        "ip_address": service_data.ip_address,
+                        "domain": service_data.domain,
+                        "externally_detected_providers": service_data.externally_detected_providers,
+                        "is_active": service_data.is_active,
+                        "first_observed": service_data.first_observed,
+                        "last_observed": service_data.last_observed,
+                        "port": service_data.port,
+                        "protocol": service_data.protocol,
+                        "active_classifications": service_data.active_classifications,
+                        "inactive_classifications": service_data.inactive_classifications,
+                        "discovery_type": service_data.discovery_type,
+                        "externally_inferred_vulnerability_score": service_data.externally_inferred_vulnerability_score,
+                        "externally_inferred_cves": service_data.externally_inferred_cves,
+                        "service_key": service_data.service_key,
+                        "service_key_type": service_data.service_key_type,
+                    },
+                )
+                LOGGER.info(service_data)
+                if service_data.cves is not None:
+                    for cve_data, cve_match_data in service_data.cves:
+                        LOGGER.info(cve_data)
+                        LOGGER.info(cve_match_data)
+                        cve_object, created = XpanseCves.objects.update_or_create(
+                            cve_id=cve_data.cve_id,
+                            defaults={
+                                "cvss_score_v2": cve_data.cvss_score_v2,
+                                "cve_severity_v2": cve_data.cve_severity_v2,
+                                "cvss_score_v3": cve_data.cvss_score_v3,
+                                "cve_severity_v3": cve_data.cve_severity_v3,
+                            },
+                        )
+
+                        (
+                            cve_match_object,
+                            created,
+                        ) = XpanseCveService.objects.update_or_create(
+                            xpanse_inferred_cve=cve_object,
+                            xpanse_service=service_object,
+                            defaults={
+                                "inferred_cve_match_type": cve_match_data.inferred_cve_match_type,
+                                "product": cve_match_data.product,
+                                "confidence": cve_match_data.confidence,
+                                "vendor": cve_match_data.vendor,
+                                "version_number": cve_match_data.version_number,
+                                "activity_status": cve_match_data.activity_status,
+                                "first_observed": cve_match_data.first_observed,
+                                "last_observed": cve_match_data.last_observed,
+                            },
+                        )
+                    services_list.append(service_object)
+
+            alert_object.services.set(services_list)
+
+            alert_object.save()
+
+            # for vender, product_list in vender_prod_dict.items():
+
+            #     vender_obj, vender_created = CpeVender.objects.update_or_create(
+            #         vender_name=vender
+            #     )
+            #     for product, version in product_list:
+            #         product_obj, product_created = CpeProduct.objects.update_or_create(
+            #             cpe_product_name=product,
+            #             version_number=version,
+            #             defaults={"cpe_vender_uid": vender_obj},
+            #         )
+            #         prod_obj_list.append(product_obj)
+
+            # cve_object.products.set(prod_obj_list)
+            # cve_object.save()
+
+            # prods = []
+            # for prod in list(cve_object.products.all()):
+            #     prods.append(
+            #         {
+            #             "cpe_product_uid": prod.cpe_product_uid,
+            #             "cpe_product_name": prod.cpe_product_name,
+            #             "version_number": prod.version_number,
+            #             "vender_uid": prod.cpe_vender_uid_id,
+            #             "vender_name": prod.cpe_vender_uid.vender_name,
+            #         }
+            #     )
+            return {
+                "message": "Record updated successfully.",
+                "updated_cve": "cve_object",
+                "products": "prods",
+            }
+
+        except Exception as e:
+            print(e)
+            print("failed to insert or update")
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+
+@api_router.post(
+    "/xpanse_vulns",
+    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.XpanseVulnPullTaskResp,
+    tags=["Get all VS cert data needed for D-Score"],
+)
+def xpanse_vulns(
+    data: schemas.XpanseVulnPullInput, tokens: dict = Depends(get_api_key)
+):
+    """Create API endpoint to get all Xpanse Vulnerabilities."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    LOGGER.info(data)
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # If API key valid, create task for query
+            task = get_xpanse_vulns.delay(data.business_unit, data.modified_datetime)
+            # Return the new task id w/ "Processing" status
+            return {"task_id": task.id, "status": "Processing"}
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+
+@api_router.get(
+    "/xpanse_vulns/task/{task_id}",
+    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.XpanseVulnPullTaskResp,
+    tags=["Check task status for Xpanse Vulnerability pull."],
+)
+async def get_xpanse_vulns_task_status(
+    task_id: str, tokens: dict = Depends(get_api_key)
+):
+    """Check task status for Xpanse Vulnerability pull."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            # userapiTokenverify(theapiKey=tokens)
+            # Retrieve task status
+            task = get_xpanse_vulns.AsyncResult(task_id)
+            # Return appropriate message for status
+            if task.state == "SUCCESS":
+                return {
+                    "task_id": task_id,
+                    "status": "Completed",
+                    "result": task.result,
+                }
+            elif task.state == "PENDING":
+                return {"task_id": task_id, "status": "Pending"}
+            elif task.state == "FAILURE":
+                return {
+                    "task_id": task_id,
+                    "status": "Failed",
+                    "error": str(task.result),
+                }
+            else:
+                return {"task_id": task_id, "status": task.state}
         except ObjectDoesNotExist:
             LOGGER.info("API key expired please try again")
     else:
