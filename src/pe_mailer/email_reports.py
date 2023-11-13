@@ -236,7 +236,7 @@ def send_pe_reports(ses_client, pe_report_dir, to):
         sys.exit(1)
 
     staging_conn = connect()
-    org_contacts = get_orgs_contacts(staging_conn)
+    org_contacts = get_orgs_contacts() # removed staging_conn param
 
     agencies_emailed_pe_reports = 0
     # Iterate over cyhy_requests, if necessary

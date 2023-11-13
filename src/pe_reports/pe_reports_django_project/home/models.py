@@ -233,6 +233,9 @@ class Cidrs(models.Model):
         null=True,
     )
     insert_alert = models.TextField(blank=True, null=True)
+    first_seen = models.DateField(blank=True, null=True)
+    last_seen = models.DateField(blank=True, null=True)
+    current = models.BooleanField(blank=True, null=True)
 
     class Meta:
         """Set Cidrs model metadata."""
@@ -616,7 +619,7 @@ class DomainAlerts(models.Model):
 class DomainPermutations(models.Model):
     """Define DomainPermutations model."""
 
-    suspected_domain_uid = models.UUIDField(default=uuid.uuid1)
+    suspected_domain_uid = models.UUIDField(primary_key=True, default=uuid.uuid1)
     organizations_uid = models.ForeignKey(
         "Organizations", on_delete=models.CASCADE, db_column="organizations_uid"
     )
@@ -700,6 +703,11 @@ class Ips(models.Model):
     live = models.BooleanField(blank=True, null=True)
     date_last_live = models.DateTimeField(blank=True, null=True)
     last_reverse_lookup = models.DateTimeField(blank=True, null=True)
+    first_seen = models.DateField(blank=True, null=True)
+    last_seen = models.DateField(blank=True, null=True)
+    current = models.BooleanField(blank=True, null=True)
+    from_cidr = models.BooleanField(blank=True, null=True)  # varchar type in db???
+    organizations_uid = models.UUIDField(blank=True, null=True)
 
     class Meta:
         """Set Ips model metadata."""
@@ -1046,6 +1054,8 @@ class ShodanAssets(models.Model):
     data_source_uid = models.ForeignKey(
         DataSource, on_delete=models.CASCADE, db_column="data_source_uid"
     )
+    country_code = models.TextField(blank=True, null=True)
+    location = models.TextField(blank=True, null=True)
 
     class Meta:
         """Set ShodanAssets model metadata."""
@@ -1736,6 +1746,10 @@ class VwOrgsAttacksurface(models.Model):
     num_root_domain = models.BigIntegerField(blank=True, null=True)
     num_sub_domain = models.BigIntegerField(blank=True, null=True)
     num_ips = models.BigIntegerField(blank=True, null=True)
+    num_cidrs = models.BigIntegerField(blank=True, null=True)
+    num_ports_protocols = models.BigIntegerField(blank=True, null=True)
+    num_software = models.BigIntegerField(blank=True, null=True)
+    num_foreign_ips = models.BigIntegerField(blank=True, null=True)
 
     class Meta:
         """Set VwOrgsAttacksurface model metadata."""
@@ -1756,6 +1770,51 @@ class VwOrgsTotalPorts(models.Model):
 
         managed = False  # Created from a view. Don't remove.
         db_table = "vw_orgs_total_ports"
+
+
+class VwIpsSubRootOrgInfo(models.Model):
+    """VwIpsSubRootOrgInfo model class."""
+
+    ip_hash = models.CharField(blank=True, null=True)
+    ip = models.CharField(blank=True, null=True)
+    origin_cidr = models.UUIDField(blank=True, null=True)
+    organizations_uid = models.UUIDField(blank=True, null=True)
+    i_current = models.BooleanField(blank=True, null=True)
+    sd_current = models.BooleanField(blank=True, null=True)
+
+    class Meta:
+        """VwIpsSubRootOrgInfo model meta class."""
+
+        managed = False
+        db_table = "vw_ips_sub_root_org_info"
+
+
+class VwIpsCidrOrgInfo(models.Model):
+    """VwIpsCidrOrgInfo model class."""
+
+    ip_hash = models.CharField(blank=True, null=True)
+    ip = models.CharField(blank=True, null=True)
+    origin_cidr = models.UUIDField(blank=True, null=True)
+    network = models.CharField(blank=True, null=True)
+    organizations_uid = models.UUIDField(blank=True, null=True)
+
+    class Meta:
+        """VwIpsCidrOrgInfo model meta class."""
+
+        managed = False
+        db_table = "vw_ips_cidr_org_info"
+
+
+class VwPEScoreCheckNewCVE(models.Model):
+    """VwPEScoreCheckNewCVE model class."""
+
+    cve_name = models.CharField(blank=True, null=True)
+
+    class Meta:
+        """VwPEScoreCheckNewCVE model meta class."""
+
+        managed = False
+        db_table = "vw_pescore_check_new_cve"
 
 
 # ---------- D-Score View Models ----------
