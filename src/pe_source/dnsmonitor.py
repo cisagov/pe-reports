@@ -71,8 +71,8 @@ class DNSMonitor:
         failed = []
         # Iterate through each org
         for org in pe_orgs_final:
-            org_name = org["org_name"]
-            org_uid = org["org_uid"]
+            org_name = org["name"]
+            org_uid = org["organizations_uid"]
             org_code = org["cyhy_db_name"]
             LOGGER.info("\nRunning DNSMonitor on %s", org_code)
 
@@ -106,7 +106,7 @@ class DNSMonitor:
                         root_domain,
                     )
                     try:
-                        addSubdomain(None, root_domain, org_uid, True)
+                        addSubdomain(root_domain, org_uid, True)
                         LOGGER.info(
                             "Success adding %s to subdomain table.", root_domain
                         )

@@ -3,16 +3,31 @@
 import ast
 import datetime
 import json
-from typing import List
+from typing import List, Optional
+import uuid
 
 # Third-Party Libraries
 from celery import shared_task
 from django.core import serializers
-from django.db.models import Q
-from home.models import (  # General DB Table Models:; D-Score View Models:; I-Score View Models:; Misc. Score View Models:
+from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
+from django.db.models import Count, Q, Sum
+from home.models import (
+    Alerts,
+    Cidrs,
+    CveInfo,
     CyhyKevs,
+    DomainAlerts,
+    DomainPermutations,
+    Ips,
     MatVwOrgsAllIps,
     Organizations,
+    SubDomains,
+    TopCves,
+    VwBreachcomp,
+    VwBreachcompCredsbydate,
+    VwDarkwebInviteonlymarkets,
+    VwDarkwebMentionsbydate,
+    VwDarkwebPotentialthreats,
     VwDscorePEDomain,
     VwDscorePEIp,
     VwDscoreVSCert,
@@ -28,8 +43,14 @@ from home.models import (  # General DB Table Models:; D-Score View Models:; I-S
     VwIscoreVSVulnPrev,
     VwIscoreWASVuln,
     VwIscoreWASVulnPrev,
+    VwOrgsAttacksurface,
     VwPshttDomainsToRun,
+    VwShodanvulnsSuspected,
+    VwShodanvulnsVerified,
+    XpanseAlerts,
 )
+
+from . import schemas
 
 
 # v ---------- Task Helper Functions ---------- v
@@ -47,9 +68,7 @@ def convert_date_to_string(date):
     return date
 
 
-# ^ ---------- Task Helper Functions ---------- ^
-
-
+# v ---------- Task Functions ---------- v
 @shared_task(bind=True)
 def get_vs_info(self, cyhy_db_names: List[str]):
     """Get the Vulnerability Scanning information from the database."""
@@ -98,7 +117,7 @@ def get_vw_pshtt_domains_to_run_info(self):
     return endpoint_data
 
 
-# ---------- D-Score View Tasks ----------
+# ---------- D-Score Tasks ----------
 @shared_task(bind=True)
 def get_dscore_vs_cert_info(self, specified_orgs: List[str]):
     """Task function for the dscore_vs_cert API endpoint."""
@@ -184,7 +203,7 @@ def get_fceb_status_info(self, specified_orgs: List[str]):
     return fceb_status
 
 
-# ---------- I-Score View Tasks ----------
+# ---------- I-Score Tasks ----------
 @shared_task(bind=True)
 def get_iscore_vs_vuln_info(self, specified_orgs: List[str]):
     """Task function for the iscore_vs_vuln API endpoint."""
@@ -369,7 +388,7 @@ def get_kev_list_info(self):
     return kev_list
 
 
-# ---------- Misc. Score View Tasks ----------
+# ---------- General Score Tasks ----------
 @shared_task(bind=True)
 def get_xs_stakeholders_info(self):
     """Task function for the XS stakeholder list query API endpoint."""
@@ -447,3 +466,572 @@ def get_xl_stakeholders_info(self):
     for row in xl_stakeholders:
         row["organizations_uid"] = convert_uuid_to_string(row["organizations_uid"])
     return xl_stakeholders
+
+
+# ---------- Misc. Tasks ----------
+# --- execute_ips(), Issue 559 ---
+@shared_task(bind=True)
+def ips_insert_task(self, new_ips: List[dict]):
+    """Task function for the ips_insert API endpoint."""
+    # Go through each new ip
+    for new_ip in new_ips:
+        # Get Cidrs.origin_cidr object for this ip
+        curr_ip_origin_cidr = Cidrs.objects.get(cidr_uid=new_ip["origin_cidr"])
+        try:
+            Ips.objects.get(ip=new_ip["ip"])
+        except Ips.DoesNotExist:
+            # If ip record doesn't exist yet, create one
+            from_cidr_state = False
+            if curr_ip_origin_cidr:
+                from_cidr_state = True
+            Ips.objects.create(
+                ip_hash=new_ip["ip_hash"],
+                ip=new_ip["ip"],
+                origin_cidr=curr_ip_origin_cidr,
+                from_cidr=from_cidr_state,
+            )
+        else:
+            # If ip record does exits, update it
+            Ips.objects.filter(ip=new_ip["ip"]).update(
+                origin_cidr=new_ip["origin_cidr"],
+            )
+    # Return success message
+    return "New ip records have been inserted into ips table"
+
+
+# --- query_all_subs(), Issue 560 ---
+@shared_task(bind=True)
+def sub_domains_table_task(self, page: int, per_page: int):
+    """Task function for the sub_domains_table API endpoint."""
+    # Make database query and grab all data
+    total_data = list(SubDomains.objects.all().values())
+    # Divide up data w/ specified num records per page
+    paged_data = Paginator(total_data, per_page)
+    # Attempt to retrieve specified page
+    try:
+        single_page_data = paged_data.page(page)
+    except PageNotAnInteger:
+        # If page is not an integer, deliver first page.
+        single_page_data = paged_data.page(1)
+    except EmptyPage:
+        # If page is out of range (e.g. 9999), deliver last page of results.
+        single_page_data = paged_data.page(paged_data.num_pages)
+    # Serialize specified page
+    single_page_data = list(single_page_data)
+    # Convert uuids to strings
+    for row in single_page_data:
+        row["sub_domain_uid"] = convert_uuid_to_string(row["sub_domain_uid"])
+        row["root_domain_uid_id"] = convert_uuid_to_string(row["root_domain_uid_id"])
+        row["data_source_uid_id"] = convert_uuid_to_string(row["data_source_uid_id"])
+        row["dns_record_uid_id"] = convert_uuid_to_string(row["dns_record_uid_id"])
+        row["first_seen"] = convert_date_to_string(row["first_seen"])
+        row["last_seen"] = convert_date_to_string(row["last_seen"])
+    result = {
+        "total_pages": paged_data.num_pages,
+        "current_page": page,
+        "data": single_page_data,
+    }
+    return result
+
+
+# -- set_from_cidr(), Issue 616 ---
+@shared_task(bind=True)
+def ips_update_from_cidr_task(self):
+    """Task function for the ips_update_from_cidr API endpoint."""
+    # Make database query and convert to list of dictionaries
+    Ips.objects.filter(origin_cidr__isnull=False).update(from_cidr=True)
+    return "Ips table from_cidr field has been updated."
+
+
+# --- darkweb_cves(), Issue 630 ---
+@shared_task(bind=True)
+def darkweb_cves_task(self):
+    """Task function for the darkweb_cves API endpoint."""
+    # Make database query and convert to list of dictionaries
+    all_data = list(TopCves.objects.all().values())
+    for row in all_data:
+        row["top_cves_uid"] = convert_uuid_to_string(row["top_cves_uid"])
+        row["data_source_uid_id"] = convert_uuid_to_string(row["data_source_uid_id"])
+        row["date"] = convert_date_to_string(row["date"])
+    return all_data
+
+
+# --- query_subs(), Issue 633 ---
+@shared_task(bind=True)
+def sub_domains_by_org_task(self, org_uid: str, page: int, per_page: int):
+    """Task function for the subdomains by org query API endpoint."""
+    # Make database query and convert to list of dictionaries
+    total_data = list(
+        SubDomains.objects.filter(root_domain_uid__organizations_uid=org_uid).values()
+    )
+    # Divide up data w/ specified num records per page
+    paged_data = Paginator(total_data, per_page)
+    # Attempt to retrieve specified page
+    try:
+        single_page_data = paged_data.page(page)
+    except PageNotAnInteger:
+        # If page is not an integer, deliver first page.
+        single_page_data = paged_data.page(1)
+    except EmptyPage:
+        # If page is out of range (e.g. 9999), deliver last page of results.
+        single_page_data = paged_data.page(paged_data.num_pages)
+    # Catch query no results scenario
+    if not total_data:
+        single_page_data = [{x: None for x in schemas.SubDomainTable.__fields__}]
+        return {
+            "total_pages": paged_data.num_pages,
+            "current_page": page,
+            "data": single_page_data,
+        }
+    # Serialize specified page
+    single_page_data = list(single_page_data)
+    # Convert uuids to strings
+    for row in single_page_data:
+        row["sub_domain_uid"] = convert_uuid_to_string(row["sub_domain_uid"])
+        row["root_domain_uid_id"] = convert_uuid_to_string(row["root_domain_uid_id"])
+        row["data_source_uid_id"] = convert_uuid_to_string(row["data_source_uid_id"])
+        row["dns_record_uid_id"] = convert_uuid_to_string(row["dns_record_uid_id"])
+        row["first_seen"] = convert_date_to_string(row["first_seen"])
+        row["last_seen"] = convert_date_to_string(row["last_seen"])
+    result = {
+        "total_pages": paged_data.num_pages,
+        "current_page": page,
+        "data": single_page_data,
+    }
+    return result
+
+
+# --- pescore_hist_domain_alert(), Issue 635 ---
+@shared_task(bind=True)
+def pescore_hist_domain_alert_task(self, start_date: str, end_date: str):
+    """Task function for the pescore_hist_domain_alert API endpoint."""
+    # Make database query and convert to list of dictionaries
+    # Get reported orgs
+    reported_orgs = list(
+        Organizations.objects.filter(report_on=True).values(
+            "organizations_uid", "cyhy_db_name"
+        )
+    )
+    # Get domain alert data
+    pescore_hist_domain_alert_data = list(
+        DomainAlerts.objects.filter(date__range=[start_date, end_date]).values(
+            "organizations_uid", "date"
+        )
+    )
+    # Convert uuids to strings
+    for row in reported_orgs:
+        row["organizations_uid"] = convert_uuid_to_string(row["organizations_uid"])
+    for row in pescore_hist_domain_alert_data:
+        row["organizations_uid"] = convert_uuid_to_string(row["organizations_uid"])
+        row["date"] = convert_date_to_string(row["date"])
+    return {
+        "reported_orgs": reported_orgs,
+        "hist_domain_alert_data": pescore_hist_domain_alert_data,
+    }
+
+
+# --- pescore_hist_darkweb_alert(), Issue 635 ---
+@shared_task(bind=True)
+def pescore_hist_darkweb_alert_task(self, start_date: str, end_date: str):
+    """Task function for the pescore_hist_darkweb_alert API endpoint."""
+    # Make database query and convert to list of dictionaries
+    # Get reported orgs
+    reported_orgs = list(
+        Organizations.objects.filter(report_on=True).values(
+            "organizations_uid", "cyhy_db_name"
+        )
+    )
+    # Get darkweb alert data
+    pescore_hist_darkweb_alert_data = list(
+        Alerts.objects.filter(date__range=[start_date, end_date]).values(
+            "organizations_uid", "date"
+        )
+    )
+    # Convert uuids to strings
+    for row in reported_orgs:
+        row["organizations_uid"] = convert_uuid_to_string(row["organizations_uid"])
+    for row in pescore_hist_darkweb_alert_data:
+        row["organizations_uid"] = convert_uuid_to_string(row["organizations_uid"])
+        row["date"] = convert_date_to_string(row["date"])
+    return {
+        "reported_orgs": reported_orgs,
+        "hist_darkweb_alert_data": pescore_hist_darkweb_alert_data,
+    }
+
+
+# --- pescore_hist_darkweb_ment(), Issue 635 ---
+@shared_task(bind=True)
+def pescore_hist_darkweb_ment_task(self, start_date: str, end_date: str):
+    """Task function for the pescore_hist_darkweb_ment API endpoint."""
+    # Make database query and convert to list of dictionaries
+    # Get reported orgs
+    reported_orgs = list(
+        Organizations.objects.filter(report_on=True).values(
+            "organizations_uid", "cyhy_db_name"
+        )
+    )
+    # Get darkweb mention data
+    pescore_hist_darkweb_ment_data = list(
+        VwDarkwebMentionsbydate.objects.filter(
+            date__range=[start_date, end_date]
+        ).values("organizations_uid", "date", "count")
+    )
+    # Convert uuids to strings
+    for row in reported_orgs:
+        row["organizations_uid"] = convert_uuid_to_string(row["organizations_uid"])
+    for row in pescore_hist_darkweb_ment_data:
+        row["organizations_uid"] = convert_uuid_to_string(row["organizations_uid"])
+        row["date"] = convert_date_to_string(row["date"])
+    return {
+        "reported_orgs": reported_orgs,
+        "hist_darkweb_ment_data": pescore_hist_darkweb_ment_data,
+    }
+
+
+# --- pescore_hist_cred(), Issue 635 ---
+@shared_task(bind=True)
+def pescore_hist_cred_task(self, start_date: str, end_date: str):
+    """Task function for the pescore_hist_cred API endpoint."""
+    # Make database query and convert to list of dictionaries
+    # Get reported orgs
+    reported_orgs = list(
+        Organizations.objects.filter(report_on=True).values(
+            "organizations_uid", "cyhy_db_name"
+        )
+    )
+    # Get cred data
+    pescore_hist_cred_data = list(
+        VwBreachcompCredsbydate.objects.filter(
+            mod_date__range=[start_date, end_date]
+        ).values()
+    )
+    # Convert uuids to strings
+    for row in reported_orgs:
+        row["organizations_uid"] = convert_uuid_to_string(row["organizations_uid"])
+    for row in pescore_hist_cred_data:
+        row["organizations_uid"] = convert_uuid_to_string(row["organizations_uid"])
+        row["mod_date"] = convert_date_to_string(row["mod_date"])
+    return {
+        "reported_orgs": reported_orgs,
+        "hist_cred_data": pescore_hist_cred_data,
+    }
+
+
+# --- pescore_base_metrics(), Issue 635 ---
+@shared_task(bind=True)
+def pescore_base_metrics_task(self, start_date: str, end_date: str):
+    """Task function for the pescore_base_metrics API endpoint."""
+    # Make database query and convert to list of dictionaries
+    # Get reported orgs
+    reported_orgs = list(
+        Organizations.objects.filter(report_on=True).values("organizations_uid")
+    )
+    # print("pescore_base_metric query status: got reported_orgs")
+    # Gather credential data and aggregate
+    cred_data = list(
+        VwBreachcompCredsbydate.objects.filter(mod_date__range=[start_date, end_date])
+        .values("organizations_uid")
+        .annotate(
+            no_password=Sum("no_password"), password_included=Sum("password_included")
+        )
+        .order_by()
+    )
+    # print("pescore_base_metric query status: got cred_data")
+    # Gather breach data and aggregate
+    breach_data = list(
+        VwBreachcomp.objects.filter(modified_date__range=[start_date, end_date])
+        .values("organizations_uid")
+        .annotate(num_breaches=Count("breach_name", distinct=True))
+        .order_by()
+    )
+    # print("pescore_base_metric query status: got breach_data")
+    # Gather suspected domain data and aggregate
+    domain_sus_data = list(
+        DomainPermutations.objects.filter(
+            date_active__range=[start_date, end_date], malicious=True
+        )
+        .values("organizations_uid")
+        .annotate(num_sus_domain=Count("*"))
+        .order_by()
+    )
+    # print("pescore_base_metric query status: got domain_sus_data")
+    # Gather domain alert data and aggregate
+    domain_alert_data = list(
+        DomainAlerts.objects.filter(date__range=[start_date, end_date])
+        .values("organizations_uid")
+        .annotate(num_alert_domain=Count("*"))
+        .order_by()
+    )
+    # print("pescore_base_metric query status: got domain_alert_data")
+    # Gather verified vulnerability data and aggregate
+    vuln_verif_data = (
+        VwShodanvulnsVerified.objects.filter(timestamp__range=[start_date, end_date])
+        .values("organizations_uid", "cve", "ip")
+        .distinct()
+    )
+    vuln_verif_data = list(
+        vuln_verif_data.values("organizations_uid")
+        .annotate(num_verif_vulns=Count("*"))
+        .order_by()
+    )
+    # print("pescore_base_metric query status: got vuln_verif_data")
+    # Gather unverified vulnerability data and aggregate
+    # unnest CVEs?
+    vuln_unverif_data = (
+        VwShodanvulnsSuspected.objects.filter(timestamp__range=[start_date, end_date])
+        .exclude(type="Insecure Protocol")
+        .values("organizations_uid", "potential_vulns", "ip")
+        .distinct()
+    )
+    vuln_unverif_data = list(
+        vuln_unverif_data.values("organizations_uid")
+        .annotate(num_assets_unverif_vulns=Count("*"))
+        .order_by()
+    )
+    # print("pescore_base_metric query status: got vuln_unverif_data")
+    # Gather port vulnerability data and aggregate
+    vuln_port_data = (
+        VwShodanvulnsSuspected.objects.filter(
+            timestamp__range=[start_date, end_date], type="Insecure Protocol"
+        )
+        .exclude(protocol__in=("http", "smtp"))
+        .values("organizations_uid", "protocol", "ip", "port")
+        .distinct()
+    )
+    vuln_port_data = list(
+        vuln_port_data.values("organizations_uid")
+        .annotate(num_risky_ports=Count("port"))
+        .order_by()
+    )
+    # print("pescore_base_metric query status: got vuln_port_data")
+    # Gather darkweb alert data and aggregate
+    darkweb_alert_data = list(
+        Alerts.objects.filter(date__range=[start_date, end_date])
+        .values("organizations_uid")
+        .annotate(num_dw_alerts=Count("*"))
+        .order_by()
+    )
+    # print("pescore_base_metric query status: got darkweb_alert_data")
+    # Gather darkweb mention data and aggregate
+    darkweb_ment_data = list(
+        VwDarkwebMentionsbydate.objects.filter(date__range=[start_date, end_date])
+        .values("organizations_uid")
+        .annotate(num_dw_mentions=Sum("count"))
+        .order_by()
+    )
+    # print("pescore_base_metric query status: got darkweb_ment_data")
+    # Gather darkweb threat data and aggregate
+    darkweb_threat_data = list(
+        VwDarkwebPotentialthreats.objects.filter(date__range=[start_date, end_date])
+        .values("organizations_uid")
+        .annotate(num_dw_threats=Count("*"))
+        .order_by()
+    )
+    # print("pescore_base_metric query status: got darkweb_threat_data")
+    # Gather darkweb invite data and aggregate
+    darkweb_inv_data = list(
+        VwDarkwebInviteonlymarkets.objects.filter(date__range=[start_date, end_date])
+        .values("organizations_uid")
+        .annotate(num_dw_invites=Count("*"))
+        .order_by()
+    )
+    # print("pescore_base_metric query status: got darkweb_inv_data")
+    # Gather attacksurface data and aggregate
+    attacksurface_data = list(
+        VwOrgsAttacksurface.objects.values(
+            "organizations_uid",
+            "cyhy_db_name",
+            "num_ports",
+            "num_root_domain",
+            "num_sub_domain",
+            "num_ips",
+        )
+    )
+    # Testing
+    # reported_orgs = reported_orgs[:10]
+    # cred_data = cred_data[:10]
+    # breach_data = breach_data[:10]
+    # domain_sus_data = domain_sus_data[:10]
+    # domain_alert_data = domain_alert_data[:10]
+    # vuln_verif_data = vuln_verif_data[:10]
+    # vuln_unverif_data = vuln_unverif_data[:10]
+    # vuln_port_data = vuln_port_data[:10]
+    # darkweb_alert_data = darkweb_alert_data[:10]
+    # darkweb_ment_data = darkweb_ment_data[:10]
+    # darkweb_threat_data = darkweb_threat_data[:10]
+    # darkweb_inv_data = darkweb_inv_data[:10]
+    # attacksurface_data = attacksurface_data[:10]
+    # print("pescore_base_metric query status: got attacksurface_data")
+    # Convert uuids to strings
+    for dataset in [
+        reported_orgs,
+        cred_data,
+        breach_data,
+        domain_sus_data,
+        domain_alert_data,
+        vuln_verif_data,
+        vuln_unverif_data,
+        vuln_port_data,
+        darkweb_alert_data,
+        darkweb_ment_data,
+        darkweb_threat_data,
+        darkweb_inv_data,
+        attacksurface_data,
+    ]:
+        for row in dataset:
+            row["organizations_uid"] = convert_uuid_to_string(row["organizations_uid"])
+    return {
+        "reported_orgs": reported_orgs,
+        "cred_data": cred_data,
+        "breach_data": breach_data,
+        "domain_sus_data": domain_sus_data,
+        "domain_alert_data": domain_alert_data,
+        "vuln_verif_data": vuln_verif_data,
+        "vuln_unverif_data": vuln_unverif_data,
+        "vuln_port_data": vuln_port_data,
+        "darkweb_alert_data": darkweb_alert_data,
+        "darkweb_ment_data": darkweb_ment_data,
+        "darkweb_threat_data": darkweb_threat_data,
+        "darkweb_inv_data": darkweb_inv_data,
+        "attacksurface_data": attacksurface_data,
+    }
+
+
+# --- upsert_new_cves(), Issue 637 ---
+@shared_task(bind=True)
+def cve_info_insert_task(self, new_cves: List[dict]):
+    """Task function for the cve_info_insert API endpoint."""
+    # Go through each new cve
+    for cve in new_cves:
+        try:
+            CveInfo.objects.get(cve_name=cve["cve_name"])
+        except CveInfo.DoesNotExist:
+            # If CVE record doesn't exist yet, create one
+            CveInfo.objects.create(
+                # generate new uuid
+                cve_uuid=uuid.uuid1(),
+                cve_name=cve["cve_name"],
+                cvss_2_0=cve["cvss_2_0"],
+                cvss_2_0_severity=cve["cvss_2_0_severity"],
+                cvss_2_0_vector=cve["cvss_2_0_vector"],
+                cvss_3_0=cve["cvss_3_0"],
+                cvss_3_0_severity=cve["cvss_3_0_severity"],
+                cvss_3_0_vector=cve["cvss_3_0_vector"],
+                dve_score=cve["dve_score"],
+            )
+        else:
+            # If CVE record does exits, update it
+            CveInfo.objects.filter(cve_name=cve["cve_name"]).update(
+                # use existing uuid
+                cvss_2_0=cve["cvss_2_0"],
+                cvss_2_0_severity=cve["cvss_2_0_severity"],
+                cvss_2_0_vector=cve["cvss_2_0_vector"],
+                cvss_3_0=cve["cvss_3_0"],
+                cvss_3_0_severity=cve["cvss_3_0_severity"],
+                cvss_3_0_vector=cve["cvss_3_0_vector"],
+                dve_score=cve["dve_score"],
+            )
+    # Return success message
+    return "New CVE records have been inserted into cve_info table"
+
+
+@shared_task(bind=True)
+def get_xpanse_vulns(
+    self, business_unit: str, modified_datetime: Optional[datetime.datetime] = None
+):
+    """Task function for the Xpanse Vulns by business_unit and modified_date API endpoint."""
+    # Make database query and convert to list of dictionaries
+
+    xpanse_alerts = XpanseAlerts.objects.filter(
+        business_units__entity_name=business_unit
+    )
+
+    if modified_datetime is not None:
+        xpanse_alerts = xpanse_alerts.filter(
+            Q(local_insert_ts__gte=modified_datetime)
+            | Q(last_modified_ts__gte=modified_datetime)
+        )
+
+    vulns = []
+    for alert in xpanse_alerts:
+        vuln_dict = {
+            "alert_name": alert.alert_name,  # str
+            "description": alert.description,  # str
+            "last_modified_ts": alert.last_modified_ts,  # datetime
+            "local_insert_ts": alert.local_insert_ts,  # datetime
+            "event_timestamp": alert.event_timestamp,  # List[datetime]
+            "host_name": alert.host_name,  # str
+            "alert_action": alert.alert_action,  # str
+            "action_country": alert.action_country,  # List[str]
+            "action_remote_port": alert.action_remote_port,  # List[int]
+            "external_id": alert.external_id,  # str
+            "related_external_id": alert.related_external_id,  # str
+            "alert_occurrence": alert.alert_occurrence,  # int
+            "severity": alert.severity,  # str
+            "matching_status": alert.matching_status,  # str
+            "alert_type": alert.alert_type,  # str
+            "resolution_status": alert.resolution_status,  # str
+            "resolution_comment": alert.resolution_comment,  # str
+            "last_observed": alert.last_observed,  # datetime
+            "country_codes": alert.country_codes,  # List[str]
+            "cloud_providers": alert.cloud_providers,  # List[str]
+            "ipv4_addresses": alert.ipv4_addresses,  # List[str]
+            "domain_names": alert.domain_names,  # List[str]
+            "port_protocol": alert.port_protocol,  # str
+            "time_pulled_from_xpanse": alert.time_pulled_from_xpanse,  # datetime
+            "action_pretty": alert.action_pretty,  # str
+            "attack_surface_rule_name": alert.attack_surface_rule_name,  # str
+            "certificate": alert.certificate,  # Dict
+            "remediation_guidance": alert.remediation_guidance,  # str
+            "asset_identifiers": alert.asset_identifiers,  # List[Dict]
+            "services": [],
+        }
+
+        for service in alert.services.all():
+            service_dict = {
+                "service_id": service.service_id,
+                "service_name": service.service_name,
+                "service_type": service.service_type,
+                "ip_address": service.ip_address,
+                "domain": service.domain,
+                "externally_detected_providers": service.externally_detected_providers,
+                "is_active": service.is_active,
+                "first_observed": service.first_observed,
+                "last_observed": service.last_observed,
+                "port": service.port,
+                "protocol": service.protocol,
+                "active_classifications": service.active_classifications,
+                "inactive_classifications": service.inactive_classifications,
+                "discovery_type": service.discovery_type,
+                "externally_inferred_vulnerability_score": service.externally_inferred_vulnerability_score,
+                "externally_inferred_cves": service.externally_inferred_cves,
+                "service_key": service.service_key,
+                "service_key_type": service.service_key_type,
+                "cves": [],
+            }
+            cve_services = service.xpansecveservice_set.select_related(
+                "xpanse_inferred_cve"
+            )
+            for vuln in cve_services:
+                service_dict["cves"].append(
+                    {
+                        "cve_id": vuln.xpanse_inferred_cve.cve_id,
+                        "cvss_score_v2": vuln.xpanse_inferred_cve.cvss_score_v2,
+                        "cve_severity_v2": vuln.xpanse_inferred_cve.cve_severity_v2,
+                        "cvss_score_v3": vuln.xpanse_inferred_cve.cvss_score_v3,
+                        "cve_severity_v3": vuln.xpanse_inferred_cve.cve_severity_v3,
+                        "inferred_cve_match_type": vuln.inferred_cve_match_type,
+                        "product": vuln.product,
+                        "confidence": vuln.confidence,
+                        "vendor": vuln.vendor,
+                        "version_number": vuln.version_number,
+                        "activity_status": vuln.activity_status,
+                        "first_observed": vuln.first_observed,
+                        "last_observed": vuln.last_observed,
+                    }
+                )
+
+            vuln_dict["services"].append(service_dict)
+        vulns.append(vuln_dict)
+
+    return vulns

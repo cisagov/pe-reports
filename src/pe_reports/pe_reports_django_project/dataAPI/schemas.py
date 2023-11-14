@@ -3,6 +3,7 @@
 
 # Standard Python Libraries
 from datetime import date, datetime
+from decimal import Decimal
 
 # from pydantic.types import UUID1, UUID
 from typing import Any, Dict, List, Optional, Tuple
@@ -241,29 +242,29 @@ class PshttInsert(BaseModel):
 class VwBreachcomp(BaseModel):
     """VwBreachcomp schema class."""
 
-    credential_exposures_uid: str
-    email: str
-    breach_name: str
-    organizations_uid: str
-    root_domain: str
-    sub_domain: str
-    hash_type: str
-    name: str
-    login_id: str
-    password: str
-    phone: str
-    data_source_uid: str
-    description: str
-    breach_date: str
-    added_date: str
-    modified_date: str
-    data_classes: str
-    password_included: str
-    is_verified: str
-    is_fabricated: str
-    is_sensitive: str
-    is_retired: str
-    is_spam_list: str
+    credential_exposures_uid: Optional[str] = None
+    email: Optional[str] = None
+    breach_name: Optional[str] = None
+    organizations_uid: Optional[str] = None
+    root_domain: Optional[str] = None
+    sub_domain: Optional[str] = None
+    hash_type: Optional[str] = None
+    name: Optional[str] = None
+    login_id: Optional[str] = None
+    password: Optional[str] = None
+    phone: Optional[str] = None
+    data_source_uid: Optional[str] = None
+    description: Optional[str] = None
+    breach_date: Optional[str] = None
+    added_date: Optional[str] = None
+    modified_date: Optional[str] = None
+    data_classes: Optional[List[str]] = None
+    password_included: Optional[bool] = None
+    is_verified: Optional[bool] = None
+    is_fabricated: Optional[bool] = None
+    is_sensitive: Optional[bool] = None
+    is_retired: Optional[bool] = None
+    is_spam_list: Optional[bool] = None
 
 
 class VwBreachDetails(BaseModel):
@@ -1299,3 +1300,1893 @@ class GetCveCall(BaseModel):
         """GetCveCall schema config class."""
 
         orm_mode = True
+
+
+# --- execute_ips(), Issue 559 ---
+# Insert record into Ips
+class IpsInsert(BaseModel):
+    """IpsInsert schema class."""
+
+    ip_hash: str
+    ip: str
+    origin_cidr: str
+
+    class Config:
+        """IpsInsert schema config class."""
+
+        orm_mode = True
+
+
+# --- execute_ips(), Issue 559 ---
+# Insert record into Ips, input
+class IpsInsertInput(BaseModel):
+    """IpsInsertInput schema class."""
+
+    new_ips: List[IpsInsert]
+
+    class Config:
+        """IpsInsertInput schema config class."""
+
+        orm_mode = True
+
+
+# --- execute_ips(), Issue 559 ---
+# Insert record into Ips, task resp
+class IpsInsertTaskResp(BaseModel):
+    """IpsInsertTaskResp schema class."""
+
+    task_id: str
+    status: str
+    result: Optional[str] = None
+    error: Optional[str] = None
+
+
+# --- query_domMasq_alerts(), Issue 562
+# Return all the fields of the domain_alerts table
+class DomainAlertsTable(BaseModel):
+    """DomainAlertsTable schema class."""
+
+    domain_alert_uid: Optional[str] = None
+    sub_domain_uid_id: Optional[str] = None
+    data_source_uid_id: Optional[str] = None
+    organizations_uid: Optional[str] = None
+    alert_type: Optional[str] = None
+    message: Optional[str] = None
+    previous_value: Optional[str] = None
+    new_value: Optional[str] = None
+    date: Optional[str] = None
+
+    class Config:
+        """DomainAlertsTable schema config class."""
+
+        orm_mode = True
+
+
+# --- query_domMasq(), Issue 563
+# Return all the fields of the domain_permutation table
+class DomainPermuTable(BaseModel):
+    """DomainPermuTable schema class."""
+
+    suspected_domain_uid: Optional[str] = None
+    organizations_uid_id: Optional[str] = None
+    domain_permutation: Optional[str] = None
+    ipv4: Optional[str] = None
+    ipv6: Optional[str] = None
+    mail_server: Optional[str] = None
+    name_server: Optional[str] = None
+    fuzzer: Optional[str] = None
+    date_observed: Optional[str] = None
+    ssdeep_score: Optional[str] = None
+    malicious: Optional[bool] = None
+    blocklist_attack_count: Optional[int] = None
+    blocklist_report_count: Optional[int] = None
+    data_source_uid_id: Optional[str] = None
+    sub_domain_uid_id: Optional[str] = None
+    dshield_record_count: Optional[int] = None
+    date_active: Optional[str] = None
+
+    class Config:
+        """DomainPermuTable schema config class."""
+
+        orm_mode = True
+
+
+# --- insert_roots(), Issue 564
+# Return all the fields of the domain_permutation table
+class OrganizationsTable(BaseModel):
+    """OrganizationsTable schema class."""
+
+    organizations_uid: Optional[str] = None
+    name: Optional[str] = None
+    cyhy_db_name: Optional[str] = None
+    org_type_uid_id: Optional[str] = None
+    report_on: Optional[bool] = None
+    # password: Optional[str] = None
+    date_first_reported: Optional[str] = None
+    parent_org_uid_id: Optional[str] = None
+    premium_report: Optional[bool] = None
+    agency_type: Optional[str] = None
+    demo: Optional[bool] = None
+    scorecard: Optional[bool] = None
+    fceb: Optional[bool] = None
+    receives_cyhy_report: Optional[bool] = None
+    receives_bod_report: Optional[bool] = None
+    receives_cybex_report: Optional[bool] = None
+    run_scans: Optional[bool] = None
+    is_parent: Optional[bool] = None
+    ignore_roll_up: Optional[bool] = None
+    retired: Optional[bool] = None
+    cyhy_period_start: Optional[str] = None
+    fceb_child: Optional[bool] = None
+    election: Optional[bool] = None
+    scorecard_child: Optional[bool] = None
+
+    class Config:
+        """OrganizationsTable schema config class."""
+
+        orm_mode = True
+
+
+# --- insert_roots(), Issue 564
+# Return all the fields of the domain_permutation table, input
+class RootDomainsInsertInput(BaseModel):
+    """RootDomainsInsertInput schema class."""
+
+    org_dict: OrganizationsTable
+    domain_list: list[str]
+
+    class Config:
+        """RootDomainsInsertInput schema config class."""
+
+        orm_mode = True
+
+
+# --- get_orgs_contacts(), Issue 601
+# Get the contact info for all orgs where report_on is true
+class OrgsReportOnContacts(BaseModel):
+    """OrgsReportOnContacts schema class."""
+
+    email: str
+    contact_type: str
+    org_id: str
+
+    class Config:
+        """OrgsReportOnContacts schema config class."""
+
+        orm_mode = True
+
+
+# --- get_org_assets_count_past(), Issue 603 ---
+# Generalized schema for returning all report_summary_stats table fields
+class RSSTable(BaseModel):
+    """RSSTable schema class."""
+
+    report_uid: Optional[str]
+    organizations_uid_id: Optional[str]
+    start_date: Optional[str]
+    end_date: Optional[str]
+    ip_count: Optional[int]
+    root_count: Optional[int]
+    sub_count: Optional[int]
+    ports_count: Optional[int]
+    creds_count: Optional[int]
+    breach_count: Optional[int]
+    creds_password_count: Optional[int]
+    domain_alert_count: Optional[int]
+    suspected_domain_count: Optional[int]
+    insecure_port_count: Optional[int]
+    verified_vuln_count: Optional[int]
+    suspected_vuln_count: Optional[int]
+    threat_actor_count: Optional[int]
+    dark_web_alerts_count: Optional[int]
+    dark_web_mentions_count: Optional[int]
+    dark_web_executive_alerts_count: Optional[int]
+    dark_web_asset_alerts_count: Optional[int]
+    pe_number_score: Optional[str]  # ?
+    pe_letter_grade: Optional[str]
+    pe_percent_score: Optional[float]  # ?
+    cidr_count: Optional[int]
+    port_protocol_count: Optional[int]
+    software_count: Optional[int]
+    foreign_ips_count: Optional[int]
+
+    class Config:
+        """RSSTable schema config class."""
+
+        orm_mode = True
+
+
+# --- get_org_assets_count(), Issue 604 ---
+# Get asset counts for the specified org_uid
+class AssetCountsByOrg(BaseModel):
+    """AssetCountsByOrg schema class."""
+
+    organizations_uid: str
+    cyhy_db_name: str
+    num_root_domain: int
+    num_sub_domain: int
+    num_ips: int
+    num_ports: int
+    num_cidrs: int
+    num_ports_protocols: int
+    num_software: int
+    num_foreign_ips: int
+
+    class Config:
+        """AssetCountsByOrg schema config class."""
+
+        orm_mode = True
+
+
+# --- get_new_orgs(), Issue 605, 606, 607 ---
+# Generalized schema for returning all organizations table fields
+class OrgsTable(BaseModel):
+    """OrgsTable schema class."""
+
+    organizations_uid: str
+    name: Optional[str] = None
+    cyhy_db_name: Optional[str] = None
+    org_type_uid_id: Optional[str] = None
+    report_on: Optional[bool] = None
+    password: Optional[str] = None
+    date_first_reported: Optional[str] = None
+    parent_org_uid_id: Optional[str] = None
+    premium_report: Optional[bool] = None
+    agency_type: Optional[str] = None
+    demo: Optional[bool] = None
+    scorecard: Optional[bool] = None
+    fceb: Optional[bool] = None
+    receives_cyhy_report: Optional[bool] = None
+    receives_bod_report: Optional[bool] = None
+    receives_cybex_report: Optional[bool] = None
+    run_scans: Optional[bool] = None
+    is_parent: Optional[bool] = None
+    ignore_roll_up: Optional[bool] = None
+    retired: Optional[bool] = None
+    cyhy_period_start: Optional[str] = None
+    fceb_child: Optional[bool] = None
+    election: Optional[bool] = None
+    scorecard_child: Optional[bool] = None
+
+    class Config:
+        """OrgsTable schema config class."""
+
+        orm_mode = True
+
+
+# --- set_org_to_report_on(), Issue 606, 607 ---
+# Set specified organization to report_on
+class OrgsSetReportOnInput(BaseModel):
+    """OrgsSetReportOnInput schema class."""
+
+    cyhy_db_name: str
+    premium: bool
+
+    class Config:
+        """OrgsSetReportOnInput schema config class."""
+
+
+# --- query_cyhy_assets(), Issue 608 ---
+# Get CyHy database assets for an org (cyhy_db_name)
+class CyhyDbAssetsByOrg(BaseModel):
+    """CyhyDbAssetsByOrg schema class."""
+
+    field_id: Optional[str] = None
+    org_id: Optional[str] = None
+    org_name: Optional[str] = None
+    contact: Optional[str] = None
+    network: Optional[str] = None
+    type: Optional[str] = None
+    first_seen: Optional[str] = None
+    last_seen: Optional[str] = None
+    currently_in_cyhy: Optional[bool] = None
+
+    class Config:
+        """CyhyDbAssetsByOrg schema config class."""
+
+        orm_mode = True
+
+
+# --- get_cidrs_and_ips(), Issue 610 ---
+# Get CIDRs and IPs data for an org
+class CidrsIpsByOrg(BaseModel):
+    """CidrsIpsByOrg schema class."""
+
+    ip: str
+
+    class Config:
+        """CidrsIpsByOrg schema config class."""
+
+        orm_mode = True
+
+
+# --- query_ips(), Issue 611 ---
+# Get IPs data for an org
+class IpsByOrg(BaseModel):
+    """IpsByOrg schema class."""
+
+    cidr_ip_data: List[CidrsIpsByOrg]
+    sub_root_ip_data: List[CidrsIpsByOrg]
+
+    class Config:
+        """IpsByOrg schema config class."""
+
+        orm_mode = True
+
+
+# --- query_extra_ips(), Issue 612 ---
+# Get "extra" IP data for an org
+class ExtraIpsByOrg(BaseModel):
+    """ExtraIpsByOrg schema class."""
+
+    ip_hash: str
+    ip: str
+
+    class Config:
+        """ExtraIpsByOrg schema config class."""
+
+        orm_mode = True
+
+
+# --- set_from_cidr(), Issue 616 ---
+# Set from_cidr to True for any IPs that have an origin_cidr, task resp
+class IpsUpdateFromCidrTaskResp(BaseModel):
+    """IpsUpdateFromCidrTaskResp schema class."""
+
+    task_id: str
+    status: str
+    result: Optional[str] = None
+    error: Optional[str] = None
+
+
+# --- query_cidrs_by_org(), Issue 618 ---
+# Get all CIDRs for specified org
+class CidrsByOrg(BaseModel):
+    """CidrsByOrg schema class."""
+
+    cidr_uid: Optional[str] = None
+    network: Optional[str] = None
+    organizations_uid_id: Optional[str] = None
+    data_source_uid_id: Optional[str] = None
+    insert_alert: Optional[str] = None
+    first_seen: Optional[str] = None
+    last_seen: Optional[str] = None
+    current: Optional[bool] = None
+
+    class Config:
+        """CidrsByOrg schema config class."""
+
+        orm_mode = True
+
+
+# --- query_ports_protocols(), Issue 619 ---
+# Get distinct ports/protocols for specified org
+class PortsProtocolsByOrg(BaseModel):
+    """PortsProtocolsByOrg schema class."""
+
+    port: Optional[int] = None
+    protocol: Optional[str] = None
+
+    class Config:
+        """PortsProtocolsByOrg schema config class."""
+
+        orm_mode = True
+
+
+# --- query_software(), Issue 620 ---
+# Get distinct software for specified org
+class SoftwareByOrg(BaseModel):
+    """SoftwareByOrg schema class."""
+
+    product: Optional[str] = None
+
+    class Config:
+        """SoftwareByOrg schema config class."""
+
+        orm_mode = True
+
+
+# --- query_foreign_ips(), Issue 621 ---
+# Get assets outside the US for specified org
+class ForeignIpsByOrg(BaseModel):
+    """ForeignIpsByOrg schema class."""
+
+    shodan_asset_uid: Optional[str] = None
+    organizations_uid_id: Optional[str] = None
+    organization: Optional[str] = None
+    ip: Optional[str] = None
+    port: Optional[int] = None
+    protocol: Optional[str] = None
+    timestamp: Optional[str] = None
+    product: Optional[str] = None
+    server: Optional[str] = None
+    tags: Optional[List[str]] = None  # List
+    domains: Optional[List[str]] = None  # List
+    hostnames: Optional[List[str]] = None  # List
+    isn: Optional[str] = None
+    asn: Optional[int] = None
+    data_source_uid_id: Optional[str] = None
+    country_code: Optional[str] = None
+    location: Optional[str] = None
+
+    class Config:
+        """ForeignIpsByOrg schema config class."""
+
+        orm_mode = True
+
+
+# --- query_roots(), Issue 622 ---
+# Get root domains for specified org
+class RootDomainsByOrg(BaseModel):
+    """RootDomainsByOrg schema class."""
+
+    root_domain_uid: Optional[str] = None
+    root_domain: Optional[str] = None
+
+    class Config:
+        """RootDomainsByOrg schema config class."""
+
+        orm_mode = True
+
+
+# --- query_creds_view(), Issue 623 ---
+# Uses VwBreachcomp schema
+
+
+# --- query_credsbyday_view(), Issue 624 ---
+class CredsbydateByOrg(BaseModel):
+    """CredsbydateByOrg schema class."""
+
+    mod_date: Optional[str] = None
+    no_password: Optional[int] = None
+    password_included: Optional[int] = None
+
+    class Config:
+        """CredsbydateByOrg schema config class."""
+
+        orm_mode = True
+
+
+# --- query_breachdetails_view(), Issue 625 ---
+class BreachdetailsByOrg(BaseModel):
+    """BreachdetailsByOrg schema class."""
+
+    breach_name: Optional[str] = None
+    mod_date: Optional[str] = None
+    breach_date: Optional[str] = None
+    password_included: Optional[int] = None
+    number_of_creds: Optional[int] = None
+
+    class Config:
+        """BreachdetailsByOrg schema config class."""
+
+        orm_mode = True
+
+
+# --- query_shodan(), Issue 628 ---
+class VwShodanvulnsSuspectedSchema(BaseModel):
+    """VwShodanvulnsSuspectedSchema schema class."""
+
+    organizations_uid: Optional[str]
+    organization: Optional[str]
+    ip: Optional[str]
+    port: Optional[str]
+    protocol: Optional[str]
+    type: Optional[str]
+    name: Optional[str]
+    # potential_vulns: List[Optional[str]]
+    potential_vulns: Optional[List[str]]
+    mitigation: Optional[str]
+    timestamp: Optional[str]
+    product: Optional[str]
+    server: Optional[str]
+    # tags: List[Optional[str]]
+    # domains: List[Optional[str]]
+    # hostnames: List[Optional[str]]
+    tags: Optional[List[str]]
+    domains: Optional[List[str]]
+    hostnames: Optional[List[str]]
+    isn: Optional[str]
+    asn: Optional[int]
+    data_source: Optional[str]
+
+    class Config:
+        """VwShodanvulnsSuspectedSchema schema config class."""
+
+        orm_mode = True
+
+
+# --- query_shodan(), Issue 628 ---
+class VwShodanvulnsVerifiedSchema(BaseModel):
+    """VwShodanvulnsVerifiedSchema schema class."""
+
+    organizations_uid: Optional[str]
+    organization: Optional[str]
+    ip: Optional[str]
+    port: Optional[str]
+    protocol: Optional[str]
+    timestamp: Optional[str]
+    cve: Optional[str]
+    severity: Optional[str]
+    cvss: Optional[Decimal]
+    summary: Optional[str]
+    product: Optional[str]
+    attack_vector: Optional[str]
+    av_description: Optional[str]
+    attack_complexity: Optional[str]
+    ac_description: Optional[str]
+    confidentiality_impact: Optional[str]
+    ci_description: Optional[str]
+    integrity_impact: Optional[str]
+    ii_description: Optional[str]
+    availability_impact: Optional[str]
+    ai_description: Optional[str]
+    # tags: List[Optional[str]]
+    # domains: List[Optional[str]]
+    # hostnames: List[Optional[str]]
+    tags: Optional[List[str]]
+    domains: Optional[List[str]]
+    hostnames: Optional[List[str]]
+    isn: Optional[str]
+    asn: Optional[int]
+    data_source: Optional[str]
+
+    class Config:
+        """VwShodanvulnsVerifiedSchema schema config class."""
+
+        orm_mode = True
+
+
+# --- query_shodan(), Issue 628 ---
+class ShodanAssetsSchema(BaseModel):
+    """ShodanAssetsSchema schema class."""
+
+    shodan_asset_uid: Optional[str]
+    organizations_uid_id: Optional[str]
+    organization: Optional[str]
+    ip: Optional[str]
+    port: Optional[int]
+    protocol: Optional[str]
+    timestamp: Optional[str]
+    product: Optional[str]
+    server: Optional[str]
+    # tags: List[Optional[str]]
+    # domains: List[Optional[str]]
+    # hostnames: List[Optional[str]]
+    tags: Optional[List[str]]
+    domains: Optional[List[str]]
+    hostnames: Optional[List[str]]
+    isn: Optional[str]
+    asn: Optional[int]
+    data_source_uid_id: Optional[str]
+
+    class Config:
+        """ShodanAssetsSchema schema config class."""
+
+        orm_mode = True
+
+
+# --- query_darkweb(), Issue 629 ---
+class DarkWebDataInput(BaseModel):
+    """DarkWebDataInput schema class."""
+
+    org_uid: str
+    start_date: str
+    end_date: str
+    table: str
+
+    class Config:
+        """DarkWebDataInput schema config class."""
+
+        orm_mode = True
+
+
+# --- query_darkweb(), Issue 629 ---
+class MentionsTable(BaseModel):
+    """MentionsTable schema class."""
+
+    mentions_uid: Optional[str] = None
+    category: Optional[str] = None
+    collection_date: Optional[str] = None
+    content: Optional[str] = None
+    creator: Optional[str] = None
+    date: Optional[str] = None
+    sixgill_mention_id: Optional[str] = None
+    post_id: Optional[str] = None
+    lang: Optional[str] = None
+    rep_grade: Optional[str] = None
+    site: Optional[str] = None
+    site_grade: Optional[str] = None
+    title: Optional[str] = None
+    type: Optional[str] = None
+    url: Optional[str] = None
+    comments_count: Optional[str] = None
+    sub_category: Optional[str] = None
+    tags: Optional[str] = None
+    organizations_uid: Optional[str] = None
+    data_source_uid: Optional[str] = None
+    title_translated: Optional[str] = None
+    content_translated: Optional[str] = None
+    detected_lang: Optional[str] = None
+
+    class Config:
+        """MentionsTable schema config class."""
+
+        orm_mode = True
+
+
+# --- query_darkweb(), Issue 629 ---
+class AlertsTable(BaseModel):
+    """AlertsTable schema class."""
+
+    alerts_uid: Optional[str] = None
+    alert_name: Optional[str] = None
+    content: Optional[str] = None
+    date: Optional[str] = None
+    sixgill_id: Optional[str] = None
+    read: Optional[str] = None
+    severity: Optional[str] = None
+    site: Optional[str] = None
+    threat_level: Optional[str] = None
+    threats: Optional[str] = None
+    title: Optional[str] = None
+    user_id: Optional[str] = None
+    category: Optional[str] = None
+    lang: Optional[str] = None
+    organizations_uid_id: Optional[str] = None
+    data_source_uid_id: Optional[str] = None
+    content_snip: Optional[str] = None
+    asset_mentioned: Optional[str] = None
+    asset_type: Optional[str] = None
+
+    class Config:
+        """AlertsTable schema config class."""
+
+        orm_mode = True
+
+
+# --- query_darkweb(), Issue 629 ---
+class VwDarkwebMentionsbydate(BaseModel):
+    """VwDarkwebMentionsbydate schema class."""
+
+    organizations_uid: Optional[str] = None
+    date: Optional[str] = None
+    count: Optional[int] = None
+
+    class Config:
+        """VwDarkwebMentionsbydate schema config class."""
+
+        orm_mode = True
+
+
+# --- query_darkweb(), Issue 629 ---
+class VwDarkwebInviteonlymarkets(BaseModel):
+    """VwDarkwebInviteonlymarkets schema class."""
+
+    organizations_uid: Optional[str] = None
+    date: Optional[str] = None
+    Site: Optional[str] = None
+
+    class Config:
+        """VwDarkwebInviteonlymarkets schema config class."""
+
+        orm_mode = True
+
+
+# --- query_darkweb(), Issue 629 ---
+class VwDarkwebSocmediaMostactposts(BaseModel):
+    """VwDarkwebSocmediaMostactposts schema class."""
+
+    organizations_uid: Optional[str] = None
+    date: Optional[str] = None
+    Title: Optional[str] = None
+    comments_count: Optional[int] = None
+
+    class Config:
+        """VwDarkwebSocmediaMostactposts schema config class."""
+
+        orm_mode = True
+
+
+# --- query_darkweb(), Issue 629 ---
+class VwDarkwebMostactposts(BaseModel):
+    """VwDarkwebMostactposts schema class."""
+
+    organizations_uid: Optional[str] = None
+    date: Optional[str] = None
+    Title: Optional[str] = None
+    comments_count: Optional[int] = None
+
+    class Config:
+        """VwDarkwebMostactposts schema config class."""
+
+        orm_mode = True
+
+
+# --- query_darkweb(), Issue 629 ---
+class VwDarkwebExecalerts(BaseModel):
+    """VwDarkwebExecalerts schema class."""
+
+    organizations_uid: Optional[str] = None
+    date: Optional[str] = None
+    Site: Optional[str] = None
+    Title: Optional[str] = None
+    Events: Optional[int] = None
+
+    class Config:
+        """VwDarkwebExecalerts schema config class."""
+
+        orm_mode = True
+
+
+# --- query_darkweb(), Issue 629 ---
+class VwDarkwebAssetalerts(BaseModel):
+    """VwDarkwebAssetalerts schema class."""
+
+    organizations_uid: Optional[str] = None
+    date: Optional[str] = None
+    Site: Optional[str] = None
+    Title: Optional[str] = None
+    Events: Optional[int] = None
+
+    class Config:
+        """VwDarkwebAssetalerts schema config class."""
+
+        orm_mode = True
+
+
+# --- query_darkweb(), Issue 629 ---
+class VwDarkwebThreatactors(BaseModel):
+    """VwDarkwebThreatactors schema class."""
+
+    organizations_uid: Optional[str] = None
+    date: Optional[str] = None
+    Creator: Optional[str] = None
+    Grade: Optional[float] = None
+
+    class Config:
+        """VwDarkwebThreatactors schema config class."""
+
+        orm_mode = True
+
+
+# --- query_darkweb(), Issue 629 ---
+class VwDarkwebPotentialthreats(BaseModel):
+    """VwDarkwebPotentialthreats schema class."""
+
+    organizations_uid: Optional[str] = None
+    date: Optional[str] = None
+    Site: Optional[str] = None
+    Threats: Optional[str] = None
+
+    class Config:
+        """VwDarkwebPotentialthreats schema config class."""
+
+        orm_mode = True
+
+
+# --- query_darkweb(), Issue 629 ---
+class VwDarkwebSites(BaseModel):
+    """VwDarkwebSites schema class."""
+
+    organizations_uid: Optional[str] = None
+    date: Optional[str] = None
+    Site: Optional[str] = None
+
+    class Config:
+        """VwDarkwebSites schema config class."""
+
+        orm_mode = True
+
+
+# --- query_darkweb_cves(), Issue 630 ---
+class TopCvesTable(BaseModel):
+    """TopCvesRecord schema class."""
+
+    top_cves_uid: str
+    cve_id: str
+    dynamic_rating: str
+    nvd_base_score: str
+    date: str
+    summary: str
+    data_source_uid_id: str
+
+    class Config:
+        """TopCvesRecord schema config class."""
+
+        orm_mode = True
+
+
+# --- query_darkweb_cves(), Issue 630 ---
+class DarkWebCvesTaskResp(BaseModel):
+    """DarkWebCvesTaskResp schema class."""
+
+    task_id: str
+    status: str
+    result: Optional[List[TopCvesTable]] = None
+    error: Optional[str] = None
+
+
+# --- execute_scorecard(), Issue 632 ---
+# Insert record into report_summary_stats, input
+class RSSInsertInput(BaseModel):
+    """RSSInsertInput schema class."""
+
+    organizations_uid: str
+    start_date: str
+    end_date: str
+    ip_count: int
+    root_count: int
+    sub_count: int
+    ports_count: int
+    creds_count: int
+    breach_count: int
+    cred_password_count: int
+    domain_alert_count: int
+    suspected_domain_count: int
+    insecure_port_count: int
+    verified_vuln_count: int
+    suspected_vuln_count: int
+    suspected_vuln_addrs_count: int
+    threat_actor_count: int
+    dark_web_alerts_count: int
+    dark_web_mentions_count: int
+    dark_web_executive_alerts_count: int
+    dark_web_asset_alerts_count: int
+    pe_number_score: int
+    pe_letter_grade: str
+
+    class Config:
+        """RSSInsertInput schema config class."""
+
+        orm_mode = True
+
+
+# --- query_all_subs()/query_subs(), Issue 560, 633 ---
+# Get entire sub_domains table, single output
+class SubDomainTable(BaseModel):
+    """SubDomainTable schema class."""
+
+    sub_domain_uid: Optional[str] = None
+    sub_domain: Optional[str] = None
+    root_domain_uid_id: Optional[str] = None
+    data_source_uid_id: Optional[str] = None
+    dns_record_uid_id: Optional[str] = None
+    status: Optional[bool] = None
+    first_seen: Optional[str] = None
+    last_seen: Optional[str] = None
+    current: Optional[bool] = None
+    identified: Optional[bool] = None
+
+    class Config:
+        """SubDomainTable schema config class."""
+
+        orm_mode = True
+        validate_assignment = True
+
+
+# --- query_all_subs()/query_subs(), Issue 560, 633 ---
+# Get entire sub_domains table, paged output
+class SubDomainPagedResult(BaseModel):
+    """SubDomainPagedResult schema class."""
+
+    total_pages: int
+    current_page: int
+    data: List[SubDomainTable]
+
+
+# --- query_all_subs(), Issue 633 ---
+# Get entire sub_domains table, paged input
+class SubDomainPagedInput(BaseModel):
+    """SubDomainPagedInput schema class."""
+
+    org_uid: str
+    page: int
+    per_page: int
+
+    class Config:
+        """SubDomainPagedInput schema config class."""
+
+        orm_mode = True
+
+
+# --- query_all_subs()/query_subs, Issue 560, 633 ---
+# Get entire sub_domains table, paged task resp
+class SubDomainPagedTaskResp(BaseModel):
+    """SubDomainPagedTaskResp schema class."""
+
+    task_id: str
+    status: str
+    result: Optional[SubDomainPagedResult] = None
+    error: Optional[str] = None
+
+
+# --- query_previous_period(), Issue 634 ---
+# Get prev. report period data from report_summary_stats
+class RSSPrevPeriod(BaseModel):
+    """RSSPrevPeriod schema class."""
+
+    ip_count: Optional[int] = None
+    root_count: Optional[int] = None
+    sub_count: Optional[int] = None
+    cred_password_count: Optional[int] = None
+    suspected_vuln_addrs_count: Optional[int] = None
+    suspected_vuln_count: Optional[int] = None
+    insecure_port_count: Optional[int] = None
+    threat_actor_count: Optional[int] = None
+
+    class Config:
+        """RSSPrevPeriod schema config class."""
+
+        orm_mode = True
+
+
+# --- query_previous_period(), Issue 634 ---
+# Get prev. report period data from report_summary_stats, input
+class RSSPrevPeriodInput(BaseModel):
+    """RSSPrevPeriodInput schema class."""
+
+    org_uid: str
+    prev_end_date: str
+
+    class Config:
+        """RSSPrevPeriodInput schema config class."""
+
+        orm_mode = True
+
+
+# ---------- General PE Score Schemas ----------
+# --- reported orgs schema, Issue 635 ---
+# List of reported organizations schema
+class ReportedOrgs(BaseModel):
+    """ReportedOrgs schema class."""
+
+    organizations_uid: str
+
+    class Config:
+        """ReportedOrgs schema config class."""
+
+        orm_mode = True
+
+
+# --- reported orgs schema, Issue 635 ---
+# List of reported organizations w/ cyhy db name schema
+class ReportedOrgsCyhy(BaseModel):
+    """ReportedOrgsCyhy schema class."""
+
+    organizations_uid: str
+    cyhy_db_name: str
+
+    class Config:
+        """ReportedOrgsCyhy schema config class."""
+
+        orm_mode = True
+
+
+# ---------- PE Score Historical Data ----------
+# --- pescore_hist_domain_alert(), Issue 635 ---
+# Get pescore_hist_domain_alert data for the specified period
+class PEScoreHistDomainAlert(BaseModel):
+    """PEScoreHistDomainAlert schema class."""
+
+    organizations_uid: str
+    date: str
+
+    class Config:
+        """PEScoreHistDomainAlert schema config class."""
+
+        orm_mode = True
+
+
+# --- pescore_hist_domain_alert(), Issue 635 ---
+# Get pescore_hist_domain_alert data for the specified period, consolidated resp
+class PEScoreHistDomainAlertResp(BaseModel):
+    """PEScoreHistDomainAlertResp schema class."""
+
+    reported_orgs: List[ReportedOrgsCyhy]
+    hist_domain_alert_data: List[PEScoreHistDomainAlert]
+
+    class Config:
+        """PEScoreHistDomainAlertResp schema config class."""
+
+        orm_mode = True
+
+
+# --- pescore_hist_domain_alert(), Issue 635 ---
+# Get pescore_hist_domain_alert data for the specified period, task resp
+class PEScoreHistDomainAlertTaskResp(BaseModel):
+    """PEScoreHistDomainAlertTaskResp schema class."""
+
+    task_id: str
+    status: str
+    result: Optional[PEScoreHistDomainAlertResp] = None
+    error: Optional[str] = None
+
+
+# --- pescore_hist_darkweb_alert(), Issue 635 ---
+# Get pescore_hist_darkweb_alert data for the specified period
+class PEScoreHistDarkwebAlert(BaseModel):
+    """PEScoreHistDarkwebAlert schema class."""
+
+    organizations_uid: str
+    date: str
+
+    class Config:
+        """PEScoreHistDarkwebALert schema config class."""
+
+        orm_mode = True
+
+
+# --- pescore_hist_darkweb_alert(), Issue 635 ---
+# Get pescore_hist_darkweb_alert data for the specified period, consolidated resp
+class PEScoreHistDarkwebAlertResp(BaseModel):
+    """PEScoreHistDarkwebAlertResp schema class."""
+
+    reported_orgs: List[ReportedOrgsCyhy]
+    hist_darkweb_alert_data: List[PEScoreHistDarkwebAlert]
+
+    class Config:
+        """PEScoreHistDarkwebAlertResp schema config class."""
+
+        orm_mode = True
+
+
+# --- pescore_hist_darkweb_alert(), Issue 635 ---
+# Get pescore_hist_darkweb_alert data for the specified period, task resp
+class PEScoreHistDarkwebAlertTaskResp(BaseModel):
+    """PEScoreHistDarkwebAlertTaskResp schema class."""
+
+    task_id: str
+    status: str
+    result: Optional[PEScoreHistDarkwebAlertResp] = None
+    error: Optional[str] = None
+
+
+# --- pescore_hist_darkweb_ment(), Issue 635 ---
+# Get pescore_hist_darkweb_ment data for the specified period
+class PEScoreHistDarkwebMent(BaseModel):
+    """PEScoreHistDarkwebMent schema class."""
+
+    organizations_uid: str
+    date: str
+    count: int
+
+    class Config:
+        """PEScoreHistDarkwebMent schema config class."""
+
+        orm_mode = True
+
+
+# --- pescore_hist_darkweb_ment(), Issue 635 ---
+# Get pescore_hist_darkweb_ment data for the specified period, consolidated resp
+class PEScoreHistDarkwebMentResp(BaseModel):
+    """PEScoreHistDarkwebMentResp schema class."""
+
+    reported_orgs: List[ReportedOrgsCyhy]
+    hist_darkweb_ment_data: List[PEScoreHistDarkwebMent]
+
+    class Config:
+        """PEScoreHistDarkwebMentResp schema config class."""
+
+        orm_mode = True
+
+
+# --- pescore_hist_darkweb_ment(), Issue 635 ---
+# Get pescore_hist_darkweb_ment data for the specified period, task resp
+class PEScoreHistDarkwebMentTaskResp(BaseModel):
+    """PEScoreHistDarkwebMentTaskResp schema class."""
+
+    task_id: str
+    status: str
+    result: Optional[PEScoreHistDarkwebMentResp] = None
+    error: Optional[str] = None
+
+
+# --- pescore_hist_cred(), Issue 635 ---
+# Get pescore_hist_cred data for the specified period
+class PEScoreHistCred(BaseModel):
+    """PEScoreHistCred schema class."""
+
+    organizations_uid: str
+    mod_date: str
+    no_password: int
+    password_included: int
+
+    class Config:
+        """PEScoreHistCred schema config class."""
+
+        orm_mode = True
+
+
+# --- pescore_hist_cred(), Issue 635 ---
+# Get pescore_hist_cred data for the specified period, consolidated resp
+class PEScoreHistCredResp(BaseModel):
+    """PEScoreHistCredResp schema class."""
+
+    reported_orgs: List[ReportedOrgsCyhy]
+    hist_cred_data: List[PEScoreHistCred]
+
+    class Config:
+        """PEScoreHistCredResp schema config class."""
+
+        orm_mode = True
+
+
+# --- pescore_hist_cred(), Issue 635 ---
+# Get pescore_hist_cred data for the specified period, task resp
+class PEScoreHistCredTaskResp(BaseModel):
+    """PEScoreHistCredTaskResp schema class."""
+
+    task_id: str
+    status: str
+    result: Optional[PEScoreHistCredResp] = None
+    error: Optional[str] = None
+
+
+# ---------- PE Score Base Metrics Data ----------
+# --- pescore_base_metrics(), Issue 635 ---
+# Get data for CRED component of pescore_base_metrics
+class PEScoreCred(BaseModel):
+    """PEScoreCred schema class."""
+
+    organizations_uid: str
+    password_included: int
+    no_password: int
+
+    class Config:
+        """PEScoreCred schema config class."""
+
+        orm_mode = True
+
+
+# --- pescore_base_metrics(), Issue 635 ---
+# Get data for BREACH component of pescore_base_metrics
+class PEScoreBreach(BaseModel):
+    """PEScoreBreach schema class."""
+
+    organizations_uid: str
+    num_breaches: int
+
+    class Config:
+        """PEScoreBreach schema config class."""
+
+        orm_mode = True
+
+
+# --- pescore_base_metrics(), Issue 635 ---
+# Get data for DOMAIN SUSPECTED component of pescore_base_metrics
+class PEScoreDomainSus(BaseModel):
+    """PEScoreDomainSus schema class."""
+
+    organizations_uid: str
+    num_sus_domain: int
+
+    class Config:
+        """PEScoreDomainSus schema config class."""
+
+        orm_mode = True
+
+
+# --- pescore_base_metrics(), Issue 635 ---
+# Get data for DOMAIN ALERT component of pescore_base_metrics
+class PEScoreDomainAlert(BaseModel):
+    """PEScoreDomainAlert schema class."""
+
+    organizations_uid: str
+    num_alert_domain: int
+
+    class Config:
+        """PEscoreDomainAlert schema config class."""
+
+        orm_mode = True
+
+
+# --- pescore_base_metrics(), Issue 635 ---
+# Get data for VERIF VULN component of pescore_base_metrics
+class PEScoreVulnVerif(BaseModel):
+    """PEScoreVulnVerif schema class."""
+
+    organizations_uid: str
+    num_verif_vulns: int
+
+    class Config:
+        """PESCoreVulnVerif schema config class."""
+
+        orm_mode = True
+
+
+# --- pescore_base_metrics(), Issue 635 ---
+# Get data for UNVERIF VULN component of pescore_base_metrics
+class PEScoreVulnUnverif(BaseModel):
+    """PEScoreVulnUnverif schema class."""
+
+    organizations_uid: str
+    num_assets_unverif_vulns: int
+
+    class Config:
+        """PEScoreVulnUnverif schema config class."""
+
+        orm_mode = True
+
+
+# --- pescore_base_metrics(), Issue 635 ---
+# Get data for PORT component of pescore_base_metrics
+class PEScoreVulnPort(BaseModel):
+    """PEScoreVulnPort schema class."""
+
+    organizations_uid: str
+    num_risky_ports: int
+
+    class Config:
+        """PEscoreVulnPort schema config class."""
+
+        orm_mode = True
+
+
+# --- pescore_base_metrics(), Issue 635 ---
+# Get data for DARKWEB ALERT component of pescore_base_metrics
+class PEScoreDarkwebAlert(BaseModel):
+    """PEScoreDarkwebAlert schema class."""
+
+    organizations_uid: str
+    num_dw_alerts: int
+
+    class Config:
+        """PEScoreDarkwebAlert schema config class."""
+
+        orm_mode = True
+
+
+# --- pescore_base_metrics(), Issue 635 ---
+# Get data for DARKWEB MENTION component of pescore_base_metrics
+class PEScoreDarkwebMent(BaseModel):
+    """PEScoreDarkwebMent schema class."""
+
+    organizations_uid: str
+    num_dw_mentions: int
+
+    class Config:
+        """PEScoreDarkwebMent schema config class."""
+
+        orm_mode = True
+
+
+# --- pescore_base_metrics(), Issue 635 ---
+# Get data for DARKWEB THREAT component of pescore_base_metrics
+class PEScoreDarkwebThreat(BaseModel):
+    """PEScoreDarkwebThreat schema class."""
+
+    organizations_uid: str
+    num_dw_threats: int
+
+    class Config:
+        """PEScoreDarkwebThreat schema config class."""
+
+        orm_mode = True
+
+
+# --- pescore_base_metrics(), Issue 635 ---
+# Get data for DARKWEB INVITE component of pescore_base_metrics
+class PEScoreDarkwebInv(BaseModel):
+    """PEScoreDarkwebInv schema class."""
+
+    organizations_uid: str
+    num_dw_invites: int
+
+    class Config:
+        """PEScoreDarwkebInv schema config class."""
+
+        orm_mode = True
+
+
+# --- pescore_base_metrics(), Issue 635 ---
+# Get data for ATTACKSURFACE component of pescore_base_metrics
+class PEScoreAttackSurface(BaseModel):
+    """PEScoreAttackSurface schema class."""
+
+    organizations_uid: str
+    cyhy_db_name: Optional[str] = None
+    num_ports: Optional[int] = None
+    num_root_domain: Optional[int] = None
+    num_sub_domain: Optional[int] = None
+    num_ips: Optional[int] = None
+    num_cidrs: Optional[int] = None
+    num_ports_protocols: Optional[int] = None
+    num_software: Optional[int] = None
+    num_foreign_ips: Optional[int] = None
+
+    class Config:
+        """PEScoreAttackSurface schema config class."""
+
+        orm_mode = True
+
+
+# --- pescore_base_metrics(), Issue 635 ---
+# Get all base metric data for PE score
+class PEScoreBaseMetrics(BaseModel):
+    """PEScoreBaseMetrics schema class."""
+
+    reported_orgs: List[ReportedOrgs]
+    cred_data: List[PEScoreCred]
+    breach_data: List[PEScoreBreach]
+    domain_sus_data: List[PEScoreDomainSus]
+    domain_alert_data: List[PEScoreDomainAlert]
+    vuln_verif_data: List[PEScoreVulnVerif]
+    vuln_unverif_data: List[PEScoreVulnUnverif]
+    vuln_port_data: List[PEScoreVulnPort]
+    darkweb_alert_data: List[PEScoreDarkwebAlert]
+    darkweb_ment_data: List[PEScoreDarkwebMent]
+    darkweb_threat_data: List[PEScoreDarkwebThreat]
+    darkweb_inv_data: List[PEScoreDarkwebInv]
+    attacksurface_data: List[PEScoreAttackSurface]
+
+
+# --- pescore_base_metrics(), Issue 635 ---
+# Get all base metric data for PE score, task resp
+class PEScoreBaseMetricsTaskResp(BaseModel):
+    """PEScoreBaseMetricsTaskResp schema class."""
+
+    task_id: str
+    status: str
+    result: Optional[PEScoreBaseMetrics] = None
+    error: Optional[str] = None
+
+
+# --- get_new_cves_list(), Issue 636 ---
+# Get any detected CVEs that aren't in the cve_info table yet
+class VwPEScoreCheckNewCVE(BaseModel):
+    """VwPEScoreCheckNewCVE schema class."""
+
+    cve_name: str
+
+    class Config:
+        """VwPEScoreCheckNewCVE schema config class."""
+
+        orm_mode = True
+
+
+# --- upsert_new_cves(), Issue 637 ---
+# Upsert new CVEs into cve_info
+class CVEInfoInsert(BaseModel):
+    """CVEInfoInsert schema class."""
+
+    cve_name: str
+    cvss_2_0: float
+    cvss_2_0_severity: str
+    cvss_2_0_vector: str
+    cvss_3_0: float
+    cvss_3_0_severity: str
+    cvss_3_0_vector: str
+    dve_score: float
+
+    class Config:
+        """CVEInfoInsert schema config class."""
+
+        orm_mode = True
+
+
+# --- upsert_new_cves(), Issue 637 ---
+# Upsert new CVEs into cve_info, input
+class CVEInfoInsertInput(BaseModel):
+    """CVEInfoInsertInput schema class."""
+
+    new_cves: List[CVEInfoInsert]
+
+    class Config:
+        """CVEInfoInsertInput schema config class."""
+
+        orm_mode = True
+
+
+# --- upsert_new_cves(), Issue 637 ---
+# Upsert new CVEs into cve_info, task resp
+class CVEInfoInsertTaskResp(BaseModel):
+    """CVEInfoInsertTaskResp schema class."""
+
+    task_id: str
+    status: str
+    result: Optional[str] = None
+    error: Optional[str] = None
+
+
+# --- insert_sixgill_mentions(), Issue 654 ---
+# Insert multiple records into the mentions table
+class MentionsInsert(BaseModel):
+    """MentionsInsert schema class."""
+
+    organizations_uid: str
+    data_source_uid: str
+    category: str
+    collection_date: str
+    content: str
+    creator: str
+    date: str
+    sixgill_mention_id: str
+    lang: str
+    post_id: str
+    rep_grade: str
+    site: str
+    site_grade: str
+    sub_category: str
+    title: str
+    type: str
+    url: str
+    comments_count: str
+    tags: str
+
+    class Config:
+        """MentionsInsert schema config class."""
+
+        orm_mode = True
+
+
+# --- insert_sixgill_mentions(), Issue 654 ---
+# Insert multiple records into the mentions table, input
+class MentionsInsertInput(BaseModel):
+    """MentionsInsertInput schema class."""
+
+    insert_data: List[MentionsInsert]
+
+    class Config:
+        """MentionsInsertInput schema config class."""
+
+        orm_mode = True
+
+
+# --- insert_sixgill_breaches(), Issue 655 ---
+# Insert multiple records into the credential_breaches table
+class CredBreachesInsert(BaseModel):
+    """CredBreachesInsert schema class."""
+
+    breach_name: str
+    description: str
+    exposed_cred_count: int
+    breach_date: str
+    modified_date: str
+    password_included: bool
+    data_source_uid: str
+
+    class Config:
+        """CredBreachesInsert schema config class."""
+
+        orm_mode = True
+
+
+# --- insert_sixgill_breaches(), Issue 655 ---
+# Insert multiple records into the credential_breaches table, input
+class CredBreachesInsertInput(BaseModel):
+    """CredBreachesInsertInput schema class."""
+
+    insert_data: List[CredBreachesInsert]
+
+    class Config:
+        """CredBreachesInsertInput schema config class."""
+
+        orm_mode = True
+
+
+# --- insert_sixgill_topCVEs(), Issue 657 ---
+# Insert multiple records into the top_cves table
+class TopCVEsInsert(BaseModel):
+    """TopCVEsInsert schema class."""
+
+    cve_id: str
+    dynamic_rating: Optional[str] = None
+    nvd_base_score: Optional[str] = None
+    date: str
+    summary: Optional[str] = None
+    data_source_uid: Optional[str] = None
+
+    class Config:
+        """TopCVEsInsert schema config class."""
+
+        orm_mode = True
+
+
+# --- insert_sixgill_topCVEs(), Issue 657 ---
+# Insert multiple records into the top_cves table, input
+class TopCVEsInsertInput(BaseModel):
+    """TopCVEsInsertInput schema class."""
+
+    insert_data: List[TopCVEsInsert]
+
+    class Config:
+        """TopCVEsInsertInput schema config class."""
+
+        orm_mode = True
+
+
+# --- addRootdomain(), Issue 661 ---
+# Insert single root domain into root_domains table, input
+class RootDomainsSingleInsertInput(BaseModel):
+    """RootDomainsSingleInsertInput schema class."""
+
+    root_domain: str
+    pe_org_uid: str
+    source_uid: str
+    org_name: str
+
+    class Config:
+        """RootDomainsSingleInsertInput schema config class."""
+
+        orm_mode = True
+
+
+# --- addSubdomain(), Issue 662 ---
+# Insert single sub domain into sub_domains table, input
+class SubDomainsSingleInsertInput(BaseModel):
+    """SubDomainsSingleInsertInput schema class."""
+
+    domain: str
+    pe_org_uid: str
+    root: Optional[bool] = None
+
+    class Config:
+        """SubDomainsSingleInsertInput schema config class."""
+
+        orm_mode = True
+
+
+# ---------- Generalized Schemas ----------
+# Generalized 1 org_uid input schema
+class GenInputOrgUIDSingle(BaseModel):
+    """GenInputOrgUIDSingle schema class."""
+
+    org_uid: str
+
+    class Config:
+        """GenInputOrgUIDSingle schema config class."""
+
+        orm_mode = True
+
+
+# Generalized 1 org cyhy_db_name input schema
+class GenInputOrgCyhyNameSingle(BaseModel):
+    """GenInputOrgCyhyNameSingle schema class."""
+
+    org_cyhy_name: str
+
+    class Config:
+        """GenInputOrgCyhyNameSingle schema config class."""
+
+        orm_mode = True
+
+
+# Generalized 1 org_uid, 1 date input schema
+class GenInputOrgUIDDateSingle(BaseModel):
+    """GenInputOrgUIDDateSingle schema class."""
+
+    org_uid: str
+    date: str
+
+    class Config:
+        """GenInputOrgUIDDateSingle schema config class."""
+
+        orm_mode = True
+
+
+# Generalized list of org_uids input schema
+class GenInputOrgUIDList(BaseModel):
+    """GenInputOrgUIDList schema class."""
+
+    org_uid_list: List[str]
+
+    class Config:
+        """GenInputOrgUIDList config."""
+
+        orm_mode = True
+
+
+class GenInputOrgUIDDateRange(BaseModel):
+    """GenInputOrgUIDDateRange schema class."""
+
+    org_uid: str
+    start_date: str
+    end_date: str
+
+    class Config:
+        """GenInputOrgUIDDateRange schema config class."""
+
+
+# Generalized start/end date input schema
+class GenInputDateRange(BaseModel):
+    """GenInputDateRange schema class."""
+
+    start_date: str
+    end_date: str
+
+    class Config:
+        """GenInputDateRange schema config class."""
+
+        orm_mode = True
+
+
+# Generalized list of org_uids and start/end date input schema
+class GenInputOrgUIDListDateRange(BaseModel):
+    """GenInputOrgUIDListDateRange schema class."""
+
+    org_uid_list: List[str]
+    start_date: str
+    end_date: str
+
+    class Config:
+        """GenInputOrgUIDListDateRange schema config class."""
+
+        orm_mode = True
+
+
+class XpanseBusinessUnitsInsert(BaseModel):
+    """XpanseBusinessUnitsInsert schema class."""
+
+    # xpanse_business_unit_uid: Optional[Any]
+    entity_name: str
+    state: Optional[str] = None
+    county: Optional[str] = None
+    city: Optional[str] = None
+    sector: Optional[str] = None
+    entity_type: Optional[str] = None
+    region: Optional[str] = None
+    rating: Optional[int] = None
+
+
+class XpanseAsset(BaseModel):
+    """XpanseAsset schema class."""
+
+    # xpanse_asset_uid = models.UUIDField(primary_key=True, default=uuid.uuid1)
+    asm_id: Optional[str] = None
+    asset_name: Optional[str] = None
+    asset_type: Optional[str] = None
+    last_observed: Optional[datetime] = None
+    first_observed: Optional[datetime] = None
+    externally_detected_providers: Optional[List[str]] = None
+    created: Optional[datetime] = None
+    ips: Optional[List[str]] = None
+    active_external_services_types: Optional[List[str]] = None
+    domain: Optional[str] = None
+    certificate_issuer: Optional[str] = None
+    certificate_algorithm: Optional[str] = None
+    certificate_classifications: Optional[List[str]] = None
+    resolves: Optional[bool] = None
+    # details
+    top_level_asset_mapper_domain: Optional[str] = None
+    domain_asset_type: Optional[Dict] = None  # This was JSON
+    is_paid_level_domain: Optional[bool] = None
+    domain_details: Optional[Dict] = None  # This was JSON
+    dns_zone: Optional[str] = None
+    latest_sampled_ip: Optional[int] = None
+
+    recent_ips: Optional[List[Dict]] = None  # This was JSON
+    external_services: Optional[List[Dict]] = None  # This was JSON
+    externally_inferred_vulnerability_score: Optional[float] = None
+    externally_inferred_cves: Optional[List[str]] = None
+    explainers: Optional[List[str]] = None
+    tags: Optional[List[str]] = None
+
+
+class XpanseCve(BaseModel):
+    """XpanseCVE schema class."""
+
+    cve_id: Optional[str] = None
+    cvss_score_v2: Optional[float] = None
+    cve_severity_v2: Optional[str] = None
+    cvss_score_v3: Optional[float] = None
+    cve_severity_v3: Optional[str] = None
+
+
+class XpanseCveMatch(BaseModel):
+    """XpanseCveMatch schema class."""
+
+    inferred_cve_match_type: Optional[str] = None
+    product: Optional[str] = None
+    confidence: Optional[str] = None
+    vendor: Optional[str] = None
+    version_number: Optional[str] = None
+    activity_status: Optional[str] = None
+    first_observed: Optional[datetime] = None
+    last_observed: Optional[datetime] = None
+
+
+class XpanseService(BaseModel):
+    """XpanseService schema class."""
+
+    # xpanse_service_uid = models.UUIDField(primary_key=True, default=uuid.uuid1)
+    service_id: Optional[str] = None
+    service_name: Optional[str] = None
+    service_type: Optional[str] = None
+    ip_address: Optional[List[str]] = None
+    domain: Optional[List[str]] = None
+    externally_detected_providers: Optional[List[str]] = None
+    is_active: Optional[str] = None
+    first_observed: Optional[datetime] = None
+    last_observed: Optional[datetime] = None
+    port: Optional[int] = None
+    protocol: Optional[str] = None
+    active_classifications: Optional[List[str]] = None
+    inactive_classifications: Optional[List[str]] = None
+    discovery_type: Optional[str] = None
+    externally_inferred_vulnerability_score: Optional[float] = None
+    externally_inferred_cves: Optional[List[str]] = None
+    service_key: Optional[str] = None
+    service_key_type: Optional[str] = None
+
+    cves: Optional[List[Tuple[XpanseCve, XpanseCveMatch]]] = None
+
+
+class XpanseAlertInsert(BaseModel):
+    """XpanseAlertInsert schema class."""
+
+    # xpanse_alert_uid =  models.UUIDField(primary_key=True, default=uuid.uuid1)
+    time_pulled_from_xpanse: Optional[datetime] = None
+    alert_id: str
+    detection_timestamp: Optional[datetime] = None
+    alert_name: Optional[str] = None
+    # endpoint_id ???,
+    description: Optional[str] = None
+    host_name: Optional[str] = None
+    alert_action: Optional[str] = None
+    # user_name ??? null,
+    # mac_addresses ??? null,
+    # source ??? null,
+    action_pretty: Optional[str] = None
+    # category ??? null,
+    # project ??? null,
+    # cloud_provider ??? null,
+    # resource_sub_type ??? null,
+    # resource_type ??? null,
+    action_country: Optional[List[str]] = None
+    # event_type ??? null,
+    # is_whitelisted ??? null,
+    # image_name ??? null,
+    # action_local_ip ??? null,
+    # action_local_port ??? null,
+    # action_external_hostname ??? null,
+    # action_remote_ip ??? null,
+    action_remote_port: Optional[List[int]] = None
+    # "matching_service_rule_id ??? null,
+    starred: Optional[bool] = None
+    external_id: Optional[str] = None
+    related_external_id: Optional[str] = None
+    alert_occurrence: Optional[int] = None
+    severity: Optional[str] = None
+    matching_status: Optional[str] = None
+    # end_match_attempt_ts ??? null,
+    local_insert_ts: Optional[datetime] = None
+    last_modified_ts: Optional[datetime] = None
+    # case_id: Optional[int] = None
+    # deduplicate_tokens ??? null,
+    # filter_rule_id ??? null,
+    # event_id ??? null,
+    event_timestamp: Optional[List[datetime]] = None
+    # action_local_ip_v6 ??? null,
+    # action_remote_ip_v6 ??? null,
+    alert_type: Optional[str] = None
+    resolution_status: Optional[str] = None
+    resolution_comment: Optional[str] = None
+    # dynamic_fields ??? null,
+    tags: Optional[List[str]] = None
+    # malicious_urls ??? null,
+    last_observed: Optional[datetime] = None
+    country_codes: Optional[List[str]] = None
+    cloud_providers: Optional[List[str]] = None
+    ipv4_addresses: Optional[List[str]] = None
+    # ipv6_addresses ??? null,
+    domain_names: Optional[List[str]] = None
+    service_ids: Optional[List[str]] = None
+    website_ids: Optional[List[str]] = None
+    asset_ids: Optional[List[str]] = None
+    certificate: Optional[Dict] = None  # This was JSON
+    # {
+    #            issuerName": "IOS-Self-Signed-Certificate-782645061",
+    #            subjectName": "IOS-Self-Signed-Certificate-782645061",
+    #            validNotBefore": 1398850008000,
+    #            validNotAfter": 1577836800000,
+    #            serialNumber": "1"
+    # },
+    port_protocol: Optional[str] = None
+    # business_unit_hierarchies
+    attack_surface_rule_name: Optional[str] = None
+    remediation_guidance: Optional[str] = None
+    asset_identifiers: Optional[List[Dict]] = None  # This was JSON
+
+    business_units: List[str] = []
+    services: List[XpanseService] = []
+    assets: List[XpanseAsset] = []
+
+
+class XpanseCveOutput(BaseModel):
+    """XpanseCveOutput schema class."""
+
+    cve_id: Optional[str] = None
+    cvss_score_v2: Optional[str] = None
+    cve_severity_v2: Optional[str] = None
+    cvss_score_v3: Optional[str] = None
+    cve_severity_v3: Optional[str] = None
+    inferred_cve_match_type: Optional[str] = None
+    product: Optional[str] = None
+    confidence: Optional[str] = None
+    vendor: Optional[str] = None
+    version_number: Optional[str] = None
+    activity_status: Optional[str] = None
+    first_observed: Optional[str] = None
+    last_observed: Optional[str] = None
+
+
+class XpanseServiceOutput(BaseModel):
+    """XpanseServiceOutput schema class."""
+
+    service_id: Optional[str] = None
+    service_name: Optional[str] = None
+    service_type: Optional[str] = None
+    ip_address: Optional[List[str]] = None
+    domain: Optional[List[str]] = None
+    externally_detected_providers: Optional[List[str]] = None
+    is_active: Optional[str] = None
+    first_observed: Optional[str] = None
+    last_observed: Optional[str] = None
+    port: Optional[int] = None
+    protocol: Optional[str] = None
+    active_classifications: Optional[List[str]] = None
+    inactive_classifications: Optional[List[str]] = None
+    discovery_type: Optional[str] = None
+    externally_inferred_vulnerability_score: Optional[str] = None
+    externally_inferred_cves: Optional[List[str]] = None
+    service_key: Optional[str] = None
+    service_key_type: Optional[str] = None
+    cves: Optional[List[XpanseCveOutput]] = None
+
+
+class XpanseVulnOutput(BaseModel):
+    """XpanseVulnOutput schhema class."""
+
+    alert_name: Optional[str] = None
+    description: Optional[str] = None
+    last_modified_ts: Optional[datetime] = None
+    local_insert_ts: Optional[datetime] = None
+    event_timestamp: Optional[List[datetime]] = None
+    host_name: Optional[str] = None
+    alert_action: Optional[str] = None
+    action_country: Optional[List[str]] = None
+    action_remote_port: Optional[List[int]] = None
+    external_id: Optional[str] = None
+    related_external_id: Optional[str] = None
+    alert_occurrence: Optional[int] = None
+    severity: Optional[str] = None
+    matching_status: Optional[str] = None
+    alert_type: Optional[str] = None
+    resolution_status: Optional[str] = None
+    resolution_comment: Optional[str] = None
+    last_observed: Optional[str] = None
+    country_codes: Optional[List[str]] = None
+    cloud_providers: Optional[List[str]] = None
+    ipv4_addresses: Optional[List[str]] = None
+    domain_names: Optional[List[str]] = None
+    port_protocol: Optional[str] = None
+    time_pulled_from_xpanse: Optional[str] = None
+    action_pretty: Optional[str] = None
+    attack_surface_rule_name: Optional[str] = None
+    certificate: Optional[Dict] = None
+    remediation_guidance: Optional[str] = None
+    asset_identifiers: Optional[List[Dict]] = None
+    services: Optional[List[XpanseServiceOutput]] = None
+
+
+class XpanseVulnPullInput(BaseModel):
+    """XpanseVulnPullInput schema class."""
+
+    business_unit: str
+    modified_datetime: Optional[datetime] = None
+
+    class Config:
+        """XpanseVulnPullInput schema config class."""
+
+        orm_mode = True
+
+
+# vw_dscore_vs_cert task response schema:
+class XpanseVulnPullTaskResp(BaseModel):
+    """XpanseVulnPullTaskResp schema class."""
+
+    task_id: str
+    status: str
+    result: Optional[List[XpanseVulnOutput]] = None
+    error: Optional[str] = None
