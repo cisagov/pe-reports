@@ -1167,7 +1167,6 @@ def cred_breaches_insert_task(self, new_breaches: List[dict]):
             CredentialBreaches.objects.filter(
                 breach_name=new_breach["breach_name"]
             ).update(
-                exposed_cred_count=new_breach["exposed_cred_count"],
                 password_included=new_breach["password_included"],
             )
             update_ct += 1
@@ -1180,11 +1179,10 @@ def cred_breaches_insert_task(self, new_breaches: List[dict]):
                 credential_breaches_uid=uuid.uuid1(),
                 breach_name=new_breach["breach_name"],
                 description=new_breach["description"],
-                exposed_cred_count=new_breach["exposed_cred_count"],
                 breach_date=new_breach["breach_date"],
-                modified_date=new_breach["modified_date"],
                 password_included=new_breach["password_included"],
                 data_source_uid=curr_source_inst,
+                modified_date=new_breach["modified_date"],
             )
             create_ct += 1
     # Return success message

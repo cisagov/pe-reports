@@ -2830,23 +2830,21 @@ class MentionsInsertTaskResp(BaseModel):
     error: Optional[str] = None
 
 
-# --- insert_sixgill_breaches(), Issue 655 ---
-class CredBreachesInsert(BaseModel):
-    """CredBreachesInsert schema class."""
+# --- insert_sixgill_breaches(), Issue 655 --- 
+class CredBreachesInsert(BaseModel): 
+    """CredBreachesInsert schema class.""" 
 
-    breach_name: str  # good
-    description: str  # good
-    exposed_cred_count: int  # good
-    breach_date: str  # good
-    modified_date: str  # good
-    password_included: bool  # used to be password col
-    data_source_uid: str  # good
-    # add "password" col?
-
+    breach_name: str 
+    description: str
+    breach_date: str
+    password_included: bool
+    data_source_uid: str
+    modified_date: str 
+    
     class Config:
         """CredBreachesInsert schema config class."""
-
-        orm_mode = True
+        
+        orm_mode = True 
 
 
 # --- insert_sixgill_breaches(), Issue 655 ---
