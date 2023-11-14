@@ -4,11 +4,10 @@
 # Standard Python Libraries
 import datetime
 from ipaddress import ip_address, ip_network
+import json
 import logging
 import socket
 import sys
-import json
-import requests
 import time
 
 # Third-Party Libraries
@@ -18,6 +17,7 @@ import psycopg2
 from psycopg2 import OperationalError
 from psycopg2.extensions import AsIs
 import psycopg2.extras as extras
+import requests
 from sshtunnel import SSHTunnelForwarder
 
 from .config import config, staging_config
@@ -28,13 +28,14 @@ LOGGER = logging.getLogger(__name__)
 CONN_PARAMS_DIC = config()
 CONN_PARAMS_DIC_STAGING = staging_config()
 
-pe_api_url = "http://127.0.0.1:8089/apiv1/" #API_DIC.get("pe_api_url")
-pe_api_key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE2NzMwNDAzNDUsInN1YiI6ImNkdWhuNzUifQ.Gx8loA6ZtWe7MA4eqlDzWUPzc_j9vJjOLYOxg2aBZxQ"#API_DIC.get("pe_api_key")
+API_DIC = staging_config(section="pe_api")
+pe_api_url = API_DIC.get("pe_api_url")
+pe_api_key = API_DIC.get("pe_api_key")
 
 
 def task_api_call(task_url, check_url, data={}, retry_time=3):
     """
-    Query tasked endpoint given task_url and check_url
+    Query tasked endpoint given task_url and check_url.
 
     Return:
         Endpoint result
@@ -60,7 +61,9 @@ def task_api_call(task_url, check_url, data={}, retry_time=3):
             # Ping task status endpoint and get status
             check_task_resp = requests.get(check_task_url, headers=headers).json()
             task_status = check_task_resp.get("status")
-            LOGGER.info("\tPinged " + check_url + " status endpoint, status: " + task_status)
+            LOGGER.info(
+                "\tPinged " + check_url + " status endpoint, status: " + task_status
+            )
             time.sleep(retry_time)
     except requests.exceptions.HTTPError as errh:
         LOGGER.error(errh)
@@ -467,6 +470,7 @@ def query_score_data(start, end, sql):
 def execute_ips(new_ips):
     """
     Query API to insert new IP record into ips table.
+
     On ip conflict, update the old record with the new data
 
     Args:
@@ -480,7 +484,7 @@ def execute_ips(new_ips):
     status_url = "ips_insert/task/"
     data = json.dumps({"new_ips": new_ips})
     # Make API call
-    result = task_api_call(task_url, status_url, data, 3)
+    task_api_call(task_url, status_url, data, 3)
     # Process data and return
     LOGGER.info("Successfully inserted new IPs into ips table using execute_ips()")
 
@@ -502,10 +506,7 @@ def query_all_subs():
         # Endpoint info
         create_task_url = "sub_domains_table"
         check_task_url = "sub_domains_table/task/"
-        headers = {
-            "Content-Type": "application/json",
-            "access_token": pe_api_key,
-        }
+
         data = json.dumps({"org_uid": "n/a", "page": page_num, "per_page": 50000})
         # Make API call
         result = task_api_call(create_task_url, check_task_url, data, 3)
@@ -538,7 +539,9 @@ def query_domMasq_alerts(org_uid, start_date, end_date):
     Return:
         All domain_alerts data for the specified org_uid and date range as a dataframe
     """
-    if isinstance(start_date, datetime.datetime) or isinstance(start_date, datetime.date):
+    if isinstance(start_date, datetime.datetime) or isinstance(
+        start_date, datetime.date
+    ):
         start_date = start_date.strftime("%Y-%m-%d")
     if isinstance(end_date, datetime.datetime) or isinstance(end_date, datetime.date):
         end_date = end_date.strftime("%Y-%m-%d")
@@ -593,7 +596,9 @@ def query_domMasq(org_uid, start_date, end_date):
     Return:
         All domain_permutations data for the specified org_uid and date range as a dataframe
     """
-    if isinstance(start_date, datetime.datetime) or isinstance(start_date, datetime.date):
+    if isinstance(start_date, datetime.datetime) or isinstance(
+        start_date, datetime.date
+    ):
         start_date = start_date.strftime("%Y-%m-%d")
     if isinstance(end_date, datetime.datetime) or isinstance(end_date, datetime.date):
         end_date = end_date.strftime("%Y-%m-%d")
@@ -1122,7 +1127,7 @@ def query_extra_ips(org_uid):
         # Call endpoint
         result = requests.post(endpoint_url, headers=headers, data=data).json()
         # Process data and return
-        result_list = list(set([d["ip"] for d in result]))
+        result_list = list({d["ip"] for d in result})
         return result_list
     except requests.exceptions.HTTPError as errh:
         LOGGER.info(errh)
@@ -1138,9 +1143,7 @@ def query_extra_ips(org_uid):
 
 # --- Issue 616 ---
 def set_from_cidr():
-    """
-    Query API to set from_cidr to True for any IPs that have an origin_cidr.
-    """
+    """Query API to set from_cidr to True for any IPs that have an origin_cidr."""
     # Endpoint info
     task_url = "ips_update_from_cidr"
     status_url = "ips_update_from_cidr/task/"
@@ -1507,11 +1510,9 @@ def query_breachdetails_view(org_uid, start_date, end_date):
         result_df["mod_date"] = pd.to_datetime(result_df["mod_date"]).dt.date
         result_df["breach_date"] = pd.to_datetime(result_df["breach_date"]).dt.date
         result_df.rename(
-                columns={
-                    "mod_date": "modified_date"
-                },
-                inplace=True,
-            )
+            columns={"mod_date": "modified_date"},
+            inplace=True,
+        )
         # Return truly empty dataframe if no results
         if result_df[result_df.columns].isnull().apply(lambda x: all(x), axis=1)[0]:
             result_df.drop(result_df.index, inplace=True)
@@ -1554,18 +1555,18 @@ def query_darkweb(org_uid, start_date, end_date, table):
     }
     # Check table name is valid
     if table in [
-            "mentions",
-            "alerts",
-            "vw_darkweb_mentionsbydate",
-            "vw_darkweb_inviteonlymarkets",
-            "vw_darkweb_socmedia_mostactposts",
-            "vw_darkweb_mostactposts",
-            "vw_darkweb_execalerts",
-            "vw_darkweb_assetalerts",
-            "vw_darkweb_threatactors",
-            "vw_darkweb_potentialthreats",
-            "vw_darkweb_sites",
-        ]:
+        "mentions",
+        "alerts",
+        "vw_darkweb_mentionsbydate",
+        "vw_darkweb_inviteonlymarkets",
+        "vw_darkweb_socmedia_mostactposts",
+        "vw_darkweb_mostactposts",
+        "vw_darkweb_execalerts",
+        "vw_darkweb_assetalerts",
+        "vw_darkweb_threatactors",
+        "vw_darkweb_potentialthreats",
+        "vw_darkweb_sites",
+    ]:
         data = json.dumps(
             {
                 "org_uid": org_uid,
@@ -1637,11 +1638,12 @@ def query_darkweb_cves(table):
     result_df["date"] = pd.to_datetime(result_df["date"]).dt.date
     return result_df
 
-    
+
 # --- Issue 632 ---
 def execute_scorecard(summary_dict):
     """
     Insert a record for an organization into the report_summary_stats table.
+
     On org_uid/star_date conflict, update the old record with the new data
 
     Args:
@@ -1669,6 +1671,7 @@ def execute_scorecard(summary_dict):
             endpoint_url, headers=headers, data=data
         ).json()
         LOGGER.info("Successfully inserted new record in report_summary_stats table")
+        return rss_insert_result
     except requests.exceptions.HTTPError as errh:
         LOGGER.error(errh)
     except requests.exceptions.ConnectionError as errc:
@@ -1701,10 +1704,7 @@ def query_subs(org_uid):
         # Endpoint info
         create_task_url = "sub_domains_by_org"
         check_task_url = "sub_domains_by_org/task/"
-        headers = {
-            "Content-Type": "application/json",
-            "access_token": pe_api_key,
-        }
+
         data = json.dumps({"org_uid": org_uid, "page": page_num, "per_page": 50000})
         # Make API call
         result = task_api_call(create_task_url, check_task_url, data, 3)
@@ -1716,7 +1716,8 @@ def query_subs(org_uid):
     # Once all data has been retrieved, return overall dataframe
     total_data = pd.DataFrame.from_dict(total_data)
     LOGGER.info(
-        "Total time to retrieve all subdomains for this org: " + str(time.time() - start_time)
+        "Total time to retrieve all subdomains for this org: "
+        + str(time.time() - start_time)
     )
     # Process data and return
     total_data.rename(
@@ -1733,7 +1734,7 @@ def query_subs(org_uid):
     if total_data[total_data.columns].isnull().apply(lambda x: all(x), axis=1)[0]:
         total_data.drop(total_data.index, inplace=True)
     return total_data
-    
+
 
 # --- Issue 634 ---
 def query_previous_period(org_uid, prev_end_date):
@@ -1776,7 +1777,6 @@ def query_previous_period(org_uid, prev_end_date):
     except json.decoder.JSONDecodeError as err:
         LOGGER.info(err)
 
-    
     # Once task finishes, return result
     if rss_prev_period_result:
         rss_prev_period_result = rss_prev_period_result[0]
@@ -2136,6 +2136,7 @@ def get_new_cves_list():
 def upsert_new_cves(new_cves):
     """
     Query API to upsert new CVE records into cve_info.
+
     On cve_name conflict, update the old record with the new data
 
     Args:
@@ -2153,6 +2154,7 @@ def upsert_new_cves(new_cves):
     LOGGER.info(
         "Successfully inserted new CVEs into cve_info table using upsert_new_cves()"
     )
+    return result
 
 
 # v ===== OLD TSQL VERSIONS OF FUNCTIONS ===== v
@@ -2343,7 +2345,7 @@ def get_org_assets_count_tsql(uid):
         }
     return assets_dict
 
-    
+
 # --- 605 OLD TSQL ---
 def get_new_orgs_tsql():
     """Query organizations table for new orgs."""
@@ -2495,6 +2497,7 @@ def query_extra_ips_tsql(org_uid):
     conn.close()
 
     return ips
+
 
 # --- 616 OLD TSQL ---
 def set_from_cidr_tsql():

@@ -22,6 +22,7 @@ from dataAPI.tasks import (  # D-Score Task Functions:; I-Score Task Functions:;
     alerts_insert_task,
     convert_date_to_string,
     convert_uuid_to_string,
+    cred_breach_intelx_task,
     cred_breaches_insert_task,
     credexp_insert_task,
     cve_info_insert_task,
@@ -71,6 +72,7 @@ from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.db import transaction
 from django.db.models import F
+from django.forms.models import model_to_dict
 
 # Third party imports
 from fastapi import (  # Body,; FastAPI,
@@ -95,10 +97,12 @@ from fastapi_limiter.depends import RateLimiter
 
 # from fastapi_limiter import FastAPILimiter
 # from fastapi_limiter.depends import RateLimiter
-from home.models import (  # MatVwOrgsAllIps,
+from home.models import (  # MatVwOrgsAllIps,; CredentialBreaches,; TopCves,
     Alerts,
     Cidrs,
-    CredentialBreaches,
+    CpeProduct,
+    CpeVender,
+    Cves,
     CyhyContacts,
     CyhyDbAssets,
     CyhyPortScans,
@@ -112,7 +116,6 @@ from home.models import (  # MatVwOrgsAllIps,
     RootDomains,
     ShodanAssets,
     SubDomains,
-    TopCves,
     VwBreachcomp,
     VwBreachcompBreachdetails,
     VwBreachcompCredsbydate,
@@ -2609,6 +2612,146 @@ async def get_xl_stakeholders_task_status(
         return {"message": "No api key was submitted"}
 
 
+@api_router.put(
+    "/cve_insert_or_update",
+    dependencies=[Depends(get_api_key)],
+    # response_model=Dict[schemas.PshttDataBase],
+    tags=["Update or insert CVE data from NIST"],
+)
+# @transaction.atomic
+def cve_insert_or_update(
+    # tag: str,
+    data: schemas.CveInsert,
+    tokens: dict = Depends(get_api_key),
+):
+    """Create API endpoint to create a record in database."""
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            LOGGER.info(f"The api key submitted {tokens}")
+            # Get WAS record based on tag
+            vender_prod_dict = data.vender_product
+            cve_object, created = Cves.objects.update_or_create(
+                cve_name=data.cve_name,
+                defaults={
+                    "cve_name": data.cve_name,
+                    "published_date": data.published_date,
+                    "last_modified_date": data.last_modified_date,
+                    "vuln_status": data.vuln_status,
+                    "description": data.description,
+                    "cvss_v2_source": data.cvss_v2_source,
+                    "cvss_v2_type": data.cvss_v2_type,
+                    "cvss_v2_version": data.cvss_v2_version,
+                    "cvss_v2_vector_string": data.cvss_v2_vector_string,
+                    "cvss_v2_base_score": data.cvss_v2_base_score,
+                    "cvss_v2_base_severity": data.cvss_v2_base_severity,
+                    "cvss_v2_exploitability_score": data.cvss_v2_exploitability_score,
+                    "cvss_v2_impact_score": data.cvss_v2_impact_score,
+                    "cvss_v3_source": data.cvss_v3_source,
+                    "cvss_v3_type": data.cvss_v3_type,
+                    "cvss_v3_version": data.cvss_v3_version,
+                    "cvss_v3_vector_string": data.cvss_v3_vector_string,
+                    "cvss_v3_base_score": data.cvss_v3_base_score,
+                    "cvss_v3_base_severity": data.cvss_v3_base_severity,
+                    "cvss_v3_exploitability_score": data.cvss_v3_exploitability_score,
+                    "cvss_v3_impact_score": data.cvss_v3_impact_score,
+                    "cvss_v4_source": data.cvss_v4_source,
+                    "cvss_v4_type": data.cvss_v4_type,
+                    "cvss_v4_version": data.cvss_v4_version,
+                    "cvss_v4_vector_string": data.cvss_v4_vector_string,
+                    "cvss_v4_base_score": data.cvss_v4_base_score,
+                    "cvss_v4_base_severity": data.cvss_v4_base_severity,
+                    "cvss_v4_exploitability_score": data.cvss_v4_exploitability_score,
+                    "cvss_v4_impact_score": data.cvss_v4_impact_score,
+                    "weaknesses": data.weaknesses,
+                    "reference_urls": data.reference_urls,
+                    "cpe_list": data.cpe_list,
+                },
+            )
+            if created:
+                LOGGER.info("new CVE record created for %s", data.cve_name)
+
+            prod_obj_list = []
+            for vender, product_list in vender_prod_dict.items():
+                vender_obj, vender_created = CpeVender.objects.update_or_create(
+                    vender_name=vender
+                )
+                for product, version in product_list:
+                    product_obj, product_created = CpeProduct.objects.update_or_create(
+                        cpe_product_name=product,
+                        version_number=version,
+                        defaults={"cpe_vender_uid": vender_obj},
+                    )
+                    prod_obj_list.append(product_obj)
+
+            cve_object.products.set(prod_obj_list)
+            cve_object.save()
+
+            prods = []
+            for prod in list(cve_object.products.all()):
+                prods.append(
+                    {
+                        "cpe_product_uid": prod.cpe_product_uid,
+                        "cpe_product_name": prod.cpe_product_name,
+                        "version_number": prod.version_number,
+                        "vender_uid": prod.cpe_vender_uid_id,
+                        "vender_name": prod.cpe_vender_uid.vender_name,
+                    }
+                )
+            return {
+                "message": "Record updated successfully.",
+                "updated_cve": cve_object,
+                "products": prods,
+            }
+
+        except Exception as e:
+            print(e)
+            print("failed to insert or update")
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+
+@api_router.post(
+    "/get_cve",
+    dependencies=[Depends(get_api_key)],
+    # response_model=schemas.DataSource,
+    tags=["Get cve data and relevant products for a gvien CVE"],
+)
+def get_cve(data: schemas.GetCveCall, tokens: dict = Depends(get_api_key)):
+    """Get CVE and product data."""
+    LOGGER.info("in CVE")
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            LOGGER.info(f"The api key submitted {tokens}")
+            try:
+                cve = Cves.objects.get(cve_name=f"{data.cve_name}")
+                products = cve.products.all()
+                vend_prod_dict: dict[str, list] = {}
+                for prod in products.iterator():
+                    if prod.cpe_vender_uid.vender_name not in vend_prod_dict.keys():
+                        vend_prod_dict[prod.cpe_vender_uid.vender_name] = []
+                    vend_prod_dict[prod.cpe_vender_uid.vender_name].append(
+                        {
+                            "cpe_product_uid": prod.cpe_product_uid,
+                            "cpe_product_name": prod.cpe_product_name,
+                            "version_number": prod.version_number,
+                            "vender_uid": prod.cpe_vender_uid_id,
+                        }
+                    )
+                cve_dict = model_to_dict(cve)
+                return {"cve_data": cve_dict, "products": vend_prod_dict}
+            except ValidationError:
+                return {"message": "CVE does not exist"}
+
+        except Exception as e:
+            LOGGER.info("API key expired please try again")
+            LOGGER.info(e)
+    else:
+        return {"message": "No api key was submitted"}
+
+
 # ---------- Misc. Endpoints ----------
 # --- execute_ips(), Issue 559 ---
 @api_router.post(
@@ -4838,7 +4981,9 @@ async def cve_info_insert_status(task_id: str, tokens: dict = Depends(get_api_ke
 # --- get_intelx_breaches(), Issue 641 ---
 @api_router.post(
     "/cred_breach_intelx",
-    dependencies=[Depends(get_api_key)], #Depends(RateLimiter(times=200, seconds=60))],
+    dependencies=[
+        Depends(get_api_key)
+    ],  # Depends(RateLimiter(times=200, seconds=60))],
     response_model=schemas.CredBreachIntelXTaskResp,
     tags=["Get IntelX credential breaches"],
 )
@@ -4863,7 +5008,9 @@ def cred_breach_intelx(
 
 @api_router.get(
     "/cred_breach_intelx/task/{task_id}",
-    dependencies=[Depends(get_api_key)], #Depends(RateLimiter(times=200, seconds=60))],
+    dependencies=[
+        Depends(get_api_key)
+    ],  # Depends(RateLimiter(times=200, seconds=60))],
     response_model=schemas.CredBreachIntelXTaskResp,
     tags=["Check task status for cred_breach_intelx endpoint task."],
 )
@@ -4902,13 +5049,13 @@ async def cred_breach_intelx_status(task_id: str, tokens: dict = Depends(get_api
 # --- insert_sixgill_alerts(), Issue 653 ---
 @api_router.post(
     "/alerts_insert",
-    dependencies=[Depends(get_api_key)], #Depends(RateLimiter(times=200, seconds=60))],
+    dependencies=[
+        Depends(get_api_key)
+    ],  # Depends(RateLimiter(times=200, seconds=60))],
     response_model=schemas.AlertsInsertTaskResp,
     tags=["Insert multiple records into the alerts table."],
 )
-def alerts_insert(
-    data: schemas.AlertsInsertInput, tokens: dict = Depends(get_api_key)
-):
+def alerts_insert(data: schemas.AlertsInsertInput, tokens: dict = Depends(get_api_key)):
     """Call API endpoint to insert multiple records into the alerts table."""
     # Convert list of alert models to list of dictionaries
     new_alerts = [dict(input_dict) for input_dict in data.new_alerts]
@@ -4929,7 +5076,9 @@ def alerts_insert(
 
 @api_router.get(
     "/alerts_insert/task/{task_id}",
-    dependencies=[Depends(get_api_key)], #Depends(RateLimiter(times=200, seconds=60))],
+    dependencies=[
+        Depends(get_api_key)
+    ],  # Depends(RateLimiter(times=200, seconds=60))],
     response_model=schemas.AlertsInsertTaskResp,
     tags=["Check task status for alerts_insert endpoint task."],
 )
@@ -4968,7 +5117,9 @@ async def alerts_insert_status(task_id: str, tokens: dict = Depends(get_api_key)
 # --- insert_sixgill_mentions(), Issue 654 ---
 @api_router.post(
     "/mentions_insert",
-    dependencies=[Depends(get_api_key)], #Depends(RateLimiter(times=200, seconds=60))],
+    dependencies=[
+        Depends(get_api_key)
+    ],  # Depends(RateLimiter(times=200, seconds=60))],
     response_model=schemas.MentionsInsertTaskResp,
     tags=["Insert multiple records into the mentions table."],
 )
@@ -4995,7 +5146,9 @@ def mentions_insert(
 
 @api_router.get(
     "/mentions_insert/task/{task_id}",
-    dependencies=[Depends(get_api_key)], #Depends(RateLimiter(times=200, seconds=60))],
+    dependencies=[
+        Depends(get_api_key)
+    ],  # Depends(RateLimiter(times=200, seconds=60))],
     response_model=schemas.MentionsInsertTaskResp,
     tags=["Check task status for mentions_insert endpoint task."],
 )
@@ -5034,7 +5187,9 @@ async def mentions_insert_status(task_id: str, tokens: dict = Depends(get_api_ke
 # --- insert_sixgill_breaches(), Issue 655 ---
 @api_router.post(
     "/cred_breaches_insert",
-    dependencies=[Depends(get_api_key)], #Depends(RateLimiter(times=200, seconds=60))],
+    dependencies=[
+        Depends(get_api_key)
+    ],  # Depends(RateLimiter(times=200, seconds=60))],
     response_model=schemas.CredBreachesInsertTaskResp,
     tags=["Insert multiple records into the credential_breaches table."],
 )
@@ -5061,11 +5216,15 @@ def cred_breaches_insert(
 
 @api_router.get(
     "/cred_breaches_insert/task/{task_id}",
-    dependencies=[Depends(get_api_key)], #Depends(RateLimiter(times=200, seconds=60))],
+    dependencies=[
+        Depends(get_api_key)
+    ],  # Depends(RateLimiter(times=200, seconds=60))],
     response_model=schemas.CredBreachesInsertTaskResp,
     tags=["Check task status for cred_breaches_insert endpoint task."],
 )
-async def cred_breaches_insert_status(task_id: str, tokens: dict = Depends(get_api_key)):
+async def cred_breaches_insert_status(
+    task_id: str, tokens: dict = Depends(get_api_key)
+):
     """Call API endpoint to get status of cred_breaches_insert task."""
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
@@ -5100,7 +5259,9 @@ async def cred_breaches_insert_status(task_id: str, tokens: dict = Depends(get_a
 # --- insert_sixgill_credentials(), Issue 656 ---
 @api_router.post(
     "/credexp_insert",
-    dependencies=[Depends(get_api_key)], #Depends(RateLimiter(times=200, seconds=60))],
+    dependencies=[
+        Depends(get_api_key)
+    ],  # Depends(RateLimiter(times=200, seconds=60))],
     response_model=schemas.CredExpInsertTaskResp,
     tags=["Insert multiple records into the credential_exposures table."],
 )
@@ -5127,7 +5288,9 @@ def credexp_insert(
 
 @api_router.get(
     "/credexp_insert/task/{task_id}",
-    dependencies=[Depends(get_api_key)], #Depends(RateLimiter(times=200, seconds=60))],
+    dependencies=[
+        Depends(get_api_key)
+    ],  # Depends(RateLimiter(times=200, seconds=60))],
     response_model=schemas.CredExpInsertTaskResp,
     tags=["Check task status for credexp_insert endpoint task."],
 )
@@ -5166,7 +5329,9 @@ async def credexp_insert_status(task_id: str, tokens: dict = Depends(get_api_key
 # --- insert_sixgill_topCVEs(), Issue 657 ---
 @api_router.post(
     "/top_cves_insert",
-    dependencies=[Depends(get_api_key)], #Depends(RateLimiter(times=200, seconds=60))],
+    dependencies=[
+        Depends(get_api_key)
+    ],  # Depends(RateLimiter(times=200, seconds=60))],
     response_model=schemas.TopCVEsInsertTaskResp,
     tags=["Insert multiple records into the top_cves table."],
 )
@@ -5193,7 +5358,9 @@ def top_cves_insert(
 
 @api_router.get(
     "/top_cves_insert/task/{task_id}",
-    dependencies=[Depends(get_api_key)], #Depends(RateLimiter(times=200, seconds=60))],
+    dependencies=[
+        Depends(get_api_key)
+    ],  # Depends(RateLimiter(times=200, seconds=60))],
     response_model=schemas.TopCVEsInsertTaskResp,
     tags=["Check task status for top_cves_insert endpoint task."],
 )

@@ -1251,6 +1251,57 @@ class VwIscoreOrgsIpCountsTaskResp(BaseModel):
     error: Optional[str] = None
 
 
+class CveInsert(BaseModel):
+    """CveInsert schema class."""
+
+    cve_uid: Optional[Any]
+    cve_name: str
+    published_date: Optional[datetime] = None
+    last_modified_date: Optional[datetime] = None
+    vuln_status: Optional[str] = None
+    description: Optional[str] = None
+    cvss_v2_source: Optional[str] = None
+    cvss_v2_type: Optional[str] = None
+    cvss_v2_version: Optional[str] = None
+    cvss_v2_vector_string: Optional[str] = None
+    cvss_v2_base_score: Optional[float] = None
+    cvss_v2_base_severity: Optional[str] = None
+    cvss_v2_exploitability_score: Optional[float] = None
+    cvss_v2_impact_score: Optional[float] = None
+    cvss_v3_source: Optional[str] = None
+    cvss_v3_type: Optional[str] = None
+    cvss_v3_version: Optional[str] = None
+    cvss_v3_vector_string: Optional[str] = None
+    cvss_v3_base_score: Optional[float] = None
+    cvss_v3_base_severity: Optional[str] = None
+    cvss_v3_exploitability_score: Optional[float] = None
+    cvss_v3_impact_score: Optional[float] = None
+    cvss_v4_source: Optional[str] = None
+    cvss_v4_type: Optional[str] = None
+    cvss_v4_version: Optional[str] = None
+    cvss_v4_vector_string: Optional[str] = None
+    cvss_v4_base_score: Optional[float] = None
+    cvss_v4_base_severity: Optional[str] = None
+    cvss_v4_exploitability_score: Optional[float] = None
+    cvss_v4_impact_score: Optional[float] = None
+    weaknesses: List[str] = []
+    reference_urls: List[str] = []
+    cpe_list: List[str] = []
+
+    vender_product: Dict[str, List[Tuple]]
+
+
+class GetCveCall(BaseModel):
+    """Get CVE Call schema."""
+
+    cve_name: str
+
+    class Config:
+        """GetCveCall schema config class."""
+
+        orm_mode = True
+
+
 # --- execute_ips(), Issue 559 ---
 # Insert record into Ips
 class IpsInsert(BaseModel):
@@ -2701,7 +2752,7 @@ class AlertsInsert(BaseModel):
 
     class Config:
         """AlertsInsert schema config class."""
-        
+
         orm_mode = True
 
 
@@ -2726,7 +2777,7 @@ class AlertsInsertTaskResp(BaseModel):
     result: Optional[str] = None
     error: Optional[str] = None
 
-    
+
 # --- insert_sixgill_mentions(), Issue 654 ---
 class MentionsInsert(BaseModel):
     """MentionsInsert schema class."""
@@ -2783,13 +2834,13 @@ class MentionsInsertTaskResp(BaseModel):
 class CredBreachesInsert(BaseModel):
     """CredBreachesInsert schema class."""
 
-    breach_name: str # good
-    description: str # good
-    exposed_cred_count: int # good
-    breach_date: str # good
-    modified_date: str # good
-    password_included: bool # used to be password col
-    data_source_uid: str # good
+    breach_name: str  # good
+    description: str  # good
+    exposed_cred_count: int  # good
+    breach_date: str  # good
+    modified_date: str  # good
+    password_included: bool  # used to be password col
+    data_source_uid: str  # good
     # add "password" col?
 
     class Config:
@@ -2839,7 +2890,7 @@ class CredExpInsert(BaseModel):
 
     class Config:
         """CredExpInsert schema config class."""
-        
+
         orm_mode = True
 
 
