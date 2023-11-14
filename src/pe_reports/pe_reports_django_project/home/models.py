@@ -1775,8 +1775,8 @@ class VwOrgsTotalPorts(models.Model):
 class VwIpsSubRootOrgInfo(models.Model):
     """VwIpsSubRootOrgInfo model class."""
 
-    ip_hash = models.CharField(blank=True, null=True)
-    ip = models.CharField(blank=True, null=True)
+    ip_hash = models.CharField(blank=True, null=True, max_length=255)
+    ip = models.CharField(blank=True, null=True, max_length=255)
     origin_cidr = models.UUIDField(blank=True, null=True)
     organizations_uid = models.UUIDField(blank=True, null=True)
     i_current = models.BooleanField(blank=True, null=True)
@@ -1792,10 +1792,10 @@ class VwIpsSubRootOrgInfo(models.Model):
 class VwIpsCidrOrgInfo(models.Model):
     """VwIpsCidrOrgInfo model class."""
 
-    ip_hash = models.CharField(blank=True, null=True)
-    ip = models.CharField(blank=True, null=True)
+    ip_hash = models.CharField(blank=True, null=True, max_length=255)
+    ip = models.CharField(blank=True, null=True, max_length=255)
     origin_cidr = models.UUIDField(blank=True, null=True)
-    network = models.CharField(blank=True, null=True)
+    network = models.CharField(blank=True, null=True, max_length=255)
     organizations_uid = models.UUIDField(blank=True, null=True)
 
     class Meta:
@@ -1808,7 +1808,7 @@ class VwIpsCidrOrgInfo(models.Model):
 class VwPEScoreCheckNewCVE(models.Model):
     """VwPEScoreCheckNewCVE model class."""
 
-    cve_name = models.CharField(blank=True, null=True)
+    cve_name = models.CharField(blank=True, null=True, max_length=255)
 
     class Meta:
         """VwPEScoreCheckNewCVE model meta class."""
@@ -1907,7 +1907,7 @@ class VwIscoreVSVuln(models.Model):
 
     organizations_uid = models.UUIDField(primary_key=True)
     parent_org_uid = models.UUIDField(blank=True, null=True)
-    cve_name = models.CharField(blank=True, null=True)
+    cve_name = models.CharField(blank=True, null=True, max_length=255)
     cvss_score = models.FloatField(blank=True, null=True)
 
     class Meta:
@@ -1923,7 +1923,7 @@ class VwIscoreVSVulnPrev(models.Model):
 
     organizations_uid = models.UUIDField(primary_key=True)
     parent_org_uid = models.UUIDField(blank=True, null=True)
-    cve_name = models.CharField(blank=True, null=True)
+    cve_name = models.CharField(blank=True, null=True, max_length=255)
     cvss_score = models.FloatField(blank=True, null=True)
     time_closed = models.DateField(blank=True, null=True)
 
@@ -1941,7 +1941,7 @@ class VwIscorePEVuln(models.Model):
     organizations_uid = models.UUIDField(primary_key=True)
     parent_org_uid = models.UUIDField(blank=True, null=True)
     date = models.DateField(blank=True, null=True)
-    cve_name = models.CharField(blank=True, null=True)
+    cve_name = models.CharField(blank=True, null=True, max_length=255)
     cvss_score = models.FloatField(blank=True, null=True)
 
     class Meta:
@@ -1990,7 +1990,7 @@ class VwIscorePEDarkweb(models.Model):
 
     organizations_uid = models.UUIDField(primary_key=True)
     parent_org_uid = models.UUIDField(blank=True, null=True)
-    alert_type = models.CharField(blank=True, null=True)
+    alert_type = models.CharField(blank=True, null=True, max_length=255)
     date = models.DateField(blank=True, null=True)
     Count = models.BigIntegerField(blank=True, null=True)
 
@@ -2007,10 +2007,10 @@ class VwIscorePEProtocol(models.Model):
 
     organizations_uid = models.UUIDField(primary_key=True)
     parent_org_uid = models.UUIDField(blank=True, null=True)
-    port = models.CharField(blank=True, null=True)
-    ip = models.CharField(blank=True, null=True)
-    protocol = models.CharField(blank=True, null=True)
-    protocol_type = models.CharField(blank=True, null=True)
+    port = models.CharField(blank=True, null=True, max_length=255)
+    ip = models.CharField(blank=True, null=True, max_length=255)
+    protocol = models.CharField(blank=True, null=True, max_length=255)
+    protocol_type = models.CharField(blank=True, null=True, max_length=255)
     date = models.DateField(blank=True, null=True)
 
     class Meta:
@@ -2027,9 +2027,9 @@ class VwIscoreWASVuln(models.Model):
     organizations_uid = models.UUIDField(primary_key=True)
     parent_org_uid = models.UUIDField(blank=True, null=True)
     date = models.DateField(blank=True, null=True)
-    cve_name = models.CharField(blank=True, null=True)
+    cve_name = models.CharField(blank=True, null=True, max_length=255)
     cvss_score = models.FloatField(blank=True, null=True)
-    owasp_category = models.CharField(blank=True, null=True)
+    owasp_category = models.CharField(blank=True, null=True, max_length=255)
 
     class Meta:
         """Set VwIscoreWASVuln model metadata."""
@@ -2059,7 +2059,7 @@ class CyhyKevs(models.Model):
     """Define CyhyKevs model."""
 
     cyhy_kevs_uid = models.UUIDField(primary_key=True)
-    kev = models.CharField(blank=True, null=True)
+    kev = models.CharField(blank=True, null=True, max_length=255)
     first_seen = models.DateField(blank=True, null=True)
     last_seen = models.DateField(blank=True, null=True)
 
@@ -2076,7 +2076,7 @@ class VwIscoreOrgsIpCounts(models.Model):
     """Define VwIscoreOrgsIpCounts model."""
 
     organizations_uid = models.UUIDField(primary_key=True)
-    cyhy_db_name = models.CharField(blank=True, null=True)
+    cyhy_db_name = models.CharField(blank=True, null=True, max_length=255)
     ip_count = models.BigIntegerField(blank=True, null=True)
 
     class Meta:
