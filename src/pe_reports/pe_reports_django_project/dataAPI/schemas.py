@@ -3035,6 +3035,16 @@ class GenInputOrgUIDList(BaseModel):
 
         orm_mode = True
 
+class GenInputOrgName(BaseModel):
+    """GenInputOrgUIDList schema class."""
+
+    org_name: str
+
+    class Config:
+        """GenInputOrgUIDList config."""
+
+        orm_mode = True
+
 
 class GenInputOrgUIDDateRange(BaseModel):
     """GenInputOrgUIDDateRange schema class."""
@@ -3349,3 +3359,91 @@ class XpanseVulnPullTaskResp(BaseModel):
     status: str
     result: Optional[List[XpanseVulnOutput]] = None
     error: Optional[str] = None
+
+#--- Issue 628 ---
+class VwShodanvulnsSuspectedSchema(BaseModel):
+    organizations_uid: Optional[str]
+    organization: Optional[str]
+    ip: Optional[str]
+    port: Optional[str]
+    protocol: Optional[str]
+    type: Optional[str]
+    name: Optional[str]
+    potential_vulns: List[Optional[str]]
+    mitigation: Optional[str]
+    timestamp: Optional[str]
+    product: Optional[str]
+    server: Optional[str]
+    tags: List[Optional[str]]
+    domains: List[Optional[str]]
+    hostnames: List[Optional[str]]
+    isn: Optional[str]
+    asn: Optional[int]
+    data_source: Optional[str]
+
+    class Config:
+        orm_mode = True
+#--- Issue 628 ---   
+class VwShodanvulnsVerifiedSchema(BaseModel):
+    organizations_uid: Optional[str]
+    organization: Optional[str]
+    ip: Optional[str]
+    port: Optional[str]
+    protocol: Optional[str]
+    timestamp: Optional[str]
+    cve: Optional[str]
+    severity: Optional[str]
+    cvss: Optional[Decimal]
+    summary: Optional[str]
+    product: Optional[str]
+    attack_vector: Optional[str]
+    av_description: Optional[str]
+    attack_complexity: Optional[str]
+    ac_description: Optional[str]
+    confidentiality_impact: Optional[str]
+    ci_description: Optional[str]
+    integrity_impact: Optional[str]
+    ii_description: Optional[str]
+    availability_impact: Optional[str]
+    ai_description: Optional[str]
+    tags: List[Optional[str]]
+    domains: List[Optional[str]]
+    hostnames: List[Optional[str]]
+    isn: Optional[str]
+    asn: Optional[int]
+    data_source: Optional[str]
+
+    class Config:
+        orm_mode = True
+
+#--- Issue 628 ---  
+class ShodanAssetsSchema(BaseModel):
+    shodan_asset_uid: Optional[str]
+    organizations_uid_id: Optional[str]
+    organization: Optional[str]
+    ip: Optional[str]
+    port: Optional[int]
+    protocol: Optional[str]
+    timestamp: Optional[str]
+    product: Optional[str]
+    server: Optional[str]
+    tags: List[Optional[str]]
+    domains: List[Optional[str]]
+    hostnames: List[Optional[str]]
+    isn: Optional[str]
+    asn: Optional[int]
+    data_source_uid_id: Optional[str]
+
+    class Config:
+        orm_mode = True
+
+# --- insert_sixgill_mentions(), Issue 654 ---
+# Insert multiple records into the mentions table, input
+class ShodanAssetInput(BaseModel):
+    """ShodanAssetInput schema class."""
+
+    insert_data: List[ShodanAssetsSchema]
+
+    class Config:
+        """ShodanAssetInput schema config class."""
+        orm_mode = True

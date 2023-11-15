@@ -18,52 +18,7 @@ from typing import Any, List, Optional, Union
 import uuid
 
 # Third-Party Libraries
-from dataAPI.tasks import (  # D-Score Task Functions:; I-Score Task Functions:; Misc. Score-Related Task Functions:
-    alerts_insert_task,
-    convert_date_to_string,
-    convert_uuid_to_string,
-    cred_breach_intelx_task,
-    cred_breaches_insert_task,
-    credexp_insert_task,
-    cve_info_insert_task,
-    darkweb_cves_task,
-    get_dscore_pe_domain_info,
-    get_dscore_pe_ip_info,
-    get_dscore_vs_cert_info,
-    get_dscore_vs_mail_info,
-    get_dscore_was_webapp_info,
-    get_fceb_status_info,
-    get_iscore_pe_breach_info,
-    get_iscore_pe_cred_info,
-    get_iscore_pe_darkweb_info,
-    get_iscore_pe_protocol_info,
-    get_iscore_pe_vuln_info,
-    get_iscore_vs_vuln_info,
-    get_iscore_vs_vuln_prev_info,
-    get_iscore_was_vuln_info,
-    get_iscore_was_vuln_prev_info,
-    get_kev_list_info,
-    get_l_stakeholders_info,
-    get_m_stakeholders_info,
-    get_s_stakeholders_info,
-    get_ve_info,
-    get_vs_info,
-    get_vw_pshtt_domains_to_run_info,
-    get_xl_stakeholders_info,
-    get_xpanse_vulns,
-    get_xs_stakeholders_info,
-    ips_insert_task,
-    ips_update_from_cidr_task,
-    mentions_insert_task,
-    pescore_base_metrics_task,
-    pescore_hist_cred_task,
-    pescore_hist_darkweb_alert_task,
-    pescore_hist_darkweb_ment_task,
-    pescore_hist_domain_alert_task,
-    sub_domains_by_org_task,
-    sub_domains_table_task,
-    top_cves_insert_task,
-)
+from dataAPI.tasks import *
 from decouple import config
 from django.conf import settings
 
@@ -5868,3 +5823,168 @@ async def get_xpanse_vulns_task_status(
             LOGGER.info("API key expired please try again")
     else:
         return {"message": "No api key was submitted"}
+
+#--- Issue 628 ---
+
+## GenInputOrgUIDListDateRange
+#vw_shodanvulns_suspected
+#vw_shodanvulns_verified
+#shodan_assets
+
+@api_router.post(
+    "/shodanvulns_suspected_view",
+    dependencies=[Depends(get_api_key)],
+    response_model=List[schemas.VwShodanvulnsSuspectedSchema],
+    tags=["Get all records for view shodanvulns_suspected_view"],
+)
+def shodanvulns_suspected_view(
+    data: schemas.GenInputOrgUIDDateRange, tokens: dict = Depends(get_api_key)
+):
+    """API endpoint for shodanvulns_suspected_view """
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if 1: #if tokens:
+        try:
+            #userapiTokenverify(theapiKey=tokens)
+            # If API key valid, make query
+            org_data = list(
+                VwShodanvulnsSuspected.objects.filter(
+                    organizations_uid=data.org_uid,
+                    timestamp__range=[data.start_date, data.end_date],
+                ).values()
+            )
+            # Convert uuids to strings
+            for row in org_data:
+                row["organizations_uid"] = convert_uuid_to_string(
+                    row["organizations_uid"]
+                )
+                row["timestamp"] = convert_date_to_string(row["timestamp"])
+            return org_data
+            #return {"Type": org_data[0]}
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+
+@api_router.post(
+    "/shodanvulns_verified_view",
+    #dependencies=[Depends(get_api_key)],
+    response_model=List[schemas.VwShodanvulnsVerifiedSchema],
+    tags=["Get all records for view shodanvulns_verified_view"],
+)
+def shodanvulns_verified_view(
+    data: schemas.GenInputOrgUIDDateRange, tokens: dict = Depends(get_api_key)
+):
+    """API endpoint for shodanvulns_verified_view """
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if 1: #if tokens:
+        try:
+            #userapiTokenverify(theapiKey=tokens)
+            # If API key valid, make query
+            org_data = list(
+                VwShodanvulnsVerified.objects.filter(
+                    organizations_uid=data.org_uid,
+                    timestamp__range=[data.start_date, data.end_date],
+                ).values()
+            )
+            # Convert uuids to strings
+            for row in org_data:
+                row["organizations_uid"] = convert_uuid_to_string(
+                    row["organizations_uid"]
+                )
+                row["timestamp"] = convert_date_to_string(row["timestamp"])
+            return org_data
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+@api_router.post(
+    "/shodan_assets",
+    #dependencies=[Depends(get_api_key)],
+    response_model=List[schemas.ShodanAssetsSchema],
+    tags=["Get all records for view shodan_assets"],
+)
+def shodan_assets(
+    data: schemas.GenInputOrgUIDDateRange, tokens: dict = Depends(get_api_key)
+):
+    """API endpoint for shodan_assets"""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if 1: #if tokens:
+        try:
+            #userapiTokenverify(theapiKey=tokens)
+            # If API key valid, make query
+            org_data = list(
+                ShodanAssets.objects.filter(
+                    organizations_uid=data.org_uid,
+                    timestamp__range=[data.start_date, data.end_date],
+                ).values()
+            )
+            # Convert uuids to strings
+            for row in org_data:
+                row["shodan_asset_uid"] = convert_uuid_to_string(
+                    row["shodan_asset_uid"]
+                )
+                row["organizations_uid_id"] = convert_uuid_to_string(
+                    row["organizations_uid_id"]
+                )
+                row["data_source_uid_id"] = convert_uuid_to_string(
+                    row["data_source_uid_id"]
+                )
+                row["timestamp"] = convert_date_to_string(row["timestamp"])
+            return org_data
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+    
+@api_router.post(
+    "/crossfeed_vulns",
+    dependencies=[Depends(get_api_key)],
+    #response_model=schemas.PshttDomainToRunTaskResp,TODO, create schema for generlized output
+    tags=["Return all vulnerabilites formatte for crossfeed database."],
+)
+def crossfeed_vulns(
+    data: schemas.GenInputOrgName,
+    tokens: dict = Depends(get_api_key)
+    ):
+    """Returna all vulnerabilities for crossfeed database."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        task = shodan_vulns_task.delay(data.org_name)
+        #TODO: add task for XPANSE data
+        # Return the new task id w/ "Processing" status
+        return {"task_id": task.id, "status": "Processing"}
+
+    else:
+        return {"message": "No api key was submitted"}
+    
+
+
+@api_router.get(
+    "/crossfeed_vulns/task/{task_id}",
+    dependencies=[Depends(get_api_key)],
+    # , Depends(RateLimiter(times=200, seconds=60))
+    # response_model=schemas.PshttDomainToRunTaskResp,
+    tags=["Check task status for endpoint."],
+)
+async def crossfeed_vulns_resp(
+    task_id: str, tokens: dict = Depends(get_api_key)
+):
+    """Retrieve status of get_pshtt_domains_to_run task."""
+    # Retrieve task status
+    task = shodan_vulns_task.AsyncResult(task_id)
+    # Return appropriate message for status
+    if task.state == "SUCCESS":
+        return {"task_id": task_id, "status": "Completed", "result": task.result}
+    elif task.state == "PENDING":
+        return {"task_id": task_id, "status": "Pending"}
+    elif task.state == "FAILURE":
+        return {"task_id": task_id, "status": "Failed", "error": str(task.result)}
+    else:
+        return {"task_id": task_id, "status": task.state}

@@ -25,6 +25,7 @@ from home.models import (
     MatVwOrgsAllIps,
     Mentions,
     Organizations,
+    ShodanVulns,
     SubDomains,
     TopCves,
     VwBreachcomp,
@@ -1270,3 +1271,11 @@ def top_cves_insert_task(self, new_topcves: List[dict]):
             create_ct += 1
     # Return success message
     return str(create_ct) + " records created in the top_cves table"
+
+@shared_task(bind=True)
+def shodan_vulns_task(self, org: str):
+    """Task function for reformatted shodan vulnerabilites for crossfeed."""
+
+
+
+
