@@ -1155,8 +1155,8 @@ def mentions_insert_task(self, new_mentions: List[dict]):
 
 # --- insert_sixgill_breaches(), Issue 655 ---
 @shared_task(bind=True)
-def cred_breaches_insert_task(self, new_breaches: List[dict]):
-    """Task function for the cred_breaches_insert API endpoint."""
+def cred_breach_sixgill_task(self, new_breaches: List[dict]):
+    """Task function for the cred_breaches_sixgill_insert API endpoint."""
     create_ct = 0
     update_ct = 0
     for new_breach in new_breaches:
@@ -1191,7 +1191,7 @@ def cred_breaches_insert_task(self, new_breaches: List[dict]):
 
 # --- insert_sixgill_credentials(), Issue 656 ---
 @shared_task(bind=True)
-def credexp_insert_task(self, new_exposures: List[dict]):
+def cred_exp_sixgill_task(self, new_exposures: List[dict]):
     """Task function for the credexp_insert API endpoint."""
     update_ct = 0
     create_ct = 0

@@ -278,7 +278,7 @@ class CredentialBreaches(models.Model):
 class CredentialExposures(models.Model):
     """Define CredentialExposures model."""
 
-    credential_exposures_uid = models.UUIDField(primary_key=True)
+    credential_exposures_uid = models.UUIDField(primary_key=True, default=uuid.uuid1)
     email = models.TextField()
     organizations_uid = models.ForeignKey(
         "Organizations", on_delete=models.CASCADE, db_column="organizations_uid"
@@ -300,6 +300,7 @@ class CredentialExposures(models.Model):
     phone = models.TextField(blank=True, null=True)
     password = models.TextField(blank=True, null=True)
     hash_type = models.TextField(blank=True, null=True)
+    intelx_system_id = models.TextField(blank=True, null=True)
 
     class Meta:
         """Set CredentialExposures model metadata."""

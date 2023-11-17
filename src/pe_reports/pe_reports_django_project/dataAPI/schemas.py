@@ -2831,8 +2831,8 @@ class MentionsInsertTaskResp(BaseModel):
 
 
 # --- insert_sixgill_breaches(), Issue 655 --- 
-class CredBreachesInsert(BaseModel): 
-    """CredBreachesInsert schema class.""" 
+class CredBreachesSixgillInsert(BaseModel): 
+    """CredBreachesSixgillInsert schema class.""" 
 
     breach_name: str 
     description: str
@@ -2842,26 +2842,26 @@ class CredBreachesInsert(BaseModel):
     modified_date: str 
     
     class Config:
-        """CredBreachesInsert schema config class."""
+        """CredBreachesSixgillInsert schema config class."""
         
         orm_mode = True 
 
 
 # --- insert_sixgill_breaches(), Issue 655 ---
-class CredBreachesInsertInput(BaseModel):
-    """CredBreachesInsertInput schema class."""
+class CredBreachesSixgillInsertInput(BaseModel):
+    """CredBreachesSixgillInsertInput schema class."""
 
-    new_breaches: List[CredBreachesInsert]
+    new_breaches: List[CredBreachesSixgillInsert]
 
     class Config:
-        """CredBreachesInsertInput schema config class."""
+        """CredBreachesSixgillInsertInput schema config class."""
 
         orm_mode = True
 
 
 # --- insert_sixgill_breaches(), Issue 655 ---
-class CredBreachesInsertTaskResp(BaseModel):
-    """CredBreachesInsertTaskResp schema class."""
+class CredBreachesSixgillInsertTaskResp(BaseModel):
+    """CredBreachesSixgillInsertTaskResp schema class."""
 
     task_id: str
     status: str
@@ -2870,8 +2870,8 @@ class CredBreachesInsertTaskResp(BaseModel):
 
 
 # --- insert_sixgill_credentials(), Issue 656 ---
-class CredExpInsert(BaseModel):
-    """CredExpInsert schema class."""
+class CredExpSixgillInsert(BaseModel):
+    """CredExpSixgillInsert schema class."""
 
     modified_date: str
     sub_domain: str
@@ -2887,26 +2887,26 @@ class CredExpInsert(BaseModel):
     credential_breaches_uid: str
 
     class Config:
-        """CredExpInsert schema config class."""
+        """CredExpSixgillInsert schema config class."""
 
         orm_mode = True
 
 
 # --- insert_sixgill_credentials(), Issue 656 ---
-class CredExpInsertInput(BaseModel):
-    """CredExpInsertInput schema class."""
+class CredExpSixgillInsertInput(BaseModel):
+    """CredExpSixgillInsertInput schema class."""
 
-    new_exposures: List[CredExpInsert]
+    new_exposures: List[CredExpSixgillInsert]
 
     class Config:
-        """CredExpInsertInput schema config class."""
+        """CredExpSixgillInsertInput schema config class."""
 
         orm_mode = True
 
 
 # --- insert_sixgill_credentials(), Issue 656 ---
-class CredExpInsertTaskResp(BaseModel):
-    """CredExpInsertTaskResp schema class."""
+class CredExpSixgillInsertTaskResp(BaseModel):
+    """CredExpSixgillInsertTaskResp schema class."""
 
     task_id: str
     status: str
@@ -2955,6 +2955,73 @@ class TopCVEsInsertTaskResp(BaseModel):
     error: Optional[str] = None
 
 
+# --- execute_dnsmonitor_data(), Issue 659 ---
+# Insert multiple records into the domain_permutations table
+class DomainPermuInsert(BaseModel):
+    """DomainPermuInsert schema class."""
+
+    organizations_uid: str
+    sub_domain_uid: Optional[str] = None
+    data_source_uid: Optional[str] = None
+    domain_permutation: str
+    ipv4: Optional[str] = None
+    ipv6: Optional[str] = None
+    mail_server: Optional[str] = None
+    name_server: Optional[str] = None
+    date_observed: Optional[str] = None
+
+    class Config:
+        """DomainPermuInsert schema config class."""
+
+        orm_mode = True
+
+
+# --- execute_dnsmonitor_data(), Issue 659 ---
+# Insert multiple records into the domain_permutations table, input
+class DomainPermuInsertInput(BaseModel):
+    """DomainPermuInsertInput schema class."""
+
+    insert_data: List[DomainPermuInsert]
+
+    class Config:
+        """DomainPermuInsertInput schema config class."""
+
+        orm_mode = True
+
+
+# --- execute_dnsmonitor_alert_data(), Issue 660 ---
+# Insert multiple records into the domain_alerts table
+class DomainAlertsInsert(BaseModel):
+    """DomainAlertsInsert schema class."""
+
+    organizations_uid: str
+    sub_domain_uid: Optional[str] = None
+    data_source_uid: Optional[str] = None
+    alert_type: Optional[str] = None
+    message: Optional[str] = None
+    previous_value: Optional[str] = None
+    new_value: Optional[str] = None
+    date: Optional[str] = None
+
+    class Config:
+        """DomainAlertsInsert schema config class."""
+
+        orm_mode = True
+
+
+# --- execute_dnsmonitor_alert_data(), Issue 660 ---
+# Insert multiple records into the domain_alerts table, input
+class DomainAlertsInsertInput(BaseModel):
+    """DomainAlertsInsertInput schema class."""
+
+    insert_data: List[DomainAlertsInsert]
+
+    class Config:
+        """DomainAlertsInsertInput schema config class."""
+
+        orm_mode = True
+
+
 # --- addRootdomain(), Issue 661 ---
 # Insert single root domain into root_domains table, input
 class RootDomainsSingleInsertInput(BaseModel):
@@ -2982,6 +3049,73 @@ class SubDomainsSingleInsertInput(BaseModel):
 
     class Config:
         """SubDomainsSingleInsertInput schema config class."""
+
+        orm_mode = True
+
+
+# --- insert_intelx_breaches(), Issue 663 ---
+# Insert bulk IntelX breach data into credential_breaches table
+class CredBreachesIntelxInsert(BaseModel):
+    """CredBreachesIntelxInsert schema class."""
+
+    breach_name: str
+    description: str
+    breach_date: str
+    added_date: str
+    modified_date: str
+    password_included: bool
+    data_source_uid: str
+
+    class Config:
+        """CredBreachesIntelxInsert schema config class."""
+
+        orm_mode = True
+
+
+# --- insert_intelx_breaches(), Issue 663 ---
+# Insert bulk IntelX breach data into credential_breaches table, input
+class CredBreachesIntelxInsertInput(BaseModel):
+    """CredBreachesIntelxInsertInput schema class."""
+
+    breach_data: List[CredBreachesIntelxInsert]
+
+    class Config:
+        """CredBreachesIntelxInsertInput schema config class."""
+
+        orm_mode = True
+
+
+# --- insert_intelx_credentials(), Issue 664 ---
+# Insert bulk IntelX credential data into credential_exposures table
+class CredExpIntelxInsert(BaseModel):
+    """CredExpIntelxInsert schema class."""
+
+    email: str
+    organizations_uid: str
+    root_domain: str
+    sub_domain: str
+    breach_name: str
+    modified_date: str
+    data_source_uid: str
+    password: str
+    hash_type: str
+    intelx_system_id: str
+
+    class Config:
+        """CredExpIntelxInsert schema config class."""
+
+        orm_mode = True
+
+
+# --- insert_intelx_credentials(), Issue 664 ---
+# Insert bulk IntelX credential data into credential_exposures table, input
+class CredExpIntelxInsertInput(BaseModel):
+    """CredExpIntelxInsertInput schema class."""
+
+    exp_data: List[CredExpIntelxInsert]
+
+    class Config:
+        """CredExpIntelxInsertInput schema config class."""
 
         orm_mode = True
 
@@ -3211,7 +3345,7 @@ class XpanseAlertInsert(BaseModel):
     # end_match_attempt_ts ??? null,
     local_insert_ts: Optional[datetime] = None
     last_modified_ts: Optional[datetime] = None
-    # case_id: Optional[int] = None
+    case_id: Optional[int] = None
     # deduplicate_tokens ??? null,
     # filter_rule_id ??? null,
     # event_id ??? null,

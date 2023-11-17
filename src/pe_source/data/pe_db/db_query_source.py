@@ -29,7 +29,6 @@ API_DIC = staging_config(section="pe_api")
 pe_api_url = API_DIC.get("pe_api_url")
 pe_api_key = API_DIC.get("pe_api_key")
 
-
 def show_psycopg2_exception(err):
     """Handle errors for PostgreSQL issues."""
     err_type, err_obj, traceback = sys.exc_info()
@@ -300,46 +299,6 @@ def insert_shodan_data(dataframe, table, thread, org_name, failed):
     return failed
 
 
-def execute_dnsmonitor_data(dataframe, table):
-    """Insert DNSMonitor data."""
-    conn = connect()
-    tpls = [tuple(x) for x in dataframe.to_numpy()]
-    cols = ",".join(list(dataframe.columns))
-    sql = """INSERT INTO {}({}) VALUES %s
-    ON CONFLICT (domain_permutation, organizations_uid)
-    DO UPDATE SET ipv4 = EXCLUDED.ipv4,
-        ipv6 = EXCLUDED.ipv6,
-        date_observed = EXCLUDED.date_observed,
-        mail_server = EXCLUDED.mail_server,
-        name_server = EXCLUDED.name_server,
-        sub_domain_uid = EXCLUDED.sub_domain_uid,
-        data_source_uid = EXCLUDED.data_source_uid;"""
-    cursor = conn.cursor()
-    extras.execute_values(
-        cursor,
-        sql.format(table, cols),
-        tpls,
-    )
-    conn.commit()
-
-
-def execute_dnsmonitor_alert_data(dataframe, table):
-    """Insert DNSMonitor alerts."""
-    conn = connect()
-    tpls = [tuple(x) for x in dataframe.to_numpy()]
-    cols = ",".join(list(dataframe.columns))
-    sql = """INSERT INTO {}({}) VALUES %s
-    ON CONFLICT (alert_type, sub_domain_uid, date, new_value)
-    DO NOTHING;"""
-    cursor = conn.cursor()
-    extras.execute_values(
-        cursor,
-        sql.format(table, cols),
-        tpls,
-    )
-    conn.commit()
-
-
 def getRootdomain(domain):
     """Get root domain."""
     conn = connect()
@@ -397,70 +356,6 @@ def query_orgs_rev():
     sql = "SELECT * FROM organizations WHERE report_on is True ORDER BY organizations_uid DESC;"
     df = pd.read_sql_query(sql, conn)
     return df
-
-
-def insert_intelx_breaches(df):
-    """Insert intelx breach data."""
-    df = df.drop_duplicates(subset=["breach_name"])
-    conn = connect()
-    table = "credential_breaches"
-    # Create a list of tuples from the dataframe values
-    tuples = [tuple(x) for x in df.to_numpy()]
-    # Comma-separated dataframe columns
-    cols = ",".join(list(df.columns))
-    # SQL query to execute
-    query = """INSERT INTO {}({}) VALUES %s
-    ON CONFLICT (breach_name) DO UPDATE SET
-    password_included = EXCLUDED.password_included;"""
-    cursor = conn.cursor()
-    try:
-        extras.execute_values(
-            cursor,
-            query.format(
-                table,
-                cols,
-            ),
-            tuples,
-        )
-        conn.commit()
-        logging.info("Successfully inserted/updated breaches into PE database.")
-    except (Exception, psycopg2.DatabaseError) as error:
-        logging.info(error)
-        conn.rollback()
-    cursor.close()
-
-
-def insert_intelx_credentials(df):
-    """Insert sixgill credential data."""
-    df = df.drop_duplicates(subset=["breach_name", "email"])
-    conn = connect()
-    table = "credential_exposures"
-    # Create a list of tuples from the dataframe values
-    tuples = [tuple(x) for x in df.to_numpy()]
-    # Comma-separated dataframe columns
-    cols = ",".join(list(df.columns))
-    # SQL query to execute
-    query = """INSERT INTO {}({}) VALUES %s
-    ON CONFLICT (breach_name, email) DO UPDATE SET
-    modified_date = EXCLUDED.modified_date;"""
-    cursor = conn.cursor()
-    try:
-        extras.execute_values(
-            cursor,
-            query.format(
-                table,
-                cols,
-            ),
-            tuples,
-        )
-        conn.commit()
-        logging.info(
-            "Successfully inserted/updated exposed credentials into PE database."
-        )
-    except (Exception, psycopg2.DatabaseError) as error:
-        logging.info(error)
-        conn.rollback()
-    cursor.close()
 
 
 def api_pshtt_domains_to_run():
@@ -817,8 +712,8 @@ def insert_sixgill_breaches_api(new_breaches):
     new_breaches["modified_date"] = new_breaches["modified_date"].astype(str)
     new_breaches = new_breaches.to_dict("records")
     # Endpoint info
-    task_url = "cred_breaches_insert"
-    status_url = "cred_breaches_insert/task/"
+    task_url = "cred_breaches_sixgill_insert"
+    status_url = "cred_breaches_sixgill_insert/task/"
     data = json.dumps({"new_breaches": new_breaches})
     # Make API call
     result = task_api_call(task_url, status_url, data, 3)
@@ -837,8 +732,8 @@ def insert_sixgill_credentials_api(new_exposures):
     # Convert dataframe to list of dictionaries
     new_exposures = new_exposures.to_dict("records")
     # Endpoint info
-    task_url = "credexp_insert"
-    status_url = "credexp_insert/task/"
+    task_url = "cred_exp_sixgill_insert"
+    status_url = "cred_exp_sixgill_insert/task/"
     data = json.dumps({"new_exposures": new_exposures})
     # Make API call
     result = task_api_call(task_url, status_url, data, 3)
@@ -865,6 +760,76 @@ def insert_sixgill_topCVEs_api(new_topcves):
     result = task_api_call(task_url, status_url, data, 3)
     # Process data and return
     LOGGER.info(result)
+
+
+# --- 659 ---
+def execute_dnsmonitor_data_api(df):
+    """
+    Query API to insert multiple records into the domain_permutations table.
+
+    Args:
+        df: Dataframe containing DNSMonitor data to be inserted
+    """
+    # Endpoint info
+    endpoint_url = pe_api_url + "domain_permu_insert"
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": pe_api_key,
+    }
+    # Adjust data types and convert to list of dictionaries
+    df["date_observed"] = df["date_observed"].astype(str)
+    df_dict_list = df.to_dict("records")
+    data = json.dumps({"insert_data": df_dict_list})
+    try:
+        # Call endpoint
+        result = requests.put(endpoint_url, headers=headers, data=data).json()
+        # Process data and return
+        LOGGER.info(result)
+    except requests.exceptions.HTTPError as errh:
+        LOGGER.error(errh)
+    except requests.exceptions.ConnectionError as errc:
+        LOGGER.error(errc)
+    except requests.exceptions.Timeout as errt:
+        LOGGER.error(errt)
+    except requests.exceptions.RequestException as err:
+        LOGGER.error(err)
+    except json.decoder.JSONDecodeError as err:
+        LOGGER.error(err)
+
+
+# --- 660 ---
+def execute_dnsmonitor_alert_data_api(df):
+    """
+    Query API to insert multiple records into the domain_alerts table.
+
+    Args:
+        df: Dataframe containing DNSMonitor data to be inserted
+    """
+    # Endpoint info
+    endpoint_url = pe_api_url + "domain_alerts_insert"
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": pe_api_key,
+    }
+    # Adjust data types and convert to list of dictionaries
+    df["date"] = df["date"].astype(str)
+    df_dict_list = df.to_dict("records")
+    data = json.dumps({"insert_data": df_dict_list})
+    try:
+        # Call endpoint
+        result = requests.put(endpoint_url, headers=headers, data=data).json()
+        # Process data and return
+        LOGGER.info(result)
+    except requests.exceptions.HTTPError as errh:
+        LOGGER.error(errh)
+    except requests.exceptions.ConnectionError as errc:
+        LOGGER.error(errc)
+    except requests.exceptions.Timeout as errt:
+        LOGGER.error(errt)
+    except requests.exceptions.RequestException as err:
+        LOGGER.error(err)
+    except json.decoder.JSONDecodeError as err:
+        LOGGER.error(err)
 
 
 # --- Issue 661 ---
@@ -932,6 +897,80 @@ def addSubdomain_api(domain, pe_org_uid, root):
             "root": root,
         }
     )
+    try:
+        # Call endpoint
+        result = requests.put(endpoint_url, headers=headers, data=data).json()
+        # Process data and return
+        LOGGER.info(result)
+    except requests.exceptions.HTTPError as errh:
+        LOGGER.error(errh)
+    except requests.exceptions.ConnectionError as errc:
+        LOGGER.error(errc)
+    except requests.exceptions.Timeout as errt:
+        LOGGER.error(errt)
+    except requests.exceptions.RequestException as err:
+        LOGGER.error(err)
+    except json.decoder.JSONDecodeError as err:
+        LOGGER.error(err)
+
+
+# --- Issue 663 ---
+def insert_intelx_breaches_api(df):
+    """
+    Query API to insert multiple records into the credential_breaches table.
+
+    Args:
+        df: Dataframe containing IntelX breach data to be inserted
+    """
+    # Endpoint info
+    endpoint_url = pe_api_url + "cred_breaches_intelx_insert"
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": pe_api_key,
+    }
+    # Remove duplicates and convert to list of dictionaries
+    df = df.drop_duplicates(subset=["breach_name"])
+    df[["breach_date", "added_date", "modified_date"]] = df[
+        ["breach_date", "added_date", "modified_date"]
+    ].astype(str)
+    df_dict_list = df.to_dict("records")
+    data = json.dumps({"breach_data": df_dict_list})
+    try:
+        # Call endpoint
+        result = requests.put(endpoint_url, headers=headers, data=data).json()
+        # Process data and return
+        LOGGER.info(result)
+    except requests.exceptions.HTTPError as errh:
+        LOGGER.error(errh)
+    except requests.exceptions.ConnectionError as errc:
+        LOGGER.error(errc)
+    except requests.exceptions.Timeout as errt:
+        LOGGER.error(errt)
+    except requests.exceptions.RequestException as err:
+        LOGGER.error(err)
+    except json.decoder.JSONDecodeError as err:
+        LOGGER.error(err)
+
+
+# --- Issue 664 ---
+def insert_intelx_credentials_api(df):
+    """
+    Query API to insert multiple records into the credential_exposures table.
+
+    Args:
+        df: Dataframe containing IntelX credential exposure data to be inserted
+    """
+    # Endpoint info
+    endpoint_url = pe_api_url + "cred_exp_intelx_insert"
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": pe_api_key,
+    }
+    # Remove duplicates and convert to list of dictionaries
+    df = df.drop_duplicates(subset=["breach_name", "email"])
+    df["modified_date"] = df["modified_date"].astype(str)
+    df_dict_list = df.to_dict("records")
+    data = json.dumps({"exp_data": df_dict_list})
     try:
         # Call endpoint
         result = requests.put(endpoint_url, headers=headers, data=data).json()
@@ -1119,36 +1158,6 @@ def insert_sixgill_breaches(df):
     cursor.close()
 
 
-# --- 657 OLD TSQL ---
-def insert_sixgill_topCVEs(df):
-    """Insert sixgill top CVEs."""
-    conn = connect()
-    table = "top_cves"
-    # Create a list of tuples from the dataframe values
-    tuples = [tuple(x) for x in df.to_numpy()]
-    # Comma-separated dataframe columns
-    cols = ",".join(list(df.columns))
-    # SQL query to execute
-    query = """INSERT INTO {}({}) VALUES %s
-    ON CONFLICT (cve_id, date) DO NOTHING;"""
-    cursor = conn.cursor()
-    try:
-        extras.execute_values(
-            cursor,
-            query.format(
-                table,
-                cols,
-            ),
-            tuples,
-        )
-        conn.commit()
-        logging.info("Successfully inserted/updated top cve data into PE database.")
-    except (Exception, psycopg2.DatabaseError) as error:
-        logging.info(error)
-        conn.rollback()
-    cursor.close()
-
-
 # --- 656 OLD TSQL ---
 def insert_sixgill_credentials(df):
     """Insert sixgill credential data."""
@@ -1182,6 +1191,78 @@ def insert_sixgill_credentials(df):
     cursor.close()
 
 
+# --- 657 OLD TSQL ---
+def insert_sixgill_topCVEs(df):
+    """Insert sixgill top CVEs."""
+    conn = connect()
+    table = "top_cves"
+    # Create a list of tuples from the dataframe values
+    tuples = [tuple(x) for x in df.to_numpy()]
+    # Comma-separated dataframe columns
+    cols = ",".join(list(df.columns))
+    # SQL query to execute
+    query = """INSERT INTO {}({}) VALUES %s
+    ON CONFLICT (cve_id, date) DO NOTHING;"""
+    cursor = conn.cursor()
+    try:
+        extras.execute_values(
+            cursor,
+            query.format(
+                table,
+                cols,
+            ),
+            tuples,
+        )
+        conn.commit()
+        logging.info("Successfully inserted/updated top cve data into PE database.")
+    except (Exception, psycopg2.DatabaseError) as error:
+        logging.info(error)
+        conn.rollback()
+    cursor.close()
+
+
+# --- 659 OLD TSQL ---
+def execute_dnsmonitor_data(dataframe, table):
+    """Insert DNSMonitor data."""
+    conn = connect()
+    tpls = [tuple(x) for x in dataframe.to_numpy()]
+    cols = ",".join(list(dataframe.columns))
+    sql = """INSERT INTO {}({}) VALUES %s
+    ON CONFLICT (domain_permutation, organizations_uid)
+    DO UPDATE SET ipv4 = EXCLUDED.ipv4,
+        ipv6 = EXCLUDED.ipv6,
+        date_observed = EXCLUDED.date_observed,
+        mail_server = EXCLUDED.mail_server,
+        name_server = EXCLUDED.name_server,
+        sub_domain_uid = EXCLUDED.sub_domain_uid,
+        data_source_uid = EXCLUDED.data_source_uid;"""
+    cursor = conn.cursor()
+    extras.execute_values(
+        cursor,
+        sql.format(table, cols),
+        tpls,
+    )
+    conn.commit()
+
+
+# --- 660 OLD TSQL ---
+def execute_dnsmonitor_alert_data(dataframe, table):
+    """Insert DNSMonitor alerts."""
+    conn = connect()
+    tpls = [tuple(x) for x in dataframe.to_numpy()]
+    cols = ",".join(list(dataframe.columns))
+    sql = """INSERT INTO {}({}) VALUES %s
+    ON CONFLICT (alert_type, sub_domain_uid, date, new_value)
+    DO NOTHING;"""
+    cursor = conn.cursor()
+    extras.execute_values(
+        cursor,
+        sql.format(table, cols),
+        tpls,
+    )
+    conn.commit()
+
+
 # --- 661 OLD TSQL ---
 def addRootdomain(root_domain, pe_org_uid, source_uid, org_name):
     """Add root domain."""
@@ -1213,6 +1294,72 @@ def addSubdomain(conn, domain, pe_org_uid, root):
     LOGGER.info("Success adding domain %s to subdomains table.", domain)
     conn.commit()
     close(conn)
+
+
+# --- 663 OLD TSQL ---
+def insert_intelx_breaches(df):
+    """Insert intelx breach data."""
+    df = df.drop_duplicates(subset=["breach_name"])
+    conn = connect()
+    table = "credential_breaches"
+    # Create a list of tuples from the dataframe values
+    tuples = [tuple(x) for x in df.to_numpy()]
+    # Comma-separated dataframe columns
+    cols = ",".join(list(df.columns))
+    # SQL query to execute
+    query = """INSERT INTO {}({}) VALUES %s
+    ON CONFLICT (breach_name) DO UPDATE SET
+    password_included = EXCLUDED.password_included;"""
+    cursor = conn.cursor()
+    try:
+        extras.execute_values(
+            cursor,
+            query.format(
+                table,
+                cols,
+            ),
+            tuples,
+        )
+        conn.commit()
+        logging.info("Successfully inserted/updated breaches into PE database.")
+    except (Exception, psycopg2.DatabaseError) as error:
+        logging.info(error)
+        conn.rollback()
+    cursor.close()
+
+
+# --- 664 OLD TSQL ---
+def insert_intelx_credentials(df):
+    """Insert sixgill credential data."""
+    df = df.drop_duplicates(subset=["breach_name", "email"])
+    conn = connect()
+    table = "credential_exposures"
+    # Create a list of tuples from the dataframe values
+    tuples = [tuple(x) for x in df.to_numpy()]
+    # Comma-separated dataframe columns
+    cols = ",".join(list(df.columns))
+    # SQL query to execute
+    query = """INSERT INTO {}({}) VALUES %s
+    ON CONFLICT (breach_name, email) DO UPDATE SET
+    modified_date = EXCLUDED.modified_date;"""
+    cursor = conn.cursor()
+    try:
+        extras.execute_values(
+            cursor,
+            query.format(
+                table,
+                cols,
+            ),
+            tuples,
+        )
+        conn.commit()
+        logging.info(
+            "Successfully inserted/updated exposed credentials into PE database."
+        )
+    except (Exception, psycopg2.DatabaseError) as error:
+        logging.info(error)
+        conn.rollback()
+    cursor.close()
 
 
 def insert_or_update_business_unit(business_unit_dict):
@@ -1276,13 +1423,13 @@ def api_xpanse_alert_insert(xpanse_alert_dict):
     }
     data = json.dumps(xpanse_alert_dict, default=str)
 
-    LOGGER.info(data)
+    # LOGGER.info(data)
     try:
         # Call endpoint
         xpanse_alert_insert_result = requests.put(
             endpoint_url, headers=headers, data=data
         ).json()
-
+        LOGGER.info((xpanse_alert_insert_result))
         LOGGER.info(
             "Successfully inserted new record in xpanse_alerts table with associated assets and services"
         )
