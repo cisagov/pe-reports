@@ -149,35 +149,52 @@ def alerts_content(auth, organization_id, alert_id):
 
 
 def dve_top_cves():
-    """Get data about a specific CVE."""
-    url = "https://api.cybersixgill.com/dve_enrich/summary"
+    """Retrieve the top 10 CVEs for this report period."""
+    url = "https://api.cybersixgill.com/dve_enrich/enrich"
     auth = cybersix_token()
     headers = {
-        "Content-Type": "application/x-www-form-urlencoded",
+        "Content-Type": "application/json",
         "Cache-Control": "no-cache",
         "Authorization": "Bearer " + auth,
     }
-    resp = requests.get(url, headers=headers).json()
-    sorted_values = sorted(
-        resp["values"],
-        key=lambda x: x["score"]["sixgill"]["current"]
-        if x["score"]["sixgill"]["current"] is not None
-        else float("-inf"),
-        reverse=True,
+    data = json.dumps(
+        {
+            "filters": {
+                "sixgill_rating_range": {"from": 8, "to": 10},
+            },
+            "results_size": 10,
+            "enriched": True,
+            "from_index": 0,
+        }
     )
-    top_10_cves = sorted_values[:10]
+    resp = requests.post(url, headers=headers, data=data).json()
 
-    # Printing the top 10 CVEs
+    # sorted_values = sorted(
+    #     resp["objects"],
+    #     key=lambda x: x["score"]["sixgill"]["current"]
+    #     if x["score"]["sixgill"]["current"] is not None
+    #     else float("-inf"),
+    #     reverse=True,
+    # )
+    # top_10_cves = sorted_values[:10]
+
+    result_list = resp.get("objects")
     clean_top_10_cves = []
-    for cve in top_10_cves:
-        print(cve["id"], "- Current rating:", cve["score"]["sixgill"]["current"])
-        print(cve)
+    for result in result_list:
+        cve_id = result.get("name")
+        dynamic_rating = result.get("x_sixgill_info").get("score").get("current")
+        if result.get("x_sixgill_info").get("nvd").get("v3") is None:
+            nvd_v3_score = None
+        else:
+            nvd_v3_score = result.get("x_sixgill_info").get("nvd").get("v3").get("current")
+        nvd_base_score = "{'v2': None, 'v3': " + str(nvd_v3_score) + "}"
         clean_cve = {
-            "cve_id": cve["id"],
-            "dynamic_rating": cve["score"]["sixgill"]["current"],
-            "nvd_base_score": cve["score"]["nvd"]["score"],
+            "cve_id": cve_id,
+            "dynamic_rating": dynamic_rating,
+            "nvd_base_score": nvd_base_score,
         }
         clean_top_10_cves.append(clean_cve)
+
     return clean_top_10_cves
 
 def credential_auth(params):
@@ -212,7 +229,6 @@ def setNewCSGOrg(newOrgName, orgAliases, orgDomainNames, orgIP, orgExecs):
     }
 
     response = requests.post(url, headers=headers, data=newOrganization).json()
-
     newOrgID = response["id"]
 
     if newOrgID:
