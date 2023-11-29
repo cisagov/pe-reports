@@ -41,6 +41,20 @@ def get_version(version_file):
     raise RuntimeError("Unable to find version string.")
 
 
+# # Extract the command-line arguments
+# cmd_args = sys.argv[1:]
+
+# # Check if the "--exclude-packages" argument is present
+# if "--exclude-packages" in cmd_args:
+#     # List the packages you want to exclude
+#     excluded_packages = ["pe_mailer", "pe_source", "pe_asm", "pe_scorecard", "pe_reports"]
+
+#     # Remove the excluded packages from the packages list
+#     for package in excluded_packages:
+#         if package in find_packages(where="src"):
+#             find_packages(where="src").remove(package)
+
+
 setup(
     name="pe_reports",
     # Versions should comply with PEP440
@@ -113,11 +127,11 @@ setup(
         "dshield",
         "glob2 == 0.7",
         "elastic-apm",
-        # "flask",
-        # "Flask-Login",
-        # "flask_migrate",
-        # "flask_wtf",
-        # "Flask-SQLAlchemy >= 3.0.3",
+        "flask",
+        "Flask-Login",
+        "flask_migrate",
+        "flask_wtf",
+        "Flask-SQLAlchemy >= 3.0.3",
         "googletrans",
         # "idna",
         "importlib_resources == 5.4.0",
