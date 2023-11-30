@@ -5055,10 +5055,10 @@ async def cred_breach_intelx_status(task_id: str, tokens: dict = Depends(get_api
         Depends(get_api_key)
     ],  # Depends(RateLimiter(times=200, seconds=60))],
     response_model=schemas.AlertsInsertTaskResp,
-    tags=["Insert multiple records into the alerts table."],
+    tags=["Insert multiple sixgill records into the alerts table."],
 )
 def alerts_insert(data: schemas.AlertsInsertInput, tokens: dict = Depends(get_api_key)):
-    """Call API endpoint to insert multiple records into the alerts table."""
+    """Call API endpoint to insert multiple sixgill records into the alerts table."""
     # Convert list of alert models to list of dictionaries
     new_alerts = [dict(input_dict) for input_dict in data.new_alerts]
     # Check for API key
@@ -5463,7 +5463,7 @@ def domain_permu_insert(
                     )
                     create_ct += 1
             return (
-                "DNSMonitor records in the domain_permutations table: "
+                "New DNSMonitor data in the domain_permutations table: "
                 + str(create_ct)
                 + " created, "
                 + str(update_ct)
@@ -5618,6 +5618,8 @@ def sub_domains_single_insert(
             org_name = Organizations.objects.filter(
                 organizations_uid=data.pe_org_uid
             ).values("cyhy_db_name")[0]["cyhy_db_name"]
+            create_ct = 0
+            update_ct = 0
             # Check if sub domain already exists in table
             sub_domain_results = SubDomains.objects.filter(
                 sub_domain=data.domain,
@@ -5645,7 +5647,7 @@ def sub_domains_single_insert(
                 root_inst = RootDomains.objects.get(
                     organizations_uid=data.pe_org_uid, root_domain=curr_root
                 )
-                # Create new sub domain record
+                # Create subdomain record now that root exists
                 SubDomains.objects.create(
                     sub_domain=data.domain,
                     root_domain_uid=root_inst,
@@ -5654,22 +5656,25 @@ def sub_domains_single_insert(
                     last_seen=curr_date,
                     identified=False,
                 )
-                # Return status message
-                return (
-                    "Sub domain has been inserted into sub_domains table for "
-                    + org_name
-                )
+                create_ct += 1  
             else:
-                # If sub domain already exists, update last_seen and identified
+                # If subdomain record already exists, update
                 SubDomains.objects.filter(
                     sub_domain=data.domain,
                     root_domain_uid__organizations_uid=data.pe_org_uid,
-                ).update(last_seen=curr_date, identified=False)
-                # Return status message
-                return (
-                    "Sub domain record has been updated in the sub_domains table for "
-                    + org_name
+                ).update(
+                    last_seen=curr_date,
+                    identified=False,
                 )
+                update_ct += 1
+            # Return status message
+            return (
+                str(create_ct)
+                + " records created, "
+                + str(update_ct)
+                + " records updated in the sub_domains table for "
+                + org_name
+            )
         except ObjectDoesNotExist:
             LOGGER.info("API key expired please try again")
     else:

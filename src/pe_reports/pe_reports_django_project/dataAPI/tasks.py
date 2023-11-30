@@ -1039,6 +1039,8 @@ def get_xpanse_vulns(
         vulns.append(vuln_dict)
 
     return vulns
+
+
 # --- get_intelx_breaches(), Issue 641 ---
 @shared_task(bind=True)
 def cred_breach_intelx_task(self, source_uid: str):

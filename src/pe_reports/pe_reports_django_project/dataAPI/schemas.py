@@ -2731,24 +2731,24 @@ class CredBreachIntelXTaskResp(BaseModel):
 class AlertsInsert(BaseModel):
     """AlertsInsert schema class."""
 
-    alert_name: str
-    content: str
-    date: str
-    sixgill_id: str
-    read: str
-    severity: str
-    site: str
-    threat_level: str
-    threats: str
-    title: str
-    user_id: str
-    category: str
-    lang: str
-    organizations_uid: str
-    data_source_uid: str
-    content_snip: str
-    asset_mentioned: str
-    asset_type: str
+    alert_name: Optional[str] = None
+    content:Optional[str] = None # PROBLEM
+    date: Optional[str] = None
+    sixgill_id: Optional[str] = None
+    read: Optional[str] = None
+    severity: Optional[str] = None
+    site: Optional[str] = None 
+    threat_level: Optional[str] = None
+    threats: Optional[str] = None # PROBLEM
+    title: Optional[str] = None
+    user_id: Optional[str] = None
+    category: Optional[str] = None
+    lang: Optional[str] = None # PROBLEM
+    organizations_uid: Optional[str] = None # PROBLEM
+    data_source_uid: Optional[str] = None # PROBLEM
+    content_snip: Optional[str] = None# PROBLEM
+    asset_mentioned: Optional[str] = None # PROBLEM
+    asset_type: Optional[str] = None # PROBLEM
 
     class Config:
         """AlertsInsert schema config class."""
