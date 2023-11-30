@@ -147,7 +147,7 @@ setup(
         "shodan == 1.27.0",
         "sshtunnel",
         "sslyze>=5.0.0",
-        # "spacy",
+        "spacy",
         "nltk",
         "beautifulsoup4",
         "sublist3r",
