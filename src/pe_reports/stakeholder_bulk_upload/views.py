@@ -38,7 +38,7 @@ from pe_reports.helpers.enumerate_subs_from_root import (
 )
 from pe_source.data.sixgill.api import setNewCSGOrg
 
-# If you are getting errors saying that a "en_core_web_lg" is loaded. Run the command " python -m spacy download en_core_web_trf" but might have to chagne the name fo the spacy model
+# If you are getting errors saying that a "en_core_web_lg" is loaded. Run the command " python -m spacy download en_core_web_trf" but might have to change the name fo the spacy model
 # nlp = spacy.load("en_core_web_lg")
 
 LOGGER = logging.getLogger(__name__)

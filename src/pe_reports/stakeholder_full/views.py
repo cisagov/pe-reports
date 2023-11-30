@@ -41,9 +41,9 @@ LOGGER = logging.getLogger(__name__)
 
 # CSG credentials
 # TODO: Insert credentials
-API_Client_ID = config("API_Client_ID")
-API_Client_secret = config("API_Client_secret")
-API_WHOIS = config("API_WHOIS")
+API_Client_ID = config(section="API_Client_ID")
+API_Client_secret = config(section="API_Client_secret")
+API_WHOIS = config(section="API_WHOIS")
 
 conn = None
 cursor = None
