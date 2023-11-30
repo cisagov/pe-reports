@@ -116,7 +116,7 @@ setup(
     include_package_data=True,
     install_requires=[
         "beautifulsoup4 == 4.12.2",
-        "boto3 == 1.21.10",
+        "boto3 == 1.33.4",
         "botocore == 1.33.4",
         "chevron == 0.14.0",
         "celery == 5.3.6",
