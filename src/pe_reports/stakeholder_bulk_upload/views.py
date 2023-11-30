@@ -4,11 +4,9 @@
 # Standard Python Libraries
 import logging
 import os
-import re
 import traceback
 
 # Third-Party Libraries
-from bs4 import BeautifulSoup
 from flask import (
     Blueprint,
     current_app,
@@ -19,8 +17,8 @@ from flask import (
     url_for,
 )
 import pandas as pd
-import requests
-import spacy
+
+# import spacy
 from werkzeug.utils import secure_filename
 
 # cisagov Libraries
@@ -41,7 +39,7 @@ from pe_reports.helpers.enumerate_subs_from_root import (
 from pe_source.data.sixgill.api import setNewCSGOrg
 
 # If you are getting errors saying that a "en_core_web_lg" is loaded. Run the command " python -m spacy download en_core_web_trf" but might have to chagne the name fo the spacy model
-nlp = spacy.load("en_core_web_lg")
+# nlp = spacy.load("en_core_web_lg")
 
 LOGGER = logging.getLogger(__name__)
 
@@ -59,33 +57,33 @@ def allowed_file(filename):
     return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
-def theExecs(URL):
-    """Fetch executives from about page."""
-    # Scrape the page with Beautiful Soup
-    page = requests.get(URL).text
-    soup = BeautifulSoup(page, "lxml")
-    body = soup.body.text
-    body = body.replace("\n", " ")
-    body = body.replace("\t", " ")
-    body = body.replace("\r", " ")
-    body = body.replace("\xa0", " ")
+# def theExecs(URL):
+#     """Fetch executives from about page."""
+#     # Scrape the page with Beautiful Soup
+#     page = requests.get(URL).text
+#     soup = BeautifulSoup(page, "lxml")
+#     body = soup.body.text
+#     body = body.replace("\n", " ")
+#     body = body.replace("\t", " ")
+#     body = body.replace("\r", " ")
+#     body = body.replace("\xa0", " ")
 
-    # Use NLP to locate the executive names and append to list
-    exec_list = []
-    doc = nlp(body)
-    for ent in doc.ents:
-        exec_list.append((ent.label_, ent.text))
+#     # Use NLP to locate the executive names and append to list
+#     exec_list = []
+#     doc = nlp(body)
+#     for ent in doc.ents:
+#         exec_list.append((ent.label_, ent.text))
 
-    # Clean up exec list
-    final_exec_list = []
-    regex_pattern = re.compile(r"[@_'’!#\-$%^&*()<>?/\|}{~:]")
-    for hy in exec_list:
-        if ("PERSON" in hy) and (hy[1] not in final_exec_list) and (len(hy[1]) < 50):
-            if not regex_pattern.search(hy[1]) and len(hy[1].split()) > 1:
-                person = hy[1].split("  ")
-                if len(person) <= 1:
-                    final_exec_list.append(hy[1])
-    return final_exec_list
+#     # Clean up exec list
+#     final_exec_list = []
+#     regex_pattern = re.compile(r"[@_'’!#\-$%^&*()<>?/\|}{~:]")
+#     for hy in exec_list:
+#         if ("PERSON" in hy) and (hy[1] not in final_exec_list) and (len(hy[1]) < 50):
+#             if not regex_pattern.search(hy[1]) and len(hy[1].split()) > 1:
+#                 person = hy[1].split("  ")
+#                 if len(person) <= 1:
+#                     final_exec_list.append(hy[1])
+#     return final_exec_list
 
 
 def add_stakeholders(orgs_df):
@@ -130,7 +128,8 @@ def add_stakeholders(orgs_df):
             if org_row["premium"] is True:
                 # Get executives list by passing the about page URL
                 logging.info("Getting executives:")
-                allExecutives = list(theExecs(org_row["exec_url"]))
+                # allExecutives = list(theExecs(org_row["exec_url"]))
+                allExecutives = []
                 logging.info(allExecutives)
 
                 # Insert org and all assets into Cybersixgill
