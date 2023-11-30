@@ -100,7 +100,7 @@ setup(
     package_dir={"": "src"},
     package_data={
         "pe_mailer": ["data/*"],
-        "pe_reports": ["*.html", "*.css", "data/*", "assets/*", "*.ttf"],
+        "pe_reports": ["*.html", "*.css", "data/*", "assets/*", "*.ttf", "fonts/*"],
         "pe_source": [
             "data/*",
             "data/shodan/*",
