@@ -154,6 +154,7 @@ setup(
         "pyyaml == 6.0",
         "redis",
         "reportlab",
+        "retry",
         "requests",
         "schema == 0.7.5",
         "setuptools == 58.1.0",
