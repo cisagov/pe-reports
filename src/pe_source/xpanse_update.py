@@ -259,15 +259,9 @@ def format_alerts(alert, org_dict):
                                     "version_number": cve["inferredCve"][
                                         "inferredCveMatchMetadata"
                                     ].get("version", None),
-                                    "activity_status": cve["inferredCve"].get(
-                                        "activityStatus", None
-                                    ),
-                                    "first_observed": cve["inferredCve"].get(
-                                        "firstObserved", None
-                                    ),
-                                    "last_observed": cve["inferredCve"].get(
-                                        "lastObserved", None
-                                    ),
+                                    "activity_status": cve.get("activityStatus", None),
+                                    "first_observed": cve.get("firstObserved", None),
+                                    "last_observed": cve.get("lastObserved", None),
                                 },
                             )
                         )

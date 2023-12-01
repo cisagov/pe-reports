@@ -25,7 +25,6 @@ from home.models import (
     MatVwOrgsAllIps,
     Mentions,
     Organizations,
-    ShodanVulns,
     SubDomains,
     TopCves,
     VwBreachcomp,
@@ -53,6 +52,7 @@ from home.models import (
     VwShodanvulnsSuspected,
     VwShodanvulnsVerified,
     XpanseAlerts,
+    XpanseServices,
 )
 
 from . import schemas
@@ -1040,6 +1040,8 @@ def get_xpanse_vulns(
         vulns.append(vuln_dict)
 
     return vulns
+
+
 # --- get_intelx_breaches(), Issue 641 ---
 @shared_task(bind=True)
 def cred_breach_intelx_task(self, source_uid: str):
@@ -1104,11 +1106,16 @@ def alerts_insert_task(self, new_alerts: List[dict]):
                 content=new_alert["content"],
                 content_snip=new_alert["content_snip"],
                 asset_mentioned=new_alert["asset_mentioned"],
-                asset_type=new_alert["asset_type"]
+                asset_type=new_alert["asset_type"],
             )
             update_ct += 1
     # Return success message
-    return str(create_ct) + " records created, " + str(update_ct) + " records updated in the alerts table"
+    return (
+        str(create_ct)
+        + " records created, "
+        + str(update_ct)
+        + " records updated in the alerts table"
+    )
 
 
 # --- insert_sixgill_mentions(), Issue 654 ---
@@ -1118,9 +1125,7 @@ def mentions_insert_task(self, new_mentions: List[dict]):
     create_ct = 0
     for new_mention in new_mentions:
         try:
-            Mentions.objects.get(
-                sixgill_mention_id=new_mention["sixgill_mention_id"]
-            )
+            Mentions.objects.get(sixgill_mention_id=new_mention["sixgill_mention_id"])
             # If record already exists, do nothing
         except Mentions.DoesNotExist:
             # If mention record doesn't exist yet, create one
@@ -1156,8 +1161,8 @@ def mentions_insert_task(self, new_mentions: List[dict]):
 
 # --- insert_sixgill_breaches(), Issue 655 ---
 @shared_task(bind=True)
-def cred_breaches_insert_task(self, new_breaches: List[dict]):
-    """Task function for the cred_breaches_insert API endpoint."""
+def cred_breach_sixgill_task(self, new_breaches: List[dict]):
+    """Task function for the cred_breaches_sixgill_insert API endpoint."""
     create_ct = 0
     update_ct = 0
     for new_breach in new_breaches:
@@ -1187,12 +1192,17 @@ def cred_breaches_insert_task(self, new_breaches: List[dict]):
             )
             create_ct += 1
     # Return success message
-    return str(create_ct) + " records created, " + str(update_ct) + " records updated in the credential_breaches table"
+    return (
+        str(create_ct)
+        + " records created, "
+        + str(update_ct)
+        + " records updated in the credential_breaches table"
+    )
 
 
 # --- insert_sixgill_credentials(), Issue 656 ---
 @shared_task(bind=True)
-def credexp_insert_task(self, new_exposures: List[dict]):
+def cred_exp_sixgill_task(self, new_exposures: List[dict]):
     """Task function for the credexp_insert API endpoint."""
     update_ct = 0
     create_ct = 0
@@ -1239,7 +1249,12 @@ def credexp_insert_task(self, new_exposures: List[dict]):
             )
             update_ct += 1
     # Return success message
-    return str(create_ct) + " records created, " + str(update_ct) + " records updated in the credential_exposures table"
+    return (
+        str(create_ct)
+        + " records created, "
+        + str(update_ct)
+        + " records updated in the credential_exposures table"
+    )
 
 
 # --- insert_sixgill_topCVEs(), Issue 657 ---
@@ -1272,10 +1287,72 @@ def top_cves_insert_task(self, new_topcves: List[dict]):
     # Return success message
     return str(create_ct) + " records created in the top_cves table"
 
+
+# @shared_task(bind=True)
+# def shodan_vulns_task(self, org: str):
+#     """Task function for reformatted shodan vulnerabilites for crossfeed."""
+
+
 @shared_task(bind=True)
-def shodan_vulns_task(self, org: str):
-    """Task function for reformatted shodan vulnerabilites for crossfeed."""
+def xpanse_vulns_crossfeed_task(self, org: str):
+    """Task function for reformatted xpanse vulnerabities for crossfeed."""
+    # xpanse_alerts = XpanseAlerts.objects.filter(business_units__entity_name=org)
 
+    service_list = XpanseServices.objects.filter(
+        alerts__business_units__entity_name=org
+    )
 
+    # if modified_datetime is not None:
+    #     xpanse_alerts = xpanse_alerts.filter(
+    #         Q(local_insert_ts__gte=modified_datetime)
+    #         | Q(last_modified_ts__gte=modified_datetime)
+    #     )
 
+    crossfeed_vulns = []
+    xpanse_vuln_dict = {}
+    for service in service_list:
+        # current_service_vulns = []
+        cve_services = service.xpansecveservice_set.select_related(
+            "xpanse_inferred_cve"
+        )
+        for vuln in cve_services:
+            key = service.service_name + " - " + vuln.xpanse_inferred_cve.cve_id
 
+            if key in xpanse_vuln_dict:
+                continue
+
+            else:
+                xpanse_vuln_dict[key] = {
+                    "title": vuln.xpanse_inferred_cve.cve_id,
+                    "cve": vuln.xpanse_inferred_cve.cve_id,
+                    "cvss": vuln.xpanse_inferred_cve.cvss_score_v3
+                    if vuln.xpanse_inferred_cve.cvss_score_v3
+                    else vuln.xpanse_inferred_cve.cvss_score_v2,
+                    "severity": vuln.xpanse_inferred_cve.cvss_severity_v3
+                    if vuln.xpanse_inferred_cve.cvss_severity_v3
+                    else vuln.xpanse_inferred_cve.cvss_severity_v2,
+                    "state": "open" if service.is_active == "Active" else "closed",
+                    "source": "Palo Alto Xpanse",
+                    "needsPopulation": True,
+                    "port": service.port,
+                    "lastSeen": vuln.last_observed,
+                    "cpe": "cpe:/a:"
+                    + vuln.vendor
+                    + ":"
+                    + vuln.product
+                    + ":"
+                    + vuln.version_number,
+                    "version": vuln.version_number,
+                    "product": vuln.product,
+                    "service_port": service.port,
+                    "service_asset": service.ip_address
+                    if service.service_key_type == "Domain"
+                    else service.domain,
+                    "service_asset_type": service.service_key_type,
+                }
+
+        # TODO link xpanse alerts to vulns here
+
+        crossfeed_vulns += list(xpanse_vuln_dict.values())
+
+    return crossfeed_vulns
