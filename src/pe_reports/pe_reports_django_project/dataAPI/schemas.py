@@ -3516,12 +3516,13 @@ class UniversalCrossfeedVuln(BaseModel):
     cve: str
     cvss: Optional[str] = None
     state: Optional[str] = None
+    severity: Optional[str] = None  # xpanse has this
     source: Optional[str] = None
     needsPopulation: Optional[bool] = None
     # service: { id: serviceId }
     port: Optional[int] = None
     lastSeen: Optional[datetime] = None
-    banner: Optional[str] = None  # Not sure on this one
+    banner: Optional[str] = None  # Not sure on this one, xpanse doesn't provide this
     serviceSource: Optional[str] = None  # This could be a duplicate to source?
     # shodanResults: {
     #               product: service.product,
