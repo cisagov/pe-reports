@@ -80,12 +80,15 @@ setup(
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
-        # Temporarily hold back support for Python 3.11 due to the version pin
-        # for the PyMuPDF package. Pre-built wheels for Python 3.11 were not made
-        # available until the 1.21.0 release and building the PyMuPDF package from
-        # source proves problematic due to dependencies. Please see the following
-        # issue for more information: https://github.com/cisagov/pe-reports/issues/441
+        # Temporarily hold back support for Python 3.11 and 3.12 due
+        # to the version pin for the PyMuPDF package. Pre-built wheels
+        # for Python 3.11 were not made available until the 1.21.0
+        # release and building the PyMuPDF package from source proves
+        # problematic due to dependencies. Please see the following
+        # issue for more information:
+        # https://github.com/cisagov/pe-reports/issues/441
         # "Programming Language :: Python :: 3.11",
+        # "Programming Language :: Python :: 3.12",
         "Programming Language :: Python :: Implementation :: CPython",
     ],
     python_requires=">=3.6",
