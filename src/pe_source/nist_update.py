@@ -7,7 +7,10 @@ import sys
 
 # Third-Party Libraries
 # Relative imports
-from data.pe_db.db_query_source import api_cve_insert, get_cve_and_products
+from data.pe_db.db_query_source import (  # query_all_cves,
+    api_cve_insert,
+    get_cve_and_products,
+)
 from nested_lookup import nested_lookup
 import pytz
 import requests
@@ -276,7 +279,12 @@ def main():
     initial_fill()
     # update_cves(24)
     # query_cve('CVE-2023-53465')
-    check_cve_is_synced()
+    # check_cve_is_synced()
+
+    # cves = query_all_cves(
+    #     datetime.fromtimestamp(1695403756).strftime("%Y-%m-%d %H:%M:%S")
+    # )
+    # print(cves)
 
 
 if __name__ == "__main__":

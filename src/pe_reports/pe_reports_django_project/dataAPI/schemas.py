@@ -2732,23 +2732,23 @@ class AlertsInsert(BaseModel):
     """AlertsInsert schema class."""
 
     alert_name: Optional[str] = None
-    content:Optional[str] = None # PROBLEM
+    content: Optional[str] = None  # PROBLEM
     date: Optional[str] = None
     sixgill_id: Optional[str] = None
     read: Optional[str] = None
     severity: Optional[str] = None
-    site: Optional[str] = None 
+    site: Optional[str] = None
     threat_level: Optional[str] = None
-    threats: Optional[str] = None # PROBLEM
+    threats: Optional[str] = None  # PROBLEM
     title: Optional[str] = None
     user_id: Optional[str] = None
     category: Optional[str] = None
-    lang: Optional[str] = None # PROBLEM
-    organizations_uid: Optional[str] = None # PROBLEM
-    data_source_uid: Optional[str] = None # PROBLEM
-    content_snip: Optional[str] = None# PROBLEM
-    asset_mentioned: Optional[str] = None # PROBLEM
-    asset_type: Optional[str] = None # PROBLEM
+    lang: Optional[str] = None  # PROBLEM
+    organizations_uid: Optional[str] = None  # PROBLEM
+    data_source_uid: Optional[str] = None  # PROBLEM
+    content_snip: Optional[str] = None  # PROBLEM
+    asset_mentioned: Optional[str] = None  # PROBLEM
+    asset_type: Optional[str] = None  # PROBLEM
 
     class Config:
         """AlertsInsert schema config class."""
@@ -2830,21 +2830,21 @@ class MentionsInsertTaskResp(BaseModel):
     error: Optional[str] = None
 
 
-# --- insert_sixgill_breaches(), Issue 655 --- 
-class CredBreachesSixgillInsert(BaseModel): 
-    """CredBreachesSixgillInsert schema class.""" 
+# --- insert_sixgill_breaches(), Issue 655 ---
+class CredBreachesSixgillInsert(BaseModel):
+    """CredBreachesSixgillInsert schema class."""
 
-    breach_name: str 
+    breach_name: str
     description: str
     breach_date: str
     password_included: bool
     data_source_uid: str
-    modified_date: str 
-    
+    modified_date: str
+
     class Config:
         """CredBreachesSixgillInsert schema config class."""
-        
-        orm_mode = True 
+
+        orm_mode = True
 
 
 # --- insert_sixgill_breaches(), Issue 655 ---
@@ -3482,4 +3482,95 @@ class XpanseVulnPullTaskResp(BaseModel):
     task_id: str
     status: str
     result: Optional[List[XpanseVulnOutput]] = None
+    error: Optional[str] = None
+
+
+class CpeProduct(BaseModel):
+    """CpeProduct schema class."""
+
+    cpe_product_name: str
+    version_number: str
+    vender: str
+
+
+# --- query_all_subs()/query_subs(), Issue 560, 633 ---
+# Get entire sub_domains table, single output
+class CveWithProducts(BaseModel):
+    """CveWithProducts schema class."""
+
+    cve_uid: Optional[Any]
+    cve_name: Optional[str]
+    published_date: Optional[datetime] = None
+    last_modified_date: Optional[datetime] = None
+    vuln_status: Optional[str] = None
+    description: Optional[str] = None
+    cvss_v2_source: Optional[str] = None
+    cvss_v2_type: Optional[str] = None
+    cvss_v2_version: Optional[str] = None
+    cvss_v2_vector_string: Optional[str] = None
+    cvss_v2_base_score: Optional[float] = None
+    cvss_v2_base_severity: Optional[str] = None
+    cvss_v2_exploitability_score: Optional[float] = None
+    cvss_v2_impact_score: Optional[float] = None
+    cvss_v3_source: Optional[str] = None
+    cvss_v3_type: Optional[str] = None
+    cvss_v3_version: Optional[str] = None
+    cvss_v3_vector_string: Optional[str] = None
+    cvss_v3_base_score: Optional[float] = None
+    cvss_v3_base_severity: Optional[str] = None
+    cvss_v3_exploitability_score: Optional[float] = None
+    cvss_v3_impact_score: Optional[float] = None
+    cvss_v4_source: Optional[str] = None
+    cvss_v4_type: Optional[str] = None
+    cvss_v4_version: Optional[str] = None
+    cvss_v4_vector_string: Optional[str] = None
+    cvss_v4_base_score: Optional[float] = None
+    cvss_v4_base_severity: Optional[str] = None
+    cvss_v4_exploitability_score: Optional[float] = None
+    cvss_v4_impact_score: Optional[float] = None
+    weaknesses: Optional[List[str]] = None
+    reference_urls: Optional[List[str]] = None
+    cpe_list: Optional[List[str]] = None
+    vender_product: Optional[Dict[str, List[CpeProduct]]] = None
+
+    class Config:
+        """CveWithProducts schema config class."""
+
+        orm_mode = True
+        validate_assignment = True
+
+
+# --- query_all_subs()/query_subs(), Issue 560, 633 ---
+# Get entire sub_domains table, paged output
+class CvePagedResult(BaseModel):
+    """SubDomainPagedResult schema class."""
+
+    total_pages: int
+    current_page: int
+    data: List[CveWithProducts]
+
+
+# --- query_all_subs(), Issue 633 ---
+# Get entire sub_domains table, paged input
+class CvePagedInput(BaseModel):
+    """CvePagedInput schema class."""
+
+    modified_datetime: Optional[datetime] = None
+    page: int
+    per_page: int
+
+    class Config:
+        """CvePagedInput schema config class."""
+
+        orm_mode = True
+
+
+# --- query_all_subs()/query_subs, Issue 560, 633 ---
+# Get entire sub_domains table, paged task resp
+class CvePagedTaskResp(BaseModel):
+    """SubDomainPagedTaskResp schema class."""
+
+    task_id: str
+    status: str
+    result: Optional[CvePagedResult] = None
     error: Optional[str] = None

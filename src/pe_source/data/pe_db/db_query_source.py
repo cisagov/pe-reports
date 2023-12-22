@@ -29,6 +29,7 @@ API_DIC = staging_config(section="pe_api")
 pe_api_url = API_DIC.get("pe_api_url")
 pe_api_key = API_DIC.get("pe_api_key")
 
+
 def show_psycopg2_exception(err):
     """Handle errors for PostgreSQL issues."""
     err_type, err_obj, traceback = sys.exc_info()
@@ -615,20 +616,20 @@ def insert_sixgill_alerts(new_alerts):
         "content",
         "date",
         "sixgill_id",
-        "read", # bool
-        "severity", # int64
-        "site", # sometimes NaN instead of text
+        "read",  # bool
+        "severity",  # int64
+        "site",  # sometimes NaN instead of text
         "threat_level",
-        "threats", # list 
+        "threats",  # list
         "title",
         "user_id",
-        "category", # float
-        "lang", # float 
-        "organizations_uid", 
-        "data_source_uid", 
-        "content_snip", 
+        "category",  # float
+        "lang",  # float
+        "organizations_uid",
+        "data_source_uid",
+        "content_snip",
         "asset_mentioned",
-        "asset_type", 
+        "asset_type",
     ]
     try:
         new_alerts = new_alerts.loc[:, new_alerts.columns.isin(cols)]
@@ -639,23 +640,25 @@ def insert_sixgill_alerts(new_alerts):
     new_alerts["date"] = new_alerts["date"].dt.strftime("%Y-%m-%d")
     new_alerts[
         [
-            "read", # bool
-            "severity", # int64
-            "site", # sometimes NaN instead of text
-            "threats", # list
-            "category", # float
-            "lang", # float
+            "read",  # bool
+            "severity",  # int64
+            "site",  # sometimes NaN instead of text
+            "threats",  # list
+            "category",  # float
+            "lang",  # float
         ]
     ] = new_alerts[
         [
-            "read", # bool
-            "severity", # int64
-            "site", # sometimes NaN instead of text
-            "threats", # list
-            "category", # float
-            "lang", # float
+            "read",  # bool
+            "severity",  # int64
+            "site",  # sometimes NaN instead of text
+            "threats",  # list
+            "category",  # float
+            "lang",  # float
         ]
-    ].astype(str)
+    ].astype(
+        str
+    )
     new_alerts["threats"] = new_alerts["threats"].str.replace("[", "{")
     new_alerts["threats"] = new_alerts["threats"].str.replace("]", "}")
     new_alerts["threats"] = new_alerts["threats"].str.replace("'", '"')
@@ -663,11 +666,15 @@ def insert_sixgill_alerts(new_alerts):
     new_alerts = new_alerts.to_dict("records")
     # Break overall list into chunks of size n
     n = 500
-    chunked_list = [new_alerts[i * n:(i + 1) * n] for i in range((len(new_alerts) + n - 1) // n )] 
+    chunked_list = [
+        new_alerts[i * n : (i + 1) * n] for i in range((len(new_alerts) + n - 1) // n)
+    ]
     # Iterate through and insert each list chunk
     chunk_ct = 1
     for chunk in chunked_list:
-        LOGGER.info("Working on chunk " + str(chunk_ct) + " of " + str(len(chunked_list)))
+        LOGGER.info(
+            "Working on chunk " + str(chunk_ct) + " of " + str(len(chunked_list))
+        )
         # Endpoint info
         task_url = "alerts_insert"
         status_url = "alerts_insert/task/"
@@ -692,22 +699,22 @@ def insert_sixgill_mentions(new_mentions):
         "organizations_uid",
         "data_source_uid",
         "category",
-        "collection_date", 
+        "collection_date",
         "content",
         "creator",
         "date",
         "sixgill_mention_id",
         "lang",
         "post_id",
-        "rep_grade", #float64
+        "rep_grade",  # float64
         "site",
-        "site_grade", #int64
-        "sub_category", 
+        "site_grade",  # int64
+        "sub_category",
         "title",
         "type",
         "url",
-        "comments_count", #float64
-        "tags", #float64
+        "comments_count",  # float64
+        "tags",  # float64
     ]
     try:
         new_mentions = new_mentions.loc[:, new_mentions.columns.isin(cols)]
@@ -725,32 +732,39 @@ def insert_sixgill_mentions(new_mentions):
         [
             "collection_date",
             "date",
-            "rep_grade", #float64
-            "site_grade", #int64
-            "title", # Needs string conversion
-            "comments_count", #float64
-            "tags", #float64
+            "rep_grade",  # float64
+            "site_grade",  # int64
+            "title",  # Needs string conversion
+            "comments_count",  # float64
+            "tags",  # float64
         ]
     ] = new_mentions[
         [
             "collection_date",
             "date",
-            "rep_grade", #float64
-            "site_grade", #int64
-            "title", # Needs str conversion
-            "comments_count", #float64
-            "tags", #float64
+            "rep_grade",  # float64
+            "site_grade",  # int64
+            "title",  # Needs str conversion
+            "comments_count",  # float64
+            "tags",  # float64
         ]
-    ].astype(str)
+    ].astype(
+        str
+    )
     # Convert dataframe to list of dictionaries
     new_mentions = new_mentions.to_dict("records")
     # Break overall list into chunks of size n
     n = 500
-    chunked_list = [new_mentions[i * n:(i + 1) * n] for i in range((len(new_mentions) + n - 1) // n )] 
+    chunked_list = [
+        new_mentions[i * n : (i + 1) * n]
+        for i in range((len(new_mentions) + n - 1) // n)
+    ]
     # Iterate through and insert each list chunk
     chunk_ct = 1
     for chunk in chunked_list:
-        LOGGER.info("Working on chunk " + str(chunk_ct) + " of " + str(len(chunked_list)))
+        LOGGER.info(
+            "Working on chunk " + str(chunk_ct) + " of " + str(len(chunked_list))
+        )
         # Endpoint info
         task_url = "mentions_insert"
         status_url = "mentions_insert/task/"
@@ -1494,7 +1508,7 @@ def api_xpanse_alert_insert(xpanse_alert_dict):
         xpanse_alert_insert_result = requests.put(
             endpoint_url, headers=headers, data=data
         ).json()
-        LOGGER.info((xpanse_alert_insert_result))
+        LOGGER.info(xpanse_alert_insert_result)
         LOGGER.info(
             "Successfully inserted new record in xpanse_alerts table with associated assets and services"
         )
@@ -1581,3 +1595,35 @@ def api_pull_xpanse_vulns(business_unit, modified_date):
             )
     except Exception as e:
         raise Exception("xpanse_vuln query task failed 2, details: ", e)
+
+
+def query_all_cves(modified_date=None):
+    """Query all CVEs added or changed since provided date."""
+    start_time = time.time()
+    total_num_pages = 1
+    page_num = 1
+    total_data = []
+    # Retrieve data for each page
+    while page_num <= total_num_pages:
+        # Endpoint info
+        create_task_url = "cves_by_modified_date"
+        check_task_url = "cves_by_modified_date/task/"
+
+        data = json.dumps(
+            {"modified_datetime": modified_date, "page": page_num, "per_page": 25000}
+        )
+        # Make API call
+        result = task_api_call(create_task_url, check_task_url, data, 3)
+        # Once task finishes, append result to total list
+        print(result)
+        total_data += result.get("data")
+        total_num_pages = result.get("total_pages")
+        LOGGER.info("Retrieved page: " + str(page_num) + " of " + str(total_num_pages))
+        page_num += 1
+    # Once all data has been retrieved, return overall tuple list
+    # total_data = pd.DataFrame.from_dict(total_data)
+    total_data = [tuple(dic.values()) for dic in total_data]
+    LOGGER.info("Total time to retrieve cves:", (time.time() - start_time))
+    # total_data["first_seen"] = pd.to_datetime(total_data["first_seen"]).dt.date
+    # total_data["last_seen"] = pd.to_datetime(total_data["last_seen"]).dt.date
+    return total_data
