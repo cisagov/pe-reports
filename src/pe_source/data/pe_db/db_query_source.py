@@ -8,7 +8,6 @@ import logging
 import socket
 import sys
 import time
-import re
 
 # Third-Party Libraries
 import pandas as pd
@@ -732,9 +731,7 @@ def insert_sixgill_mentions_api(new_mentions):
     )
     # Remove useless image file text from content field
     new_mentions["content"] = new_mentions["content"].str.replace(
-        "(?:@@@SIXGILL_IMAGE?)[^\s]+", 
-        "[SIXGILL_IMAGE_FILE]", 
-        regex=True
+        r"(?:@@@SIXGILL_IMAGE?)[^\s]+", "[SIXGILL_IMAGE_FILE]", regex=True
     )
     new_mentions["sub_category"] = "NaN"
     new_mentions[
@@ -757,8 +754,12 @@ def insert_sixgill_mentions_api(new_mentions):
             "comments_count",  # float64
             "tags",  # float64
         ]
-    ].astype(str)
-    new_mentions["comments_count"].replace("nan", "NaN", inplace=True) # switch nan to NaN
+    ].astype(
+        str
+    )
+    new_mentions["comments_count"].replace(
+        "nan", "NaN", inplace=True
+    )  # switch nan to NaN
 
     # for col in new_mentions.columns:
     #     max_str_len = new_mentions[col].map(len).max()
@@ -1624,7 +1625,7 @@ def query_all_cves(modified_date=None):
         check_task_url = "cves_by_modified_date/task/"
 
         data = json.dumps(
-            {"modified_datetime": modified_date, "page": page_num, "per_page": 500}
+            {"modified_datetime": modified_date, "page": page_num, "per_page": 200}
         )
         # Make API call
         result = task_api_call(create_task_url, check_task_url, data, 3)
