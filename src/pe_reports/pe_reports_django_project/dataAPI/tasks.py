@@ -1294,11 +1294,7 @@ def top_cves_insert_task(self, new_topcves: List[dict]):
 def cves_by_modified_date_task(self, modified_datetime: str, page: int, per_page: int):
     """Task function for the subdomains by org query API endpoint."""
     # Make database query and convert to list of dictionaries
-    products_with_venders = Prefetch(
-        "products",
-        queryset=CpeProduct.objects.select_related("cpe_vender_uid"),
-    )
-    total_data = Cves.objects.prefetch_related(products_with_venders)
+    total_data = Cves.objects.all()
 
     if modified_datetime is not None:
         total_data = total_data.filter(
@@ -1307,7 +1303,6 @@ def cves_by_modified_date_task(self, modified_datetime: str, page: int, per_page
         )
 
     total_data = total_data.order_by("cve_name")
-
     # Divide up data w/ specified num records per page
     paged_data = Paginator(total_data, per_page)
     # Attempt to retrieve specified page
@@ -1319,74 +1314,82 @@ def cves_by_modified_date_task(self, modified_datetime: str, page: int, per_page
     except EmptyPage:
         # If page is out of range (e.g. 9999), deliver last page of results.
         single_page_data = paged_data.page(paged_data.num_pages)
-    # Catch query no results scenario
-    if not total_data:
+
+    cve_list = []
+    paged_queryset = single_page_data.object_list
+
+    paged_queryset = paged_queryset.prefetch_related(
+        Prefetch(
+            "products",
+            queryset=CpeProduct.objects.select_related("cpe_vender_uid"),
+        )
+    )
+    if not paged_queryset:
         single_page_data = [{x: None for x in schemas.CveWithProducts.__fields__}]
         return {
             "total_pages": paged_data.num_pages,
             "current_page": page,
             "data": single_page_data,
         }
-
-    cve_list = []
-    for cve in single_page_data.object_list:
-        cve_obj = {
-            "cve_uid": convert_uuid_to_string(cve.cve_uid),
-            "cve_name": cve.cve_name,
-            "published_date": cve.published_date,
-            "last_modified_date": cve.last_modified_date,
-            "vuln_status": cve.vuln_status,
-            "description": cve.description,
-            "cvss_v2_source": cve.cvss_v2_source,
-            "cvss_v2_type": cve.cvss_v2_type,
-            "cvss_v2_version": cve.cvss_v2_version,
-            "cvss_v2_vector_string": cve.cvss_v2_vector_string,
-            "cvss_v2_base_score": cve.cvss_v2_base_score,
-            "cvss_v2_base_severity": cve.cvss_v2_base_severity,
-            "cvss_v2_exploitability_score": cve.cvss_v2_exploitability_score,
-            "cvss_v2_impact_score": cve.cvss_v2_impact_score,
-            "cvss_v3_source": cve.cvss_v3_source,
-            "cvss_v3_type": cve.cvss_v3_type,
-            "cvss_v3_version": cve.cvss_v3_version,
-            "cvss_v3_vector_string": cve.cvss_v3_vector_string,
-            "cvss_v3_base_score": cve.cvss_v3_base_score,
-            "cvss_v3_base_severity": cve.cvss_v3_base_severity,
-            "cvss_v3_exploitability_score": cve.cvss_v3_exploitability_score,
-            "cvss_v3_impact_score": cve.cvss_v3_impact_score,
-            "cvss_v4_source": cve.cvss_v4_source,
-            "cvss_v4_type": cve.cvss_v4_type,
-            "cvss_v4_version": cve.cvss_v4_version,
-            "cvss_v4_vector_string": cve.cvss_v4_vector_string,
-            "cvss_v4_base_score": cve.cvss_v4_base_score,
-            "cvss_v4_base_severity": cve.cvss_v4_base_severity,
-            "cvss_v4_exploitability_score": cve.cvss_v4_exploitability_score,
-            "cvss_v4_impact_score": cve.cvss_v4_impact_score,
-            "weaknesses": cve.weaknesses,
-            "reference_urls": cve.reference_urls,
-            "cpe_list": cve.cpe_list,
-            "vender_product": {},
-        }
-
-        for product in cve.products.all():
-            product_obj = {
-                "cpe_product_name": product.cpe_product_name,
-                "version_number": product.version_number,
-                "vender": product.cpe_vender_uid.vender_name,
+    else:
+        for cve in paged_queryset:
+            cve_obj = {
+                "cve_uid": convert_uuid_to_string(cve.cve_uid),
+                "cve_name": cve.cve_name,
+                "published_date": cve.published_date,
+                "last_modified_date": cve.last_modified_date,
+                "vuln_status": cve.vuln_status,
+                "description": cve.description,
+                "cvss_v2_source": cve.cvss_v2_source,
+                "cvss_v2_type": cve.cvss_v2_type,
+                "cvss_v2_version": cve.cvss_v2_version,
+                "cvss_v2_vector_string": cve.cvss_v2_vector_string,
+                "cvss_v2_base_score": cve.cvss_v2_base_score,
+                "cvss_v2_base_severity": cve.cvss_v2_base_severity,
+                "cvss_v2_exploitability_score": cve.cvss_v2_exploitability_score,
+                "cvss_v2_impact_score": cve.cvss_v2_impact_score,
+                "cvss_v3_source": cve.cvss_v3_source,
+                "cvss_v3_type": cve.cvss_v3_type,
+                "cvss_v3_version": cve.cvss_v3_version,
+                "cvss_v3_vector_string": cve.cvss_v3_vector_string,
+                "cvss_v3_base_score": cve.cvss_v3_base_score,
+                "cvss_v3_base_severity": cve.cvss_v3_base_severity,
+                "cvss_v3_exploitability_score": cve.cvss_v3_exploitability_score,
+                "cvss_v3_impact_score": cve.cvss_v3_impact_score,
+                "cvss_v4_source": cve.cvss_v4_source,
+                "cvss_v4_type": cve.cvss_v4_type,
+                "cvss_v4_version": cve.cvss_v4_version,
+                "cvss_v4_vector_string": cve.cvss_v4_vector_string,
+                "cvss_v4_base_score": cve.cvss_v4_base_score,
+                "cvss_v4_base_severity": cve.cvss_v4_base_severity,
+                "cvss_v4_exploitability_score": cve.cvss_v4_exploitability_score,
+                "cvss_v4_impact_score": cve.cvss_v4_impact_score,
+                "weaknesses": cve.weaknesses,
+                "reference_urls": cve.reference_urls,
+                "cpe_list": cve.cpe_list,
+                "vender_product": {},
             }
-            if product.cpe_vender_uid.vender_name in cve_obj["vender_product"]:
-                cve_obj["vender_product"][product.cpe_vender_uid.vender_name].append(
-                    product_obj
-                )
-            else:
-                cve_obj["vender_product"][product.cpe_vender_uid.vender_name] = [
-                    product_obj
-                ]
-            # vender_product: Optional[Dict[str, List[CpeProduct]]] = None
-        cve_list.append(cve_obj)
 
-    result = {
-        "total_pages": paged_data.num_pages,
-        "current_page": page,
-        "data": cve_list,
-    }
-    return result
+            for product in cve.products.all():
+                product_obj = {
+                    "cpe_product_name": product.cpe_product_name,
+                    "version_number": product.version_number,
+                    "vender": product.cpe_vender_uid.vender_name,
+                }
+                if product.cpe_vender_uid.vender_name in cve_obj["vender_product"]:
+                    cve_obj["vender_product"][
+                        product.cpe_vender_uid.vender_name
+                    ].append(product_obj)
+                else:
+                    cve_obj["vender_product"][product.cpe_vender_uid.vender_name] = [
+                        product_obj
+                    ]
+
+            cve_list.append(cve_obj)
+
+        result = {
+            "total_pages": paged_data.num_pages,
+            "current_page": page,
+            "data": cve_list,
+        }
+        return result

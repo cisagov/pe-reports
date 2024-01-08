@@ -1610,7 +1610,7 @@ def query_all_cves(modified_date=None):
         check_task_url = "cves_by_modified_date/task/"
 
         data = json.dumps(
-            {"modified_datetime": modified_date, "page": page_num, "per_page": 25000}
+            {"modified_datetime": modified_date, "page": page_num, "per_page": 200}
         )
         # Make API call
         result = task_api_call(create_task_url, check_task_url, data, 3)
@@ -1623,7 +1623,7 @@ def query_all_cves(modified_date=None):
     # Once all data has been retrieved, return overall tuple list
     # total_data = pd.DataFrame.from_dict(total_data)
     total_data = [tuple(dic.values()) for dic in total_data]
-    LOGGER.info("Total time to retrieve cves:", (time.time() - start_time))
+    LOGGER.info("Total time to retrieve cves: %s", (time.time() - start_time))
     # total_data["first_seen"] = pd.to_datetime(total_data["first_seen"]).dt.date
     # total_data["last_seen"] = pd.to_datetime(total_data["last_seen"]).dt.date
     return total_data
