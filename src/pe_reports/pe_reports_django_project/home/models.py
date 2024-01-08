@@ -983,6 +983,10 @@ class ReportSummaryStats(models.Model):
     pe_percent_score = models.DecimalField(
         max_digits=1000, decimal_places=1000, blank=True, null=True
     )
+    cidr_count = models.IntegerField(blank=True, null=True)
+    port_protocol_count = models.IntegerField(blank=True, null=True)
+    software_count = models.IntegerField(blank=True, null=True)
+    foreign_ips_count = models.IntegerField(blank=True, null=True)
 
     class Meta:
         """Set ReportSummaryStats model metadata."""

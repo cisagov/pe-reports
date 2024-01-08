@@ -8,6 +8,7 @@ import logging
 import socket
 import sys
 import time
+import re
 
 # Third-Party Libraries
 import pandas as pd
@@ -527,7 +528,7 @@ def api_cve_insert(cve_dict):
         cve_insert_result = requests.put(
             endpoint_url, headers=headers, data=data
         ).json()
-        print(cve_insert_result)
+        # print(cve_insert_result)
         LOGGER.info(
             "Successfully inserted new record in cves table with associated cpe products and venders"
         )
@@ -631,10 +632,8 @@ def insert_sixgill_alerts(new_alerts):
         "asset_mentioned",
         "asset_type",
     ]
-    try:
-        new_alerts = new_alerts.loc[:, new_alerts.columns.isin(cols)]
-    except Exception as e:
-        logging.error(e)
+    # Select specified data fields, missing fields filled with empty strings
+    new_alerts = new_alerts.reindex(columns=cols).fillna("")
     # Adjust data types
     new_alerts["date"] = pd.to_datetime(new_alerts["date"])
     new_alerts["date"] = new_alerts["date"].dt.strftime("%Y-%m-%d")
@@ -662,6 +661,12 @@ def insert_sixgill_alerts(new_alerts):
     new_alerts["threats"] = new_alerts["threats"].str.replace("[", "{")
     new_alerts["threats"] = new_alerts["threats"].str.replace("]", "}")
     new_alerts["threats"] = new_alerts["threats"].str.replace("'", '"')
+    # Remove any "[\x00|NULL]" characters if column data type is object
+    new_alerts = new_alerts.apply(
+        lambda col: col.str.replace(r"(\x00)|(NULL)", "", regex=True)
+        if col.dtype == object
+        else col
+    )
     # Convert dataframe to list of dictionaries
     new_alerts = new_alerts.to_dict("records")
     # Break overall list into chunks of size n
@@ -687,7 +692,7 @@ def insert_sixgill_alerts(new_alerts):
 
 
 # --- 654 ---
-def insert_sixgill_mentions(new_mentions):
+def insert_sixgill_mentions_api(new_mentions):
     """
     Query API to insert multiple records into the mentions table.
 
@@ -716,16 +721,20 @@ def insert_sixgill_mentions(new_mentions):
         "comments_count",  # float64
         "tags",  # float64
     ]
-    try:
-        new_mentions = new_mentions.loc[:, new_mentions.columns.isin(cols)]
-    except Exception as e:
-        logging.error(e)
+    # Select specified data fields, missing fields filled with empty strings
+    new_mentions = new_mentions.reindex(columns=cols).fillna("")
     new_mentions["date"] = new_mentions["date"].str[:10]
     # Remove any "[\x00|NULL]" characters if column data type is object
     new_mentions = new_mentions.apply(
         lambda col: col.str.replace(r"(\x00)|(NULL)", "", regex=True)
         if col.dtype == object
         else col
+    )
+    # Remove useless image file text from content field
+    new_mentions["content"] = new_mentions["content"].str.replace(
+        "(?:@@@SIXGILL_IMAGE?)[^\s]+", 
+        "[SIXGILL_IMAGE_FILE]", 
+        regex=True
     )
     new_mentions["sub_category"] = "NaN"
     new_mentions[
@@ -748,13 +757,18 @@ def insert_sixgill_mentions(new_mentions):
             "comments_count",  # float64
             "tags",  # float64
         ]
-    ].astype(
-        str
-    )
+    ].astype(str)
+    new_mentions["comments_count"].replace("nan", "NaN", inplace=True) # switch nan to NaN
+
+    # for col in new_mentions.columns:
+    #     max_str_len = new_mentions[col].map(len).max()
+    #     print("column: " + col)
+    #     print("\tmax string length in col: " + str(max_str_len))
+
     # Convert dataframe to list of dictionaries
     new_mentions = new_mentions.to_dict("records")
     # Break overall list into chunks of size n
-    n = 500
+    n = 10
     chunked_list = [
         new_mentions[i * n : (i + 1) * n]
         for i in range((len(new_mentions) + n - 1) // n)
@@ -770,7 +784,7 @@ def insert_sixgill_mentions(new_mentions):
         status_url = "mentions_insert/task/"
         data = json.dumps({"new_mentions": chunk})
         # Make API call
-        result = task_api_call(task_url, status_url, data, 3)
+        result = task_api_call(task_url, status_url, data, 1)
         chunk_ct += 1
         # Process data and return
         LOGGER.info(result)
@@ -954,7 +968,7 @@ def addRootdomain(root_domain, pe_org_uid, source_uid, org_name):
 
 
 # --- Issue 662 ---
-def addSubdomain_api(domain, pe_org_uid, root):
+def addSubdomain(domain, pe_org_uid, root):
     """
     Query API to insert a single sub domain into the sub_domains table.
 
@@ -1145,7 +1159,7 @@ def insert_sixgill_alerts_tsql(df):
 
 
 # --- 654 OLD TSQL ---
-def insert_sixgill_mentions_tsql(df):
+def insert_sixgill_mentions(df):
     """Insert sixgill mention data."""
     conn = connect()
     columns_to_subset = [
@@ -1356,7 +1370,7 @@ def addRootdomain_tsql(root_domain, pe_org_uid, source_uid, org_name):
 
 
 # --- 662 OLD TSQL ---
-def addSubdomain(conn, domain, pe_org_uid, root):
+def addSubdomain_tsql(conn, domain, pe_org_uid, root):
     """Add a subdomain into the database."""
     conn = connect()
     if root:
@@ -1610,7 +1624,7 @@ def query_all_cves(modified_date=None):
         check_task_url = "cves_by_modified_date/task/"
 
         data = json.dumps(
-            {"modified_datetime": modified_date, "page": page_num, "per_page": 25000}
+            {"modified_datetime": modified_date, "page": page_num, "per_page": 500}
         )
         # Make API call
         result = task_api_call(create_task_url, check_task_url, data, 3)
@@ -1623,7 +1637,7 @@ def query_all_cves(modified_date=None):
     # Once all data has been retrieved, return overall tuple list
     # total_data = pd.DataFrame.from_dict(total_data)
     total_data = [tuple(dic.values()) for dic in total_data]
-    LOGGER.info("Total time to retrieve cves:", (time.time() - start_time))
+    LOGGER.info("Total time to retrieve cves: %s", (time.time() - start_time))
     # total_data["first_seen"] = pd.to_datetime(total_data["first_seen"]).dt.date
     # total_data["last_seen"] = pd.to_datetime(total_data["last_seen"]).dt.date
     return total_data

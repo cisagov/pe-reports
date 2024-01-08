@@ -288,18 +288,21 @@ def hibp_thread(org_df, thread, compiled_breaches, breach_UIDS_Dict):
                     subdomain = sd
                     root_domain = sub["root_domain"]
                     for b in breach_list:
-                        cred = {
-                            "email": email + "@" + subdomain,
-                            "organizations_uid": pe_org_uid,
-                            "root_domain": root_domain,
-                            "sub_domain": subdomain,
-                            "modified_date": compiled_breaches[b]["modified_date"],
-                            "breach_name": b,
-                            "credential_breaches_uid": breach_UIDS_Dict[b],
-                            "data_source_uid": source_uid,
-                            "name": None,
-                        }
-                        creds_list.append(cred)
+                        try:
+                            cred = {
+                                "email": email + "@" + subdomain,
+                                "organizations_uid": pe_org_uid,
+                                "root_domain": root_domain,
+                                "sub_domain": subdomain,
+                                "modified_date": compiled_breaches[b]["modified_date"],
+                                "breach_name": b,
+                                "credential_breaches_uid": breach_UIDS_Dict[b],
+                                "data_source_uid": source_uid,
+                                "name": None,
+                            }
+                            creds_list.append(cred)
+                        except:
+                            LOGGER.info("error adding cred to cred_list")
                 LOGGER.info("%s:\t\tthere are %s creds found", thread, len(creds_list))
                 # Insert new creds into the PE DB
                 execute_hibp_emails_values(PE_conn, creds_list, thread)

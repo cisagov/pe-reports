@@ -234,7 +234,8 @@ def run_dnstwist(orgs_list):
                         # TODO: Create custom exceptions.
                         # Issue 265: https://github.com/cisagov/pe-reports/issues/265
                         # Add and then get it
-                        addSubdomain(sub_domain, pe_org_uid, True)
+                        addSubdomain(sub_domain, pe_org_uid, True) # api ver.
+                        # addSubdomain(PE_conn, sub_domain, pe_org_uid, True) # tsql ver.
                         sub_domain_uid = getSubdomain(sub_domain)
 
                     # Check Blocklist

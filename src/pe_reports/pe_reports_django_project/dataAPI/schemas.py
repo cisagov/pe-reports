@@ -2118,7 +2118,7 @@ class RSSInsertInput(BaseModel):
     ip_count: int
     root_count: int
     sub_count: int
-    ports_count: int
+    num_ports: int #ports_count: int
     creds_count: int
     breach_count: int
     cred_password_count: int
@@ -2133,8 +2133,12 @@ class RSSInsertInput(BaseModel):
     dark_web_mentions_count: int
     dark_web_executive_alerts_count: int
     dark_web_asset_alerts_count: int
-    pe_number_score: int
-    pe_letter_grade: str
+    pe_number_score: str # may be "NA"
+    pe_letter_grade: str # may be "NA"
+    cidr_count: int
+    port_protocol_count: int
+    software_count: int
+    foreign_ips_count: int
 
     class Config:
         """RSSInsertInput schema config class."""
@@ -2782,25 +2786,25 @@ class AlertsInsertTaskResp(BaseModel):
 class MentionsInsert(BaseModel):
     """MentionsInsert schema class."""
 
-    organizations_uid: str
-    data_source_uid: str
-    category: str
-    collection_date: str
-    content: str
-    creator: str
-    date: str
-    sixgill_mention_id: str
-    lang: str
-    post_id: str
-    rep_grade: str
-    site: str
-    site_grade: str
-    sub_category: str
-    title: str
-    type: str
-    url: str
-    comments_count: str
-    tags: str
+    organizations_uid: Optional[str] = None
+    data_source_uid: Optional[str] = None
+    category: Optional[str] = None
+    collection_date: Optional[str] = None
+    content: Optional[str] = None
+    creator: Optional[str] = None
+    date: Optional[str] = None
+    sixgill_mention_id: Optional[str] = None
+    lang: Optional[str] = None
+    post_id: Optional[str] = None
+    rep_grade: Optional[str] = None
+    site: Optional[str] = None
+    site_grade: Optional[str] = None
+    sub_category: Optional[str] = None
+    title: Optional[str] = None
+    type: Optional[str] = None
+    url: Optional[str] = None
+    comments_count: Optional[str] = None
+    tags: Optional[str] = None
 
     class Config:
         """MentionsInsert schema config class."""

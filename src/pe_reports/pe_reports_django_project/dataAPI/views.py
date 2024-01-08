@@ -525,7 +525,7 @@ def pshtt_result_update_or_insert(
 
 @api_router.post(
     "/orgs",
-    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    dependencies=[Depends(get_api_key)], #Depends(RateLimiter(times=200, seconds=60))],
     response_model=List[schemas.Organization],
     tags=["List of all Organizations"],
 )
@@ -3830,7 +3830,7 @@ def breachcomp_by_org(
             breachcomp_by_org_data = list(
                 VwBreachcomp.objects.filter(
                     organizations_uid=data.org_uid,
-                    modified_date__range=(data.start_date, data.end_date),
+                    modified_date__date__range=(data.start_date, data.end_date),
                 ).values()
             )
             # Convert uuids to strings
@@ -4387,36 +4387,74 @@ def rss_insert(data: schemas.RSSInsertInput, tokens: dict = Depends(get_api_key)
             specified_org_uid = Organizations.objects.get(
                 organizations_uid=data.organizations_uid
             )
-            # Insert new record. If record already exists, update that record
-            ReportSummaryStats.objects.update_or_create(
-                organizations_uid=specified_org_uid,
-                start_date=data.start_date,
-                defaults={
-                    "organizations_uid": specified_org_uid,
-                    "start_date": data.start_date,
-                    "end_date": data.end_date,
-                    "ip_count": data.ip_count,
-                    "root_count": data.root_count,
-                    "sub_count": data.sub_count,
-                    "ports_count": data.ports_count,
-                    "creds_count": data.creds_count,
-                    "breach_count": data.breach_count,
-                    "cred_password_count": data.cred_password_count,
-                    "domain_alert_count": data.domain_alert_count,
-                    "suspected_domain_count": data.suspected_domain_count,
-                    "insecure_port_count": data.insecure_port_count,
-                    "verified_vuln_count": data.verified_vuln_count,
-                    "suspected_vuln_count": data.suspected_vuln_count,
-                    "suspected_vuln_addrs_count": data.suspected_vuln_addrs_count,
-                    "threat_actor_count": data.threat_actor_count,
-                    "dark_web_alerts_count": data.dark_web_alerts_count,
-                    "dark_web_mentions_count": data.dark_web_mentions_count,
-                    "dark_web_executive_alerts_count": data.dark_web_executive_alerts_count,
-                    "dark_web_asset_alerts_count": data.dark_web_asset_alerts_count,
-                    "pe_number_score": data.pe_number_score,
-                    "pe_letter_grade": data.pe_letter_grade,
-                },
-            )
+            try:
+                # Check if record already exists
+                ReportSummaryStats.objects.get(
+                    organizations_uid=specified_org_uid,
+                    start_date=data.start_date
+                )
+                # If it already exists, update
+                ReportSummaryStats.objects.filter(
+                    organizations_uid=specified_org_uid,
+                    start_date=data.start_date,
+                ).update(
+                    ip_count=data.ip_count,
+                    root_count=data.root_count,
+                    sub_count=data.sub_count,
+                    ports_count=data.num_ports,
+                    creds_count=data.creds_count,
+                    breach_count=data.breach_count,
+                    cred_password_count=data.cred_password_count,
+                    domain_alert_count=data.domain_alert_count,
+                    suspected_domain_count=data.suspected_domain_count,
+                    insecure_port_count=data.insecure_port_count,
+                    verified_vuln_count=data.verified_vuln_count,
+                    suspected_vuln_count=data.suspected_vuln_count,
+                    suspected_vuln_addrs_count=data.suspected_vuln_addrs_count,
+                    threat_actor_count=data.threat_actor_count,
+                    dark_web_alerts_count=data.dark_web_alerts_count,
+                    dark_web_mentions_count=data.dark_web_mentions_count,
+                    dark_web_executive_alerts_count=data.dark_web_executive_alerts_count,
+                    dark_web_asset_alerts_count=data.dark_web_asset_alerts_count,
+                    pe_number_score=data.pe_number_score,
+                    pe_letter_grade=data.pe_letter_grade,
+                    cidr_count=data.cidr_count,
+                    port_protocol_count=data.port_protocol_count,
+                    software_count=data.software_count,
+                    foreign_ips_count=data.foreign_ips_count,
+                )
+            except ReportSummaryStats.DoesNotExist:
+                # Otherwise, create a new record
+                ReportSummaryStats.objects.create(
+                    report_uid=uuid.uuid1(),
+                    organizations_uid=specified_org_uid,
+                    start_date=data.start_date,
+                    end_date=data.end_date,
+                    ip_count=data.ip_count,
+                    root_count=data.root_count,
+                    sub_count=data.sub_count,
+                    ports_count=data.num_ports, # num_ports input -> ports_count
+                    creds_count=data.creds_count,
+                    breach_count=data.breach_count,
+                    cred_password_count=data.cred_password_count,
+                    domain_alert_count=data.domain_alert_count,
+                    suspected_domain_count=data.suspected_domain_count,
+                    insecure_port_count=data.insecure_port_count,
+                    verified_vuln_count=data.verified_vuln_count,
+                    suspected_vuln_count=data.suspected_vuln_count,
+                    suspected_vuln_addrs_count=data.suspected_vuln_addrs_count,
+                    threat_actor_count=data.threat_actor_count,
+                    dark_web_alerts_count=data.dark_web_alerts_count,
+                    dark_web_mentions_count=data.dark_web_mentions_count,
+                    dark_web_executive_alerts_count=data.dark_web_executive_alerts_count,
+                    dark_web_asset_alerts_count=data.dark_web_asset_alerts_count,
+                    pe_number_score=data.pe_number_score,
+                    pe_letter_grade=data.pe_letter_grade,
+                    cidr_count=data.cidr_count,
+                    port_protocol_count=data.port_protocol_count,
+                    software_count=data.software_count,
+                    foreign_ips_count=data.foreign_ips_count,
+                )
         except Exception:
             LOGGER.info("API key expired please try again")
     else:

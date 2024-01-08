@@ -106,7 +106,8 @@ class DNSMonitor:
                         root_domain,
                     )
                     try:
-                        addSubdomain(root_domain, org_uid, True)
+                        addSubdomain(root_domain, org_uid, True) # api ver.
+                        # addSubdomain(conn, root_domain, org_uid, True) # tsql ver.
                         LOGGER.info(
                             "Success adding %s to subdomain table.", root_domain
                         )
@@ -162,8 +163,9 @@ class DNSMonitor:
                 subset=["domain_permutation"], keep="last"
             )
             try:
-                execute_dnsmonitor_data(dom_perm_df, "domain_permutations")
-                LOGGER.info("Success inserting into domain_permutations - %s", org_code)
+                execute_dnsmonitor_data(dom_perm_df) # api ver.
+                # execute_dnsmonitor_data(dom_perm_df, "domain_permutations") # tsql ver.
+                # LOGGER.info("Success inserting into domain_permutations - %s", org_code) # tsql ver.
             except Exception as e:
                 LOGGER.error("Failed inserting into domain_permutations - %s", org_code)
                 LOGGER.error(e)
@@ -184,8 +186,9 @@ class DNSMonitor:
                 ]
             ]
             try:
-                execute_dnsmonitor_alert_data(domain_alerts, "domain_alerts")
-                LOGGER.info("Success inserting into domain_alerts - %s", org_code)
+                execute_dnsmonitor_alert_data(domain_alerts) # api ver.
+                # execute_dnsmonitor_alert_data(domain_alerts, "domain_alerts") # tsql ver.
+                # LOGGER.info("Success inserting into domain_alerts - %s", org_code) # tsql ver.
             except Exception as e:
                 LOGGER.error("Failed inserting into domain_alerts - %s", org_code)
                 LOGGER.error(e)
