@@ -29,6 +29,7 @@ API_DIC = staging_config(section="pe_api")
 pe_api_url = API_DIC.get("pe_api_url")
 pe_api_key = API_DIC.get("pe_api_key")
 
+
 def show_psycopg2_exception(err):
     """Handle errors for PostgreSQL issues."""
     err_type, err_obj, traceback = sys.exc_info()
@@ -500,71 +501,6 @@ def getDataSource(conn, source):
     return source
 
 
-# --- Issue 641 ---
-def get_intelx_breaches_api(source_uid):
-    """
-    Query API for all IntelX credential breaches.
-
-    Args:
-        source_uid: The data source uid to filter credential breaches by
-
-    Return:
-        Credential breach data that have the specified data_source_uid as a list of tuples
-    """
-    # Endpoint info
-    task_url = "cred_breach_intelx"
-    status_url = "cred_breach_intelx/task/"
-    data = json.dumps({"source_uid": source_uid})
-    # Make API call
-    result = task_api_call(task_url, status_url, data, 3)
-    # Process data and return
-    # Convert result to list of tuples to match original function
-    tup_result = [tuple(row.values()) for row in result]
-    return tup_result
-
-
-# --- Issue 653 ---
-def insert_sixgill_alerts_api(new_alerts):
-    """
-    Query API to insert multiple records into alerts table.
-
-    Args:
-        new_alerts: Dataframe containing the new alerts
-    """
-    # Convert dataframe to list of dictionaries
-    new_alerts = new_alerts[
-        [
-            "alert_name",
-            "content",
-            "date",
-            "sixgill_id",
-            "read",
-            "severity",
-            "site",
-            "threat_level",
-            "threats",
-            "title",
-            "user_id",
-            "category",
-            "lang",
-            "organizations_uid",
-            "data_source_uid",
-            "content_snip",
-            "asset_mentioned",
-            "asset_type",
-        ]
-    ]
-    new_alerts = new_alerts.to_dict("records")
-    # Endpoint info
-    task_url = "alerts_insert"
-    status_url = "alerts_insert/task/"
-    data = json.dumps({"new_alerts": new_alerts})
-    # Make API call
-    result = task_api_call(task_url, status_url, data, 3)
-    # Process data and return
-    LOGGER.info(result)
-
-
 def api_cve_insert(cve_dict):
     """
     Insert a cve record for  into the cve table with linked products and venders.
@@ -591,7 +527,7 @@ def api_cve_insert(cve_dict):
         cve_insert_result = requests.put(
             endpoint_url, headers=headers, data=data
         ).json()
-        print(cve_insert_result)
+        # print(cve_insert_result)
         LOGGER.info(
             "Successfully inserted new record in cves table with associated cpe products and venders"
         )
@@ -643,6 +579,117 @@ def get_cve_and_products(cve_name):
         LOGGER.info(err)
 
 
+# --- Issue 641 ---
+def get_intelx_breaches(source_uid):
+    """
+    Query API for all IntelX credential breaches.
+
+    Args:
+        source_uid: The data source uid to filter credential breaches by
+
+    Return:
+        Credential breach data that have the specified data_source_uid as a list of tuples
+    """
+    # Endpoint info
+    task_url = "cred_breach_intelx"
+    status_url = "cred_breach_intelx/task/"
+    data = json.dumps({"source_uid": source_uid})
+    # Make API call
+    result = task_api_call(task_url, status_url, data, 3)
+    # Process data and return
+    # Convert result to list of tuples to match original function
+    tup_result = [tuple(row.values()) for row in result]
+    return tup_result
+
+
+# --- Issue 653 ---
+def insert_sixgill_alerts(new_alerts):
+    """
+    Query API to insert multiple records into alerts table.
+
+    Args:
+        new_alerts: Dataframe containing the new alerts
+    """
+    # Select specific columns
+    cols = [
+        "alert_name",
+        "content",
+        "date",
+        "sixgill_id",
+        "read",  # bool
+        "severity",  # int64
+        "site",  # sometimes NaN instead of text
+        "threat_level",
+        "threats",  # list
+        "title",
+        "user_id",
+        "category",  # float
+        "lang",  # float
+        "organizations_uid",
+        "data_source_uid",
+        "content_snip",
+        "asset_mentioned",
+        "asset_type",
+    ]
+    # Select specified data fields, missing fields filled with empty strings
+    new_alerts = new_alerts.reindex(columns=cols).fillna("")
+    # Adjust data types
+    new_alerts["date"] = pd.to_datetime(new_alerts["date"])
+    new_alerts["date"] = new_alerts["date"].dt.strftime("%Y-%m-%d")
+    new_alerts[
+        [
+            "read",  # bool
+            "severity",  # int64
+            "site",  # sometimes NaN instead of text
+            "threats",  # list
+            "category",  # float
+            "lang",  # float
+        ]
+    ] = new_alerts[
+        [
+            "read",  # bool
+            "severity",  # int64
+            "site",  # sometimes NaN instead of text
+            "threats",  # list
+            "category",  # float
+            "lang",  # float
+        ]
+    ].astype(
+        str
+    )
+    new_alerts["threats"] = new_alerts["threats"].str.replace("[", "{")
+    new_alerts["threats"] = new_alerts["threats"].str.replace("]", "}")
+    new_alerts["threats"] = new_alerts["threats"].str.replace("'", '"')
+    # Remove any "[\x00|NULL]" characters if column data type is object
+    new_alerts = new_alerts.apply(
+        lambda col: col.str.replace(r"(\x00)|(NULL)", "", regex=True)
+        if col.dtype == object
+        else col
+    )
+    # Convert dataframe to list of dictionaries
+    new_alerts = new_alerts.to_dict("records")
+    # Break overall list into chunks of size n
+    n = 500
+    chunked_list = [
+        new_alerts[i * n : (i + 1) * n] for i in range((len(new_alerts) + n - 1) // n)
+    ]
+    # Iterate through and insert each list chunk
+    chunk_ct = 1
+    for chunk in chunked_list:
+        LOGGER.info(
+            "Working on chunk " + str(chunk_ct) + " of " + str(len(chunked_list))
+        )
+        # Endpoint info
+        task_url = "alerts_insert"
+        status_url = "alerts_insert/task/"
+        data = json.dumps({"new_alerts": chunk})
+        # Make API call
+        result = task_api_call(task_url, status_url, data, 3)
+        chunk_ct += 1
+        # Process data and return
+        LOGGER.info(result)
+
+
 # --- 654 ---
 def insert_sixgill_mentions_api(new_mentions):
     """
@@ -663,44 +710,89 @@ def insert_sixgill_mentions_api(new_mentions):
         "sixgill_mention_id",
         "lang",
         "post_id",
-        "rep_grade",
+        "rep_grade",  # float64
         "site",
-        "site_grade",
+        "site_grade",  # int64
         "sub_category",
         "title",
         "type",
         "url",
-        "comments_count",
-        "tags",
+        "comments_count",  # float64
+        "tags",  # float64
     ]
-    try:
-        new_mentions = new_mentions[cols]
-    except Exception as e:
-        LOGGER.info(e)
-        cols = cols[:-1]
-        new_mentions = new_mentions[cols]
-        new_mentions["tags"] = "NaN"
-    new_mentions["collection_date"] = new_mentions["collection_date"].astype(str)
-    new_mentions["date"] = new_mentions["date"].astype(str)
+    # Select specified data fields, missing fields filled with empty strings
+    new_mentions = new_mentions.reindex(columns=cols).fillna("")
+    new_mentions["date"] = new_mentions["date"].str[:10]
     # Remove any "[\x00|NULL]" characters if column data type is object
     new_mentions = new_mentions.apply(
         lambda col: col.str.replace(r"(\x00)|(NULL)", "", regex=True)
         if col.dtype == object
         else col
     )
+    # Remove useless image file text from content field
+    new_mentions["content"] = new_mentions["content"].str.replace(
+        r"(?:@@@SIXGILL_IMAGE?)[^\s]+", "[SIXGILL_IMAGE_FILE]", regex=True
+    )
+    new_mentions["sub_category"] = "NaN"
+    new_mentions[
+        [
+            "collection_date",
+            "date",
+            "rep_grade",  # float64
+            "site_grade",  # int64
+            "title",  # Needs string conversion
+            "comments_count",  # float64
+            "tags",  # float64
+        ]
+    ] = new_mentions[
+        [
+            "collection_date",
+            "date",
+            "rep_grade",  # float64
+            "site_grade",  # int64
+            "title",  # Needs str conversion
+            "comments_count",  # float64
+            "tags",  # float64
+        ]
+    ].astype(
+        str
+    )
+    new_mentions["comments_count"].replace(
+        "nan", "NaN", inplace=True
+    )  # switch nan to NaN
+
+    # for col in new_mentions.columns:
+    #     max_str_len = new_mentions[col].map(len).max()
+    #     print("column: " + col)
+    #     print("\tmax string length in col: " + str(max_str_len))
+
+    # Convert dataframe to list of dictionaries
     new_mentions = new_mentions.to_dict("records")
-    # Endpoint info
-    task_url = "mentions_insert"
-    status_url = "mentions_insert/task/"
-    data = json.dumps({"new_mentions": new_mentions})
-    # Make API call
-    result = task_api_call(task_url, status_url, data, 3)
-    # Process data and return
-    LOGGER.info(result)
+    # Break overall list into chunks of size n
+    n = 10
+    chunked_list = [
+        new_mentions[i * n : (i + 1) * n]
+        for i in range((len(new_mentions) + n - 1) // n)
+    ]
+    # Iterate through and insert each list chunk
+    chunk_ct = 1
+    for chunk in chunked_list:
+        LOGGER.info(
+            "Working on chunk " + str(chunk_ct) + " of " + str(len(chunked_list))
+        )
+        # Endpoint info
+        task_url = "mentions_insert"
+        status_url = "mentions_insert/task/"
+        data = json.dumps({"new_mentions": chunk})
+        # Make API call
+        result = task_api_call(task_url, status_url, data, 1)
+        chunk_ct += 1
+        # Process data and return
+        LOGGER.info(result)
 
 
 # --- 655 ---
-def insert_sixgill_breaches_api(new_breaches):
+def insert_sixgill_breaches(new_breaches):
     """
     Query API to insert multiple records into the credential_breaches table.
 
@@ -722,7 +814,7 @@ def insert_sixgill_breaches_api(new_breaches):
 
 
 # --- Issue 656 ---
-def insert_sixgill_credentials_api(new_exposures):
+def insert_sixgill_credentials(new_exposures):
     """
     Query API to insert multiple records into credential_exposures table.
 
@@ -742,7 +834,7 @@ def insert_sixgill_credentials_api(new_exposures):
 
 
 # --- 657 ---
-def insert_sixgill_topCVEs_api(new_topcves):
+def insert_sixgill_topCVEs(new_topcves):
     """
     Query API to insert multiple records into the top_cves table.
 
@@ -763,7 +855,7 @@ def insert_sixgill_topCVEs_api(new_topcves):
 
 
 # --- 659 ---
-def execute_dnsmonitor_data_api(df):
+def execute_dnsmonitor_data(df):
     """
     Query API to insert multiple records into the domain_permutations table.
 
@@ -777,7 +869,8 @@ def execute_dnsmonitor_data_api(df):
         "access_token": pe_api_key,
     }
     # Adjust data types and convert to list of dictionaries
-    df["date_observed"] = df["date_observed"].astype(str)
+    df["date_observed"] = pd.to_datetime(df["date_observed"])
+    df["date_observed"] = df["date_observed"].dt.strftime("%Y-%m-%d")
     df_dict_list = df.to_dict("records")
     data = json.dumps({"insert_data": df_dict_list})
     try:
@@ -798,7 +891,7 @@ def execute_dnsmonitor_data_api(df):
 
 
 # --- 660 ---
-def execute_dnsmonitor_alert_data_api(df):
+def execute_dnsmonitor_alert_data(df):
     """
     Query API to insert multiple records into the domain_alerts table.
 
@@ -812,7 +905,8 @@ def execute_dnsmonitor_alert_data_api(df):
         "access_token": pe_api_key,
     }
     # Adjust data types and convert to list of dictionaries
-    df["date"] = df["date"].astype(str)
+    df["date"] = pd.to_datetime(df["date"])
+    df["date"] = df["date"].dt.strftime("%Y-%m-%d")
     df_dict_list = df.to_dict("records")
     data = json.dumps({"insert_data": df_dict_list})
     try:
@@ -833,7 +927,7 @@ def execute_dnsmonitor_alert_data_api(df):
 
 
 # --- Issue 661 ---
-def addRootdomain_api(root_domain, pe_org_uid, source_uid, org_name):
+def addRootdomain(root_domain, pe_org_uid, source_uid, org_name):
     """
     Query API to insert a single root domain into the root_domains table.
 
@@ -875,7 +969,7 @@ def addRootdomain_api(root_domain, pe_org_uid, source_uid, org_name):
 
 
 # --- Issue 662 ---
-def addSubdomain_api(domain, pe_org_uid, root):
+def addSubdomain(domain, pe_org_uid, root):
     """
     Query API to insert a single sub domain into the sub_domains table.
 
@@ -915,7 +1009,7 @@ def addSubdomain_api(domain, pe_org_uid, root):
 
 
 # --- Issue 663 ---
-def insert_intelx_breaches_api(df):
+def insert_intelx_breaches(df):
     """
     Query API to insert multiple records into the credential_breaches table.
 
@@ -953,7 +1047,7 @@ def insert_intelx_breaches_api(df):
 
 
 # --- Issue 664 ---
-def insert_intelx_credentials_api(df):
+def insert_intelx_credentials(df):
     """
     Query API to insert multiple records into the credential_exposures table.
 
@@ -990,7 +1084,7 @@ def insert_intelx_credentials_api(df):
 
 # v ===== OLD TSQL VERSIONS OF FUNCTIONS ===== v
 # --- 641 OLD TSQL ---
-def get_intelx_breaches(source_uid):
+def get_intelx_breaches_tsql(source_uid):
     """Get IntelX credential breaches."""
     conn = connect()
     try:
@@ -1008,7 +1102,7 @@ def get_intelx_breaches(source_uid):
 
 
 # --- 653 OLD TSQL ---
-def insert_sixgill_alerts(df):
+def insert_sixgill_alerts_tsql(df):
     """Insert sixgill alert data."""
     conn = connect()
     columns_to_subset = [
@@ -1128,7 +1222,7 @@ def insert_sixgill_mentions(df):
 
 
 # --- 655 OLD TSQL ---
-def insert_sixgill_breaches(df):
+def insert_sixgill_breaches_tsql(df):
     """Insert sixgill breach data."""
     conn = connect()
     table = "credential_breaches"
@@ -1159,7 +1253,7 @@ def insert_sixgill_breaches(df):
 
 
 # --- 656 OLD TSQL ---
-def insert_sixgill_credentials(df):
+def insert_sixgill_credentials_tsql(df):
     """Insert sixgill credential data."""
     conn = connect()
     table = "credential_exposures"
@@ -1192,7 +1286,7 @@ def insert_sixgill_credentials(df):
 
 
 # --- 657 OLD TSQL ---
-def insert_sixgill_topCVEs(df):
+def insert_sixgill_topCVEs_tsql(df):
     """Insert sixgill top CVEs."""
     conn = connect()
     table = "top_cves"
@@ -1222,7 +1316,7 @@ def insert_sixgill_topCVEs(df):
 
 
 # --- 659 OLD TSQL ---
-def execute_dnsmonitor_data(dataframe, table):
+def execute_dnsmonitor_data_tsql(dataframe, table):
     """Insert DNSMonitor data."""
     conn = connect()
     tpls = [tuple(x) for x in dataframe.to_numpy()]
@@ -1246,7 +1340,7 @@ def execute_dnsmonitor_data(dataframe, table):
 
 
 # --- 660 OLD TSQL ---
-def execute_dnsmonitor_alert_data(dataframe, table):
+def execute_dnsmonitor_alert_data_tsql(dataframe, table):
     """Insert DNSMonitor alerts."""
     conn = connect()
     tpls = [tuple(x) for x in dataframe.to_numpy()]
@@ -1264,7 +1358,7 @@ def execute_dnsmonitor_alert_data(dataframe, table):
 
 
 # --- 661 OLD TSQL ---
-def addRootdomain(root_domain, pe_org_uid, source_uid, org_name):
+def addRootdomain_tsql(root_domain, pe_org_uid, source_uid, org_name):
     """Add root domain."""
     conn = connect()
     ip_address = str(socket.gethostbyname(root_domain))
@@ -1277,7 +1371,7 @@ def addRootdomain(root_domain, pe_org_uid, source_uid, org_name):
 
 
 # --- 662 OLD TSQL ---
-def addSubdomain(conn, domain, pe_org_uid, root):
+def addSubdomain_tsql(conn, domain, pe_org_uid, root):
     """Add a subdomain into the database."""
     conn = connect()
     if root:
@@ -1297,7 +1391,7 @@ def addSubdomain(conn, domain, pe_org_uid, root):
 
 
 # --- 663 OLD TSQL ---
-def insert_intelx_breaches(df):
+def insert_intelx_breaches_tsql(df):
     """Insert intelx breach data."""
     df = df.drop_duplicates(subset=["breach_name"])
     conn = connect()
@@ -1329,7 +1423,7 @@ def insert_intelx_breaches(df):
 
 
 # --- 664 OLD TSQL ---
-def insert_intelx_credentials(df):
+def insert_intelx_credentials_tsql(df):
     """Insert sixgill credential data."""
     df = df.drop_duplicates(subset=["breach_name", "email"])
     conn = connect()
@@ -1429,7 +1523,7 @@ def api_xpanse_alert_insert(xpanse_alert_dict):
         xpanse_alert_insert_result = requests.put(
             endpoint_url, headers=headers, data=data
         ).json()
-        LOGGER.info((xpanse_alert_insert_result))
+        LOGGER.info(xpanse_alert_insert_result)
         LOGGER.info(
             "Successfully inserted new record in xpanse_alerts table with associated assets and services"
         )
@@ -1516,3 +1610,35 @@ def api_pull_xpanse_vulns(business_unit, modified_date):
             )
     except Exception as e:
         raise Exception("xpanse_vuln query task failed 2, details: ", e)
+
+
+def query_all_cves(modified_date=None):
+    """Query all CVEs added or changed since provided date."""
+    start_time = time.time()
+    total_num_pages = 1
+    page_num = 1
+    total_data = []
+    # Retrieve data for each page
+    while page_num <= total_num_pages:
+        # Endpoint info
+        create_task_url = "cves_by_modified_date"
+        check_task_url = "cves_by_modified_date/task/"
+
+        data = json.dumps(
+            {"modified_datetime": modified_date, "page": page_num, "per_page": 200}
+        )
+        # Make API call
+        result = task_api_call(create_task_url, check_task_url, data, 3)
+        # Once task finishes, append result to total list
+        print(result)
+        total_data += result.get("data")
+        total_num_pages = result.get("total_pages")
+        LOGGER.info("Retrieved page: " + str(page_num) + " of " + str(total_num_pages))
+        page_num += 1
+    # Once all data has been retrieved, return overall tuple list
+    # total_data = pd.DataFrame.from_dict(total_data)
+    total_data = [tuple(dic.values()) for dic in total_data]
+    LOGGER.info("Total time to retrieve cves: %s", (time.time() - start_time))
+    # total_data["first_seen"] = pd.to_datetime(total_data["first_seen"]).dt.date
+    # total_data["last_seen"] = pd.to_datetime(total_data["last_seen"]).dt.date
+    return total_data

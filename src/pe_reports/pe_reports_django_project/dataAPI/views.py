@@ -26,6 +26,7 @@ from dataAPI.tasks import (  # D-Score Task Functions:; I-Score Task Functions:;
     cred_breach_sixgill_task,
     cred_exp_sixgill_task,
     cve_info_insert_task,
+    cves_by_modified_date_task,
     darkweb_cves_task,
     get_dscore_pe_domain_info,
     get_dscore_pe_ip_info,
@@ -524,7 +525,7 @@ def pshtt_result_update_or_insert(
 
 @api_router.post(
     "/orgs",
-    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    dependencies=[Depends(get_api_key)], #Depends(RateLimiter(times=200, seconds=60))],
     response_model=List[schemas.Organization],
     tags=["List of all Organizations"],
 )
@@ -3829,7 +3830,7 @@ def breachcomp_by_org(
             breachcomp_by_org_data = list(
                 VwBreachcomp.objects.filter(
                     organizations_uid=data.org_uid,
-                    modified_date__range=(data.start_date, data.end_date),
+                    modified_date__date__range=(data.start_date, data.end_date),
                 ).values()
             )
             # Convert uuids to strings
@@ -4386,36 +4387,74 @@ def rss_insert(data: schemas.RSSInsertInput, tokens: dict = Depends(get_api_key)
             specified_org_uid = Organizations.objects.get(
                 organizations_uid=data.organizations_uid
             )
-            # Insert new record. If record already exists, update that record
-            ReportSummaryStats.objects.update_or_create(
-                organizations_uid=specified_org_uid,
-                start_date=data.start_date,
-                defaults={
-                    "organizations_uid": specified_org_uid,
-                    "start_date": data.start_date,
-                    "end_date": data.end_date,
-                    "ip_count": data.ip_count,
-                    "root_count": data.root_count,
-                    "sub_count": data.sub_count,
-                    "ports_count": data.ports_count,
-                    "creds_count": data.creds_count,
-                    "breach_count": data.breach_count,
-                    "cred_password_count": data.cred_password_count,
-                    "domain_alert_count": data.domain_alert_count,
-                    "suspected_domain_count": data.suspected_domain_count,
-                    "insecure_port_count": data.insecure_port_count,
-                    "verified_vuln_count": data.verified_vuln_count,
-                    "suspected_vuln_count": data.suspected_vuln_count,
-                    "suspected_vuln_addrs_count": data.suspected_vuln_addrs_count,
-                    "threat_actor_count": data.threat_actor_count,
-                    "dark_web_alerts_count": data.dark_web_alerts_count,
-                    "dark_web_mentions_count": data.dark_web_mentions_count,
-                    "dark_web_executive_alerts_count": data.dark_web_executive_alerts_count,
-                    "dark_web_asset_alerts_count": data.dark_web_asset_alerts_count,
-                    "pe_number_score": data.pe_number_score,
-                    "pe_letter_grade": data.pe_letter_grade,
-                },
-            )
+            try:
+                # Check if record already exists
+                ReportSummaryStats.objects.get(
+                    organizations_uid=specified_org_uid,
+                    start_date=data.start_date
+                )
+                # If it already exists, update
+                ReportSummaryStats.objects.filter(
+                    organizations_uid=specified_org_uid,
+                    start_date=data.start_date,
+                ).update(
+                    ip_count=data.ip_count,
+                    root_count=data.root_count,
+                    sub_count=data.sub_count,
+                    ports_count=data.num_ports,
+                    creds_count=data.creds_count,
+                    breach_count=data.breach_count,
+                    cred_password_count=data.cred_password_count,
+                    domain_alert_count=data.domain_alert_count,
+                    suspected_domain_count=data.suspected_domain_count,
+                    insecure_port_count=data.insecure_port_count,
+                    verified_vuln_count=data.verified_vuln_count,
+                    suspected_vuln_count=data.suspected_vuln_count,
+                    suspected_vuln_addrs_count=data.suspected_vuln_addrs_count,
+                    threat_actor_count=data.threat_actor_count,
+                    dark_web_alerts_count=data.dark_web_alerts_count,
+                    dark_web_mentions_count=data.dark_web_mentions_count,
+                    dark_web_executive_alerts_count=data.dark_web_executive_alerts_count,
+                    dark_web_asset_alerts_count=data.dark_web_asset_alerts_count,
+                    pe_number_score=data.pe_number_score,
+                    pe_letter_grade=data.pe_letter_grade,
+                    cidr_count=data.cidr_count,
+                    port_protocol_count=data.port_protocol_count,
+                    software_count=data.software_count,
+                    foreign_ips_count=data.foreign_ips_count,
+                )
+            except ReportSummaryStats.DoesNotExist:
+                # Otherwise, create a new record
+                ReportSummaryStats.objects.create(
+                    report_uid=uuid.uuid1(),
+                    organizations_uid=specified_org_uid,
+                    start_date=data.start_date,
+                    end_date=data.end_date,
+                    ip_count=data.ip_count,
+                    root_count=data.root_count,
+                    sub_count=data.sub_count,
+                    ports_count=data.num_ports, # num_ports input -> ports_count
+                    creds_count=data.creds_count,
+                    breach_count=data.breach_count,
+                    cred_password_count=data.cred_password_count,
+                    domain_alert_count=data.domain_alert_count,
+                    suspected_domain_count=data.suspected_domain_count,
+                    insecure_port_count=data.insecure_port_count,
+                    verified_vuln_count=data.verified_vuln_count,
+                    suspected_vuln_count=data.suspected_vuln_count,
+                    suspected_vuln_addrs_count=data.suspected_vuln_addrs_count,
+                    threat_actor_count=data.threat_actor_count,
+                    dark_web_alerts_count=data.dark_web_alerts_count,
+                    dark_web_mentions_count=data.dark_web_mentions_count,
+                    dark_web_executive_alerts_count=data.dark_web_executive_alerts_count,
+                    dark_web_asset_alerts_count=data.dark_web_asset_alerts_count,
+                    pe_number_score=data.pe_number_score,
+                    pe_letter_grade=data.pe_letter_grade,
+                    cidr_count=data.cidr_count,
+                    port_protocol_count=data.port_protocol_count,
+                    software_count=data.software_count,
+                    foreign_ips_count=data.foreign_ips_count,
+                )
         except Exception:
             LOGGER.info("API key expired please try again")
     else:
@@ -5055,10 +5094,10 @@ async def cred_breach_intelx_status(task_id: str, tokens: dict = Depends(get_api
         Depends(get_api_key)
     ],  # Depends(RateLimiter(times=200, seconds=60))],
     response_model=schemas.AlertsInsertTaskResp,
-    tags=["Insert multiple records into the alerts table."],
+    tags=["Insert multiple sixgill records into the alerts table."],
 )
 def alerts_insert(data: schemas.AlertsInsertInput, tokens: dict = Depends(get_api_key)):
-    """Call API endpoint to insert multiple records into the alerts table."""
+    """Call API endpoint to insert multiple sixgill records into the alerts table."""
     # Convert list of alert models to list of dictionaries
     new_alerts = [dict(input_dict) for input_dict in data.new_alerts]
     # Check for API key
@@ -5296,7 +5335,9 @@ def cred_exp_sixgill_insert(
     response_model=schemas.CredExpSixgillInsertTaskResp,
     tags=["Check task status for cred_exp_sixgill_insert endpoint task."],
 )
-async def cred_exp_sixgill_insert_status(task_id: str, tokens: dict = Depends(get_api_key)):
+async def cred_exp_sixgill_insert_status(
+    task_id: str, tokens: dict = Depends(get_api_key)
+):
     """Call API endpoint to get status of cred_exp_sixgill_insert task."""
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
@@ -5401,13 +5442,15 @@ async def top_cves_insert_status(task_id: str, tokens: dict = Depends(get_api_ke
 # --- execute_dnsmonitor_data(), Issue 659
 @api_router.put(
     "/domain_permu_insert",
-    dependencies=[Depends(get_api_key)], #Depends(RateLimiter(times=200, seconds=60))],
+    dependencies=[
+        Depends(get_api_key)
+    ],  # Depends(RateLimiter(times=200, seconds=60))],
     tags=["Insert multiple DNSMonitor records into the domain_permutations table."],
 )
 def domain_permu_insert(
     data: schemas.DomainPermuInsertInput, tokens: dict = Depends(get_api_key)
 ):
-    """API endpoint to insert multiple DNSMonitor records into the domain_permutations table."""
+    """Insert multiple DNSMonitor records into the domain_permutations table through the API."""
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
@@ -5418,32 +5461,32 @@ def domain_permu_insert(
             update_ct = 0
             for record in data.insert_data:
                 # convert to dict
-                record = dict(record)
+                record_dict = dict(record)
                 curr_org_inst = Organizations.objects.get(
-                    organizations_uid=record["organizations_uid"]
+                    organizations_uid=record_dict["organizations_uid"]
                 )
                 curr_source_inst = DataSource.objects.get(
-                    data_source_uid=record["data_source_uid"]
+                    data_source_uid=record_dict["data_source_uid"]
                 )
                 curr_subdomain_inst = SubDomains.objects.get(
-                    sub_domain_uid=record["sub_domain_uid"]
+                    sub_domain_uid=record_dict["sub_domain_uid"]
                 )
                 # Insert each row of data, on conflict update existing
                 try:
                     DomainPermutations.objects.get(
                         organizations_uid=curr_org_inst,
-                        domain_permutation=record["domain_permutation"],
+                        domain_permutation=record_dict["domain_permutation"],
                     )
                     # If record already exists, update
                     DomainPermutations.objects.filter(
                         organizations_uid=curr_org_inst,
-                        domain_permutation=record["domain_permutation"],
+                        domain_permutation=record_dict["domain_permutation"],
                     ).update(
-                        ipv4=record["ipv4"],
-                        ipv6=record["ipv6"],
-                        date_observed=record["date_observed"],
-                        mail_server=record["mail_server"],
-                        name_server=record["name_server"],
+                        ipv4=record_dict["ipv4"],
+                        ipv6=record_dict["ipv6"],
+                        date_observed=record_dict["date_observed"],
+                        mail_server=record_dict["mail_server"],
+                        name_server=record_dict["name_server"],
                         sub_domain_uid=curr_subdomain_inst,
                         data_source_uid=curr_source_inst,
                     )
@@ -5452,18 +5495,18 @@ def domain_permu_insert(
                     # Otherwise, create new record
                     DomainPermutations.objects.create(
                         organizations_uid=curr_org_inst,
-                        domain_permutation=record["domain_permutation"],
-                        ipv4=record["ipv4"],
-                        ipv6=record["ipv6"],
-                        date_observed=record["date_observed"],
-                        mail_server=record["mail_server"],
-                        name_server=record["name_server"],
+                        domain_permutation=record_dict["domain_permutation"],
+                        ipv4=record_dict["ipv4"],
+                        ipv6=record_dict["ipv6"],
+                        date_observed=record_dict["date_observed"],
+                        mail_server=record_dict["mail_server"],
+                        name_server=record_dict["name_server"],
                         sub_domain_uid=curr_subdomain_inst,
                         data_source_uid=curr_source_inst,
                     )
                     create_ct += 1
             return (
-                "DNSMonitor records in the domain_permutations table: "
+                "New DNSMonitor data in the domain_permutations table: "
                 + str(create_ct)
                 + " created, "
                 + str(update_ct)
@@ -5478,13 +5521,15 @@ def domain_permu_insert(
 # --- execute_dnsmonitor_alert_data(), Issue 660
 @api_router.put(
     "/domain_alerts_insert",
-    dependencies=[Depends(get_api_key)], #Depends(RateLimiter(times=200, seconds=60))],
+    dependencies=[
+        Depends(get_api_key)
+    ],  # Depends(RateLimiter(times=200, seconds=60))],
     tags=["Insert multiple DNSMonitor records into the domain_alerts table."],
 )
 def domain_alerts_insert(
     data: schemas.DomainAlertsInsertInput, tokens: dict = Depends(get_api_key)
 ):
-    """API endpoint to insert multiple DNSMonitor records into the domain_alerts table."""
+    """Insert multiple DNSMonitor records into the domain_alerts table through the API."""
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
@@ -5494,34 +5539,34 @@ def domain_alerts_insert(
             create_ct = 0
             for record in data.insert_data:
                 # convert to dict
-                record = dict(record)
+                record_dict = dict(record)
                 curr_sub_inst = SubDomains.objects.get(
-                    sub_domain_uid=record["sub_domain_uid"]
+                    sub_domain_uid=record_dict["sub_domain_uid"]
                 )
                 curr_source_inst = DataSource.objects.get(
-                    data_source_uid=record["data_source_uid"]
+                    data_source_uid=record_dict["data_source_uid"]
                 )
                 # Insert each row of data, on conflict do nothing
                 try:
                     DomainAlerts.objects.get(
-                        alert_type=record["alert_type"],
-                        sub_domain_uid=record["sub_domain_uid"],
-                        date=record["date"],
-                        new_value=record["new_value"],
+                        alert_type=record_dict["alert_type"],
+                        sub_domain_uid=record_dict["sub_domain_uid"],
+                        date=record_dict["date"],
+                        new_value=record_dict["new_value"],
                     )
                     # If record already exists, do nothing
                 except DomainAlerts.DoesNotExist:
                     # Otherwise, create new record
                     DomainAlerts.objects.create(
                         domain_alert_uid=uuid.uuid1(),
-                        organizations_uid=record["organizations_uid"],
+                        organizations_uid=record_dict["organizations_uid"],
                         sub_domain_uid=curr_sub_inst,
                         data_source_uid=curr_source_inst,
-                        alert_type=record["alert_type"],
-                        message=record["message"],
-                        previous_value=record["previous_value"],
-                        new_value=record["new_value"],
-                        date=record["date"],
+                        alert_type=record_dict["alert_type"],
+                        message=record_dict["message"],
+                        previous_value=record_dict["previous_value"],
+                        new_value=record_dict["new_value"],
+                        date=record_dict["date"],
                     )
                     create_ct += 1
             return (
@@ -5618,6 +5663,8 @@ def sub_domains_single_insert(
             org_name = Organizations.objects.filter(
                 organizations_uid=data.pe_org_uid
             ).values("cyhy_db_name")[0]["cyhy_db_name"]
+            create_ct = 0
+            update_ct = 0
             # Check if sub domain already exists in table
             sub_domain_results = SubDomains.objects.filter(
                 sub_domain=data.domain,
@@ -5645,7 +5692,7 @@ def sub_domains_single_insert(
                 root_inst = RootDomains.objects.get(
                     organizations_uid=data.pe_org_uid, root_domain=curr_root
                 )
-                # Create new sub domain record
+                # Create subdomain record now that root exists
                 SubDomains.objects.create(
                     sub_domain=data.domain,
                     root_domain_uid=root_inst,
@@ -5654,22 +5701,25 @@ def sub_domains_single_insert(
                     last_seen=curr_date,
                     identified=False,
                 )
-                # Return status message
-                return (
-                    "Sub domain has been inserted into sub_domains table for "
-                    + org_name
-                )
+                create_ct += 1
             else:
-                # If sub domain already exists, update last_seen and identified
+                # If subdomain record already exists, update
                 SubDomains.objects.filter(
                     sub_domain=data.domain,
                     root_domain_uid__organizations_uid=data.pe_org_uid,
-                ).update(last_seen=curr_date, identified=False)
-                # Return status message
-                return (
-                    "Sub domain record has been updated in the sub_domains table for "
-                    + org_name
+                ).update(
+                    last_seen=curr_date,
+                    identified=False,
                 )
+                update_ct += 1
+            # Return status message
+            return (
+                str(create_ct)
+                + " records created, "
+                + str(update_ct)
+                + " records updated in the sub_domains table for "
+                + org_name
+            )
         except ObjectDoesNotExist:
             LOGGER.info("API key expired please try again")
     else:
@@ -5679,13 +5729,15 @@ def sub_domains_single_insert(
 # --- insert_intelx_breaches(), Issue 663 ---
 @api_router.put(
     "/cred_breaches_intelx_insert",
-    dependencies=[Depends(get_api_key)], #Depends(RateLimiter(times=200, seconds=60))],
+    dependencies=[
+        Depends(get_api_key)
+    ],  # Depends(RateLimiter(times=200, seconds=60))],
     tags=["Insert IntelX credential breaches into the credential_breaches table."],
 )
 def cred_breaches_intelx_insert(
     data: schemas.CredBreachesIntelxInsertInput, tokens: dict = Depends(get_api_key)
 ):
-    """API endpoint to insert IntelX credential breaches into the credential_breaches table."""
+    """Insert IntelX credential breaches into the credential_breaches table through the API ."""
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
@@ -5718,14 +5770,12 @@ def cred_breaches_intelx_insert(
                 else:
                     CredentialBreaches.objects.filter(
                         breach_name=row_dict["breach_name"]
-                    ).update(
-                        password_included=row_dict["password_included"]
-                    )
-                    update_count +=1
+                    ).update(password_included=row_dict["password_included"])
+                    update_count += 1
             return (
-                str(insert_count) 
-                + " records created, " 
-                + str(update_count) 
+                str(insert_count)
+                + " records created, "
+                + str(update_count)
                 + " records updated in the credential_breaches table"
             )
         except ObjectDoesNotExist:
@@ -5737,13 +5787,15 @@ def cred_breaches_intelx_insert(
 # --- insert_intelx_credentials(), Issue 664 ---
 @api_router.put(
     "/cred_exp_intelx_insert",
-    dependencies=[Depends(get_api_key)], #Depends(RateLimiter(times=200, seconds=60))],
+    dependencies=[
+        Depends(get_api_key)
+    ],  # Depends(RateLimiter(times=200, seconds=60))],
     tags=["Insert IntelX data into the credential_exposures table."],
 )
 def cred_exp_intelx_insert(
     data: schemas.CredExpIntelxInsertInput, tokens: dict = Depends(get_api_key)
 ):
-    """API endpoint to insert IntelX data into the credential_exposures table."""
+    """Insert IntelX data into the credential_exposures table using the API endpoint."""
     # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
@@ -5763,9 +5815,7 @@ def cred_exp_intelx_insert(
                     CredentialExposures.objects.filter(
                         breach_name=row_dict["breach_name"],
                         email=row_dict["email"],
-                    ).update(
-                        modified_date=row_dict["modified_date"]
-                    )
+                    ).update(modified_date=row_dict["modified_date"])
                     update_cnt += 1
                 except CredentialExposures.DoesNotExist:
                     # If record doesn't exist yet, create one
@@ -5779,7 +5829,7 @@ def cred_exp_intelx_insert(
                         breach_name=row_dict["breach_name"],
                     )
                     CredentialExposures.objects.create(
-                        #credential_exposures_uid=uuid.uuid1(),
+                        # credential_exposures_uid=uuid.uuid1(),
                         email=row_dict["email"],
                         organizations_uid=curr_org_inst,
                         root_domain=row_dict["root_domain"],
@@ -5794,7 +5844,12 @@ def cred_exp_intelx_insert(
                     )
                     create_cnt += 1
             # Return success message
-            return str(create_cnt) + " records created, " + str(update_cnt) + " records updated in the credential_exposures table"
+            return (
+                str(create_cnt)
+                + " records created, "
+                + str(update_cnt)
+                + " records updated in the credential_exposures table"
+            )
         except ObjectDoesNotExist:
             LOGGER.info("API key expired please try again")
     else:
@@ -6111,6 +6166,78 @@ async def get_xpanse_vulns_task_status(
             # userapiTokenverify(theapiKey=tokens)
             # Retrieve task status
             task = get_xpanse_vulns.AsyncResult(task_id)
+            # Return appropriate message for status
+            if task.state == "SUCCESS":
+                return {
+                    "task_id": task_id,
+                    "status": "Completed",
+                    "result": task.result,
+                }
+            elif task.state == "PENDING":
+                return {"task_id": task_id, "status": "Pending"}
+            elif task.state == "FAILURE":
+                return {
+                    "task_id": task_id,
+                    "status": "Failed",
+                    "error": str(task.result),
+                }
+            else:
+                return {"task_id": task_id, "status": task.state}
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+
+# --- query_subs(), Issue 633 (paginated) ---
+@api_router.post(
+    "/cves_by_modified_date",
+    dependencies=[
+        Depends(get_api_key)
+    ],  # Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.CvePagedTaskResp,
+    tags=["Get all CVEs and related products since a user specified date."],
+)
+def cves_by_modified_date(
+    data: schemas.CvePagedInput, tokens: dict = Depends(get_api_key)
+):
+    """Create API endpoint to get all CVEs and related products since a user specified date."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # If API key valid, create task for query
+            task = cves_by_modified_date_task.delay(
+                data.modified_datetime, data.page, data.per_page
+            )
+            # Return the new task id w/ "Processing" status
+            return {"task_id": task.id, "status": "Processing"}
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+
+@api_router.get(
+    "/cves_by_modified_date/task/{task_id}",
+    dependencies=[
+        Depends(get_api_key)
+    ],  # Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.CvePagedTaskResp,
+    tags=["Check task status for cves_by_modified_date."],
+)
+async def cves_by_modified_date_task_status(
+    task_id: str, tokens: dict = Depends(get_api_key)
+):
+    """Get task status for cves_by_modified_date."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            # userapiTokenverify(theapiKey=tokens)
+            # Retrieve task status
+            task = cves_by_modified_date_task.AsyncResult(task_id)
             # Return appropriate message for status
             if task.state == "SUCCESS":
                 return {

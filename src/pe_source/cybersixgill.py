@@ -176,9 +176,6 @@ class Cybersixgill:
             "icq",
             "mastodon",
         ]
-        # if org_id not in ["DHS_FLETC","EAC","DOC_CENSUS","DOL_BLS","VA","HUD","NSF","OPM","DHS_CIS","SSA","NASA","DOC_BIS","DOC_NOAA","DOC_OS","DOC_OIG"]:
-        #     return 1
-
         # Fetch alert data with sixgill_org_id
         try:
             print(sixgill_org_id)
@@ -244,7 +241,6 @@ class Cybersixgill:
     ):
         """Get mentions."""
         LOGGER.info("Fetching mention data for %s.", org_id)
-
         # Fetch org aliases from Cybersixgill
         try:
             aliases = alias_organization(sixgill_org_id)
@@ -345,10 +341,6 @@ class Cybersixgill:
     def get_credentials(self, org_id, sixgill_org_id, pe_org_uid, source_uid):
         """Get credentials."""
         LOGGER.info("Fetching credential data for %s.", org_id)
-
-        # if org_id in ["DHS","VA","DOJ"]:
-        #     return 1
-
         # Fetch org root domains from Cybersixgill
         try:
             roots = root_domains(sixgill_org_id)

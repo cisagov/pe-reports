@@ -59,7 +59,10 @@ def task_api_call(task_url, check_url, data={}, retry_time=3):
         check_task_url += task_id
         while task_status != "Completed" and task_status != "Failed":
             # Ping task status endpoint and get status
-            check_task_resp = requests.get(check_task_url, headers=headers).json()
+            # check_task_resp = requests.get(check_task_url, headers=headers).json()
+            check_task_resp = requests.get(check_task_url, headers=headers)
+            #print(check_task_resp)
+            check_task_resp = check_task_resp.json()
             task_status = check_task_resp.get("status")
             LOGGER.info(
                 "\tPinged " + check_url + " status endpoint, status: " + task_status
@@ -67,14 +70,21 @@ def task_api_call(task_url, check_url, data={}, retry_time=3):
             time.sleep(retry_time)
     except requests.exceptions.HTTPError as errh:
         LOGGER.error(errh)
+        print(errh)
     except requests.exceptions.ConnectionError as errc:
         LOGGER.error(errc)
+        print(errc)
     except requests.exceptions.Timeout as errt:
         LOGGER.error(errt)
+        print(errt)
     except requests.exceptions.RequestException as err:
         LOGGER.error(err)
+        print(err)
     except json.decoder.JSONDecodeError as err:
         LOGGER.error(err)
+        print(err)
+    except Exception as err:
+        print(err)
     # Once task finishes, return result
     if task_status == "Completed":
         return check_task_resp.get("result")
@@ -422,36 +432,6 @@ def query_shodan(org_uid, start_date, end_date, table):
             close(conn)
 
 
-def query_cyberSix_creds(org_uid, start_date, end_date):
-    """Query cybersix_exposed_credentials table."""
-    conn = connect()
-    try:
-        sql = """SELECT * FROM public.cybersix_exposed_credentials as creds
-        WHERE organizations_uid = %(org_uid)s
-        AND breach_date BETWEEN %(start)s AND %(end)s"""
-        df = pd.read_sql(
-            sql,
-            conn,
-            params={"org_uid": org_uid, "start": start_date, "end": end_date},
-        )
-        df["breach_date_str"] = pd.to_datetime(df["breach_date"]).dt.strftime(
-            "%m/%d/%Y"
-        )
-        df.loc[df["breach_name"] == "", "breach_name"] = (
-            "Cyber_six_" + df["breach_date_str"]
-        )
-        df["description"] = (
-            df["description"].str.split("Query to find the related").str[0]
-        )
-        df["password_included"] = np.where(df["password"] != "", True, False)
-        return df
-    except (Exception, psycopg2.DatabaseError) as error:
-        LOGGER.error("There was a problem with your database query %s", error)
-    finally:
-        if conn is not None:
-            close(conn)
-
-
 def query_score_data(start, end, sql):
     """Query data necessary to generate organization scores."""
     conn = connect()
@@ -524,6 +504,12 @@ def query_all_subs():
     # total_data["first_seen"] = pd.to_datetime(total_data["first_seen"]).dt.date
     # total_data["last_seen"] = pd.to_datetime(total_data["last_seen"]).dt.date
     return total_data
+
+
+# --- Issue 561 ---
+# Not used anywhere, however an API endpoint
+# was created for this issue. It's currently
+# in the api-extended branch.
 
 
 # --- Issue 562, 627? ---
@@ -1595,7 +1581,8 @@ def query_darkweb(org_uid, start_date, end_date, table):
                 },
                 inplace=True,
             )
-            result_df["date"] = pd.to_datetime(result_df["date"]).dt.date
+            if "date" in result_df.columns:
+                result_df["date"] = pd.to_datetime(result_df["date"]).dt.date
             # Return truly empty dataframe if no results
             if result_df[result_df.columns].isnull().apply(lambda x: all(x), axis=1)[0]:
                 result_df.drop(result_df.index, inplace=True)
@@ -1658,6 +1645,12 @@ def execute_scorecard(summary_dict):
         input_dict.pop("dns")
     if "circles_df" in input_dict:
         input_dict.pop("circles_df")
+    if "org_name" in input_dict:
+        input_dict.pop("org_name")
+    # Fill in any empty fields in dictionary
+    for key in input_dict.keys():
+        if ("count" in key or key == "num_ports") and input_dict.get(key) is None:
+            input_dict.update({key: 0})
     # Endpoint info
     endpoint_url = pe_api_url + "rss_insert"
     headers = {
@@ -1671,7 +1664,6 @@ def execute_scorecard(summary_dict):
             endpoint_url, headers=headers, data=data
         ).json()
         LOGGER.info("Successfully inserted new record in report_summary_stats table")
-        return rss_insert_result
     except requests.exceptions.HTTPError as errh:
         LOGGER.error(errh)
     except requests.exceptions.ConnectionError as errc:
@@ -2195,6 +2187,37 @@ def query_all_subs_tsql(conn):
             close(conn)
 
 
+# --- 561 OLD TSQL ---
+def query_cyberSix_creds(org_uid, start_date, end_date):
+    """Query cybersix_exposed_credentials table."""
+    conn = connect()
+    try:
+        sql = """SELECT * FROM public.cybersix_exposed_credentials as creds
+        WHERE organizations_uid = %(org_uid)s
+        AND breach_date BETWEEN %(start)s AND %(end)s"""
+        df = pd.read_sql(
+            sql,
+            conn,
+            params={"org_uid": org_uid, "start": start_date, "end": end_date},
+        )
+        df["breach_date_str"] = pd.to_datetime(df["breach_date"]).dt.strftime(
+            "%m/%d/%Y"
+        )
+        df.loc[df["breach_name"] == "", "breach_name"] = (
+            "Cyber_six_" + df["breach_date_str"]
+        )
+        df["description"] = (
+            df["description"].str.split("Query to find the related").str[0]
+        )
+        df["password_included"] = np.where(df["password"] != "", True, False)
+        return df
+    except (Exception, psycopg2.DatabaseError) as error:
+        LOGGER.error("There was a problem with your database query %s", error)
+    finally:
+        if conn is not None:
+            close(conn)
+
+
 # --- 562 OLD TSQL ---
 def query_domMasq_alerts_tsql(org_uid, start_date, end_date):
     """Query domain alerts table."""
@@ -2585,7 +2608,9 @@ def query_creds_view_tsql(org_uid, start_date, end_date):
     """Query credentials view ."""
     conn = connect()
     try:
-        sql = """SELECT * FROM mat_vw_breachcomp
+        # used to pull data from mat_vw_breachcomp,
+        # but that's broken now -> use vw_breachcomp
+        sql = """SELECT * FROM vw_breachcomp
         WHERE organizations_uid = %(org_uid)s
         AND modified_date BETWEEN %(start_date)s AND %(end_date)s"""
         df = pd.read_sql(

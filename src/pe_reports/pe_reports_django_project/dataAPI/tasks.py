@@ -10,13 +10,15 @@ import uuid
 from celery import shared_task
 from django.core import serializers
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
-from django.db.models import Count, Q, Sum
+from django.db.models import Count, Prefetch, Q, Sum
 from home.models import (
     Alerts,
     Cidrs,
+    CpeProduct,
     CredentialBreaches,
     CredentialExposures,
     CveInfo,
+    Cves,
     CyhyKevs,
     DataSource,
     DomainAlerts,
@@ -1039,6 +1041,8 @@ def get_xpanse_vulns(
         vulns.append(vuln_dict)
 
     return vulns
+
+
 # --- get_intelx_breaches(), Issue 641 ---
 @shared_task(bind=True)
 def cred_breach_intelx_task(self, source_uid: str):
@@ -1103,11 +1107,16 @@ def alerts_insert_task(self, new_alerts: List[dict]):
                 content=new_alert["content"],
                 content_snip=new_alert["content_snip"],
                 asset_mentioned=new_alert["asset_mentioned"],
-                asset_type=new_alert["asset_type"]
+                asset_type=new_alert["asset_type"],
             )
             update_ct += 1
     # Return success message
-    return str(create_ct) + " records created, " + str(update_ct) + " records updated in the alerts table"
+    return (
+        str(create_ct)
+        + " records created, "
+        + str(update_ct)
+        + " records updated in the alerts table"
+    )
 
 
 # --- insert_sixgill_mentions(), Issue 654 ---
@@ -1117,9 +1126,7 @@ def mentions_insert_task(self, new_mentions: List[dict]):
     create_ct = 0
     for new_mention in new_mentions:
         try:
-            Mentions.objects.get(
-                sixgill_mention_id=new_mention["sixgill_mention_id"]
-            )
+            Mentions.objects.get(sixgill_mention_id=new_mention["sixgill_mention_id"])
             # If record already exists, do nothing
         except Mentions.DoesNotExist:
             # If mention record doesn't exist yet, create one
@@ -1186,7 +1193,12 @@ def cred_breach_sixgill_task(self, new_breaches: List[dict]):
             )
             create_ct += 1
     # Return success message
-    return str(create_ct) + " records created, " + str(update_ct) + " records updated in the credential_breaches table"
+    return (
+        str(create_ct)
+        + " records created, "
+        + str(update_ct)
+        + " records updated in the credential_breaches table"
+    )
 
 
 # --- insert_sixgill_credentials(), Issue 656 ---
@@ -1238,7 +1250,12 @@ def cred_exp_sixgill_task(self, new_exposures: List[dict]):
             )
             update_ct += 1
     # Return success message
-    return str(create_ct) + " records created, " + str(update_ct) + " records updated in the credential_exposures table"
+    return (
+        str(create_ct)
+        + " records created, "
+        + str(update_ct)
+        + " records updated in the credential_exposures table"
+    )
 
 
 # --- insert_sixgill_topCVEs(), Issue 657 ---
@@ -1270,3 +1287,109 @@ def top_cves_insert_task(self, new_topcves: List[dict]):
             create_ct += 1
     # Return success message
     return str(create_ct) + " records created in the top_cves table"
+
+
+# --- query_subs(), Issue 633 ---
+@shared_task(bind=True)
+def cves_by_modified_date_task(self, modified_datetime: str, page: int, per_page: int):
+    """Task function for the subdomains by org query API endpoint."""
+    # Make database query and convert to list of dictionaries
+    total_data = Cves.objects.all()
+
+    if modified_datetime is not None:
+        total_data = total_data.filter(
+            Q(last_modified_date__gte=modified_datetime)
+            | Q(published_date__gte=modified_datetime)
+        )
+
+    total_data = total_data.order_by("cve_name")
+    # Divide up data w/ specified num records per page
+    paged_data = Paginator(total_data, per_page)
+    # Attempt to retrieve specified page
+    try:
+        single_page_data = paged_data.page(page)
+    except PageNotAnInteger:
+        # If page is not an integer, deliver first page.
+        single_page_data = paged_data.page(1)
+    except EmptyPage:
+        # If page is out of range (e.g. 9999), deliver last page of results.
+        single_page_data = paged_data.page(paged_data.num_pages)
+
+    cve_list = []
+    paged_queryset = single_page_data.object_list
+
+    paged_queryset = paged_queryset.prefetch_related(
+        Prefetch(
+            "products",
+            queryset=CpeProduct.objects.select_related("cpe_vender_uid"),
+        )
+    )
+    if not paged_queryset:
+        single_page_data = [{x: None for x in schemas.CveWithProducts.__fields__}]
+        return {
+            "total_pages": paged_data.num_pages,
+            "current_page": page,
+            "data": single_page_data,
+        }
+    else:
+        for cve in paged_queryset:
+            cve_obj = {
+                "cve_uid": convert_uuid_to_string(cve.cve_uid),
+                "cve_name": cve.cve_name,
+                "published_date": cve.published_date,
+                "last_modified_date": cve.last_modified_date,
+                "vuln_status": cve.vuln_status,
+                "description": cve.description,
+                "cvss_v2_source": cve.cvss_v2_source,
+                "cvss_v2_type": cve.cvss_v2_type,
+                "cvss_v2_version": cve.cvss_v2_version,
+                "cvss_v2_vector_string": cve.cvss_v2_vector_string,
+                "cvss_v2_base_score": cve.cvss_v2_base_score,
+                "cvss_v2_base_severity": cve.cvss_v2_base_severity,
+                "cvss_v2_exploitability_score": cve.cvss_v2_exploitability_score,
+                "cvss_v2_impact_score": cve.cvss_v2_impact_score,
+                "cvss_v3_source": cve.cvss_v3_source,
+                "cvss_v3_type": cve.cvss_v3_type,
+                "cvss_v3_version": cve.cvss_v3_version,
+                "cvss_v3_vector_string": cve.cvss_v3_vector_string,
+                "cvss_v3_base_score": cve.cvss_v3_base_score,
+                "cvss_v3_base_severity": cve.cvss_v3_base_severity,
+                "cvss_v3_exploitability_score": cve.cvss_v3_exploitability_score,
+                "cvss_v3_impact_score": cve.cvss_v3_impact_score,
+                "cvss_v4_source": cve.cvss_v4_source,
+                "cvss_v4_type": cve.cvss_v4_type,
+                "cvss_v4_version": cve.cvss_v4_version,
+                "cvss_v4_vector_string": cve.cvss_v4_vector_string,
+                "cvss_v4_base_score": cve.cvss_v4_base_score,
+                "cvss_v4_base_severity": cve.cvss_v4_base_severity,
+                "cvss_v4_exploitability_score": cve.cvss_v4_exploitability_score,
+                "cvss_v4_impact_score": cve.cvss_v4_impact_score,
+                "weaknesses": cve.weaknesses,
+                "reference_urls": cve.reference_urls,
+                "cpe_list": cve.cpe_list,
+                "vender_product": {},
+            }
+
+            for product in cve.products.all():
+                product_obj = {
+                    "cpe_product_name": product.cpe_product_name,
+                    "version_number": product.version_number,
+                    "vender": product.cpe_vender_uid.vender_name,
+                }
+                if product.cpe_vender_uid.vender_name in cve_obj["vender_product"]:
+                    cve_obj["vender_product"][
+                        product.cpe_vender_uid.vender_name
+                    ].append(product_obj)
+                else:
+                    cve_obj["vender_product"][product.cpe_vender_uid.vender_name] = [
+                        product_obj
+                    ]
+
+            cve_list.append(cve_obj)
+
+        result = {
+            "total_pages": paged_data.num_pages,
+            "current_page": page,
+            "data": cve_list,
+        }
+        return result

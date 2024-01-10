@@ -4,10 +4,14 @@
 from datetime import datetime, timedelta
 import logging
 import sys
+import time
 
 # Third-Party Libraries
 # Relative imports
-from data.pe_db.db_query_source import api_cve_insert, get_cve_and_products
+from data.pe_db.db_query_source import (  # query_all_cves,
+    api_cve_insert,
+    get_cve_and_products,
+)
 from nested_lookup import nested_lookup
 import pytz
 import requests
@@ -34,19 +38,29 @@ def initial_fill(start_index=0):
     for vuln in result["vulnerabilities"]:
         cve_dict = format_vulnerability(vuln)
         api_cve_insert(cve_dict)
-
+    error_count = 0
     while start_index < result["totalResults"]:
-        params = "?startIndex=" + str(start_index)
-        response = requests.request(
-            "GET", nist_url + params, headers=headers, data=payload
-        )
+        try:
+            params = "?startIndex=" + str(start_index)
+            response = requests.request(
+                "GET", nist_url + params, headers=headers, data=payload
+            )
+            result = response.json()
 
-        result = response.json()
+        except Exception as e:
+            LOGGER.error("Issue while querying: %s. Trying again in 5 seconds", e)
+
+            time.sleep(5)
+            error_count += 1
+            if error_count < 5:
+                continue
+            else:
+                LOGGER.error("Failed too many times. Exiting out now.")
+
         start_index += result["resultsPerPage"]
         for vuln in result["vulnerabilities"]:
             cve_dict = format_vulnerability(vuln)
             api_cve_insert(cve_dict)
-
     LOGGER.info("CVEs have been filled.")
 
 
@@ -75,9 +89,15 @@ def update_cves(hours_back=12):
     for vuln in result["vulnerabilities"]:
         cve_dict = format_vulnerability(vuln)
         api_cve_insert(cve_dict)
-
     while start_index < result["totalResults"]:
-        params = "?startIndex=" + str(start_index)
+        params = (
+            "?startIndex="
+            + str(start_index)
+            + "&lastModStartDate="
+            + last_mod_start_date
+            + "&lastModEndDate="
+            + last_mod_end_date
+        )
         response = requests.request(
             "GET", nist_url + params, headers=headers, data=payload
         )
@@ -273,10 +293,13 @@ def check_cve_is_synced():
 
 def main():
     """Update CVE, CPE, and Vender tables using the NIST API."""
-    initial_fill()
-    # update_cves(24)
+    # initial_fill()
+    update_cves(48)
     # query_cve('CVE-2023-53465')
-    check_cve_is_synced()
+    # check_cve_is_synced()
+
+    # cves = query_all_cves()
+    # print(cves)
 
 
 if __name__ == "__main__":
