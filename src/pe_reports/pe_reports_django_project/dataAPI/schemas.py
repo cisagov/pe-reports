@@ -1,6 +1,7 @@
 """Pydantic models used by FastAPI."""
 # Standard Python Libraries
 from datetime import date, datetime
+from decimal import Decimal
 
 # from pydantic.types import UUID1, UUID
 from typing import Any, List, Optional
@@ -548,157 +549,6 @@ class GenInputOrgUIDListDateRange(BaseModel):
         orm_mode = True
 
 
-# ---------- D-Score View Schemas, Issue 571 ----------
-# vw_dscore_vs_cert schema:
-class VwDscoreVSCert(BaseModel):
-    """VwDscoreVSCert schema class."""
-
-    organizations_uid: str
-    parent_org_uid: Optional[str] = None
-    num_ident_cert: Optional[int] = None
-    num_monitor_cert: Optional[int] = None
-
-    class Config:
-        """VwDscoreVSCert schema config class."""
-
-        orm_mode = True
-
-
-# vw_dscore_vs_cert task response schema:
-class VwDscoreVSCertTaskResp(BaseModel):
-    """VwDscoreVSCertTaskResp schema class."""
-
-    task_id: str
-    status: str
-    result: Optional[List[VwDscoreVSCert]] = None
-    error: Optional[str] = None
-
-
-# vw_dscore_vs_mail schema:
-class VwDscoreVSMail(BaseModel):
-    """VwDscoreVSMail schema class."""
-
-    organizations_uid: str
-    parent_org_uid: Optional[str] = None
-    num_valid_dmarc: Optional[int] = None
-    num_valid_spf: Optional[int] = None
-    num_valid_dmarc_or_spf: Optional[int] = None
-    total_mail_domains: Optional[int] = None
-
-    class Config:
-        """VwDscoreVSMail schema config class."""
-
-        orm_mode = True
-
-
-# vw_dscore_vs_mail task response schema:
-class VwDscoreVSMailTaskResp(BaseModel):
-    """VwDscoreVSMailTaskResp schema class."""
-
-    task_id: str
-    status: str
-    result: Optional[List[VwDscoreVSMail]] = None
-    error: Optional[str] = None
-
-
-# vw_dscore_pe_ip schema:
-class VwDscorePEIp(BaseModel):
-    """VwDscorePEIp schema class."""
-
-    organizations_uid: str
-    parent_org_uid: Optional[str] = None
-    num_ident_ip: Optional[int] = None
-    num_monitor_ip: Optional[int] = None
-
-    class Config:
-        """VwDscorePEIp schema config class."""
-
-        orm_mode = True
-
-
-# vw_dscore_pe_ip task response schema:
-class VwDscorePEIpTaskResp(BaseModel):
-    """VwDscorePEIpTaskResp schema class."""
-
-    task_id: str
-    status: str
-    result: Optional[List[VwDscorePEIp]] = None
-    error: Optional[str] = None
-
-
-# vw_dscore_pe_domain schema:
-class VwDscorePEDomain(BaseModel):
-    """VwDscorePEDomain schema class."""
-
-    organizations_uid: str
-    parent_org_uid: Optional[str] = None
-    num_ident_domain: Optional[int] = None
-    num_monitor_domain: Optional[int] = None
-
-    class Config:
-        """VwDscorePEDomain schema config class."""
-
-        orm_mode = True
-
-
-# vw_dscore_pe_domain task response schema:
-class VwDscorePEDomainTaskResp(BaseModel):
-    """VwDscorePEDomainTaskResp schema class."""
-
-    task_id: str
-    status: str
-    result: Optional[List[VwDscorePEDomain]] = None
-    error: Optional[str] = None
-
-
-# vw_dscore_was_webapp schema:
-class VwDscoreWASWebapp(BaseModel):
-    """VwDscoreWASWebapp schema class."""
-
-    organizations_uid: str
-    parent_org_uid: Optional[str] = None
-    num_ident_webapp: Optional[int] = None
-    num_monitor_webapp: Optional[int] = None
-
-    class Config:
-        """VwDscoreWASWebapp schema config class."""
-
-        orm_mode = True
-
-
-# vw_dscore_was_webapp task response schema:
-class VwDscoreWASWebappTaskResp(BaseModel):
-    """VwDscoreWASWebappTaskResp schema class."""
-
-    task_id: str
-    status: str
-    result: Optional[List[VwDscoreWASWebapp]] = None
-    error: Optional[str] = None
-
-
-# FCEB status query schema (no view):
-class FCEBStatus(BaseModel):
-    """FCEBStatus schema class."""
-
-    organizations_uid: str
-    fceb: Optional[bool] = None
-
-    class Config:
-        """FCEBStatus schema config class."""
-
-        orm_mode = True
-
-
-# FCEB status query task response schema (no view):
-class FCEBStatusTaskResp(BaseModel):
-    """FCEBStatusTaskResp schema class."""
-
-    task_id: str
-    status: str
-    result: Optional[List[FCEBStatus]] = None
-    error: Optional[str] = None
-
-
 # ---------- I-Score View Schemas, Issue 570 ----------
 # vw_iscore_vs_vuln schema:
 class VwIscoreVSVuln(BaseModel):
@@ -711,6 +561,18 @@ class VwIscoreVSVuln(BaseModel):
 
     class Config:
         """VwIscoreVSVuln schema config class."""
+
+        orm_mode = True
+
+
+# vw_iscore_vs_vuln input schema:
+class VwIscoreVSVulnInput(BaseModel):
+    """VwIscoreVSVulnInput schema class."""
+
+    specified_orgs: List[str]
+
+    class Config:
+        """VwIscoreVSVulnInput schema config class."""
 
         orm_mode = True
 
@@ -741,6 +603,20 @@ class VwIscoreVSVulnPrev(BaseModel):
         orm_mode = True
 
 
+# vw_iscore_vs_vuln_prev input schema:
+class VwIscoreVSVulnPrevInput(BaseModel):
+    """VwIscoreVSVulnPrevInput schema class."""
+
+    specified_orgs: List[str]
+    start_date: str
+    end_date: str
+
+    class Config:
+        """VwIscoreVSVulnPrevInput schema config class."""
+
+        orm_mode = True
+
+
 # vw_iscore_vs_vuln_prev task response schema:
 class VwIscoreVSVulnPrevTaskResp(BaseModel):
     """VwIscoreVSVulnPrevTaskResp schema class."""
@@ -763,6 +639,20 @@ class VwIscorePEVuln(BaseModel):
 
     class Config:
         """VwIscorePEVuln schema config class."""
+
+        orm_mode = True
+
+
+# vw_iscore_pe_vuln input schema:
+class VwIscorePEVulnInput(BaseModel):
+    """VwIscorePEVulnInput schema class."""
+
+    specified_orgs: List[str]
+    start_date: str
+    end_date: str
+
+    class Config:
+        """VwIscorePEVulnInput schema config class."""
 
         orm_mode = True
 
@@ -793,6 +683,20 @@ class VwIscorePECred(BaseModel):
         orm_mode = True
 
 
+# vw_iscore_pe_cred input schema:
+class VwIscorePECredInput(BaseModel):
+    """VwIscorePECredInput schema class."""
+
+    specified_orgs: List[str]
+    start_date: str
+    end_date: str
+
+    class Config:
+        """VwIscorePECredInput schema config class."""
+
+        orm_mode = True
+
+
 # vw_iscore_pe_cred task response schema:
 class VwIscorePECredTaskResp(BaseModel):
     """VwIscorePECredTaskResp schema class."""
@@ -814,6 +718,20 @@ class VwIscorePEBreach(BaseModel):
 
     class Config:
         """VwIscorePEBreach schema config class."""
+
+        orm_mode = True
+
+
+# vw_iscore_pe_breach input schema:
+class VwIscorePEBreachInput(BaseModel):
+    """VwIscorePEBreachInput schema class."""
+
+    specified_orgs: List[str]
+    start_date: str
+    end_date: str
+
+    class Config:
+        """VwIscorePEBreachInput schema config class."""
 
         orm_mode = True
 
@@ -840,6 +758,21 @@ class VwIscorePEDarkweb(BaseModel):
 
     class Config:
         """VwIscorePEDarkweb schema config class."""
+
+        orm_mode = True
+
+
+# vw_iscore_pe_darkweb input schema:
+class VwIscorePEDarkwebInput(BaseModel):
+    """VwIscorePEDarkwebInput schema class."""
+
+    specified_orgs: List[str]
+    start_date: str
+    end_date: str
+    # Don't forget 0001-01-01 dates
+
+    class Config:
+        """VwIscorePEDarkwebInput schema config class."""
 
         orm_mode = True
 
@@ -872,6 +805,20 @@ class VwIscorePEProtocol(BaseModel):
         orm_mode = True
 
 
+# vw_iscore_pe_protocol input schema:
+class VwIscorePEProtocolInput(BaseModel):
+    """VwIscorePEProtocolInput schema class."""
+
+    specified_orgs: List[str]
+    start_date: str
+    end_date: str
+
+    class Config:
+        """VwIscorePEProtocolInput schema config class."""
+
+        orm_mode = True
+
+
 # vw_iscore_pe_protocol task response schema:
 class VwIscorePEProtocolTaskResp(BaseModel):
     """VwIscorePEProtocolTaskResp schema class."""
@@ -899,6 +846,20 @@ class VwIscoreWASVuln(BaseModel):
         orm_mode = True
 
 
+# vw_iscore_was_vuln input schema:
+class VwIscoreWASVulnInput(BaseModel):
+    """VwIscoreWASVulnInput schema class."""
+
+    specified_orgs: List[str]
+    start_date: str
+    end_date: str
+
+    class Config:
+        """VwIscoreWASVulnInput schema config class."""
+
+        orm_mode = True
+
+
 # vw_iscore_was_vuln task response schema:
 class VwIscoreWASVulnTaskResp(BaseModel):
     """VwIscoreWASVulnTaskResp schema class."""
@@ -920,6 +881,20 @@ class VwIscoreWASVulnPrev(BaseModel):
 
     class Config:
         """VwIscoreWASVulnPrev schema config class."""
+
+        orm_mode = True
+
+
+# vw_iscore_was_vuln_prev input schema:
+class VwIscoreWASVulnPrevInput(BaseModel):
+    """VwIscoreWASVulnPrevInput schema class."""
+
+    specified_orgs: List[str]
+    start_date: str
+    end_date: str
+
+    class Config:
+        """VwIscoreWASVulnPrevInput schema config class."""
 
         orm_mode = True
 
@@ -957,24 +932,247 @@ class KEVListTaskResp(BaseModel):
     error: Optional[str] = None
 
 
+# ---------- D-Score View Schemas, Issue 571 ----------
+# vw_dscore_vs_cert schema:
+class VwDscoreVSCert(BaseModel):
+    """VwDscoreVSCert schema class."""
+
+    organizations_uid: str
+    parent_org_uid: Optional[str] = None
+    num_ident_cert: Optional[int] = None
+    num_monitor_cert: Optional[int] = None
+
+    class Config:
+        """VwDscoreVSCert schema config class."""
+
+        orm_mode = True
+
+
+# vw_dscore_vs_cert input schema:
+class VwDscoreVSCertInput(BaseModel):
+    """VwDscoreVSCertInput schema class."""
+
+    specified_orgs: List[str]
+
+    class Config:
+        """VwDscoreVSCertInput schema config class."""
+
+        orm_mode = True
+
+
+# vw_dscore_vs_cert task response schema:
+class VwDscoreVSCertTaskResp(BaseModel):
+    """VwDscoreVSCertTaskResp schema class."""
+
+    task_id: str
+    status: str
+    result: Optional[List[VwDscoreVSCert]] = None
+    error: Optional[str] = None
+
+
+# vw_dscore_vs_mail schema:
+class VwDscoreVSMail(BaseModel):
+    """VwDscoreVSMail schema class."""
+
+    organizations_uid: str
+    parent_org_uid: Optional[str] = None
+    num_valid_dmarc: Optional[int] = None
+    num_valid_spf: Optional[int] = None
+    num_valid_dmarc_or_spf: Optional[int] = None
+    total_mail_domains: Optional[int] = None
+
+    class Config:
+        """VwDscoreVSMail schema config class."""
+
+        orm_mode = True
+
+
+# vw_dscore_vs_mail input schema:
+class VwDscoreVSMailInput(BaseModel):
+    """VwDscoreVSMailInput schema class."""
+
+    specified_orgs: List[str]
+
+    class Config:
+        """VwDscoreVSMailInput schema config class."""
+
+        orm_mode = True
+
+
+# vw_dscore_vs_mail task response schema:
+class VwDscoreVSMailTaskResp(BaseModel):
+    """VwDscoreVSMailTaskResp schema class."""
+
+    task_id: str
+    status: str
+    result: Optional[List[VwDscoreVSMail]] = None
+    error: Optional[str] = None
+
+
+# vw_dscore_pe_ip schema:
+class VwDscorePEIp(BaseModel):
+    """VwDscorePEIp schema class."""
+
+    organizations_uid: str
+    parent_org_uid: Optional[str] = None
+    num_ident_ip: Optional[int] = None
+    num_monitor_ip: Optional[int] = None
+
+    class Config:
+        """VwDscorePEIp schema config class."""
+
+        orm_mode = True
+
+
+# vw_dscore_pe_ip input schema:
+class VwDscorePEIpInput(BaseModel):
+    """VwDscorePEIpInput schema class."""
+
+    specified_orgs: List[str]
+
+    class Config:
+        """VwDscorePEIpInput schema config class."""
+
+        orm_mode = True
+
+
+# vw_dscore_pe_ip task response schema:
+class VwDscorePEIpTaskResp(BaseModel):
+    """VwDscorePEIpTaskResp schema class."""
+
+    task_id: str
+    status: str
+    result: Optional[List[VwDscorePEIp]] = None
+    error: Optional[str] = None
+
+
+# vw_dscore_pe_domain schema:
+class VwDscorePEDomain(BaseModel):
+    """VwDscorePEDomain schema class."""
+
+    organizations_uid: str
+    parent_org_uid: Optional[str] = None
+    num_ident_domain: Optional[int] = None
+    num_monitor_domain: Optional[int] = None
+
+    class Config:
+        """VwDscorePEDomain schema config class."""
+
+        orm_mode = True
+
+
+# vw_dscore_pe_domain input schema:
+class VwDscorePEDomainInput(BaseModel):
+    """VwDscorePEDomainInput schema class."""
+
+    specified_orgs: List[str]
+
+    class Config:
+        """VwDscorePEDomainInput schema config class."""
+
+        orm_mode = True
+
+
+# vw_dscore_pe_domain task response schema:
+class VwDscorePEDomainTaskResp(BaseModel):
+    """VwDscorePEDomainTaskResp schema class."""
+
+    task_id: str
+    status: str
+    result: Optional[List[VwDscorePEDomain]] = None
+    error: Optional[str] = None
+
+
+# vw_dscore_was_webapp schema:
+class VwDscoreWASWebapp(BaseModel):
+    """VwDscoreWASWebapp schema class."""
+
+    organizations_uid: str
+    parent_org_uid: Optional[str] = None
+    num_ident_webapp: Optional[int] = None
+    num_monitor_webapp: Optional[int] = None
+
+    class Config:
+        """VwDscoreWASWebapp schema config class."""
+
+        orm_mode = True
+
+
+# vw_dscore_was_webapp input schema:
+class VwDscoreWASWebappInput(BaseModel):
+    """VwDscoreWASWebappInput schema class."""
+
+    specified_orgs: List[str]
+
+    class Config:
+        """VwDscoreWASWebappInput schema config class."""
+
+        orm_mode = True
+
+
+# vw_dscore_was_webapp task response schema:
+class VwDscoreWASWebappTaskResp(BaseModel):
+    """VwDscoreWASWebappTaskResp schema class."""
+
+    task_id: str
+    status: str
+    result: Optional[List[VwDscoreWASWebapp]] = None
+    error: Optional[str] = None
+
+
+# FCEB status query schema (no view):
+class FCEBStatus(BaseModel):
+    """FCEBStatus schema class."""
+
+    organizations_uid: str
+    fceb: Optional[bool] = None
+
+    class Config:
+        """FCEBStatus schema config class."""
+
+        orm_mode = True
+
+
+# FCEB status query input schema (no view):
+class FCEBStatusInput(BaseModel):
+    """FCEBStatusInput schema class."""
+
+    specified_orgs: List[str]
+
+    class Config:
+        """FCEBStatusInput schema config class."""
+
+        orm_mode = True
+
+
+# FCEB status query task response schema (no view):
+class FCEBStatusTaskResp(BaseModel):
+    """FCEBStatusTaskResp schema class."""
+
+    task_id: str
+    status: str
+    result: Optional[List[FCEBStatus]] = None
+    error: Optional[str] = None
+
+
 # ---------- Misc. Score Schemas ----------
 # vw_iscore_orgs_ip_counts schema:
 # vw_iscore_orgs_ip_counts does not use any input parameters
 class VwIscoreOrgsIpCounts(BaseModel):
-    """VwIscoreOrgsIpCounts schema."""
+    """VwIscoreOrgsIpCounts schema class."""
 
     organizations_uid: str
     cyhy_db_name: str
 
     class Config:
-        """VwIscoreOrgsIpCounts schema configuration."""
+        """VwIscoreOrgsIpCounts schema config class."""
 
         orm_mode = True
 
 
 # vw_iscore_orgs_ip_counts task response schema:
 class VwIscoreOrgsIpCountsTaskResp(BaseModel):
-    """VwIscoreOrgsIpCountsTaskResp schema."""
+    """VwIscoreOrgsIpCountsTaskResp schema class."""
 
     task_id: str
     status: str
@@ -1021,18 +1219,17 @@ class IpsInsertTaskResp(BaseModel):
     error: Optional[str] = None
 
 
-# --- query_all_subs(), Issue 560 ---
-# --- query_subs(), Issue 633 ---
+# --- query_all_subs()/query_subs(), Issue 560, 633 ---
 # Get entire sub_domains table, single output
 class SubDomainTable(BaseModel):
     """SubDomainTable schema class."""
 
-    sub_domain_uid: str
+    sub_domain_uid: Optional[str] = None
     sub_domain: Optional[str] = None
     root_domain_uid_id: Optional[str] = None
     data_source_uid_id: Optional[str] = None
     dns_record_uid_id: Optional[str] = None
-    status: bool = False
+    status: Optional[bool] = None
     first_seen: Optional[str] = None
     last_seen: Optional[str] = None
     current: Optional[bool] = None
@@ -1045,38 +1242,39 @@ class SubDomainTable(BaseModel):
         validate_assignment = True
 
 
-# --- query_all_subs(), Issue 560 ---
-# Get entire sub_domains table, overall output
-class SubDomainResult(BaseModel):
-    """SubDomainResult schema class."""
+# --- query_all_subs()/query_subs(), Issue 560, 633 ---
+# Get entire sub_domains table, paged output
+class SubDomainPagedResult(BaseModel):
+    """SubDomainPagedResult schema class."""
 
     total_pages: int
     current_page: int
     data: List[SubDomainTable]
 
 
-# --- query_all_subs(), Issue 560 ---
-# Get entire sub_domains table, input
-class SubDomainTableInput(BaseModel):
-    """SubDomainTableInput schema class."""
+# --- query_all_subs(), Issue 633 ---
+# Get entire sub_domains table, paged input
+class SubDomainPagedInput(BaseModel):
+    """SubDomainPagedInput schema class."""
 
+    org_uid: str
     page: int
     per_page: int
 
     class Config:
-        """SubdomainTableInput schema config class."""
+        """SubDomainPagedInput schema config class."""
 
         orm_mode = True
 
 
-# --- query_all_subs(), Issue 560 ---
-# Get entire sub_domains table, task resp
-class SubDomainTableTaskResp(BaseModel):
-    """SubDomainTableTaskResp schema class."""
+# --- query_all_subs()/query_subs, Issue 560, 633 ---
+# Get entire sub_domains table, paged task resp
+class SubDomainPagedTaskResp(BaseModel):
+    """SubDomainPagedTaskResp schema class."""
 
     task_id: str
     status: str
-    result: Optional[SubDomainResult] = None
+    result: Optional[SubDomainPagedResult] = None
     error: Optional[str] = None
 
 
@@ -1131,11 +1329,47 @@ class DomainPermuTable(BaseModel):
 
 
 # --- insert_roots(), Issue 564
+# Return all the fields of the domain_permutation table
+class OrganizationsTable(BaseModel):
+    """OrganizationsTable schema class."""
+
+    organizations_uid: Optional[str] = None
+    name: Optional[str] = None
+    cyhy_db_name: Optional[str] = None
+    org_type_uid_id: Optional[str] = None
+    report_on: Optional[bool] = None
+    # password: Optional[str] = None
+    date_first_reported: Optional[str] = None
+    parent_org_uid_id: Optional[str] = None
+    premium_report: Optional[bool] = None
+    agency_type: Optional[str] = None
+    demo: Optional[bool] = None
+    scorecard: Optional[bool] = None
+    fceb: Optional[bool] = None
+    receives_cyhy_report: Optional[bool] = None
+    receives_bod_report: Optional[bool] = None
+    receives_cybex_report: Optional[bool] = None
+    run_scans: Optional[bool] = None
+    is_parent: Optional[bool] = None
+    ignore_roll_up: Optional[bool] = None
+    retired: Optional[bool] = None
+    cyhy_period_start: Optional[str] = None
+    fceb_child: Optional[bool] = None
+    election: Optional[bool] = None
+    scorecard_child: Optional[bool] = None
+
+    class Config:
+        """OrganizationsTable schema config class."""
+
+        orm_mode = True
+
+
+# --- insert_roots(), Issue 564
 # Return all the fields of the domain_permutation table, input
 class RootDomainsInsertInput(BaseModel):
     """RootDomainsInsertInput schema class."""
 
-    org_dict: dict
+    org_dict: OrganizationsTable
     domain_list: list[str]
 
     class Config:
@@ -1164,8 +1398,8 @@ class OrgsReportOnContacts(BaseModel):
 class RSSTable(BaseModel):
     """RSSTable schema class."""
 
-    report_uid: str
-    organizations_uid_id: str
+    report_uid: Optional[str]
+    organizations_uid_id: Optional[str]
     start_date: Optional[str]
     end_date: Optional[str]
     ip_count: Optional[int]
@@ -1338,8 +1572,8 @@ class IpsUpdateFromCidrTaskResp(BaseModel):
 
     task_id: str
     status: str
-    result: str = None
-    error: str = None
+    result: Optional[str] = None
+    error: Optional[str] = None
 
 
 # --- query_cidrs_by_org(), Issue 618 ---
@@ -1347,7 +1581,7 @@ class IpsUpdateFromCidrTaskResp(BaseModel):
 class CidrsByOrg(BaseModel):
     """CidrsByOrg schema class."""
 
-    cidr_uid: str
+    cidr_uid: Optional[str] = None
     network: Optional[str] = None
     organizations_uid_id: Optional[str] = None
     data_source_uid_id: Optional[str] = None
@@ -1367,8 +1601,8 @@ class CidrsByOrg(BaseModel):
 class PortsProtocolsByOrg(BaseModel):
     """PortsProtocolsByOrg schema class."""
 
-    port: int
-    protocol: str
+    port: Optional[int] = None
+    protocol: Optional[str] = None
 
     class Config:
         """PortsProtocolsByOrg schema config class."""
@@ -1381,7 +1615,7 @@ class PortsProtocolsByOrg(BaseModel):
 class SoftwareByOrg(BaseModel):
     """SoftwareByOrg schema class."""
 
-    product: str
+    product: Optional[str] = None
 
     class Config:
         """SoftwareByOrg schema config class."""
@@ -1394,7 +1628,7 @@ class SoftwareByOrg(BaseModel):
 class ForeignIpsByOrg(BaseModel):
     """ForeignIpsByOrg schema class."""
 
-    shodan_asset_uid: str
+    shodan_asset_uid: Optional[str] = None
     organizations_uid_id: Optional[str] = None
     organization: Optional[str] = None
     ip: Optional[str] = None
@@ -1423,13 +1657,391 @@ class ForeignIpsByOrg(BaseModel):
 class RootDomainsByOrg(BaseModel):
     """RootDomainsByOrg schema class."""
 
-    root_domain_uid: str
-    root_domain: str
+    root_domain_uid: Optional[str] = None
+    root_domain: Optional[str] = None
 
     class Config:
         """RootDomainsByOrg schema config class."""
 
         orm_mode = True
+
+
+# --- query_creds_view(), Issue 623 ---
+# Uses VwBreachcomp schema
+        
+
+# --- query_credsbyday_view(), Issue 624 ---
+class CredsbydateByOrg(BaseModel):
+    """CredsbydateByOrg schema class."""
+
+    mod_date: Optional[str] = None
+    no_password: Optional[int] = None
+    password_included: Optional[int] = None
+
+    class Config:
+        """CredsbydateByOrg schema config class."""
+
+        orm_mode = True
+
+
+# --- query_breachdetails_view(), Issue 625 ---
+class BreachdetailsByOrg(BaseModel):
+    """BreachdetailsByOrg schema class."""
+
+    breach_name: Optional[str] = None
+    mod_date: Optional[str] = None
+    breach_date: Optional[str] = None
+    password_included: Optional[int] = None
+    number_of_creds: Optional[int] = None
+
+    class Config:
+        """BreachdetailsByOrg schema config class."""
+
+        orm_mode = True
+
+
+# --- query_shodan(), Issue 628 ---
+class VwShodanvulnsSuspectedSchema(BaseModel):
+    """VwShodanvulnsSuspectedSchema schema class."""
+
+    organizations_uid: Optional[str]
+    organization: Optional[str]
+    ip: Optional[str]
+    port: Optional[str]
+    protocol: Optional[str]
+    type: Optional[str]
+    name: Optional[str]
+    # potential_vulns: List[Optional[str]]
+    potential_vulns: Optional[List[str]]
+    mitigation: Optional[str]
+    timestamp: Optional[str]
+    product: Optional[str]
+    server: Optional[str]
+    # tags: List[Optional[str]]
+    # domains: List[Optional[str]]
+    # hostnames: List[Optional[str]]
+    tags: Optional[List[str]]
+    domains: Optional[List[str]]
+    hostnames: Optional[List[str]]
+    isn: Optional[str]
+    asn: Optional[int]
+    data_source: Optional[str]
+
+    class Config:
+        """VwShodanvulnsSuspectedSchema schema config class."""
+
+        orm_mode = True
+
+
+# --- query_shodan(), Issue 628 ---
+class VwShodanvulnsVerifiedSchema(BaseModel):
+    """VwShodanvulnsVerifiedSchema schema class."""
+
+    organizations_uid: Optional[str]
+    organization: Optional[str]
+    ip: Optional[str]
+    port: Optional[str]
+    protocol: Optional[str]
+    timestamp: Optional[str]
+    cve: Optional[str]
+    severity: Optional[str]
+    cvss: Optional[Decimal]
+    summary: Optional[str]
+    product: Optional[str]
+    attack_vector: Optional[str]
+    av_description: Optional[str]
+    attack_complexity: Optional[str]
+    ac_description: Optional[str]
+    confidentiality_impact: Optional[str]
+    ci_description: Optional[str]
+    integrity_impact: Optional[str]
+    ii_description: Optional[str]
+    availability_impact: Optional[str]
+    ai_description: Optional[str]
+    # tags: List[Optional[str]]
+    # domains: List[Optional[str]]
+    # hostnames: List[Optional[str]]
+    tags: Optional[List[str]]
+    domains: Optional[List[str]]
+    hostnames: Optional[List[str]]
+    isn: Optional[str]
+    asn: Optional[int]
+    data_source: Optional[str]
+
+    class Config:
+        """VwShodanvulnsVerifiedSchema schema config class."""
+
+        orm_mode = True
+
+
+# --- query_shodan(), Issue 628 ---
+class ShodanAssetsSchema(BaseModel):
+    """ShodanAssetsSchema schema class."""
+
+    shodan_asset_uid: Optional[str]
+    organizations_uid_id: Optional[str]
+    organization: Optional[str]
+    ip: Optional[str]
+    port: Optional[int]
+    protocol: Optional[str]
+    timestamp: Optional[str]
+    product: Optional[str]
+    server: Optional[str]
+    # tags: List[Optional[str]]
+    # domains: List[Optional[str]]
+    # hostnames: List[Optional[str]]
+    tags: Optional[List[str]]
+    domains: Optional[List[str]]
+    hostnames: Optional[List[str]]
+    isn: Optional[str]
+    asn: Optional[int]
+    data_source_uid_id: Optional[str]
+
+    class Config:
+        """ShodanAssetsSchema schema config class."""
+
+        orm_mode = True
+
+
+# --- query_darkweb(), Issue 629 ---
+class DarkWebDataInput(BaseModel):
+    """DarkWebDataInput schema class."""
+
+    org_uid: str
+    start_date: str
+    end_date: str
+    table: str
+
+    class Config:
+        """DarkWebDataInput schema config class."""
+
+        orm_mode = True
+
+
+# --- query_darkweb(), Issue 629 ---
+class MentionsTable(BaseModel):
+    """MentionsTable schema class."""
+
+    mentions_uid: Optional[str] = None
+    category: Optional[str] = None
+    collection_date: Optional[str] = None
+    content: Optional[str] = None
+    creator: Optional[str] = None
+    date: Optional[str] = None
+    sixgill_mention_id: Optional[str] = None
+    post_id: Optional[str] = None
+    lang: Optional[str] = None
+    rep_grade: Optional[str] = None
+    site: Optional[str] = None
+    site_grade: Optional[str] = None
+    title: Optional[str] = None
+    type: Optional[str] = None
+    url: Optional[str] = None
+    comments_count: Optional[str] = None
+    sub_category: Optional[str] = None
+    tags: Optional[str] = None
+    organizations_uid: Optional[str] = None
+    data_source_uid: Optional[str] = None
+    title_translated: Optional[str] = None
+    content_translated: Optional[str] = None
+    detected_lang: Optional[str] = None
+
+    class Config:
+        """MentionsTable schema config class."""
+
+        orm_mode = True
+
+
+# --- query_darkweb(), Issue 629 ---
+class AlertsTable(BaseModel):
+    """AlertsTable schema class."""
+
+    alerts_uid: Optional[str] = None
+    alert_name: Optional[str] = None
+    content: Optional[str] = None
+    date: Optional[str] = None
+    sixgill_id: Optional[str] = None
+    read: Optional[str] = None
+    severity: Optional[str] = None
+    site: Optional[str] = None
+    threat_level: Optional[str] = None
+    threats: Optional[str] = None
+    title: Optional[str] = None
+    user_id: Optional[str] = None
+    category: Optional[str] = None
+    lang: Optional[str] = None
+    organizations_uid_id: Optional[str] = None
+    data_source_uid_id: Optional[str] = None
+    content_snip: Optional[str] = None
+    asset_mentioned: Optional[str] = None
+    asset_type: Optional[str] = None
+
+    class Config:
+        """AlertsTable schema config class."""
+
+        orm_mode = True
+
+
+# --- query_darkweb(), Issue 629 ---
+class VwDarkwebMentionsbydate(BaseModel):
+    """VwDarkwebMentionsbydate schema class."""
+
+    organizations_uid: Optional[str] = None
+    date: Optional[str] = None
+    count: Optional[int] = None
+
+    class Config:
+        """VwDarkwebMentionsbydate schema config class."""
+
+        orm_mode = True
+
+
+# --- query_darkweb(), Issue 629 ---
+class VwDarkwebInviteonlymarkets(BaseModel):
+    """VwDarkwebInviteonlymarkets schema class."""
+
+    organizations_uid: Optional[str] = None
+    date: Optional[str] = None
+    Site: Optional[str] = None
+
+    class Config:
+        """VwDarkwebInviteonlymarkets schema config class."""
+
+        orm_mode = True
+
+
+# --- query_darkweb(), Issue 629 ---
+class VwDarkwebSocmediaMostactposts(BaseModel):
+    """VwDarkwebSocmediaMostactposts schema class."""
+
+    organizations_uid: Optional[str] = None
+    date: Optional[str] = None
+    Title: Optional[str] = None
+    comments_count: Optional[int] = None
+
+    class Config:
+        """VwDarkwebSocmediaMostactposts schema config class."""
+
+        orm_mode = True
+
+
+# --- query_darkweb(), Issue 629 ---
+class VwDarkwebMostactposts(BaseModel):
+    """VwDarkwebMostactposts schema class."""
+
+    organizations_uid: Optional[str] = None
+    date: Optional[str] = None
+    Title: Optional[str] = None
+    comments_count: Optional[int] = None
+
+    class Config:
+        """VwDarkwebMostactposts schema config class."""
+
+        orm_mode = True
+
+
+# --- query_darkweb(), Issue 629 ---
+class VwDarkwebExecalerts(BaseModel):
+    """VwDarkwebExecalerts schema class."""
+
+    organizations_uid: Optional[str] = None
+    date: Optional[str] = None
+    Site: Optional[str] = None
+    Title: Optional[str] = None
+    Events: Optional[int] = None
+
+    class Config:
+        """VwDarkwebExecalerts schema config class."""
+
+        orm_mode = True
+
+
+# --- query_darkweb(), Issue 629 ---
+class VwDarkwebAssetalerts(BaseModel):
+    """VwDarkwebAssetalerts schema class."""
+
+    organizations_uid: Optional[str] = None
+    date: Optional[str] = None
+    Site: Optional[str] = None
+    Title: Optional[str] = None
+    Events: Optional[int] = None
+
+    class Config:
+        """VwDarkwebAssetalerts schema config class."""
+
+        orm_mode = True
+
+
+# --- query_darkweb(), Issue 629 ---
+class VwDarkwebThreatactors(BaseModel):
+    """VwDarkwebThreatactors schema class."""
+
+    organizations_uid: Optional[str] = None
+    date: Optional[str] = None
+    Creator: Optional[str] = None
+    Grade: Optional[float] = None
+
+    class Config:
+        """VwDarkwebThreatactors schema config class."""
+
+        orm_mode = True
+
+
+# --- query_darkweb(), Issue 629 ---
+class VwDarkwebPotentialthreats(BaseModel):
+    """VwDarkwebPotentialthreats schema class."""
+
+    organizations_uid: Optional[str] = None
+    date: Optional[str] = None
+    Site: Optional[str] = None
+    Threats: Optional[str] = None
+
+    class Config:
+        """VwDarkwebPotentialthreats schema config class."""
+
+        orm_mode = True
+
+
+# --- query_darkweb(), Issue 629 ---
+class VwDarkwebSites(BaseModel):
+    """VwDarkwebSites schema class."""
+
+    organizations_uid: Optional[str] = None
+    date: Optional[str] = None
+    Site: Optional[str] = None
+
+    class Config:
+        """VwDarkwebSites schema config class."""
+
+        orm_mode = True
+
+
+# --- query_darkweb_cves(), Issue 630 ---
+class TopCvesTable(BaseModel):
+    """TopCvesRecord schema class."""
+
+    top_cves_uid: str
+    cve_id: str
+    dynamic_rating: str
+    nvd_base_score: str
+    date: str
+    summary: str
+    data_source_uid_id: str
+
+    class Config:
+        """TopCvesRecord schema config class."""
+
+        orm_mode = True
+
+
+# --- query_darkweb_cves(), Issue 630 ---
+class DarkWebCvesTaskResp(BaseModel):
+    """DarkWebCvesTaskResp schema class."""
+
+    task_id: str
+    status: str
+    result: Optional[List[TopCvesTable]] = None
+    error: Optional[str] = None
 
 
 # --- execute_scorecard(), Issue 632 ---
@@ -1443,7 +2055,7 @@ class RSSInsertInput(BaseModel):
     ip_count: int
     root_count: int
     sub_count: int
-    ports_count: int
+    num_ports: int #ports_count: int
     creds_count: int
     breach_count: int
     cred_password_count: int
@@ -1458,8 +2070,12 @@ class RSSInsertInput(BaseModel):
     dark_web_mentions_count: int
     dark_web_executive_alerts_count: int
     dark_web_asset_alerts_count: int
-    pe_number_score: int
-    pe_letter_grade: str
+    pe_number_score: str # may be "NA"
+    pe_letter_grade: str # may be "NA"
+    cidr_count: int
+    port_protocol_count: int
+    software_count: int
+    foreign_ips_count: int
 
     class Config:
         """RSSInsertInput schema config class."""
@@ -1501,7 +2117,7 @@ class RSSPrevPeriodInput(BaseModel):
         orm_mode = True
 
 
-# ---------- General PE Score Schemas ----------
+# ---------- General PE Score Schemas, 635 ----------
 # --- reported orgs schema, Issue 635 ---
 # List of reported organizations schema
 class ReportedOrgs(BaseModel):
@@ -1529,7 +2145,7 @@ class ReportedOrgsCyhy(BaseModel):
         orm_mode = True
 
 
-# ---------- PE Score Historical Data ----------
+# ---------- PE Score Historical Data, 635 ----------
 # --- pescore_hist_domain_alert(), Issue 635 ---
 # Get pescore_hist_domain_alert data for the specified period
 class PEScoreHistDomainAlert(BaseModel):
@@ -1689,7 +2305,7 @@ class PEScoreHistCredTaskResp(BaseModel):
     error: Optional[str] = None
 
 
-# ---------- PE Score Base Metrics Data ----------
+# ---------- PE Score Base Metrics Data, 635 ----------
 # --- pescore_base_metrics(), Issue 635 ---
 # Get data for CRED component of pescore_base_metrics
 class PEScoreCred(BaseModel):
@@ -1851,7 +2467,7 @@ class PEScoreAttackSurface(BaseModel):
     """PEScoreAttackSurface schema class."""
 
     organizations_uid: str
-    cyhy_db_name: str
+    cyhy_db_name: Optional[str] = None
     num_ports: Optional[int] = None
     num_root_domain: Optional[int] = None
     num_sub_domain: Optional[int] = None
@@ -1993,30 +2609,80 @@ class CredBreachIntelXTaskResp(BaseModel):
     error: Optional[str] = None
 
 
+# --- insert_sixgill_alerts(), Issue 653 ---
+class AlertsInsert(BaseModel):
+    """AlertsInsert schema class."""
+
+    alert_name: Optional[str] = None
+    content: Optional[str] = None  # PROBLEM
+    date: Optional[str] = None
+    sixgill_id: Optional[str] = None
+    read: Optional[str] = None
+    severity: Optional[str] = None
+    site: Optional[str] = None
+    threat_level: Optional[str] = None
+    threats: Optional[str] = None  # PROBLEM
+    title: Optional[str] = None
+    user_id: Optional[str] = None
+    category: Optional[str] = None
+    lang: Optional[str] = None  # PROBLEM
+    organizations_uid: Optional[str] = None  # PROBLEM
+    data_source_uid: Optional[str] = None  # PROBLEM
+    content_snip: Optional[str] = None  # PROBLEM
+    asset_mentioned: Optional[str] = None  # PROBLEM
+    asset_type: Optional[str] = None  # PROBLEM
+
+    class Config:
+        """AlertsInsert schema config class."""
+
+        orm_mode = True
+
+
+# --- insert_sixgill_alerts(), Issue 653 ---
+class AlertsInsertInput(BaseModel):
+    """AlertsInsertInput schema class."""
+
+    new_alerts: List[AlertsInsert]
+
+    class Config:
+        """AlertsInsertInput schema config class."""
+
+        orm_mode = True
+
+
+# --- insert_sixgill_alerts(), Issue 653 ---
+class AlertsInsertTaskResp(BaseModel):
+    """AlertsInsertTaskResp schema class."""
+
+    task_id: str
+    status: str
+    result: Optional[str] = None
+    error: Optional[str] = None
+
+
 # --- insert_sixgill_mentions(), Issue 654 ---
-# Insert multiple records into the mentions table
 class MentionsInsert(BaseModel):
     """MentionsInsert schema class."""
 
-    organizations_uid: str
-    data_source_uid: str
-    category: str
-    collection_date: str
-    content: str
-    creator: str
-    date: str
-    sixgill_mention_id: str
-    lang: str
-    post_id: str
-    rep_grade: str
-    site: str
-    site_grade: str
-    sub_category: str
-    title: str
-    type: str
-    url: str
-    comments_count: str
-    tags: str
+    organizations_uid: Optional[str] = None
+    data_source_uid: Optional[str] = None
+    category: Optional[str] = None
+    collection_date: Optional[str] = None
+    content: Optional[str] = None
+    creator: Optional[str] = None
+    date: Optional[str] = None
+    sixgill_mention_id: Optional[str] = None
+    lang: Optional[str] = None
+    post_id: Optional[str] = None
+    rep_grade: Optional[str] = None
+    site: Optional[str] = None
+    site_grade: Optional[str] = None
+    sub_category: Optional[str] = None
+    title: Optional[str] = None
+    type: Optional[str] = None
+    url: Optional[str] = None
+    comments_count: Optional[str] = None
+    tags: Optional[str] = None
 
     class Config:
         """MentionsInsert schema config class."""
@@ -2025,11 +2691,10 @@ class MentionsInsert(BaseModel):
 
 
 # --- insert_sixgill_mentions(), Issue 654 ---
-# Insert multiple records into the mentions table, input
 class MentionsInsertInput(BaseModel):
     """MentionsInsertInput schema class."""
 
-    insert_data: List[MentionsInsert]
+    new_mentions: List[MentionsInsert]
 
     class Config:
         """MentionsInsertInput schema config class."""
@@ -2037,36 +2702,98 @@ class MentionsInsertInput(BaseModel):
         orm_mode = True
 
 
+# --- insert_sixgill_mentions(), Issue 654 ---
+class MentionsInsertTaskResp(BaseModel):
+    """MentionsInsertTaskResp schema class."""
+
+    task_id: str
+    status: str
+    result: Optional[str] = None
+    error: Optional[str] = None
+
+
 # --- insert_sixgill_breaches(), Issue 655 ---
-# Insert multiple records into the credential_breaches table
-class CredBreachesInsert(BaseModel):
-    """CredBreachesInsert schema class."""
+class CredBreachesSixgillInsert(BaseModel):
+    """CredBreachesSixgillInsert schema class."""
 
     breach_name: str
     description: str
-    exposed_cred_count: int
     breach_date: str
-    modified_date: str
     password_included: bool
     data_source_uid: str
+    modified_date: str
 
     class Config:
-        """CredBreachesInsert schema config class."""
+        """CredBreachesSixgillInsert schema config class."""
 
         orm_mode = True
 
 
 # --- insert_sixgill_breaches(), Issue 655 ---
-# Insert multiple records into the credential_breaches table, input
-class CredBreachesInsertInput(BaseModel):
-    """CredBreachesInsertInput schema class."""
+class CredBreachesSixgillInsertInput(BaseModel):
+    """CredBreachesSixgillInsertInput schema class."""
 
-    insert_data: List[CredBreachesInsert]
+    new_breaches: List[CredBreachesSixgillInsert]
 
     class Config:
-        """CredBreachesInsertInput schema config class."""
+        """CredBreachesSixgillInsertInput schema config class."""
 
         orm_mode = True
+
+
+# --- insert_sixgill_breaches(), Issue 655 ---
+class CredBreachesSixgillInsertTaskResp(BaseModel):
+    """CredBreachesSixgillInsertTaskResp schema class."""
+
+    task_id: str
+    status: str
+    result: Optional[str] = None
+    error: Optional[str] = None
+
+
+# --- insert_sixgill_credentials(), Issue 656 ---
+class CredExpSixgillInsert(BaseModel):
+    """CredExpSixgillInsert schema class."""
+
+    modified_date: str
+    sub_domain: str
+    email: str
+    hash_type: str
+    name: str
+    login_id: str
+    password: str
+    phone: str
+    breach_name: str
+    organizations_uid: str
+    data_source_uid: str
+    credential_breaches_uid: str
+
+    class Config:
+        """CredExpSixgillInsert schema config class."""
+
+        orm_mode = True
+
+
+# --- insert_sixgill_credentials(), Issue 656 ---
+class CredExpSixgillInsertInput(BaseModel):
+    """CredExpSixgillInsertInput schema class."""
+
+    new_exposures: List[CredExpSixgillInsert]
+
+    class Config:
+        """CredExpSixgillInsertInput schema config class."""
+
+        orm_mode = True
+
+
+# --- insert_sixgill_credentials(), Issue 656 ---
+class CredExpSixgillInsertTaskResp(BaseModel):
+    """CredExpSixgillInsertTaskResp schema class."""
+
+    task_id: str
+    status: str
+    result: Optional[str] = None
+    error: Optional[str] = None
 
 
 # --- insert_sixgill_topCVEs(), Issue 657 ---
@@ -2092,12 +2819,22 @@ class TopCVEsInsert(BaseModel):
 class TopCVEsInsertInput(BaseModel):
     """TopCVEsInsertInput schema class."""
 
-    insert_data: List[TopCVEsInsert]
+    new_topcves: List[TopCVEsInsert]
 
     class Config:
         """TopCVEsInsertInput schema config class."""
 
         orm_mode = True
+
+
+# --- insert_sixgill_topCVEs(), Issue 657 ---
+class TopCVEsInsertTaskResp(BaseModel):
+    """TopCVEsInsertTaskResp schema class."""
+
+    task_id: str
+    status: str
+    result: Optional[str] = None
+    error: Optional[str] = None
 
 
 # --- execute_dnsmonitor_data(), Issue 659 ---
@@ -2226,6 +2963,41 @@ class CredBreachesIntelxInsertInput(BaseModel):
 
     class Config:
         """CredBreachesIntelxInsertInput schema config class."""
+
+        orm_mode = True
+
+
+# --- insert_intelx_credentials(), Issue 664 ---
+# Insert bulk IntelX credential data into credential_exposures table
+class CredExpIntelxInsert(BaseModel):
+    """CredExpIntelxInsert schema class."""
+
+    email: str
+    organizations_uid: str
+    root_domain: str
+    sub_domain: str
+    breach_name: str
+    modified_date: str
+    data_source_uid: str
+    password: str
+    hash_type: str
+    intelx_system_id: str
+
+    class Config:
+        """CredExpIntelxInsert schema config class."""
+
+        orm_mode = True
+
+
+# --- insert_intelx_credentials(), Issue 664 ---
+# Insert bulk IntelX credential data into credential_exposures table, input
+class CredExpIntelxInsertInput(BaseModel):
+    """CredExpIntelxInsertInput schema class."""
+
+    exp_data: List[CredExpIntelxInsert]
+
+    class Config:
+        """CredExpIntelxInsertInput schema config class."""
 
         orm_mode = True
 
@@ -2382,37 +3154,6 @@ class PshttInsert(BaseModel):
     ep_httpwww_headers: Optional[str] = None  # This field type is a guess.
     ep_httpwww_server_header: Optional[str] = None
     ep_httpwww_server_version: Optional[str] = None
-
-
-# --- Top_cves table record, Issue 630 ---
-class TopCvesRecord(BaseModel):
-    top_cves_uid: str
-    cve_id: str
-    dynamic_rating: str
-    nvd_base_score: str
-    date: datetime
-    summary: str
-    data_source_uid_id: str
-
-
-# --- darkweb_cves(), Issue 630 ---
-# Get darkweb
-class DarkWebCvesTaskResp(BaseModel):
-    task_id: str
-    status: str
-    result: List[TopCvesRecord] = None
-    error: str = None
-
-
-# --- darkwebdatainput Issue 629 ---
-class DarkWebDataInput(BaseModel):
-    table: str
-    org_uid: str
-    start_date: str
-    end_date: str
-
-    class Config:
-        orm_mode = True
 
 
 class AlertInput(BaseModel):

@@ -11,6 +11,8 @@ from celery import shared_task
 from django.core import serializers
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.db.models import Count, Q, Sum
+
+# Import api database models
 from home.models import *
 
 # cisagov Libraries
@@ -30,6 +32,14 @@ def convert_date_to_string(date):
     if date is not None:
         return date.strftime("%Y-%m-%d")
     return date
+
+def convert_uuids_to_strings(list_of_dicts):
+    """Convert organizations_uid and parent_org_uid to strings."""
+    for row in list_of_dicts:
+        row["organizations_uid"] = str(row["organizations_uid"])
+        if row["parent_org_uid"] is not None:
+            row["parent_org_uid"] = str(row["parent_org_uid"])
+    return list_of_dicts
 
 
 @shared_task(bind=True)
@@ -86,92 +96,6 @@ def get_rva_info(ip_address: List[str]):
     return result
 
 
-# ---------- Score Tasks Helper Functions ----------
-def convert_uuids_to_strings(list_of_dicts):
-    """Convert organizations_uid and parent_org_uid to strings."""
-    for row in list_of_dicts:
-        row["organizations_uid"] = str(row["organizations_uid"])
-        if row["parent_org_uid"] is not None:
-            row["parent_org_uid"] = str(row["parent_org_uid"])
-    return list_of_dicts
-
-
-# ---------- D-Score View Tasks, Issue 571 ----------
-@shared_task(bind=True)
-def get_dscore_vs_cert_info(self, specified_orgs: List[str]):
-    """Task function for the dscore_vs_cert API endpoint."""
-    # Make database query and convert to list of dictionaries
-    dscore_vs_cert = list(
-        VwDscoreVSCert.objects.filter(organizations_uid__in=specified_orgs).values()
-    )
-    # Convert uuids to strings
-    dscore_vs_cert = convert_uuids_to_strings(dscore_vs_cert)
-    return dscore_vs_cert
-
-
-@shared_task(bind=True)
-def get_dscore_vs_mail_info(self, specified_orgs: List[str]):
-    """Task function for the dscore_vs_mail API endpoint."""
-    # Make database query and convert to list of dictionaries
-    dscore_vs_mail = list(
-        VwDscoreVSMail.objects.filter(organizations_uid__in=specified_orgs).values()
-    )
-    # Convert uuids to strings
-    dscore_vs_mail = convert_uuids_to_strings(dscore_vs_mail)
-    return dscore_vs_mail
-
-
-@shared_task(bind=True)
-def get_dscore_pe_ip_info(self, specified_orgs: List[str]):
-    """Task function for the dscore_pe_ip API endpoint."""
-    # Make database query and convert to list of dictionaries
-    dscore_pe_ip = list(
-        VwDscorePEIp.objects.filter(organizations_uid__in=specified_orgs).values()
-    )
-    # Convert uuids to strings
-    dscore_pe_ip = convert_uuids_to_strings(dscore_pe_ip)
-    return dscore_pe_ip
-
-
-@shared_task(bind=True)
-def get_dscore_pe_domain_info(self, specified_orgs: List[str]):
-    """Task function for the dscore_pe_domain API endpoint."""
-    # Make database query and convert to list of dictionaries
-    dscore_pe_domain = list(
-        VwDscorePEDomain.objects.filter(organizations_uid__in=specified_orgs).values()
-    )
-    # Convert uuids to strings
-    dscore_pe_domain = convert_uuids_to_strings(dscore_pe_domain)
-    return dscore_pe_domain
-
-
-@shared_task(bind=True)
-def get_dscore_was_webapp_info(self, specified_orgs: List[str]):
-    """Task function for the dscore_was_webapp API endpoint."""
-    # Make database query and convert to list of dictionaries
-    dscore_was_webapp = list(
-        VwDscoreWASWebapp.objects.filter(organizations_uid__in=specified_orgs).values()
-    )
-    # Convert uuids to strings
-    dscore_was_webapp = convert_uuids_to_strings(dscore_was_webapp)
-    return dscore_was_webapp
-
-
-@shared_task(bind=True)
-def get_fceb_status_info(self, specified_orgs: List[str]):
-    """Task function for the FCEB status query API endpoint."""
-    # Make database query and convert to list of dictionaries
-    fceb_status = list(
-        Organizations.objects.filter(organizations_uid__in=specified_orgs).values(
-            "organizations_uid", "fceb"
-        )
-    )
-    # Convert uuids to strings
-    for row in fceb_status:
-        row["organizations_uid"] = str(row["organizations_uid"])
-    return fceb_status
-
-
 # ---------- I-Score View Tasks, Issue 570 ----------
 @shared_task(bind=True)
 def get_iscore_vs_vuln_info(self, specified_orgs: List[str]):
@@ -181,7 +105,9 @@ def get_iscore_vs_vuln_info(self, specified_orgs: List[str]):
         VwIscoreVSVuln.objects.filter(organizations_uid__in=specified_orgs).values()
     )
     # Convert uuids to strings
-    iscore_vs_vuln = convert_uuids_to_strings(iscore_vs_vuln)
+    for row in iscore_vs_vuln:
+        row["organizations_uid"] = convert_uuid_to_string(row["organizations_uid"])
+        row["parent_org_uid"] = convert_uuid_to_string(row["parent_org_uid"])
     return iscore_vs_vuln
 
 
@@ -197,11 +123,11 @@ def get_iscore_vs_vuln_prev_info(
             time_closed__range=[start_date, end_date],
         ).values()
     )
-    # Convert datetime objects to string
+    # Convert uuids/datetime to strings
     for row in iscore_vs_vuln_prev:
-        row["time_closed"] = row["time_closed"].strftime("%Y-%m-%d")
-    # Convert uuids to strings
-    iscore_vs_vuln_prev = convert_uuids_to_strings(iscore_vs_vuln_prev)
+        row["organizations_uid"] = convert_uuid_to_string(row["organizations_uid"])
+        row["parent_org_uid"] = convert_uuid_to_string(row["parent_org_uid"])
+        row["time_closed"] = convert_date_to_string(row["time_closed"])
     return iscore_vs_vuln_prev
 
 
@@ -217,13 +143,13 @@ def get_iscore_pe_vuln_info(
             date__range=[start_date, end_date],
         ).values()
     )
-    # Fix data types
+    # Convert uuids/datetime to strings
     for row in iscore_pe_vuln:
-        row["date"] = row["date"].strftime("%Y-%m-%d")
+        row["organizations_uid"] = convert_uuid_to_string(row["organizations_uid"])
+        row["parent_org_uid"] = convert_uuid_to_string(row["parent_org_uid"])
+        row["date"] = convert_date_to_string(row["date"])
         if row["cvss_score"] is not None:
             row["cvss_score"] = float(row["cvss_score"])
-    # Convert uuids to strings
-    iscore_pe_vuln = convert_uuids_to_strings(iscore_pe_vuln)
     return iscore_pe_vuln
 
 
@@ -239,11 +165,11 @@ def get_iscore_pe_cred_info(
             date__range=[start_date, end_date],
         ).values()
     )
-    # Fix data types
+    # Convert uuids/datetime to strings
     for row in iscore_pe_cred:
-        row["date"] = row["date"].strftime("%Y-%m-%d")
-    # Convert uuids to strings
-    iscore_pe_cred = convert_uuids_to_strings(iscore_pe_cred)
+        row["organizations_uid"] = convert_uuid_to_string(row["organizations_uid"])
+        row["parent_org_uid"] = convert_uuid_to_string(row["parent_org_uid"])
+        row["date"] = convert_date_to_string(row["date"])
     return iscore_pe_cred
 
 
@@ -259,11 +185,11 @@ def get_iscore_pe_breach_info(
             date__range=[start_date, end_date],
         ).values()
     )
-    # Fix data types
+    # Convert uuids/datetime to strings
     for row in iscore_pe_breach:
-        row["date"] = row["date"].strftime("%Y-%m-%d")
-    # Convert uuids to strings
-    iscore_pe_breach = convert_uuids_to_strings(iscore_pe_breach)
+        row["organizations_uid"] = convert_uuid_to_string(row["organizations_uid"])
+        row["parent_org_uid"] = convert_uuid_to_string(row["parent_org_uid"])
+        row["date"] = convert_date_to_string(row["date"])
     return iscore_pe_breach
 
 
@@ -279,11 +205,11 @@ def get_iscore_pe_darkweb_info(
             (Q(date__gte=start_date) & Q(date__lte=end_date)) | Q(date="0001-01-01"),
         ).values()
     )
-    # Fix data types
+    # Convert uuids/datetime to strings
     for row in iscore_pe_darkweb:
-        row["date"] = row["date"].strftime("%Y-%m-%d")
-    # Convert uuids to strings
-    iscore_pe_darkweb = convert_uuids_to_strings(iscore_pe_darkweb)
+        row["organizations_uid"] = convert_uuid_to_string(row["organizations_uid"])
+        row["parent_org_uid"] = convert_uuid_to_string(row["parent_org_uid"])
+        row["date"] = convert_date_to_string(row["date"])
     return iscore_pe_darkweb
 
 
@@ -299,11 +225,11 @@ def get_iscore_pe_protocol_info(
             date__range=[start_date, end_date],
         ).values()
     )
-    # Fix data types
+    # Convert uuids/datetime to strings
     for row in iscore_pe_protocol:
-        row["date"] = row["date"].strftime("%Y-%m-%d")
-    # Convert uuids to strings
-    iscore_pe_protocol = convert_uuids_to_strings(iscore_pe_protocol)
+        row["organizations_uid"] = convert_uuid_to_string(row["organizations_uid"])
+        row["parent_org_uid"] = convert_uuid_to_string(row["parent_org_uid"])
+        row["date"] = convert_date_to_string(row["date"])
     return iscore_pe_protocol
 
 
@@ -319,11 +245,11 @@ def get_iscore_was_vuln_info(
             date__range=[start_date, end_date],
         ).values()
     )
-    # Fix data types
+    # Convert uuids/datetime to strings
     for row in iscore_was_vuln:
-        row["date"] = row["date"].strftime("%Y-%m-%d")
-    # Convert uuids to strings
-    iscore_was_vuln = convert_uuids_to_strings(iscore_was_vuln)
+        row["organizations_uid"] = convert_uuid_to_string(row["organizations_uid"])
+        row["parent_org_uid"] = convert_uuid_to_string(row["parent_org_uid"])
+        row["date"] = convert_date_to_string(row["date"])
     return iscore_was_vuln
 
 
@@ -339,11 +265,11 @@ def get_iscore_was_vuln_prev_info(
             date__range=[start_date, end_date],
         ).values()
     )
-    # Fix data types
+    # Convert uuids/datetime to strings
     for row in iscore_was_vuln_prev:
-        row["date"] = row["date"].strftime("%Y-%m-%d")
-    # Convert uuids to strings
-    iscore_was_vuln_prev = convert_uuids_to_strings(iscore_was_vuln_prev)
+        row["organizations_uid"] = convert_uuid_to_string(row["organizations_uid"])
+        row["parent_org_uid"] = convert_uuid_to_string(row["parent_org_uid"])
+        row["date"] = convert_date_to_string(row["date"])
     return iscore_was_vuln_prev
 
 
@@ -353,6 +279,92 @@ def get_kev_list_info(self):
     # Make database query
     kev_list = list(CyhyKevs.objects.values("kev"))
     return kev_list
+
+
+# ---------- D-Score View Tasks, Issue 571 ----------
+@shared_task(bind=True)
+def get_dscore_vs_cert_info(self, specified_orgs: List[str]):
+    """Task function for the dscore_vs_cert API endpoint."""
+    # Make database query and convert to list of dictionaries
+    dscore_vs_cert = list(
+        VwDscoreVSCert.objects.filter(organizations_uid__in=specified_orgs).values()
+    )
+    # Convert uuids to strings
+    for row in dscore_vs_cert:
+        row["organizations_uid"] = convert_uuid_to_string(row["organizations_uid"])
+        row["parent_org_uid"] = convert_uuid_to_string(row["parent_org_uid"])
+    return dscore_vs_cert
+
+
+@shared_task(bind=True)
+def get_dscore_vs_mail_info(self, specified_orgs: List[str]):
+    """Task function for the dscore_vs_mail API endpoint."""
+    # Make database query and convert to list of dictionaries
+    dscore_vs_mail = list(
+        VwDscoreVSMail.objects.filter(organizations_uid__in=specified_orgs).values()
+    )
+    # Convert uuids to strings
+    for row in dscore_vs_mail:
+        row["organizations_uid"] = convert_uuid_to_string(row["organizations_uid"])
+        row["parent_org_uid"] = convert_uuid_to_string(row["parent_org_uid"])
+    return dscore_vs_mail
+
+
+@shared_task(bind=True)
+def get_dscore_pe_ip_info(self, specified_orgs: List[str]):
+    """Task function for the dscore_pe_ip API endpoint."""
+    # Make database query and convert to list of dictionaries
+    dscore_pe_ip = list(
+        VwDscorePEIp.objects.filter(organizations_uid__in=specified_orgs).values()
+    )
+    # Convert uuids to strings
+    for row in dscore_pe_ip:
+        row["organizations_uid"] = convert_uuid_to_string(row["organizations_uid"])
+        row["parent_org_uid"] = convert_uuid_to_string(row["parent_org_uid"])
+    return dscore_pe_ip
+
+
+@shared_task(bind=True)
+def get_dscore_pe_domain_info(self, specified_orgs: List[str]):
+    """Task function for the dscore_pe_domain API endpoint."""
+    # Make database query and convert to list of dictionaries
+    dscore_pe_domain = list(
+        VwDscorePEDomain.objects.filter(organizations_uid__in=specified_orgs).values()
+    )
+    # Convert uuids to strings
+    for row in dscore_pe_domain:
+        row["organizations_uid"] = convert_uuid_to_string(row["organizations_uid"])
+        row["parent_org_uid"] = convert_uuid_to_string(row["parent_org_uid"])
+    return dscore_pe_domain
+
+
+@shared_task(bind=True)
+def get_dscore_was_webapp_info(self, specified_orgs: List[str]):
+    """Task function for the dscore_was_webapp API endpoint."""
+    # Make database query and convert to list of dictionaries
+    dscore_was_webapp = list(
+        VwDscoreWASWebapp.objects.filter(organizations_uid__in=specified_orgs).values()
+    )
+    # Convert uuids to strings
+    for row in dscore_was_webapp:
+        row["organizations_uid"] = convert_uuid_to_string(row["organizations_uid"])
+        row["parent_org_uid"] = convert_uuid_to_string(row["parent_org_uid"])
+    return dscore_was_webapp
+
+
+@shared_task(bind=True)
+def get_fceb_status_info(self, specified_orgs: List[str]):
+    """Task function for the FCEB status query API endpoint."""
+    # Make database query and convert to list of dictionaries
+    fceb_status = list(
+        Organizations.objects.filter(organizations_uid__in=specified_orgs).values(
+            "organizations_uid", "fceb"
+        )
+    )
+    # Convert uuids to strings
+    for row in fceb_status:
+        row["organizations_uid"] = convert_uuid_to_string(row["organizations_uid"])
+    return fceb_status
 
 
 # ---------- Misc. Score View Tasks ----------
@@ -368,7 +380,7 @@ def get_xs_stakeholders_info(self):
     )
     # Convert uuids to strings
     for row in xs_stakeholders:
-        row["organizations_uid"] = str(row["organizations_uid"])
+        row["organizations_uid"] = convert_uuid_to_string(row["organizations_uid"])
     return xs_stakeholders
 
 
@@ -384,7 +396,7 @@ def get_s_stakeholders_info(self):
     )
     # Convert uuids to strings
     for row in s_stakeholders:
-        row["organizations_uid"] = str(row["organizations_uid"])
+        row["organizations_uid"] = convert_uuid_to_string(row["organizations_uid"])
     return s_stakeholders
 
 
@@ -400,7 +412,7 @@ def get_m_stakeholders_info(self):
     )
     # Convert uuids to strings
     for row in m_stakeholders:
-        row["organizations_uid"] = str(row["organizations_uid"])
+        row["organizations_uid"] = convert_uuid_to_string(row["organizations_uid"])
     return m_stakeholders
 
 
@@ -416,7 +428,7 @@ def get_l_stakeholders_info(self):
     )
     # Convert uuids to strings
     for row in l_stakeholders:
-        row["organizations_uid"] = str(row["organizations_uid"])
+        row["organizations_uid"] = convert_uuid_to_string(row["organizations_uid"])
     return l_stakeholders
 
 
@@ -431,10 +443,10 @@ def get_xl_stakeholders_info(self):
     )
     # Convert uuids to strings
     for row in xl_stakeholders:
-        row["organizations_uid"] = str(row["organizations_uid"])
+        row["organizations_uid"] = convert_uuid_to_string(row["organizations_uid"])
     return xl_stakeholders
 
-
+# ---------- Misc. Tasks ----------
 # --- execute_ips(), Issue 559 ---
 @shared_task(bind=True)
 def ips_insert_task(self, new_ips: List[dict]):
@@ -447,15 +459,18 @@ def ips_insert_task(self, new_ips: List[dict]):
             Ips.objects.get(ip=new_ip["ip"])
         except Ips.DoesNotExist:
             # If ip record doesn't exist yet, create one
+            from_cidr_state = False
+            if curr_ip_origin_cidr:
+                from_cidr_state = True
             Ips.objects.create(
                 ip_hash=new_ip["ip_hash"],
                 ip=new_ip["ip"],
                 origin_cidr=curr_ip_origin_cidr,
+                from_cidr=from_cidr_state,
             )
         else:
             # If ip record does exits, update it
             Ips.objects.filter(ip=new_ip["ip"]).update(
-                ip_hash=new_ip["ip_hash"],
                 origin_cidr=new_ip["origin_cidr"],
             )
     # Return success message
@@ -503,7 +518,65 @@ def ips_update_from_cidr_task(self):
     """Task function for the ips_update_from_cidr API endpoint."""
     # Make database query and convert to list of dictionaries
     Ips.objects.filter(origin_cidr__isnull=False).update(from_cidr=True)
-    return "Ips table from_cidr field has been updated"
+    return "Ips table from_cidr field has been updated."
+
+
+# --- darkweb_cves(), Issue 630 ---
+@shared_task(bind=True)
+def darkweb_cves_task(self):
+    """Task function for the darkweb_cves API endpoint."""
+    # Make database query and convert to list of dictionaries
+    all_data = list(TopCves.objects.all().values())
+    for row in all_data:
+        row["top_cves_uid"] = convert_uuid_to_string(row["top_cves_uid"])
+        row["data_source_uid_id"] = convert_uuid_to_string(row["data_source_uid_id"])
+        row["date"] = convert_date_to_string(row["date"])
+    return all_data
+
+
+# --- query_subs(), Issue 633 ---
+@shared_task(bind=True)
+def sub_domains_by_org_task(self, org_uid: str, page: int, per_page: int):
+    """Task function for the subdomains by org query API endpoint."""
+    # Make database query and convert to list of dictionaries
+    total_data = list(
+        SubDomains.objects.filter(root_domain_uid__organizations_uid=org_uid).values()
+    )
+    # Divide up data w/ specified num records per page
+    paged_data = Paginator(total_data, per_page)
+    # Attempt to retrieve specified page
+    try:
+        single_page_data = paged_data.page(page)
+    except PageNotAnInteger:
+        # If page is not an integer, deliver first page.
+        single_page_data = paged_data.page(1)
+    except EmptyPage:
+        # If page is out of range (e.g. 9999), deliver last page of results.
+        single_page_data = paged_data.page(paged_data.num_pages)
+    # Catch query no results scenario
+    if not total_data:
+        single_page_data = [{x: None for x in schemas.SubDomainTable.__fields__}]
+        return {
+            "total_pages": paged_data.num_pages,
+            "current_page": page,
+            "data": single_page_data,
+        }
+    # Serialize specified page
+    single_page_data = list(single_page_data)
+    # Convert uuids to strings
+    for row in single_page_data:
+        row["sub_domain_uid"] = convert_uuid_to_string(row["sub_domain_uid"])
+        row["root_domain_uid_id"] = convert_uuid_to_string(row["root_domain_uid_id"])
+        row["data_source_uid_id"] = convert_uuid_to_string(row["data_source_uid_id"])
+        row["dns_record_uid_id"] = convert_uuid_to_string(row["dns_record_uid_id"])
+        row["first_seen"] = convert_date_to_string(row["first_seen"])
+        row["last_seen"] = convert_date_to_string(row["last_seen"])
+    result = {
+        "total_pages": paged_data.num_pages,
+        "current_page": page,
+        "data": single_page_data,
+    }
+    return result
 
 
 # --- pescore_hist_domain_alert(), Issue 635 ---
@@ -752,6 +825,20 @@ def pescore_base_metrics_task(self, start_date: str, end_date: str):
             "num_ips",
         )
     )
+    # Testing
+    # reported_orgs = reported_orgs[:10]
+    # cred_data = cred_data[:10]
+    # breach_data = breach_data[:10]
+    # domain_sus_data = domain_sus_data[:10]
+    # domain_alert_data = domain_alert_data[:10]
+    # vuln_verif_data = vuln_verif_data[:10]
+    # vuln_unverif_data = vuln_unverif_data[:10]
+    # vuln_port_data = vuln_port_data[:10]
+    # darkweb_alert_data = darkweb_alert_data[:10]
+    # darkweb_ment_data = darkweb_ment_data[:10]
+    # darkweb_threat_data = darkweb_threat_data[:10]
+    # darkweb_inv_data = darkweb_inv_data[:10]
+    # attacksurface_data = attacksurface_data[:10]
     # print("pescore_base_metric query status: got attacksurface_data")
     # Convert uuids to strings
     for dataset in [
@@ -844,6 +931,234 @@ def cred_breach_intelx_task(self, source_uid: str):
     return cred_breach_intelx_data
 
 
+# --- insert_sixgill_alerts(), Issue 653 ---
+@shared_task(bind=True)
+def alerts_insert_task(self, new_alerts: List[dict]):
+    """Task function for the alerts_insert API endpoint."""
+    # Go through each new alert
+    update_ct = 0
+    create_ct = 0
+    for new_alert in new_alerts:
+        try:
+            Alerts.objects.get(sixgill_id=new_alert["sixgill_id"])
+        except Alerts.DoesNotExist:
+            # If alert record doesn't exist yet, create one
+            curr_org_inst = Organizations.objects.get(
+                organizations_uid=new_alert["organizations_uid"]
+            )
+            curr_source_inst = DataSource.objects.get(
+                data_source_uid=new_alert["data_source_uid"]
+            )
+            Alerts.objects.create(
+                alerts_uid=uuid.uuid1(),
+                alert_name=new_alert["alert_name"],
+                content=new_alert["content"],
+                date=new_alert["date"],
+                sixgill_id=new_alert["sixgill_id"],
+                read=new_alert["read"],
+                severity=new_alert["severity"],
+                site=new_alert["site"],
+                threat_level=new_alert["threat_level"],
+                threats=new_alert["threats"],
+                title=new_alert["title"],
+                user_id=new_alert["user_id"],
+                category=new_alert["category"],
+                lang=new_alert["lang"],
+                organizations_uid=curr_org_inst,
+                data_source_uid=curr_source_inst,
+                content_snip=new_alert["content_snip"],
+                asset_mentioned=new_alert["asset_mentioned"],
+                asset_type=new_alert["asset_type"],
+            )
+            create_ct += 1
+        else:
+            # If alert record does exits, update it
+            Alerts.objects.filter(sixgill_id=new_alert["sixgill_id"]).update(
+                content=new_alert["content"],
+                content_snip=new_alert["content_snip"],
+                asset_mentioned=new_alert["asset_mentioned"],
+                asset_type=new_alert["asset_type"],
+            )
+            update_ct += 1
+    # Return success message
+    return (
+        str(create_ct)
+        + " records created, "
+        + str(update_ct)
+        + " records updated in the alerts table"
+    )
+
+
+# --- insert_sixgill_mentions(), Issue 654 ---
+@shared_task(bind=True)
+def mentions_insert_task(self, new_mentions: List[dict]):
+    """Task function for the mentions_insert API endpoint."""
+    create_ct = 0
+    for new_mention in new_mentions:
+        try:
+            Mentions.objects.get(sixgill_mention_id=new_mention["sixgill_mention_id"])
+            # If record already exists, do nothing
+        except Mentions.DoesNotExist:
+            # If mention record doesn't exist yet, create one
+            curr_source_inst = DataSource.objects.get(
+                data_source_uid=new_mention["data_source_uid"]
+            )
+            Mentions.objects.create(
+                mentions_uid=uuid.uuid1(),
+                organizations_uid=new_mention["organizations_uid"],
+                data_source_uid=curr_source_inst,
+                category=new_mention["category"],
+                collection_date=new_mention["collection_date"],
+                content=new_mention["content"],
+                creator=new_mention["creator"],
+                date=new_mention["date"],
+                sixgill_mention_id=new_mention["sixgill_mention_id"],
+                lang=new_mention["lang"],
+                post_id=new_mention["post_id"],
+                rep_grade=new_mention["rep_grade"],
+                site=new_mention["site"],
+                site_grade=new_mention["site_grade"],
+                sub_category=new_mention["sub_category"],
+                title=new_mention["title"],
+                type=new_mention["type"],
+                url=new_mention["url"],
+                comments_count=new_mention["comments_count"],
+                tags=new_mention["tags"],
+            )
+            create_ct += 1
+    # Return success message
+    return str(create_ct) + " records created in the mentions table"
+
+
+# --- insert_sixgill_breaches(), Issue 655 ---
+@shared_task(bind=True)
+def cred_breach_sixgill_task(self, new_breaches: List[dict]):
+    """Task function for the cred_breaches_sixgill_insert API endpoint."""
+    create_ct = 0
+    update_ct = 0
+    for new_breach in new_breaches:
+        # Insert each row of data
+        try:
+            CredentialBreaches.objects.get(breach_name=new_breach["breach_name"])
+            # If record already exists, update
+            CredentialBreaches.objects.filter(
+                breach_name=new_breach["breach_name"]
+            ).update(
+                password_included=new_breach["password_included"],
+            )
+            update_ct += 1
+        except CredentialBreaches.DoesNotExist:
+            # Otherwise, create new record
+            curr_source_inst = DataSource.objects.get(
+                data_source_uid=new_breach["data_source_uid"]
+            )
+            CredentialBreaches.objects.create(
+                credential_breaches_uid=uuid.uuid1(),
+                breach_name=new_breach["breach_name"],
+                description=new_breach["description"],
+                breach_date=new_breach["breach_date"],
+                password_included=new_breach["password_included"],
+                data_source_uid=curr_source_inst,
+                modified_date=new_breach["modified_date"],
+            )
+            create_ct += 1
+    # Return success message
+    return (
+        str(create_ct)
+        + " records created, "
+        + str(update_ct)
+        + " records updated in the credential_breaches table"
+    )
+
+
+# --- insert_sixgill_credentials(), Issue 656 ---
+@shared_task(bind=True)
+def cred_exp_sixgill_task(self, new_exposures: List[dict]):
+    """Task function for the credexp_insert API endpoint."""
+    update_ct = 0
+    create_ct = 0
+    for new_exposure in new_exposures:
+        try:
+            CredentialExposures.objects.get(
+                breach_name=new_exposure["breach_name"],
+                email=new_exposure["email"],
+            )
+        except CredentialExposures.DoesNotExist:
+            # If cred exp record doesn't exist yet, create one
+            curr_org_inst = Organizations.objects.get(
+                organizations_uid=new_exposure["organizations_uid"]
+            )
+            curr_source_inst = DataSource.objects.get(
+                data_source_uid=new_exposure["data_source_uid"]
+            )
+            curr_breach_inst = CredentialBreaches.objects.get(
+                credential_breaches_uid=new_exposure["credential_breaches_uid"]
+            )
+            CredentialExposures.objects.create(
+                credential_exposures_uid=uuid.uuid1(),
+                modified_date=new_exposure["modified_date"],
+                sub_domain=new_exposure["sub_domain"],
+                email=new_exposure["email"],
+                hash_type=new_exposure["hash_type"],
+                name=new_exposure["name"],
+                login_id=new_exposure["login_id"],
+                password=new_exposure["password"],
+                phone=new_exposure["phone"],
+                breach_name=new_exposure["breach_name"],
+                organizations_uid=curr_org_inst,
+                data_source_uid=curr_source_inst,
+                credential_breaches_uid=curr_breach_inst,
+            )
+            create_ct += 1
+        else:
+            # If cred exp record does exits, update it
+            CredentialExposures.objects.filter(
+                breach_name=new_exposure["breach_name"],
+                email=new_exposure["email"],
+            ).update(
+                modified_date=new_exposure["modified_date"],
+            )
+            update_ct += 1
+    # Return success message
+    return (
+        str(create_ct)
+        + " records created, "
+        + str(update_ct)
+        + " records updated in the credential_exposures table"
+    )
+
+
+# --- insert_sixgill_topCVEs(), Issue 657 ---
+@shared_task(bind=True)
+def top_cves_insert_task(self, new_topcves: List[dict]):
+    """Task function for the top_cves_insert API endpoint."""
+    create_ct = 0
+    for new_topcve in new_topcves:
+        try:
+            TopCves.objects.get(
+                cve_id=new_topcve["cve_id"],
+                date=new_topcve["date"],
+            )
+            # If record already exists, do nothing
+        except TopCves.DoesNotExist:
+            # If record doesn't exist yet, create one
+            curr_source_inst = DataSource.objects.get(
+                data_source_uid=new_topcve["data_source_uid"]
+            )
+            TopCves.objects.create(
+                top_cves_uid=uuid.uuid1(),
+                cve_id=new_topcve["cve_id"],
+                dynamic_rating=new_topcve["dynamic_rating"],
+                nvd_base_score=new_topcve["nvd_base_score"],
+                date=new_topcve["date"],
+                summary=new_topcve["summary"],
+                data_source_uid=curr_source_inst,
+            )
+            create_ct += 1
+    # Return success message
+    return str(create_ct) + " records created in the top_cves table"
+
+
 @shared_task(bind=True)
 def get_vw_pshtt_domains_to_run_info(self):
     """Get subdomains to run through the PSHTT scan."""
@@ -856,15 +1171,3 @@ def get_vw_pshtt_domains_to_run_info(self):
         row["organizations_uid"] = str(row["organizations_uid"])
     # Return results
     return endpoint_data
-
-# --- darkweb_cves(), Issue 630 ---
-@shared_task(bind=True)
-def darkweb_cves_task(self):
-    """Task function for the darkweb_cves API endpoint."""
-    # Make database query and convert to list of dictionaries
-    all_data = list(TopCves.objects.all().values())
-    
-    for row in all_data:
-        row["top_cves_uid"] = convert_uuid_to_string(row["top_cves_uid"])
-        row["data_source_uid_id"] = convert_uuid_to_string(row["data_source_uid_id"])
-    return all_data
