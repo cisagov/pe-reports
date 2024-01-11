@@ -3,17 +3,20 @@
 import ast
 import datetime
 import json
-from typing import List
+from typing import List, Optional
 import uuid
 
 # Third-Party Libraries
 from celery import shared_task
 from django.core import serializers
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
-from django.db.models import Count, Q, Sum
+from django.db.models import Count, Prefetch, Q, Sum
 
 # Import api database models
 from home.models import *
+
+# Import schemas
+from . import schemas
 
 # cisagov Libraries
 from pe_reports.helpers import ip_passthrough
@@ -1158,6 +1161,213 @@ def top_cves_insert_task(self, new_topcves: List[dict]):
     # Return success message
     return str(create_ct) + " records created in the top_cves table"
 
+
+# --- xpanse endpoint, Issue 682 ---
+@shared_task(bind=True)
+def get_xpanse_vulns(
+    self, business_unit: str, modified_datetime: Optional[datetime.datetime] = None
+):
+    """Task function for the Xpanse Vulns by business_unit and modified_date API endpoint."""
+    # Make database query and convert to list of dictionaries
+
+    xpanse_alerts = XpanseAlerts.objects.filter(
+        business_units__entity_name=business_unit
+    )
+
+    if modified_datetime is not None:
+        xpanse_alerts = xpanse_alerts.filter(
+            Q(local_insert_ts__gte=modified_datetime)
+            | Q(last_modified_ts__gte=modified_datetime)
+        )
+
+    vulns = []
+    for alert in xpanse_alerts:
+        vuln_dict = {
+            "alert_name": alert.alert_name,  # str
+            "description": alert.description,  # str
+            "last_modified_ts": alert.last_modified_ts,  # datetime
+            "local_insert_ts": alert.local_insert_ts,  # datetime
+            "event_timestamp": alert.event_timestamp,  # List[datetime]
+            "host_name": alert.host_name,  # str
+            "alert_action": alert.alert_action,  # str
+            "action_country": alert.action_country,  # List[str]
+            "action_remote_port": alert.action_remote_port,  # List[int]
+            "external_id": alert.external_id,  # str
+            "related_external_id": alert.related_external_id,  # str
+            "alert_occurrence": alert.alert_occurrence,  # int
+            "severity": alert.severity,  # str
+            "matching_status": alert.matching_status,  # str
+            "alert_type": alert.alert_type,  # str
+            "resolution_status": alert.resolution_status,  # str
+            "resolution_comment": alert.resolution_comment,  # str
+            "last_observed": alert.last_observed,  # datetime
+            "country_codes": alert.country_codes,  # List[str]
+            "cloud_providers": alert.cloud_providers,  # List[str]
+            "ipv4_addresses": alert.ipv4_addresses,  # List[str]
+            "domain_names": alert.domain_names,  # List[str]
+            "port_protocol": alert.port_protocol,  # str
+            "time_pulled_from_xpanse": alert.time_pulled_from_xpanse,  # datetime
+            "action_pretty": alert.action_pretty,  # str
+            "attack_surface_rule_name": alert.attack_surface_rule_name,  # str
+            "certificate": alert.certificate,  # Dict
+            "remediation_guidance": alert.remediation_guidance,  # str
+            "asset_identifiers": alert.asset_identifiers,  # List[Dict]
+            "services": [],
+        }
+
+        for service in alert.services.all():
+            service_dict = {
+                "service_id": service.service_id,
+                "service_name": service.service_name,
+                "service_type": service.service_type,
+                "ip_address": service.ip_address,
+                "domain": service.domain,
+                "externally_detected_providers": service.externally_detected_providers,
+                "is_active": service.is_active,
+                "first_observed": service.first_observed,
+                "last_observed": service.last_observed,
+                "port": service.port,
+                "protocol": service.protocol,
+                "active_classifications": service.active_classifications,
+                "inactive_classifications": service.inactive_classifications,
+                "discovery_type": service.discovery_type,
+                "externally_inferred_vulnerability_score": service.externally_inferred_vulnerability_score,
+                "externally_inferred_cves": service.externally_inferred_cves,
+                "service_key": service.service_key,
+                "service_key_type": service.service_key_type,
+                "cves": [],
+            }
+            cve_services = service.xpansecveservice_set.select_related(
+                "xpanse_inferred_cve"
+            )
+            for vuln in cve_services:
+                service_dict["cves"].append(
+                    {
+                        "cve_id": vuln.xpanse_inferred_cve.cve_id,
+                        "cvss_score_v2": vuln.xpanse_inferred_cve.cvss_score_v2,
+                        "cve_severity_v2": vuln.xpanse_inferred_cve.cve_severity_v2,
+                        "cvss_score_v3": vuln.xpanse_inferred_cve.cvss_score_v3,
+                        "cve_severity_v3": vuln.xpanse_inferred_cve.cve_severity_v3,
+                        "inferred_cve_match_type": vuln.inferred_cve_match_type,
+                        "product": vuln.product,
+                        "confidence": vuln.confidence,
+                        "vendor": vuln.vendor,
+                        "version_number": vuln.version_number,
+                        "activity_status": vuln.activity_status,
+                        "first_observed": vuln.first_observed,
+                        "last_observed": vuln.last_observed,
+                    }
+                )
+
+            vuln_dict["services"].append(service_dict)
+        vulns.append(vuln_dict)
+
+    return vulns
+
+
+# --- NIST CVE endpoint, Issue 696 ---
+@shared_task(bind=True)
+def cves_by_modified_date_task(self, modified_datetime: str, page: int, per_page: int):
+    """Task function for the subdomains by org query API endpoint."""
+    # Make database query and convert to list of dictionaries
+    total_data = Cves.objects.all()
+    
+    if modified_datetime is not None:
+        total_data = total_data.filter(
+            Q(last_modified_date__gte=modified_datetime)
+            | Q(published_date__gte=modified_datetime)
+        )
+
+    total_data = total_data.order_by("cve_name")
+    # Divide up data w/ specified num records per page
+    paged_data = Paginator(total_data, per_page)
+    # Attempt to retrieve specified page
+    try:
+        single_page_data = paged_data.page(page)
+    except PageNotAnInteger:
+        # If page is not an integer, deliver first page.
+        single_page_data = paged_data.page(1)
+    except EmptyPage:
+        # If page is out of range (e.g. 9999), deliver last page of results.
+        single_page_data = paged_data.page(paged_data.num_pages)
+    
+    cve_list = []
+    paged_queryset = single_page_data.object_list
+
+    paged_queryset = paged_queryset.prefetch_related(Prefetch(
+        "products",
+        queryset=CpeProduct.objects.select_related("cpe_vender_uid"),
+    ))
+    if not paged_queryset:
+        single_page_data = [{x: None for x in schemas.CveWithProducts.__fields__}]
+        return {
+            "total_pages": paged_data.num_pages,
+            "current_page": page,
+            "data": single_page_data,
+        }
+    else:
+        for cve in paged_queryset:
+            cve_obj = {
+                "cve_uid": convert_uuid_to_string(cve.cve_uid),
+                "cve_name": cve.cve_name,
+                "published_date": cve.published_date,
+                "last_modified_date": cve.last_modified_date,
+                "vuln_status": cve.vuln_status,
+                "description": cve.description,
+                "cvss_v2_source": cve.cvss_v2_source,
+                "cvss_v2_type": cve.cvss_v2_type,
+                "cvss_v2_version": cve.cvss_v2_version,
+                "cvss_v2_vector_string": cve.cvss_v2_vector_string,
+                "cvss_v2_base_score": cve.cvss_v2_base_score,
+                "cvss_v2_base_severity": cve.cvss_v2_base_severity,
+                "cvss_v2_exploitability_score": cve.cvss_v2_exploitability_score,
+                "cvss_v2_impact_score": cve.cvss_v2_impact_score,
+                "cvss_v3_source": cve.cvss_v3_source,
+                "cvss_v3_type": cve.cvss_v3_type,
+                "cvss_v3_version": cve.cvss_v3_version,
+                "cvss_v3_vector_string": cve.cvss_v3_vector_string,
+                "cvss_v3_base_score": cve.cvss_v3_base_score,
+                "cvss_v3_base_severity": cve.cvss_v3_base_severity,
+                "cvss_v3_exploitability_score": cve.cvss_v3_exploitability_score,
+                "cvss_v3_impact_score": cve.cvss_v3_impact_score,
+                "cvss_v4_source": cve.cvss_v4_source,
+                "cvss_v4_type": cve.cvss_v4_type,
+                "cvss_v4_version": cve.cvss_v4_version,
+                "cvss_v4_vector_string": cve.cvss_v4_vector_string,
+                "cvss_v4_base_score": cve.cvss_v4_base_score,
+                "cvss_v4_base_severity": cve.cvss_v4_base_severity,
+                "cvss_v4_exploitability_score": cve.cvss_v4_exploitability_score,
+                "cvss_v4_impact_score": cve.cvss_v4_impact_score,
+                "weaknesses": cve.weaknesses,
+                "reference_urls": cve.reference_urls,
+                "cpe_list": cve.cpe_list,
+                "vender_product": {},
+            }
+
+            for product in cve.products.all():
+                product_obj = {
+                    "cpe_product_name": product.cpe_product_name,
+                    "version_number": product.version_number,
+                    "vender": product.cpe_vender_uid.vender_name,
+                }
+                if product.cpe_vender_uid.vender_name in cve_obj["vender_product"]:
+                    cve_obj["vender_product"][product.cpe_vender_uid.vender_name].append(
+                        product_obj
+                    )
+                else:
+                    cve_obj["vender_product"][product.cpe_vender_uid.vender_name] = [
+                        product_obj
+                    ]
+
+            cve_list.append(cve_obj)
+
+        result = {
+            "total_pages": paged_data.num_pages,
+            "current_page": page,
+            "data": cve_list,
+        }
+        return result
+    
 
 @shared_task(bind=True)
 def get_vw_pshtt_domains_to_run_info(self):

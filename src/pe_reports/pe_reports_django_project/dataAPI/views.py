@@ -3641,7 +3641,7 @@ def dom_masq_alerts(data: schemas.AlertInput, tokens: dict = Depends(get_api_key
     else:
         return {"message": "No api key was submitted"}
     
-    
+
 # --- query_shodan(), Issue 628 ---
 # GenInputOrgUIDListDateRange
 # vw_shodanvulns_suspected
@@ -5552,6 +5552,559 @@ def cred_exp_intelx_insert(
             LOGGER.info("API key expired please try again")
     else:
         return {"message": "No api key was submitted"}
+    
+
+# --- xpanse endpoint, Issue 682 ---
+@api_router.put(
+    "/xpanse_business_unit_insert_or_update",
+    dependencies=[Depends(get_api_key)],
+    # response_model=Dict[schemas.PshttDataBase],
+    tags=["Update or insert CVE data from NIST"],
+)
+# @transaction.atomic
+def xpanse_business_unit_insert_or_update(
+    # tag: str,
+    data: schemas.XpanseBusinessUnitsInsert,
+    tokens: dict = Depends(get_api_key),
+):
+    """Create API endpoint to create a record in database."""
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            LOGGER.info(f"The api key submitted {tokens}")
+
+            (
+                business_unit_object,
+                created,
+            ) = XpanseBusinessUnits.objects.update_or_create(
+                entity_name=data.entity_name,
+                defaults={
+                    "state": data.state,
+                    "county": data.county,
+                    "city": data.city,
+                    "sector": data.sector,
+                    "entity_type": data.entity_type,
+                    "region": data.region,
+                    "rating": data.rating,
+                },
+            )
+            if created:
+                LOGGER.info(
+                    "New Xpanse Business Unit record created for %s", data.entity_name
+                )
+                return {
+                    "message": "New business unit created.",
+                    "business_unit_obj": business_unit_object,
+                }
+            return {
+                "message": "Business unit updated.",
+                "business_unit_obj": business_unit_object,
+            }
+        except Exception as e:
+            print(e)
+            print("failed to insert or update")
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+
+# --- xpanse endpoint, Issue 682 ---
+@api_router.put(
+    "/xpanse_alert_insert_or_update",
+    dependencies=[Depends(get_api_key)],
+    # response_model=Dict[schemas.PshttDataBase],
+    tags=["Update or insert CVE data from NIST"],
+)
+# @transaction.atomic
+def xpanse_alert_insert_or_update(
+    # tag: str,
+    data: schemas.XpanseAlertInsert,
+    tokens: dict = Depends(get_api_key),
+):
+    """Create API endpoint to create a record in database."""
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            LOGGER.info(f"The api key submitted {tokens}")
+            LOGGER.info("Got into Xpanse Alert insert")
+
+            # vender_prod_dict = data.vender_product
+            alert_object, created = XpanseAlerts.objects.update_or_create(
+                alert_id=data.alert_id,
+                defaults={
+                    "time_pulled_from_xpanse": data.time_pulled_from_xpanse,
+                    # "alert_id": data.alert_id,
+                    "detection_timestamp": data.detection_timestamp,
+                    "alert_name": data.alert_name,
+                    "description": data.description,
+                    "host_name": data.host_name,
+                    "alert_action": data.alert_action,
+                    "action_pretty": data.action_pretty,
+                    "action_country": data.action_country,
+                    "action_remote_port": data.action_remote_port,
+                    "starred": data.starred,
+                    "external_id": data.external_id,
+                    "related_external_id": data.related_external_id,
+                    "alert_occurrence": data.alert_occurrence,
+                    "severity": data.severity,
+                    "matching_status": data.matching_status,
+                    "local_insert_ts": data.local_insert_ts,
+                    "last_modified_ts": data.last_modified_ts,
+                    "case_id": data.case_id,
+                    "event_timestamp": data.event_timestamp,
+                    "alert_type": data.alert_type,
+                    "resolution_status": data.resolution_status,
+                    "resolution_comment": data.resolution_comment,
+                    "tags": data.tags,
+                    "last_observed": data.last_observed,
+                    "country_codes": data.country_codes,
+                    "cloud_providers": data.cloud_providers,
+                    "ipv4_addresses": data.ipv4_addresses,
+                    "domain_names": data.domain_names,
+                    "service_ids": data.service_ids,
+                    "website_ids": data.website_ids,
+                    "asset_ids": data.asset_ids,
+                    "certificate": data.certificate,
+                    "port_protocol": data.port_protocol,
+                    "attack_surface_rule_name": data.attack_surface_rule_name,
+                    "remediation_guidance": data.remediation_guidance,
+                    "asset_identifiers": data.asset_identifiers
+                    # business_units: Optional[List[str]] = None
+                    # services: Optional[List[XpanseService]] = None
+                    # assets : Optional[List[XpanseAsset]] = None
+                },
+            )
+
+            if created:
+                LOGGER.info("new Xpanse alert record created for %s", data.alert_name)
+
+            business_unit_list = []
+            for b_u in data.business_units:
+                business_unit_list.append(
+                    XpanseBusinessUnits.objects.get(entity_name=b_u)
+                )
+
+            alert_object.business_units.set(business_unit_list)
+
+            asset_list = []
+            for asset_data in data.assets:
+                asset_object, created = XpanseAssets.objects.update_or_create(
+                    asm_id=asset_data.asm_id,
+                    defaults={
+                        "asset_name": asset_data.asset_name,
+                        "asset_type": asset_data.asset_type,
+                        "last_observed": asset_data.last_observed,
+                        "first_observed": asset_data.first_observed,
+                        "externally_detected_providers": asset_data.externally_detected_providers,
+                        "created": asset_data.created,
+                        "ips": asset_data.ips,
+                        "active_external_services_types": asset_data.active_external_services_types,
+                        "domain": asset_data.domain,
+                        "certificate_issuer": asset_data.certificate_issuer,
+                        "certificate_algorithm": asset_data.certificate_algorithm,
+                        "certificate_classifications": asset_data.certificate_classifications,
+                        "resolves": asset_data.resolves,
+                        # details
+                        "top_level_asset_mapper_domain": asset_data.top_level_asset_mapper_domain,
+                        "domain_asset_type": asset_data.domain_asset_type,
+                        "is_paid_level_domain": asset_data.is_paid_level_domain,
+                        "domain_details": asset_data.domain_details,
+                        "dns_zone": asset_data.dns_zone,
+                        "latest_sampled_ip": asset_data.latest_sampled_ip,
+                        "recent_ips": asset_data.recent_ips,
+                        "external_services": asset_data.external_services,
+                        "externally_inferred_vulnerability_score": asset_data.externally_inferred_vulnerability_score,
+                        "externally_inferred_cves": asset_data.externally_inferred_cves,
+                        "explainers": asset_data.explainers,
+                        "tags": asset_data.tags,
+                    },
+                )
+                asset_list.append(asset_object)
+
+            alert_object.assets.set(asset_list)
+
+            services_list = []
+            for service_data in data.services:
+                service_object, created = XpanseServices.objects.update_or_create(
+                    service_id=service_data.service_id,
+                    defaults={
+                        "service_name": service_data.service_name,
+                        "service_type": service_data.service_type,
+                        "ip_address": service_data.ip_address,
+                        "domain": service_data.domain,
+                        "externally_detected_providers": service_data.externally_detected_providers,
+                        "is_active": service_data.is_active,
+                        "first_observed": service_data.first_observed,
+                        "last_observed": service_data.last_observed,
+                        "port": service_data.port,
+                        "protocol": service_data.protocol,
+                        "active_classifications": service_data.active_classifications,
+                        "inactive_classifications": service_data.inactive_classifications,
+                        "discovery_type": service_data.discovery_type,
+                        "externally_inferred_vulnerability_score": service_data.externally_inferred_vulnerability_score,
+                        "externally_inferred_cves": service_data.externally_inferred_cves,
+                        "service_key": service_data.service_key,
+                        "service_key_type": service_data.service_key_type,
+                    },
+                )
+                LOGGER.info(service_data)
+                if service_data.cves is not None:
+                    for cve_data, cve_match_data in service_data.cves:
+                        LOGGER.info(cve_data)
+                        LOGGER.info(cve_match_data)
+                        cve_object, created = XpanseCves.objects.update_or_create(
+                            cve_id=cve_data.cve_id,
+                            defaults={
+                                "cvss_score_v2": cve_data.cvss_score_v2,
+                                "cve_severity_v2": cve_data.cve_severity_v2,
+                                "cvss_score_v3": cve_data.cvss_score_v3,
+                                "cve_severity_v3": cve_data.cve_severity_v3,
+                            },
+                        )
+
+                        (
+                            cve_match_object,
+                            created,
+                        ) = XpanseCveService.objects.update_or_create(
+                            xpanse_inferred_cve=cve_object,
+                            xpanse_service=service_object,
+                            defaults={
+                                "inferred_cve_match_type": cve_match_data.inferred_cve_match_type,
+                                "product": cve_match_data.product,
+                                "confidence": cve_match_data.confidence,
+                                "vendor": cve_match_data.vendor,
+                                "version_number": cve_match_data.version_number,
+                                "activity_status": cve_match_data.activity_status,
+                                "first_observed": cve_match_data.first_observed,
+                                "last_observed": cve_match_data.last_observed,
+                            },
+                        )
+                    services_list.append(service_object)
+
+            alert_object.services.set(services_list)
+
+            alert_object.save()
+
+            # for vender, product_list in vender_prod_dict.items():
+
+            #     vender_obj, vender_created = CpeVender.objects.update_or_create(
+            #         vender_name=vender
+            #     )
+            #     for product, version in product_list:
+            #         product_obj, product_created = CpeProduct.objects.update_or_create(
+            #             cpe_product_name=product,
+            #             version_number=version,
+            #             defaults={"cpe_vender_uid": vender_obj},
+            #         )
+            #         prod_obj_list.append(product_obj)
+
+            # cve_object.products.set(prod_obj_list)
+            # cve_object.save()
+
+            # prods = []
+            # for prod in list(cve_object.products.all()):
+            #     prods.append(
+            #         {
+            #             "cpe_product_uid": prod.cpe_product_uid,
+            #             "cpe_product_name": prod.cpe_product_name,
+            #             "version_number": prod.version_number,
+            #             "vender_uid": prod.cpe_vender_uid_id,
+            #             "vender_name": prod.cpe_vender_uid.vender_name,
+            #         }
+            #     )
+            return {"message": "Record updated successfully.", "alerts": alert_object}
+
+        except Exception as e:
+            LOGGER.error(e)
+            print("failed to insert or update")
+            LOGGER.info("API key expired please try again")
+
+    else:
+        return {"message": "No api key was submitted"}
+
+
+# --- xpanse endpoint, Issue 682 ---
+@api_router.post(
+    "/xpanse_vulns",
+    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.XpanseVulnPullTaskResp,
+    tags=["Get all VS cert data needed for D-Score"],
+)
+def xpanse_vulns(
+    data: schemas.XpanseVulnPullInput, tokens: dict = Depends(get_api_key)
+):
+    """Create API endpoint to get all Xpanse Vulnerabilities."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    LOGGER.info(data)
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # If API key valid, create task for query
+            task = get_xpanse_vulns.delay(data.business_unit, data.modified_datetime)
+            # Return the new task id w/ "Processing" status
+            return {"task_id": task.id, "status": "Processing"}
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+
+# --- xpanse endpoint, Issue 682 ---
+@api_router.get(
+    "/xpanse_vulns/task/{task_id}",
+    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.XpanseVulnPullTaskResp,
+    tags=["Check task status for Xpanse Vulnerability pull."],
+)
+async def get_xpanse_vulns_task_status(
+    task_id: str, tokens: dict = Depends(get_api_key)
+):
+    """Check task status for Xpanse Vulnerability pull."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            # userapiTokenverify(theapiKey=tokens)
+            # Retrieve task status
+            task = get_xpanse_vulns.AsyncResult(task_id)
+            # Return appropriate message for status
+            if task.state == "SUCCESS":
+                return {
+                    "task_id": task_id,
+                    "status": "Completed",
+                    "result": task.result,
+                }
+            elif task.state == "PENDING":
+                return {"task_id": task_id, "status": "Pending"}
+            elif task.state == "FAILURE":
+                return {
+                    "task_id": task_id,
+                    "status": "Failed",
+                    "error": str(task.result),
+                }
+            else:
+                return {"task_id": task_id, "status": task.state}
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+    
+
+# --- NIST CVE endpoint, Issue 696 ---
+@api_router.put(
+    "/cve_insert_or_update",
+    dependencies=[Depends(get_api_key)],
+    # response_model=Dict[schemas.PshttDataBase],
+    tags=["Update or insert CVE data from NIST"],
+)
+# @transaction.atomic
+def cve_insert_or_update(
+    # tag: str,
+    data: schemas.CveInsert,
+    tokens: dict = Depends(get_api_key),
+):
+    """Create API endpoint to create a record in database."""
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            LOGGER.info(f"The api key submitted {tokens}")
+            # Get WAS record based on tag
+            vender_prod_dict = data.vender_product
+            cve_object, created = Cves.objects.update_or_create(
+                cve_name=data.cve_name,
+                defaults={
+                    "cve_name": data.cve_name,
+                    "published_date": data.published_date,
+                    "last_modified_date": data.last_modified_date,
+                    "vuln_status": data.vuln_status,
+                    "description": data.description,
+                    "cvss_v2_source": data.cvss_v2_source,
+                    "cvss_v2_type": data.cvss_v2_type,
+                    "cvss_v2_version": data.cvss_v2_version,
+                    "cvss_v2_vector_string": data.cvss_v2_vector_string,
+                    "cvss_v2_base_score": data.cvss_v2_base_score,
+                    "cvss_v2_base_severity": data.cvss_v2_base_severity,
+                    "cvss_v2_exploitability_score": data.cvss_v2_exploitability_score,
+                    "cvss_v2_impact_score": data.cvss_v2_impact_score,
+                    "cvss_v3_source": data.cvss_v3_source,
+                    "cvss_v3_type": data.cvss_v3_type,
+                    "cvss_v3_version": data.cvss_v3_version,
+                    "cvss_v3_vector_string": data.cvss_v3_vector_string,
+                    "cvss_v3_base_score": data.cvss_v3_base_score,
+                    "cvss_v3_base_severity": data.cvss_v3_base_severity,
+                    "cvss_v3_exploitability_score": data.cvss_v3_exploitability_score,
+                    "cvss_v3_impact_score": data.cvss_v3_impact_score,
+                    "cvss_v4_source": data.cvss_v4_source,
+                    "cvss_v4_type": data.cvss_v4_type,
+                    "cvss_v4_version": data.cvss_v4_version,
+                    "cvss_v4_vector_string": data.cvss_v4_vector_string,
+                    "cvss_v4_base_score": data.cvss_v4_base_score,
+                    "cvss_v4_base_severity": data.cvss_v4_base_severity,
+                    "cvss_v4_exploitability_score": data.cvss_v4_exploitability_score,
+                    "cvss_v4_impact_score": data.cvss_v4_impact_score,
+                    "weaknesses": data.weaknesses,
+                    "reference_urls": data.reference_urls,
+                    "cpe_list": data.cpe_list,
+                },
+            )
+            if created:
+                LOGGER.info("new CVE record created for %s", data.cve_name)
+
+            prod_obj_list = []
+            for vender, product_list in vender_prod_dict.items():
+                vender_obj, vender_created = CpeVender.objects.update_or_create(
+                    vender_name=vender
+                )
+                for product, version in product_list:
+                    product_obj, product_created = CpeProduct.objects.update_or_create(
+                        cpe_product_name=product,
+                        version_number=version,
+                        defaults={"cpe_vender_uid": vender_obj},
+                    )
+                    prod_obj_list.append(product_obj)
+
+            cve_object.products.set(prod_obj_list)
+            cve_object.save()
+
+            prods = []
+            for prod in list(cve_object.products.all()):
+                prods.append(
+                    {
+                        "cpe_product_uid": prod.cpe_product_uid,
+                        "cpe_product_name": prod.cpe_product_name,
+                        "version_number": prod.version_number,
+                        "vender_uid": prod.cpe_vender_uid_id,
+                        "vender_name": prod.cpe_vender_uid.vender_name,
+                    }
+                )
+            return {
+                "message": "Record updated successfully.",
+                "updated_cve": cve_object,
+                "products": prods,
+            }
+
+        except Exception as e:
+            print(e)
+            print("failed to insert or update")
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+
+# --- NIST CVE endpoint, Issue 696 ---
+@api_router.post(
+    "/get_cve",
+    dependencies=[Depends(get_api_key)],
+    # response_model=schemas.DataSource,
+    tags=["Get cve data and relevant products for a gvien CVE"],
+)
+def get_cve(data: schemas.GetCveCall, tokens: dict = Depends(get_api_key)):
+    """Get CVE and product data."""
+    LOGGER.info("in CVE")
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            LOGGER.info(f"The api key submitted {tokens}")
+            try:
+                cve = Cves.objects.get(cve_name=f"{data.cve_name}")
+                products = cve.products.all()
+                vend_prod_dict: dict[str, list] = {}
+                for prod in products.iterator():
+                    if prod.cpe_vender_uid.vender_name not in vend_prod_dict.keys():
+                        vend_prod_dict[prod.cpe_vender_uid.vender_name] = []
+                    vend_prod_dict[prod.cpe_vender_uid.vender_name].append(
+                        {
+                            "cpe_product_uid": prod.cpe_product_uid,
+                            "cpe_product_name": prod.cpe_product_name,
+                            "version_number": prod.version_number,
+                            "vender_uid": prod.cpe_vender_uid_id,
+                        }
+                    )
+                cve_dict = model_to_dict(cve)
+                return {"cve_data": cve_dict, "products": vend_prod_dict}
+            except ValidationError:
+                return {"message": "CVE does not exist"}
+
+        except Exception as e:
+            LOGGER.info("API key expired please try again")
+            LOGGER.info(e)
+    else:
+        return {"message": "No api key was submitted"}
+    
+    
+# --- NIST CVE endpoint, Issue 696 ---
+@api_router.post(
+    "/cves_by_modified_date",
+    dependencies=[
+        Depends(get_api_key)
+    ],  # Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.CvePagedTaskResp,
+    tags=["Get all CVEs and related products since a user specified date."],
+)
+def cves_by_modified_date(
+    data: schemas.CvePagedInput, tokens: dict = Depends(get_api_key)
+):
+    """Create API endpoint to get all CVEs and related products since a user specified date."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # If API key valid, create task for query
+            task = cves_by_modified_date_task.delay(
+                data.modified_datetime, data.page, data.per_page
+            )
+            # Return the new task id w/ "Processing" status
+            return {"task_id": task.id, "status": "Processing"}
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+
+# --- NIST CVE endpoint, Issue 696 ---
+@api_router.get(
+    "/cves_by_modified_date/task/{task_id}",
+    dependencies=[
+        Depends(get_api_key)
+    ],  # Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.CvePagedTaskResp,
+    tags=["Check task status for cves_by_modified_date."],
+)
+async def cves_by_modified_date_task_status(
+    task_id: str, tokens: dict = Depends(get_api_key)
+):
+    """Get task status for cves_by_modified_date."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            # userapiTokenverify(theapiKey=tokens)
+            # Retrieve task status
+            task = cves_by_modified_date_task.AsyncResult(task_id)
+            # Return appropriate message for status
+            if task.state == "SUCCESS":
+                return {
+                    "task_id": task_id,
+                    "status": "Completed",
+                    "result": task.result,
+                }
+            elif task.state == "PENDING":
+                return {"task_id": task_id, "status": "Pending"}
+            elif task.state == "FAILURE":
+                return {
+                    "task_id": task_id,
+                    "status": "Failed",
+                    "error": str(task.result),
+                }
+            else:
+                return {"task_id": task_id, "status": task.state}
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+    
 
 
 @api_router.post(

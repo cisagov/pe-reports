@@ -2090,3 +2090,340 @@ class VwPEScoreCheckNewCVE(models.Model):
 
         managed = False
         db_table = "vw_pescore_check_new_cve"
+
+
+class XpanseBusinessUnits(models.Model):
+    """Define XpanseBusinessUnits model."""
+
+    xpanse_business_unit_uid = models.UUIDField(primary_key=True, default=uuid.uuid1)
+    entity_name = models.TextField(unique=True, blank=True, null=True)
+    state = models.TextField(blank=True, null=True)
+    county = models.TextField(blank=True, null=True)
+    city = models.TextField(blank=True, null=True)
+    sector = models.TextField(blank=True, null=True)
+    entity_type = models.TextField(blank=True, null=True)
+    region = models.TextField(blank=True, null=True)
+    rating = models.IntegerField(blank=True, null=True)
+
+    class Meta:
+        """Set XpanseBusinessUnits metadata."""
+
+        managed = False
+        db_table = "xpanse_business_units"
+
+
+class XpanseAssets(models.Model):
+    """Define XpanseAssets model."""
+
+    xpanse_asset_uid = models.UUIDField(primary_key=True, default=uuid.uuid1)
+    asm_id = models.TextField(unique=True, blank=False, null=False)
+    asset_name = models.TextField(blank=True, null=True)
+    asset_type = models.TextField(blank=True, null=True)
+    last_observed = models.DateTimeField(blank=True, null=True)
+    first_observed = models.DateTimeField(blank=True, null=True)
+    externally_detected_providers = ArrayField(
+        models.TextField(blank=True, null=False), blank=True, null=True
+    )
+    created = models.DateTimeField(blank=True, null=True)
+    ips = ArrayField(models.TextField(blank=True, null=False), blank=True, null=True)
+    active_external_services_types = ArrayField(
+        models.TextField(blank=True, null=False), blank=True, null=True
+    )
+    domain = models.TextField(blank=True, null=True)
+    certificate_issuer = models.TextField(blank=True, null=True)
+    certificate_algorithm = models.TextField(blank=True, null=True)
+    certificate_classifications = ArrayField(
+        models.TextField(blank=True, null=False), blank=True, null=True
+    )
+    resolves = models.BooleanField(blank=True, null=True)
+    # details
+    top_level_asset_mapper_domain = models.TextField(blank=True, null=True)
+    domain_asset_type = models.JSONField(blank=True, null=True)
+    is_paid_level_domain = models.BooleanField(blank=True, null=True)
+    domain_details = models.JSONField(blank=True, null=True)
+    dns_zone = models.TextField(blank=True, null=True)
+    latest_sampled_ip = models.IntegerField(blank=True, null=True)
+
+    recent_ips = models.JSONField(blank=True, null=True)
+    external_services = models.JSONField(blank=True, null=True)
+    externally_inferred_vulnerability_score = models.DecimalField(
+        max_digits=5, decimal_places=2, blank=True, null=True
+    )
+    externally_inferred_cves = ArrayField(
+        models.TextField(blank=True, null=False), blank=True, null=True
+    )
+    explainers = ArrayField(
+        models.TextField(blank=True, null=False), blank=True, null=True
+    )
+    tags = ArrayField(models.TextField(blank=True, null=False), blank=True, null=True)
+
+    class Meta:
+        """Set XpanseAssets metdata."""
+
+        managed = True
+        db_table = "xpanse_assets"
+
+
+class XpanseCves(models.Model):
+    """Define XpanseCves model."""
+
+    xpanse_cve_uid = models.UUIDField(unique=True, primary_key=True, default=uuid.uuid1)
+    cve_id = models.TextField(unique=True, blank=True, null=True)
+    cvss_score_v2 = models.DecimalField(
+        max_digits=5, decimal_places=2, blank=True, null=True
+    )
+    cve_severity_v2 = models.TextField(blank=True, null=True)
+    cvss_score_v3 = models.DecimalField(
+        max_digits=5, decimal_places=2, blank=True, null=True
+    )
+    cve_severity_v3 = models.TextField(blank=True, null=True)
+
+    class Meta:
+        """Set XpanseCves metadata."""
+
+        managed = True
+        db_table = "xpanse_cves"
+
+
+class XpanseServices(models.Model):
+    """Define XpanseServices model."""
+
+    xpanse_service_uid = models.UUIDField(primary_key=True, default=uuid.uuid1)
+    service_id = models.TextField(unique=True, blank=True, null=True)
+    service_name = models.TextField(blank=True, null=True)
+    service_type = models.TextField(blank=True, null=True)
+    ip_address = ArrayField(
+        models.TextField(blank=True, null=False), blank=True, null=True
+    )
+    domain = ArrayField(models.TextField(blank=True, null=False), blank=True, null=True)
+    externally_detected_providers = ArrayField(
+        models.TextField(blank=True, null=False), blank=True, null=True
+    )
+    is_active = models.TextField(blank=True, null=True)
+    first_observed = models.DateTimeField(blank=True, null=True)
+    last_observed = models.DateTimeField(blank=True, null=True)
+    port = models.IntegerField(blank=True, null=True)
+    protocol = models.TextField(blank=True, null=True)
+    active_classifications = ArrayField(
+        models.TextField(blank=True, null=False), blank=True, null=True
+    )
+    inactive_classifications = ArrayField(
+        models.TextField(blank=True, null=False), blank=True, null=True
+    )
+    discovery_type = models.TextField(blank=True, null=True)
+    externally_inferred_vulnerability_score = models.DecimalField(
+        max_digits=5, decimal_places=2, blank=True, null=True
+    )
+    externally_inferred_cves = ArrayField(
+        models.TextField(blank=True, null=False), blank=True, null=True
+    )
+    service_key = models.TextField(blank=True, null=True)
+    service_key_type = models.TextField(blank=True, null=True)
+
+    cves = models.ManyToManyField(XpanseCves, through="XpanseCveService")
+
+    class Meta:
+        """Set XpanseServices metadata."""
+
+        managed = True
+        db_table = "xpanse_services"
+
+
+class XpanseCveService(models.Model):
+    """Define XpanseCves-Service linking table model."""
+
+    xpanse_inferred_cve = models.ForeignKey(XpanseCves, on_delete=models.CASCADE)
+    xpanse_service = models.ForeignKey(XpanseServices, on_delete=models.CASCADE)
+    inferred_cve_match_type = models.TextField(blank=True, null=True)
+    product = models.TextField(blank=True, null=True)
+    confidence = models.TextField(blank=True, null=True)
+    vendor = models.TextField(blank=True, null=True)
+    version_number = models.TextField(blank=True, null=True)
+    activity_status = models.TextField(blank=True, null=True)
+    first_observed = models.DateTimeField(blank=True, null=True)
+    last_observed = models.DateTimeField(blank=True, null=True)
+
+    class Meta:
+        """Set XpanseCveService metadata."""
+
+        managed = True
+        db_table = "xpanse_cve_services"
+        unique_together = (("xpanse_inferred_cve", "xpanse_service"),)
+
+
+class XpanseAlerts(models.Model):
+    """Define XpanseAlerts model."""
+
+    xpanse_alert_uid = models.UUIDField(primary_key=True, default=uuid.uuid1)
+    time_pulled_from_xpanse = models.DateTimeField(blank=True, null=True)
+    alert_id = models.TextField(unique=True, blank=False, null=False)
+    detection_timestamp = models.DateTimeField(blank=True, null=True)
+    alert_name = models.TextField(blank=True, null=True)
+    # endpoint_id ???,
+    description = models.TextField(blank=True, null=True)
+    host_name = models.TextField(blank=True, null=True)
+    alert_action = models.TextField(blank=True, null=True)
+    # user_name ??? null,
+    # mac_addresses ??? null,
+    # source ??? null,
+    action_pretty = models.TextField(blank=True, null=True)
+    # category ??? null,
+    # project ??? null,
+    # cloud_provider ??? null,
+    # resource_sub_type ??? null,
+    # resource_type ??? null,
+    action_country = ArrayField(
+        models.TextField(blank=True, null=False), blank=True, null=True
+    )
+    # event_type ??? null,
+    # is_whitelisted ??? null,
+    # image_name ??? null,
+    # action_local_ip ??? null,
+    # action_local_port ??? null,
+    # action_external_hostname ??? null,
+    # action_remote_ip ??? null,
+    action_remote_port = ArrayField(
+        models.IntegerField(blank=True, null=False), blank=True, null=True
+    )
+    # "matching_service_rule_id ??? null,
+    starred = models.BooleanField(blank=True, null=True)
+    external_id = models.TextField(blank=True, null=True)
+    related_external_id = models.TextField(blank=True, null=True)
+    alert_occurrence = models.IntegerField(blank=True, null=True)
+    severity = models.TextField(blank=True, null=True)
+    matching_status = models.TextField(blank=True, null=True)
+    # end_match_attempt_ts ??? null,
+    local_insert_ts = models.DateTimeField(blank=True, null=True)
+    last_modified_ts = models.DateTimeField(blank=True, null=True)
+    case_id = models.IntegerField(blank=True, null=True)
+    # deduplicate_tokens ??? null,
+    # filter_rule_id ??? null,
+    # event_id ??? null,
+    event_timestamp = ArrayField(
+        models.DateTimeField(blank=True, null=False), blank=True, null=True
+    )
+    # action_local_ip_v6 ??? null,
+    # action_remote_ip_v6 ??? null,
+    alert_type = models.TextField(blank=True, null=True)
+    resolution_status = models.TextField(blank=True, null=True)
+    resolution_comment = models.TextField(blank=True, null=True)
+    # dynamic_fields ??? null,
+    tags = ArrayField(models.TextField(blank=True, null=False), blank=True, null=True)
+    # malicious_urls ??? null,
+    last_observed = models.DateTimeField(blank=True, null=True)
+    country_codes = ArrayField(
+        models.TextField(blank=True, null=False), blank=True, null=True
+    )
+    cloud_providers = ArrayField(
+        models.TextField(blank=True, null=False), blank=True, null=True
+    )
+    ipv4_addresses = ArrayField(
+        models.TextField(blank=True, null=False), blank=True, null=True
+    )
+    # ipv6_addresses ??? null,
+    domain_names = ArrayField(
+        models.TextField(blank=True, null=False), blank=True, null=True
+    )
+    service_ids = ArrayField(
+        models.TextField(blank=True, null=False), blank=True, null=True
+    )
+    website_ids = ArrayField(
+        models.TextField(blank=True, null=False), blank=True, null=True
+    )
+    asset_ids = ArrayField(
+        models.TextField(blank=True, null=False), blank=True, null=True
+    )
+    certificate = models.JSONField(blank=True, null=True)
+    # {
+    #            issuerName": "IOS-Self-Signed-Certificate-782645061",
+    #            subjectName": "IOS-Self-Signed-Certificate-782645061",
+    #            validNotBefore": 1398850008000,
+    #            validNotAfter": 1577836800000,
+    #            serialNumber": "1"
+    # },
+    port_protocol = models.TextField(blank=True, null=True)
+    # business_unit_hierarchies
+    attack_surface_rule_name = models.TextField(blank=True, null=True)
+    remediation_guidance = models.TextField(blank=True, null=True)
+    asset_identifiers = models.JSONField(blank=True, null=True)
+
+    business_units = models.ManyToManyField(XpanseBusinessUnits, related_name="alerts")
+    services = models.ManyToManyField(XpanseServices, related_name="alerts")
+    assets = models.ManyToManyField(XpanseAssets, related_name="alerts")
+
+    class Meta:
+        """Set XpanseAlerts model metadata."""
+
+        managed = True
+        db_table = "xpanse_alerts"
+
+
+class Cves(models.Model):
+    """Define Cves model."""
+
+    cve_uid = models.UUIDField(primary_key=True, default=uuid.uuid1)
+    cve_name = models.TextField(unique=True, blank=True, null=True)
+    published_date = models.DateTimeField(blank=True, null=True)
+    last_modified_date = models.DateTimeField(blank=True, null=True)
+    vuln_status = models.TextField(blank=True, null=True)
+    description = models.TextField(blank=True, null=True)
+    cvss_v2_source = models.TextField(blank=True, null=True)
+    cvss_v2_type = models.TextField(blank=True, null=True)
+    cvss_v2_version = models.TextField(blank=True, null=True)
+    cvss_v2_vector_string = models.TextField(blank=True, null=True)
+    cvss_v2_base_score = models.FloatField(blank=True, null=True)
+    cvss_v2_base_severity = models.TextField(blank=True, null=True)
+    cvss_v2_exploitability_score = models.FloatField(blank=True, null=True)
+    cvss_v2_impact_score = models.FloatField(blank=True, null=True)
+    cvss_v3_source = models.TextField(blank=True, null=True)
+    cvss_v3_type = models.TextField(blank=True, null=True)
+    cvss_v3_version = models.TextField(blank=True, null=True)
+    cvss_v3_vector_string = models.TextField(blank=True, null=True)
+    cvss_v3_base_score = models.FloatField(blank=True, null=True)
+    cvss_v3_base_severity = models.TextField(blank=True, null=True)
+    cvss_v3_exploitability_score = models.FloatField(blank=True, null=True)
+    cvss_v3_impact_score = models.FloatField(blank=True, null=True)
+    cvss_v4_source = models.TextField(blank=True, null=True)
+    cvss_v4_type = models.TextField(blank=True, null=True)
+    cvss_v4_version = models.TextField(blank=True, null=True)
+    cvss_v4_vector_string = models.TextField(blank=True, null=True)
+    cvss_v4_base_score = models.FloatField(blank=True, null=True)
+    cvss_v4_base_severity = models.TextField(blank=True, null=True)
+    cvss_v4_exploitability_score = models.FloatField(blank=True, null=True)
+    cvss_v4_impact_score = models.FloatField(blank=True, null=True)
+    weaknesses = ArrayField(
+        models.TextField(blank=True, null=True), blank=True, null=True
+    )
+    reference_urls = ArrayField(
+        models.TextField(blank=True, null=True), blank=True, null=True
+    )
+    cpe_list = ArrayField(
+        models.TextField(blank=True, null=True), blank=True, null=True
+    )
+
+    class Meta:
+        """Set Cves model metadata."""
+
+        managed = False
+        db_table = "cves"
+
+
+class CpeProduct(models.Model):
+    """Define CpeProduct model."""
+
+    cpe_product_uid = models.UUIDField(primary_key=True, default=uuid.uuid1)
+    cpe_product_name = models.TextField(blank=True, null=True)
+    version_number = models.TextField(blank=True, null=True)
+    cpe_vender_uid = models.ForeignKey(
+        "CpeVender", on_delete=models.CASCADE, db_column="cpe_vender_uid", default=None
+    )
+
+    # Create linking table for many to many relationship
+    cves = models.ManyToManyField(Cves, related_name="products")
+
+    class Meta:
+        """Set CpeProduct model metadata."""
+
+        managed = True
+        db_table = "cpe_product"
+        unique_together = (("cpe_product_name", "version_number"),)

@@ -5,6 +5,7 @@ from datetime import datetime
 import sys
 import logging
 import socket
+import time
 
 # Third-Party Libraries
 import pandas as pd
@@ -552,6 +553,278 @@ def insert_intelx_credentials(df):
         LOGGER.error(err)
     except json.decoder.JSONDecodeError as err:
         LOGGER.error(err)
+
+
+# --- Issue 682 ---
+def insert_or_update_business_unit(business_unit_dict):
+    """
+    Insert a Xpanse business unit record into the PE databawse .
+
+    On conflict, update the old record with the new data
+
+    Args:
+        business_unit_dict: Dictionary of column names and values to be inserted
+
+    Return:
+        Status on if the record was inserted successfully
+    """
+    # Endpoint info
+    endpoint_url = pe_api_url + "xpanse_business_unit_insert_or_update"
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": pe_api_key,
+    }
+    data = json.dumps(business_unit_dict, default=str)
+
+    LOGGER.info(data)
+    try:
+        # Call endpoint
+        xpanse_business_unit_insert_result = requests.put(
+            endpoint_url, headers=headers, data=data
+        ).json()
+        # print(xpanse_business_unit_insert_result)
+        LOGGER.info("Successfully inserted new record in xpanse_business_units table.")
+        return xpanse_business_unit_insert_result
+    except requests.exceptions.HTTPError as errh:
+        LOGGER.error(errh)
+    except requests.exceptions.ConnectionError as errc:
+        LOGGER.error(errc)
+    except requests.exceptions.Timeout as errt:
+        LOGGER.error(errt)
+    except requests.exceptions.RequestException as err:
+        LOGGER.error(err)
+    except json.decoder.JSONDecodeError as err:
+        LOGGER.error(err)
+
+
+# --- Issue 682 ---
+def api_xpanse_alert_insert(xpanse_alert_dict):
+    """
+    Insert an xpanse alert record and connected assets and services.
+
+    On conflict, update the old record with the new data
+
+    Args:
+        xpanse_alert_dict: Dictionary of column names and values to be inserted
+
+    Return:
+        Status on if the record was inserted successfully
+    """
+    # Endpoint info
+    endpoint_url = pe_api_url + "xpanse_alert_insert_or_update"
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": pe_api_key,
+    }
+    data = json.dumps(xpanse_alert_dict, default=str)
+
+    # LOGGER.info(data)
+    try:
+        # Call endpoint
+        xpanse_alert_insert_result = requests.put(
+            endpoint_url, headers=headers, data=data
+        ).json()
+        LOGGER.info(xpanse_alert_insert_result)
+        LOGGER.info(
+            "Successfully inserted new record in xpanse_alerts table with associated assets and services"
+        )
+        return xpanse_alert_insert_result
+    except requests.exceptions.HTTPError as errh:
+        LOGGER.error(errh)
+    except requests.exceptions.ConnectionError as errc:
+        LOGGER.error(errc)
+    except requests.exceptions.Timeout as errt:
+        LOGGER.error(errt)
+    except requests.exceptions.RequestException as err:
+        LOGGER.error(err)
+    except json.decoder.JSONDecodeError as err:
+        LOGGER.error(err)
+
+
+# --- Issue 682 ---
+def api_pull_xpanse_vulns(business_unit, modified_date):
+    """
+    Query API for all domains that have not been recently run through PSHTT.
+
+    Return:
+        All subdomains that haven't been run in the last 15 days
+    """
+    create_task_url = pe_api_url + "xpanse_vulns"
+    check_task_url = pe_api_url + "xpanse_vulns/task/"
+
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": pe_api_key,
+    }
+    data = json.dumps(
+        {"business_unit": business_unit, "modified_datetime": modified_date},
+        default=str,
+    )
+    print(data)
+    try:
+        print("in try")
+        # Create task for query
+        create_task_result = requests.post(
+            create_task_url, headers=headers, data=data
+        ).json()
+
+        print(create_task_result)
+        task_id = create_task_result.get("task_id")
+        LOGGER.info("Created task for xpanse_vuln endpoint query, task_id: %s", task_id)
+        # Once task has been started, keep pinging task status until finished
+        check_task_url += task_id
+        task_status = "Pending"
+
+        while task_status != "Completed" and task_status != "Failed":
+            # Ping task status endpoint and get status
+            check_task_resp = requests.get(check_task_url, headers=headers).json()
+            print(check_task_resp)
+
+            task_status = check_task_resp.get("status")
+            LOGGER.info("\tPinged xpanse_vuln status endpoint, status: %s", task_status)
+            time.sleep(3)
+    except requests.exceptions.HTTPError as errh:
+        print("HTTPError")
+        LOGGER.error(errh)
+    except requests.exceptions.ConnectionError as errc:
+        LOGGER.error(errc)
+        print("ConnectionError")
+    except requests.exceptions.Timeout as errt:
+        LOGGER.error(errt)
+        print("Timeout")
+    except requests.exceptions.RequestException as err:
+        LOGGER.error(err)
+        print("RequestException")
+    except json.decoder.JSONDecodeError as err:
+        print("JSONDecodeError")
+        LOGGER.error(err)
+
+    # Once task finishes, return result
+    try:
+        if task_status == "Completed":
+            print(check_task_resp.get("result"))
+            result_df = pd.DataFrame.from_dict(check_task_resp.get("result"))
+            list_of_dicts = result_df.to_dict("records")
+            return list_of_dicts
+        else:
+            raise Exception(
+                "xpanse_vuln query task failed 1, details: ", check_task_resp
+            )
+    except Exception as e:
+        raise Exception("xpanse_vuln query task failed 2, details: ", e)
+    
+
+# --- Issue 696 ---
+def api_cve_insert(cve_dict):
+    """
+    Insert a cve record for  into the cve table with linked products and venders.
+
+    On conflict, update the old record with the new data
+
+    Args:
+        cve_dict: Dictionary of column names and values to be inserted
+
+    Return:
+        Status on if the record was inserted successfully
+    """
+    # Endpoint info
+    endpoint_url = pe_api_url + "cve_insert_or_update"
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": pe_api_key,
+    }
+    data = json.dumps(cve_dict, default=str)
+
+    LOGGER.info(data)
+    try:
+        # Call endpoint
+        cve_insert_result = requests.put(
+            endpoint_url, headers=headers, data=data
+        ).json()
+        # print(cve_insert_result)
+        LOGGER.info(
+            "Successfully inserted new record in cves table with associated cpe products and venders"
+        )
+        return cve_insert_result
+    except requests.exceptions.HTTPError as errh:
+        LOGGER.error(errh)
+    except requests.exceptions.ConnectionError as errc:
+        LOGGER.error(errc)
+    except requests.exceptions.Timeout as errt:
+        LOGGER.error(errt)
+    except requests.exceptions.RequestException as err:
+        LOGGER.error(err)
+    except json.decoder.JSONDecodeError as err:
+        LOGGER.error(err)
+
+
+# --- Issue 696 ---
+def get_cve_and_products(cve_name):
+    """
+    Query API to retrieve a CVE and its associated products data for the specified CVE.
+
+    Args:
+        cve_name: The CVE name or code
+
+    Return:
+        CVE data and a dictionary of venders and products
+    """
+    # Endpoint info
+    endpoint_url = pe_api_url + "get_cve"
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": pe_api_key,
+    }
+    data = json.dumps({"cve_name": cve_name})
+    try:
+        # Call endpoint
+        result = requests.post(endpoint_url, headers=headers, data=data).json()
+        # Process data and return
+
+        return result
+    except requests.exceptions.HTTPError as errh:
+        LOGGER.info(errh)
+    except requests.exceptions.ConnectionError as errc:
+        LOGGER.info(errc)
+    except requests.exceptions.Timeout as errt:
+        LOGGER.info(errt)
+    except requests.exceptions.RequestException as err:
+        LOGGER.info(err)
+    except json.decoder.JSONDecodeError as err:
+        LOGGER.info(err)
+
+
+# --- Issue 696 ---
+def query_all_cves(modified_date=None):
+    """Query all CVEs added or changed since provided date."""
+    start_time = time.time()
+    total_num_pages = 1
+    page_num = 1
+    total_data = []
+    # Retrieve data for each page
+    while page_num <= total_num_pages:
+        # Endpoint info
+        create_task_url = "cves_by_modified_date"
+        check_task_url = "cves_by_modified_date/task/"
+
+        data = json.dumps(
+            {"modified_datetime": modified_date, "page": page_num, "per_page": 500}
+        )
+        # Make API call
+        result = task_api_call(create_task_url, check_task_url, data, 3)
+        # Once task finishes, append result to total list
+        print(result)
+        total_data += result.get("data")
+        total_num_pages = result.get("total_pages")
+        LOGGER.info("Retrieved page: " + str(page_num) + " of " + str(total_num_pages))
+        page_num += 1
+    # Once all data has been retrieved, return overall tuple list
+    # total_data = pd.DataFrame.from_dict(total_data)
+    total_data = [tuple(dic.values()) for dic in total_data]
+    LOGGER.info("Total time to retrieve cves: %s", (time.time() - start_time))
+    # total_data["first_seen"] = pd.to_datetime(total_data["first_seen"]).dt.date
+    # total_data["last_seen"] = pd.to_datetime(total_data["last_seen"]).dt.date
+    return total_data
 
 
 # v ===== ACTIVE TSQL THAT STILL NEEDS CONVERSION ===== v

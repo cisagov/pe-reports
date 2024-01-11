@@ -4,7 +4,7 @@ from datetime import date, datetime
 from decimal import Decimal
 
 # from pydantic.types import UUID1, UUID
-from typing import Any, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 from uuid import UUID
 
 # Third-Party Libraries
@@ -3001,6 +3001,381 @@ class CredExpIntelxInsertInput(BaseModel):
 
         orm_mode = True
 
+
+# --- xpanse endpoint, Issue 682 ---
+class XpanseBusinessUnitsInsert(BaseModel):
+    """XpanseBusinessUnitsInsert schema class."""
+
+    # xpanse_business_unit_uid: Optional[Any]
+    entity_name: str
+    state: Optional[str] = None
+    county: Optional[str] = None
+    city: Optional[str] = None
+    sector: Optional[str] = None
+    entity_type: Optional[str] = None
+    region: Optional[str] = None
+    rating: Optional[int] = None
+
+
+# --- xpanse endpoint, Issue 682 ---
+class XpanseAsset(BaseModel):
+    """XpanseAsset schema class."""
+
+    # xpanse_asset_uid = models.UUIDField(primary_key=True, default=uuid.uuid1)
+    asm_id: Optional[str] = None
+    asset_name: Optional[str] = None
+    asset_type: Optional[str] = None
+    last_observed: Optional[datetime] = None
+    first_observed: Optional[datetime] = None
+    externally_detected_providers: Optional[List[str]] = None
+    created: Optional[datetime] = None
+    ips: Optional[List[str]] = None
+    active_external_services_types: Optional[List[str]] = None
+    domain: Optional[str] = None
+    certificate_issuer: Optional[str] = None
+    certificate_algorithm: Optional[str] = None
+    certificate_classifications: Optional[List[str]] = None
+    resolves: Optional[bool] = None
+    # details
+    top_level_asset_mapper_domain: Optional[str] = None
+    domain_asset_type: Optional[Dict] = None  # This was JSON
+    is_paid_level_domain: Optional[bool] = None
+    domain_details: Optional[Dict] = None  # This was JSON
+    dns_zone: Optional[str] = None
+    latest_sampled_ip: Optional[int] = None
+
+    recent_ips: Optional[List[Dict]] = None  # This was JSON
+    external_services: Optional[List[Dict]] = None  # This was JSON
+    externally_inferred_vulnerability_score: Optional[float] = None
+    externally_inferred_cves: Optional[List[str]] = None
+    explainers: Optional[List[str]] = None
+    tags: Optional[List[str]] = None
+
+
+# --- xpanse endpoint, Issue 682 ---
+class XpanseCve(BaseModel):
+    """XpanseCVE schema class."""
+
+    cve_id: Optional[str] = None
+    cvss_score_v2: Optional[float] = None
+    cve_severity_v2: Optional[str] = None
+    cvss_score_v3: Optional[float] = None
+    cve_severity_v3: Optional[str] = None
+
+
+# --- xpanse endpoint, Issue 682 ---
+class XpanseCveMatch(BaseModel):
+    """XpanseCveMatch schema class."""
+
+    inferred_cve_match_type: Optional[str] = None
+    product: Optional[str] = None
+    confidence: Optional[str] = None
+    vendor: Optional[str] = None
+    version_number: Optional[str] = None
+    activity_status: Optional[str] = None
+    first_observed: Optional[datetime] = None
+    last_observed: Optional[datetime] = None
+
+
+# --- xpanse endpoint, Issue 682 ---
+class XpanseService(BaseModel):
+    """XpanseService schema class."""
+
+    # xpanse_service_uid = models.UUIDField(primary_key=True, default=uuid.uuid1)
+    service_id: Optional[str] = None
+    service_name: Optional[str] = None
+    service_type: Optional[str] = None
+    ip_address: Optional[List[str]] = None
+    domain: Optional[List[str]] = None
+    externally_detected_providers: Optional[List[str]] = None
+    is_active: Optional[str] = None
+    first_observed: Optional[datetime] = None
+    last_observed: Optional[datetime] = None
+    port: Optional[int] = None
+    protocol: Optional[str] = None
+    active_classifications: Optional[List[str]] = None
+    inactive_classifications: Optional[List[str]] = None
+    discovery_type: Optional[str] = None
+    externally_inferred_vulnerability_score: Optional[float] = None
+    externally_inferred_cves: Optional[List[str]] = None
+    service_key: Optional[str] = None
+    service_key_type: Optional[str] = None
+
+    cves: Optional[List[Tuple[XpanseCve, XpanseCveMatch]]] = None
+
+
+# --- xpanse endpoint, Issue 682 ---
+class XpanseAlertInsert(BaseModel):
+    """XpanseAlertInsert schema class."""
+
+    # xpanse_alert_uid =  models.UUIDField(primary_key=True, default=uuid.uuid1)
+    time_pulled_from_xpanse: Optional[datetime] = None
+    alert_id: str
+    detection_timestamp: Optional[datetime] = None
+    alert_name: Optional[str] = None
+    # endpoint_id ???,
+    description: Optional[str] = None
+    host_name: Optional[str] = None
+    alert_action: Optional[str] = None
+    # user_name ??? null,
+    # mac_addresses ??? null,
+    # source ??? null,
+    action_pretty: Optional[str] = None
+    # category ??? null,
+    # project ??? null,
+    # cloud_provider ??? null,
+    # resource_sub_type ??? null,
+    # resource_type ??? null,
+    action_country: Optional[List[str]] = None
+    # event_type ??? null,
+    # is_whitelisted ??? null,
+    # image_name ??? null,
+    # action_local_ip ??? null,
+    # action_local_port ??? null,
+    # action_external_hostname ??? null,
+    # action_remote_ip ??? null,
+    action_remote_port: Optional[List[int]] = None
+    # "matching_service_rule_id ??? null,
+    starred: Optional[bool] = None
+    external_id: Optional[str] = None
+    related_external_id: Optional[str] = None
+    alert_occurrence: Optional[int] = None
+    severity: Optional[str] = None
+    matching_status: Optional[str] = None
+    # end_match_attempt_ts ??? null,
+    local_insert_ts: Optional[datetime] = None
+    last_modified_ts: Optional[datetime] = None
+    case_id: Optional[int] = None
+    # deduplicate_tokens ??? null,
+    # filter_rule_id ??? null,
+    # event_id ??? null,
+    event_timestamp: Optional[List[datetime]] = None
+    # action_local_ip_v6 ??? null,
+    # action_remote_ip_v6 ??? null,
+    alert_type: Optional[str] = None
+    resolution_status: Optional[str] = None
+    resolution_comment: Optional[str] = None
+    # dynamic_fields ??? null,
+    tags: Optional[List[str]] = None
+    # malicious_urls ??? null,
+    last_observed: Optional[datetime] = None
+    country_codes: Optional[List[str]] = None
+    cloud_providers: Optional[List[str]] = None
+    ipv4_addresses: Optional[List[str]] = None
+    # ipv6_addresses ??? null,
+    domain_names: Optional[List[str]] = None
+    service_ids: Optional[List[str]] = None
+    website_ids: Optional[List[str]] = None
+    asset_ids: Optional[List[str]] = None
+    certificate: Optional[Dict] = None  # This was JSON
+    # {
+    #            issuerName": "IOS-Self-Signed-Certificate-782645061",
+    #            subjectName": "IOS-Self-Signed-Certificate-782645061",
+    #            validNotBefore": 1398850008000,
+    #            validNotAfter": 1577836800000,
+    #            serialNumber": "1"
+    # },
+    port_protocol: Optional[str] = None
+    # business_unit_hierarchies
+    attack_surface_rule_name: Optional[str] = None
+    remediation_guidance: Optional[str] = None
+    asset_identifiers: Optional[List[Dict]] = None  # This was JSON
+
+    business_units: List[str] = []
+    services: List[XpanseService] = []
+    assets: List[XpanseAsset] = []
+
+
+# --- xpanse endpoint, Issue 682 ---
+class XpanseCveOutput(BaseModel):
+    """XpanseCveOutput schema class."""
+
+    cve_id: Optional[str] = None
+    cvss_score_v2: Optional[str] = None
+    cve_severity_v2: Optional[str] = None
+    cvss_score_v3: Optional[str] = None
+    cve_severity_v3: Optional[str] = None
+    inferred_cve_match_type: Optional[str] = None
+    product: Optional[str] = None
+    confidence: Optional[str] = None
+    vendor: Optional[str] = None
+    version_number: Optional[str] = None
+    activity_status: Optional[str] = None
+    first_observed: Optional[str] = None
+    last_observed: Optional[str] = None
+
+
+# --- xpanse endpoint, Issue 682 ---
+class XpanseServiceOutput(BaseModel):
+    """XpanseServiceOutput schema class."""
+
+    service_id: Optional[str] = None
+    service_name: Optional[str] = None
+    service_type: Optional[str] = None
+    ip_address: Optional[List[str]] = None
+    domain: Optional[List[str]] = None
+    externally_detected_providers: Optional[List[str]] = None
+    is_active: Optional[str] = None
+    first_observed: Optional[str] = None
+    last_observed: Optional[str] = None
+    port: Optional[int] = None
+    protocol: Optional[str] = None
+    active_classifications: Optional[List[str]] = None
+    inactive_classifications: Optional[List[str]] = None
+    discovery_type: Optional[str] = None
+    externally_inferred_vulnerability_score: Optional[str] = None
+    externally_inferred_cves: Optional[List[str]] = None
+    service_key: Optional[str] = None
+    service_key_type: Optional[str] = None
+    cves: Optional[List[XpanseCveOutput]] = None
+
+
+# --- xpanse endpoint, Issue 682 ---
+class XpanseVulnOutput(BaseModel):
+    """XpanseVulnOutput schhema class."""
+
+    alert_name: Optional[str] = None
+    description: Optional[str] = None
+    last_modified_ts: Optional[datetime] = None
+    local_insert_ts: Optional[datetime] = None
+    event_timestamp: Optional[List[datetime]] = None
+    host_name: Optional[str] = None
+    alert_action: Optional[str] = None
+    action_country: Optional[List[str]] = None
+    action_remote_port: Optional[List[int]] = None
+    external_id: Optional[str] = None
+    related_external_id: Optional[str] = None
+    alert_occurrence: Optional[int] = None
+    severity: Optional[str] = None
+    matching_status: Optional[str] = None
+    alert_type: Optional[str] = None
+    resolution_status: Optional[str] = None
+    resolution_comment: Optional[str] = None
+    last_observed: Optional[str] = None
+    country_codes: Optional[List[str]] = None
+    cloud_providers: Optional[List[str]] = None
+    ipv4_addresses: Optional[List[str]] = None
+    domain_names: Optional[List[str]] = None
+    port_protocol: Optional[str] = None
+    time_pulled_from_xpanse: Optional[str] = None
+    action_pretty: Optional[str] = None
+    attack_surface_rule_name: Optional[str] = None
+    certificate: Optional[Dict] = None
+    remediation_guidance: Optional[str] = None
+    asset_identifiers: Optional[List[Dict]] = None
+    services: Optional[List[XpanseServiceOutput]] = None
+
+
+# --- xpanse endpoint, Issue 682 ---
+class XpanseVulnPullInput(BaseModel):
+    """XpanseVulnPullInput schema class."""
+
+    business_unit: str
+    modified_datetime: Optional[datetime] = None
+
+    class Config:
+        """XpanseVulnPullInput schema config class."""
+
+        orm_mode = True
+
+
+# --- xpanse endpoint, Issue 682 ---
+class XpanseVulnPullTaskResp(BaseModel):
+    """XpanseVulnPullTaskResp schema class."""
+
+    task_id: str
+    status: str
+    result: Optional[List[XpanseVulnOutput]] = None
+    error: Optional[str] = None
+
+
+# --- NIST CVE endpoint, Issue 696 ---
+class CpeProduct(BaseModel):
+    """CpeProduct schema class."""
+
+    cpe_product_name: str
+    version_number: str
+    vender: str
+
+
+# --- NIST CVE endpoint, Issue 696 ---
+class CveWithProducts(BaseModel):
+    """CveWithProducts schema class."""
+
+    cve_uid: Optional[Any]
+    cve_name: Optional[str]
+    published_date: Optional[datetime] = None
+    last_modified_date: Optional[datetime] = None
+    vuln_status: Optional[str] = None
+    description: Optional[str] = None
+    cvss_v2_source: Optional[str] = None
+    cvss_v2_type: Optional[str] = None
+    cvss_v2_version: Optional[str] = None
+    cvss_v2_vector_string: Optional[str] = None
+    cvss_v2_base_score: Optional[float] = None
+    cvss_v2_base_severity: Optional[str] = None
+    cvss_v2_exploitability_score: Optional[float] = None
+    cvss_v2_impact_score: Optional[float] = None
+    cvss_v3_source: Optional[str] = None
+    cvss_v3_type: Optional[str] = None
+    cvss_v3_version: Optional[str] = None
+    cvss_v3_vector_string: Optional[str] = None
+    cvss_v3_base_score: Optional[float] = None
+    cvss_v3_base_severity: Optional[str] = None
+    cvss_v3_exploitability_score: Optional[float] = None
+    cvss_v3_impact_score: Optional[float] = None
+    cvss_v4_source: Optional[str] = None
+    cvss_v4_type: Optional[str] = None
+    cvss_v4_version: Optional[str] = None
+    cvss_v4_vector_string: Optional[str] = None
+    cvss_v4_base_score: Optional[float] = None
+    cvss_v4_base_severity: Optional[str] = None
+    cvss_v4_exploitability_score: Optional[float] = None
+    cvss_v4_impact_score: Optional[float] = None
+    weaknesses: Optional[List[str]] = None
+    reference_urls: Optional[List[str]] = None
+    cpe_list: Optional[List[str]] = None
+    vender_product: Optional[Dict[str, List[CpeProduct]]] = None
+
+    class Config:
+        """CveWithProducts schema config class."""
+
+        orm_mode = True
+        validate_assignment = True
+
+
+# --- NIST CVE endpoint, Issue 696 ---
+class CvePagedResult(BaseModel):
+    """SubDomainPagedResult schema class."""
+
+    total_pages: int
+    current_page: int
+    data: List[CveWithProducts]
+
+
+# --- NIST CVE endpoint, Issue 696 ---
+class CvePagedInput(BaseModel):
+    """CvePagedInput schema class."""
+
+    modified_datetime: Optional[datetime] = None
+    page: int
+    per_page: int
+
+    class Config:
+        """CvePagedInput schema config class."""
+
+        orm_mode = True
+
+
+# --- NIST CVE endpoint, Issue 696 ---
+class CvePagedTaskResp(BaseModel):
+    """SubDomainPagedTaskResp schema class."""
+
+    task_id: str
+    status: str
+    result: Optional[CvePagedResult] = None
+    error: Optional[str] = None
+    
 
 class PshttDomainToRun(BaseModel):
     """PshttDomainsToRun schema class."""
