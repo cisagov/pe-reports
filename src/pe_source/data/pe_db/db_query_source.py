@@ -827,6 +827,122 @@ def query_all_cves(modified_date=None):
     return total_data
 
 
+# --- Pshtt Scan ---
+def api_pshtt_domains_to_run():
+    """
+    Query API for all domains that have not been recently run through PSHTT.
+
+    Return:
+        All subdomains that haven't been run in the last 15 days
+    """
+    create_task_url = pe_api_url + "pshtt_unscanned_domains"
+    check_task_url = pe_api_url + "pshtt_unscanned_domains/task/"
+
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": pe_api_key,
+    }
+
+    try:
+        print("in try")
+        # Create task for query
+        create_task_result = requests.post(
+            create_task_url,
+            headers=headers,
+            # data = data
+        ).json()
+
+        print(create_task_result)
+        task_id = create_task_result.get("task_id")
+        LOGGER.info(
+            "Created task for pshtt_domains_to_run endpoint query, task_id: %s", task_id
+        )
+        # Once task has been started, keep pinging task status until finished
+        check_task_url += task_id
+        task_status = "Pending"
+
+        while task_status != "Completed" and task_status != "Failed":
+            # Ping task status endpoint and get status
+            check_task_resp = requests.get(check_task_url, headers=headers).json()
+            print(check_task_resp)
+
+            task_status = check_task_resp.get("status")
+            LOGGER.info(
+                "\tPinged pshtt_domains_to_run status endpoint, status: %s", task_status
+            )
+            time.sleep(3)
+    except requests.exceptions.HTTPError as errh:
+        print("HTTPError")
+        LOGGER.error(errh)
+    except requests.exceptions.ConnectionError as errc:
+        LOGGER.error(errc)
+        print("ConnectionError")
+    except requests.exceptions.Timeout as errt:
+        LOGGER.error(errt)
+        print("Timeout")
+    except requests.exceptions.RequestException as err:
+        LOGGER.error(err)
+        print("RequestException")
+    except json.decoder.JSONDecodeError as err:
+        print("JSONDecodeError")
+        LOGGER.error(err)
+
+    # Once task finishes, return result
+    try:
+        if task_status == "Completed":
+            result_df = pd.DataFrame.from_dict(check_task_resp.get("result"))
+            list_of_dicts = result_df.to_dict("records")
+            return list_of_dicts
+        else:
+            raise Exception(
+                "pshtt_domains_to_run query task failed, details: ", check_task_resp
+            )
+    except Exception as e:
+        raise Exception("pshtt_domains_to_run query task failed, details: ", e)
+
+
+# --- Pshtt Scan ---
+def api_pshtt_insert(pshtt_dict):
+    """
+    Insert a pshtt record for an subdomain into the pshtt_records table.
+
+    On conflict, update the old record with the new data
+
+    Args:
+        pshtt_dict: Dictionary of column names and values to be inserted
+
+    Return:
+        Status on if the record was inserted successfully
+    """
+    # Endpoint info
+    endpoint_url = pe_api_url + "pshtt_result_update_or_insert"
+    headers = {
+        "Content-Type": "application/json",
+        "access_token": pe_api_key,
+    }
+    data = json.dumps(pshtt_dict, default=str)
+
+    LOGGER.info(data)
+    try:
+        # Call endpoint
+        pshtt_insert_result = requests.put(
+            endpoint_url, headers=headers, data=data
+        ).json()
+        print(pshtt_insert_result)
+        return pshtt_insert_result
+        LOGGER.info("Successfully inserted new record in report_summary_stats table")
+    except requests.exceptions.HTTPError as errh:
+        LOGGER.error(errh)
+    except requests.exceptions.ConnectionError as errc:
+        LOGGER.error(errc)
+    except requests.exceptions.Timeout as errt:
+        LOGGER.error(errt)
+    except requests.exceptions.RequestException as err:
+        LOGGER.error(err)
+    except json.decoder.JSONDecodeError as err:
+        LOGGER.error(err)
+
+
 # v ===== ACTIVE TSQL THAT STILL NEEDS CONVERSION ===== v
 # Conversion in progress
 def get_orgs():
@@ -974,6 +1090,18 @@ def org_root_domains(conn, org_uid):
     sql = """
         select * from root_domains rd
         where rd.organizations_uid = %(org_id)s;
+    """
+    df = pd.read_sql_query(sql, conn, params={"org_id": org_uid})
+    return df
+
+
+# Conversion in progress
+def get_root_domains(conn, org_uid):
+    """Get root domains from database given the org_uid."""
+    sql = """
+        select * from root_domains rd
+        where rd.organizations_uid = %(org_id)s
+        and enumerate_subs is True;
     """
     df = pd.read_sql_query(sql, conn, params={"org_id": org_uid})
     return df

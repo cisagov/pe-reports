@@ -1336,16 +1336,6 @@ class VwBreachcompCredsbydate(models.Model):
         db_table = "vw_breachcomp_credsbydate"
 
 
-# class VwDarkwebMentionsbydate(models.Model):
-#     organizations_uid = models.UUIDField(primary_key=True)
-#     date = models.DateField(blank=True, null=True)
-#     count = models.BigIntegerField(db_column='Count', blank=True, null=True)  # Field name made lowercase.
-#
-#     class Meta:
-#         managed = False  # Created from a view. Don't remove.
-#         db_table = 'vw_darkweb_mentionsbydate'
-
-
 class VwDarkwebMentionsbydate(models.Model):
     """VwDarkwebMentionsbydate model class."""
 

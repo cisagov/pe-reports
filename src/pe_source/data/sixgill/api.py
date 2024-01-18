@@ -12,6 +12,7 @@ from retry import retry
 # cisagov Libraries
 from pe_source.data.pe_db.config import cybersix_token
 
+# Setup logging
 LOGGER = logging.getLogger(__name__)
 
 
@@ -26,6 +27,7 @@ def get_sixgill_organizations():
     }
     orgs = requests.get(url, headers=headers).json()
     df_orgs = pd.DataFrame(orgs)
+    df_orgs = df_orgs[["name", "organization_id"]]
     sixgill_dict = df_orgs.set_index("name").agg(list, axis=1).to_dict()
     return sixgill_dict
 
@@ -132,18 +134,56 @@ def alerts_content(auth, organization_id, alert_id):
     return content
 
 
-def dve_top_cves(size):
-    """Get data about a specific CVE."""
-    url = "https://api.cybersixgill.com/dve_enrich/top_cves"
+def dve_top_cves():
+    """Retrieve the top 10 CVEs for this report period."""
+    url = "https://api.cybersixgill.com/dve_enrich/enrich"
+    # Used to be: https://api.cybersixgill.com/dve_enrich/top_cves
     auth = cybersix_token()
     headers = {
-        "Content-Type": "application/x-www-form-urlencoded",
+        "Content-Type": "application/json",
         "Cache-Control": "no-cache",
         "Authorization": "Bearer " + auth,
     }
-    payload = {"size": size}
-    resp = requests.get(url, headers=headers, params=payload).json()
-    return resp
+    data = json.dumps(
+        {
+            "filters": {
+                "sixgill_rating_range": {"from": 8, "to": 10},
+            },
+            "results_size": 10,
+            "enriched": True,
+            "from_index": 0,
+        }
+    )
+    resp = requests.post(url, headers=headers, data=data).json()
+
+    # old version needed sorting:
+    # sorted_values = sorted(
+    #     resp["objects"],
+    #     key=lambda x: x["score"]["sixgill"]["current"]
+    #     if x["score"]["sixgill"]["current"] is not None
+    #     else float("-inf"),
+    #     reverse=True,
+    # )
+    # top_10_cves = sorted_values[:10]
+
+    result_list = resp.get("objects")
+    clean_top_10_cves = []
+    for result in result_list:
+        cve_id = result.get("name")
+        dynamic_rating = result.get("x_sixgill_info").get("score").get("current")
+        if result.get("x_sixgill_info").get("nvd").get("v3") is None:
+            nvd_v3_score = None
+        else:
+            nvd_v3_score = result.get("x_sixgill_info").get("nvd").get("v3").get("current")
+        nvd_base_score = "{'v2': None, 'v3': " + str(nvd_v3_score) + "}"
+        clean_cve = {
+            "cve_id": cve_id,
+            "dynamic_rating": dynamic_rating,
+            "nvd_base_score": nvd_base_score,
+        }
+        clean_top_10_cves.append(clean_cve)
+
+    return clean_top_10_cves
 
 
 def credential_auth(params):
@@ -170,22 +210,17 @@ def setNewCSGOrg(newOrgName, orgAliases, orgDomainNames, orgIP, orgExecs):
         }
     )
     url = "https://api.cybersixgill.com/multi-tenant/organization"
-
     headers = {
         "Content-Type": "application/json",
         "Cache-Control": "no-cache",
         "Authorization": f"Bearer {cybersix_token()}",
     }
-
     response = requests.post(url, headers=headers, data=newOrganization).json()
-
     newOrgID = response["id"]
-
     if newOrgID:
         LOGGER.info("A new org_id was created: %s", newOrgID)
         setOrganizationUsers(newOrgID)
         setOrganizationDetails(newOrgID, orgAliases, orgDomainNames, orgIP, orgExecs)
-
     return response
 
 
@@ -196,11 +231,9 @@ def setOrganizationUsers(org_id):
     id_role1 = "610017c216948d7efa077a52"
     csg_role_id = "role_id"
     csg_user_id = "user_id"
-
     for user in getUserInfo():
         userrole = user[csg_role_id]
         user_id = user[csg_user_id]
-
         if (
             (userrole == role1)
             and (user_id != id_role1)
@@ -212,13 +245,11 @@ def setOrganizationUsers(org_id):
                 f"https://api.cybersixgill.com/multi-tenant/organization/"
                 f"{org_id}/user/{user_id}?role_id={userrole}"
             )
-
             headers = {
                 "Content-Type": "application/json",
                 "Cache-Control": "no-cache",
                 "Authorization": f"Bearer {cybersix_token()}",
             }
-
             response = requests.post(url, headers=headers).json()
             LOGGER.info("The response is %s", response)
 
@@ -237,13 +268,11 @@ def setOrganizationDetails(org_id, orgAliases, orgDomain, orgIP, orgExecs):
         }
     )
     url = f"https://api.cybersixgill.com/multi-tenant/" f"organization/{org_id}/assets"
-
     headers = {
         "Content-Type": "application/json",
         "Cache-Control": "no-cache",
         "Authorization": f"Bearer {cybersix_token()}",
     }
-
     response = requests.put(url, headers=headers, data=newOrganizationDetails).json()
     LOGGER.info("The response is %s", response)
 
@@ -251,15 +280,12 @@ def setOrganizationDetails(org_id, orgAliases, orgDomain, orgIP, orgExecs):
 def getUserInfo():
     """Get all organization details from Cybersixgill via API."""
     url = "https://api.cybersixgill.com/multi-tenant/organization"
-
     headers = {
         "Content-Type": "application/json",
         "Cache-Control": "no-cache",
         "Authorization": f"Bearer {cybersix_token()}",
     }
-
     response = requests.get(url, headers=headers).json()
-
     userInfo = response[1]["assigned_users"]
     return userInfo
 
@@ -296,3 +322,4 @@ def get_bulk_cve_resp(cve_list):
         return resp
     except Exception as e:
         LOGGER.error("Error making bulk CVE API call: %s", e)
+

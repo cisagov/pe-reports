@@ -6,12 +6,13 @@ import threading
 # Third-Party Libraries
 import numpy
 
+# cisagov Libraries
 from .data.pe_db.config import shodan_api_init
 from .data.pe_db.db_query_source import get_orgs
-from .data.shodan.shodan_search import run_shodan_thread
+from .data.shodan_db.shodan_search import run_shodan_thread
 
 
-class Shodan:
+class Get_shodan:
     """Fetch Shodan data."""
 
     def __init__(self, orgs_list):
@@ -26,10 +27,20 @@ class Shodan:
         pe_orgs = get_orgs()
 
         # Filter orgs if specified
+        pe_orgs_final = []
         if orgs_list == "all":
-            pe_orgs_final = pe_orgs
+            for pe_org in pe_orgs:
+                if pe_org["report_on"]:
+                    pe_orgs_final.append(pe_org)
+                else:
+                    continue
+        elif orgs_list == "DEMO":
+            for pe_org in pe_orgs:
+                if pe_org["demo"]:
+                    pe_orgs_final.append(pe_org)
+                else:
+                    continue
         else:
-            pe_orgs_final = []
             for pe_org in pe_orgs:
                 if pe_org["cyhy_db_name"] in orgs_list:
                     pe_orgs_final.append(pe_org)

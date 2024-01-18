@@ -196,42 +196,43 @@ async def get_api_key(
         )
 
 
-def process_item(item):
-    """Process CSV rows."""
-    # TODO: Replace with the code for what you wish to do with the row of data in the CSV.
-    LOGGER.info("The item is %s" % item)
-    print("The item is %s" % item)
+@api_router.post("/get_key", tags=["Get user api keys"])
+def read_get_key(data: schemas.UserAPI):
+    """Call API endpoint to get api by submitting refresh token."""
+    user_key = ""
+    userkey = list(apiUser.objects.filter(refresh_token=data.refresh_token))
+    LOGGER.info(f"The input data requested was ***********{data.refresh_token[-10:]}")
 
-
-# def api_key_auth(api_key: str = Depends(oauth2_scheme)):
-#     if api_key not in api_keys:
-#         raise HTTPException(
-#             status_code=status.HTTP_401_UNAUTHORIZED,
-#             detail="Forbidden"
-#         )
+    for u in userkey:
+        user_key = u.apiKey
+    return user_key
 
 
 @api_router.post(
-    "/orgs",
-    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
-    response_model=List[schemas.Organization],
-    tags=["List of all Organizations"],
+    "/signup",
+    summary="Create api key and access token on user",
+    tags=["Sign-up to add api_key and access token to user"],
 )
-def read_orgs(tokens: dict = Depends(get_api_key)):
-    """Call API endpoint to get all organizations."""
-    orgs = list(Organizations.objects.all())
+def create_user(data: schemas.UserAuth):
+    """Create an API User."""
+    # querying database to check if user already exist
+    user = userinfo(data.username)
 
-    if tokens:
+    # TODO put logging statement here.
+    print(f"The user id is {user}\n")
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User with this username does not exist",
+        )
 
-        # LOGGER.info(f"The api key submitted {tokens}")
-        try:
-
-            userapiTokenverify(theapiKey=tokens)
-            return orgs
-        except Exception:
-            LOGGER.info("API key expired please try again")
-    else:
-        return {"message": "No api key was submitted"}
+    theNewUser = apiUser(
+        apiKey=create_access_token(data.username),
+        user_id=user,
+        refresh_token=create_refresh_token(data.username),
+    )
+    apiUser.save(theNewUser)
+    return theNewUser
 
 
 @api_router.post(
@@ -280,6 +281,36 @@ def read_user_weekly_statuses(
         return statuses
     except Exception:
         LOGGER.info("API key expired please try again")
+
+
+def process_item(item):
+    """Process CSV rows."""
+    # TODO: Replace with the code for what you wish to do with the row of data in the CSV.
+    LOGGER.info("The item is %s" % item)
+    print("The item is %s" % item)
+
+
+@api_router.post(
+    "/orgs",
+    dependencies=[Depends(get_api_key), Depends(RateLimiter(times=200, seconds=60))],
+    response_model=List[schemas.Organization],
+    tags=["List of all Organizations"],
+)
+def read_orgs(tokens: dict = Depends(get_api_key)):
+    """Call API endpoint to get all organizations."""
+    orgs = list(Organizations.objects.all())
+
+    if tokens:
+
+        # LOGGER.info(f"The api key submitted {tokens}")
+        try:
+
+            userapiTokenverify(theapiKey=tokens)
+            return orgs
+        except Exception:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
 
 
 @api_router.post(
@@ -455,135 +486,32 @@ def read_breachdetails(tokens: dict = Depends(get_api_key)):
         return {"message": "No api key was submitted"}
 
 
-@api_router.post("/get_key", tags=["Get user api keys"])
-def read_get_key(data: schemas.UserAPI):
-    """Call API endpoint to get api by submitting refresh token."""
-    user_key = ""
-    userkey = list(apiUser.objects.filter(refresh_token=data.refresh_token))
-    LOGGER.info(f"The input data requested was ***********{data.refresh_token[-10:]}")
-
-    for u in userkey:
-        user_key = u.apiKey
-    return user_key
-
-
-# @api_router.post("/testingUsers",
-#                 tags=["List of user id"])
-# def read_users(data: schemas.UserAuth):
-#     user = userinfo(data.username)
-#
-#     # user = list(User.objects.filter(username='cduhn75'))
-#     if user is None:
-#         raise HTTPException(
-#             status_code=status.HTTP_400_BAD_REQUEST,
-#             detail="User with this name does exist"
-#         )
-#     return userinfo(data.username)
-
-
-# @api_router.get("/secure_endpoint", tags=["test"])
-# async def get_open_api_endpoint(api_key: APIKey = Depends(get_api_key)):
-#     print(api_key)
-#     response = "How cool is this?"
-#     return response
-
-
 @api_router.post(
-    "/signup",
-    summary="Create api key and access token on user",
-    tags=["Sign-up to add api_key and access token to user"],
+    "/cyhy_port_scan",
+    dependencies=[Depends(get_api_key)],
+    # response_model=Dict[schemas.WASDataBase],
+    tags=["Create new cyhy port scan data"],
 )
-def create_user(data: schemas.UserAuth):
-    """Create an API User."""
-    # querying database to check if user already exist
-    user = userinfo(data.username)
+def cyhy_port_scan_info_create(
+    ports_scan_data: schemas.CyhyPortScans, tokens: dict = Depends(get_api_key)
+):
+    """Call API endpoint to create a record in database."""
+    cyhy_ports = CyhyPortScans(**ports_scan_data.dict())
 
-    # TODO put logging statement here.
-    print(f"The user id is {user}\n")
-    if user is None:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="User with this username does not exist",
-        )
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
 
-    theNewUser = apiUser(
-        apiKey=create_access_token(data.username),
-        user_id=user,
-        refresh_token=create_refresh_token(data.username),
-    )
-    apiUser.save(theNewUser)
-    return theNewUser
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            cyhy_ports.save()
+            return {"saved_customer": cyhy_ports}
+        except Exception:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
 
 
-# @api_router.get("/items/")
-# async def read_items(token: str=Depends(oauth2_scheme)):
-#     return {"token": token}
-
-
-@api_router.post(
-    "/was_upload", dependencies=[Depends(get_api_key)], tags=["Upload WAS csv file"]
-)
-def upload(file: UploadFile = File(...)):
-    """Upload csv file from WAS."""
-    f = TextIOWrapper(file.file)
-
-    dict_reader = csv.DictReader(f)
-    # dict_reader = dict_reader.fieldnames
-    # dict_reader = set(dict_reader)
-    col_names = dict_reader.fieldnames
-    if col_names is None:
-        raise HTTPException(400, detail="The CSV file does not have headers")
-
-    col_names_set: set[str] = set(col_names)
-
-    required_columns = [
-        "org",
-        "org_code",
-        "root_domain",
-        "exec_url",
-        "aliases",
-        "premium",
-        "demo",
-    ]
-    # Check needed columns exist
-    incorrect_col = []
-    testtheList = [i for i in required_columns if i in col_names_set]
-
-    try:
-        if not file.filename.endswith("csv"):
-
-            raise HTTPException(400, detail="Invalid document type")
-
-        if len(testtheList) == len(col_names):
-
-            for row, item in enumerate(dict_reader, start=1):
-                process_item(item)
-            return {"message": "Successfully uploaded %s" % file.filename}
-        else:
-            for col in required_columns:
-                if col in col_names:
-                    pass
-                else:
-                    incorrect_col.append(col)
-            raise HTTPException(
-                400,
-                detail="There was a missing or"
-                " incorrect column in file,"
-                " to columns %s" % incorrect_col,
-            )
-
-    except ValueError:
-        return {
-            "message": "There was an error uploading the file at %s." % incorrect_col
-        }
-    except ValidationError as e:
-
-        return {"message": "There was an error uploading the file type at %s." % e}
-
-    finally:
-        file.file.close()
-
-
+# ---------- RVA Endpoints ----------
 @api_router.post(
     "/rva_info",
     dependencies=[Depends(get_api_key)],
@@ -625,6 +553,7 @@ async def get_rva_task_status(task_id: str, tokens: dict = Depends(get_api_key))
         return {"task_id": task_id, "status": task.state}
 
 
+# ---------- VE Endpoints ----------
 @api_router.post(
     "/ve_info",
     dependencies=[Depends(get_api_key)],
@@ -666,6 +595,7 @@ async def get_ve_task_status(task_id: str, tokens: dict = Depends(get_api_key)):
         return {"task_id": task_id, "status": task.state}
 
 
+# ---------- VS Endpoints ----------
 @api_router.post(
     "/vs_info",
     dependencies=[Depends(get_api_key)],
@@ -704,6 +634,7 @@ async def get_task_status(task_id: str, tokens: dict = Depends(get_api_key)):
         return {"task_id": task_id, "status": task.state}
 
 
+# ---------- WAS Endpoints ----------
 @api_router.post(
     "/was_info",
     dependencies=[Depends(get_api_key)],
@@ -807,31 +738,6 @@ def was_info_update(
         return {"message": "No api key was submitted"}
 
 
-@api_router.post(
-    "/cyhy_port_scan",
-    dependencies=[Depends(get_api_key)],
-    # response_model=Dict[schemas.WASDataBase],
-    tags=["Create new cyhy port scan data"],
-)
-def cyhy_port_scan_info_create(
-    ports_scan_data: schemas.CyhyPortScans, tokens: dict = Depends(get_api_key)
-):
-    """Call API endpoint to create a record in database."""
-    cyhy_ports = CyhyPortScans(**ports_scan_data.dict())
-
-    LOGGER.info(f"The api key submitted {tokens}")
-    if tokens:
-
-        try:
-            userapiTokenverify(theapiKey=tokens)
-            cyhy_ports.save()
-            return {"saved_customer": cyhy_ports}
-        except Exception:
-            LOGGER.info("API key expired please try again")
-    else:
-        return {"message": "No api key was submitted"}
-
-
 @api_router.put(
     "/was_info_update/{cyhy_id}",
     dependencies=[Depends(get_api_key)],
@@ -865,6 +771,70 @@ def cyhy_ports_scan_info_update(
             LOGGER.info("API key expired please try again")
     else:
         return {"message": "No api key was submitted"}
+    
+
+@api_router.post(
+    "/was_upload", dependencies=[Depends(get_api_key)], tags=["Upload WAS csv file"]
+)
+def upload(file: UploadFile = File(...)):
+    """Upload csv file from WAS."""
+    f = TextIOWrapper(file.file)
+
+    dict_reader = csv.DictReader(f)
+    # dict_reader = dict_reader.fieldnames
+    # dict_reader = set(dict_reader)
+    col_names = dict_reader.fieldnames
+    if col_names is None:
+        raise HTTPException(400, detail="The CSV file does not have headers")
+
+    col_names_set: set[str] = set(col_names)
+
+    required_columns = [
+        "org",
+        "org_code",
+        "root_domain",
+        "exec_url",
+        "aliases",
+        "premium",
+        "demo",
+    ]
+    # Check needed columns exist
+    incorrect_col = []
+    testtheList = [i for i in required_columns if i in col_names_set]
+
+    try:
+        if not file.filename.endswith("csv"):
+
+            raise HTTPException(400, detail="Invalid document type")
+
+        if len(testtheList) == len(col_names):
+
+            for row, item in enumerate(dict_reader, start=1):
+                process_item(item)
+            return {"message": "Successfully uploaded %s" % file.filename}
+        else:
+            for col in required_columns:
+                if col in col_names:
+                    pass
+                else:
+                    incorrect_col.append(col)
+            raise HTTPException(
+                400,
+                detail="There was a missing or"
+                " incorrect column in file,"
+                " to columns %s" % incorrect_col,
+            )
+
+    except ValueError:
+        return {
+            "message": "There was an error uploading the file at %s." % incorrect_col
+        }
+    except ValidationError as e:
+
+        return {"message": "There was an error uploading the file type at %s." % e}
+
+    finally:
+        file.file.close()
 
 
 # ---------- I-Score View Endpoints, Issue 570 ----------
