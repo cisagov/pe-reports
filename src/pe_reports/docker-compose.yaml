@@ -1,5 +1,4 @@
 ---
-
 version: "3.8"
 services:
   pe_reports_rabbitmq:
@@ -11,7 +10,7 @@ services:
       - 15672:15672
       - 5672:5672
     env_file:
-      - pe_reports_django_project/.env
+      - ../../src/pe_reports/pe_reports_django_project/.env
     environment:
       - RABBITMQ_DEFAULT_USER=${RABBITMQ_USER}
       - RABBITMQ_DEFAULT_PASS=${RABBITMQ_PASS}
@@ -25,10 +24,10 @@ services:
       - LANGUAGE=C.UTF-8
       - LC_ALL=C.UTF-8
     volumes:
-      # modify this path for where your data is stored
-      - /Users/duhnc/Desktop/allInfo/pe-reports-apiextended/src/pe_reports/data/rabbitmq/data:/var/lib/rabbitmq/mnesia:rw
+      - /home/ubuntu/pe-reports/src/pe_reports/data/rabbitmq/data:/var/lib/rabbitmq/mnesia:rw
+      - /var/www/pe-reports/src/pe_reports/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf
     networks:
-      - pe_reports_network
+      - pe_reports_rabbitmq_network
 
   pe_reports_redis:
     container_name: pe_reports_redis
@@ -40,11 +39,19 @@ services:
     volumes:
       - redis_data:/data
     networks:
-      - pe_reports_network
-    environment:
-      - REDIS_PASSWORD=${REDIS_PW}
-    env_file:
-      - .env
+      - pe_reports_redis_network
+
+  nginx:
+    image: nginx:1.25.0
+    ports:
+      - "8089:8089"
+    volumes:
+      - ./config/nginx_config_conf.d:/etc/nginx/conf.d
+      - ./pe_reports_django_project/static:/var/www/pe-reports/static
+      - ./pe-reports:/var/www/pe-reports
+    networks:
+      - pe_reports_nginx_network
+
 networks:
   pe_reports_network:
     driver: bridge

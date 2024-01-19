@@ -2748,6 +2748,40 @@ def query_cidrs():
     conn.close()
     return df
 
+
+# Conversion in progress
+def get_demo_orgs(conn):
+    """Query organizations table for orgs we report on."""
+    try:
+        cur = conn.cursor()
+        sql = """SELECT * FROM organizations
+        WHERE demo is True"""
+        cur.execute(sql)
+        pe_orgs = cur.fetchall()
+        cur.close()
+        return pe_orgs
+    except (Exception, psycopg2.DatabaseError) as error:
+        LOGGER.error("There was a problem with your database query %s", error)
+    finally:
+        if conn is not None:
+            close(conn)
+
+
+# Conversion in progress
+def query_score_data(start, end, sql):
+    """Query data necessary to generate organization scores."""
+    conn = connect()
+    try:
+        df = pd.read_sql(sql, conn, params={"start": start, "end": end})
+        conn.close()
+        return df
+    except (Exception, psycopg2.DatabaseError) as error:
+        LOGGER.error("There was a problem with your database query %s", error)
+    finally:
+        if conn is not None:
+            close(conn)
+
+
 # Conversion in progress
 # def api_get_data_source_uid(source):
 #     """Query organizations table."""

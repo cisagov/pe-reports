@@ -40,7 +40,11 @@ class Message(MIMEMultipart):
 
     DefaultFrom = "reports@cyber.dhs.gov"
     DefaultCc = None
-    DefaultBcc = ["cyhy_reports@hq.dhs.gov", "reports@cyber.dhs.gov"]
+    DefaultBcc = [
+        "cyhy_reports@hq.dhs.gov",
+        "andrew.loftus@associates.cisa.dhs.gov",
+        "pe_automation@hq.dhs.gov"
+        ]
     DefaultReplyTo = "vulnerability@cisa.dhs.gov"
 
     def __init__(
@@ -174,7 +178,7 @@ class Message(MIMEMultipart):
             The filename of the CSV file to attach.
 
         """
-        with open(csv_filename, "r") as attachment:
+        with open(csv_filename) as attachment:
             part = MIMEText(attachment.read(), "csv")
 
         # See https://en.wikipedia.org/wiki/MIME#Content-Disposition

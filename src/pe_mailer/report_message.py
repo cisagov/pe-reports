@@ -1,5 +1,6 @@
 """This module contains the ReportMessage class."""
 
+# cisagov Libraries
 from .message import Message
 
 
@@ -13,6 +14,7 @@ class ReportMessage(Message):
         text_body,
         html_body,
         pdf_filename,
+        pdf_asm_filename,
         from_addr=Message.DefaultFrom,
         cc_addrs=Message.DefaultCc,
         bcc_addrs=Message.DefaultBcc,
@@ -62,3 +64,5 @@ class ReportMessage(Message):
         )
 
         self.attach_pdf(pdf_filename)
+        if pdf_asm_filename:
+            self.attach_pdf(pdf_asm_filename)

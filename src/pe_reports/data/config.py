@@ -13,14 +13,14 @@ REPORT_DB_CONFIG = files("pe_reports").joinpath("data/database.ini")
 def config(filename=REPORT_DB_CONFIG, section="postgres"):
     """Parse Postgres configuration details from database configuration file."""
     parser = ConfigParser()
-
     parser.read(filename, encoding="utf-8")
 
     db = dict()
 
     if parser.has_section(section):
         for key, value in parser.items(section):
-            print(value)
+            if key == "pe_api_key" or key == "pe_api_url":
+                continue
             db[key] = value
 
     else:
@@ -65,3 +65,16 @@ def whois_xml_api_key():
             "Database.ini file not found at this path: {}".format(REPORT_DB_CONFIG)
         )
     return key
+
+
+def db_password_key(filename=REPORT_DB_CONFIG, section="pe_db_password_key"):
+    """Get key to encrypt/decrypt P&E passwords."""
+    parser = ConfigParser()
+    parser.read(filename, encoding="utf-8")
+    db = dict()
+    if parser.has_section(section):
+        for key, value in parser.items(section):
+            db[key] = value
+    else:
+        raise Exception(f"Section {section} not found in {filename}")
+    return db["key"]

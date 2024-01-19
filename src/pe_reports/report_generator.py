@@ -1,7 +1,7 @@
 """cisagov/pe-reports: A tool for creating Posture & Exposure reports.
 
 Usage:
-  pe-reports REPORT_DATE OUTPUT_DIRECTORY [--log-level=LEVEL]
+  pe-reports REPORT_DATE OUTPUT_DIRECTORY [--log-level=LEVEL] [--soc_med_included] [--demo]
 
 Options:
   -h --help                         Show this message.
@@ -11,6 +11,8 @@ Options:
   -l --log-level=LEVEL              If specified, then the log level will be set to
                                     the specified value.  Valid values are "debug", "info",
                                     "warning", "error", and "critical". [default: info]
+  -s --soc_med_included            Include social media posts from Cybersixgill in the report.
+  -d --demo                         Run report on demo orgs.
 """
 
 # Standard Python Libraries
@@ -20,20 +22,49 @@ import sys
 from typing import Any, Dict
 
 # Third-Party Libraries
+import boto3
+from botocore.exceptions import ClientError
 import docopt
 import fitz
 import pandas as pd
 from schema import And, Schema, SchemaError, Use
-from xhtml2pdf import pisa
 
 # cisagov Libraries
 import pe_reports
-
 from ._version import __version__
-from .data.db_query import connect, get_orgs
+from .asm_generator import create_summary
+from .data.db_query import connect, get_demo_orgs, get_orgs, refresh_asset_counts_vw
 from .pages import init
+from .reportlab_core_generator import core_report_gen
+from .reportlab_generator import report_gen
 
+# from .scorecard_generator import create_scorecard
+# from .helpers.generate_pe_score import get_pe_scores
+
+# Setup logging
 LOGGER = logging.getLogger(__name__)
+ACCESSOR_AWS_PROFILE = os.getenv("ACCESSOR_PROFILE")
+
+
+def upload_file_to_s3(file_name, datestring, bucket, excel_org):
+    """Upload a file to an S3 bucket."""
+    session = boto3.Session(profile_name=ACCESSOR_AWS_PROFILE)
+    s3_client = session.client("s3")
+
+    # If S3 object_name was not specified, use file_name
+    object_name = f"{datestring}/{os.path.basename(file_name)}"
+
+    if excel_org is not None:
+        object_name = f"{datestring}/{excel_org}-raw-data/{os.path.basename(file_name)}"
+
+    try:
+        response = s3_client.upload_file(file_name, bucket, object_name)
+        if response is None:
+            LOGGER.info("Success uploading to S3.")
+        else:
+            LOGGER.info(response)
+    except ClientError as e:
+        LOGGER.error(e)
 
 
 def embed(
@@ -41,6 +72,10 @@ def embed(
     org_code,
     datestring,
     file,
+    cred_json,
+    da_json,
+    vuln_json,
+    mi_json,
     cred_xlsx,
     da_xlsx,
     vuln_xlsx,
@@ -49,35 +84,57 @@ def embed(
     """Embeds raw data into PDF and encrypts file."""
     doc = fitz.open(file)
     # Get the summary page of the PDF on page 4
-    page = doc[3]
-    output = (
-        f"{output_directory}/{org_code}/Posture_and_Exposure_Report-{datestring}.pdf"
-    )
+    page = doc[4]
+    output = f"{output_directory}/{org_code}/Posture_and_Exposure_Report-{org_code}-{datestring}.pdf"
 
     # Open CSV data as binary
-    cc = open(cred_xlsx, "rb").read()
-    da = open(da_xlsx, "rb").read()
-    ma = open(vuln_xlsx, "rb").read()
-    mi = open(mi_xlsx, "rb").read()
+    cc = open(cred_json, "rb").read()
+    da = open(da_json, "rb").read()
+    ma = open(vuln_json, "rb").read()
+    if mi_json:
+        mi = open(mi_json, "rb").read()
+
+    # Open CSV data as binary
+    cc_xl = open(cred_xlsx, "rb").read()
+    da_xl = open(da_xlsx, "rb").read()
+    ma_xl = open(vuln_xlsx, "rb").read()
+    if mi_xlsx:
+        mi_xl = open(mi_xlsx, "rb").read()
 
     # Insert link to CSV data in summary page of PDF.
     # Use coordinates to position them on the bottom.
-    p1 = fitz.Point(110, 695)
-    p2 = fitz.Point(240, 695)
-    p3 = fitz.Point(375, 695)
-    p5 = fitz.Point(500, 695)
+    p1 = fitz.Point(300, 607)
+    p2 = fitz.Point(300, 635)
+    p3 = fitz.Point(300, 663)
+    p4 = fitz.Point(300, 691)
+    p5 = fitz.Point(340, 607)
+    p6 = fitz.Point(340, 635)
+    p7 = fitz.Point(340, 663)
+    p8 = fitz.Point(340, 691)
 
     # Embed and add push-pin graphic
     page.add_file_annot(
-        p1, cc, "compromised_credentials.xlsx", desc="Open up CSV", icon="PushPin"
+        p1, cc, "compromised_credentials.json", desc="Open JSON", icon="Paperclip"
     )
     page.add_file_annot(
-        p2, da, "domain_alerts.xlsx", desc="Open up CSV", icon="PushPin"
+        p2, da, "domain_alerts.json", desc="Open JSON", icon="Paperclip"
     )
-    page.add_file_annot(p3, ma, "vuln_alerts.xlsx", desc="Open up xlsx", icon="PushPin")
+    page.add_file_annot(p3, ma, "vuln_alerts.json", desc="Open JSON", icon="Paperclip")
+    if mi_json:
+        page.add_file_annot(
+            p4, mi, "mention_incidents.json", desc="Open JSON", icon="Paperclip"
+        )
     page.add_file_annot(
-        p5, mi, "mention_incidents.xlsx", desc="Open up CSV", icon="PushPin"
+        p5, cc_xl, "compromised_credentials.xlsx", desc="Open Excel", icon="Graph"
     )
+    page.add_file_annot(
+        p6, da_xl, "domain_alerts.xlsx", desc="Open Excel", icon="Graph"
+    )
+    page.add_file_annot(p7, ma_xl, "vuln_alerts.xlsx", desc="Open Excel", icon="Graph")
+    if mi_xlsx:
+        page.add_file_annot(
+            p8, mi_xl, "mention_incidents.xlsx", desc="Open Excel", icon="Graph"
+        )
 
     # Save doc and set garbage=4 to reduce PDF size using all 4 methods:
     # Remove unused objects, compact xref table, merge duplicate objects,
@@ -93,44 +150,58 @@ def embed(
     if filesize >= 20000000:
         tooLarge = True
 
-    return filesize, tooLarge
+    return filesize, tooLarge, output
 
 
-def convert_html_to_pdf(source_html, output_filename):
-    """Convert HTML to PDF."""
-    # Open output file for writing (truncated binary)
-    result_file = open(output_filename, "w+b")
-
-    # Convert HTML to PDF
-    pisa_status = pisa.CreatePDF(
-        source_html, dest=result_file  # the HTML to convert
-    )  # file handle to receive result
-
-    # Close output file
-    result_file.close()  # close output file
-
-    # Return False on success and True on errors
-    return pisa_status.err
-
-
-def generate_reports(datestring, output_directory):
+def generate_reports(datestring, output_directory, soc_med_included=False, demo=False):
     """Process steps for generating report data."""
     # Get PE orgs from PE db
     conn = connect()
     if conn:
-        pe_orgs = get_orgs(conn)
+        if demo:
+            pe_orgs = get_demo_orgs(conn)
+        else:
+            pe_orgs = get_orgs(conn)
     else:
         return 1
     generated_reports = 0
 
+    # Resfresh ASM counts view
+    LOGGER.info("Refreshing ASM count view and IPs from cidrs")
+    refresh_asset_counts_vw()
+    # set_from_cidr()
+    LOGGER.info("Finished refreshing ASM count view and IPs from Cidrs")
+
     # Iterate over organizations
+
     if pe_orgs:
         LOGGER.info("PE orgs count: %d", len(pe_orgs))
+        # Generate PE scores for all stakeholders.
+        LOGGER.info("Calculating P&E Scores")
+        # pe_scores_df = get_pe_scores(datestring, 12)
+        # go = 0
+        # pe_orgs.reverse()
         for org in pe_orgs:
             # Assign organization values
             org_uid = org[0]
             org_name = org[1]
             org_code = org[2]
+            premium = org[8]
+
+            # Uncomment this to only run specified orgs
+            # if org_code not in ["EXIM"]:
+            #     continue
+
+            # Uncomment this to skip specified orgs
+            # if org_code in ["ABLTYONE","ACHP","ACUS","ADF","AFRH","BGSF","CFA","CFPB","CFTC","CIGIE","CLACWA","CNCS","CPSC","CSHIB","CSOSA","DE","DENALI_AlasConnect","DFC","DHS","DHS_FLETC","DNFSB","DOC","DOC_BIS","DOC_CENSUS","DOC_NIST","DOC_NOAA","DOC_NTIA","DOE","DOI","DOI_BIA","DOI_BSEE-BOEM-ONRR","DOI_FWS","DOI_IBC","DOI_NPS","DOI_OIG","DOI_OS","DOI_OS-OAS","DOJ","DOL","DOL_BLS","DOS","DOT","EAC","ED","EEOC","EOP","EOP_OMB","EPA","EXIM","FAA","FCA","FCC","FERC","FHFA","FLRA","FMSHRC","FRB","FTC","GSA","GSEC","GTA","HHS_FDA","HHS_NIH","MCC","MMC","MSPB","NARA","NASA","NCD","NCPC","NCUA","NEA","NEH","NLRB","NMB","NRC","NSF","NTSB","NWTRB","OGE","ONHIR","OPM","OSC","OSHRC","PBGC","PC","PCLOB","PRC","PT","RRB","SBA","SEC","SSA","SSAB","SSS","STB","TREAS","TVA","UDALL","USAB","USAGM","USAID","USCCR","USDA","USIBWC","USICH","USITC","USTDA","VA"]:
+            #     continue
+
+            # if org_code == "HHS_FDA":
+            #     go = 1
+            #     continue
+            # if go != 1:
+            #     continue
+            # Rapidgator%20 DOI_BIA
 
             LOGGER.info("Running on %s", org_code)
 
@@ -139,72 +210,93 @@ def generate_reports(datestring, output_directory):
                 if not os.path.exists(f"{output_directory}/{dir_name}"):
                     os.mkdir(f"{output_directory}/{dir_name}")
 
+            pe_scores_df = pd.DataFrame()
+            if not pe_scores_df.empty:
+                score = pe_scores_df.loc[
+                    pe_scores_df["cyhy_db_name"] == org_code, "PE_score"
+                ].item()
+                grade = pe_scores_df.loc[
+                    pe_scores_df["cyhy_db_name"] == org_code, "letter_grade"
+                ].item()
+            else:
+                score = "NA"
+                grade = "NA"
+
             # Insert Charts and Metrics into PDF
             (
-                source_html,
-                creds_sum,
-                masq_df,
-                insecure_df,
-                vulns_df,
-                assets_df,
-                dark_web_mentions,
-                alerts,
-                top_cves,
+                chevron_dict,
+                scorecard_dict,
+                summary_dict,
+                cred_json,
+                da_json,
+                vuln_json,
+                mi_json,
+                cred_xlsx,
+                da_xlsx,
+                vuln_xlsx,
+                mi_xlsx,
             ) = init(
                 datestring,
                 org_name,
+                org_code,
                 org_uid,
+                premium,
+                score,
+                grade,
+                output_directory,
+                soc_med_included,
             )
+
+            # Create ASM Summary
+            LOGGER.info("Creating ASM Summary")
+            summary_filename = f"{output_directory}/Posture-and-Exposure-ASM-Summary_{org_code}_{scorecard_dict['end_date'].strftime('%Y-%m-%d')}.pdf"
+            final_summary_output = f"{output_directory}/{org_code}/Posture-and-Exposure-ASM-Summary_{org_code}_{scorecard_dict['end_date'].strftime('%Y-%m-%d')}.pdf"
+            summary_json_filename = f"{output_directory}/{org_code}/ASM_Summary.json"
+            summary_excel_filename = f"{output_directory}/{org_code}/ASM_Summary.xlsx"
+            asm_xlsx = create_summary(
+                org_uid,
+                final_summary_output,
+                summary_dict,
+                summary_filename,
+                summary_json_filename,
+                summary_excel_filename,
+            )
+            LOGGER.info("Done")
+
+            # Create scorecard
+            LOGGER.info("Creating scorecard")
+            # scorecard_filename = f"{output_directory}/{org_code}/Posture-and-Exposure-Scorecard_{org_code}_{scorecard_dict['end_date'].strftime('%Y-%m-%d')}.pdf"
+            # create_scorecard(scorecard_dict, scorecard_filename)
+            LOGGER.info("Done")
 
             # Convert to HTML to PDF
-            output_filename = f"{output_directory}/{org_code}-Posture_and_Exposure_Report-{datestring}.pdf"
-            convert_html_to_pdf(source_html, output_filename)
-
-            # Create Credential Exposure Excel file
-            cred_xlsx = f"{output_directory}/{org_code}/compromised_credentials.xlsx"
-            credWriter = pd.ExcelWriter(cred_xlsx, engine="xlsxwriter")
-            creds_sum.to_excel(
-                credWriter, sheet_name="Exposed_Credentials", index=False
-            )
-            credWriter.save()
-
-            # Create Domain Masquerading Excel file
-            da_xlsx = f"{output_directory}/{org_code}/domain_alerts.xlsx"
-            domWriter = pd.ExcelWriter(da_xlsx, engine="xlsxwriter")
-            masq_df.to_excel(domWriter, sheet_name="Suspected Domains", index=False)
-            domWriter.save()
-
-            # Create Suspected vulnerability Excel file
-            vuln_xlsx = f"{output_directory}/{org_code}/vuln_alerts.xlsx"
-            vulnWriter = pd.ExcelWriter(vuln_xlsx, engine="xlsxwriter")
-            assets_df.to_excel(vulnWriter, sheet_name="Assets", index=False)
-            insecure_df.to_excel(vulnWriter, sheet_name="Insecure", index=False)
-            vulns_df.to_excel(vulnWriter, sheet_name="Verified Vulns", index=False)
-            vulnWriter.save()
-
-            # Create dark web Excel file
-            mi_xlsx = f"{output_directory}/{org_code}/mention_incidents.xlsx"
-            miWriter = pd.ExcelWriter(mi_xlsx, engine="xlsxwriter")
-            dark_web_mentions.to_excel(
-                miWriter, sheet_name="Dark Web Mentions", index=False
-            )
-            alerts.to_excel(miWriter, sheet_name="Dark Web Alerts", index=False)
-            top_cves.to_excel(miWriter, sheet_name="Top CVEs", index=False)
-            miWriter.save()
+            output_filename = f"{output_directory}/Posture_and_Exposure_Report-{org_code}-{datestring}.pdf"
+            # convert_html_to_pdf(source_html, output_filename)#TODO possibly generate report here
+            chevron_dict["filename"] = output_filename
+            if premium:
+                report_gen(chevron_dict, soc_med_included)
+            else:
+                core_report_gen(chevron_dict)
 
             # Grab the PDF
-            pdf = f"{output_directory}/{org_code}-Posture_and_Exposure_Report-{datestring}.pdf"
+            pdf = f"{output_directory}/Posture_and_Exposure_Report-{org_code}-{datestring}.pdf"
 
-            (filesize, tooLarge) = embed(
+            # Embed Excel files
+            (filesize, tooLarge, output) = embed(
                 output_directory,
                 org_code,
                 datestring,
                 pdf,
+                cred_json,
+                da_json,
+                vuln_json,
+                mi_json,
                 cred_xlsx,
                 da_xlsx,
                 vuln_xlsx,
                 mi_xlsx,
             )
+
             # Log a message if the report is too large.  Our current mailer
             # cannot send files larger than 20MB.
             if tooLarge:
@@ -212,13 +304,32 @@ def generate_reports(datestring, output_directory):
                     "%s is too large. File size: %s Limit: 20MB", org_code, filesize
                 )
 
+            bucket_name = "cisa-crossfeed-staging-reports"
+
+            # Upload excel files
+            upload_file_to_s3(cred_xlsx, datestring, bucket_name, org_code)
+            upload_file_to_s3(da_xlsx, datestring, bucket_name, org_code)
+            upload_file_to_s3(vuln_xlsx, datestring, bucket_name, org_code)
+            if premium:
+                upload_file_to_s3(mi_xlsx, datestring, bucket_name, org_code)
+            upload_file_to_s3(asm_xlsx, datestring, bucket_name, org_code)
+
+            # Upload report
+            upload_file_to_s3(output, datestring, bucket_name, None)
+
+            # Upload scorecard
+            upload_file_to_s3(final_summary_output, datestring, bucket_name, None)
+
+            # Upload ASM Summary
+            # upload_file_to_s3(scorecard_filename, datestring, bucket_name, None)
             generated_reports += 1
+
     else:
         LOGGER.error(
             "Connection to pe database failed and/or there are 0 organizations stored."
         )
 
-    return generated_reports
+    LOGGER.info("%s reports generated", generated_reports)
 
 
 def main():
@@ -268,6 +379,8 @@ def main():
     generated_reports = generate_reports(
         validated_args["REPORT_DATE"],
         validated_args["OUTPUT_DIRECTORY"],
+        validated_args["--soc_med_included"],
+        validated_args["--demo"],
     )
 
     LOGGER.info("%s reports generated", generated_reports)
