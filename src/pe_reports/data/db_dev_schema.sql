@@ -2,8 +2,8 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 15.3
--- Dumped by pg_dump version 15.3 (Ubuntu 15.3-1.pgdg20.04+1)
+-- Dumped from database version 11.16
+-- Dumped by pg_dump version 12.14 (Ubuntu 12.14-0ubuntu0.20.04.1)
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -17,15 +17,6 @@ SET client_min_messages = warning;
 SET row_security = off;
 
 --
--- Name: public; Type: SCHEMA; Schema: -; Owner: crossfeed
---
-
--- *not* creating schema, since initdb creates it
-
-
-ALTER SCHEMA public OWNER TO crossfeed;
-
---
 -- Name: pgcrypto; Type: EXTENSION; Schema: -; Owner: -
 --
 
@@ -33,7 +24,7 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA public;
 
 
 --
--- Name: EXTENSION pgcrypto; Type: COMMENT; Schema: -; Owner: 
+-- Name: EXTENSION pgcrypto; Type: COMMENT; Schema: -; Owner:
 --
 
 COMMENT ON EXTENSION pgcrypto IS 'cryptographic functions';
@@ -47,7 +38,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA public;
 
 
 --
--- Name: EXTENSION "uuid-ossp"; Type: COMMENT; Schema: -; Owner: 
+-- Name: EXTENSION "uuid-ossp"; Type: COMMENT; Schema: -; Owner:
 --
 
 COMMENT ON EXTENSION "uuid-ossp" IS 'generate universally unique identifiers (UUIDs)';
@@ -62,7 +53,7 @@ CREATE FUNCTION public.get_cred_metrics(start_date date, end_date date) RETURNS 
     AS $$
 BEGIN
 RETURN QUERY
-	SELECT 
+	SELECT
 		cred_metrics.organizations_uid,
 		cred_metrics.password_creds,
 		cred_metrics.total_creds,
@@ -74,7 +65,7 @@ RETURN QUERY
 				CAST(COALESCE(creds.password_included, 0) as bigint) password_creds,
 				CAST(COALESCE(creds.no_password + creds.password_included, 0) as bigint) total_creds
 			FROM
-				(				
+				(
 					/* Orgs we're reporting on */
 					SELECT
 						organizations.organizations_uid
@@ -96,7 +87,7 @@ RETURN QUERY
 					GROUP BY
 						vw_breachcomp_credsbydate.organizations_uid
 				) creds
-				ON reported_orgs.organizations_uid = creds.organizations_uid	
+				ON reported_orgs.organizations_uid = creds.organizations_uid
 		) cred_metrics
 		INNER JOIN
 		(
@@ -104,7 +95,7 @@ RETURN QUERY
 				reported_orgs.organizations_uid,
 				COALESCE(breaches.num_breaches, 0) num_breaches
 			FROM
-				(				
+				(
 					/* Orgs we're reporting on */
 					SELECT
 						organizations.organizations_uid
@@ -155,7 +146,7 @@ RETURN QUERY
 				reported_orgs.organizations_uid,
 				COALESCE(alerts.num_dw_alerts, 0) AS num_dw_alerts
 			FROM
-				(				
+				(
 					/* Orgs we're reporting on */
 					SELECT
 						organizations.organizations_uid
@@ -185,7 +176,7 @@ RETURN QUERY
 				reported_orgs.organizations_uid,
 				COALESCE(mentions.num_dw_mentions, 0) AS num_dw_mentions
 			FROM
-				(				
+				(
 					/* Orgs we're reporting on */
 					SELECT
 						organizations.organizations_uid
@@ -216,7 +207,7 @@ RETURN QUERY
 				reported_orgs.organizations_uid,
 				COALESCE(threats.num_dw_threats, 0) AS num_dw_threats
 			FROM
-				(				
+				(
 					/* Orgs we're reporting on */
 					SELECT
 						organizations.organizations_uid
@@ -247,7 +238,7 @@ RETURN QUERY
 				reported_orgs.organizations_uid,
 				COALESCE(invites.num_dw_invites, 0) AS num_dw_invites
 			FROM
-				(				
+				(
 					/* Orgs we're reporting on */
 					SELECT
 						organizations.organizations_uid
@@ -268,7 +259,7 @@ RETURN QUERY
 					GROUP BY
 						vw_darkweb_inviteonlymarkets.organizations_uid
 				) invites
-				ON reported_orgs.organizations_uid = invites.organizations_uid	
+				ON reported_orgs.organizations_uid = invites.organizations_uid
 		) dw_invite_metrics
 		ON
 		dw_alert_metrics.organizations_uid = dw_invite_metrics.organizations_uid;
@@ -286,7 +277,7 @@ CREATE FUNCTION public.get_domain_metrics(start_date date, end_date date) RETURN
     AS $$
 BEGIN
 RETURN QUERY
-	SELECT 
+	SELECT
 		domain_sus_metrics.organizations_uid,
 		domain_sus_metrics.num_sus_domain,
 		domain_alert_metrics.num_alert_domain
@@ -296,7 +287,7 @@ RETURN QUERY
 				reported_orgs.organizations_uid,
 				COALESCE(domain_sus.num_sus_domain, 0) num_sus_domain
 			FROM
-				(				
+				(
 					/* Orgs we're reporting on */
 					SELECT
 						organizations.organizations_uid
@@ -319,7 +310,7 @@ RETURN QUERY
 					GROUP BY
 						domain_permutations.organizations_uid
 				) domain_sus
-				ON reported_orgs.organizations_uid = domain_sus.organizations_uid	
+				ON reported_orgs.organizations_uid = domain_sus.organizations_uid
 		) domain_sus_metrics
 		INNER JOIN
 		(
@@ -327,7 +318,7 @@ RETURN QUERY
 				reported_orgs.organizations_uid,
 				COALESCE(domain_alerts.num_alert_domain, 0) num_alert_domain
 			FROM
-				(				
+				(
 					/* Orgs we're reporting on */
 					SELECT
 						organizations.organizations_uid
@@ -377,7 +368,7 @@ RETURN QUERY
 				reported_orgs.organizations_uid,
 				COALESCE(verif_vulns.num_verif_vulns, 0) AS num_verif_vulns
 			FROM
-				(				
+				(
 					/* Orgs we're reporting on */
 					SELECT
 						organizations.organizations_uid
@@ -505,7 +496,7 @@ ALTER FUNCTION public.get_vuln_metrics(start_date date, end_date date) OWNER TO 
 CREATE FUNCTION public.insert_cidr(arg_net inet, arg_org_uid uuid, arg_data_src text, arg_first_seen date, arg_last_seen date) RETURNS uuid
     LANGUAGE plpgsql
     AS $$
-declare 
+declare
     parent_uid uuid := null;
     comp_cidr_uid uuid := null;
     comp_net cidr;
@@ -517,12 +508,12 @@ declare
     new_cidr_uid uuid := null;
     in_cidrs record;
     cidrs_in record;
-begin   
+begin
         select o.parent_org_uid into parent_uid from organizations o where o.organizations_uid = arg_org_uid;
         select ds.data_source_uid into ds_uid from data_source ds where ds.name = arg_data_src;
         -- Check if any cidrs equal the provided cidr
         select ct.cidr_uid, o.organizations_uid , ct.network, o.parent_org_uid, o."cyhy_db_name"  as parent_id from cidrs ct
-        join organizations o on ct.organizations_uid = o.organizations_uid 
+        join organizations o on ct.organizations_uid = o.organizations_uid
         where ct.network = arg_net into comp_cidr_uid, comp_uid, comp_net, comp_parent_uid, comp_cyhy_id;
         if (comp_net is not null) then
             --if the already saved cidr's org is the given cidr's parent org
@@ -533,9 +524,9 @@ begin
                 new_cidr_uid := comp_cidr_uid;
                 save_to_db := false;
             --if the given cidr is the parent to the already saved cidr.
-            --(the cidr exists in the db and has already been assigned to a 
+            --(the cidr exists in the db and has already been assigned to a
             --child org. We know this is true if the provided cidr's org_uid is equal
-            --to the already existing cidr's parent_org_uid) 
+            --to the already existing cidr's parent_org_uid)
             elseif (arg_org_uid = comp_parent_uid) then
             	-- update last_seen
             	update cidrs set last_seen = arg_last_seen
@@ -551,7 +542,7 @@ begin
             save_to_db :=false;
             --if the orgs are not related
             else
-                insert into cidrs (network, organizations_uid, insert_alert, data_source_uid, first_seen, last_seen) 
+                insert into cidrs (network, organizations_uid, insert_alert, data_source_uid, first_seen, last_seen)
                 values (arg_net, arg_org_uid, 'Cidr duplicate between unrelated org. This cidr is also found in the following org. org_cyhy_id:' || comp_cyhy_id || ' org_uid: ' || comp_uid , ds_uid, arg_first_seen, arg_last_seen)
                 on conflict (organizations_uid, network )
                 do update set last_seen = excluded.last_seen
@@ -561,18 +552,18 @@ begin
         end if;
         -- Check if the cidr is contained in an existing cidr block
         if exists(select ct.network from cidrs ct where arg_net << ct.network) then
-            for in_cidrs in select o.organizations_uid , tct.network, o.parent_org_uid, tct.cidr_uid from cidrs tct 
-            join organizations o on o.organizations_uid = tct.organizations_uid where arg_net << tct.network and tct."current" loop 
+            for in_cidrs in select o.organizations_uid , tct.network, o.parent_org_uid, tct.cidr_uid from cidrs tct
+            join organizations o on o.organizations_uid = tct.organizations_uid where arg_net << tct.network loop
                 -- Our cidr is found in an existing cidr for the same org
-                --do nothing 
-                if (in_cidrs.organizations_uid = arg_org_uid) then 
+                --do nothing
+                if (in_cidrs.organizations_uid = arg_org_uid) then
                     raise notice 'This cidr is containeed in another cidr for the same organization';
                     save_to_db := false;
                 -- Our cidr is found in an existing cidr related to our parent org
                 -- add cidr
                 elseif (in_cidrs.organizations_uid = parent_uid) then
                     if (new_cidr_uid is null) then
-                        insert into cidrs (network, organizations_uid , data_source_uid, first_seen, last_seen) 
+                        insert into cidrs (network, organizations_uid , data_source_uid, first_seen, last_seen)
                         values (arg_net, arg_org_uid, ds_uid, arg_first_seen, arg_last_seen)
                         on conflict (organizations_uid, network )
                         do update set last_seen = excluded.last_seen
@@ -580,7 +571,7 @@ begin
                         save_to_db := false;
                     end if;
                     --UPDATE IPS THAT BELONG TO THIS CIDR TO POINT HERE *******************************************
-                    update ips 
+                    update ips
                     set origin_cidr = new_cidr_uid
                     where ip << arg_net
                     and origin_cidr = in_cidrs.cidr_uid;
@@ -591,8 +582,8 @@ begin
                 --Our cidr is found in an existing cidr unrelated to our org
                 -- insert with an insert warning
                 else
-                    insert into cidrs (network, organizations_uid, insert_alert, data_source_uid, first_seen, last_seen) 
-                    values (arg_net, arg_org_uid, 'This cidr range is contained in another cidr owned by the following unrelated org. org_uid:' || in_cidrs.organizations_uid , ds_uid, arg_first_seen, arg_last_seen) 
+                    insert into cidrs (network, organizations_uid, insert_alert, data_source_uid, first_seen, last_seen)
+                    values (arg_net, arg_org_uid, 'This cidr range is contained in another cidr owned by the following unrelated org. org_uid:' || in_cidrs.organizations_uid , ds_uid, arg_first_seen, arg_last_seen)
                     on conflict (organizations_uid, network)
                     DO UPDATE SET insert_alert = cidrs.insert_alert || ', ' || in_cidrs.organizations_uid,
                     last_seen = excluded.last_seen
@@ -602,14 +593,14 @@ begin
             end loop;
         end if;
         -- Check if any cidrs are contained within it
-        if exists(select ct.network from cidrs ct where ct.network << arg_net ) then 
-            for cidrs_in in select cidr_uid, o.organizations_uid , tct.network, o.parent_org_uid, tct.cidr_uid from cidrs tct 
-            join organizations o on o.organizations_uid = tct.organizations_uid where tct.network << arg_net  loop 
+        if exists(select ct.network from cidrs ct where ct.network << arg_net ) then
+            for cidrs_in in select cidr_uid, o.organizations_uid , tct.network, o.parent_org_uid, tct.cidr_uid from cidrs tct
+            join organizations o on o.organizations_uid = tct.organizations_uid where tct.network << arg_net  loop
                 -- an existing cidr is found in our cidr for the same org
                 -- update existing cidr to current cidr
-                if (cidrs_in.organizations_uid = arg_org_uid) then 
+                if (cidrs_in.organizations_uid = arg_org_uid) then
                     if (new_cidr_uid is null) then
-                        insert into cidrs (network, organizations_uid , data_source_uid, first_seen, last_seen) 
+                        insert into cidrs (network, organizations_uid , data_source_uid, first_seen, last_seen)
                         values (arg_net, arg_org_uid, ds_uid, arg_first_seen, arg_last_seen)
                         on conflict (organizations_uid, network )
                         do update set last_seen = excluded.last_seen
@@ -617,56 +608,56 @@ begin
                         save_to_db := false;
                     end if;
                     --update all ips to point to this new cidr block
-                    update ips 
+                    update ips
                     set origin_cidr = new_cidr_uid
                     where ip << arg_net
                     and origin_cidr = cidrs_in.cidr_uid;
                     --delete the old cidr
-                    DELETE FROM cidrs 
+                    DELETE FROM cidrs
                     WHERE network = cidrs_in.network
                     and organizations_uid = arg_org_uid;
-                -- an existing cidr related to our parent org is found in our cidr 
+                -- an existing cidr related to our parent org is found in our cidr
                 -- update existing cidr to our org and cidr
                 elseif (cidrs_in.organizations_uid = parent_uid) then
                     if (new_cidr_uid is null) then
-                        insert into cidrs (network, organizations_uid , data_source_uid, first_seen, last_seen) 
+                        insert into cidrs (network, organizations_uid , data_source_uid, first_seen, last_seen)
                         values (arg_net, arg_org_uid, ds_uid, arg_first_seen, arg_last_seen)
                         on conflict (organizations_uid, network )
-                        do update set last_seen = excluded.last_seen 
+                        do update set last_seen = excluded.last_seen
                         returning cidr_uid into new_cidr_uid;
                         save_to_db := false;
                     end if;
                     --update all ips to point to this new cidr block
-                    update ips 
+                    update ips
                     set origin_cidr = new_cidr_uid
                     where ip << arg_net
                     and origin_cidr = cidrs_in.cidr_uid;
                     --delete the old cidr
-                    DELETE FROM cidrs 
+                    DELETE FROM cidrs
                     WHERE network = cidrs_in.network
                     and organizations_uid = arg_org_uid;
                 -- an existing cidr is found in our cidr related to our child org
                 -- add new cidr to our org
                 elseif (arg_org_uid = cidrs_in.parent_org_uid) then
                     if (new_cidr_uid is null) then
-                        insert into cidrs (network, organizations_uid , data_source_uid, first_seen, last_seen) 
+                        insert into cidrs (network, organizations_uid , data_source_uid, first_seen, last_seen)
                         values (arg_net, arg_org_uid, ds_uid, arg_first_seen, arg_last_seen)
                         on conflict (organizations_uid, network )
                         do update set last_seen = excluded.last_seen
                         returning cidr_uid into new_cidr_uid;
                         save_to_db := false;
                     end if;
-                    update ips 
+                    update ips
                     set origin_cidr = cidrs_in.cidr_uid
                     where ip << cidrs_in.network
                     and origin_cidr = arg_net;
-                --an existing cidr unrelated to our org is found in our cidr 
+                --an existing cidr unrelated to our org is found in our cidr
                 -- insert with an insert warning
                 else
-                    insert into cidrs (network, organizations_uid, insert_alert, data_source_uid, first_seen, last_seen) 
-                    values (arg_net, arg_org_uid, 'another cidr owned by the following unrelated org is contained in this cidr range  . org_uid:' || cidrs_in.organizations_uid , ds_uid, arg_first_seen, arg_last_seen) 
+                    insert into cidrs (network, organizations_uid, insert_alert, data_source_uid, first_seen, last_seen)
+                    values (arg_net, arg_org_uid, 'another cidr owned by the following unrelated org is contained in this cidr range  . org_uid:' || cidrs_in.organizations_uid , ds_uid, arg_first_seen, arg_last_seen)
                     on conflict (organizations_uid, network)
-                    DO UPDATE SET insert_alert = cidrs.insert_alert || ', ' || cidrs_in.organizations_uid, 
+                    DO UPDATE SET insert_alert = cidrs.insert_alert || ', ' || cidrs_in.organizations_uid,
                     last_seen = excluded.last_seen
                     returning cidr_uid into new_cidr_uid;
                     save_to_db := false;
@@ -675,8 +666,8 @@ begin
             save_to_db := false;
         end if;
         if (save_to_db = true) then
-            insert into cidrs (network, organizations_uid , data_source_uid, first_seen, last_seen) 
-            values (arg_net, arg_org_uid, ds_uid, arg_first_seen, arg_last_seen) 
+            insert into cidrs (network, organizations_uid , data_source_uid, first_seen, last_seen)
+            values (arg_net, arg_org_uid, ds_uid, arg_first_seen, arg_last_seen)
             on conflict (organizations_uid, network )
             do update set last_seen = excluded.last_seen
             returning cidr_uid into new_cidr_uid;
@@ -695,48 +686,48 @@ ALTER FUNCTION public.insert_cidr(arg_net inet, arg_org_uid uuid, arg_data_src t
 CREATE FUNCTION public.insert_sub_domain(arg_identified boolean, arg_date date, sub_d text, org_uid uuid, data_src text, root_d text DEFAULT NULL::text, root_d_uid uuid DEFAULT NULL::uuid) RETURNS uuid
     LANGUAGE plpgsql
     AS $$
-declare 
+declare
 	sub_id uuid;
 	ds_uid uuid := null;
 begin
 		-- Try to fetch the domain
-		select sub_domain_uid into sub_id from sub_domains sd 
-		join root_domains rd on rd.root_domain_uid = sd.root_domain_uid 
+		select sub_domain_uid into sub_id from sub_domains sd
+		join root_domains rd on rd.root_domain_uid = sd.root_domain_uid
 		where sd.sub_domain = sub_d
 		and rd.organizations_uid = org_uid;
-		
+
 		-- If the domain does not exist in the databse
 		if (sub_id is null) then
 			-- If the root_domain_uid is not provided, look it up
 			if (root_d_uid is null and root_d is not null) then
 				begin
-					select rd.root_domain_uid into root_d_uid 
-					from root_domains rd 
+					select rd.root_domain_uid into root_d_uid
+					from root_domains rd
 					where rd.root_domain = root_d and rd.organizations_uid = org_uid;
 					raise notice 'uid found: %', root_d_uid;
-				end; 
+				end;
 			else
 					raise notice 'uid provided: %', root_d_uid;
 			end if;
-		
+
 			-- Query the data_source_uid based on the provided data source name
 			select ds.data_source_uid into ds_uid from data_source ds where ds.name = data_src;
-		
+
 			-- If the root_domain_uid is still null create a new root domain and return the root_domain_uid
 			if (root_d_uid is null) then
 				begin
-					insert into root_domains (organizations_uid, root_domain, data_source_uid, enumerate_subs) 
-					values (org_uid, root_d, ds_uid, false) 
+					insert into root_domains (organizations_uid, root_domain, data_source_uid, enumerate_subs)
+					values (org_uid, root_d, ds_uid, false)
 					on conflict (organizations_uid, root_domain) do nothing;
 					-- Get newly created root domain's uid
 					select rd.root_domain_uid into root_d_uid from root_domains rd where rd.root_domain = root_d;
 				end;
 			end if;
-		
+
 			-- Create sub_domain and return uid
-			insert into sub_domains (sub_domain, root_domain_uid, data_source_uid, first_seen, last_seen, identified) 
-			values (sub_d, root_d_uid, ds_uid, arg_date, arg_date, arg_identified) 
-			on conflict (sub_domain, root_domain_uid) 
+			insert into sub_domains (sub_domain, root_domain_uid, data_source_uid, first_seen, last_seen, identified)
+			values (sub_d, root_d_uid, ds_uid, arg_date, arg_date, arg_identified)
+			on conflict (sub_domain, root_domain_uid)
 			do update set last_seen = excluded.last_seen, identified = EXCLUDED.identified
 			returning sub_domain_uid into sub_id;
 			raise notice 'uid out of if: %', root_d_uid;
@@ -755,23 +746,22 @@ ALTER FUNCTION public.insert_sub_domain(arg_identified boolean, arg_date date, s
 CREATE FUNCTION public.link_ips_and_subs(arg_date date, arg_ip_hash text, arg_ip inet, arg_org_uid uuid, arg_sub_domain text, arg_data_src text, arg_root_uid uuid DEFAULT NULL::uuid, arg_root text DEFAULT NULL::text) RETURNS uuid
     LANGUAGE plpgsql
     AS $$
-declare 
+declare
 	sub_id uuid;
 	ip_hash_return text;
 	ds_uid uuid := null;
 	i_s_uid uuid := null;
 begin
 
-		-- Insert ip, if exists then update last_seen	
-		insert into ips (ip_hash, ip, first_seen, last_seen, organizations_uid)
-		values (arg_ip_hash, arg_ip, arg_date, arg_date, arg_org_uid)
+		-- Insert ip, if exists then update last_seen
+		insert into ips (ip_hash, ip, first_seen, last_seen)
+		values (arg_ip_hash, arg_ip, arg_date, arg_date)
 		on conflict (ip)
-		do update set 
-			last_seen = EXCLUDED.last_seen,
-			organizations_uid = EXCLUDED.organizations_uid;
-			
-	
-	
+		do update set
+			last_seen = EXCLUDED.last_seen;
+
+
+
 	   -- Get sub domain uid (add it if it doesn't exist)
 	   -- If root is null, don't pass root domain to insert subs
 	   if (arg_root is null) then
@@ -782,16 +772,16 @@ begin
 	   		select insert_sub_domain(arg_identified => true, arg_date=> arg_date, sub_d=> arg_sub_domain, org_uid => arg_org_uid, data_src => arg_data_src, root_d => arg_root)
 	   		into sub_id;
 	   end if;
-	  
-	   
+
+
 	  -- Insert into ip_subs table
 	  insert into ips_subs (ip_hash, sub_domain_uid, first_seen, last_seen)
 	  values (arg_ip_hash, sub_id, arg_date, arg_date)
-	  on conflict(ip_hash, sub_domain_uid) 
+	  on conflict(ip_hash, sub_domain_uid)
 	  do update set
 	  		last_seen = EXCLUDED.last_seen
 	  returning ips_subs_uid into i_s_uid; -- insert both fk ids into the product_order table
-	
+
 	return i_s_uid;
 end;
 $$;
@@ -850,7 +840,7 @@ RETURN QUERY
 			FROM
 				get_vuln_metrics(start_date, end_date)
 		) vuln_metrics
-		ON 
+		ON
 		cred_metrics.organizations_uid = vuln_metrics.organizations_uid
 		INNER JOIN
 		(
@@ -912,7 +902,7 @@ RETURN QUERY
 						UNNEST(vss.potential_vulns) as unverif_cve
 					FROM
 						public.vw_shodanvulns_suspected vss
-					WHERE 
+					WHERE
 						vss."type" != 'Insecure Protocol'
 						AND
 						vss.timestamp BETWEEN start_date AND end_date
@@ -952,7 +942,7 @@ RETURN QUERY
 		) current_cves
 		LEFT JOIN
 		public.cve_info
-		ON 
+		ON
 		current_cves.cve_name = cve_info.cve_name
 	WHERE
 		cve_info.cve_name IS NULL;
@@ -1052,13 +1042,13 @@ RETURN QUERY
 						/* Filter out CVEs that don't have CVSS 2.0 nor 3.0 scores */
 						NOT (cve_info.cvss_2_0 IS NULL AND cve_info.cvss_3_0 IS NULL)
 					ORDER BY
-						reported_orgs.cyhy_db_name		
+						reported_orgs.cyhy_db_name
 				) verif_cves
 			GROUP BY
 				verif_cves.organizations_uid,
 				verif_cves.cyhy_db_name
 		) verif
-		ON 
+		ON
 		reported_orgs.organizations_uid = verif.organizations_uid
 		LEFT JOIN
 		(
@@ -1099,7 +1089,7 @@ RETURN QUERY
 								UNNEST(vss.potential_vulns) as unverif_cve
 							FROM
 								public.vw_shodanvulns_suspected vss
-							WHERE 
+							WHERE
 								vss."type" != 'Insecure Protocol'
 								AND
 								vss.timestamp BETWEEN start_date AND end_date
@@ -1144,7 +1134,7 @@ RETURN QUERY
 		reported_orgs.cyhy_db_name,
 		domain_alerts.date as mod_date
 	FROM
-		(				
+		(
 			/* Orgs we're reporting on */
 			SELECT
 				organizations.organizations_uid,
@@ -1187,7 +1177,7 @@ RETURN QUERY
 		reported_orgs.cyhy_db_name,
 		alerts.date AS mod_date
 	FROM
-		(				
+		(
 			/* Orgs we're reporting on */
 			SELECT
 				organizations.organizations_uid,
@@ -1315,9 +1305,9 @@ BEGIN
    SELECT cb.breach_name, cb.description, cb.exposed_cred_count, cb.breach_date,
    			cb.added_date , cb.modified_date, cb.data_classes, cb.password_included ,
    			cb.is_verified , ds.name-- I added parentheses
-   FROM  credential_breaches cb 
+   FROM  credential_breaches cb
    join data_source ds on ds.data_source_uid = cb.data_source_uid
-   where lower(cb.breach_name) = lower(b_name);                    -- potential ambiguity 
+   where lower(cb.breach_name) = lower(b_name);                    -- potential ambiguity
 END
 $$;
 
@@ -1338,7 +1328,7 @@ BEGIN
    join organizations o on o.organizations_uid = c.organizations_uid
    join data_source d on d.data_source_uid = c.data_source_uid
     where lower(c.breach_name) = lower(b_name)
-    and o.cyhy_db_name = org_id;                    -- potential ambiguity 
+    and o.cyhy_db_name = org_id;                    -- potential ambiguity
 END
 $$;
 
@@ -1363,8 +1353,6 @@ $$;
 ALTER FUNCTION public.set_status_completed_and_week_ending() OWNER TO pe;
 
 SET default_tablespace = '';
-
-SET default_table_access_method = heap;
 
 --
 -- Name: Users; Type: TABLE; Schema: public; Owner: pe
@@ -1949,8 +1937,7 @@ CREATE TABLE public.cyhy_tickets (
     cve text,
     first_seen date,
     last_seen date,
-    source text,
-    ip text
+    source text
 );
 
 
@@ -2331,8 +2318,7 @@ CREATE TABLE public.ips (
     first_seen date,
     last_seen date,
     current boolean,
-    from_cidr character varying DEFAULT false NOT NULL,
-    organizations_uid uuid
+    from_cidr character varying DEFAULT false NOT NULL
 );
 
 
@@ -2384,7 +2370,7 @@ CREATE MATERIALIZED VIEW public.mat_vw_breachcomp AS
     b.is_spam_list
    FROM (public.credential_exposures creds
      JOIN public.credential_breaches b ON ((creds.credential_breaches_uid = b.credential_breaches_uid)))
-  WHERE (timezone('UTC'::text, ((b.modified_date)::date)::timestamp with time zone) >= (CURRENT_DATE - '30 days'::interval))
+  WHERE ((timezone('UTC'::text, ((b.modified_date)::date)::timestamp with time zone) >= '2023-03-30 00:00:00'::timestamp without time zone) AND (timezone('UTC'::text, ((b.modified_date)::date)::timestamp with time zone) <= '2023-05-18 00:00:00'::timestamp without time zone))
   WITH NO DATA;
 
 
@@ -2841,11 +2827,11 @@ CREATE VIEW public.vw_orgs_total_cidrs AS
  SELECT reported_orgs.organizations_uid,
     COALESCE(cidr_counts.count, (0)::bigint) AS count
    FROM (( SELECT organizations.organizations_uid
-           FROM public.organizations) reported_orgs
+           FROM public.organizations
+          WHERE (organizations.report_on = true)) reported_orgs
      LEFT JOIN ( SELECT c.organizations_uid,
             count(c.network) AS count
            FROM public.cidrs c
-          WHERE c.current
           GROUP BY c.organizations_uid) cidr_counts ON ((reported_orgs.organizations_uid = cidr_counts.organizations_uid)));
 
 
@@ -2865,7 +2851,8 @@ CREATE VIEW public.vw_orgs_total_domains AS
             COALESCE(root_counts.num_root_domain, (0)::bigint) AS num_root_domain
            FROM (( SELECT organizations.organizations_uid,
                     organizations.cyhy_db_name
-                   FROM public.organizations) reported_orgs
+                   FROM public.organizations
+                  WHERE (organizations.report_on = true)) reported_orgs
              LEFT JOIN ( SELECT root_table_1.organizations_uid,
                     count(DISTINCT root_table_1.root_domain) AS num_root_domain
                    FROM public.root_domains root_table_1
@@ -2875,7 +2862,8 @@ CREATE VIEW public.vw_orgs_total_domains AS
             COALESCE(sub_counts.num_sub_domain, (0)::bigint) AS num_sub_domain
            FROM (( SELECT organizations.organizations_uid,
                     organizations.cyhy_db_name
-                   FROM public.organizations) reported_orgs
+                   FROM public.organizations
+                  WHERE (organizations.report_on = true)) reported_orgs
              LEFT JOIN ( SELECT root_table_1.organizations_uid,
                     count(DISTINCT sub_table_1.sub_domain) AS num_sub_domain
                    FROM (public.sub_domains sub_table_1
@@ -2901,7 +2889,8 @@ CREATE VIEW public.vw_orgs_total_foreign_ips AS
  SELECT reported_orgs.organizations_uid,
     COALESCE(foreign_ips.num_foreign_ips, (0)::bigint) AS num_foreign_ips
    FROM (( SELECT organizations.organizations_uid
-           FROM public.organizations) reported_orgs
+           FROM public.organizations
+          WHERE (organizations.report_on = true)) reported_orgs
      LEFT JOIN ( SELECT sa.organizations_uid,
             count(
                 CASE
@@ -2919,17 +2908,36 @@ ALTER TABLE public.vw_orgs_total_foreign_ips OWNER TO pe;
 --
 
 CREATE VIEW public.vw_orgs_total_ips AS
-SELECT
-    NULL::uuid AS organizations_uid,
-    NULL::text AS cyhy_db_name,
-    NULL::uuid AS parent_org_uid,
-    NULL::double precision AS cidr_ips,
-    NULL::bigint AS identified_ips,
-    NULL::double precision AS num_ips,
-    NULL::bigint AS cidr_count;
+ SELECT reported_orgs.organizations_uid,
+    reported_orgs.cyhy_db_name,
+    COALESCE(count(all_ips.ip), (0)::bigint) AS num_ips
+   FROM (( SELECT organizations.organizations_uid,
+            organizations.cyhy_db_name
+           FROM public.organizations
+          WHERE (organizations.report_on = true)) reported_orgs
+     LEFT JOIN ( SELECT cidrs_table.organizations_uid,
+            ips_table.ip
+           FROM (public.ips ips_table
+             JOIN public.cidrs cidrs_table ON ((ips_table.origin_cidr = cidrs_table.cidr_uid)))
+        UNION
+         SELECT rd.organizations_uid,
+            i.ip
+           FROM (((public.root_domains rd
+             JOIN public.sub_domains sd ON ((rd.root_domain_uid = sd.root_domain_uid)))
+             JOIN public.ips_subs si ON ((sd.sub_domain_uid = si.sub_domain_uid)))
+             JOIN public.ips i ON ((si.ip_hash = i.ip_hash)))) all_ips ON ((reported_orgs.organizations_uid = all_ips.organizations_uid)))
+  GROUP BY reported_orgs.organizations_uid, reported_orgs.cyhy_db_name
+  ORDER BY COALESCE(count(all_ips.ip), (0)::bigint);
 
 
 ALTER TABLE public.vw_orgs_total_ips OWNER TO pe;
+
+--
+-- Name: VIEW vw_orgs_total_ips; Type: COMMENT; Schema: public; Owner: pe
+--
+
+COMMENT ON VIEW public.vw_orgs_total_ips IS 'Gets the total number of ips associated with each organization.';
+
 
 --
 -- Name: vw_orgs_total_ports; Type: VIEW; Schema: public; Owner: pe
@@ -2941,7 +2949,8 @@ CREATE VIEW public.vw_orgs_total_ports AS
     COALESCE(count(all_ports.port), (0)::bigint) AS num_ports
    FROM (( SELECT organizations.organizations_uid,
             organizations.cyhy_db_name
-           FROM public.organizations) reported_orgs
+           FROM public.organizations
+          WHERE (organizations.report_on = true)) reported_orgs
      LEFT JOIN ( SELECT DISTINCT assets.organizations_uid,
             assets.ip,
             assets.port
@@ -2977,7 +2986,8 @@ CREATE VIEW public.vw_orgs_total_ports_protocols AS
  SELECT reported_orgs.organizations_uid,
     COALESCE(protocols.port_protocol, (0)::bigint) AS port_protocol
    FROM (( SELECT organizations.organizations_uid
-           FROM public.organizations) reported_orgs
+           FROM public.organizations
+          WHERE (organizations.report_on = true)) reported_orgs
      LEFT JOIN ( SELECT t.organizations_uid,
             count(*) AS port_protocol
            FROM ( SELECT DISTINCT sa.port,
@@ -2997,7 +3007,8 @@ CREATE VIEW public.vw_orgs_total_software AS
  SELECT reported_orgs.organizations_uid,
     COALESCE(software.num_software, (0)::bigint) AS num_software
    FROM (( SELECT organizations.organizations_uid
-           FROM public.organizations) reported_orgs
+           FROM public.organizations
+          WHERE (organizations.report_on = true)) reported_orgs
      LEFT JOIN ( SELECT t.organizations_uid,
             count(*) AS num_software
            FROM ( SELECT DISTINCT sa.product,
@@ -3132,7 +3143,7 @@ CREATE TABLE public.pshtt_results (
     sub_domain_uid uuid NOT NULL,
     data_source_uid uuid NOT NULL,
     sub_domain text NOT NULL,
-    date_scanned date,
+    scanned boolean,
     base_domain text,
     base_domain_hsts_preloaded boolean,
     canonical_url text,
@@ -3160,10 +3171,6 @@ CREATE TABLE public.pshtt_results (
     https_probably_missing_intermediate_cert boolean,
     https_publicly_trusted boolean,
     https_self_signed_cert boolean,
-    https_leaf_cert_expiration_date date,
-    https_leaf_cert_issuer text,
-    https_leaf_cert_subject text,
-    https_root_cert_issuer text,
     ip inet,
     live boolean,
     notes text,
@@ -3174,20 +3181,122 @@ CREATE TABLE public.pshtt_results (
     strictly_forces_https boolean,
     unknown_error boolean,
     valid_https boolean,
-    ep_http_headers text,
+    ep_http_headers json,
+    ep_http_ip inet,
+    ep_http_live boolean,
+    ep_http_notes text,
+    ep_http_redirect boolean,
+    ep_http_redirect_eventually_to text,
+    ep_http_redirect_eventually_to_external boolean,
+    ep_http_redirect_eventually_to_http boolean,
+    ep_http_redirect_eventually_to_https boolean,
+    ep_http_redirect_eventually_to_subdomain boolean,
+    ep_http_redirect_immediately_to text,
+    ep_http_redirect_immediately_to_external boolean,
+    ep_http_redirect_immediately_to_http boolean,
+    ep_http_redirect_immediately_to_https boolean,
+    ep_http_redirect_immediately_to_subdomain boolean,
+    ep_http_redirect_immediately_to_www boolean,
     ep_http_server_header text,
     ep_http_server_version text,
-    ep_https_headers text,
+    ep_http_status integer,
+    ep_http_unknown_error boolean,
+    ep_http_url text,
+    ep_https_headers json,
+    ep_https_hsts boolean,
+    ep_https_hsts_all_subdomains boolean,
     ep_https_hsts_header text,
+    ep_https_hsts_max_age numeric,
+    ep_https_hsts_preload boolean,
+    ep_https_https_bad_chain boolean,
+    ep_https_https_bad_hostname boolean,
+    ep_https_https_cert_chain_len integer,
+    ep_https_https_client_auth_required boolean,
+    ep_https_https_custom_trusted boolean,
+    ep_https_https_expired_cert boolean,
+    ep_https_https_vull_connection boolean,
+    ep_https_https_missing_intermediate_cert boolean,
+    ep_https_https_public_trusted boolean,
+    ep_https_https_self_signed_cert boolean,
+    ep_https_https_valid boolean,
+    ep_https_ip inet,
+    ep_https_live boolean,
+    ep_https_notes text,
+    ep_https_redirect boolean,
+    ep_https_redireect_eventually_to text,
+    ep_https_redirect_eventually_to_external boolean,
+    ep_https_redirect_eventually_to_http boolean,
+    ep_https_redirect_eventually_to_https boolean,
+    ep_https_redirect_eventually_to_subdomain boolean,
+    ep_https_redirect_immediately_to text,
+    ep_https_redirect_immediately_to_external boolean,
+    ep_https_redirect_immediately_to_http boolean,
+    ep_https_redirect_immediately_to_https boolean,
+    ep_https_redirect_immediately_to_subdomain boolean,
+    ep_https_redirect_immediately_to_www boolean,
     ep_https_server_header text,
     ep_https_server_version text,
-    ep_httpswww_headers text,
+    ep_https_status integer,
+    ep_https_unknown_error boolean,
+    ep_https_url text,
+    ep_httpswww_headers json,
+    ep_httpswww_hsts boolean,
+    ep_httpswww_hsts_all_subdomains boolean,
     ep_httpswww_hsts_header text,
+    ep_httpswww_hsts_max_age numeric,
+    ep_httpswww_hsts_preload boolean,
+    ep_httpswww_https_bad_chain boolean,
+    ep_httpswww_https_bad_hostname boolean,
+    ep_httpswww_https_cert_chain_len integer,
+    ep_httpswww_https_client_auth_required boolean,
+    ep_httpswww_https_custom_trusted boolean,
+    ep_httpswww_https_expired_cert boolean,
+    ep_httpswww_https_full_connection boolean,
+    ep_httpswww_https_missing_intermediate_cert boolean,
+    ep_httpswww_https_public_trusted boolean,
+    ep_httpswww_https_self_signed_cert boolean,
+    ep_httpswww_https_valid boolean,
+    ep_httpswww_ip inet,
+    ep_httpswww_live boolean,
+    ep_httpswww_notes text,
+    ep_httpswww_redirect boolean,
+    ep_httpswww_redirect_eventually_to text,
+    ep_httpswww_redirect_eventually_to_external boolean,
+    ep_httpswww_redirect_eventually_to_http boolean,
+    ep_httpswww_redirect_eventually_to_https boolean,
+    ep_httpswww_redirect_eventually_to_subdomain boolean,
+    ep_httpswww_redirect_immediately_to text,
+    ep_httpswww_redirect_immediately_to_external boolean,
+    ep_httpswww_redirect_immediately_to_http boolean,
+    ep_httpswww_redirect_immediately_to_https boolean,
+    ep_httpswww_redirect_immediately_to_subdomain boolean,
+    ep_httpswww_redirect_immediately_to_www boolean,
     ep_httpswww_server_header text,
     ep_httpswww_server_version text,
-    ep_httpwww_headers text,
+    ep_httpswww_status integer,
+    ep_httpswww_unknown_error boolean,
+    ep_httpswww_url text,
+    ep_httpwww_headers json,
+    ep_httpwww_ip inet,
+    ep_httpwww_live boolean,
+    ep_httpwww_notes text,
+    ep_httpwww_redirect boolean,
+    ep_httpwww_redirect_eventually_to text,
+    ep_httpwww_redirect_eventually_to_external boolean,
+    ep_httpwww_redirect_eventually_to_http boolean,
+    ep_httpwww_redirect_eventually_to_https boolean,
+    ep_httpwww_redirect_eventually_to_subdomain boolean,
+    ep_httpwww_redirect_immediately_to text,
+    ep_httpwww_redirect_immediately_to_external boolean,
+    ep_httpwww_redirect_immediately_to_http boolean,
+    ep_httpwww_redirect_immediately_to_https boolean,
+    ep_httpwww_redirect_immediately_to_subdomain boolean,
+    ep_httpwww_redirect_immediately_to_www boolean,
     ep_httpwww_server_header text,
-    ep_httpwww_server_version text
+    ep_httpwww_server_version text,
+    ep_httpwww_status integer,
+    ep_httpwww_unknown_error boolean,
+    ep_httpwww_url text
 );
 
 
@@ -3781,11 +3890,9 @@ ALTER TABLE public.vw_domain_counts OWNER TO pe;
 
 CREATE VIEW public.vw_dscore_pe_domain AS
  SELECT domain_data.organizations_uid,
-    domain_data.parent_org_uid,
     count(domain_data.sub_domain) FILTER (WHERE (domain_data.identified = false)) AS num_ident_domain,
     count(domain_data.sub_domain) AS num_monitor_domain
-   FROM ( SELECT orgs.organizations_uid,
-            orgs.parent_org_uid,
+   FROM ( SELECT COALESCE(orgs.parent_org_uid, orgs.organizations_uid) AS organizations_uid,
             all_domains.sub_domain,
             all_domains.identified
            FROM (( SELECT organizations.organizations_uid,
@@ -3796,7 +3903,7 @@ CREATE VIEW public.vw_dscore_pe_domain AS
                     sub_domains.identified
                    FROM (public.root_domains
                      JOIN public.sub_domains ON ((root_domains.root_domain_uid = sub_domains.root_domain_uid)))) all_domains ON ((orgs.organizations_uid = all_domains.organizations_uid)))) domain_data
-  GROUP BY domain_data.organizations_uid, domain_data.parent_org_uid;
+  GROUP BY domain_data.organizations_uid;
 
 
 ALTER TABLE public.vw_dscore_pe_domain OWNER TO pe;
@@ -3813,17 +3920,41 @@ COMMENT ON VIEW public.vw_dscore_pe_domain IS 'Retrieves all the PE domain data 
 --
 
 CREATE VIEW public.vw_dscore_pe_ip AS
- SELECT ip_data.organizations_uid,
-    ip_data.parent_org_uid,
-    COALESCE(count(ip_data.ip) FILTER (WHERE (ip_data.origin_cidr IS NOT NULL)), (0)::bigint) AS num_ident_ip,
-    COALESCE(count(ip_data.ip), (0)::bigint) AS num_monitor_ip
-   FROM ( SELECT organizations.organizations_uid,
-            organizations.parent_org_uid,
-            ips.ip,
-            ips.origin_cidr
-           FROM (public.organizations
-             LEFT JOIN public.ips ON ((organizations.organizations_uid = ips.organizations_uid)))) ip_data
-  GROUP BY ip_data.organizations_uid, ip_data.parent_org_uid;
+ SELECT grouped_cidr_ips.organizations_uid,
+    grouped_cidr_ips.num_ident_ip,
+    grouped_all_ips.num_monitor_ip
+   FROM (( SELECT cidr_ips_data.organizations_uid,
+            COALESCE(count(cidr_ips_data.ip), (0)::bigint) AS num_ident_ip
+           FROM ( SELECT COALESCE(orgs.parent_org_uid, orgs.organizations_uid) AS organizations_uid,
+                    cidr_ips.ip
+                   FROM (( SELECT organizations.organizations_uid,
+                            organizations.parent_org_uid
+                           FROM public.organizations) orgs
+                     LEFT JOIN ( SELECT cidrs.organizations_uid,
+                            ips.ip
+                           FROM (public.ips
+                             JOIN public.cidrs ON ((ips.origin_cidr = cidrs.cidr_uid)))) cidr_ips ON ((orgs.organizations_uid = cidr_ips.organizations_uid)))) cidr_ips_data
+          GROUP BY cidr_ips_data.organizations_uid) grouped_cidr_ips
+     JOIN ( SELECT all_ips_data.organizations_uid,
+            COALESCE(count(all_ips_data.ip), (0)::bigint) AS num_monitor_ip
+           FROM ( SELECT COALESCE(orgs.parent_org_uid, orgs.organizations_uid) AS organizations_uid,
+                    all_ips.ip
+                   FROM (( SELECT organizations.organizations_uid,
+                            organizations.parent_org_uid
+                           FROM public.organizations) orgs
+                     LEFT JOIN ( SELECT cidrs.organizations_uid,
+                            ips.ip
+                           FROM (public.ips
+                             JOIN public.cidrs ON ((ips.origin_cidr = cidrs.cidr_uid)))
+                        UNION
+                         SELECT rd.organizations_uid,
+                            i.ip
+                           FROM (((public.root_domains rd
+                             JOIN public.sub_domains sd ON ((rd.root_domain_uid = sd.root_domain_uid)))
+                             JOIN public.ips_subs si ON ((sd.sub_domain_uid = si.sub_domain_uid)))
+                             JOIN public.ips i ON ((si.ip_hash = i.ip_hash)))) all_ips ON ((orgs.organizations_uid = all_ips.organizations_uid)))) all_ips_data
+          GROUP BY all_ips_data.organizations_uid) grouped_all_ips ON ((grouped_cidr_ips.organizations_uid = grouped_all_ips.organizations_uid)))
+  ORDER BY grouped_cidr_ips.organizations_uid;
 
 
 ALTER TABLE public.vw_dscore_pe_ip OWNER TO pe;
@@ -3841,15 +3972,13 @@ COMMENT ON VIEW public.vw_dscore_pe_ip IS 'Retrieves all the PE IP data needed t
 
 CREATE VIEW public.vw_dscore_vs_cert AS
  SELECT cert_data.organizations_uid,
-    cert_data.parent_org_uid,
     sum(cert_data.num_ident_cert) AS num_ident_cert,
     sum(cert_data.num_monitor_cert) AS num_monitor_cert
-   FROM ( SELECT organizations.organizations_uid,
-            organizations.parent_org_uid,
+   FROM ( SELECT COALESCE(organizations.parent_org_uid, organizations.organizations_uid) AS organizations_uid,
             0 AS num_ident_cert,
             0 AS num_monitor_cert
            FROM public.organizations) cert_data
-  GROUP BY cert_data.organizations_uid, cert_data.parent_org_uid;
+  GROUP BY cert_data.organizations_uid;
 
 
 ALTER TABLE public.vw_dscore_vs_cert OWNER TO pe;
@@ -3867,13 +3996,11 @@ COMMENT ON VIEW public.vw_dscore_vs_cert IS 'Retrieves all VS certificate data n
 
 CREATE VIEW public.vw_dscore_vs_mail AS
  SELECT mail_data.organizations_uid,
-    mail_data.parent_org_uid,
     COALESCE(sum(mail_data.domain_counter) FILTER (WHERE ((mail_data.valid_dmarc_base_domain = true) OR (mail_data.valid_dmarc = true))), (0)::bigint) AS num_valid_dmarc,
     COALESCE(sum(mail_data.domain_counter) FILTER (WHERE (mail_data.valid_spf = true)), (0)::bigint) AS num_valid_spf,
     COALESCE(sum(mail_data.domain_counter) FILTER (WHERE ((mail_data.valid_dmarc_base_domain = true) OR (mail_data.valid_dmarc = true) OR (mail_data.valid_spf = true))), (0)::bigint) AS num_valid_dmarc_or_spf,
     sum(mail_data.domain_counter) AS total_mail_domains
-   FROM ( SELECT orgs.organizations_uid,
-            orgs.parent_org_uid,
+   FROM ( SELECT COALESCE(orgs.parent_org_uid, orgs.organizations_uid) AS organizations_uid,
             mail.domain,
             mail.valid_dmarc_base_domain,
             mail.valid_dmarc,
@@ -3907,7 +4034,7 @@ CREATE VIEW public.vw_dscore_vs_mail AS
                     1 AS domain_counter
                    FROM public.cyhy_trustymail
                   WHERE (cyhy_trustymail.cyhy_latest = true)) mail ON ((orgs.organizations_uid = mail.organizations_uid)))) mail_data
-  GROUP BY mail_data.organizations_uid, mail_data.parent_org_uid;
+  GROUP BY mail_data.organizations_uid;
 
 
 ALTER TABLE public.vw_dscore_vs_mail OWNER TO pe;
@@ -3941,11 +4068,9 @@ ALTER TABLE public.was_summary OWNER TO pe;
 
 CREATE VIEW public.vw_dscore_was_webapp AS
  SELECT webapp_data.organizations_uid,
-    webapp_data.parent_org_uid,
     sum(webapp_data.num_ident_webapp) AS num_ident_webapp,
     sum(webapp_data.num_monitor_webapp) AS num_monitor_webapp
-   FROM ( SELECT orgs.organizations_uid,
-            orgs.parent_org_uid,
+   FROM ( SELECT COALESCE(orgs.parent_org_uid, orgs.organizations_uid) AS organizations_uid,
             COALESCE(webapps.num_ident_webapp, 0) AS num_ident_webapp,
             COALESCE(webapps.num_monitor_webapp, 0) AS num_monitor_webapp
            FROM (( SELECT organizations.organizations_uid,
@@ -3956,7 +4081,7 @@ CREATE VIEW public.vw_dscore_was_webapp AS
                     was_summary.webapp_count AS num_ident_webapp,
                     was_summary.webapp_count AS num_monitor_webapp
                    FROM public.was_summary) webapps ON ((orgs.cyhy_db_name = webapps.was_org_id)))) webapp_data
-  GROUP BY webapp_data.organizations_uid, webapp_data.parent_org_uid;
+  GROUP BY webapp_data.organizations_uid;
 
 
 ALTER TABLE public.vw_dscore_was_webapp OWNER TO pe;
@@ -4078,57 +4203,6 @@ CREATE VIEW public.vw_fceb_total_ips AS
 ALTER TABLE public.vw_fceb_total_ips OWNER TO pe;
 
 --
--- Name: vw_ips_cidr_org_info; Type: VIEW; Schema: public; Owner: pe
---
-
-CREATE VIEW public.vw_ips_cidr_org_info AS
- SELECT i.ip_hash,
-    i.ip,
-    i.origin_cidr,
-    ct.network,
-    o.organizations_uid
-   FROM ((public.ips i
-     JOIN public.cidrs ct ON ((ct.cidr_uid = i.origin_cidr)))
-     JOIN public.organizations o ON ((o.organizations_uid = ct.organizations_uid)));
-
-
-ALTER TABLE public.vw_ips_cidr_org_info OWNER TO pe;
-
---
--- Name: VIEW vw_ips_cidr_org_info; Type: COMMENT; Schema: public; Owner: pe
---
-
-COMMENT ON VIEW public.vw_ips_cidr_org_info IS 'View containing ip data joined with data from the cidrs and organizations tables';
-
-
---
--- Name: vw_ips_sub_root_org_info; Type: VIEW; Schema: public; Owner: pe
---
-
-CREATE VIEW public.vw_ips_sub_root_org_info AS
- SELECT i.ip_hash,
-    i.ip,
-    i.origin_cidr,
-    o.organizations_uid,
-    i.current AS i_current,
-    sd.current AS sd_current
-   FROM ((((public.ips i
-     JOIN public.ips_subs is2 ON ((i.ip_hash = is2.ip_hash)))
-     JOIN public.sub_domains sd ON ((sd.sub_domain_uid = is2.sub_domain_uid)))
-     JOIN public.root_domains rd ON ((rd.root_domain_uid = sd.root_domain_uid)))
-     JOIN public.organizations o ON ((o.organizations_uid = rd.organizations_uid)));
-
-
-ALTER TABLE public.vw_ips_sub_root_org_info OWNER TO pe;
-
---
--- Name: VIEW vw_ips_sub_root_org_info; Type: COMMENT; Schema: public; Owner: pe
---
-
-COMMENT ON VIEW public.vw_ips_sub_root_org_info IS 'View containing ip data joined with data from sub_domains, root_domains, and organizations tables';
-
-
---
 -- Name: vw_iscore_orgs_ip_counts; Type: VIEW; Schema: public; Owner: pe
 --
 
@@ -4177,8 +4251,7 @@ COMMENT ON VIEW public.vw_iscore_orgs_ip_counts IS 'Retrieve list of all stakeho
 --
 
 CREATE VIEW public.vw_iscore_pe_breach AS
- SELECT orgs.organizations_uid,
-    orgs.parent_org_uid,
+ SELECT COALESCE(orgs.parent_org_uid, orgs.organizations_uid) AS organizations_uid,
     COALESCE(breach_data.date, '0001-01-01'::date) AS date,
     COALESCE(breach_data.breach_count, 0) AS breach_count
    FROM (( SELECT organizations.organizations_uid,
@@ -4205,8 +4278,7 @@ COMMENT ON VIEW public.vw_iscore_pe_breach IS 'Retrieve all relevant PE breach d
 --
 
 CREATE VIEW public.vw_iscore_pe_cred AS
- SELECT orgs.organizations_uid,
-    orgs.parent_org_uid,
+ SELECT COALESCE(orgs.parent_org_uid, orgs.organizations_uid) AS organizations_uid,
     COALESCE(cred_data.date, '0001-01-01'::date) AS date,
     COALESCE(cred_data.password_creds, (0)::bigint) AS password_creds,
     COALESCE(cred_data.total_creds, (0)::bigint) AS total_creds
@@ -4234,59 +4306,50 @@ COMMENT ON VIEW public.vw_iscore_pe_cred IS 'Retrieve all relevant PE credential
 --
 
 CREATE VIEW public.vw_iscore_pe_darkweb AS
- SELECT dw_data.organizations_uid,
-    dw_data.parent_org_uid,
-    dw_data.alert_type,
-    dw_data.date,
-    dw_data."Count"
-   FROM ( SELECT orgs.organizations_uid,
-            orgs.parent_org_uid,
-            'MENTION'::text AS alert_type,
-            COALESCE(vw_darkweb_mentionsbydate.date, '0001-01-01'::date) AS date,
-            COALESCE(vw_darkweb_mentionsbydate."Count", (0)::bigint) AS "Count"
-           FROM (( SELECT organizations.organizations_uid,
-                    organizations.parent_org_uid
-                   FROM public.organizations) orgs
-             LEFT JOIN public.vw_darkweb_mentionsbydate ON ((orgs.organizations_uid = vw_darkweb_mentionsbydate.organizations_uid)))
-        UNION ALL
-         SELECT orgs.organizations_uid,
-            orgs.parent_org_uid,
-            'POTENTIAL_THREAT'::text AS alert_type,
-            COALESCE(threats.date, '0001-01-01'::date) AS date,
-            COALESCE(threats."Count", 0) AS "Count"
-           FROM (( SELECT organizations.organizations_uid,
-                    organizations.parent_org_uid
-                   FROM public.organizations) orgs
-             LEFT JOIN ( SELECT vw_darkweb_potentialthreats.organizations_uid,
-                    vw_darkweb_potentialthreats.date,
-                    1 AS "Count"
-                   FROM public.vw_darkweb_potentialthreats) threats ON ((orgs.organizations_uid = threats.organizations_uid)))
-        UNION ALL
-         SELECT orgs.organizations_uid,
-            orgs.parent_org_uid,
-            'INVITE_ONLY'::text AS alert_type,
-            COALESCE(invites.date, '0001-01-01'::date) AS date,
-            COALESCE(invites."Count", 0) AS "Count"
-           FROM (( SELECT organizations.organizations_uid,
-                    organizations.parent_org_uid
-                   FROM public.organizations) orgs
-             LEFT JOIN ( SELECT vw_darkweb_inviteonlymarkets.organizations_uid,
-                    vw_darkweb_inviteonlymarkets.date,
-                    1 AS "Count"
-                   FROM public.vw_darkweb_inviteonlymarkets) invites ON ((orgs.organizations_uid = invites.organizations_uid)))
-        UNION ALL
-         SELECT orgs.organizations_uid,
-            orgs.parent_org_uid,
-            'ASSET'::text AS alert_type,
-            COALESCE(assets.date, '0001-01-01'::date) AS date,
-            COALESCE(assets."Count", 0) AS "Count"
-           FROM (( SELECT organizations.organizations_uid,
-                    organizations.parent_org_uid
-                   FROM public.organizations) orgs
-             LEFT JOIN ( SELECT vw_darkweb_assetalerts.organizations_uid,
-                    vw_darkweb_assetalerts.date,
-                    1 AS "Count"
-                   FROM public.vw_darkweb_assetalerts) assets ON ((orgs.organizations_uid = assets.organizations_uid)))) dw_data;
+ SELECT COALESCE(orgs.parent_org_uid, orgs.organizations_uid) AS organizations_uid,
+    'MENTION'::text AS alert_type,
+    COALESCE(vw_darkweb_mentionsbydate.date, '0001-01-01'::date) AS date,
+    COALESCE(vw_darkweb_mentionsbydate."Count", (0)::bigint) AS "Count"
+   FROM (( SELECT organizations.organizations_uid,
+            organizations.parent_org_uid
+           FROM public.organizations) orgs
+     LEFT JOIN public.vw_darkweb_mentionsbydate ON ((orgs.organizations_uid = vw_darkweb_mentionsbydate.organizations_uid)))
+UNION ALL
+ SELECT COALESCE(orgs.parent_org_uid, orgs.organizations_uid) AS organizations_uid,
+    'POTENTIAL_THREAT'::text AS alert_type,
+    COALESCE(threats.date, '0001-01-01'::date) AS date,
+    COALESCE(threats."Count", 0) AS "Count"
+   FROM (( SELECT organizations.organizations_uid,
+            organizations.parent_org_uid
+           FROM public.organizations) orgs
+     LEFT JOIN ( SELECT vw_darkweb_potentialthreats.organizations_uid,
+            vw_darkweb_potentialthreats.date,
+            1 AS "Count"
+           FROM public.vw_darkweb_potentialthreats) threats ON ((orgs.organizations_uid = threats.organizations_uid)))
+UNION ALL
+ SELECT COALESCE(orgs.parent_org_uid, orgs.organizations_uid) AS organizations_uid,
+    'INVITE_ONLY'::text AS alert_type,
+    COALESCE(invites.date, '0001-01-01'::date) AS date,
+    COALESCE(invites."Count", 0) AS "Count"
+   FROM (( SELECT organizations.organizations_uid,
+            organizations.parent_org_uid
+           FROM public.organizations) orgs
+     LEFT JOIN ( SELECT vw_darkweb_inviteonlymarkets.organizations_uid,
+            vw_darkweb_inviteonlymarkets.date,
+            1 AS "Count"
+           FROM public.vw_darkweb_inviteonlymarkets) invites ON ((orgs.organizations_uid = invites.organizations_uid)))
+UNION ALL
+ SELECT COALESCE(orgs.parent_org_uid, orgs.organizations_uid) AS organizations_uid,
+    'ASSET'::text AS alert_type,
+    COALESCE(assets.date, '0001-01-01'::date) AS date,
+    COALESCE(assets."Count", 0) AS "Count"
+   FROM (( SELECT organizations.organizations_uid,
+            organizations.parent_org_uid
+           FROM public.organizations) orgs
+     LEFT JOIN ( SELECT vw_darkweb_assetalerts.organizations_uid,
+            vw_darkweb_assetalerts.date,
+            1 AS "Count"
+           FROM public.vw_darkweb_assetalerts) assets ON ((orgs.organizations_uid = assets.organizations_uid)));
 
 
 ALTER TABLE public.vw_iscore_pe_darkweb OWNER TO pe;
@@ -4333,8 +4396,7 @@ ALTER TABLE public.vw_shodanvulns_suspected OWNER TO pe;
 --
 
 CREATE VIEW public.vw_iscore_pe_protocol AS
- SELECT orgs.organizations_uid,
-    orgs.parent_org_uid,
+ SELECT COALESCE(orgs.parent_org_uid, orgs.organizations_uid) AS organizations_uid,
     protocol_data.port,
     protocol_data.ip,
     protocol_data.protocol,
@@ -4417,8 +4479,7 @@ ALTER TABLE public.vw_shodanvulns_verified OWNER TO pe;
 --
 
 CREATE VIEW public.vw_iscore_pe_vuln AS
- SELECT orgs.organizations_uid,
-    orgs.parent_org_uid,
+ SELECT COALESCE(orgs.parent_org_uid, orgs.organizations_uid) AS organizations_uid,
     all_vulns.date,
     all_vulns.cve AS cve_name,
     all_vulns.cvss_score
@@ -4456,8 +4517,7 @@ COMMENT ON VIEW public.vw_iscore_pe_vuln IS 'Retrieve all relevant PE vulnerabil
 --
 
 CREATE VIEW public.vw_iscore_vs_vuln AS
- SELECT orgs.organizations_uid,
-    orgs.parent_org_uid,
+ SELECT COALESCE(orgs.parent_org_uid, orgs.organizations_uid) AS organizations_uid,
     vs_vulns.cve_name,
     vs_vulns.cvss_score
    FROM (( SELECT organizations.organizations_uid,
@@ -4484,8 +4544,7 @@ COMMENT ON VIEW public.vw_iscore_vs_vuln IS 'Retrieve all VS vulnerability data 
 --
 
 CREATE VIEW public.vw_iscore_vs_vuln_prev AS
- SELECT orgs.organizations_uid,
-    orgs.parent_org_uid,
+ SELECT COALESCE(orgs.parent_org_uid, orgs.organizations_uid) AS organizations_uid,
     vs_vulns.cve_name,
     vs_vulns.cvss_score,
     vs_vulns.time_closed
@@ -4525,9 +4584,7 @@ CREATE TABLE public.was_findings (
     temporal_score double precision,
     fstatus character varying,
     last_detected date,
-    first_detected date,
-    is_remidiated boolean,
-    potential boolean
+    first_detected date
 );
 
 
@@ -4538,8 +4595,7 @@ ALTER TABLE public.was_findings OWNER TO pe;
 --
 
 CREATE VIEW public.vw_iscore_was_vuln AS
- SELECT orgs.organizations_uid,
-    orgs.parent_org_uid,
+ SELECT COALESCE(orgs.parent_org_uid, orgs.organizations_uid) AS organizations_uid,
     was_vulns.date,
     was_vulns.cve_name,
     was_vulns.cvss_score,
@@ -4554,7 +4610,7 @@ CREATE VIEW public.vw_iscore_was_vuln AS
             was_findings.base_score AS cvss_score,
             was_findings.owasp_category
            FROM public.was_findings
-          WHERE (((was_findings.finding_type)::text = 'VULNERABILITY'::text) AND ((was_findings.fstatus)::text = ANY (ARRAY[('NEW'::character varying)::text, ('ACTIVE'::character varying)::text, ('REOPENED'::character varying)::text])))) was_vulns ON ((orgs.cyhy_db_name = was_vulns.org_id)));
+          WHERE (((was_findings.finding_type)::text = 'VULNERABILITY'::text) AND ((was_findings.fstatus)::text = ANY ((ARRAY['NEW'::character varying, 'ACTIVE'::character varying, 'REOPENED'::character varying])::text[])))) was_vulns ON ((orgs.cyhy_db_name = was_vulns.org_id)));
 
 
 ALTER TABLE public.vw_iscore_was_vuln OWNER TO pe;
@@ -4582,8 +4638,7 @@ CREATE TABLE public.was_history (
     high_vuln_cnt integer,
     report_period date,
     high_rem_cnt integer,
-    crit_rem_cnt integer,
-    total_potential integer
+    crit_rem_cnt integer
 );
 
 
@@ -4594,8 +4649,7 @@ ALTER TABLE public.was_history OWNER TO pe;
 --
 
 CREATE VIEW public.vw_iscore_was_vuln_prev AS
- SELECT orgs.organizations_uid,
-    orgs.parent_org_uid,
+ SELECT COALESCE(orgs.parent_org_uid, orgs.organizations_uid) AS organizations_uid,
     was_vulns_prev.vuln_cnt AS was_total_vulns_prev,
     was_vulns_prev.date
    FROM (( SELECT organizations.organizations_uid,
@@ -4674,6 +4728,13 @@ CREATE VIEW public.vw_orgs_attacksurface AS
 ALTER TABLE public.vw_orgs_attacksurface OWNER TO pe;
 
 --
+-- Name: VIEW vw_orgs_attacksurface; Type: COMMENT; Schema: public; Owner: pe
+--
+
+COMMENT ON VIEW public.vw_orgs_attacksurface IS 'gets all attack surface related metrics for the orgs PE reports on';
+
+
+--
 -- Name: vw_orgs_contact_info; Type: VIEW; Schema: public; Owner: pe
 --
 
@@ -4699,60 +4760,6 @@ ALTER TABLE public.vw_orgs_contact_info OWNER TO pe;
 
 COMMENT ON VIEW public.vw_orgs_contact_info IS 'Gets the contact info for all PE organizations';
 
-
---
--- Name: vw_pescore_check_new_cve; Type: VIEW; Schema: public; Owner: pe
---
-
-CREATE VIEW public.vw_pescore_check_new_cve AS
- SELECT current_cves.cve_name
-   FROM (( SELECT unverif_vulns.cve_name
-           FROM (public.organizations o
-             JOIN ( SELECT DISTINCT vss.organizations_uid,
-                    unnest(vss.potential_vulns) AS cve_name
-                   FROM public.vw_shodanvulns_suspected vss
-                  WHERE (vss.type <> 'Insecure Protocol'::text)) unverif_vulns ON ((o.organizations_uid = unverif_vulns.organizations_uid)))
-          WHERE (o.report_on = true)
-        UNION
-         SELECT verif_vulns.cve_name
-           FROM (public.organizations o
-             JOIN ( SELECT DISTINCT shodan_vulns.organizations_uid,
-                    shodan_vulns.cve AS cve_name
-                   FROM public.shodan_vulns
-                  WHERE (shodan_vulns.is_verified = true)) verif_vulns ON ((o.organizations_uid = verif_vulns.organizations_uid)))
-          WHERE (o.report_on = true)) current_cves
-     LEFT JOIN public.cve_info ON ((current_cves.cve_name = cve_info.cve_name)))
-  WHERE (cve_info.cve_name IS NULL);
-
-
-ALTER TABLE public.vw_pescore_check_new_cve OWNER TO pe;
-
---
--- Name: VIEW vw_pescore_check_new_cve; Type: COMMENT; Schema: public; Owner: pe
---
-
-COMMENT ON VIEW public.vw_pescore_check_new_cve IS 'View to get any new CVEs that aren''t yet in the cve_info table';
-
-
---
--- Name: vw_pshtt_domains_to_run; Type: VIEW; Schema: public; Owner: pe
---
-
-CREATE VIEW public.vw_pshtt_domains_to_run AS
- SELECT sd.sub_domain_uid,
-    sd.sub_domain,
-    o.organizations_uid,
-    o.name
-   FROM (((public.sub_domains sd
-     JOIN public.root_domains rd ON ((rd.root_domain_uid = sd.root_domain_uid)))
-     JOIN public.organizations o ON ((o.organizations_uid = rd.organizations_uid)))
-     LEFT JOIN ( SELECT pr_1.sub_domain_uid
-           FROM public.pshtt_results pr_1
-          WHERE (pr_1.date_scanned > (CURRENT_DATE - '15 days'::interval))) pr ON ((pr.sub_domain_uid = sd.sub_domain_uid)))
-  WHERE ((sd.current = true) AND (pr.sub_domain_uid IS NULL));
-
-
-ALTER TABLE public.vw_pshtt_domains_to_run OWNER TO pe;
 
 --
 -- Name: vw_scorecard_orgs; Type: VIEW; Schema: public; Owner: pe
@@ -4799,9 +4806,7 @@ CREATE VIEW public.vw_scorecard_orgs AS
             o.receives_cyhy_report,
             o.is_parent,
             o.fceb,
-            o.fceb_child,
-            o.name,
-            o.cyhy_period_start
+            o.fceb_child
            FROM ((sector_queries cq
              JOIN public.sectors_orgs so ON ((so.sector_uid = cq.sector_uid)))
              JOIN public.organizations o ON ((o.organizations_uid = so.organizations_uid)))
@@ -4814,9 +4819,7 @@ CREATE VIEW public.vw_scorecard_orgs AS
             co.receives_cyhy_report,
             co.is_parent,
             co.fceb,
-            co.fceb_child,
-            co.name,
-            co.cyhy_period_start
+            co.fceb_child
            FROM (public.organizations co
              JOIN org_queries oq_1 ON ((oq_1.organizations_uid = co.parent_org_uid)))
         )
@@ -4828,162 +4831,11 @@ CREATE VIEW public.vw_scorecard_orgs AS
     oq.receives_cyhy_report,
     oq.is_parent,
     oq.fceb,
-    oq.fceb_child,
-    oq.name,
-    oq.cyhy_period_start
-   FROM org_queries oq
-  WHERE (oq.retired <> true);
+    oq.fceb_child
+   FROM org_queries oq;
 
 
 ALTER TABLE public.vw_scorecard_orgs OWNER TO pe;
-
---
--- Name: vw_scorecard_top_orgs; Type: VIEW; Schema: public; Owner: pe
---
-
-CREATE VIEW public.vw_scorecard_top_orgs AS
- WITH RECURSIVE sector_queries AS (
-         SELECT s.sector_uid,
-            s.id,
-            s.acronym,
-            s.name,
-            s.email,
-            s.contact_name,
-            s.retired,
-            s.first_seen,
-            s.last_seen,
-            s.run_scorecards,
-            s.password,
-            s.parent_sector_uid
-           FROM public.sectors s
-          WHERE (s.run_scorecards = true)
-        UNION ALL
-         SELECT e.sector_uid,
-            e.id,
-            e.acronym,
-            e.name,
-            e.email,
-            e.contact_name,
-            e.retired,
-            e.first_seen,
-            e.last_seen,
-            e.run_scorecards,
-            e.password,
-            e.parent_sector_uid
-           FROM (public.sectors e
-             JOIN sector_queries c ON ((e.parent_sector_uid = c.sector_uid)))
-        )
- SELECT o.organizations_uid,
-    o.cyhy_db_name,
-    cq.id AS sector_id,
-    o.parent_org_uid,
-    o.retired,
-    o.receives_cyhy_report,
-    o.is_parent,
-    o.fceb,
-    o.fceb_child,
-    o.name,
-    o.cyhy_period_start
-   FROM ((sector_queries cq
-     JOIN public.sectors_orgs so ON ((so.sector_uid = cq.sector_uid)))
-     JOIN public.organizations o ON ((o.organizations_uid = so.organizations_uid)));
-
-
-ALTER TABLE public.vw_scorecard_top_orgs OWNER TO pe;
-
---
--- Name: vw_sector_orgs; Type: VIEW; Schema: public; Owner: pe
---
-
-CREATE VIEW public.vw_sector_orgs AS
- WITH RECURSIVE org_queries AS (
-         WITH RECURSIVE sector_queries AS (
-                 SELECT s.sector_uid,
-                    s.id,
-                    s.acronym,
-                    s.name,
-                    s.email,
-                    s.contact_name,
-                    s.retired,
-                    s.first_seen,
-                    s.last_seen,
-                    s.run_scorecards,
-                    s.password,
-                    s.parent_sector_uid
-                   FROM public.sectors s
-                UNION ALL
-                 SELECT e.sector_uid,
-                    e.id,
-                    e.acronym,
-                    e.name,
-                    e.email,
-                    e.contact_name,
-                    e.retired,
-                    e.first_seen,
-                    e.last_seen,
-                    e.run_scorecards,
-                    e.password,
-                    e.parent_sector_uid
-                   FROM (public.sectors e
-                     JOIN sector_queries c ON ((e.parent_sector_uid = c.sector_uid)))
-                )
-         SELECT o.organizations_uid,
-            o.cyhy_db_name,
-            cq.id AS sector_id,
-            cq.run_scorecards,
-            true AS top_level_org,
-            o.parent_org_uid,
-            o.report_on,
-            o.retired,
-            o.demo,
-            o.receives_cyhy_report,
-            o.is_parent,
-            o.fceb,
-            o.fceb_child,
-            o.name,
-            o.cyhy_period_start
-           FROM ((sector_queries cq
-             JOIN public.sectors_orgs so ON ((so.sector_uid = cq.sector_uid)))
-             JOIN public.organizations o ON ((o.organizations_uid = so.organizations_uid)))
-        UNION ALL
-         SELECT co.organizations_uid,
-            co.cyhy_db_name,
-            oq_1.sector_id,
-            oq_1.run_scorecards,
-            false AS top_level_org,
-            co.parent_org_uid,
-            co.report_on,
-            co.retired,
-            co.demo,
-            co.receives_cyhy_report,
-            co.is_parent,
-            co.fceb,
-            co.fceb_child,
-            co.name,
-            co.cyhy_period_start
-           FROM (public.organizations co
-             JOIN org_queries oq_1 ON ((oq_1.organizations_uid = co.parent_org_uid)))
-        )
- SELECT DISTINCT oq.organizations_uid,
-    oq.cyhy_db_name,
-    oq.name,
-    oq.sector_id,
-    oq.run_scorecards,
-    oq.top_level_org,
-    oq.parent_org_uid,
-    oq.report_on,
-    oq.retired,
-    oq.demo,
-    oq.receives_cyhy_report,
-    oq.is_parent,
-    oq.fceb,
-    oq.fceb_child,
-    oq.cyhy_period_start
-   FROM org_queries oq
-  WHERE (oq.retired <> true);
-
-
-ALTER TABLE public.vw_sector_orgs OWNER TO pe;
 
 --
 -- Name: vw_sector_time_to_remediate; Type: VIEW; Schema: public; Owner: pe
@@ -5671,6 +5523,14 @@ ALTER TABLE ONLY public.pshtt_results
 
 
 --
+-- Name: pshtt_results pshtt_results_pkey; Type: CONSTRAINT; Schema: public; Owner: pe
+--
+
+ALTER TABLE ONLY public.pshtt_results
+    ADD CONSTRAINT pshtt_results_pkey PRIMARY KEY (pshtt_results_uid);
+
+
+--
 -- Name: report_summary_stats report_summary_stats_pkey; Type: CONSTRAINT; Schema: public; Owner: pe
 --
 
@@ -6130,13 +5990,6 @@ CREATE INDEX django_session_session_key_c0390e0f_like ON public.django_session U
 
 
 --
--- Name: idx_ips_origin_cidr; Type: INDEX; Schema: public; Owner: pe
---
-
-CREATE INDEX idx_ips_origin_cidr ON public.ips USING btree (origin_cidr);
-
-
---
 -- Name: ix_Users_email; Type: INDEX; Schema: public; Owner: pe
 --
 
@@ -6151,63 +6004,10 @@ CREATE UNIQUE INDEX "ix_Users_username" ON public."Users" USING btree (username)
 
 
 --
--- Name: vw_orgs_total_ips _RETURN; Type: RULE; Schema: public; Owner: pe
---
-
-CREATE OR REPLACE VIEW public.vw_orgs_total_ips AS
- SELECT ci.organizations_uid,
-    ci.cyhy_db_name,
-    ci.parent_org_uid,
-    COALESCE(ci.cidr_ip_count, (0)::double precision) AS cidr_ips,
-    COALESCE(li.lone_count, (0)::bigint) AS identified_ips,
-    (COALESCE(ci.cidr_ip_count, (0)::double precision) + (COALESCE(li.lone_count, (0)::bigint))::double precision) AS num_ips,
-    ci.cidr_count
-   FROM (( SELECT o.organizations_uid,
-            o.cyhy_db_name,
-            o.parent_org_uid,
-            sum(ic.ip_count) AS cidr_ip_count,
-            count(ic.network) AS cidr_count
-           FROM (public.organizations o
-             LEFT JOIN ( SELECT c.organizations_uid,
-                    masklen((c.network)::inet) AS masklen,
-                    c.network,
-                        CASE
-                            WHEN (family((c.network)::inet) = 4) THEN
-                            CASE
-                                WHEN (masklen((c.network)::inet) < 31) THEN (((2)::double precision ^ ((32 - ( SELECT masklen((c.network)::inet) AS masklen)))::double precision) - (2)::double precision)
-                                WHEN (masklen((c.network)::inet) = 31) THEN (2)::double precision
-                                WHEN (masklen((c.network)::inet) = 32) THEN (1)::double precision
-                                ELSE NULL::double precision
-                            END
-                            WHEN (family((c.network)::inet) = 6) THEN
-                            CASE
-                                WHEN (masklen((c.network)::inet) < 127) THEN (((2)::double precision ^ ((128 - ( SELECT masklen((c.network)::inet) AS masklen)))::double precision) - (2)::double precision)
-                                WHEN (masklen((c.network)::inet) = 127) THEN (2)::double precision
-                                WHEN (masklen((c.network)::inet) = 128) THEN (1)::double precision
-                                ELSE NULL::double precision
-                            END
-                            ELSE NULL::double precision
-                        END AS ip_count
-                   FROM public.cidrs c
-                  WHERE c.current) ic ON ((ic.organizations_uid = o.organizations_uid)))
-          GROUP BY o.organizations_uid, o.cyhy_db_name) ci
-     LEFT JOIN ( SELECT lone_ips.organizations_uid,
-            count(lone_ips.ip) AS lone_count
-           FROM ( SELECT DISTINCT rd.organizations_uid,
-                    i.ip
-                   FROM (((public.ips i
-                     JOIN public.ips_subs si ON ((si.ip_hash = i.ip_hash)))
-                     JOIN public.sub_domains sd ON ((sd.sub_domain_uid = si.sub_domain_uid)))
-                     JOIN public.root_domains rd ON ((rd.root_domain_uid = sd.root_domain_uid)))
-                  WHERE (sd.current AND i.current AND (i.origin_cidr IS NULL))) lone_ips
-          GROUP BY lone_ips.organizations_uid) li ON ((li.organizations_uid = ci.organizations_uid)));
-
-
---
 -- Name: weekly_statuses set_status_completed_and_week_ending_trigger; Type: TRIGGER; Schema: public; Owner: pe
 --
 
-CREATE TRIGGER set_status_completed_and_week_ending_trigger BEFORE INSERT ON public.weekly_statuses FOR EACH ROW EXECUTE FUNCTION public.set_status_completed_and_week_ending();
+CREATE TRIGGER set_status_completed_and_week_ending_trigger BEFORE INSERT ON public.weekly_statuses FOR EACH ROW EXECUTE PROCEDURE public.set_status_completed_and_week_ending();
 
 
 --
@@ -6483,14 +6283,6 @@ ALTER TABLE ONLY public.executives
 
 
 --
--- Name: ips fk_org_uid; Type: FK CONSTRAINT; Schema: public; Owner: pe
---
-
-ALTER TABLE ONLY public.ips
-    ADD CONSTRAINT fk_org_uid FOREIGN KEY (organizations_uid) REFERENCES public.organizations(organizations_uid);
-
-
---
 -- Name: credential_exposures hibp_exposed_credentials_breach_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: pe
 --
 
@@ -6560,6 +6352,22 @@ ALTER TABLE ONLY public.organizations
 
 ALTER TABLE ONLY public.was_map
     ADD CONSTRAINT pe_org_id_fk FOREIGN KEY (pe_org_id) REFERENCES public.organizations(organizations_uid);
+
+
+--
+-- Name: pshtt_results pshtt_results_organizations_uid_fkey; Type: FK CONSTRAINT; Schema: public; Owner: pe
+--
+
+ALTER TABLE ONLY public.pshtt_results
+    ADD CONSTRAINT pshtt_results_organizations_uid_fkey FOREIGN KEY (organizations_uid) REFERENCES public.organizations(organizations_uid) NOT VALID;
+
+
+--
+-- Name: pshtt_results pshtt_results_sub_domain_uid_fkey; Type: FK CONSTRAINT; Schema: public; Owner: pe
+--
+
+ALTER TABLE ONLY public.pshtt_results
+    ADD CONSTRAINT pshtt_results_sub_domain_uid_fkey FOREIGN KEY (sub_domain_uid) REFERENCES public.sub_domains(sub_domain_uid) NOT VALID;
 
 
 --
@@ -6718,7 +6526,9 @@ ALTER TABLE ONLY public.web_assets
 -- Name: SCHEMA public; Type: ACL; Schema: -; Owner: crossfeed
 --
 
-REVOKE USAGE ON SCHEMA public FROM PUBLIC;
+REVOKE ALL ON SCHEMA public FROM rdsadmin;
+REVOKE ALL ON SCHEMA public FROM PUBLIC;
+GRANT ALL ON SCHEMA public TO crossfeed;
 GRANT ALL ON SCHEMA public TO PUBLIC;
 
 
@@ -6726,3 +6536,157 @@ GRANT ALL ON SCHEMA public TO PUBLIC;
 -- PostgreSQL database dump complete
 --
 
+
+--
+-- Fill table with DHS
+--
+
+INSERT INTO public.organizations (name, cyhy_db_name, organizations_uid, report_on)
+VALUES ('Department of Homeland Security', 'DHS', '385caaea-416f-11ec-bf33-02589a36c9d7', true);
+
+
+INSERT INTO public.data_source(name, description, last_run)
+VALUES ('Shodan', 'IoT scanner', '2022-03-14');
+
+INSERT INTO public.data_source(name, description, last_run)
+VALUES ('HaveIBeenPwned', 'Credentials', '2022-03-14');
+
+INSERT INTO public.data_source(name, description, last_run)
+VALUES ('DNSTwist', 'Domain Permutations', '2022-03-14');
+
+INSERT INTO public.data_source(name, description, last_run)
+VALUES ('DNSMonitor', 'Domain Permutations', '2022-03-14');
+
+INSERT INTO public.data_source(name, description, last_run)
+VALUES ('CIRCL.lu', 'CVE engine', '2022-03-14');
+
+INSERT INTO public.data_source(name, description, last_run)
+VALUES ('WhoisXML', 'DNS lookpus', '2022-03-14');
+
+INSERT INTO public.data_source(name, description, last_run)
+VALUES ('findomain', 'Domain enumerator', '2022-03-14');
+
+INSERT INTO public.data_source(name, description, last_run)
+VALUES ('Sublist3r', 'Domain Permutations', '2022-03-14');
+
+INSERT INTO public.data_source(name, description, last_run)
+VALUES ('Cybersixgill', 'Dark web mentions and credentials', '2022-03-14');
+
+INSERT INTO public.data_source(name, description, last_run)
+VALUES ('unknown', 'Source unknown', '2022-03-14');
+
+INSERT INTO public.cidrs(cidr_uid, network, organizations_uid, current)
+VALUES ('677fb376-056e-11ed-8dbf-02c6a3fe975b', '65.246.123.64/27', '385caaea-416f-11ec-bf33-02589a36c9d7', true);
+
+INSERT INTO public.ips(ip, ip_hash, origin_cidr, current, from_cidr)
+VALUES ('65.246.123.64', 'a1', '677fb376-056e-11ed-8dbf-02c6a3fe975b', true, true);
+INSERT INTO public.ips(ip, ip_hash, origin_cidr, current, from_cidr)
+VALUES ('65.246.123.65','a2', '677fb376-056e-11ed-8dbf-02c6a3fe975b', true, true);
+INSERT INTO public.ips(ip, ip_hash, origin_cidr, current, from_cidr)
+VALUES ('65.246.123.67','a3', '677fb376-056e-11ed-8dbf-02c6a3fe975b', true, true);
+INSERT INTO public.ips(ip, ip_hash, origin_cidr, current, from_cidr)
+VALUES ('65.246.123.68','a4', '677fb376-056e-11ed-8dbf-02c6a3fe975b', true, true);
+INSERT INTO public.ips(ip, ip_hash, origin_cidr, current, from_cidr)
+VALUES ('65.246.123.69','a5', '677fb376-056e-11ed-8dbf-02c6a3fe975b', true, true);
+INSERT INTO public.ips(ip, ip_hash, origin_cidr, current, from_cidr)
+VALUES ('65.246.123.70','a6', '677fb376-056e-11ed-8dbf-02c6a3fe975b', true, true);
+INSERT INTO public.ips(ip, ip_hash, origin_cidr, current, from_cidr)
+VALUES ('65.246.123.71','a7', '677fb376-056e-11ed-8dbf-02c6a3fe975b', true, true);
+INSERT INTO public.ips(ip, ip_hash, origin_cidr, current, from_cidr)
+VALUES ('65.246.123.72','a8', '677fb376-056e-11ed-8dbf-02c6a3fe975b', true, true);
+INSERT INTO public.ips(ip, ip_hash, origin_cidr, current, from_cidr)
+VALUES ('65.246.123.73','a9', '677fb376-056e-11ed-8dbf-02c6a3fe975b', true, true);
+INSERT INTO public.ips(ip, ip_hash, origin_cidr, current, from_cidr)
+VALUES ('65.246.123.74','a10', '677fb376-056e-11ed-8dbf-02c6a3fe975b', true, true);
+INSERT INTO public.ips(ip, ip_hash, origin_cidr, current, from_cidr)
+VALUES ('65.246.123.75','a11', '677fb376-056e-11ed-8dbf-02c6a3fe975b', true, true);
+INSERT INTO public.ips(ip, ip_hash, origin_cidr, current, from_cidr)
+VALUES ('65.246.123.76','a12', '677fb376-056e-11ed-8dbf-02c6a3fe975b', true, true);
+INSERT INTO public.ips(ip, ip_hash, origin_cidr, current, from_cidr)
+VALUES ('65.246.123.77','a13', '677fb376-056e-11ed-8dbf-02c6a3fe975b', true, true);
+INSERT INTO public.ips(ip, ip_hash, origin_cidr, current, from_cidr)
+VALUES ('65.246.123.78','a14', '677fb376-056e-11ed-8dbf-02c6a3fe975b', true, true);
+INSERT INTO public.ips(ip, ip_hash, origin_cidr, current, from_cidr)
+VALUES ('65.246.123.79','a15', '677fb376-056e-11ed-8dbf-02c6a3fe975b', true, true);
+INSERT INTO public.ips(ip, ip_hash, origin_cidr, current, from_cidr)
+VALUES ('65.246.123.80','a16', '677fb376-056e-11ed-8dbf-02c6a3fe975b', true, true);
+INSERT INTO public.ips(ip, ip_hash, origin_cidr, current, from_cidr)
+VALUES ('65.246.123.81','a17', '677fb376-056e-11ed-8dbf-02c6a3fe975b', true, true);
+INSERT INTO public.ips(ip, ip_hash, origin_cidr, current, from_cidr)
+VALUES ('65.246.123.82','a18', '677fb376-056e-11ed-8dbf-02c6a3fe975b', true, true);
+INSERT INTO public.ips(ip, ip_hash, origin_cidr, current, from_cidr)
+VALUES ('65.246.123.83','a19', '677fb376-056e-11ed-8dbf-02c6a3fe975b', true, true);
+INSERT INTO public.ips(ip, ip_hash, origin_cidr, current, from_cidr)
+VALUES ('65.246.123.84','a20', '677fb376-056e-11ed-8dbf-02c6a3fe975b', true, true);
+INSERT INTO public.ips(ip, ip_hash, origin_cidr, current, from_cidr)
+VALUES ('65.246.123.85','a21', '677fb376-056e-11ed-8dbf-02c6a3fe975b', true, true);
+INSERT INTO public.ips(ip, ip_hash, origin_cidr, current, from_cidr)
+VALUES ('65.246.123.86','a22', '677fb376-056e-11ed-8dbf-02c6a3fe975b', true, true);
+INSERT INTO public.ips(ip, ip_hash, origin_cidr, current, from_cidr)
+VALUES ('65.246.123.87','a23', '677fb376-056e-11ed-8dbf-02c6a3fe975b', true, true);
+INSERT INTO public.ips(ip, ip_hash, origin_cidr, current, from_cidr)
+VALUES ('65.246.123.88','a24', '677fb376-056e-11ed-8dbf-02c6a3fe975b', true, true);
+INSERT INTO public.ips(ip, ip_hash, origin_cidr, current, from_cidr)
+VALUES ('65.246.123.89','a25', '677fb376-056e-11ed-8dbf-02c6a3fe975b', true, true);
+INSERT INTO public.ips(ip, ip_hash, origin_cidr, current, from_cidr)
+VALUES ('65.246.123.90','a26', '677fb376-056e-11ed-8dbf-02c6a3fe975b', true, true);
+INSERT INTO public.ips(ip, ip_hash, origin_cidr, current, from_cidr)
+VALUES ('65.246.123.91','a27', '677fb376-056e-11ed-8dbf-02c6a3fe975b', true, true);
+INSERT INTO public.ips(ip, ip_hash, origin_cidr, current, from_cidr)
+VALUES ('65.246.123.92','a28', '677fb376-056e-11ed-8dbf-02c6a3fe975b', true, true);
+INSERT INTO public.ips(ip, ip_hash, origin_cidr, current, from_cidr)
+VALUES ('65.246.123.93','a29', '677fb376-056e-11ed-8dbf-02c6a3fe975b', true, true);
+INSERT INTO public.ips(ip, ip_hash, origin_cidr, current, from_cidr)
+VALUES ('65.246.123.94','a30', '677fb376-056e-11ed-8dbf-02c6a3fe975b', true, true);
+INSERT INTO public.ips(ip, ip_hash, origin_cidr, current, from_cidr)
+VALUES ('65.246.123.95','a31', '677fb376-056e-11ed-8dbf-02c6a3fe975b', true, true);
+
+
+INSERT INTO public.data_source(name, description, last_run)
+VALUES ('Shodan', 'IoT scanner', '2023-05-23');
+
+INSERT INTO public.data_source(name, description, last_run)
+VALUES ('IntelX', 'Credentials and web posts identified by IntelX', '2023-05-23');
+
+
+INSERT INTO public.cidrs(cidr_uid, network, organizations_uid, current)
+VALUES ('3475a99e-0475-11ed-8e55-02c6a3fe975b', '209.37.109.142/31', '385caaea-416f-11ec-bf33-02589a36c9d7', true);
+
+INSERT INTO public.ips(ip, ip_hash, origin_cidr, current, from_cidr)
+VALUES ('209.37.109.142', 'b1', '3475a99e-0475-11ed-8e55-02c6a3fe975b', true, true);
+
+INSERT INTO public.ips(ip, ip_hash, origin_cidr, current, from_cidr)
+VALUES ('209.37.109.141', 'b2', '3475a99e-0475-11ed-8e55-02c6a3fe975b', true, true);
+
+
+INSERT INTO public.cidrs (network, organizations_uid, current)
+VALUES ('12.125.15.78/32', '385caaea-416f-11ec-bf33-02589a36c9d7', true),
+       ('12.170.240.128/27', '385caaea-416f-11ec-bf33-02589a36c9d7', true),
+       ('23.35.119.179/32', '385caaea-416f-11ec-bf33-02589a36c9d7', true),
+       ('23.59.17.226/32', '385caaea-416f-11ec-bf33-02589a36c9d7', true),
+       ('23.59.196.56/32', '385caaea-416f-11ec-bf33-02589a36c9d7', true),
+       ('23.59.199.179/32', '385caaea-416f-11ec-bf33-02589a36c9d7', true),
+       ('216.81.89.147/32', '385caaea-416f-11ec-bf33-02589a36c9d7', true),
+       ('12.22.250.40/29', '385caaea-416f-11ec-bf33-02589a36c9d7', true),
+       ('12.22.250.48/28', '385caaea-416f-11ec-bf33-02589a36c9d7', true),
+       ('12.53.154.64/27', '385caaea-416f-11ec-bf33-02589a36c9d7', true),
+       ('12.104.99.32/27', '385caaea-416f-11ec-bf33-02589a36c9d7', true),
+       ('12.110.111.112/29', '385caaea-416f-11ec-bf33-02589a36c9d7', true),
+       ('12.86.82.110/32', '385caaea-416f-11ec-bf33-02589a36c9d7', true),
+       ('69.228.70.5/32', '385caaea-416f-11ec-bf33-02589a36c9d7', true),
+       ('76.233.148.144/28', '385caaea-416f-11ec-bf33-02589a36c9d7', true),
+       ('99.3.159.96/28', '385caaea-416f-11ec-bf33-02589a36c9d7', true),
+       ('12.118.95.65/32', '385caaea-416f-11ec-bf33-02589a36c9d7', true),
+       ('99.33.16.16/29', '385caaea-416f-11ec-bf33-02589a36c9d7', true),
+       ('166.112.0.0/16', '385caaea-416f-11ec-bf33-02589a36c9d7', true),
+       ('64.119.224.0/20', '385caaea-416f-11ec-bf33-02589a36c9d7', true),
+       ('99.54.73.208/29', '385caaea-416f-11ec-bf33-02589a36c9d7', true),
+       ('205.142.100.0/22', '385caaea-416f-11ec-bf33-02589a36c9d7', true),
+       ('12.226.130.0/23', '385caaea-416f-11ec-bf33-02589a36c9d7', true),
+       ('63.161.169.0/24', '385caaea-416f-11ec-bf33-02589a36c9d7', true),
+       ('50.193.124.224/28', '385caaea-416f-11ec-bf33-02589a36c9d7', true),
+       ('207.238.6.32/27', '385caaea-416f-11ec-bf33-02589a36c9d7', true),
+       ('54.85.181.131/32', '385caaea-416f-11ec-bf33-02589a36c9d7', true),
+       ('209.37.109.204/31', '385caaea-416f-11ec-bf33-02589a36c9d7', true),
+       ('173.255.57.26/32', '385caaea-416f-11ec-bf33-02589a36c9d7', true),
+       ('162.83.67.224/27', '385caaea-416f-11ec-bf33-02589a36c9d7', true);
