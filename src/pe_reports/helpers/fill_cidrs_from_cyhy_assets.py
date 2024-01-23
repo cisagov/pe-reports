@@ -3,9 +3,6 @@
 # Standard Python Libraries
 import logging
 
-# Third-Party Libraries
-import pandas as pd
-
 # cisagov Libraries
 from pe_reports.data.db_query import connect, query_cyhy_assets
 

@@ -1,9 +1,13 @@
 """Function for accessing the bulk WhoisXML API."""
+# Standard Python Libraries
+import json
 from retry import retry
 import requests
-import json
 from time import sleep
+
+# cisagov Libraries
 from pe_reports.data.config import whois_xml_api_key
+
 
 url = "https://www.whoisxmlapi.com/BulkWhoisLookup/bulkServices/"
 whois_api = whois_xml_api_key()

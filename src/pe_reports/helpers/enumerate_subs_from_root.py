@@ -1,6 +1,5 @@
 """Script to enumerate subs based on a provided root domain."""
 # Standard Python Libraries
-import datetime
 import json
 
 # Third-Party Libraries

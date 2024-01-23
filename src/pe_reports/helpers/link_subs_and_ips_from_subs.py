@@ -4,9 +4,6 @@ import hashlib
 import logging
 import socket
 
-# Third-Party Libraries
-import pandas as pd
-
 # cisagov Libraries
 from pe_reports.data.db_query import connect, query_subs
 

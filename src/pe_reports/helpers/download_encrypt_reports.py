@@ -22,7 +22,7 @@ import fitz
 
 # cisagov Libraries
 from pe_reports.data.config import db_password_key
-from pe_reports.data.db_query import connect, get_orgs, get_orgs_pass
+from pe_reports.data.db_query import connect_to_staging, get_orgs, get_orgs_pass
 
 # Setup logging
 LOGGER = logging.getLogger(__name__)
@@ -54,13 +54,48 @@ def encrypt(file, password, encrypted_file):
 
 def download_encrypt_reports(report_date, output_dir):
     """Fetch reports from S3 bucket."""
+    # Connect to the database to get org names
+    conn = connect_to_staging()
+    pe_orgs = get_orgs(conn)
+
+    # Fetch the correct AWS credentials and connect to S3
+    session = boto3.Session(profile_name=ACCESSOR_AWS_PROFILE)
+    s3 = session.client("s3")
 
     download_count = 0
-    # total = len(pe_orgs)
-    # print(total)
+    total = len(pe_orgs)
+    print(total)
+    for org in pe_orgs:
+        org_code = org[2]
+        if org_code == "FAA":
+            continue
+
+        print(f"Downloading {org_code}")
+        # Download each report
+        try:
+            # P&E Report
+            file_name = f"Posture_and_Exposure_Report-{org_code}-{report_date}.pdf"
+            object_name = f"{report_date}/{file_name}"
+            output_file = f"{output_dir}/{file_name}"
+
+            # ASM Summary
+            asm_file_name = (
+                f"Posture-and-Exposure-ASM-Summary_{org_code}_{report_date}.pdf"
+            )
+            asm_object_name = f"{report_date}/{asm_file_name}"
+            asm_output_file = f"{output_dir}/{asm_file_name}"
+
+            # Download each
+            s3.download_file(BUCKET_NAME, object_name, output_file)
+            s3.download_file(BUCKET_NAME, asm_object_name, asm_output_file)
+            download_count += 1
+        except Exception as e:
+            LOGGER.error(e)
+            LOGGER.error("Report is not in S3 for %s", org_code)
+            continue
 
     # Encrypt the reports
-    conn = connect()
+    conn = connect_to_staging()
     pe_org_pass = get_orgs_pass(conn, PASSWORD)
     conn.close()
     encrypted_count = 0
@@ -72,9 +107,9 @@ def download_encrypt_reports(report_date, output_dir):
             continue
         # Check if file exists before encrypting
         current_file = (
-            f"{output_dir}/{org_pass[0]}/Posture_and_Exposure_Report-{org_pass[0]}-{report_date}.pdf"
+            f"{output_dir}/Posture_and_Exposure_Report-{org_pass[0]}-{report_date}.pdf"
         )
-        current_asm_file = f"{output_dir}/{org_pass[0]}/Posture-and-Exposure-ASM-Summary_{org_pass[0]}_{report_date}.pdf"
+        current_asm_file = f"{output_dir}/Posture-and-Exposure-ASM-Summary_{org_pass[0]}_{report_date}.pdf"
         if not os.path.isfile(current_file):
             LOGGER.error("%s report does not exist.", org_pass[0])
             continue
@@ -104,7 +139,8 @@ def download_encrypt_reports(report_date, output_dir):
             LOGGER.error("%s report failed to encrypt.", org_pass[0])
             continue
 
-    LOGGER.info("%d/%d were encrypted.", encrypted_count, 134)
+    LOGGER.info("%d/%d were downloaded.", download_count, total)
+    LOGGER.info("%d/%d were encrypted.", encrypted_count, total)
 
 
 def main():

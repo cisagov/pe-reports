@@ -13,6 +13,7 @@ Options:
 # Standard Python Libraries
 import logging
 import os
+import shutil
 import traceback
 
 # Third-Party Libraries
@@ -22,13 +23,14 @@ import fitz
 
 # cisagov Libraries
 from pe_reports.data.config import db_password_key
-from pe_reports.data.db_query import connect, get_orgs, get_orgs_pass
+from pe_reports.data.db_query import connect_to_staging, get_orgs, get_orgs_pass
 
 # Setup logging
 LOGGER = logging.getLogger(__name__)
 ACCESSOR_AWS_PROFILE = "cool-dns-sesmanagesuppressionlist-cyber.dhs.gov"
 BUCKET_NAME = "cisa-crossfeed-staging-reports"
 PASSWORD = db_password_key()
+print(PASSWORD)
 
 
 def encrypt(file, password, encrypted_file):
@@ -54,13 +56,63 @@ def encrypt(file, password, encrypted_file):
 
 def download_encrypt_reports(report_date, output_dir):
     """Fetch reports from S3 bucket."""
+    # Connect to the database to get org names
+    conn = connect_to_staging()
+    pe_orgs = get_orgs(conn)
+
+    # Fetch the correct AWS credentials and connect to S3
+    session = boto3.Session(profile_name=ACCESSOR_AWS_PROFILE)
+    s3 = session.client("s3")
 
     download_count = 0
-    # total = len(pe_orgs)
-    # print(total)
+    total = len(pe_orgs)
+    print(total)
+    for org in pe_orgs:
+        org_code = org[2]
+        if org_code == "FAA":
+            continue
+
+        if org_code not in ["CSOSA", "FRB", "EXIM"]:
+            continue
+
+        print(f"Downloading {org_code}")
+
+        org_dir = f"{output_dir}/{org_code}"
+        if not os.path.exists(org_dir):
+            os.mkdir(org_dir)
+
+        # Download each report
+        try:
+
+            filenames = [
+                "compromised_credentials.xlsx",
+                "domain_alerts.xlsx",
+                "mention_incidents.xlsx",
+                "vuln_alerts.xlsx",
+                "ASM_Summary.xlsx",
+            ]
+            for file in filenames:
+                # Download each
+                file_name = file
+                object_name = f"{report_date}/{org_code}-raw-data/{file_name}"
+                print(object_name)
+                output_file = f"{output_dir}/{org_code}/{file_name}"
+                print(output_file)
+                s3.download_file(BUCKET_NAME, object_name, output_file)
+                download_count += 1
+        except Exception as e:
+            LOGGER.error(e)
+            LOGGER.error("Report is not in S3 for %s", org_code)
+            continue
+
+        shutil.make_archive(
+            f"{output_dir}/{org_code}-{report_date}-Raw-Data",
+            format="zip",
+            root_dir=f"{output_dir}/{org_code}",
+        )
 
     # Encrypt the reports
-    conn = connect()
+    conn = connect_to_staging()
     pe_org_pass = get_orgs_pass(conn, PASSWORD)
     conn.close()
     encrypted_count = 0
@@ -71,15 +123,9 @@ def download_encrypt_reports(report_date, output_dir):
             LOGGER.error("NO PASSWORD")
             continue
         # Check if file exists before encrypting
-        current_file = (
-            f"{output_dir}/{org_pass[0]}/Posture_and_Exposure_Report-{org_pass[0]}-{report_date}.pdf"
-        )
-        current_asm_file = f"{output_dir}/{org_pass[0]}/Posture-and-Exposure-ASM-Summary_{org_pass[0]}_{report_date}.pdf"
+        current_file = f"{output_dir}/{org_pass[0]}-{report_date}-Raw-Data.zip"
         if not os.path.isfile(current_file):
             LOGGER.error("%s report does not exist.", org_pass[0])
-            continue
-        if not os.path.isfile(current_asm_file):
-            LOGGER.error("%s ASM summary does not exist.", org_pass[0])
             continue
 
         # Create encrypted path
@@ -89,14 +135,13 @@ def download_encrypt_reports(report_date, output_dir):
         encrypted_org_path = f"{output_dir}/encrypted_reports/{org_pass[0]}"
         if not os.path.exists(encrypted_org_path):
             os.mkdir(encrypted_org_path)
-        encrypted_file = f"{encrypted_org_path}/Posture_and_Exposure_Report-{org_pass[0]}-{report_date}.pdf"
-        asm_encrypted_file = f"{encrypted_org_path}/Posture-and-Exposure-ASM-Summary_{org_pass[0]}_{report_date}.pdf"
-
+        encrypted_file = (
+            f"{encrypted_org_path}/{org_pass[0]}-{report_date}-Raw-Data.zip"
+        )
         # Encrypt the reports
         try:
             encrypt(current_file, password, encrypted_file)
             # Encrypt the summary
-            encrypt(current_asm_file, password, asm_encrypted_file)
             encrypted_count += 1
         except Exception as e:
             LOGGER.error(e)
@@ -104,7 +149,8 @@ def download_encrypt_reports(report_date, output_dir):
             LOGGER.error("%s report failed to encrypt.", org_pass[0])
             continue
 
-    LOGGER.info("%d/%d were encrypted.", encrypted_count, 134)
+    LOGGER.info("%d/%d were downloaded.", download_count, total)
+    LOGGER.info("%d/%d were encrypted.", encrypted_count, total)
 
 
 def main():

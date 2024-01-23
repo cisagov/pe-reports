@@ -19,30 +19,40 @@ jobs:
     steps:
       - id: setup-env
         uses: cisagov/setup-env-github-action@develop
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - id: setup-python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4
         with:
-          python-version: 3.9
+          # Temporarily hold back support for Python 3.11 due to the
+          # version pin for the PyMuPDF package. Pre-built wheels for
+          # Python 3.11 were not made available until the 1.21.0
+          # release and building the PyMuPDF package from source
+          # proves problematic due to dependencies. Please see the
+          # following issue for more information:
+          # https://github.com/cisagov/pe-reports/issues/441
+          #
+          # It's also the case that we cannot build the wheel for
+          # reportlab under Python 3.11 because its C code accesses
+          # the C struct members of PyFrameObject directly, and these
+          # struct members are no longer public as of Python 3.11.
+          # See here for more details:
+          # https://docs.python.org/3/whatsnew/3.11.html#pyframeobject-3-11-hiding
+          python-version: "3.10"
       # We need the Go version and Go cache location for the actions/cache step,
       # so the Go installation must happen before that.
-      - uses: actions/setup-go@v2
+      - id: setup-go
+        uses: actions/setup-go@v4
         with:
-          go-version: '1.16'
-      - name: Store installed Go version
-        id: go-version
-        run: |
-          echo "::set-output name=version::"\
-          "$(go version | sed 's/^go version go\([0-9.]\+\) .*/\1/')"
+          go-version: "1.19"
       - name: Lookup Go cache directory
         id: go-cache
         run: |
-          echo "::set-output name=dir::$(go env GOCACHE)"
-      - uses: actions/cache@v2
+          echo "dir=$(go env GOCACHE)" >> $GITHUB_OUTPUT
+      - uses: actions/cache@v3
         env:
           BASE_CACHE_KEY: "${{ github.job }}-${{ runner.os }}-\
             py${{ steps.setup-python.outputs.python-version }}-\
-            go${{ steps.go-version.outputs.version }}-\
+            go${{ steps.setup-go.outputs.go-version }}-\
             packer${{ steps.setup-env.outputs.packer-version }}-\
             tf${{ steps.setup-env.outputs.terraform-version }}-"
         with:
@@ -82,7 +92,7 @@ jobs:
             ${{ env.CURL_CACHE_DIR }}/"${PACKER_ZIP}"
           sudo mv /usr/local/bin/packer /usr/local/bin/packer-default
           sudo ln -s /opt/packer/packer /usr/local/bin/packer
-      - uses: hashicorp/setup-terraform@v1
+      - uses: hashicorp/setup-terraform@v2
         with:
           terraform_version: ${{ steps.setup-env.outputs.terraform-version }}
       - name: Install shfmt
@@ -95,9 +105,14 @@ jobs:
           PACKAGE_URL: github.com/terraform-docs/terraform-docs
           PACKAGE_VERSION: ${{ steps.setup-env.outputs.terraform-docs-version }}
         run: go install ${PACKAGE_URL}@${PACKAGE_VERSION}
+      # Install some necessary packages for building wheels
+      - uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          packages: libmupdf-dev
+          version: 1.3.0
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
+          python -m pip install --upgrade pip setuptools wheel
           pip install --upgrade --requirement requirements-test.txt
       - name: Set up pre-commit hook environments
         run: pre-commit install-hooks
@@ -107,22 +122,34 @@ jobs:
         uses: mxschmitt/action-tmate@v3
         if: env.RUN_TMATE
   test:
-    runs-on: ubuntu-latest
+    name: test source - py${{ matrix.python-version }}
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
+        os:
+          - ubuntu-latest
         python-version:
           - "3.7"
           - "3.8"
           - "3.9"
           - "3.10"
+          # Temporarily hold back support for Python 3.11 due to the version pin
+          # for the PyMuPDF package. Pre-built wheels for Python 3.11 were not made
+          # available until the 1.21.0 release and building the PyMuPDF package from
+          # source proves problematic due to dependencies. Please see the following
+          # issue for more information: https://github.com/cisagov/pe-reports/issues/441
+          # - "3.11"
+        include:
+          - os: ubuntu-20.04
+            python-version: "3.6"
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - id: setup-python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
-      - uses: actions/cache@v2
+      - uses: actions/cache@v3
         env:
           BASE_CACHE_KEY: "${{ github.job }}-${{ runner.os }}-\
             py${{ steps.setup-python.outputs.python-version }}-"
@@ -137,6 +164,11 @@ jobs:
             ${{ hashFiles('setup.py') }}"
           restore-keys: |
             ${{ env.BASE_CACHE_KEY }}
+      # Install some necessary packages for building wheels
+      - uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          packages: libmupdf-dev
+          version: 1.3.0
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
@@ -158,14 +190,15 @@ jobs:
         if: env.RUN_TMATE
   coveralls-finish:
     runs-on: ubuntu-latest
-    needs: test
+    needs:
+      - test
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - id: setup-python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4
         with:
-          python-version: 3.9
-      - uses: actions/cache@v2
+          python-version: "3.10"
+      - uses: actions/cache@v3
         env:
           BASE_CACHE_KEY: "${{ github.job }}-${{ runner.os }}-\
             py${{ steps.setup-python.outputs.python-version }}-"
@@ -180,6 +213,11 @@ jobs:
             ${{ hashFiles('setup.py') }}"
           restore-keys: |
             ${{ env.BASE_CACHE_KEY }}
+      # Install some necessary packages for building wheels
+      - uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          packages: libmupdf-dev
+          version: 1.3.0
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
@@ -192,23 +230,37 @@ jobs:
         uses: mxschmitt/action-tmate@v3
         if: env.RUN_TMATE
   build:
-    runs-on: ubuntu-latest
-    needs: [lint, test]
+    name: build wheel - py${{ matrix.python-version }}
+    needs:
+      - lint
+      - test
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
+        os:
+          - ubuntu-latest
         python-version:
           - "3.7"
           - "3.8"
           - "3.9"
           - "3.10"
+          # Temporarily hold back support for Python 3.11 due to the version pin
+          # for the PyMuPDF package. Pre-built wheels for Python 3.11 were not made
+          # available until the 1.21.0 release and building the PyMuPDF package from
+          # source proves problematic due to dependencies. Please see the following
+          # issue for more information: https://github.com/cisagov/pe-reports/issues/441
+          # - "3.11"
+        include:
+          - os: ubuntu-20.04
+            python-version: "3.6"
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - id: setup-python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
-      - uses: actions/cache@v2
+      - uses: actions/cache@v3
         env:
           BASE_CACHE_KEY: "${{ github.job }}-${{ runner.os }}-\
             py${{ steps.setup-python.outputs.python-version }}-"
@@ -222,17 +274,85 @@ jobs:
             ${{ hashFiles('setup.py') }}"
           restore-keys: |
             ${{ env.BASE_CACHE_KEY }}
-      - name: Install dependencies
+      # Install some necessary packages for building wheels
+      - uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          packages: libmupdf-dev
+          version: 1.3.0
+      - name: Install build dependencies
         run: |
-          python -m pip install --upgrade pip wheel
-          pip install --upgrade --requirement requirements.txt
+          python -m pip install --upgrade pip setuptools wheel
+          python -m pip install --upgrade build
       - name: Build artifacts
-        run: python3 setup.py sdist bdist_wheel
+        run: python -m build
       - name: Upload artifacts
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: dist-${{ matrix.python-version }}
           path: dist
+      - name: Setup tmate debug session
+        uses: mxschmitt/action-tmate@v3
+        if: env.RUN_TMATE
+  test-build:
+    name: test built wheel - py${{ matrix.python-version }}
+    needs:
+      - build
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+        python-version:
+          - "3.7"
+          - "3.8"
+          - "3.9"
+          - "3.10"
+          # Temporarily hold back support for Python 3.11 due to the version pin
+          # for the PyMuPDF package. Pre-built wheels for Python 3.11 were not made
+          # available until the 1.21.0 release and building the PyMuPDF package from
+          # source proves problematic due to dependencies. Please see the following
+          # issue for more information: https://github.com/cisagov/pe-reports/issues/441
+          # - "3.11"
+        include:
+          - os: ubuntu-20.04
+            python-version: "3.6"
+    steps:
+      - uses: actions/checkout@v3
+      - id: setup-python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+      - uses: actions/cache@v3
+        env:
+          BASE_CACHE_KEY: "${{ github.job }}-${{ runner.os }}-\
+            py${{ steps.setup-python.outputs.python-version }}-"
+        with:
+          path: ${{ env.PIP_CACHE_DIR }}
+          # We do not use '**/setup.py' in the cache key so only the 'setup.py'
+          # file in the root of the repository is used. This is in case a Python
+          # package were to have a 'setup.py' as part of its internal codebase.
+          key: "${{ env.BASE_CACHE_KEY }}\
+            ${{ hashFiles('**/requirements.txt') }}-\
+            ${{ hashFiles('setup.py') }}"
+          restore-keys: |
+            ${{ env.BASE_CACHE_KEY }}
+      - name: Retrieve the built wheel
+        uses: actions/download-artifact@v3
+        with:
+          name: dist-${{ matrix.python-version }}
+          path: dist
+      - id: find-wheel
+        name: Get the name of the retrieved wheel (there should only be one)
+        run: echo "wheel=$(ls dist/*whl)" >> $GITHUB_OUTPUT
+      - name: Update core Python packages
+        run: python -m pip install --upgrade pip setuptools wheel
+      - name: Install the built wheel (along with testing dependencies)
+        run: python -m pip install ${{ steps.find-wheel.outputs.wheel }}[test]
+      - name: Run tests
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: pytest
       - name: Setup tmate debug session
         uses: mxschmitt/action-tmate@v3
         if: env.RUN_TMATE
