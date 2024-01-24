@@ -16,13 +16,12 @@ import os
 import traceback
 
 # Third-Party Libraries
-import boto3
 from docopt import docopt
 import fitz
 
 # cisagov Libraries
 from pe_reports.data.config import db_password_key
-from pe_reports.data.db_query import connect, get_orgs, get_orgs_pass
+from pe_reports.data.db_query import connect, get_orgs_pass
 
 # Setup logging
 LOGGER = logging.getLogger(__name__)

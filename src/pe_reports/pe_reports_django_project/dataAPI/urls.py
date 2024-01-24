@@ -1,10 +1,10 @@
 # Third-Party Libraries
 from fastapi import APIRouter
 
+# cisagov Libraries
 from . import views
-
-# The API model for one object.
 from ..home.models import Organizations
+
 
 # router = APIRouter()
 #

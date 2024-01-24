@@ -8,7 +8,6 @@ from pe_reports.data.config import whois_xml_api_key
 from pe_reports.data.db_query import (
     connect,
     query_all_subs,
-    get_orgs
 )
 
 #function that uses whoisxml api to get status of domain

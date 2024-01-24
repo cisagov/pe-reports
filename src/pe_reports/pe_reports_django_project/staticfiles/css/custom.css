@@ -5,6 +5,7 @@ body {
 .htmx-settling img {
   opacity: 0;
 }
+
 img {
   transition: opacity 300ms ease-in;
 }
@@ -29,6 +30,7 @@ img {
   0% {
     -webkit-transform: rotate(0deg);
   }
+
   100% {
     -webkit-transform: rotate(360deg);
   }
@@ -38,6 +40,7 @@ img {
   0% {
     transform: rotate(0deg);
   }
+
   100% {
     transform: rotate(360deg);
   }
@@ -57,6 +60,7 @@ img {
     bottom: -100px;
     opacity: 0;
   }
+
   to {
     bottom: 0px;
     opacity: 1;
@@ -68,6 +72,7 @@ img {
     bottom: -100px;
     opacity: 0;
   }
+
   to {
     bottom: 0;
     opacity: 1;
@@ -79,6 +84,14 @@ div#myDiv {
   text-align: center;
 }
 
+div#loading {
+  width: 50%;
+  height: 350px;
+  /*justify-content: center;*/
+  align-items: center;
+  background: url("../SVG-Loaders/svg-loaders/bars.svg") no-repeat;
+  cursor: wait;
+}
 
 homeBG {
   background-color: white;

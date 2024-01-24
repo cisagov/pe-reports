@@ -7,20 +7,16 @@ import os
 # Third-Party Libraries
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.http import HttpResponseNotFound
-
-# Third party packages
 from django.shortcuts import redirect, render
 
 # cisagov Libraries
-#
-# # cisagov Libraries
 from pe_reports.data.db_query import get_orgs_df
 from pe_reports.helpers.bulletin.bulletin_generator import (
     generate_creds_bulletin,
     generate_cybersix_bulletin,
 )
 from pe_reports.report_generator import generate_reports
+from pe_scorecard.scorecard_generator import generate_scorecards
 
 from .forms import (
     BulletinFormExternal,
@@ -29,26 +25,20 @@ from .forms import (
     ScoreCardGenFormExternal,
 )
 
+# from django.http import HttpResponseNotFound
+
+
 # from .models import Usersapi, Organizations
 # from .forms import GatherStakeholderForm
 # import psycopg2
 # import psycopg2.extras.   .
 # import requests
 
-
+# Setup logging
 LOGGER = logging.getLogger(__name__)
 
 conn = None
 cursor = None
-
-
-# @login_required
-# def report_gen(request):
-#     try:
-#         return render(request=request,
-#                       template_name="report_gen/report_gen.html")
-#     except:
-#         return HttpResponseNotFound('Nothing found')
 
 
 def validate_filename(filename):
@@ -99,6 +89,7 @@ def validate_date(date_string):
         return False
 
 
+@login_required
 def report_gen(request):
     """Process form information, instantiate form and render page template."""
     report_date = False
@@ -153,7 +144,7 @@ def report_gen(request):
         print(get_orgs_df())
         # Pandas does not support "cond is True" syntax for dataframe filters,
         # so we must disable flake8 E712 here
-        all_orgs = all_orgs[all_orgs["report_on"] == True]  # noqa: E712
+        # all_orgs = all_orgs[all_orgs["report_on"] == True]  # noqa: E712
 
         if org_id != "":
             org_id = org_id.upper()
@@ -175,6 +166,7 @@ def report_gen(request):
                 output_directory="/var/www/cred_bulletins",
                 filename=org_id + "_" + breach_name.replace(" ", "") + "_Bulletin.pdf",
             )
+        LOGGER.info("Completed Scorecard run.")
 
     score_card_form = ScoreCardGenFormExternal(request.POST)
     if score_card_form.is_valid():
@@ -182,11 +174,14 @@ def report_gen(request):
         org_id = score_card_form.cleaned_data["org_id"]
         month = score_card_form.cleaned_data["month"]
         year = score_card_form.cleaned_data["year"]
+        exclude_bods = score_card_form.cleaned_data["exclude_bods"]
+        cancel_refresh = score_card_form.cleaned_data["cancel_refresh"]
         all_orgs = get_orgs_df()
-        print(get_orgs_df())
+        # print(get_orgs_df())
+        LOGGER.info(all_orgs)
         # Pandas does not support "cond is True" syntax for dataframe filters,
         # so we must disable flake8 E712 here
-        all_orgs = all_orgs[all_orgs["report_on"] == True]  # noqa: E712
+        # all_orgs = all_orgs[all_orgs["report_on"] == True]  # noqa: E712
 
         if org_id != "":
             org_id = org_id.upper()
@@ -199,14 +194,20 @@ def report_gen(request):
             )
             return redirect("/report_gen/")
 
+        # Create output directory
+        output_directory = f"/var/www/scorecards_{month}_{year}"
+        if not os.path.exists(output_directory):
+            os.mkdir(output_directory)
         for org_index, org in all_orgs.iterrows():
             LOGGER.info("Running on %s", org["name"])
-            generate_creds_bulletin(
-                breach_name,
+            generate_scorecards(
+                month,
+                year,
+                output_directory,
                 org_id,
-                "user_text",
-                output_directory="/var/www/cred_bulletins",
-                filename=org_id + "_" + breach_name.replace(" ", "") + "_Bulletin.pdf",
+                email=True,
+                cancel_refresh=cancel_refresh,
+                exclude_bods=exclude_bods,
             )
 
     return render(

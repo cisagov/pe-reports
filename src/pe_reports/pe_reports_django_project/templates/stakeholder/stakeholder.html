@@ -1,31 +1,47 @@
-{% extends 'base.html' %} {% load crispy_forms_tags %} {% load static %}
-{% block title %} Stakeholder {% endblock title %} {% block content %}
+{% extends 'base.html' %}
+
+{% load crispy_forms_tags %}
+
+{% load static %}
+
+{% block title %}
+Stakeholder
+{% endblock title %}
+
+{% block content %}
 <div class="row justify-content-lg-center">
-  <div class="row col-lg-4">
-    <button type="button" class="btn btn-primary" onclick="showDiv()">
-      Add External Stakeholder
+  <div class="d-flex justify-content-center">
+
+    <button type="button" class="btn btn-primary" onclick="showBulkUpoadDiv()">
+      P&E Stakeholder Bulk Upload
     </button>
   </div>
   <br />
 
-  <div id="TestsDiv" class="row justify-content-lg-center">
+  <div id="BulkUploadDiv" class="row justify-content-lg-center" style="display: none">
+
     <div class="d-flex justify-content-center">
-      <div class="card" style="width: 55%" id="content">
+      <div class="card" id="content">
         <div class="card-header text-white bg-primary mb-3">
-          Add external agency
+          P&E Stakeholder Bulk Upload
         </div>
         <div class="card-body">
-          <form action="" method="post">
-            {% csrf_token %} {{ form|crispy }}
-            <input class="btn btn-primary" type="submit" value="Submit" />
+          <form method="POST" enctype="multipart/form-data">
+            <label for="fileInput" class="form-label">CSV must contain these columns: org_name, org_code,
+              root_domain, exec_url, aliases, premium, demo
+            </label>
+            {% csrf_token %}
+            {{ form.as_p }}
+            <br />
+            <input class="btn btn-primary" type="submit" value="Process CSV">
           </form>
         </div>
       </div>
     </div>
   </div>
   <script>
-    function showDiv() {
-      let T = document.getElementById("TestsDiv"),
+    function showBulkUpoadDiv() {
+      let T = document.getElementById("BulkUploadDiv"),
         displayValue = "";
       if (T.style.display == "") displayValue = "none";
       T.style.display = displayValue;
@@ -50,4 +66,3 @@
     });
   </script>
   {% endblock content %}
-</div>

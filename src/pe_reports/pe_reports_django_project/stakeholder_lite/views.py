@@ -18,6 +18,7 @@ from .forms import GatherStakeholderLiteForm
 
 # Create your views here.
 
+# Setup logging
 LOGGER = logging.getLogger(__name__)
 
 

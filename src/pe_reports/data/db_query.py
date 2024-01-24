@@ -2782,6 +2782,24 @@ def query_score_data(start, end, sql):
             close(conn)
 
 
+# ???
+def check_org_exists(org_code):
+    """Check if org code is listed in the P&E database."""
+    exists = False
+    conn = connect()
+    sql = """
+    select * from organizations o
+    where o.cyhy_db_name = %(org_code)s
+    """
+
+    df = pd.read_sql_query(sql, conn, params={"org_code": org_code})
+
+    if not df.empty:
+        exists = True
+
+    return exists
+
+
 # Conversion in progress
 # def api_get_data_source_uid(source):
 #     """Query organizations table."""

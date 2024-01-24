@@ -1,7 +1,17 @@
-{% extends 'base.html' %} {% load crispy_forms_tags %} {% load static %}
-{% block title %} Stakeholder {% endblock title %} {% block content %}
+{% extends 'base.html' %}
+
+{% load crispy_forms_tags %}
+
+{% load static %}
+
+{% block title %}
+Stakeholder
+{% endblock title %}
+
+{% block content %}
 <div class="row justify-content-lg-center">
   <div class="row col-lg-4">
+
     <button type="button" class="btn btn-primary" onclick="showDiv()">
       Add External Stakeholder
     </button>
@@ -10,14 +20,15 @@
 
   <div id="TestsDiv" class="row justify-content-lg-center">
     <div class="d-flex justify-content-center">
-      <div class="card" style="width: 25%" id="content">
+      <div class="card" style="width: 25%;" id="content">
         <div class="card-header text-white bg-primary mb-3">
           Add external agency
         </div>
         <div class="card-body">
           <form action="" method="POST">
-            {% csrf_token %} {{ form|crispy }}
-            <input class="btn btn-primary" type="submit" value="Submit" />
+            {% csrf_token %}
+            {{ form|crispy }}
+            <input class="btn btn-primary" type="submit" value="Submit">
           </form>
         </div>
       </div>
@@ -50,4 +61,3 @@
     });
   </script>
   {% endblock content %}
-</div>

@@ -11,11 +11,8 @@ https://docs.djangoproject.com/en/4.1/ref/settings/
 """
 
 # Standard Python Libraries
-
 import mimetypes
 import os
-
-# Python built-in
 from pathlib import Path
 
 # Third-Party Libraries
@@ -38,7 +35,7 @@ SECRET_KEY = config("SECRET_KEY")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ["127.0.0.1"]
+ALLOWED_HOSTS = ["*"]
 
 MESSAGE_TAGS = {
     messages.DEBUG: "alert-secondary",
@@ -64,7 +61,6 @@ INSTALLED_APPS = [
     "home.apps.HomeConfig",
     "manage_login.apps.ManageLoginConfig",
     "report_gen.apps.ReportGenConfig",
-    "stakeholder_lite.apps.StakeholderLiteConfig",
     "crispy_forms",
     "crispy_bootstrap5",
     "whitenoise.runserver_nostatic",
@@ -118,11 +114,6 @@ LOGGING = {
             "level": "INFO",
             "propagate": True,
         },
-        "stakeholder_lite.views": {
-            "handlers": ["file"],
-            "level": "INFO",
-            "propagate": True,
-        },
         "report_gen.views": {
             "handlers": ["file"],
             "level": "INFO",
@@ -133,35 +124,15 @@ LOGGING = {
             "level": "INFO",
             "propagate": True,
         },
-        "celery": {
-            "handlers": ["file"],
-            "level": "INFO",
-            "propagate": True,
-        },
-        "celery.task": {
-            "handlers": ["file"],
-            "level": "INFO",
-            "propagate": True,
-        },
-        "celery.worker": {
-            "handlers": ["file"],
-            "level": "INFO",
-            "propagate": True,
-        },
     },
 }
 
 ELASTIC_APM = {
-  'SERVICE_NAME': 'PE-ReportsAMP',
-
-  'SECRET_TOKEN': '',
-
-  'SERVER_URL': 'http://localhost:8200',
-
-  'ENVIRONMENT': 'PE-ReportsAccessorEC2',
+    "SERVICE_NAME": "PE-ReportsAMP",
+    "SECRET_TOKEN": "",
+    "SERVER_URL": "http://localhost:8200",
+    "ENVIRONMENT": "PE-ReportsAccessorEC2",
 }
-
-
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -214,15 +185,9 @@ DATABASES = {
 CELERY_BROKER_URL = (
     f"amqp://{config('RABBITMQ_USER')}:{config('RABBITMQ_PASS')}@localhost:5672/"
 )
-CELERY_RESULT_BACKEND = f"redis://:{config('REDIS_PW')}@localhost:6379"
-# CELERY_RESULT_BACKEND = f"rediss://:{config('REDIS_PW')}@localhost:6379"
+CELERY_RESULT_BACKEND = "redis://localhost:6379"
 CELERY_RESULT_EXPIRES = 86400
-
-# SSL settings for Redis
-# CELERY_REDIS_BACKEND_USE_SSL = {
-#     'ssl_cert_reqs': 'required',
-#     'ssl_ca_certs': '/path/to/ca.crt',  # Replace with the path to your CA certificate
-# }
+CELERY_BEAT_SCHEDULE_FILENAME = os.path.join(BASE_DIR, 'celerybeat-schedule.db')
 
 
 # Password validation
@@ -242,16 +207,6 @@ AUTH_PASSWORD_VALIDATORS = [
         "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
     },
 ]
-
-# settings.py
-EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
-EMAIL_HOST = "your_smtp_server.com"
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
-EMAIL_HOST_USER = "your_email@example.com"
-EMAIL_HOST_PASSWORD = "your_email_password"
-DEFAULT_FROM_EMAIL = "webmaster@example.com"
-
 
 LOGIN_URL = "/login/"
 LOGOUT_REDIRECT_URL = "/"
@@ -291,8 +246,6 @@ STATIC_FINDERS = (
 # https://docs.djangoproject.com/en/4.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
-
-EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 
 
 MOUNT_DJANGO_APP = True

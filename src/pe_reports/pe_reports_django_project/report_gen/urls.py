@@ -1,9 +1,9 @@
 # Third-Party Libraries
-from django.contrib.auth.decorators import login_required
 from django.urls import path
 
+# cisagov Libraries
 from . import views
 
 urlpatterns = [
-    path("", login_required(views.report_gen), name="report_gen"),
+    path('', views.report_gen, name='report_gen'),
 ]
