@@ -6,7 +6,6 @@ import threading
 # Third-Party Libraries
 import numpy
 
-# cisagov Libraries
 from .data.pe_db.config import shodan_api_init
 from .data.pe_db.db_query_source import get_orgs
 from .data.shodan_db.shodan_search import run_shodan_thread

@@ -14,7 +14,6 @@ import psycopg2.extras as extras
 from pymongo import MongoClient
 from sshtunnel import SSHTunnelForwarder
 
-# cisagov Libraries
 from .checkAccessor import checkCyhyRunning, checkVMrunning
 from .cyhy_config import db_config, db_password_key
 
@@ -593,7 +592,6 @@ def insert_cyhy_scorecard_data(conn, df, table_name, on_conflict):
 
 def identified_sub_domains(conn):
     """Set sub-domains to identified."""
-
     # If the sub's root-domain has enumerate=False, then "identified" is True
     cursor = conn.cursor()
     LOGGER.info("Marking identified sub-domains.")

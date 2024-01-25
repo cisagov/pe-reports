@@ -9,17 +9,14 @@ import pandas as pd
 import requests
 
 # cisagov Libraries
-from pe_reports.data.config import whois_xml_api_key
-from pe_reports.data.db_query import (
-    get_data_source_uid,
-)
 from pe_asm.data.cyhy_db_query import (
+    insert_sub_domains,
     pe_db_connect,
     pe_db_staging_connect,
     query_roots,
-    insert_sub_domains,
-    identify_sub_changes,
 )
+from pe_reports.data.config import whois_xml_api_key
+from pe_reports.data.db_query import get_data_source_uid
 
 LOGGER = logging.getLogger(__name__)
 API_WHOIS = whois_xml_api_key()

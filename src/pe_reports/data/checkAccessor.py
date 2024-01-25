@@ -1,6 +1,8 @@
-#!/usr/bin/env python3
-import os
+"""checkAccessor.py module."""
+# !/usr/bin/env python3
+# Standard Python Libraries
 import logging
+import os
 import sys
 import time
 
@@ -16,7 +18,7 @@ def checkVMrunning():
 
         checkAWS = os.popen(
             f"""
-            export AWS_DEFAULT_PROFILE=cool-dns-sesmanagesuppressionlist-cyber.dhs.gov && 
+            export AWS_DEFAULT_PROFILE=cool-dns-sesmanagesuppressionlist-cyber.dhs.gov &&
             aws ec2 describe-instance-status --instance-ids {vmID}
             """
         )
@@ -37,11 +39,11 @@ def checkVMrunning():
             )
             theInstance_ID = os.getenv("INSTANCE_ID")
             os.popen(
-                f"""export AWS_DEFAULT_PROFILE=cool-dns-sesmanagesuppressionlist-cyber.dhs.gov && 
+                f"""export AWS_DEFAULT_PROFILE=cool-dns-sesmanagesuppressionlist-cyber.dhs.gov &&
                 aws ec2 start-instances --instance-ids {theInstance_ID}"""
             )
             checkVMrunning()
-    except (BrokenPipeError, IOError):
+    except (BrokenPipeError, OSError):
         sys.stderr.close()
         LOGGER.info(f"There was some abnormal operation related to stdout.{sys.stderr}")
 
@@ -58,6 +60,7 @@ def kill_screen_ssh():
 
 
 def main():
+    """Define main fuction."""
     LOGGER.info("The program is starting...")
     checkVMrunning()
 

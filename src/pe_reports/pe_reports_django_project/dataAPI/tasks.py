@@ -13,13 +13,57 @@ from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.db.models import Count, Prefetch, Q, Sum
 
 # Import api database models
-from home.models import *
-
-# Import schemas
-from . import schemas
+# from home.models import *
+from home.models import (
+    Alerts,
+    Cidrs,
+    CpeProduct,
+    CredentialBreaches,
+    CredentialExposures,
+    CveInfo,
+    Cves,
+    CyhyKevs,
+    DataSource,
+    DomainAlerts,
+    DomainPermutations,
+    Ips,
+    MatVwOrgsAllIps,
+    Mentions,
+    Organizations,
+    SubDomains,
+    TopCves,
+    VwBreachcomp,
+    VwBreachcompCredsbydate,
+    VwDarkwebInviteonlymarkets,
+    VwDarkwebMentionsbydate,
+    VwDarkwebPotentialthreats,
+    VwDscorePEDomain,
+    VwDscorePEIp,
+    VwDscoreVSCert,
+    VwDscoreVSMail,
+    VwDscoreWASWebapp,
+    VwIscoreOrgsIpCounts,
+    VwIscorePEBreach,
+    VwIscorePECred,
+    VwIscorePEDarkweb,
+    VwIscorePEProtocol,
+    VwIscorePEVuln,
+    VwIscoreVSVuln,
+    VwIscoreVSVulnPrev,
+    VwIscoreWASVuln,
+    VwIscoreWASVulnPrev,
+    VwOrgsAttacksurface,
+    VwPshttDomainsToRun,
+    VwShodanvulnsSuspected,
+    VwShodanvulnsVerified,
+    XpanseAlerts,
+)
 
 # cisagov Libraries
 from pe_reports.helpers import ip_passthrough
+
+# Import schemas
+from . import schemas
 
 
 # ---------- Task Helper Functions ----------
@@ -35,6 +79,7 @@ def convert_date_to_string(date):
     if date is not None:
         return date.strftime("%Y-%m-%d")
     return date
+
 
 def convert_uuids_to_strings(list_of_dicts):
     """Convert organizations_uid and parent_org_uid to strings."""
@@ -448,6 +493,7 @@ def get_xl_stakeholders_info(self):
     for row in xl_stakeholders:
         row["organizations_uid"] = convert_uuid_to_string(row["organizations_uid"])
     return xl_stakeholders
+
 
 # ---------- Misc. Tasks ----------
 # --- execute_ips(), Issue 559 ---
@@ -1271,7 +1317,7 @@ def cves_by_modified_date_task(self, modified_datetime: str, page: int, per_page
     """Task function for the subdomains by org query API endpoint."""
     # Make database query and convert to list of dictionaries
     total_data = Cves.objects.all()
-    
+
     if modified_datetime is not None:
         total_data = total_data.filter(
             Q(last_modified_date__gte=modified_datetime)
@@ -1290,14 +1336,16 @@ def cves_by_modified_date_task(self, modified_datetime: str, page: int, per_page
     except EmptyPage:
         # If page is out of range (e.g. 9999), deliver last page of results.
         single_page_data = paged_data.page(paged_data.num_pages)
-    
+
     cve_list = []
     paged_queryset = single_page_data.object_list
 
-    paged_queryset = paged_queryset.prefetch_related(Prefetch(
-        "products",
-        queryset=CpeProduct.objects.select_related("cpe_vender_uid"),
-    ))
+    paged_queryset = paged_queryset.prefetch_related(
+        Prefetch(
+            "products",
+            queryset=CpeProduct.objects.select_related("cpe_vender_uid"),
+        )
+    )
     if not paged_queryset:
         single_page_data = [{x: None for x in schemas.CveWithProducts.__fields__}]
         return {
@@ -1351,9 +1399,9 @@ def cves_by_modified_date_task(self, modified_datetime: str, page: int, per_page
                     "vender": product.cpe_vender_uid.vender_name,
                 }
                 if product.cpe_vender_uid.vender_name in cve_obj["vender_product"]:
-                    cve_obj["vender_product"][product.cpe_vender_uid.vender_name].append(
-                        product_obj
-                    )
+                    cve_obj["vender_product"][
+                        product.cpe_vender_uid.vender_name
+                    ].append(product_obj)
                 else:
                     cve_obj["vender_product"][product.cpe_vender_uid.vender_name] = [
                         product_obj
@@ -1367,7 +1415,7 @@ def cves_by_modified_date_task(self, modified_datetime: str, page: int, per_page
             "data": cve_list,
         }
         return result
-    
+
 
 @shared_task(bind=True)
 def get_vw_pshtt_domains_to_run_info(self):

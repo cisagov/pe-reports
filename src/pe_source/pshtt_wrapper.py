@@ -6,12 +6,11 @@ import logging
 import threading
 
 # Third-Party Libraries
+import data.pshtt.utils as utils
 import numpy as np
 
-# cisagov Libraries
-from .data.pshtt.pshtt import inspect_domains
-import data.pshtt.utils as utils
 from .data.pe_db.db_query_source import api_pshtt_domains_to_run, api_pshtt_insert
+from .data.pshtt.pshtt import inspect_domains
 
 NOW = datetime.datetime.now()
 DAYS_BACK = datetime.timedelta(days=15)

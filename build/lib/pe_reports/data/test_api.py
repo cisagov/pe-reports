@@ -1,10 +1,12 @@
+"""build pe_reports/data/test_api.py script."""
 import requests
 import logging
 import time
 import json
 import pandas as pd
-pe_api_key = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE2OTA0OTIwNDksInN1YiI6ImNkdWhuNzUifQ.ESEuzmAdSD63LIzdSHC9v2HwPRKWv_hfJkFB4GGt1J8'#CONN_PARAMS_DIC_STAGING.get("pe_api_key")
-pe_api_url = 'http://127.0.0.1:8000/apiv1/'#CONN_PARAMS_DIC_STAGING.get("pe_api_url")
+
+pe_api_key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE2OTA0OTIwNDksInN1YiI6ImNkdWhuNzUifQ.ESEuzmAdSD63LIzdSHC9v2HwPRKWv_hfJkFB4GGt1J8"  # CONN_PARAMS_DIC_STAGING.get("pe_api_key")
+pe_api_url = "http://127.0.0.1:8000/apiv1/"  # CONN_PARAMS_DIC_STAGING.get("pe_api_url")
 
 
 LOGGER = logging.getLogger(__name__)
@@ -12,7 +14,7 @@ LOGGER = logging.getLogger(__name__)
 
 def api_darkweb_cves():
     """
-    Query all the darkweb cves from top_cves table
+    Query all the darkweb cves from top_cves table.
 
     Return:
         List of all darkweb_cves
@@ -26,14 +28,12 @@ def api_darkweb_cves():
     }
     task_status = "Pending"
     check_task_resp = ""
-    data = json.dumps({"page": 2, "per_page": 250000})
+    # data = json.dumps({"page": 2, "per_page": 250000})
     try:
         # Create task for query
         create_task_result = requests.post(create_task_url, headers=headers).json()
         task_id = create_task_result.get("task_id")
-        LOGGER.info(
-            "Created task for query cves endpoint query, task_id: ", task_id
-        )
+        LOGGER.info("Created task for query cves endpoint query, task_id: ", task_id)
         # Once task has been started, keep pinging task status until finished
         check_task_url += task_id
         while task_status != "Completed" and task_status != "Failed":
@@ -61,8 +61,10 @@ def api_darkweb_cves():
         return result_df
     else:
         raise Exception("Darkweb CVES query failed, details: ", check_task_resp)
-    
-def task_api_call(task_url, check_url, data={},retry_time=3):
+
+
+def task_api_call(task_url, check_url, data={}, retry_time=3):
+    """task_api_call function."""
     # Endpoint info
     create_task_url = pe_api_url + task_url
     check_task_url = pe_api_url + check_url
@@ -74,11 +76,11 @@ def task_api_call(task_url, check_url, data={},retry_time=3):
     check_task_resp = ""
     try:
         # Create task for query
-        create_task_result = requests.post(create_task_url, headers=headers , data=data).json()
+        create_task_result = requests.post(
+            create_task_url, headers=headers, data=data
+        ).json()
         task_id = create_task_result.get("task_id")
-        LOGGER.info(
-            "Created task for query, task_id: ", task_id
-        )
+        LOGGER.info("Created task for query, task_id: ", task_id)
         check_task_url += task_id
         while task_status != "Completed" and task_status != "Failed":
             # Ping task status endpoint and get status
@@ -104,31 +106,41 @@ def task_api_call(task_url, check_url, data={},retry_time=3):
         return check_task_resp.get("result")
     else:
         raise Exception("API calls failed ", check_task_resp)
-    
-#def api_call(task_url,data={}):
-    
+
+
+# def api_call(task_url,data={}):
+
+
 def query_darkweb_cves(table):
-    """"""
-    result = task_api_call("darkweb_cves","darkweb_cves/task/")
+    """query_darkweb_cves function."""
+    result = task_api_call("darkweb_cves", "darkweb_cves/task/")
     result_df = pd.DataFrame.from_dict(result)
     result_df.rename(
-            columns={
-                "data_source_uid_id": "data_source_uid",
-            },
-            inplace=True,
+        columns={
+            "data_source_uid_id": "data_source_uid",
+        },
+        inplace=True,
     )
     result_df["date"] = pd.to_datetime(result_df["date"]).dt.date
     return result_df
 
 
 def query_darkweb(org_uid, start_date, end_date, table):
+    """query_darkweb function."""
     # Endpoint info
     endpoint_url = pe_api_url + "darkweb_data"
     headers = {
         "Content-Type": "application/json",
         "access_token": pe_api_key,
     }
-    data = json.dumps({"table": table, "org_uid": org_uid, "start_date": start_date, "end_date": end_date})
+    data = json.dumps(
+        {
+            "table": table,
+            "org_uid": org_uid,
+            "start_date": start_date,
+            "end_date": end_date,
+        }
+    )
     try:
         # Call endpoint
         result = requests.post(endpoint_url, headers=headers, data=data).json()
@@ -136,8 +148,8 @@ def query_darkweb(org_uid, start_date, end_date, table):
         result_df = pd.DataFrame.from_dict(result)
         result_df.rename(
             columns={
-               "organizations_uid_id": "organizations_uid",
-               "data_source_uid_id": "data_source_uid",
+                "organizations_uid_id": "organizations_uid",
+                "data_source_uid_id": "data_source_uid",
             },
             inplace=True,
         )
@@ -154,7 +166,14 @@ def query_darkweb(org_uid, start_date, end_date, table):
     except json.decoder.JSONDecodeError as err:
         LOGGER.info(err)
 
+
 if __name__ == "__main__":
-    print(query_darkweb("385cac70-416f-11ec-bf38-02589a36c9d7","2022-01-01","2022-03-26","mentions"))
-    #print(api_darkweb_cves())
-    
+    print(
+        query_darkweb(
+            "385cac70-416f-11ec-bf38-02589a36c9d7",
+            "2022-01-01",
+            "2022-03-26",
+            "mentions",
+        )
+    )
+    # print(api_darkweb_cves())

@@ -1,13 +1,12 @@
 """A file containing the helper functions for various scoring algorithms."""
 # Standard Python Libraries
 import calendar
-import math
 from datetime import datetime
+import math
 
 # Third-Party Libraries
-import pandas as pd
 from dateutil.relativedelta import relativedelta
-
+import pandas as pd
 
 # Add skewness function?
 
@@ -42,7 +41,9 @@ def rescale(values, width, offset):
 def get_prev_startstop(curr_date, num_periods):
     """
     Get the start/stop dates for the specified number of preceding report periods, given the current date.
+
     i.e. If curr_date = 2022-08-15 and num_periods = 3, it'll return: [[7/1, 7/15], [7/16, 7/31], [8/1, 8/15]]
+
     Args:
         curr_date: current report period date (i.e. 2022-08-15)
         num_periods: number of preceding report periods to calculate (i.e. 15)
@@ -104,6 +105,7 @@ def get_prev_startstop(curr_date, num_periods):
 
 
 def get_letter_grade(score):
+    """get_letter_grade function."""
     if score < 65.0:
         return "F"
     elif score >= 65.0 and score < 67.0:
@@ -133,6 +135,7 @@ def get_letter_grade(score):
 
 
 def get_next_month(report_period_year, report_period_month):
+    """get_next_month function."""
     next_report_period_month = 0
     next_report_period_year = 0
     if report_period_month == 12:
@@ -148,6 +151,7 @@ def get_next_month(report_period_year, report_period_month):
 
 
 def get_last_month(report_period_year, report_period_month):
+    """get_last_month function."""
     last_report_period_month = 0
     last_report_period_year = 0
     if report_period_month == 1:
@@ -163,6 +167,7 @@ def get_last_month(report_period_year, report_period_month):
 
 
 def average_list(list):
+    """average_list function."""
     if len(list) == 0:
         return 0.0
     else:
@@ -170,6 +175,7 @@ def average_list(list):
 
 
 def average_numbers(vuln_count, total):
+    """average_numbers function."""
     if total == 0:
         return 0.0
     else:
@@ -178,7 +184,7 @@ def average_numbers(vuln_count, total):
 
 def split_parent_child_records(df):
     """
-    Splits rows with both an organizations_uid and parent_uid into two rows for roll up support.
+    Split rows with both an organizations_uid and parent_uid into two rows for roll up support.
 
     Args:
         df: Dataframe of database view data containing both organizations_uid and parent_org_uid columns

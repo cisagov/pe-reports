@@ -17,6 +17,7 @@ from pe_reports.data.db_query import (
     get_org_assets_count_past,
     query_previous_period,
 )
+
 from .charts import Charts
 
 # Import Classes

@@ -5,31 +5,130 @@ import csv
 from datetime import datetime, timedelta
 from io import TextIOWrapper
 import logging
-from typing import Any, List, Union
+import socket
+from typing import Any, List, Optional, Union
+import uuid
 
 # Third-Party Libraries
+# Import api task functions
+from dataAPI.tasks import (
+    alerts_insert_task,
+    convert_date_to_string,
+    convert_uuid_to_string,
+    cred_breach_intelx_task,
+    cred_breach_sixgill_task,
+    cred_exp_sixgill_task,
+    cve_info_insert_task,
+    cves_by_modified_date_task,
+    darkweb_cves_task,
+    get_dscore_pe_domain_info,
+    get_dscore_pe_ip_info,
+    get_dscore_vs_cert_info,
+    get_dscore_vs_mail_info,
+    get_dscore_was_webapp_info,
+    get_fceb_status_info,
+    get_iscore_pe_breach_info,
+    get_iscore_pe_cred_info,
+    get_iscore_pe_darkweb_info,
+    get_iscore_pe_protocol_info,
+    get_iscore_pe_vuln_info,
+    get_iscore_vs_vuln_info,
+    get_iscore_vs_vuln_prev_info,
+    get_iscore_was_vuln_info,
+    get_iscore_was_vuln_prev_info,
+    get_kev_list_info,
+    get_l_stakeholders_info,
+    get_m_stakeholders_info,
+    get_s_stakeholders_info,
+    get_ve_info,
+    get_vs_info,
+    get_vw_pshtt_domains_to_run_info,
+    get_xl_stakeholders_info,
+    get_xpanse_vulns,
+    get_xs_stakeholders_info,
+    ips_insert_task,
+    ips_update_from_cidr_task,
+    mentions_insert_task,
+    pescore_base_metrics_task,
+    pescore_hist_cred_task,
+    pescore_hist_darkweb_alert_task,
+    pescore_hist_darkweb_ment_task,
+    pescore_hist_domain_alert_task,
+    sub_domains_by_org_task,
+    sub_domains_table_task,
+    top_cves_insert_task,
+)
 from decouple import config
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.db import transaction
 from django.db.models import F
-import socket
-
-# Third party imports
+from django.forms.models import model_to_dict
 from fastapi import (
     APIRouter,
     Depends,
     File,
     HTTPException,
     Security,
-    status,
     UploadFile,
+    status,
 )
 from fastapi.security import OAuth2PasswordBearer
 from fastapi.security.api_key import APIKeyHeader
 from fastapi_limiter import FastAPILimiter
 from fastapi_limiter.depends import RateLimiter
+
+# Import api database models
+from home.models import (
+    Alerts,
+    Cidrs,
+    CpeProduct,
+    CpeVender,
+    CredentialBreaches,
+    CredentialExposures,
+    Cves,
+    CyhyContacts,
+    CyhyDbAssets,
+    CyhyPortScans,
+    DataSource,
+    DomainAlerts,
+    DomainPermutations,
+    Mentions,
+    Organizations,
+    PshttResults,
+    ReportSummaryStats,
+    RootDomains,
+    ShodanAssets,
+    SubDomains,
+    VwBreachcomp,
+    VwBreachcompBreachdetails,
+    VwBreachcompCredsbydate,
+    VwCidrs,
+    VwDarkwebAssetalerts,
+    VwDarkwebExecalerts,
+    VwDarkwebInviteonlymarkets,
+    VwDarkwebMentionsbydate,
+    VwDarkwebMostactposts,
+    VwDarkwebPotentialthreats,
+    VwDarkwebSites,
+    VwDarkwebSocmediaMostactposts,
+    VwDarkwebThreatactors,
+    VwIpsCidrOrgInfo,
+    VwIpsSubRootOrgInfo,
+    VwOrgsAttacksurface,
+    VwPEScoreCheckNewCVE,
+    VwShodanvulnsSuspected,
+    VwShodanvulnsVerified,
+    WasTrackerCustomerdata,
+    WeeklyStatuses,
+    XpanseAlerts,
+    XpanseAssets,
+    XpanseBusinessUnits,
+    XpanseCves,
+    XpanseCveService,
+    XpanseServices,
+)
 from jose import exceptions, jwt
 from redis import asyncio as aioredis
 from slowapi import Limiter
@@ -38,13 +137,6 @@ from starlette.status import HTTP_403_FORBIDDEN
 
 from . import schemas
 from .models import apiUser
-
-# Import api task functions
-from dataAPI.tasks import *
-
-# Import api database models
-from home.models import *
-
 
 # Setup logging
 LOGGER = logging.getLogger(__name__)
@@ -85,7 +177,7 @@ async def startup():
 
 
 def create_access_token(
-    subject: Union[str, Any], expires_delta: timedelta = None
+    subject: Union[str, Any], expires_delta: Optional[timedelta] = None
 ) -> str:
     """Create access token."""
     if expires_delta is not None:
@@ -101,7 +193,7 @@ def create_access_token(
 
 
 def create_refresh_token(
-    subject: Union[str, Any], expires_delta: timedelta = None
+    subject: Union[str, Any], expires_delta: Optional[timedelta] = None
 ) -> str:
     """Create a refresh token."""
     if expires_delta is not None:
@@ -301,10 +393,8 @@ def read_orgs(tokens: dict = Depends(get_api_key)):
     orgs = list(Organizations.objects.all())
 
     if tokens:
-
         # LOGGER.info(f"The api key submitted {tokens}")
         try:
-
             userapiTokenverify(theapiKey=tokens)
             return orgs
         except Exception:
@@ -407,7 +497,6 @@ def read_orgs_attacksurface(
 
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
-
         try:
             userapiTokenverify(theapiKey=tokens)
             return attackSurfaceInfo
@@ -432,7 +521,6 @@ def read_cyhy_db_asset(
 
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
-
         try:
             userapiTokenverify(theapiKey=tokens)
             return cyhyAssets
@@ -454,7 +542,6 @@ def read_cidrs(tokens: dict = Depends(get_api_key)):
 
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
-
         try:
             userapiTokenverify(theapiKey=tokens)
             return cidrs
@@ -476,7 +563,6 @@ def read_breachdetails(tokens: dict = Depends(get_api_key)):
 
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
-
         try:
             userapiTokenverify(theapiKey=tokens)
             return breachDetails
@@ -500,7 +586,6 @@ def cyhy_port_scan_info_create(
 
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
-
         try:
             userapiTokenverify(theapiKey=tokens)
             cyhy_ports.save()
@@ -512,45 +597,44 @@ def cyhy_port_scan_info_create(
 
 
 # ---------- RVA Endpoints ----------
-@api_router.post(
-    "/rva_info",
-    dependencies=[Depends(get_api_key)],
-    response_model=schemas.TaskResponse,
-    tags=["List of all VE data"],
-)
-def rva_info(ip_address: List[str], tokens: dict = Depends(get_api_key)):
-    """Call API endpoint to get all WAS data."""
-    print(ip_address)
+# @api_router.post(
+#     "/rva_info",
+#     dependencies=[Depends(get_api_key)],
+#     response_model=schemas.TaskResponse,
+#     tags=["List of all VE data"],
+# )
+# def rva_info(ip_address: List[str], tokens: dict = Depends(get_api_key)):
+#     """Call API endpoint to get all WAS data."""
+#     print(ip_address)
 
-    # orgs_df = pd.DataFrame(orgs)
+#     # orgs_df = pd.DataFrame(orgs)
 
-    LOGGER.info(f"The api key submitted {tokens}")
-    if tokens:
-        task = get_rva_info.delay(ip_address)
-        return {"task_id": task.id, "status": "Processing"}
-    else:
-        return {"message": "No api key was submitted"}
+#     LOGGER.info(f"The api key submitted {tokens}")
+#     if tokens:
+#         task = get_rva_info.delay(ip_address)
+#         return {"task_id": task.id, "status": "Processing"}
+#     else:
+#         return {"message": "No api key was submitted"}
 
 
-@api_router.get(
-    "/rva_info/task/{task_id}",
-    dependencies=[Depends(get_api_key)],
-    response_model=schemas.veTaskResponse,
-    tags=["Check task VE status"],
-)
-async def get_rva_task_status(task_id: str, tokens: dict = Depends(get_api_key)):
-    """Get RVA task status."""
-    task = get_rva_info.AsyncResult(task_id)
+# @api_router.get(
+#     "/rva_info/task/{task_id}",
+#     dependencies=[Depends(get_api_key)],
+#     response_model=schemas.veTaskResponse,
+#     tags=["Check task VE status"],
+# )
+# async def get_rva_task_status(task_id: str, tokens: dict = Depends(get_api_key)):
+#     """Get RVA task status."""
+#     task = get_rva_info.AsyncResult(task_id)
 
-    if task.state == "SUCCESS":
-
-        return {"task_id": task_id, "status": "Completed", "result": task.result}
-    elif task.state == "PENDING":
-        return {"task_id": task_id, "status": "Pending"}
-    elif task.state == "FAILURE":
-        return {"task_id": task_id, "status": "Failed", "error": str(task.result)}
-    else:
-        return {"task_id": task_id, "status": task.state}
+#     if task.state == "SUCCESS":
+#         return {"task_id": task_id, "status": "Completed", "result": task.result}
+#     elif task.state == "PENDING":
+#         return {"task_id": task_id, "status": "Pending"}
+#     elif task.state == "FAILURE":
+#         return {"task_id": task_id, "status": "Failed", "error": str(task.result)}
+#     else:
+#         return {"task_id": task_id, "status": task.state}
 
 
 # ---------- VE Endpoints ----------
@@ -585,7 +669,6 @@ async def get_ve_task_status(task_id: str, tokens: dict = Depends(get_api_key)):
     task = get_ve_info.AsyncResult(task_id)
 
     if task.state == "SUCCESS":
-
         return {"task_id": task_id, "status": "Completed", "result": task.result}
     elif task.state == "PENDING":
         return {"task_id": task_id, "status": "Pending"}
@@ -669,7 +752,6 @@ def was_info_delete(tag: str, tokens: dict = Depends(get_api_key)):
 
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
-
         try:
             userapiTokenverify(theapiKey=tokens)
             was_data.delete()
@@ -692,7 +774,6 @@ def was_info_create(customer: schemas.WASDataBase, tokens: dict = Depends(get_ap
 
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
-
         try:
             userapiTokenverify(theapiKey=tokens)
             was_customer.save()
@@ -716,7 +797,6 @@ def was_info_update(
     """Call API endpoint to create a record in database."""
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
-
         try:
             userapiTokenverify(theapiKey=tokens)
             was_data = WasTrackerCustomerdata.objects.get(tag=tag)
@@ -751,7 +831,6 @@ def cyhy_ports_scan_info_update(
     """Call API endpoint to update a record in database."""
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
-
         try:
             userapiTokenverify(theapiKey=tokens)
             scan_data = CyhyPortScans.objects.get(cyhy_id=cyhy_id)
@@ -771,7 +850,7 @@ def cyhy_ports_scan_info_update(
             LOGGER.info("API key expired please try again")
     else:
         return {"message": "No api key was submitted"}
-    
+
 
 @api_router.post(
     "/was_upload", dependencies=[Depends(get_api_key)], tags=["Upload WAS csv file"]
@@ -804,11 +883,9 @@ def upload(file: UploadFile = File(...)):
 
     try:
         if not file.filename.endswith("csv"):
-
             raise HTTPException(400, detail="Invalid document type")
 
         if len(testtheList) == len(col_names):
-
             for row, item in enumerate(dict_reader, start=1):
                 process_item(item)
             return {"message": "Successfully uploaded %s" % file.filename}
@@ -830,7 +907,6 @@ def upload(file: UploadFile = File(...)):
             "message": "There was an error uploading the file at %s." % incorrect_col
         }
     except ValidationError as e:
-
         return {"message": "There was an error uploading the file type at %s." % e}
 
     finally:
@@ -1969,7 +2045,7 @@ async def get_fceb_status_task_status(
             LOGGER.info("API key expired please try again")
     else:
         return {"message": "No api key was submitted"}
-    
+
 
 # ---------- Misc. Score Endpoints ----------
 # --- Endpoints for XS stakeholder list query ---
@@ -2311,7 +2387,9 @@ async def get_xl_stakeholders_task_status(
     else:
         return {"message": "No api key was submitted"}
 
+
 # ---------- Misc. Endpoints ----------
+
 
 @api_router.post(
     "/data_source/{source_name}",
@@ -2391,6 +2469,7 @@ def ips_insert(data: schemas.IpsInsertInput, tokens: dict = Depends(get_api_key)
             LOGGER.info("API key expired please try again")
     else:
         return {"message": "No api key was submitted"}
+
 
 @api_router.get(
     "/ips_insert/task/{task_id}",
@@ -3463,7 +3542,7 @@ def breachcomp_by_org(
             LOGGER.info("API key expired please try again")
     else:
         return {"message": "No api key was submitted"}
-    
+
 
 # --- query_credsbyday_view(), Issue 624 ---
 @api_router.post(
@@ -3503,7 +3582,7 @@ def credsbydate_by_org(
             LOGGER.info("API key expired please try again")
     else:
         return {"message": "No api key was submitted"}
-    
+
 
 # --- query_breachdetails_view(), Issue 625 ---
 @api_router.post(
@@ -3550,7 +3629,7 @@ def breachdetails_by_org(
             LOGGER.info("API key expired please try again")
     else:
         return {"message": "No api key was submitted"}
-    
+
 
 # --- Issue 626 ---
 # Query domain masquerading on the domain permutattions tables
@@ -3560,15 +3639,15 @@ def breachdetails_by_org(
     tags=["query the domain masq data."],
 )
 def dom_masq(data: schemas.AlertInput, tokens: dict = Depends(get_api_key)):
-    """API Endpoint to query the domain masq data."""
+    """Query the domain masq data."""
     if tokens:
         try:
             # userapiTokenverify(theapiKey=tokens)
             date_format = "%Y-%m-%d"
             try:
-                sdate = datetime.datetime.strptime(data.start_date, date_format)
-                edate = datetime.datetime.strptime(data.end_date, date_format)
-            except:
+                sdate = datetime.strptime(data.start_date, date_format)
+                edate = datetime.strptime(data.end_date, date_format)
+            except Exception:
                 return {"message": "date is in wrong format"}
             mentions = list(
                 DomainPermutations.objects.filter(
@@ -3576,12 +3655,12 @@ def dom_masq(data: schemas.AlertInput, tokens: dict = Depends(get_api_key)):
                 ).values()
             )
             return mentions
-        except:
+        except Exception:
             LOGGER.info("API key expired please try again")
     else:
         return {"message": "No api key was submitted"}
-    
-    
+
+
 # --- Issue 627 ---
 # Query domain masquerading alerts tables
 @api_router.post(
@@ -3590,15 +3669,15 @@ def dom_masq(data: schemas.AlertInput, tokens: dict = Depends(get_api_key)):
     tags=["query the domain masq alert data."],
 )
 def dom_masq_alerts(data: schemas.AlertInput, tokens: dict = Depends(get_api_key)):
-    """API Endpoint to query the domain masq data."""
+    """Query the domain masq data."""
     if tokens:
         try:
             # userapiTokenverify(theapiKey=tokens)
             date_format = "%Y-%m-%d"
             try:
-                sdate = datetime.datetime.strptime(data.start_date, date_format)
-                edate = datetime.datetime.strptime(data.end_date, date_format)
-            except:
+                sdate = datetime.strptime(data.start_date, date_format)
+                edate = datetime.strptime(data.end_date, date_format)
+            except Exception:
                 return {"message": "date is in wrong format"}
             mentions = list(
                 DomainAlerts.objects.filter(
@@ -3606,11 +3685,11 @@ def dom_masq_alerts(data: schemas.AlertInput, tokens: dict = Depends(get_api_key
                 ).values()
             )
             return mentions
-        except:
+        except Exception:
             LOGGER.info("API key expired please try again")
     else:
         return {"message": "No api key was submitted"}
-    
+
 
 # --- query_shodan(), Issue 628 ---
 # GenInputOrgUIDListDateRange
@@ -3744,7 +3823,7 @@ def shodan_assets(
             LOGGER.info("API key expired please try again")
     else:
         return {"message": "No api key was submitted"}
-    
+
 
 # --- query_darkweb(), Issue 629 ---
 @api_router.post(
@@ -3967,7 +4046,7 @@ def darkweb_data(data: schemas.DarkWebDataInput, tokens: dict = Depends(get_api_
             LOGGER.info("API key expired please try again")
     else:
         return {"message": "No api key was submitted"}
-    
+
 
 # --- query_darkweb_cves(), Issue 630 ---
 @api_router.post(
@@ -4032,7 +4111,7 @@ async def darkweb_cves_status(task_id: str, tokens: dict = Depends(get_api_key))
             LOGGER.info("API key expired please try again")
     else:
         return {"message": "No api key was submitted"}
-    
+
 
 # --- execute_scorecard(), Issue 632 ---
 @api_router.put(
@@ -4058,8 +4137,7 @@ def rss_insert(data: schemas.RSSInsertInput, tokens: dict = Depends(get_api_key)
             try:
                 # Check if record already exists
                 ReportSummaryStats.objects.get(
-                    organizations_uid=specified_org_uid,
-                    start_date=data.start_date
+                    organizations_uid=specified_org_uid, start_date=data.start_date
                 )
                 # If it already exists, update
                 ReportSummaryStats.objects.filter(
@@ -4101,7 +4179,7 @@ def rss_insert(data: schemas.RSSInsertInput, tokens: dict = Depends(get_api_key)
                     ip_count=data.ip_count,
                     root_count=data.root_count,
                     sub_count=data.sub_count,
-                    ports_count=data.num_ports, # num_ports input -> ports_count
+                    ports_count=data.num_ports,  # num_ports input -> ports_count
                     creds_count=data.creds_count,
                     breach_count=data.breach_count,
                     cred_password_count=data.cred_password_count,
@@ -4821,7 +4899,7 @@ async def alerts_insert_status(task_id: str, tokens: dict = Depends(get_api_key)
             LOGGER.info("API key expired please try again")
     else:
         return {"message": "No api key was submitted"}
-    
+
 
 # --- insert_sixgill_mentions(), Issue 654 ---
 @api_router.post(
@@ -5035,7 +5113,7 @@ async def cred_exp_sixgill_insert_status(
             LOGGER.info("API key expired please try again")
     else:
         return {"message": "No api key was submitted"}
-    
+
 
 # --- insert_sixgill_topCVEs(), Issue 657 ---
 @api_router.post(
@@ -5450,7 +5528,7 @@ def cred_breaches_intelx_insert(
             LOGGER.info("API key expired please try again")
     else:
         return {"message": "No api key was submitted"}
-    
+
 
 # --- insert_intelx_credentials(), Issue 664 ---
 @api_router.put(
@@ -5522,7 +5600,7 @@ def cred_exp_intelx_insert(
             LOGGER.info("API key expired please try again")
     else:
         return {"message": "No api key was submitted"}
-    
+
 
 # --- xpanse endpoint, Issue 682 ---
 @api_router.put(
@@ -5859,7 +5937,7 @@ async def get_xpanse_vulns_task_status(
             LOGGER.info("API key expired please try again")
     else:
         return {"message": "No api key was submitted"}
-    
+
 
 # --- NIST CVE endpoint, Issue 696 ---
 @api_router.put(
@@ -6001,8 +6079,8 @@ def get_cve(data: schemas.GetCveCall, tokens: dict = Depends(get_api_key)):
             LOGGER.info(e)
     else:
         return {"message": "No api key was submitted"}
-    
-    
+
+
 # --- NIST CVE endpoint, Issue 696 ---
 @api_router.post(
     "/cves_by_modified_date",
@@ -6074,7 +6152,6 @@ async def cves_by_modified_date_task_status(
             LOGGER.info("API key expired please try again")
     else:
         return {"message": "No api key was submitted"}
-    
 
 
 @api_router.post(
@@ -6226,4 +6303,3 @@ def pshtt_result_update_or_insert(
             LOGGER.info("API key expired please try again")
     else:
         return {"message": "No api key was submitted"}
-

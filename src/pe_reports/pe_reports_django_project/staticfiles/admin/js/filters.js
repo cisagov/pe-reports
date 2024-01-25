@@ -12,7 +12,7 @@
 
   Object.entries(filters).forEach(([key, value]) => {
     const detailElement = document.querySelector(
-      `[data-filter-title='${key}']`
+      `[data-filter-title='${key}']`,
     );
 
     // Check if the filter is present, it could be from other view.
@@ -30,7 +30,7 @@
       filters[`${event.target.dataset.filterTitle}`] = detail.open;
       sessionStorage.setItem(
         "django.admin.filtersState",
-        JSON.stringify(filters)
+        JSON.stringify(filters),
       );
     });
   });

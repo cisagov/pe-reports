@@ -36,13 +36,14 @@ from schema import And, Schema, SchemaError, Use
 
 # cisagov Libraries
 import pe_reports
+
 from ._version import __version__
 from .cybersixgill import Cybersixgill
 from .dnsmonitor import DNSMonitor
 from .dnstwistscript import run_dnstwist
 from .intelx_identity import IntelX
-from .shodan_wrapper import Get_shodan
 from .pshtt_wrapper import launch_pe_pshtt
+from .shodan_wrapper import Get_shodan
 
 # Setup logging
 LOGGER = logging.getLogger(__name__)

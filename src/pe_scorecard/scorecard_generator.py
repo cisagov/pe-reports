@@ -47,22 +47,19 @@ import pe_scorecard
 from ._version import __version__
 
 # from .average_time_to_remediate import calculate_time_to_remediate
-from .data.db_query import (
-    execute_scorecard_summary_data,
+from .data.db_query import (  # execute_scorecard_summary_data,; query_sector_ttr,; query_was_sector_ttr,
+    find_last_data_updated,
+    find_last_scan_date,
     find_sub_sectors,
     get_scorecard_orgs,
     get_scorecard_sectors,
     insert_scores,
     query_scorecard_data,
-    query_sector_ttr,
-    query_was_sector_ttr,
     refresh_views,
-    find_last_data_updated,
-    find_last_scan_date
 )
 
 # from .helpers.email_scorecard import email_scorecard_report
-from .metrics import Scorecard
+# from .metrics import Scorecard
 from .scores.generate_d_score import gen_discov_scores
 from .scores.generate_i_score import gen_ident_scores
 from .scores.profiling_score import get_profiling_score
@@ -120,10 +117,11 @@ def generate_scorecards(
         # Query children sectors of a given sector that may link to orgs
         all_related_sectors = find_sub_sectors(sector)["id"].values.tolist()
         # Query orgs that can have scorecards delivered to them
-        filtered_values = np.where((scorecard_orgs["sector_id"].isin(all_related_sectors)) & (scorecard_orgs["receives_cyhy_report"] == True))
-        recipient_sector_orgs = scorecard_orgs.loc[
-            filtered_values
-        ]
+        filtered_values = np.where(
+            (scorecard_orgs["sector_id"].isin(all_related_sectors))
+            & (scorecard_orgs["receives_cyhy_report"] == True)
+        )
+        recipient_sector_orgs = scorecard_orgs.loc[filtered_values]
         # Query all orgs in the sector
         sector_orgs = scorecard_orgs[
             scorecard_orgs["sector_id"].isin(all_related_sectors)
@@ -215,15 +213,11 @@ def generate_scorecards(
         # Calculate scores
         sectors_df = sector_orgs[["organizations_uid", "cyhy_db_name"]]
         end_datetime = datetime.datetime(end_date.year, end_date.month, end_date.day)
-        
-        discovery_scores = gen_discov_scores(
-            end_datetime, sectors_df
-        )
+
+        discovery_scores = gen_discov_scores(end_datetime, sectors_df)
         profiling_scores = get_profiling_score(sectors_df, int(year), int(month))
-        
-        identification_scores = gen_ident_scores(
-            end_datetime, sectors_df
-        )
+
+        identification_scores = gen_ident_scores(end_datetime, sectors_df)
         tracking_scores = get_tracking_score(sectors_df, int(year), int(month))
         # Loop through orgs again to generate scorecards
         for i, org in recipient_orgs_df.iterrows():
@@ -350,7 +344,7 @@ def generate_scorecards(
 
                 else:
                     cyhy_id_list = [org["cyhy_db_name"]]
-                
+
                 last_updated = find_last_data_updated(cyhy_id_list)[0]
 
                 if not last_updated:
@@ -359,11 +353,13 @@ def generate_scorecards(
                     last_updated = last_updated.strftime("%b %d, %Y")
 
                 scorecard_dict["last_data_sent_date"] = last_updated
-                
-                scorecard_dict['agency_id'] = org['cyhy_db_name']
-                scorecard_dict['date'] = calendar.month_name[int(month)] + " " + year
-                scorecard_dict['agency_name'] = org["name"]
-                scorecard_dict['data_pulled_date'] = find_last_scan_date()[0].strftime("%b %d, %Y")
+
+                scorecard_dict["agency_id"] = org["cyhy_db_name"]
+                scorecard_dict["date"] = calendar.month_name[int(month)] + " " + year
+                scorecard_dict["agency_name"] = org["name"]
+                scorecard_dict["data_pulled_date"] = find_last_scan_date()[0].strftime(
+                    "%b %d, %Y"
+                )
                 scorecard_dict["score"] = np.select(letter_ranges, letter_grades)
                 # # Add scores to scorecard_dict
                 # scorecard_dict['discovery_score'] = discovery_score
@@ -374,7 +370,6 @@ def generate_scorecards(
                 scorecard_dict["identification_grade"] = identification_grade
                 # scorecard_dict['tracking_score'] = tracking_score
                 scorecard_dict["tracking_grade"] = tracking_grade
-
 
                 # Create filename
                 file_name = (

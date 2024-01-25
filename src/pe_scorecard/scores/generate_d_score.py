@@ -1,39 +1,36 @@
 """A file containing the Discovery Score (D-Score) algorithm, version 1.0."""
 # Standard Python Libraries
-import sys
-import os
 import logging
+import os
+import sys
 
 # Third-Party Libraries
 import numpy as np
 import pandas as pd
 
-# Help python find db_query file
-sys.path.append(os.path.join(os.path.dirname(__file__), "..", ".."))
-
 # cisagov Libraries
-from pe_scorecard.scores.score_helper_functions import (
-    rescale,
-    get_prev_startstop,
-    split_parent_child_records,
-)
-from pe_scorecard.data.db_query import (
-    # VS queries
+from pe_scorecard.data.db_query import (  # VS queries; PE queries; WAS queries; FCEB Stakeholder sectors by size
+    dscore_pe_domain,
+    dscore_pe_ip,
     dscore_vs_cert,
     dscore_vs_mail,
-    # PE queries
-    dscore_pe_ip,
-    dscore_pe_domain,
-    # WAS queries
     dscore_was_webapp,
-    # FCEB Stakeholder sectors by size
     fceb_status,
-    xs_stakeholders,
-    s_stakeholders,
-    m_stakeholders,
-    l_stakeholders,
-    xl_stakeholders,
 )
+
+# l_stakeholders,
+# m_stakeholders,
+# s_stakeholders,
+# xl_stakeholders,
+# xs_stakeholders,
+from pe_scorecard.scores.score_helper_functions import (
+    get_prev_startstop,
+    rescale,
+    split_parent_child_records,
+)
+
+# Help python find db_query file
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", ".."))
 
 # Setup logging to central file
 LOGGER = logging.getLogger(__name__)
@@ -81,7 +78,7 @@ def import_discov_data(curr_start, curr_end, stakeholder_list):
     # Retrieve any other necessary data from the database
     # ----- FCEB status of each org in this sector: -----
     LOGGER.info("Retrieving FCEB status data for D-Score...")
-    fceb_status = fceb_status(stakeholder_list)
+    fceb_status_results = fceb_status(stakeholder_list)
     LOGGER.info("\tDone!")
     # ----- List of orgs for this sector: -----
     org_list = stakeholder_list
@@ -105,7 +102,9 @@ def import_discov_data(curr_start, curr_end, stakeholder_list):
     was_data_webapp = was_data_webapp.groupby("organizations_uid", as_index=False).sum()
 
     # Add FCEB status to organization list
-    org_list = pd.merge(org_list, fceb_status, on="organizations_uid", how="inner")
+    org_list = pd.merge(
+        org_list, fceb_status_results, on="organizations_uid", how="inner"
+    )
 
     # --------------- Process VS Data: ---------------
     # Requires 2 Views:
@@ -229,7 +228,7 @@ def calc_discov_scores(discov_data, stakeholder_list):
 
     # ---------- VS-Subscribed Data ----------
     # Index locations of VS metrics
-    vs_cert_locs = list(range(3, 6))
+    # vs_cert_locs = list(range(3, 6))
     vs_mail_locs = list(range(6, 11))
 
     # Temporary fix, give 100% score to non-FCEB organizations
@@ -251,8 +250,8 @@ def calc_discov_scores(discov_data, stakeholder_list):
 
     # ---------- PE-Subscribed Data ----------
     # Index locations of PE metrics
-    pe_ip_locs = list(range(11, 14))
-    pe_domain_locs = list(range(14, 17))
+    # pe_ip_locs = list(range(11, 14))
+    # pe_domain_locs = list(range(14, 17))
 
     # PE Nameserver Feature:
     # Nameserver data not yet available, but
@@ -264,7 +263,7 @@ def calc_discov_scores(discov_data, stakeholder_list):
 
     # ---------- WAS-Subscribed Data ----------
     # Index locations of WAS metrics
-    was_webapp_locs = list(range(17, 20))
+    # was_webapp_locs = list(range(17, 20))
 
     # No WAS features yet, but maybe in future revisions
 

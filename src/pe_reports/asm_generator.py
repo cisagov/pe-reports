@@ -7,25 +7,24 @@ import logging
 import os
 
 # Third-Party Libraries
-import fitz
 from PyPDF2 import PdfFileReader, PdfFileWriter
-import numpy as np
+import fitz
 import pandas as pd
+
+# from reportlab.lib.enums import TA_CENTER
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.styles import ParagraphStyle
+from reportlab.lib.units import inch
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfgen import canvas
 from reportlab.platypus import Frame, Paragraph
-from reportlab.lib.enums import TA_CENTER
-from reportlab.lib.units import inch
-
 
 # cisagov Libraries
 from pe_reports.data.db_query import (
     query_cidrs_by_org,
-    query_foreign_IPs,
     query_extra_ips,
+    query_foreign_IPs,
     query_ports_protocols,
     query_roots,
     query_software,
@@ -42,7 +41,9 @@ UNDERNEATH = (
     False  # if True, new content will be placed underneath page (painted first)
 )
 
-pdfmetrics.registerFont(TTFont("Frank_Goth", BASE_DIR + "/assets_asm/FranklinGothic.ttf"))
+pdfmetrics.registerFont(
+    TTFont("Frank_Goth", BASE_DIR + "/assets_asm/FranklinGothic.ttf")
+)
 pdfmetrics.registerFont(
     TTFont("Frank_Goth_Book", BASE_DIR + "/assets_asm/Franklin_Gothic_Book_Regular.ttf")
 )
@@ -204,7 +205,9 @@ def add_attachment(org_uid, final_output, pdf_file, asm_json, asm_xlsx):
     return asm_xlsx
 
 
-def create_summary(org_uid, final_output, data_dict, file_name, json_filename, excel_filename):
+def create_summary(
+    org_uid, final_output, data_dict, file_name, json_filename, excel_filename
+):
     """Create ASM summary PDF."""
     packet = io.BytesIO()
 
@@ -307,8 +310,8 @@ def create_summary(org_uid, final_output, data_dict, file_name, json_filename, e
         can,
     )
     json_title_frame = Frame(
-            6 * inch, 100, 1.5 * inch, 0.5 * inch, id=None, showBoundary=0
-        )
+        6 * inch, 100, 1.5 * inch, 0.5 * inch, id=None, showBoundary=0
+    )
     json_title = Paragraph(
         "JSON&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;EXCEL",
         style=json_excel,
@@ -335,6 +338,8 @@ def create_summary(org_uid, final_output, data_dict, file_name, json_filename, e
     output.write(outputStream)
     outputStream.close()
 
-    asm_xlsx = add_attachment(org_uid, final_output, file_name, json_filename, excel_filename)
-    
+    asm_xlsx = add_attachment(
+        org_uid, final_output, file_name, json_filename, excel_filename
+    )
+
     return asm_xlsx

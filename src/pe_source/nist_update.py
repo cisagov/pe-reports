@@ -7,16 +7,13 @@ import sys
 import time
 
 # Third-Party Libraries
+from data.pe_db.db_query_source import api_cve_insert, get_cve_and_products
 from nested_lookup import nested_lookup
 import pytz
 import requests
 
 # cisagov Libraries
 from pe_reports.data.config import staging_config
-from data.pe_db.db_query_source import (  
-    api_cve_insert,
-    get_cve_and_products,
-)
 
 API_DIC = staging_config(section="nist")
 api_key = API_DIC.get("api_key")
@@ -46,15 +43,15 @@ def initial_fill(start_index=0):
                 "GET", nist_url + params, headers=headers, data=payload
             )
             result = response.json()
-            
-        except Exception as e:
-            LOGGER.error('Issue while querying. Trying again in 5 seconds')
+
+        except Exception:
+            LOGGER.error("Issue while querying. Trying again in 5 seconds")
             time.sleep(5)
             error_count += 1
             if error_count < 5:
                 continue
             else:
-                LOGGER.error('Failed too many times. Exiting out now.')
+                LOGGER.error("Failed too many times. Exiting out now.")
 
         start_index += result["resultsPerPage"]
         for vuln in result["vulnerabilities"]:
@@ -293,7 +290,7 @@ def check_cve_is_synced():
 def main():
     """Update CVE, CPE, and Vender tables using the NIST API."""
     # initial_fill()
-    update_cves(24*5)
+    update_cves(24 * 5)
     # query_cve('CVE-2023-53465')
     # check_cve_is_synced()
 

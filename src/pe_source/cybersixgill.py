@@ -6,7 +6,6 @@ import logging
 import sys
 import traceback
 
-# cisagov Libraries
 from .data.pe_db.db_query_source import (
     get_breaches,
     get_data_source_uid,
@@ -206,14 +205,14 @@ class Cybersixgill:
                 try:
                     alert_id = alert_row["sixgill_id"]
 
-                    # content_snip, asset_mentioned, asset_type = get_alerts_content(
-                    #     sixgill_org_id, alert_id, org_assets_dict
-                    # )
+                    content_snip, asset_mentioned, asset_type = get_alerts_content(
+                        sixgill_org_id, alert_id, org_assets_dict
+                    )
 
                     alerts_df.at[alert_index, "content_snip"] = content_snip
                     alerts_df.at[alert_index, "asset_mentioned"] = asset_mentioned
                     alerts_df.at[alert_index, "asset_type"] = asset_type
-                except Exception as e:
+                except Exception:
                     # LOGGER.error(
                     #     "Failed fetching a specific alert content for %s", org_id
                     # )

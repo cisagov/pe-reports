@@ -31,7 +31,6 @@ import sys
 import docopt
 import pytablewriter
 
-# cisagov Libraries
 from . import pshtt, utils
 from ._version import __version__
 from .utils import smart_open

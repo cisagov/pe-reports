@@ -4,19 +4,17 @@ import logging
 import time
 
 # Third-Party Libraries
+from data.hibp.config import config, config2, get_hibp_token
+from data.hibp.run import query_orgs
 import pandas as pd
 import psycopg2
 import psycopg2.extras as extras
 import requests
 
-# cisagov Libraries
-from data.hibp.config import config, config2, get_hibp_token
-from data.hibp.run import query_orgs
-
 # DB connection functions
 CF_CONN_PARAMS = config2()
 PE_CONN_PARAMS = config()
-orgs_to_run = []
+orgs_to_run = []  # type: list[str]
 
 # Setup logging
 CENTRAL_LOGGING_FILE = "pe_reports_logging.log"
@@ -251,6 +249,7 @@ def execute_hibp_breach_values(conn, jsonList, table):
 
 
 def run_hibp(org_df):
+    """run_hibp function."""
     PE_conn = connect(PE_CONN_PARAMS)
     try:
         source_uid = getDataSource(PE_conn, "HaveIBeenPwnd")[0]
@@ -291,7 +290,7 @@ def run_hibp(org_df):
 
     for org_index, org_row in org_df.iloc[::-1].iterrows():
         pe_org_uid = org_row["organizations_uid"]
-        org_name = org_row["name"]
+        # org_name = org_row["name"]
         cyhy_id = org_row["cyhy_db_name"]
         # LOGGER.info(cyhy_id)
 
@@ -313,7 +312,7 @@ def run_hibp(org_df):
                 continue
             try:
                 hibp_resp = get_emails(sd)
-            except:
+            except Exception:
                 LOGGER.info("Failed after 5 tries.")
                 continue
             if hibp_resp:
@@ -339,7 +338,7 @@ def run_hibp(org_df):
                                 "name": None,
                             }
                             creds_list.append(cred)
-                        except:
+                        except Exception:
                             LOGGER.info("error adding cred to cred_list")
                 LOGGER.info("\t\tthere are %s creds found", len(creds_list))
                 # Insert new creds into the PE DB

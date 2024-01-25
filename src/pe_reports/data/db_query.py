@@ -4,12 +4,11 @@
 # Standard Python Libraries
 import datetime
 from ipaddress import ip_address, ip_network
+import json
 import logging
 import socket
 import sys
 import time
-import requests
-import json
 
 # Third-Party Libraries
 import numpy as np
@@ -18,6 +17,7 @@ import psycopg2
 from psycopg2 import OperationalError
 from psycopg2.extensions import AsIs
 import psycopg2.extras as extras
+import requests
 from sshtunnel import SSHTunnelForwarder
 
 from .config import config, staging_config
@@ -35,7 +35,7 @@ pe_api_url = CONN_PARAMS_DIC_STAGING.get("pe_api_url")
 
 def task_api_call(task_url, check_url, data={}, retry_time=3):
     """
-    Query tasked endpoint given task_url and check_url
+    Query tasked endpoint given task_url and check_url.
 
     Return:
         Endpoint result
@@ -1908,7 +1908,7 @@ def query_breachdetails_view(org_uid, start_date, end_date):
 
 # --- Issue 628 ---
 # API conversion still needs to be completed
-        
+
 
 # --- Issue 629 ---
 def query_darkweb(org_uid, start_date, end_date, table):
@@ -2055,9 +2055,7 @@ def execute_scorecard(summary_dict):
     data = json.dumps(input_dict)
     try:
         # Call endpoint
-        rss_insert_result = requests.put(
-            endpoint_url, headers=headers, data=data
-        ).json()
+        requests.put(endpoint_url, headers=headers, data=data).json()
         LOGGER.info("Successfully inserted new record in report_summary_stats table")
     except requests.exceptions.HTTPError as errh:
         LOGGER.error(errh)
@@ -2567,6 +2565,7 @@ def get_orgs_pass(conn, password):
 
 # --- Issue 617 ---
 def refresh_asset_counts_vw():
+    """refresh_assete_counts_vw function, tsql."""
     conn = connect()
     sql = """
         REFRESH MATERIALIZED VIEW
@@ -2703,7 +2702,7 @@ def get_orgs_df(staging=False):
         conn = connect()
     try:
         sql = """
-        SELECT * FROM organizations 
+        SELECT * FROM organizations
         WHERE report_on is True
         """
         pe_orgs_df = pd.read_sql(sql, conn)
@@ -3281,7 +3280,7 @@ def query_creds_view_tsql(org_uid, start_date, end_date):
         if conn is not None:
             close(conn)
 
-        
+
 # --- 624 OLD TSQL ---
 def query_credsbyday_view_tsql(org_uid, start_date, end_date):
     """Query credentials by date view ."""
@@ -3302,7 +3301,7 @@ def query_credsbyday_view_tsql(org_uid, start_date, end_date):
         if conn is not None:
             close(conn)
 
-    
+
 # --- 625 OLD TSQL ---
 def query_breachdetails_view_tsql(org_uid, start_date, end_date):
     """Query credentials by date view ."""

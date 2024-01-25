@@ -1,24 +1,22 @@
 """HIBP forward scan."""
 # Standard Python Libraries
 import logging
-import time
 import threading
+import time
 
 # Third-Party Libraries
+from data.hibp.config import config, config2, get_hibp_token
+from data.hibp.run import query_orgs
 import numpy as np
 import pandas as pd
 import psycopg2
 import psycopg2.extras as extras
 import requests
 
-# cisagov Libraries
-from data.hibp.config import config, config2, get_hibp_token
-from data.hibp.run import query_orgs
-
 # DB connection functions
 CF_CONN_PARAMS = config2()
 PE_CONN_PARAMS = config()
-orgs_to_run = []
+orgs_to_run = []  # type: list[str]
 
 # Setup logging
 CENTRAL_LOGGING_FILE = "pe_reports_logging.log"
@@ -200,7 +198,9 @@ def execute_hibp_emails_values(conn, jsonList, thread):
     # try:
     extras.execute_values(cursor, sql, values)
     conn.commit()
-    LOGGER.info("%s:\t\tHIBP data inserted into credential_exposures successfully..", thread)
+    LOGGER.info(
+        "%s:\t\tHIBP data inserted into credential_exposures successfully..", thread
+    )
     # except (Exception, psycopg2.DatabaseError) as err:
     #     show_psycopg2_exception(err)
     #     cursor.close()
@@ -251,10 +251,12 @@ def execute_hibp_breach_values(conn, jsonList, table):
         LOGGER.error(err)
         cursor.close()
 
+
 def hibp_thread(org_df, thread, compiled_breaches, breach_UIDS_Dict):
+    """hibp_thread function."""
     for org_index, org_row in org_df.iterrows():
         pe_org_uid = org_row["organizations_uid"]
-        org_name = org_row["name"]
+        # org_name = org_row["name"]
         cyhy_id = org_row["cyhy_db_name"]
         # LOGGER.info(cyhy_id)
 
@@ -276,7 +278,7 @@ def hibp_thread(org_df, thread, compiled_breaches, breach_UIDS_Dict):
                 continue
             try:
                 hibp_resp = get_emails(sd)
-            except:
+            except Exception:
                 LOGGER.info(f"{thread}: Failed after 5 tries.")
                 continue
             if hibp_resp:
@@ -302,13 +304,15 @@ def hibp_thread(org_df, thread, compiled_breaches, breach_UIDS_Dict):
                                 "name": None,
                             }
                             creds_list.append(cred)
-                        except:
+                        except Exception:
                             LOGGER.info("error adding cred to cred_list")
                 LOGGER.info("%s:\t\tthere are %s creds found", thread, len(creds_list))
                 # Insert new creds into the PE DB
                 execute_hibp_emails_values(PE_conn, creds_list, thread)
 
+
 def run_hibp(org_df):
+    """run_hibp function."""
     PE_conn = connect(PE_CONN_PARAMS)
     try:
         source_uid = getDataSource(PE_conn, "HaveIBeenPwnd")[0]
@@ -347,7 +351,6 @@ def run_hibp(org_df):
     for UID in breaches_UIDs:
         breach_UIDS_Dict.update({UID["breach_name"]: UID["credential_breaches_uid"]})
 
-
     orgs_list = np.array_split(org_df, 5)
     thread_list = []
     x = 0
@@ -355,7 +358,8 @@ def run_hibp(org_df):
         thread_name = f"Thread {x+1}: "
         # Start thread
         t = threading.Thread(
-            target=hibp_thread, args=(org, thread_name, compiled_breaches, breach_UIDS_Dict)
+            target=hibp_thread,
+            args=(org, thread_name, compiled_breaches, breach_UIDS_Dict),
         )
         t.start()
         thread_list.append(t)
@@ -363,7 +367,6 @@ def run_hibp(org_df):
 
     for thread in thread_list:
         thread.join()
-        
 
 
 def main():

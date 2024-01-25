@@ -12,10 +12,11 @@ import os
 
 # Third-Party Libraries
 from django.core.wsgi import get_wsgi_application
-from fastapi import FastAPI
+
+# from fastapi import FastAPI
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "pe_reports_django.settings")
 
 application = get_wsgi_application()
 
-#Below this line is comment
+# Below this line is comment

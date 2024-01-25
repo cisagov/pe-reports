@@ -4,23 +4,20 @@
 # Standard Python Libraries
 import datetime
 import logging
-import requests
 
 # Third-Party Libraries
-from bs4 import BeautifulSoup
-import pandas as pd
 import numpy as np
+import pandas as pd
 
-# cisagov Libraries
 from ..data.cyhy_db_query import (
+    get_fceb_orgs,
+    get_pe_org_map,
+    insert_cyhy_scorecard_data,
     mongo_connect,
     mongo_scan_connect,
     pe_db_connect,
     pe_db_staging_connect,
-    get_pe_org_map,
     query_pe_orgs,
-    insert_cyhy_scorecard_data,
-    get_fceb_orgs,
 )
 
 LOGGER = logging.getLogger(__name__)
@@ -33,7 +30,6 @@ march_end_date = datetime.datetime(2023, 4, 1)
 
 def get_cyhy_port_scans(staging=False):
     """Get CyHy Ports and Scans."""
-
     # Connect to P&E postgres database
     if staging:
         pe_db_conn = pe_db_staging_connect()
@@ -175,7 +171,6 @@ def get_cyhy_port_scans(staging=False):
 
 def get_cyhy_snapshots(staging=False):
     """Get CyHy Snapshots."""
-
     # Connect to P&E postgres database
     if staging:
         pe_db_conn = pe_db_staging_connect()
@@ -303,7 +298,6 @@ def get_cyhy_snapshots(staging=False):
 
 def get_cyhy_tickets(staging=False):
     """Get CyHy Tickets."""
-
     # Connect to P&E postgres database
     if staging:
         pe_db_conn = pe_db_staging_connect()
@@ -433,7 +427,6 @@ def get_cyhy_tickets(staging=False):
 
 def get_cyhy_vuln_scans(staging=False):
     """Get CyHy Vulnerability Scans."""
-
     # Connect to P&E postgres database
     if staging:
         pe_db_conn = pe_db_staging_connect()
@@ -569,7 +562,6 @@ def get_cyhy_vuln_scans(staging=False):
 
 def get_cyhy_kevs(staging=False):
     """Get CyHy Kevs."""
-
     # Connect to P&E postgres database
     if staging:
         pe_db_conn = pe_db_staging_connect()
@@ -621,7 +613,6 @@ def get_cyhy_kevs(staging=False):
 
 def get_cyhy_https_scan(staging=False):
     """Get CyHy https scan."""
-
     # Connect to P&E postgres database
     if staging:
         pe_db_conn = pe_db_staging_connect()
@@ -773,7 +764,6 @@ def get_cyhy_https_scan(staging=False):
 
 def get_cyhy_trustymail(staging=False):
     """Get CyHy trustymail."""
-
     # Connect to P&E postgres database
     if staging:
         pe_db_conn = pe_db_staging_connect()
@@ -931,7 +921,6 @@ def get_cyhy_trustymail(staging=False):
 
 def get_cyhy_sslyze(staging=False):
     """Get CyHy sslyze scan."""
-
     # Connect to P&E postgres database
     if staging:
         pe_db_conn = pe_db_staging_connect()

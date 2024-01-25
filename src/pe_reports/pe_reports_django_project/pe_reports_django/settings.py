@@ -187,7 +187,7 @@ CELERY_BROKER_URL = (
 )
 CELERY_RESULT_BACKEND = "redis://localhost:6379"
 CELERY_RESULT_EXPIRES = 86400
-CELERY_BEAT_SCHEDULE_FILENAME = os.path.join(BASE_DIR, 'celerybeat-schedule.db')
+CELERY_BEAT_SCHEDULE_FILENAME = os.path.join(BASE_DIR, "celerybeat-schedule.db")
 
 
 # Password validation

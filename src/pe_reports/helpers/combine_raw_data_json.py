@@ -6,16 +6,16 @@ import os
 
 # Third-Party Libraries
 import boto3
+from botocore.exceptions import ClientError
 import pandas as pd
 
 # cisagov Libraries
 from pe_reports.data.db_query import connect, get_orgs
 
-
 PATH = "/var/www/current_report_run"
 LOGGER = logging.getLogger(__name__)
 ACCESSOR_AWS_PROFILE = os.getenv("ACCESSOR_PROFILE")
-DATE = '2023-03-31'
+DATE = "2023-03-31"
 
 
 def upload_file_to_s3(file_name, datestring, bucket):
@@ -37,13 +37,14 @@ def upload_file_to_s3(file_name, datestring, bucket):
 
 
 def main():
+    """Define main function."""
     # Get PE orgs from PE db
     conn = connect()
     if conn:
         pe_orgs = get_orgs(conn)
     else:
         return 1
-    generated_reports = 0
+    # generated_reports = 0
 
     # Iterate over organizations
     if pe_orgs:
@@ -66,8 +67,8 @@ def main():
         asm_foreign_ips_merged = pd.DataFrame()
         for org in pe_orgs:
             # Assign organization values
-            org_uid = org[0]
-            org_name = org[1]
+            # org_uid = org[0]
+            # org_name = org[1]
             org_code = org[2]
 
             try:
@@ -78,7 +79,7 @@ def main():
                     engine="openpyxl",
                 )
                 cred_df["stakeholder"] = org_code
-            except:
+            except Exception:
                 print(f"{org_code}doesn't exist.")
                 continue
 
@@ -96,7 +97,7 @@ def main():
                 )
                 domain_suspected_df["stakeholder"] = org_code
                 domain_alerts_df["stakeholder"] = org_code
-            except:
+            except Exception:
                 print(f"{org_code} doesn't exist.")
                 continue
 
@@ -123,7 +124,7 @@ def main():
                 )
                 vuln_verified_df["stakeholder"] = org_code
 
-            except:
+            except Exception:
                 print(f"{org_code} doesn't exist.")
                 continue
 
@@ -149,10 +150,9 @@ def main():
                     engine="openpyxl",
                 )
 
-            except:
+            except Exception:
                 print(f"{org_code} doesn't exist.")
                 continue
-
 
             try:
                 # ASM
@@ -205,7 +205,7 @@ def main():
                 )
                 asm_foreign_ips_df["stakeholder"] = org_code
 
-            except:
+            except Exception:
                 print(f"{org_code} doesn't exist.")
                 continue
 
@@ -233,9 +233,7 @@ def main():
                 dark_alerts_df, ignore_index=True
             )
 
-            asm_cidr_merged = asm_cidr_merged.append(
-                asm_cidr_df, ignore_index=True
-            )
+            asm_cidr_merged = asm_cidr_merged.append(asm_cidr_df, ignore_index=True)
             asm_extra_ips_merged = asm_extra_ips_merged.append(
                 asm_extra_ips_df, ignore_index=True
             )
@@ -277,7 +275,6 @@ def main():
         with open(da_json, "w") as outfile:
             json.dump(final_dict, outfile, default=str)
 
-
         # Create total Vuln Alerts
         vuln_json = f"{PATH}/_combined_raw_data/total_vuln_alerts.json"
         assets_dict = vuln_assets_merged.to_dict(orient="records")
@@ -290,7 +287,6 @@ def main():
         }
         with open(vuln_json, "w") as outfile:
             json.dump(final_dict, outfile, default=str)
-
 
         # Create total Dark Web JSON
         mi_json = f"{PATH}/_combined_raw_data/total_mention_incidents.json"
@@ -305,17 +301,15 @@ def main():
         with open(mi_json, "w") as outfile:
             json.dump(final_dict, outfile, default=str)
 
-
         # Create total ASM Summary
-        asmWriter = pd.ExcelWriter(
-            f"{PATH}/_combined_raw_data/total_asm_summary.xlsx",
-            engine="xlsxwriter",
-        )
+        # asmWriter = pd.ExcelWriter(
+        #     f"{PATH}/_combined_raw_data/total_asm_summary.xlsx",
+        #     engine="xlsxwriter",
+        # )
 
         cidr_df = asm_cidr_merged[["network"]]
         cidr_dict = cidr_df["network"].to_list()
 
-        
         ips_dict = asm_extra_ips_merged["ip"].to_list()
 
         ports_protocols_dict = asm_ports_protocols_merged.to_dict(orient="records")
@@ -346,10 +340,17 @@ def main():
 
     bucket = "cisa-crossfeed-staging-reports"
     upload_file_to_s3(f"{PATH}/_combined_raw_data/total_asm_summary.json", DATE, bucket)
-    upload_file_to_s3(f"{PATH}/_combined_raw_data/total_mention_incidents.json", DATE, bucket)
+    upload_file_to_s3(
+        f"{PATH}/_combined_raw_data/total_mention_incidents.json", DATE, bucket
+    )
     upload_file_to_s3(f"{PATH}/_combined_raw_data/total_vuln_alerts.json", DATE, bucket)
-    upload_file_to_s3(f"{PATH}/_combined_raw_data/total_domain_alerts.json", DATE, bucket)
-    upload_file_to_s3(f"{PATH}/_combined_raw_data/total_compromised_credentials.json", DATE, bucket)
+    upload_file_to_s3(
+        f"{PATH}/_combined_raw_data/total_domain_alerts.json", DATE, bucket
+    )
+    upload_file_to_s3(
+        f"{PATH}/_combined_raw_data/total_compromised_credentials.json", DATE, bucket
+    )
+
 
 if __name__ == "__main__":
     main()

@@ -13,8 +13,9 @@ psql -U postgres -h localhost -c "CREATE DATABASE pe_dev;"
 # rdsadmin database (even if empty) is required for the next script
 psql -U postgres -h localhost -c "CREATE DATABASE rdsadmin;"
 
-
 # connect to the database using psql
-psql -U postgres -d pe_dev <<EOF
+psql -U postgres -d pe_dev << EOF
+EOF
+# <<EOF was flagged for being left open/unterminated
 
 \i $path

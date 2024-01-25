@@ -950,8 +950,7 @@ def create_scorecard(
         mask="auto",
     )
 
-
-    data_dict = {k: 'N/A' if v is None else v for k, v in data_dict.items() }
+    data_dict = {k: "N/A" if v is None else v for k, v in data_dict.items()}
 
     # **** Generate new page ****
     can.showPage()

@@ -28,17 +28,17 @@ import sys
 from typing import Any, Dict
 
 # Third-Party Libraries
+from _version import __version__
+from data.pe_db.db_query_source import (  # api_pull_xpanse_vulns,
+    api_xpanse_alert_insert,
+    insert_or_update_business_unit,
+)
 import docopt
 import pytz
 import requests
 from schema import And, Or, Schema, SchemaError, Use
 
 # cisagov Libraries
-from _version import __version__
-from data.pe_db.db_query_source import (  # api_pull_xpanse_vulns,
-    api_xpanse_alert_insert,
-    insert_or_update_business_unit,
-)
 import pe_reports
 from pe_reports.data.config import staging_config
 
@@ -200,7 +200,7 @@ def format_alerts(alert, org_dict):
 
     max_n = 20
     assets = []
-    ##Uncomment to track assets
+    # Uncomment to track assets
     # asset_ids = alert["asset_ids"]
     # if asset_ids is not None:
     #     asset_id_chunks = [
@@ -262,15 +262,9 @@ def format_alerts(alert, org_dict):
                                     "version_number": cve["inferredCve"][
                                         "inferredCveMatchMetadata"
                                     ].get("version", None),
-                                    "activity_status": cve.get(
-                                        "activityStatus", None
-                                    ),
-                                    "first_observed": cve.get(
-                                        "firstObserved", None
-                                    ),
-                                    "last_observed": cve.get(
-                                        "lastObserved", None
-                                    ),
+                                    "activity_status": cve.get("activityStatus", None),
+                                    "first_observed": cve.get("firstObserved", None),
+                                    "last_observed": cve.get("lastObserved", None),
                                 },
                             )
                         )

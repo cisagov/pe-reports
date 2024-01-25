@@ -44,7 +44,7 @@
     const win = window.open(
       href,
       name,
-      "height=500,width=800,resizable=yes,scrollbars=yes"
+      "height=500,width=800,resizable=yes,scrollbars=yes",
     );
     relatedWindows.push(win);
     win.focus();
@@ -77,7 +77,7 @@
   function updateRelatedObjectLinks(triggeringLink) {
     const $this = $(triggeringLink);
     const siblings = $this.nextAll(
-      ".view-related, .change-related, .delete-related"
+      ".view-related, .change-related, .delete-related",
     );
     if (!siblings.length) {
       return;
@@ -88,7 +88,7 @@
         const elm = $(this);
         elm.attr(
           "href",
-          elm.attr("data-href-template").replace("__fk__", value)
+          elm.attr("data-href-template").replace("__fk__", value),
         );
       });
     } else {
@@ -101,7 +101,7 @@
     win,
     objId,
     newRepr,
-    newId
+    newId,
   ) {
     // After create/edit a model from the options next to the current
     // select (+ or :pencil:) update ForeignKey PK of the rest of selects
@@ -113,7 +113,7 @@
     const modelName = path.split("/")[path.split("/").length - (objId ? 4 : 3)];
     // Exclude autocomplete selects.
     const selectsRelated = document.querySelectorAll(
-      `[data-model-ref="${modelName}"] select:not(.admin-autocomplete)`
+      `[data-model-ref="${modelName}"] select:not(.admin-autocomplete)`,
     );
 
     selectsRelated.forEach(function (select) {
@@ -144,7 +144,7 @@
           newRepr,
           newId,
           true,
-          true
+          true,
         );
         updateRelatedSelectsOptions(elem, win, null, newRepr, newId);
       } else if (elemName === "INPUT") {
@@ -256,7 +256,7 @@
             showRelatedObjectPopup(this);
           }
         }
-      }
+      },
     );
     $("body").on("change", ".related-widget-wrapper select", function (e) {
       const event = $.Event("django:update-related");

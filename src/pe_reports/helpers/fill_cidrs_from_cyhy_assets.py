@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """Fill CIDRs table from cyhy assets."""
 
 # Standard Python Libraries

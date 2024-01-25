@@ -13,7 +13,6 @@ import dshield
 import psycopg2.extras as extras
 import requests
 
-# cisagov Libraries
 from .data.pe_db.db_query_source import (
     addSubdomain,
     connect,
@@ -151,7 +150,7 @@ def execute_dnstwist(root_domain, test=0):
     if test == 1:
         return dnstwist_result
     finalorglist = dnstwist_result + []
-    if root_domain.split(".")[-1] == "gov": 
+    if root_domain.split(".")[-1] == "gov":
         for dom in dnstwist_result:
             if (
                 ("tld-swap" not in dom["fuzzer"])
@@ -236,7 +235,7 @@ def run_dnstwist(orgs_list):
                         # TODO: Create custom exceptions.
                         # Issue 265: https://github.com/cisagov/pe-reports/issues/265
                         # Add and then get it
-                        addSubdomain(sub_domain, pe_org_uid, True) # api ver.
+                        addSubdomain(sub_domain, pe_org_uid, True)  # api ver.
                         # addSubdomain(PE_conn, sub_domain, pe_org_uid, True) # tsql ver.
                         sub_domain_uid = getSubdomain(sub_domain)
 

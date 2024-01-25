@@ -3,7 +3,6 @@
 # Third-Party Libraries
 import chevron
 
-# cisagov Libraries
 from .message import Message
 from .report_message import ReportMessage
 
@@ -56,14 +55,14 @@ WARNING: This document is FOR OFFICIAL USE ONLY (FOUO). It contains information 
 
 <p>Good afternoon,</p>
 
-<p>Posture and Exposure (P&E) offers stakeholders an opportunity 
-to view their organizational risk from the viewpoint of the adversary. 
-We utilize passive reconnaissance services, dark web analysis, and open-source 
-tools to identify spoofing in order to generate a risk profile report that is 
+<p>Posture and Exposure (P&E) offers stakeholders an opportunity
+to view their organizational risk from the viewpoint of the adversary.
+We utilize passive reconnaissance services, dark web analysis, and open-source
+tools to identify spoofing in order to generate a risk profile report that is
 delivered on a regular basis.</p>
 
-<p>As a customer of P&E you are receiving our regularly scheduled report 
-which contains a summary of the activity we have been tracking on your behalf 
+<p>As a customer of P&E you are receiving our regularly scheduled report
+which contains a summary of the activity we have been tracking on your behalf
 for the following services:</p>
 
 <ul>
@@ -74,29 +73,29 @@ for the following services:</p>
 <li>Hidden Assets and Risky Services</li>
 </ul>
 
-<p>In the attached document you will find a Summary Report with the findings 
-based on what we identified above. On page 4 of the report, you will 
-find links to the JSON raw data as it was discovered by us. For the protection of 
-your organization, we have encrypted the document with the password that was 
-shared when the agreement was signed for Cyber Hygiene Services. <strong>For 
+<p>In the attached document you will find a Summary Report with the findings
+based on what we identified above. On page 4 of the report, you will
+find links to the JSON raw data as it was discovered by us. For the protection of
+your organization, we have encrypted the document with the password that was
+shared when the agreement was signed for Cyber Hygiene Services. <strong>For
 the best results, we recommend using Adobe Acrobat.</strong></p>
 
-<p>Finally, it is important to note that these findings have not been verified; 
-everything is gathered via passive analysis of publicly available sources.  As 
-such there may be false positive findings, however these findings should be 
-treated as information that your organization is leaking out to the internet 
+<p>Finally, it is important to note that these findings have not been verified;
+everything is gathered via passive analysis of publicly available sources.  As
+such there may be false positive findings, however these findings should be
+treated as information that your organization is leaking out to the internet
 for adversaries to notice.</p>
 
 <p style="display:inline;">Thank you,<br></p>
 <p style="display:inline;font-size:12pt;"><strong>The Posture and Exposure (P&E) Team</strong><br></p>
-<p style="display:inline;">Cybersecurity and Infrastructure Security Agency (CISA)<br>Email: 
+<p style="display:inline;">Cybersecurity and Infrastructure Security Agency (CISA)<br>Email:
 <a href="mailto:vulnerability@cisa.dhs.gov">vulnerability@cisa.dhs.gov</a></p>
 
-<p>WARNING: This document is FOR OFFICIAL USE ONLY (FOUO). It contains information 
-that may be exempt from public release under the Freedom of Information Act 
-(5 U.S.G. 552). It is to be controlled, stored, handled, transmitted, distributed, 
-and disposed of in accordance with CISA policy relating to FOUO information and 
-is not to be released to the public or other personnel who do not have a valid 
+<p>WARNING: This document is FOR OFFICIAL USE ONLY (FOUO). It contains information
+that may be exempt from public release under the Freedom of Information Act
+(5 U.S.G. 552). It is to be controlled, stored, handled, transmitted, distributed,
+and disposed of in accordance with CISA policy relating to FOUO information and
+is not to be released to the public or other personnel who do not have a valid
 'need-to-know' without prior approval of an authorized CISA official.</p>
 </body>
 </html>
@@ -145,7 +144,6 @@ is not to be released to the public or other personnel who do not have a valid
         # This is the data mustache will use to render the templates
         mustache_data = {"report_date": report_date, "cyhy_id": id}
 
-
         # Render the templates
         subject = chevron.render(PEMessage.Subject, mustache_data)
         text_body = chevron.render(PEMessage.TextBody, mustache_data)
@@ -163,6 +161,7 @@ is not to be released to the public or other personnel who do not have a valid
             cc_addrs,
             bcc_addrs,
         )
+
 
 class ScorecardMessage(ReportMessage):
     """An email message with the Posture and Exposure Report attachment.
@@ -183,9 +182,7 @@ class ScorecardMessage(ReportMessage):
 
     """
 
-    Subject = (
-        "CyHy Scorecard Report - {{cyhy_id}} - {{report_date}} (TLP:AMBER)"
-    )
+    Subject = "CyHy Scorecard Report - {{cyhy_id}} - {{report_date}} (TLP:AMBER)"
 
     TextBody = """Greetings,
                 This is a test of the text body.
@@ -199,31 +196,31 @@ class ScorecardMessage(ReportMessage):
 
 <p>Good afternoon,</p>
 
-<p>Posture and Exposure (P&E) offers stakeholders an opportunity 
-to view their organizational risk from the viewpoint of the adversary. 
-We utilize passive reconnaissance services, dark web analysis, and open-source 
-tools to identify spoofing in order to generate a risk profile report that is 
+<p>Posture and Exposure (P&E) offers stakeholders an opportunity
+to view their organizational risk from the viewpoint of the adversary.
+We utilize passive reconnaissance services, dark web analysis, and open-source
+tools to identify spoofing in order to generate a risk profile report that is
 delivered on a regular basis.</p>
 
-<p>As a customer of P&E you are receiving our regularly scheduled Scorecard 
+<p>As a customer of P&E you are receiving our regularly scheduled Scorecard
 which contains a summary of your attack surface.</p>
 
-<p>Finally, it is important to note that these findings have not been verified; 
-everything is gathered via passive analysis of publicly available sources.  As 
-such there may be false positive findings, however these findings should be 
-treated as information that your organization is leaking out to the internet 
+<p>Finally, it is important to note that these findings have not been verified;
+everything is gathered via passive analysis of publicly available sources.  As
+such there may be false positive findings, however these findings should be
+treated as information that your organization is leaking out to the internet
 for adversaries to notice.</p>
 
 <p style="display:inline;">Thank you,<br></p>
 <p style="display:inline;font-size:12pt;"><strong>The Posture and Exposure (P&E) Team</strong><br></p>
-<p style="display:inline;">Cybersecurity and Infrastructure Security Agency (CISA)<br>Email: 
+<p style="display:inline;">Cybersecurity and Infrastructure Security Agency (CISA)<br>Email:
 <a href="mailto:vulnerability@cisa.dhs.gov">vulnerability@cisa.dhs.gov</a></p>
 
-<p>WARNING: This document is FOR OFFICIAL USE ONLY (FOUO). It contains information 
-that may be exempt from public release under the Freedom of Information Act 
-(5 U.S.G. 552). It is to be controlled, stored, handled, transmitted, distributed, 
-and disposed of in accordance with CISA policy relating to FOUO information and 
-is not to be released to the public or other personnel who do not have a valid 
+<p>WARNING: This document is FOR OFFICIAL USE ONLY (FOUO). It contains information
+that may be exempt from public release under the Freedom of Information Act
+(5 U.S.G. 552). It is to be controlled, stored, handled, transmitted, distributed,
+and disposed of in accordance with CISA policy relating to FOUO information and
+is not to be released to the public or other personnel who do not have a valid
 'need-to-know' without prior approval of an authorized CISA official.</p>
 </body>
 </html>
@@ -272,7 +269,6 @@ is not to be released to the public or other personnel who do not have a valid
         # This is the data mustache will use to render the templates
         mustache_data = {"report_date": f"{month} {year}", "cyhy_id": id}
 
-
         # Render the templates
         subject = chevron.render(ScorecardMessage.Subject, mustache_data)
         text_body = chevron.render(ScorecardMessage.TextBody, mustache_data)
@@ -291,4 +287,3 @@ is not to be released to the public or other personnel who do not have a valid
             cc_addrs,
             bcc_addrs,
         )
-

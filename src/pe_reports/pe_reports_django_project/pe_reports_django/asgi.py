@@ -10,27 +10,27 @@ https://docs.djangoproject.com/en/4.1/howto/deployment/asgi/
 import os
 
 # Third-Party Libraries
-from django.core.wsgi import get_wsgi_application
+from dataAPI.views import api_router
+
 # Following 2 lines custom code
 from django.apps import apps
 from django.conf import settings
+from django.core.wsgi import get_wsgi_application
 from fastapi import FastAPI
 from fastapi.middleware.wsgi import WSGIMiddleware
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.cors import CORSMiddleware
 
-# cisagov Libraries
-from dataAPI.views import api_router
-
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "pe_reports_django.settings")
 
 application = get_wsgi_application()
 
-#Below this comment is custom code
+# Below this comment is custom code
 apps.populate(settings.INSTALLED_APPS)
 
 
 def get_application() -> FastAPI:
+    """get_application function."""
     app1 = FastAPI(title=settings.PROJECT_NAME, debug=settings.DEBUG)
     app1.add_middleware(
         CORSMiddleware,

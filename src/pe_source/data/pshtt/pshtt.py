@@ -38,7 +38,6 @@ from sslyze.server_connectivity import check_connectivity_to_server
 from sslyze.server_setting import ServerNetworkConfiguration
 import urllib3
 
-# cisagov Libraries
 from . import utils
 from .models import Domain, Endpoint
 

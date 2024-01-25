@@ -54,7 +54,7 @@
         const localNow = new Date();
         const localOffset = localNow.getTimezoneOffset() * -60;
         localNow.setTime(
-          localNow.getTime() + 1000 * (serverOffset - localOffset)
+          localNow.getTime() + 1000 * (serverOffset - localOffset),
         );
         return localNow;
       } else {
@@ -81,14 +81,14 @@
         message = ngettext(
           "Note: You are %s hour ahead of server time.",
           "Note: You are %s hours ahead of server time.",
-          timezoneOffset
+          timezoneOffset,
         );
       } else {
         timezoneOffset *= -1;
         message = ngettext(
           "Note: You are %s hour behind server time.",
           "Note: You are %s hours behind server time.",
-          timezoneOffset
+          timezoneOffset,
         );
       }
       message = interpolate(message, [timezoneOffset]);
@@ -136,7 +136,7 @@
         "class",
         "clock-icon",
         "title",
-        gettext("Choose a Time")
+        gettext("Choose a Time"),
       );
       shortcuts_span.appendChild(document.createTextNode("\u00A0"));
       shortcuts_span.appendChild(now_link);
@@ -184,7 +184,7 @@
           quickElement("li", time_list),
           gettext(element[0]),
           "href",
-          "#"
+          "#",
         );
         time_link.addEventListener("click", function (e) {
           e.preventDefault();
@@ -199,7 +199,7 @@
         cancel_p,
         gettext("Cancel"),
         "href",
-        "#"
+        "#",
       );
       cancel_link.addEventListener("click", function (e) {
         e.preventDefault();
@@ -216,10 +216,10 @@
     },
     openClock: function (num) {
       const clock_box = document.getElementById(
-        DateTimeShortcuts.clockDivName + num
+        DateTimeShortcuts.clockDivName + num,
       );
       const clock_link = document.getElementById(
-        DateTimeShortcuts.clockLinkName + num
+        DateTimeShortcuts.clockLinkName + num,
       );
 
       // Recalculate the clockbox position
@@ -237,16 +237,16 @@
       clock_box.style.display = "block";
       document.addEventListener(
         "click",
-        DateTimeShortcuts.dismissClockFunc[num]
+        DateTimeShortcuts.dismissClockFunc[num],
       );
     },
     dismissClock: function (num) {
       document.getElementById(
-        DateTimeShortcuts.clockDivName + num
+        DateTimeShortcuts.clockDivName + num,
       ).style.display = "none";
       document.removeEventListener(
         "click",
-        DateTimeShortcuts.dismissClockFunc[num]
+        DateTimeShortcuts.dismissClockFunc[num],
       );
     },
     handleClockQuicklink: function (num, val) {
@@ -257,7 +257,7 @@
         d = new Date(1970, 1, 1, val, 0, 0, 0);
       }
       DateTimeShortcuts.clockInputs[num].value = d.strftime(
-        get_format("TIME_INPUT_FORMATS")[0]
+        get_format("TIME_INPUT_FORMATS")[0],
       );
       DateTimeShortcuts.clockInputs[num].focus();
       DateTimeShortcuts.dismissClock(num);
@@ -299,7 +299,7 @@
         "class",
         "date-icon",
         "title",
-        gettext("Choose a Date")
+        gettext("Choose a Date"),
       );
       shortcuts_span.appendChild(document.createTextNode("\u00A0"));
       shortcuts_span.appendChild(today_link);
@@ -355,12 +355,12 @@
         cal_box,
         "",
         "id",
-        DateTimeShortcuts.calendarDivName2 + num
+        DateTimeShortcuts.calendarDivName2 + num,
       );
       cal_main.className = "calendar";
       DateTimeShortcuts.calendars[num] = new Calendar(
         DateTimeShortcuts.calendarDivName2 + num,
-        DateTimeShortcuts.handleCalendarCallback(num)
+        DateTimeShortcuts.handleCalendarCallback(num),
       );
       DateTimeShortcuts.calendars[num].drawCurrent();
 
@@ -372,7 +372,7 @@
         shortcuts,
         gettext("Yesterday"),
         "href",
-        "#"
+        "#",
       );
       day_link.addEventListener("click", function (e) {
         e.preventDefault();
@@ -399,7 +399,7 @@
         cancel_p,
         gettext("Cancel"),
         "href",
-        "#"
+        "#",
       );
       cancel_link.addEventListener("click", function (e) {
         e.preventDefault();
@@ -415,10 +415,10 @@
     },
     openCalendar: function (num) {
       const cal_box = document.getElementById(
-        DateTimeShortcuts.calendarDivName1 + num
+        DateTimeShortcuts.calendarDivName1 + num,
       );
       const cal_link = document.getElementById(
-        DateTimeShortcuts.calendarLinkName + num
+        DateTimeShortcuts.calendarLinkName + num,
       );
       const inp = DateTimeShortcuts.calendarInputs[num];
 
@@ -449,16 +449,16 @@
       cal_box.style.display = "block";
       document.addEventListener(
         "click",
-        DateTimeShortcuts.dismissCalendarFunc[num]
+        DateTimeShortcuts.dismissCalendarFunc[num],
       );
     },
     dismissCalendar: function (num) {
       document.getElementById(
-        DateTimeShortcuts.calendarDivName1 + num
+        DateTimeShortcuts.calendarDivName1 + num,
       ).style.display = "none";
       document.removeEventListener(
         "click",
-        DateTimeShortcuts.dismissCalendarFunc[num]
+        DateTimeShortcuts.dismissCalendarFunc[num],
       );
     },
     drawPrev: function (num) {
@@ -473,11 +473,11 @@
         DateTimeShortcuts.calendarInputs[num].value = new Date(
           y,
           m - 1,
-          d
+          d,
         ).strftime(format);
         DateTimeShortcuts.calendarInputs[num].focus();
         document.getElementById(
-          DateTimeShortcuts.calendarDivName1 + num
+          DateTimeShortcuts.calendarDivName1 + num,
         ).style.display = "none";
       };
     },
@@ -485,7 +485,7 @@
       const d = DateTimeShortcuts.now();
       d.setDate(d.getDate() + offset);
       DateTimeShortcuts.calendarInputs[num].value = d.strftime(
-        get_format("DATE_INPUT_FORMATS")[0]
+        get_format("DATE_INPUT_FORMATS")[0],
       );
       DateTimeShortcuts.calendarInputs[num].focus();
       DateTimeShortcuts.dismissCalendar(num);

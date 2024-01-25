@@ -71,13 +71,13 @@
       ngettext(
         "%(sel)s of %(cnt)s selected",
         "%(sel)s of %(cnt)s selected",
-        sel
+        sel,
       ),
       {
         sel: sel,
         cnt: actions_icnt,
       },
-      true
+      true,
     );
     const allToggle = document.getElementById(options.allToggleId);
     allToggle.checked = sel === actionCheckboxes.length;
@@ -156,7 +156,7 @@
       const startIndex = Math.min(targetIndex, lastCheckedIndex);
       const endIndex = Math.max(targetIndex, lastCheckedIndex);
       const filtered = checkboxes.filter(
-        (el, index) => startIndex <= index && index <= endIndex
+        (el, index) => startIndex <= index && index <= endIndex,
       );
       return filtered;
     }
@@ -174,7 +174,7 @@
             list_editable_changed = true;
           }
         });
-      }
+      },
     );
 
     document
@@ -183,8 +183,8 @@
         if (list_editable_changed) {
           const confirmed = confirm(
             gettext(
-              "You have unsaved changes on individual editable fields. If you run an action, your unsaved changes will be lost."
-            )
+              "You have unsaved changes on individual editable fields. If you run an action, your unsaved changes will be lost.",
+            ),
           );
           if (!confirmed) {
             event.preventDefault();
@@ -199,10 +199,10 @@
         if (document.querySelector("[name=action]").value) {
           const text = list_editable_changed
             ? gettext(
-                "You have selected an action, but you haven’t saved your changes to individual fields yet. Please click OK to save. You’ll need to re-run the action."
+                "You have selected an action, but you haven’t saved your changes to individual fields yet. Please click OK to save. You’ll need to re-run the action.",
               )
             : gettext(
-                "You have selected an action, and you haven’t made any changes on individual fields. You’re probably looking for the Go button rather than the Save button."
+                "You have selected an action, and you haven’t made any changes on individual fields. You’re probably looking for the Go button rather than the Save button.",
               );
           if (!confirm(text)) {
             event.preventDefault();

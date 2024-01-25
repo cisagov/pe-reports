@@ -38,7 +38,7 @@ Requires core.js and SelectBox.js.
       const title_available = quickElement(
         "h2",
         selector_available,
-        interpolate(gettext("Available %s") + " ", [field_name])
+        interpolate(gettext("Available %s") + " ", [field_name]),
       );
       quickElement(
         "span",
@@ -51,10 +51,10 @@ Requires core.js and SelectBox.js.
           gettext(
             "This is the list of available %s. You may choose some by " +
               "selecting them in the box below and then clicking the " +
-              '"Choose" arrow between the two boxes.'
+              '"Choose" arrow between the two boxes.',
           ),
-          [field_name]
-        )
+          [field_name],
+        ),
       );
 
       const filter_p = quickElement(
@@ -62,7 +62,7 @@ Requires core.js and SelectBox.js.
         selector_available,
         "",
         "id",
-        field_id + "_filter"
+        field_id + "_filter",
       );
       filter_p.className = "selector-filter";
 
@@ -71,7 +71,7 @@ Requires core.js and SelectBox.js.
         filter_p,
         "",
         "for",
-        field_id + "_input"
+        field_id + "_input",
       );
 
       quickElement(
@@ -83,10 +83,10 @@ Requires core.js and SelectBox.js.
         "title",
         interpolate(
           gettext(
-            "Type into this box to filter down the list of available %s."
+            "Type into this box to filter down the list of available %s.",
           ),
-          [field_name]
-        )
+          [field_name],
+        ),
       );
 
       filter_p.appendChild(document.createTextNode(" "));
@@ -98,7 +98,7 @@ Requires core.js and SelectBox.js.
         "type",
         "text",
         "placeholder",
-        gettext("Filter")
+        gettext("Filter"),
       );
       filter_input.id = field_id + "_input";
 
@@ -112,7 +112,7 @@ Requires core.js and SelectBox.js.
         "href",
         "#",
         "id",
-        field_id + "_add_all_link"
+        field_id + "_add_all_link",
       );
       choose_all.className = "selector-chooseall";
 
@@ -128,7 +128,7 @@ Requires core.js and SelectBox.js.
         "href",
         "#",
         "id",
-        field_id + "_add_link"
+        field_id + "_add_link",
       );
       add_link.className = "selector-add";
       const remove_link = quickElement(
@@ -140,7 +140,7 @@ Requires core.js and SelectBox.js.
         "href",
         "#",
         "id",
-        field_id + "_remove_link"
+        field_id + "_remove_link",
       );
       remove_link.className = "selector-remove";
 
@@ -150,7 +150,7 @@ Requires core.js and SelectBox.js.
       const title_chosen = quickElement(
         "h2",
         selector_chosen,
-        interpolate(gettext("Chosen %s") + " ", [field_name])
+        interpolate(gettext("Chosen %s") + " ", [field_name]),
       );
       quickElement(
         "span",
@@ -163,10 +163,10 @@ Requires core.js and SelectBox.js.
           gettext(
             "This is the list of chosen %s. You may remove some by " +
               "selecting them in the box below and then clicking the " +
-              '"Remove" arrow between the two boxes.'
+              '"Remove" arrow between the two boxes.',
           ),
-          [field_name]
-        )
+          [field_name],
+        ),
       );
 
       const to_box = quickElement(
@@ -180,7 +180,7 @@ Requires core.js and SelectBox.js.
         "size",
         from_box.size,
         "name",
-        from_box.name
+        from_box.name,
       );
       to_box.className = "filtered";
       const clear_all = quickElement(
@@ -194,7 +194,7 @@ Requires core.js and SelectBox.js.
         "href",
         "#",
         "id",
-        field_id + "_remove_all_link"
+        field_id + "_remove_all_link",
       );
       clear_all.className = "selector-clearall";
 
@@ -214,7 +214,7 @@ Requires core.js and SelectBox.js.
           this,
           SelectBox.move_all,
           field_id + "_from",
-          field_id + "_to"
+          field_id + "_to",
         );
       });
       add_link.addEventListener("click", function (e) {
@@ -223,7 +223,7 @@ Requires core.js and SelectBox.js.
           this,
           SelectBox.move,
           field_id + "_from",
-          field_id + "_to"
+          field_id + "_to",
         );
       });
       remove_link.addEventListener("click", function (e) {
@@ -232,7 +232,7 @@ Requires core.js and SelectBox.js.
           this,
           SelectBox.move,
           field_id + "_to",
-          field_id + "_from"
+          field_id + "_from",
         );
       });
       clear_all.addEventListener("click", function (e) {
@@ -241,7 +241,7 @@ Requires core.js and SelectBox.js.
           this,
           SelectBox.move_all,
           field_id + "_to",
-          field_id + "_from"
+          field_id + "_from",
         );
       });
       filter_input.addEventListener("keypress", function (e) {
@@ -322,7 +322,7 @@ Requires core.js and SelectBox.js.
       const temp = from.selectedIndex;
       SelectBox.filter(
         field_id + "_from",
-        document.getElementById(field_id + "_input").value
+        document.getElementById(field_id + "_input").value,
       );
       from.selectedIndex = temp;
     },

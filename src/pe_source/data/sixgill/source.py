@@ -10,6 +10,7 @@ import requests
 
 # cisagov Libraries
 from pe_source.data.pe_db.config import cybersix_token
+
 from .api import (
     alerts_content,
     alerts_count,

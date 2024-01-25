@@ -102,7 +102,7 @@ def download_encrypt_reports(report_date, output_dir):
     for org_pass in pe_org_pass:
         print(org_pass)
         password = org_pass[1]
-        if password == None:
+        if password is None:
             LOGGER.error("NO PASSWORD")
             continue
         # Check if file exists before encrypting

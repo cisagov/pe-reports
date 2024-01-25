@@ -502,11 +502,12 @@ class GenInputOrgUIDDateSingle(BaseModel):
 
 # Generalized list of org_uids input schema
 class GenInputOrgUIDList(BaseModel):
-    "GenInputOrgUIDList schema class."
+    """GenInputOrgUIDList schema class."""
+
     org_uid_list: List[str]
 
     class Config:
-        """GenInputOrgUIDList"""
+        """GenInputOrgUIDList schema config class."""
 
         orm_mode = True
 
@@ -1668,7 +1669,7 @@ class RootDomainsByOrg(BaseModel):
 
 # --- query_creds_view(), Issue 623 ---
 # Uses VwBreachcomp schema
-        
+
 
 # --- query_credsbyday_view(), Issue 624 ---
 class CredsbydateByOrg(BaseModel):
@@ -2055,7 +2056,7 @@ class RSSInsertInput(BaseModel):
     ip_count: int
     root_count: int
     sub_count: int
-    num_ports: int #ports_count: int
+    num_ports: int  # ports_count: int
     creds_count: int
     breach_count: int
     cred_password_count: int
@@ -2070,8 +2071,8 @@ class RSSInsertInput(BaseModel):
     dark_web_mentions_count: int
     dark_web_executive_alerts_count: int
     dark_web_asset_alerts_count: int
-    pe_number_score: str # may be "NA"
-    pe_letter_grade: str # may be "NA"
+    pe_number_score: str  # may be "NA"
+    pe_letter_grade: str  # may be "NA"
     cidr_count: int
     port_protocol_count: int
     software_count: int
@@ -3375,7 +3376,60 @@ class CvePagedTaskResp(BaseModel):
     status: str
     result: Optional[CvePagedResult] = None
     error: Optional[str] = None
-    
+
+
+# --- NIST CVE endpoint, Issue 696 ---
+class CveInsert(BaseModel):
+    """CveInsert schema class."""
+
+    cve_uid: Optional[Any]
+    cve_name: str
+    published_date: Optional[datetime] = None
+    last_modified_date: Optional[datetime] = None
+    vuln_status: Optional[str] = None
+    description: Optional[str] = None
+    cvss_v2_source: Optional[str] = None
+    cvss_v2_type: Optional[str] = None
+    cvss_v2_version: Optional[str] = None
+    cvss_v2_vector_string: Optional[str] = None
+    cvss_v2_base_score: Optional[float] = None
+    cvss_v2_base_severity: Optional[str] = None
+    cvss_v2_exploitability_score: Optional[float] = None
+    cvss_v2_impact_score: Optional[float] = None
+    cvss_v3_source: Optional[str] = None
+    cvss_v3_type: Optional[str] = None
+    cvss_v3_version: Optional[str] = None
+    cvss_v3_vector_string: Optional[str] = None
+    cvss_v3_base_score: Optional[float] = None
+    cvss_v3_base_severity: Optional[str] = None
+    cvss_v3_exploitability_score: Optional[float] = None
+    cvss_v3_impact_score: Optional[float] = None
+    cvss_v4_source: Optional[str] = None
+    cvss_v4_type: Optional[str] = None
+    cvss_v4_version: Optional[str] = None
+    cvss_v4_vector_string: Optional[str] = None
+    cvss_v4_base_score: Optional[float] = None
+    cvss_v4_base_severity: Optional[str] = None
+    cvss_v4_exploitability_score: Optional[float] = None
+    cvss_v4_impact_score: Optional[float] = None
+    weaknesses: List[str] = []
+    reference_urls: List[str] = []
+    cpe_list: List[str] = []
+
+    vender_product: Dict[str, List[Tuple]]
+
+
+# --- NIST CVE endpoint, Issue 696 ---
+class GetCveCall(BaseModel):
+    """Get CVE Call schema."""
+
+    cve_name: str
+
+    class Config:
+        """GetCveCall schema config class."""
+
+        orm_mode = True
+
 
 class PshttDomainToRun(BaseModel):
     """PshttDomainsToRun schema class."""
@@ -3532,9 +3586,13 @@ class PshttInsert(BaseModel):
 
 
 class AlertInput(BaseModel):
+    """AlertInput class."""
+
     org_uid: str
     start_date: str
     end_date: str
 
     class Config:
+        """AlertInput config class."""
+
         orm_mode = True

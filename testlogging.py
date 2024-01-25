@@ -1,3 +1,5 @@
+"""testlogging module for the pe-reports project."""
+# Standard Python Libraries
 import logging
 
 CENTRAL_LOGGING_FILE = "pe_reports_logging.log"
@@ -17,4 +19,4 @@ logging.basicConfig(
     level=level,
 )
 
-logging.info('The log is logged')
+logging.info("The log is logged")

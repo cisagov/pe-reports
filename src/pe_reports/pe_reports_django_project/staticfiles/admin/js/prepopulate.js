@@ -28,7 +28,7 @@
           }
         });
         prepopulatedField.val(
-          URLify(values.join(" "), maxLength, allowUnicode)
+          URLify(values.join(" "), maxLength, allowUnicode),
         );
       };
 

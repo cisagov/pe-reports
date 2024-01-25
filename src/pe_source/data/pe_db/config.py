@@ -86,7 +86,7 @@ def cybersix_token():
         try:
             resp = requests.post(url, headers=headers, data=payload).json()
             break
-        except Exception as e:
+        except Exception:
             logging.info("Error. Trying token post again...")
             time.sleep(10)
             count += 1

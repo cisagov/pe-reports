@@ -169,7 +169,8 @@ def format_table(
                 # Remove emojis from content because the report generator can't display them
                 print(str(cell))
                 cell = Paragraph(
-                    demoji.replace(str(cell), "").replace("&", "[and]"), column_style_list[current_cell]
+                    demoji.replace(str(cell), "").replace("&", "[and]"),
+                    column_style_list[current_cell],
                 )
 
             current_row.append(cell)

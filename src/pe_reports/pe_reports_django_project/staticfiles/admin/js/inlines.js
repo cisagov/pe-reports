@@ -37,16 +37,16 @@
     };
     const totalForms = $("#id_" + options.prefix + "-TOTAL_FORMS").prop(
       "autocomplete",
-      "off"
+      "off",
     );
     let nextIndex = parseInt(totalForms.val(), 10);
     const maxForms = $("#id_" + options.prefix + "-MAX_NUM_FORMS").prop(
       "autocomplete",
-      "off"
+      "off",
     );
     const minForms = $("#id_" + options.prefix + "-MIN_NUM_FORMS").prop(
       "autocomplete",
-      "off"
+      "off",
     );
     let addButton;
 
@@ -66,7 +66,7 @@
               numCols +
               '"><a href="#">' +
               options.addText +
-              "</a></tr>"
+              "</a></tr>",
           );
           addButton = $parent.find("tr:last a");
         } else {
@@ -78,7 +78,7 @@
                 options.addCssClass +
                 '"><a href="#">' +
                 options.addText +
-                "</a></div>"
+                "</a></div>",
             );
           addButton = $this.filter(":last").next().find("a");
         }
@@ -120,7 +120,7 @@
           detail: {
             formsetName: options.prefix,
           },
-        })
+        }),
       );
     };
 
@@ -139,7 +139,7 @@
               options.deleteCssClass +
               '" href="#">' +
               options.deleteText +
-              "</a></div>"
+              "</a></div>",
           );
       } else if (row.is("ul") || row.is("ol")) {
         // If they're laid out as an ordered/unordered list,
@@ -149,7 +149,7 @@
             options.deleteCssClass +
             '" href="#">' +
             options.deleteText +
-            "</a></li>"
+            "</a></li>",
         );
       } else {
         // Otherwise, just insert the remove button as the
@@ -161,7 +161,7 @@
               options.deleteCssClass +
               '" href="#">' +
               options.deleteText +
-              "</a></span>"
+              "</a></span>",
           );
       }
       // Add delete handler for each row.
@@ -192,7 +192,7 @@
           detail: {
             formsetName: options.prefix,
           },
-        })
+        }),
       );
       // Update the TOTAL_FORMS form count.
       const forms = $("." + options.formCssClass);
@@ -236,7 +236,7 @@
           options.formCssClass +
           ":not(.has_original):not(." +
           options.emptyCssClass +
-          ")"
+          ")",
       )
       .each(function () {
         addInlineDeleteButton($(this));
@@ -311,7 +311,7 @@
               row
                 .find(".field-" + field_name)
                 .find("input, select, textarea")
-                .attr("id")
+                .attr("id"),
           );
         });
         if (dependencies.length) {
@@ -349,7 +349,7 @@
           $(this).html(
             $(this)
               .html()
-              .replace(/(#\d+)/g, "#" + count)
+              .replace(/(#\d+)/g, "#" + count),
           );
         });
     };
@@ -388,7 +388,7 @@
             field_element = row.find(".form-row.field-" + field_name);
           }
           dependencies.push(
-            "#" + field_element.find("input, select, textarea").attr("id")
+            "#" + field_element.find("input, select, textarea").attr("id"),
           );
         });
         if (dependencies.length) {

@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """Link sub-domains and IPs from sub-domain lookups."""
 # Standard Python Libraries
 import hashlib

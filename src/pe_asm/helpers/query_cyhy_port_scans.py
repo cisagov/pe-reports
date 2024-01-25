@@ -1,30 +1,23 @@
-#!/usr/bin/python3
 """Query CyHy database to update P&E data with CyHy ASM data."""
+# !/usr/bin/python3
 
 # Standard Python Libraries
 import datetime
+from functools import partial
 import logging
-import requests
+import multiprocessing
 
 # Third-Party Libraries
-from bs4 import BeautifulSoup
 import pandas as pd
 
-# cisagov Libraries
 from ..data.cyhy_db_query import (
+    get_pe_org_map,
+    insert_cyhy_scorecard_data,
     mongo_connect,
-    mongo_scan_connect,
     pe_db_connect,
     pe_db_staging_connect,
-    get_pe_org_map,
     query_pe_orgs,
-    insert_cyhy_scorecard_data,
 )
-import multiprocessing
-import pymongo
-import psycopg2
-import json
-from functools import partial
 
 LOGGER = logging.getLogger(__name__)
 DATE = datetime.datetime.today()
@@ -94,7 +87,6 @@ def process_batch(batch, staging):
         if (port_scans_count % 100000 == 0) or (
             port_scans_count == (port_scans_total - skip_count)
         ):
-
             # Insert port_scans data into the P&E database
             with multiprocessing.Lock():
                 LOGGER.info("Inserting port_scans data")
@@ -127,7 +119,6 @@ def process_batch(batch, staging):
 
 def get_cyhy_port_scans(staging=False):
     """Get CyHy Ports and Scans."""
-
     # Connect to P&E postgres database
     if staging:
         pe_db_conn = pe_db_staging_connect()

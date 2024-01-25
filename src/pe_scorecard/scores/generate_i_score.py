@@ -1,44 +1,40 @@
 """A file containing the Identification Score (I-Score) algorithm, version 1.1."""
 # Standard Python Libraries
-import sys
-import os
 import logging
+import os
+import sys
 
 # Third-Party Libraries
 import numpy as np
 import pandas as pd
 
-# Help python find db_query file
-sys.path.append(os.path.join(os.path.dirname(__file__), "..", ".."))
-
 # cisagov Libraries
-from pe_scorecard.scores.score_helper_functions import (
-    rescale,
-    get_prev_startstop,
-    split_parent_child_records,
-)
 from pe_scorecard.data.db_query import (
-    # VS queries
-    iscore_vs_vuln,
-    iscore_vs_vuln_prev,
-    # PE queries
-    iscore_pe_vuln,
-    iscore_pe_cred,
     iscore_pe_breach,
+    iscore_pe_cred,
     iscore_pe_darkweb,
     iscore_pe_protocol,
-    # WAS queries
+    iscore_pe_vuln,
+    iscore_vs_vuln,
+    iscore_vs_vuln_prev,
     iscore_was_vuln,
     iscore_was_vuln_prev,
-    # KEV list
     kev_list,
-    # FCEB Stakeholder sectors by size
-    xs_stakeholders,
-    s_stakeholders,
-    m_stakeholders,
-    l_stakeholders,
-    xl_stakeholders,
 )
+
+# l_stakeholders,
+# m_stakeholders,
+# s_stakeholders,
+# xl_stakeholders,
+# xs_stakeholders,
+from pe_scorecard.scores.score_helper_functions import (
+    get_prev_startstop,
+    rescale,
+    split_parent_child_records,
+)
+
+# Help python find db_query file
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", ".."))
 
 # Setup logging to central file
 LOGGER = logging.getLogger(__name__)
@@ -108,7 +104,7 @@ def import_ident_data(prev_start, prev_end, curr_start, curr_end, stakeholder_li
     # ----- Retrieve KEV list: -----
     # List of all CVE-IDs that are considered KEVs
     LOGGER.info("Retrieving KEV list...")
-    kev_list = kev_list()
+    list_of_kevs = kev_list()
     LOGGER.info("\tDone!")
     # ----- List of orgs for this sector: -----
     org_list = stakeholder_list
@@ -134,7 +130,7 @@ def import_ident_data(prev_start, prev_end, curr_start, curr_end, stakeholder_li
     # Set KEV flags
     vs_data_vuln["is_kev"] = 0
     vs_data_vuln["is_kev"] = np.where(
-        vs_data_vuln["cve_name"].isin(kev_list["kev"].values), 1, 0
+        vs_data_vuln["cve_name"].isin(list_of_kevs["kev"].values), 1, 0
     )
     # Set flags for low/med/high/crit KEVs
     [
@@ -259,7 +255,7 @@ def import_ident_data(prev_start, prev_end, curr_start, curr_end, stakeholder_li
     # Set KEV flags
     pe_data_vuln["is_kev"] = 0
     pe_data_vuln["is_kev"] = np.where(
-        pe_data_vuln["cve_name"].isin(kev_list["kev"].values), 1, 0
+        pe_data_vuln["cve_name"].isin(list_of_kevs["kev"].values), 1, 0
     )
     # Set flags for low/med/high/crit KEVs
     [
@@ -518,7 +514,7 @@ def import_ident_data(prev_start, prev_end, curr_start, curr_end, stakeholder_li
     # Set KEV flags
     was_data_vuln["is_kev"] = 0
     was_data_vuln["is_kev"] = np.where(
-        was_data_vuln["cve_name"].isin(kev_list["kev"].values), 1, 0
+        was_data_vuln["cve_name"].isin(list_of_kevs["kev"].values), 1, 0
     )
     # Set flags for low/med/high/crit KEVs
     [

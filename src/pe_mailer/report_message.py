@@ -1,6 +1,5 @@
 """This module contains the ReportMessage class."""
 
-# cisagov Libraries
 from .message import Message
 
 

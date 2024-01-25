@@ -1,10 +1,9 @@
+"""dataAPI module urls.py."""
 # Third-Party Libraries
-from fastapi import APIRouter
+# from fastapi import APIRouter
 
-# cisagov Libraries
-from . import views
-from ..home.models import Organizations
-
+# from . import views
+# from ..home.models import Organizations
 
 # router = APIRouter()
 #

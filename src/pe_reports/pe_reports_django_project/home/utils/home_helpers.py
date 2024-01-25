@@ -1,3 +1,4 @@
+"""home module utils/home_helpers.py."""
 # Third-Party Libraries
 # import boto3
 # from botocore.exceptions import ClientError

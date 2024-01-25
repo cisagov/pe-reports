@@ -103,7 +103,7 @@ depends on core.js for utility functions like removeChildren or quickElement
       quickElement(
         "caption",
         calTable,
-        CalendarNamespace.monthsOfYear[month - 1] + " " + year
+        CalendarNamespace.monthsOfYear[month - 1] + " " + year,
       );
       const tableBody = quickElement("tbody", calTable);
 
@@ -115,14 +115,14 @@ depends on core.js for utility functions like removeChildren or quickElement
           tableRow,
           CalendarNamespace.daysOfWeek[
             (i + CalendarNamespace.firstDayOfWeek) % 7
-          ]
+          ],
         );
       }
 
       const startingPos = new Date(
         year,
         month - 1,
-        1 - CalendarNamespace.firstDayOfWeek
+        1 - CalendarNamespace.firstDayOfWeek,
       ).getDay();
       const days = CalendarNamespace.getDaysInMonth(month, year);
 
@@ -206,7 +206,7 @@ depends on core.js for utility functions like removeChildren or quickElement
         this.currentYear,
         this.div_id,
         this.callback,
-        this.selected
+        this.selected,
       );
     },
     drawDate: function (month, year, selected) {

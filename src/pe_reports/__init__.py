@@ -19,6 +19,8 @@ from flask_sqlalchemy import SQLAlchemy
 # cisagov Libraries
 from pe_reports.data.config import config
 
+from ._version import __version__  # noqa: F401
+
 # Stakeholder views
 # from pe_reports.home.views import home_blueprint
 # from pe_reports.report_gen.views import report_gen_blueprint
@@ -26,7 +28,6 @@ from pe_reports.data.config import config
 # from pe_reports.stakeholder_bulk_upload.views import stakeholder_bulk_upload_blueprint
 # from pe_reports.stakeholder_full.views import stakeholder_full_blueprint
 
-from ._version import __version__  # noqa: F401
 
 params = config()
 login_manager = LoginManager()

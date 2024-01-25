@@ -1,8 +1,14 @@
-from pymongo import MongoClient
+"""test_port_scans_agg.py script."""
+# Standard Python Libraries
 import datetime
 
+# Third-Party Libraries
+import pandas as pd
+
+# from pymongo import MongoClient
 
 one_month_ago = datetime.datetime.now() - datetime.timedelta(days=30)
+client = pd.DataFrame()
 cyhyDB = client["cyhy"]
 port_scans = cyhyDB["snapshots"]
 

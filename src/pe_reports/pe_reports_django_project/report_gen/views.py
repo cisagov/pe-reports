@@ -170,7 +170,6 @@ def report_gen(request):
 
     score_card_form = ScoreCardGenFormExternal(request.POST)
     if score_card_form.is_valid():
-
         org_id = score_card_form.cleaned_data["org_id"]
         month = score_card_form.cleaned_data["month"]
         year = score_card_form.cleaned_data["year"]

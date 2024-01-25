@@ -53,8 +53,7 @@ def encrypt(file, password, encrypted_file):
 
 def download_encrypt_reports(report_date, output_dir):
     """Fetch reports from S3 bucket."""
-
-    download_count = 0
+    # download_count = 0
     # total = len(pe_orgs)
     # print(total)
 
@@ -66,13 +65,11 @@ def download_encrypt_reports(report_date, output_dir):
     for org_pass in pe_org_pass:
         print(org_pass)
         password = org_pass[1]
-        if password == None:
+        if password is None:
             LOGGER.error("NO PASSWORD")
             continue
         # Check if file exists before encrypting
-        current_file = (
-            f"{output_dir}/{org_pass[0]}/Posture_and_Exposure_Report-{org_pass[0]}-{report_date}.pdf"
-        )
+        current_file = f"{output_dir}/{org_pass[0]}/Posture_and_Exposure_Report-{org_pass[0]}-{report_date}.pdf"
         current_asm_file = f"{output_dir}/{org_pass[0]}/Posture-and-Exposure-ASM-Summary_{org_pass[0]}_{report_date}.pdf"
         if not os.path.isfile(current_file):
             LOGGER.error("%s report does not exist.", org_pass[0])

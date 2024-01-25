@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """Link sub-domains and IPs from IP lookups."""
 # Standard Python Libraries
 import datetime
@@ -48,7 +49,6 @@ def reverseLookup(ip, failed_ips):
             print("failed to update timestamp field")
             print(e)
         if response["size"] > 0:
-
             result = response["result"]
             for domain in result:
                 print(domain)

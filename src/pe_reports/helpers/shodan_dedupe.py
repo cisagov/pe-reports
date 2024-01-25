@@ -366,7 +366,6 @@ def dedupe(orgs):
     # TODO: Add key
     api = shodan_api_init()[0]
     for org_index, org in orgs.iterrows():
-
         logging.info(f"Running on {org['name']}")
         conn = connect()
         cidrs = query_cidrs(conn, org["organizations_uid"])

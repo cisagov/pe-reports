@@ -39,6 +39,7 @@ from schema import And, Schema, SchemaError, Use
 # cisagov Libraries
 import pe_reports
 from pe_reports.data.db_query import connect, get_orgs, get_orgs_contacts
+
 from ._version import __version__
 from .pe_message import PEMessage
 from .stats_message import StatsMessage
@@ -191,11 +192,11 @@ def send_message(ses_client, message, counter=None):
 
 
 def send_pe_reports(ses_client, pe_report_dir, to):
-    """Send out Posture and Exposure reports.
+    """
+    Send out Posture and Exposure reports.
 
     Parameters
     ----------
-
     ses_client : boto3.client
         The boto3 SES client via which the message is to be sent.
 
@@ -234,8 +235,8 @@ def send_pe_reports(ses_client, pe_report_dir, to):
 
     staging_conn = connect()
     # org_contacts = get_orgs_contacts(staging_conn) # old tsql ver.
-    org_contacts = get_orgs_contacts() # api ver.
-    
+    org_contacts = get_orgs_contacts()  # api ver.
+
     agencies_emailed_pe_reports = 0
     # Iterate over cyhy_requests, if necessary
     if pe_report_dir:
@@ -338,20 +339,19 @@ def send_reports(pe_report_dir, summary_to, test_emails):
         return 1
 
     # Assume role to use mailer
-    sts_client = boto3.client('sts')
-    assumed_role_object=sts_client.assume_role(
-        RoleArn=MAILER_ARN,
-        RoleSessionName="AssumeRoleSession1"
+    sts_client = boto3.client("sts")
+    assumed_role_object = sts_client.assume_role(
+        RoleArn=MAILER_ARN, RoleSessionName="AssumeRoleSession1"
     )
-    credentials=assumed_role_object['Credentials']
+    credentials = assumed_role_object["Credentials"]
 
-    ses_client = boto3.client("ses", 
+    ses_client = boto3.client(
+        "ses",
         region_name="us-east-1",
-        aws_access_key_id=credentials['AccessKeyId'],
-        aws_secret_access_key=credentials['SecretAccessKey'],
-        aws_session_token=credentials['SessionToken']
+        aws_access_key_id=credentials["AccessKeyId"],
+        aws_secret_access_key=credentials["SecretAccessKey"],
+        aws_session_token=credentials["SessionToken"],
     )
-    
 
     # Email the summary statistics, if necessary
     if test_emails is not None:

@@ -22,7 +22,7 @@
 
     const main = document.getElementById("main");
     let navSidebarIsOpen = localStorage.getItem(
-      "django.admin.navSidebarIsOpen"
+      "django.admin.navSidebarIsOpen",
     );
     if (navSidebarIsOpen === null) {
       navSidebarIsOpen = "true";
@@ -94,7 +94,7 @@
     nav.addEventListener("keyup", checkValue, false);
 
     const storedValue = sessionStorage.getItem(
-      "django.admin.navSidebarFilterValue"
+      "django.admin.navSidebarFilterValue",
     );
     if (storedValue) {
       nav.value = storedValue;

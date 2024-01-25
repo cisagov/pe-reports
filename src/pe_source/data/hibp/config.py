@@ -21,7 +21,7 @@ def config(
             if param[0] == "pe_api_key" or param[0] == "pe_api_url":
                 continue
             db[param[0]] = param[1]
-            
+
     else:
         raise Exception("Section {} not found in the {} file".format(section, filename))
     return db
@@ -48,6 +48,7 @@ def config2(filename="/home/ubuntu/adhoc/data/database.ini", section="crossfeedD
 def get_hibp_token(
     filename="/var/www/pe-reports/src/pe_reports/data/database.ini", section="hibp"
 ):
+    """get_hibp_token function."""
     if os.path.isfile(filename):
         parser = ConfigParser()
         parser.read(filename, encoding="utf-8")

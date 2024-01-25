@@ -1,3 +1,4 @@
+"""stakeholder_lite module views.py."""
 # Standard Python Libraries
 import logging
 
@@ -34,14 +35,14 @@ def getAgenciesByCount(orgCount):
 
 
 class StakeholderLiteView(TemplateView):
-    """Stakeholder lite template"""
+    """Stakeholder lite template."""
 
     template_name = "stakeholder_lite/stakeholder_lite.html"
     LOGGER.info("Got to Stakeholder")
 
 
 class StakeholderLiteForm(FormView):
-    """Stahkeholder lite from"""
+    """Stakeholder lite form."""
 
     form_class = GatherStakeholderLiteForm
     template_name = "stakeholder_lite/stakeholder_lite.html"
@@ -49,7 +50,7 @@ class StakeholderLiteForm(FormView):
     success_url = reverse_lazy("stakeholder_lite")
 
     def form_valid(self, form):
-
+        """form_valid function."""
         theorgCount = form.cleaned_data["orgCount"].upper()
         LOGGER.info(f"The org count was {theorgCount}")
 

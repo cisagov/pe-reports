@@ -1,19 +1,21 @@
 #!/usr/bin/python3
 """Query CyHy database to update P&E data with CyHy port_scans data."""
 
-import subprocess
-import json
-import re
+# Standard Python Libraries
 import datetime
+import json
 import logging
+import re
+import subprocess
+
+# Third-Party Libraries
 import pandas as pd
 
-# cisagov Libraries
 from ..data.cyhy_db_query import (
+    insert_cyhy_scorecard_data,
     pe_db_connect,
     pe_db_staging_connect,
     query_pe_orgs,
-    insert_cyhy_scorecard_data,
 )
 
 DATE = datetime.datetime.today()
@@ -21,6 +23,7 @@ LOGGER = logging.getLogger(__name__)
 
 
 def get_cyhy_port_scans(staging):
+    """get_cyhy_port_scans function."""
     # Connect to P&E postgres database
     if staging:
         pe_db_conn = pe_db_staging_connect()
@@ -31,7 +34,7 @@ def get_cyhy_port_scans(staging):
     pe_orgs = query_pe_orgs(pe_db_conn)
 
     # Build the Go program
-    build_result = subprocess.run(
+    subprocess.run(
         [
             "go",
             "build",

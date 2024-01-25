@@ -2,9 +2,10 @@
 
 # Standard Python Libraries
 from datetime import datetime
-import sys
+import json
 import logging
 import socket
+import sys
 import time
 
 # Third-Party Libraries
@@ -13,7 +14,6 @@ import psycopg2
 from psycopg2 import OperationalError
 import psycopg2.extras as extras
 import requests
-import json
 
 # cisagov Libraries
 from pe_reports import app
@@ -206,9 +206,7 @@ def insert_sixgill_mentions(new_mentions):
     )
     # Remove useless image file text from content field
     new_mentions["content"] = new_mentions["content"].str.replace(
-        "(?:@@@SIXGILL_IMAGE?)[^\s]+", 
-        "[SIXGILL_IMAGE_FILE]", 
-        regex=True
+        r"(?:@@@SIXGILL_IMAGE?)[^\s]+", "[SIXGILL_IMAGE_FILE]", regex=True
     )
     new_mentions["sub_category"] = "NaN"
     new_mentions[
@@ -231,8 +229,12 @@ def insert_sixgill_mentions(new_mentions):
             "comments_count",  # float64
             "tags",  # float64
         ]
-    ].astype(str)
-    new_mentions["comments_count"].replace("nan", "NaN", inplace=True) # switch nan to NaN
+    ].astype(
+        str
+    )
+    new_mentions["comments_count"].replace(
+        "nan", "NaN", inplace=True
+    )  # switch nan to NaN
 
     # for col in new_mentions.columns:
     #     max_str_len = new_mentions[col].map(len).max()
@@ -712,7 +714,7 @@ def api_pull_xpanse_vulns(business_unit, modified_date):
             )
     except Exception as e:
         raise Exception("xpanse_vuln query task failed 2, details: ", e)
-    
+
 
 # --- Issue 696 ---
 def api_cve_insert(cve_dict):

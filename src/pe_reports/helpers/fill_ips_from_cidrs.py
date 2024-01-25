@@ -32,7 +32,6 @@ def fill_ips_from_cidrs():
     cidrs = query_cidrs()
     ips_from_cidrs = []
     for cidr_index, cidr in cidrs.iterrows():
-
         if cidr["insert_alert"] is not None:
             continue
         ips_from_cidrs = ips_from_cidrs + enumerate_ips(

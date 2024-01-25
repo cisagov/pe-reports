@@ -17,15 +17,20 @@ from reportlab.pdfgen import canvas
 from reportlab.platypus import Frame, Paragraph, Table, TableStyle
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
-IN_FILEPATH = BASE_DIR + "/assets_scorecard/empty_scorecard.pdf" # Never used?
+IN_FILEPATH = BASE_DIR + "/assets_scorecard/empty_scorecard.pdf"  # Never used?
 ON_PAGE_INDEX = 0
 UNDERNEATH = (
     False  # if True, new content will be placed underneath page (painted first)
 )
 
-pdfmetrics.registerFont(TTFont("Frank_Goth", BASE_DIR + "/assets_scorecard/FranklinGothic.ttf"))
 pdfmetrics.registerFont(
-    TTFont("Frank_Goth_Book", BASE_DIR + "/assets_scorecard/Franklin_Gothic_Book_Regular.ttf")
+    TTFont("Frank_Goth", BASE_DIR + "/assets_scorecard/FranklinGothic.ttf")
+)
+pdfmetrics.registerFont(
+    TTFont(
+        "Frank_Goth_Book",
+        BASE_DIR + "/assets_scorecard/Franklin_Gothic_Book_Regular.ttf",
+    )
 )
 
 
@@ -380,7 +385,9 @@ def create_scorecard(data_dict, file_name):
     packet.seek(0)
     new_pdf = PdfFileReader(packet)
     # read your existing PDF
-    existing_pdf = PdfFileReader(open(BASE_DIR + "/assets_scorecard/empty_scorecard.pdf", "rb"))
+    existing_pdf = PdfFileReader(
+        open(BASE_DIR + "/assets_scorecard/empty_scorecard.pdf", "rb")
+    )
     output = PdfFileWriter()
     # add the "watermark" (which is the new pdf) on the existing page
     page = existing_pdf.getPage(0)

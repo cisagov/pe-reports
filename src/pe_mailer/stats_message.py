@@ -6,7 +6,6 @@ import datetime
 # Third-Party Libraries
 import chevron
 
-# cisagov Libraries
 from .message import Message
 
 

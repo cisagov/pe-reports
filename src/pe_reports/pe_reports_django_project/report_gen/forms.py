@@ -16,7 +16,7 @@ class InfoFormExternal(forms.Form):
 
     def __init__(self, *args, **kwargs):
         """Initialize report gen form."""
-        super(InfoFormExternal, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         for visible in self.visible_fields():
             visible.field.widget.attrs["class"] = "form-control"
 
@@ -32,7 +32,7 @@ class BulletinFormExternal(forms.Form):
 
     def __init__(self, *args, **kwargs):
         """Initialize bulletin gen form."""
-        super(BulletinFormExternal, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         for visible in self.visible_fields():
             visible.field.widget.attrs["class"] = "form-control"
 
@@ -45,7 +45,7 @@ class CredsFormExternal(forms.Form):
 
     def __init__(self, *args, **kwargs):
         """Initialize cred breach gen form."""
-        super(CredsFormExternal, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         for visible in self.visible_fields():
             visible.field.widget.attrs["class"] = "form-control"
 
@@ -63,6 +63,6 @@ class ScoreCardGenFormExternal(forms.Form):
 
     def __init__(self, *args, **kwargs):
         """Initialize scorecard gen form."""
-        super(ScoreCardGenFormExternal, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         for visible in self.visible_fields():
             visible.field.widget.attrs["class"] = "form-control"

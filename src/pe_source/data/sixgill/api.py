@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """Cybersixgill API calls."""
 # Standard Python Libraries
 import json
@@ -174,7 +175,9 @@ def dve_top_cves():
         if result.get("x_sixgill_info").get("nvd").get("v3") is None:
             nvd_v3_score = None
         else:
-            nvd_v3_score = result.get("x_sixgill_info").get("nvd").get("v3").get("current")
+            nvd_v3_score = (
+                result.get("x_sixgill_info").get("nvd").get("v3").get("current")
+            )
         nvd_base_score = "{'v2': None, 'v3': " + str(nvd_v3_score) + "}"
         clean_cve = {
             "cve_id": cve_id,
@@ -240,7 +243,6 @@ def setOrganizationUsers(org_id):
             or userrole == role2
             and user_id != id_role1
         ):
-
             url = (
                 f"https://api.cybersixgill.com/multi-tenant/organization/"
                 f"{org_id}/user/{user_id}?role_id={userrole}"
@@ -322,4 +324,3 @@ def get_bulk_cve_resp(cve_list):
         return resp
     except Exception as e:
         LOGGER.error("Error making bulk CVE API call: %s", e)
-

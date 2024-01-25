@@ -6,7 +6,6 @@ import datetime
 # Third-Party Libraries
 import pandas as pd
 
-# cisagov Libraries
 from .data.db_query import (
     query_breachdetails_view,
     query_creds_view,
@@ -17,6 +16,7 @@ from .data.db_query import (
     query_domMasq_alerts,
     query_shodan,
 )
+
 # from .data.translator import translate
 
 
@@ -98,7 +98,9 @@ class Credentials:
                 "number_of_creds": "Number of Creds",
             }
         )
-        breach_det_df.sort_values(by=["Number of Creds","Date Reported"], ascending=False, inplace=True)
+        breach_det_df.sort_values(
+            by=["Number of Creds", "Date Reported"], ascending=False, inplace=True
+        )
         return breach_det_df
 
     def password(self):
@@ -546,7 +548,9 @@ class Cyber_Six:
             columns=["organizations_uid", "date"],
             errors="ignore",
         )
-        soc_med_most_act.sort_values(by=["Comments Count","Title"], ascending=[False,True], inplace=True)
+        soc_med_most_act.sort_values(
+            by=["Comments Count", "Title"], ascending=[False, True], inplace=True
+        )
         soc_med_most_act = soc_med_most_act[:10]
         # Translate title field to english
         # soc_med_most_act = translate(soc_med_most_act, ["Title"])
@@ -567,7 +571,9 @@ class Cyber_Six:
             errors="ignore",
         )
         # Translate title field to english
-        dark_web_most_act.sort_values(by=["Comments Count","Title"], ascending=[False,True], inplace=True)
+        dark_web_most_act.sort_values(
+            by=["Comments Count", "Title"], ascending=[False, True], inplace=True
+        )
         dark_web_most_act = dark_web_most_act[:10]
         # dark_web_most_act = translate(dark_web_most_act, ["Title"])
         dark_web_most_act["Title"] = dark_web_most_act["Title"].str[:200]
@@ -590,7 +596,9 @@ class Cyber_Six:
             asset_alerts = asset_alerts[
                 ~asset_alerts["Site"].isin(self.soc_med_platforms)
             ]
-        asset_alerts.sort_values(by=["Events", "Title"], ascending=[False,True], inplace=True)
+        asset_alerts.sort_values(
+            by=["Events", "Title"], ascending=[False, True], inplace=True
+        )
         asset_alerts["Title"] = asset_alerts["Title"].str[:200]
         return asset_alerts
 
@@ -608,7 +616,9 @@ class Cyber_Six:
         )
         if not self.soc_med_included:
             alerts_exec = alerts_exec[~alerts_exec["Site"].isin(self.soc_med_platforms)]
-        alerts_exec.sort_values(by=["Events", "Title"], ascending=[False,True], inplace=True)
+        alerts_exec.sort_values(
+            by=["Events", "Title"], ascending=[False, True], inplace=True
+        )
         alerts_exec["Title"] = alerts_exec["Title"].str[:200]
         return alerts_exec
 

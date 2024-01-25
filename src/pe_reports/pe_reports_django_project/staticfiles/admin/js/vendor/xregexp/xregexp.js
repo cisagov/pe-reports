@@ -40,7 +40,7 @@
           e,
           t,
           n,
-          r
+          r,
         );
       }
       return n[o].exports;
@@ -70,7 +70,7 @@
               "g",
               {
                 conjunction: "or",
-              }
+              },
             );
 
             /**
@@ -234,7 +234,7 @@
                               : "\\" + (+backref + numPriorCaps);
                           }
                           return match;
-                        }
+                        },
                       ) +
                       ")"
                     );
@@ -257,7 +257,7 @@
                       : "\\" + outerCapsMap[+$4];
                   }
                   return $0;
-                }
+                },
               );
 
               return XRegExp(output, flags);
@@ -346,7 +346,7 @@
               left,
               right,
               flags,
-              options
+              options,
             ) {
               flags = flags || "";
               options = options || {};
@@ -393,7 +393,7 @@
                     escapeChar +
                     "])+)+",
                   // Flags `gy` not needed here
-                  flags.replace(/[^imu]+/g, "")
+                  flags.replace(/[^imu]+/g, ""),
                 );
               }
 
@@ -449,8 +449,8 @@
                             vN[0],
                             str.slice(lastOuterEnd, outerStart),
                             lastOuterEnd,
-                            outerStart
-                          )
+                            outerStart,
+                          ),
                         );
                       }
                       if (vN[1]) {
@@ -459,8 +459,8 @@
                             vN[1],
                             str.slice(outerStart, innerStart),
                             outerStart,
-                            innerStart
-                          )
+                            innerStart,
+                          ),
                         );
                       }
                       if (vN[2]) {
@@ -469,8 +469,8 @@
                             vN[2],
                             str.slice(innerStart, delimStart),
                             innerStart,
-                            delimStart
-                          )
+                            delimStart,
+                          ),
                         );
                       }
                       if (vN[3]) {
@@ -479,8 +479,8 @@
                             vN[3],
                             str.slice(delimStart, delimEnd),
                             delimStart,
-                            delimEnd
-                          )
+                            delimEnd,
+                          ),
                         );
                       }
                     } else {
@@ -508,7 +508,7 @@
                 str.length > lastOuterEnd
               ) {
                 output.push(
-                  row(vN[0], str.slice(lastOuterEnd), lastOuterEnd, str.length)
+                  row(vN[0], str.slice(lastOuterEnd), lastOuterEnd, str.length),
                 );
               }
 
@@ -585,7 +585,7 @@
                     }
                   }
                   lastEnd = charCode(m[2] || m[1]);
-                }
+                },
               );
 
               if (lastEnd < 0xffff) {
@@ -677,7 +677,7 @@
                   slug = normalize(item.inverseOf);
                   if (!unicode.hasOwnProperty(slug)) {
                     throw new ReferenceError(
-                      ERR_UNKNOWN_REF + match[0] + " -> " + item.inverseOf
+                      ERR_UNKNOWN_REF + match[0] + " -> " + item.inverseOf,
                     );
                   }
                   item = unicode[slug];
@@ -705,7 +705,7 @@
                 scope: "all",
                 optionalFlags: "A",
                 leadChar: "\\",
-              }
+              },
             );
 
             /**
@@ -813,7 +813,7 @@
 
             if (!XRegExp.addUnicodeData) {
               throw new ReferenceError(
-                "Unicode Base must be loaded before Unicode Blocks"
+                "Unicode Base must be loaded before Unicode Blocks",
               );
             }
 
@@ -1941,7 +1941,7 @@
 
             if (!XRegExp.addUnicodeData) {
               throw new ReferenceError(
-                "Unicode Base must be loaded before Unicode Categories"
+                "Unicode Base must be loaded before Unicode Categories",
               );
             }
 
@@ -2232,7 +2232,7 @@
 
             if (!XRegExp.addUnicodeData) {
               throw new ReferenceError(
-                "Unicode Base must be loaded before Unicode Properties"
+                "Unicode Base must be loaded before Unicode Properties",
               );
             }
 
@@ -2319,7 +2319,7 @@
 
             if (!XRegExp.addUnicodeData) {
               throw new ReferenceError(
-                "Unicode Base must be loaded before Unicode Scripts"
+                "Unicode Base must be loaded before Unicode Scripts",
               );
             }
 
@@ -3039,7 +3039,7 @@
             captureNames,
             xSource,
             xFlags,
-            isInternalOnly
+            isInternalOnly,
           ) {
             var p;
 
@@ -3125,7 +3125,7 @@
               flags = nativ.replace.call(
                 flags,
                 new RegExp("[" + flagsToRemove + "]+", "g"),
-                ""
+                "",
               );
             }
 
@@ -3163,7 +3163,7 @@
               hasNamedCapture(regex) ? xData.captureNames.slice(0) : null,
               xregexpSource,
               xregexpFlags,
-              options.isInternalOnly
+              options.isInternalOnly,
             );
 
             return regex;
@@ -3201,7 +3201,7 @@
                 match.input,
                 match.index + match[0].length,
                 flags,
-                "[?*+]|{\\d+(?:,\\d*)?}"
+                "[?*+]|{\\d+(?:,\\d*)?}",
               )
             ) {
               return "";
@@ -3227,7 +3227,7 @@
                 // `XRegExp.proptotype.toString` is overridden
                 nativ.exec.call(
                   /\/([a-z]*)$/i,
-                  RegExp.prototype.toString.call(regex)
+                  RegExp.prototype.toString.call(regex),
                 )[1];
           }
 
@@ -3300,9 +3300,9 @@
                   patternsToIgnore.join("|") +
                   ")*(?:" +
                   needlePattern +
-                  ")"
+                  ")",
               ),
-              pattern.slice(pos)
+              pattern.slice(pos),
             );
           }
 
@@ -3356,13 +3356,13 @@
               function ($0, $1) {
                 if (nativ.test.call(/[gy]/, $1)) {
                   throw new SyntaxError(
-                    "Cannot use flag g or y in mode modifier " + $0
+                    "Cannot use flag g or y in mode modifier " + $0,
                   );
                 }
                 // Allow duplicate flags within the mode modifier
                 flags = clipDuplicates(flags + $1);
                 return "";
-              }
+              },
             );
 
             // Throw on unknown native or nonnative flags
@@ -3545,7 +3545,7 @@
             if (XRegExp.isRegExp(pattern)) {
               if (flags !== undefined) {
                 throw new TypeError(
-                  "Cannot supply flags when copying a RegExp"
+                  "Cannot supply flags when copying a RegExp",
                 );
               }
               return copyRegex(pattern);
@@ -3589,7 +3589,7 @@
                     appliedFlags,
                     pos,
                     scope,
-                    context
+                    context,
                   );
                   // If the matched token used the `reparse` option, splice its output into the
                   // pattern before running tokens again at the same position
@@ -3610,7 +3610,7 @@
                     appliedPattern,
                     nativeTokens[scope],
                     pos,
-                    "sticky"
+                    "sticky",
                   )[0];
                   output += token;
                   pos += token.length;
@@ -3639,7 +3639,7 @@
               new RegExp(generated.pattern, generated.flags),
               generated.captures,
               pattern,
-              flags
+              flags,
             );
           }
 
@@ -3806,7 +3806,7 @@
             return nativ.replace.call(
               toObject(str),
               /[-\[\]{}()*+?.,\\^$|#\s]/g,
-              "\\$&"
+              "\\$&",
             );
           };
 
@@ -4123,7 +4123,7 @@
                     )
                   ) {
                     throw new ReferenceError(
-                      "Backreference to undefined group: " + item.backref
+                      "Backreference to undefined group: " + item.backref,
                     );
                   }
 
@@ -4400,7 +4400,7 @@
 
             if (!(isType(patterns, "Array") && patterns.length)) {
               throw new TypeError(
-                "Must provide a nonempty array of patterns to merge"
+                "Must provide a nonempty array of patterns to merge",
               );
             }
 
@@ -4423,8 +4423,8 @@
                   nativ.replace.call(
                     XRegExp(pattern.source).source,
                     parts,
-                    rewrite
-                  )
+                    rewrite,
+                  ),
                 );
               } else {
                 output.push(XRegExp.escape(pattern));
@@ -4482,7 +4482,7 @@
                         match[i] = undefined;
                       }
                     }
-                  }
+                  },
                 );
               }
 
@@ -4644,7 +4644,7 @@
                         n = captureNames ? indexOf(captureNames, $1) : -1;
                         if (n < 0) {
                           throw new SyntaxError(
-                            "Backreference to undefined group " + $0
+                            "Backreference to undefined group " + $0,
                           );
                         }
                         return args[n + 1] || "";
@@ -4662,13 +4662,13 @@
                         // $` (left context)
                         return args[args.length - 1].slice(
                           0,
-                          args[args.length - 2]
+                          args[args.length - 2],
                         );
                       }
                       if ($2 === "'") {
                         // $' (right context)
                         return args[args.length - 1].slice(
-                          args[args.length - 2] + args[0].length
+                          args[args.length - 2] + args[0].length,
                         );
                       }
                       // Else, numbered backreference without curly braces
@@ -4688,16 +4688,16 @@
                       if (!isNaN($2)) {
                         if ($2 > args.length - 3) {
                           throw new SyntaxError(
-                            "Backreference to undefined group " + $0
+                            "Backreference to undefined group " + $0,
                           );
                         }
                         return args[$2] || "";
                       }
                       // `$` followed by an unsupported char is an error, unlike native JS
                       throw new SyntaxError("Invalid token " + $0);
-                    }
+                    },
                   );
-                }
+                },
               );
             }
 
@@ -4790,7 +4790,7 @@
             {
               scope: "all",
               leadChar: "\\",
-            }
+            },
           );
 
           /*
@@ -4818,13 +4818,13 @@
                 return match[0];
               }
               throw new SyntaxError(
-                "Cannot use Unicode code point above \\u{FFFF} without flag u"
+                "Cannot use Unicode code point above \\u{FFFF} without flag u",
               );
             },
             {
               scope: "all",
               leadChar: "\\",
-            }
+            },
           );
 
           /*
@@ -4839,7 +4839,7 @@
               // (?!) should work like \b\B, but is unreliable in some versions of Firefox
               return match[1] ? "[\\s\\S]" : "\\b\\B";
             },
-            { leadChar: "[" }
+            { leadChar: "[" },
           );
 
           /*
@@ -4868,7 +4868,7 @@
             {
               flag: "s",
               leadChar: ".",
-            }
+            },
           );
 
           /*
@@ -4885,7 +4885,7 @@
               var endIndex = match.index + match[0].length;
               if (!index || index > this.captureNames.length) {
                 throw new SyntaxError(
-                  "Backreference to undefined group " + match[0]
+                  "Backreference to undefined group " + match[0],
                 );
               }
               // Keep backreferences separate from subsequent literal numbers. This avoids e.g.
@@ -4899,7 +4899,7 @@
                   : "(?:)")
               );
             },
-            { leadChar: "\\" }
+            { leadChar: "\\" },
           );
 
           /*
@@ -4920,7 +4920,7 @@
               ) {
                 throw new SyntaxError(
                   "Cannot use octal escape or backreference to undefined group " +
-                    match[0]
+                    match[0],
                 );
               }
               return match[0];
@@ -4928,7 +4928,7 @@
             {
               scope: "all",
               leadChar: "\\",
-            }
+            },
           );
 
           /*
@@ -4945,24 +4945,24 @@
               // and therefore numeric properties may lead to incorrect lookups
               if (!isNaN(match[1])) {
                 throw new SyntaxError(
-                  "Cannot use integer as capture name " + match[0]
+                  "Cannot use integer as capture name " + match[0],
                 );
               }
               if (match[1] === "length" || match[1] === "__proto__") {
                 throw new SyntaxError(
-                  "Cannot use reserved word as capture name " + match[0]
+                  "Cannot use reserved word as capture name " + match[0],
                 );
               }
               if (indexOf(this.captureNames, match[1]) > -1) {
                 throw new SyntaxError(
-                  "Cannot use same name for multiple groups " + match[0]
+                  "Cannot use same name for multiple groups " + match[0],
                 );
               }
               this.captureNames.push(match[1]);
               this.hasNamedCapture = true;
               return "(";
             },
-            { leadChar: "(" }
+            { leadChar: "(" },
           );
 
           /*
@@ -4981,7 +4981,7 @@
             {
               optionalFlags: "n",
               leadChar: "(",
-            }
+            },
           );
 
           module.exports = XRegExp;
@@ -4990,6 +4990,6 @@
       ],
     },
     {},
-    [8]
+    [8],
   )(8);
 });

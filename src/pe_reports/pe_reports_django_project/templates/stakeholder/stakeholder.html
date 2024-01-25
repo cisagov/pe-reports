@@ -1,25 +1,18 @@
-{% extends 'base.html' %}
-
-{% load crispy_forms_tags %}
-
-{% load static %}
-
-{% block title %}
-Stakeholder
-{% endblock title %}
-
-{% block content %}
+{% extends 'base.html' %} {% load crispy_forms_tags %} {% load static %} {%
+block title %} Stakeholder {% endblock title %} {% block content %}
 <div class="row justify-content-lg-center">
   <div class="d-flex justify-content-center">
-
     <button type="button" class="btn btn-primary" onclick="showBulkUpoadDiv()">
       P&E Stakeholder Bulk Upload
     </button>
   </div>
   <br />
 
-  <div id="BulkUploadDiv" class="row justify-content-lg-center" style="display: none">
-
+  <div
+    id="BulkUploadDiv"
+    class="row justify-content-lg-center"
+    style="display: none"
+  >
     <div class="d-flex justify-content-center">
       <div class="card" id="content">
         <div class="card-header text-white bg-primary mb-3">
@@ -27,13 +20,13 @@ Stakeholder
         </div>
         <div class="card-body">
           <form method="POST" enctype="multipart/form-data">
-            <label for="fileInput" class="form-label">CSV must contain these columns: org_name, org_code,
-              root_domain, exec_url, aliases, premium, demo
+            <label for="fileInput" class="form-label"
+              >CSV must contain these columns: org_name, org_code, root_domain,
+              exec_url, aliases, premium, demo
             </label>
-            {% csrf_token %}
-            {{ form.as_p }}
+            {% csrf_token %} {{ form.as_p }}
             <br />
-            <input class="btn btn-primary" type="submit" value="Process CSV">
+            <input class="btn btn-primary" type="submit" value="Process CSV" />
           </form>
         </div>
       </div>
@@ -66,3 +59,4 @@ Stakeholder
     });
   </script>
   {% endblock content %}
+</div>

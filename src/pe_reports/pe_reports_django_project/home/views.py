@@ -53,6 +53,7 @@ from pe_reports.data.db_query import (
     set_org_to_report_on,
 )
 from pe_source.data.sixgill.api import setNewCSGOrg
+
 from .forms import (
     GenerateWeeklyStatusReportingForm,
     PeBulkUpload,
@@ -850,9 +851,3 @@ class PeBulkUploadForm(LoginRequiredMixin, FormView):
         """Upload each stakeholder into the P&E infrastructure."""
         LOGGER.info(df["org_code"])
         add_stakeholders(self.request, df)
-
-
-
-
-
-
