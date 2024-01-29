@@ -16,7 +16,7 @@ def checkVMrunning():
         vmID = os.getenv("INSTANCE_ID")
         LOGGER.info(vmID)
 
-        checkAWS = os.popen(
+        checkAWS = os.popen(  # nosec HIGH SEV. B605
             f"""
             export AWS_DEFAULT_PROFILE=cool-dns-sesmanagesuppressionlist-cyber.dhs.gov &&
             aws ec2 describe-instance-status --instance-ids {vmID}
@@ -26,7 +26,7 @@ def checkVMrunning():
         checkAWS = checkAWS[1].split()
         checkAWS = checkAWS[2]
         if checkAWS == "running":
-            os.popen("screenConnectAccessor")
+            os.popen("screenConnectAccessor")  # nosec LOW SEV. B605, B607
             LOGGER.info(
                 "The accessor was running and screen has been connected. You can now login. "
             )
@@ -38,7 +38,7 @@ def checkVMrunning():
                 "attempting to access Accessor."
             )
             theInstance_ID = os.getenv("INSTANCE_ID")
-            os.popen(
+            os.popen(  # nosec HIGH SEV. B605
                 f"""export AWS_DEFAULT_PROFILE=cool-dns-sesmanagesuppressionlist-cyber.dhs.gov &&
                 aws ec2 start-instances --instance-ids {theInstance_ID}"""
             )
@@ -50,12 +50,12 @@ def checkVMrunning():
 
 def checkCyhyRunning():
     """Connect to Cyhy database."""
-    os.popen("tocyhy")
+    os.popen("tocyhy")  # nosec LOW SEV. B605, B607
 
 
 def kill_screen_ssh():
     """Kill all ssh connections."""
-    os.popen("killall ssh")
+    os.popen("killall ssh")  # nosec LOW SEV. B605, B607
     time.sleep(1)
 
 

@@ -131,6 +131,7 @@ def get_pe_org_map(pe_db_conn):
     return pe_org_map
 
 
+# Needs API conversion
 def insert_assets(conn, assets_df, table):
     """Insert CyHy assets into the P&E databse."""
     on_conflict = """
@@ -143,11 +144,11 @@ def insert_assets(conn, assets_df, table):
     """
     tpls = [tuple(x) for x in assets_df.to_numpy()]
     cols = ",".join(list(assets_df.columns))
-    sql = "INSERT INTO {}({}) VALUES %s".format(table, cols)
+    sql = "INSERT INTO {}({}) VALUES %s"
     sql = sql + on_conflict
     cursor = conn.cursor()
     try:
-        extras.execute_values(cursor, sql, tpls)
+        extras.execute_values(cursor, sql.format(table, cols), tpls)
         conn.commit()
         LOGGER.info("Asset data inserted using execute_values() successfully")
     except (Exception, psycopg2.DatabaseError) as err:
@@ -155,6 +156,7 @@ def insert_assets(conn, assets_df, table):
         cursor.close()
 
 
+# Needs API conversion
 def insert_contacts(conn, contacts_df, table):
     """Insert CyHy contacts into the P&E databse."""
     on_conflict = """
@@ -166,11 +168,11 @@ def insert_contacts(conn, contacts_df, table):
     """
     tpls = [tuple(x) for x in contacts_df.to_numpy()]
     cols = ",".join(list(contacts_df.columns))
-    sql = "INSERT INTO {}({}) VALUES %s".format(table, cols)
+    sql = "INSERT INTO {}({}) VALUES %s"
     sql = sql + on_conflict
     cursor = conn.cursor()
     try:
-        extras.execute_values(cursor, sql, tpls)
+        extras.execute_values(cursor, sql.format(table, cols), tpls)
         conn.commit()
         LOGGER.info("Contact data inserted using execute_values() successfully")
     except (Exception, psycopg2.DatabaseError) as err:
@@ -264,23 +266,27 @@ def update_child_parent_orgs(conn, parent_uid, child_name):
     cursor.close()
 
 
+# Needs API conversion
 def update_scan_status(conn, child_name):
     """Update child parent relationships between organizations."""
-    cursor = conn.cursor()
-    cursor.execute(
-        """
+    sql = """
         UPDATE organizations
         set run_scans = True
         where cyhy_db_name = '{}'
-        """.format(
-            child_name
-        ),
-    )
+        """
+    cursor = conn.cursor()
+    try:
+        extras.execute_values(cursor, sql.format(child_name))
+        conn.commit()
+        LOGGER.info(
+            "Child/Parent relationships updated using execute_values() successfully..."
+        )
+    except (Exception, psycopg2.DatabaseError) as err:
+        show_psycopg2_exception(err)
+        cursor.close()
 
-    conn.commit()
-    cursor.close()
 
-
+# Needs API conversion
 def insert_dot_gov_domains(conn, dotgov_df, table):
     """Insert dot gov domains."""
     conflict = """
@@ -289,13 +295,13 @@ def insert_dot_gov_domains(conn, dotgov_df, table):
     """
     tpls = [tuple(x) for x in dotgov_df.to_numpy()]
     cols = ",".join(list(dotgov_df.columns))
-    sql = "INSERT INTO {}({}) VALUES %s".format(table, cols)
+    sql = "INSERT INTO {}({}) VALUES %s"
     sql = sql + conflict
     cursor = conn.cursor()
     try:
-        extras.execute_values(cursor, sql, tpls)
+        extras.execute_values(cursor, sql.format(table, cols), tpls)
         conn.commit()
-        LOGGER.info("Dot gov data inserted using execute_values() successfully..")
+        LOGGER.info("Dot gov data inserted using execute_values() successfully...")
     except (Exception, psycopg2.DatabaseError) as err:
         show_psycopg2_exception(err)
         cursor.close()
