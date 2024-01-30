@@ -6,7 +6,9 @@ import datetime
 import json
 import logging
 import re
-import subprocess  # nosec LOW SEV. B404
+
+# Low sev. B404 warning acknowledged
+import subprocess  # nosec
 
 # Third-Party Libraries
 import pandas as pd
@@ -34,7 +36,8 @@ def get_cyhy_port_scans(staging):
     pe_orgs = query_pe_orgs(pe_db_conn)
 
     # Build the Go program
-    subprocess.run(  # nosec LOW SEV. B603, B607
+    # Low sev. B603, B607 warning acknowledged
+    subprocess.run(  # nosec
         [
             "go",
             "build",
@@ -47,7 +50,8 @@ def get_cyhy_port_scans(staging):
     print("Go program built successfully.")
 
     # Call the Go program with the number of start and end days as arguments
-    result = subprocess.run(  # nosec LOW SEV. B603
+    # Low sev. B603, B607 warning acknowledged
+    result = subprocess.run(  # nosec
         ["./src/pe_asm/port_scans/cyhybatcher", "7", "0", "DOE"],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,

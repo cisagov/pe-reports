@@ -22,7 +22,8 @@ def run_backup():
         LOGGER.info("Running database backup...")
         LOGGER.info(BACKUP_SCRIPT)
         cmd = f"bash {BACKUP_SCRIPT}"
-        os.system(cmd)  # nosec HIGH SEV. B605
+        # High sev. B605 warning acknowledged
+        os.system(cmd)  # nosec
         LOGGER.info("Success")
     except Exception as e:
         failed = True
