@@ -103,7 +103,7 @@ setup(
         "pe_reports": ["*.html", "*.css", "data/*", "assets/*", "*.ttf", "fonts/*"],
         "pe_source": [
             "data/*",
-            "data/shodan/*",
+            "data/shodan_db/*",
             "data/sixgill/*",
             "data/dnsmonitor/*",
             "data/pe_db/*",
