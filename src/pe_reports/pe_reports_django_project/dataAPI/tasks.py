@@ -33,6 +33,7 @@ from home.models import (
     SubDomains,
     TopCves,
     VwBreachcomp,
+    VwBreachcompBreachdetails,
     VwBreachcompCredsbydate,
     VwDarkwebInviteonlymarkets,
     VwDarkwebMentionsbydate,
@@ -142,6 +143,31 @@ def get_rva_info(ip_address: List[str]):
         result = [{"cyhy_db_name": value} for value in cyhy_db_name_values]
 
     return result
+
+
+@shared_task(bind=True)
+def credsbydate_view_task(self):
+    """Task function for the credsbydate_view API endpoint."""
+    # Make database query and convert to list of dictionaries
+    credsbydate_data = list(VwBreachcompCredsbydate.objects.all().values())
+    # Convert uuids to strings
+    for row in credsbydate_data:
+        row["organizations_uid"] = convert_uuid_to_string(row["organizations_uid"])
+        row["mod_date"] = convert_date_to_string(row["mod_date"])
+    return credsbydate_data
+
+
+@shared_task(bind=True)
+def breachdetails_view_task(self):
+    """Task function for the breachdetails_view API endpoint."""
+    # Make database query and convert to list of dictionaries
+    breachdetails_data = list(VwBreachcompBreachdetails.objects.all().values())
+    # Convert uuids to strings
+    for row in breachdetails_data:
+        row["organizations_uid"] = convert_uuid_to_string(row["organizations_uid"])
+        row["mod_date"] = convert_date_to_string(row["mod_date"])
+        row["breach_date"] = convert_date_to_string(row["breach_date"])
+    return breachdetails_data
 
 
 # ---------- I-Score View Tasks, Issue 570 ----------

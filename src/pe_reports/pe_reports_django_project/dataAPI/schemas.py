@@ -110,24 +110,47 @@ class VwBreachcomp(BaseModel):
 
 
 class VwBreachDetails(BaseModel):
-    """VwBreachDetails schema."""
+    """VwBreachDetails schema class."""
 
-    organizations_uid: str
-    breach_name: str
-    mod_date: str
-    description: str
-    breach_date: str
-    password_included: str
-    number_of_creds: str
+    organizations_uid: Optional[str] = None
+    breach_name: Optional[str] = None
+    mod_date: Optional[str] = None
+    description: Optional[str] = None
+    breach_date: Optional[str] = None
+    password_included: Optional[bool] = None
+    number_of_creds: Optional[int] = None
+
+    class Config:
+        """VwBreachDetails schema config class."""
+
+        orm_mode = True
 
 
-class VwBreachcompCredsbydate(BaseModel):
-    """VwBreachcompCredsbydate schema."""
+class VwBreachDetailsTaskResp(BaseModel):
+    """VwBreachDetailsTaskResp schema class."""
 
-    organizations_uid: str
-    mod_date: str
-    no_password: str
-    password_included: str
+    task_id: str
+    status: str
+    result: Optional[List[VwBreachDetails]] = None
+    error: Optional[str] = None
+
+
+class VwCredsbydate(BaseModel):
+    """VwCredsbydate schema."""
+
+    organizations_uid: Optional[str] = None
+    mod_date: Optional[str] = None
+    no_password: Optional[int] = None
+    password_included: Optional[int] = None
+
+
+class VwCredsbydateTaskResp(BaseModel):
+    """VwCredsbydateTaskResp schema class."""
+
+    task_id: str
+    status: str
+    result: Optional[List[VwCredsbydate]] = None
+    error: Optional[str] = None
 
 
 class VwOrgsAttacksurface(BaseModel):

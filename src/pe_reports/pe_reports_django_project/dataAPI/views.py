@@ -13,11 +13,13 @@ import uuid
 # Import api task functions
 from dataAPI.tasks import (
     alerts_insert_task,
+    breachdetails_view_task,
     convert_date_to_string,
     convert_uuid_to_string,
     cred_breach_intelx_task,
     cred_breach_sixgill_task,
     cred_exp_sixgill_task,
+    credsbydate_view_task,
     cve_info_insert_task,
     cves_by_modified_date_task,
     darkweb_cves_task,
@@ -461,20 +463,66 @@ def read_breachcomp(tokens: dict = Depends(get_api_key)):
 
 @api_router.post(
     "/breachcomp_credsbydate",
-    dependencies=[Depends(get_api_key)],
-    response_model=List[schemas.VwBreachcompCredsbydate],
-    tags=["List all breaches by date"],
+    dependencies=[
+        Depends(get_api_key)
+    ],  # Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.VwCredsbydateTaskResp,
+    tags=["Get the entire vw_breachcomp_credsbydate view."],
 )
-def read_breachcomp_credsbydate(tokens: dict = Depends(get_api_key)):
-    """Call API endpoint to get all breach creds by date."""
-    breachcomp_dateInfo = list(VwBreachcompCredsbydate.objects.all())
-
+def credsbydate_view(tokens: dict = Depends(get_api_key)):
+    """Call API endpoint to get the entire credsbydate view."""
+    # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
         try:
             userapiTokenverify(theapiKey=tokens)
-            return breachcomp_dateInfo
-        except Exception:
+            # If API key valid, create task for query
+            task = credsbydate_view_task.delay()
+            # Return the new task id w/ "Processing" status
+            return {"task_id": task.id, "status": "Processing"}
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+
+@api_router.get(
+    "/breachcomp_credsbydate/task/{task_id}",
+    dependencies=[
+        Depends(get_api_key)
+    ],  # Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.VwCredsbydateTaskResp,
+    tags=["Check task status for vw_breachcomp_credsbydate view query."],
+)
+async def credsbydate_view_task_status(
+    task_id: str, tokens: dict = Depends(get_api_key)
+):
+    """Get task status for credsbydate_view."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            # userapiTokenverify(theapiKey=tokens)
+            # Retrieve task status
+            task = credsbydate_view_task.AsyncResult(task_id)
+            # Return appropriate message for status
+            if task.state == "SUCCESS":
+                return {
+                    "task_id": task_id,
+                    "status": "Completed",
+                    "result": task.result,
+                }
+            elif task.state == "PENDING":
+                return {"task_id": task_id, "status": "Pending"}
+            elif task.state == "FAILURE":
+                return {
+                    "task_id": task_id,
+                    "status": "Failed",
+                    "error": str(task.result),
+                }
+            else:
+                return {"task_id": task_id, "status": task.state}
+        except ObjectDoesNotExist:
             LOGGER.info("API key expired please try again")
     else:
         return {"message": "No api key was submitted"}
@@ -553,20 +601,66 @@ def read_cidrs(tokens: dict = Depends(get_api_key)):
 
 @api_router.post(
     "/breachdetails",
-    dependencies=[Depends(get_api_key)],
-    response_model=List[schemas.VwBreachDetails],
-    tags=["List of all Breach Details"],
+    dependencies=[
+        Depends(get_api_key)
+    ],  # Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.VwBreachDetailsTaskResp,
+    tags=["Get the entire vw_breachcomp_breachdetails view."],
 )
-def read_breachdetails(tokens: dict = Depends(get_api_key)):
-    """Call API endpoint to get all CIDRS."""
-    breachDetails = list(VwBreachcompBreachdetails.objects.all())
-
+def breachdetails_view(tokens: dict = Depends(get_api_key)):
+    """Call API endpoint to get the entire breachdetails view."""
+    # Check for API key
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
         try:
             userapiTokenverify(theapiKey=tokens)
-            return breachDetails
-        except Exception:
+            # If API key valid, create task for query
+            task = breachdetails_view_task.delay()
+            # Return the new task id w/ "Processing" status
+            return {"task_id": task.id, "status": "Processing"}
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
+    else:
+        return {"message": "No api key was submitted"}
+
+
+@api_router.get(
+    "/breachdetails/task/{task_id}",
+    dependencies=[
+        Depends(get_api_key)
+    ],  # Depends(RateLimiter(times=200, seconds=60))],
+    response_model=schemas.VwBreachDetailsTaskResp,
+    tags=["Check task status for vw_breachcomp_breachdetails view query."],
+)
+async def breachdetails_view_task_status(
+    task_id: str, tokens: dict = Depends(get_api_key)
+):
+    """Get task status for breachdetails_view."""
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            # userapiTokenverify(theapiKey=tokens)
+            # Retrieve task status
+            task = breachdetails_view_task.AsyncResult(task_id)
+            # Return appropriate message for status
+            if task.state == "SUCCESS":
+                return {
+                    "task_id": task_id,
+                    "status": "Completed",
+                    "result": task.result,
+                }
+            elif task.state == "PENDING":
+                return {"task_id": task_id, "status": "Pending"}
+            elif task.state == "FAILURE":
+                return {
+                    "task_id": task_id,
+                    "status": "Failed",
+                    "error": str(task.result),
+                }
+            else:
+                return {"task_id": task_id, "status": task.state}
+        except ObjectDoesNotExist:
             LOGGER.info("API key expired please try again")
     else:
         return {"message": "No api key was submitted"}
@@ -6163,15 +6257,16 @@ async def cves_by_modified_date_task_status(
 def get_unscanned_pshtt_domains(tokens: dict = Depends(get_api_key)):
     """Create API endpoint to get current domains that have not been run through pshtt recently."""
     # Check for API key
-
     LOGGER.info(f"The api key submitted {tokens}")
     if tokens:
-        # Create task for query
-        task = get_vw_pshtt_domains_to_run_info.delay()
-
-        # Return the new task id w/ "Processing" status
-        return {"task_id": task.id, "status": "Processing"}
-
+        try:
+            userapiTokenverify(theapiKey=tokens)
+            # If API key valid, create task for query
+            task = get_vw_pshtt_domains_to_run_info.delay()
+            # Return the new task id w/ "Processing" status
+            return {"task_id": task.id, "status": "Processing"}
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
     else:
         return {"message": "No api key was submitted"}
 
@@ -6187,17 +6282,33 @@ async def get_pshtt_domains_to_run_status(
     task_id: str, tokens: dict = Depends(get_api_key)
 ):
     """Retrieve status of get_pshtt_domains_to_run task."""
-    # Retrieve task status
-    task = get_vw_pshtt_domains_to_run_info.AsyncResult(task_id)
-    # Return appropriate message for status
-    if task.state == "SUCCESS":
-        return {"task_id": task_id, "status": "Completed", "result": task.result}
-    elif task.state == "PENDING":
-        return {"task_id": task_id, "status": "Pending"}
-    elif task.state == "FAILURE":
-        return {"task_id": task_id, "status": "Failed", "error": str(task.result)}
+    # Check for API key
+    LOGGER.info(f"The api key submitted {tokens}")
+    if tokens:
+        try:
+            # Retrieve task status
+            task = get_vw_pshtt_domains_to_run_info.AsyncResult(task_id)
+            # Return appropriate message for status
+            if task.state == "SUCCESS":
+                return {
+                    "task_id": task_id,
+                    "status": "Completed",
+                    "result": task.result,
+                }
+            elif task.state == "PENDING":
+                return {"task_id": task_id, "status": "Pending"}
+            elif task.state == "FAILURE":
+                return {
+                    "task_id": task_id,
+                    "status": "Failed",
+                    "error": str(task.result),
+                }
+            else:
+                return {"task_id": task_id, "status": task.state}
+        except ObjectDoesNotExist:
+            LOGGER.info("API key expired please try again")
     else:
-        return {"task_id": task_id, "status": task.state}
+        return {"message": "No api key was submitted"}
 
 
 @api_router.put(
