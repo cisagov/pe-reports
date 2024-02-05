@@ -129,6 +129,10 @@ def get_cyhy_assets(staging=False):
                 .get("location", {})
                 .get("country_name", None),
             }
+            if agency["state_fips"] == "":
+                agency["state_fips"] = None
+            if agency["county_fips"] == "":
+                agency["county_fips"] = None
             cyhy_agencies.append(agency)
 
             # If the org has children/subsidiaries,
