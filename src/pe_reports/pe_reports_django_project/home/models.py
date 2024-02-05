@@ -837,6 +837,14 @@ class Organizations(models.Model):
     fceb_child = models.BooleanField(blank=True, null=True)
     election = models.BooleanField(blank=True, null=True)
     scorecard_child = models.BooleanField(blank=True, null=True)
+    location_name = models.TextField(blank=True, null=True)
+    county = models.TextField(blank=True, null=True)
+    county_fips = models.IntegerField(blank=True, null=True)
+    state_abbreviation = models.TextField(blank=True, null=True)
+    state_fips = models.IntegerField(blank=True, null=True)
+    state_name = models.TextField(blank=True, null=True)
+    country = models.TextField(blank=True, null=True)
+    country_name = models.TextField(blank=True, null=True)
 
     class Meta:
         """Set Organizations model metadata."""

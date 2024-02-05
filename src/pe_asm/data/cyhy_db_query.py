@@ -185,9 +185,10 @@ def insert_cyhy_agencies(conn, cyhy_agency_df):
             sql = """
             INSERT INTO organizations(name, cyhy_db_name, agency_type, retired,
             receives_cyhy_report, receives_bod_report, receives_cybex_report,
-            is_parent, fceb, cyhy_period_start, scorecard, password) VALUES (%s, %s, %s, %s,
-             %s, %s, %s,
-             %s, %s, %s, %s, PGP_SYM_ENCRYPT(%s, %s))
+            is_parent, fceb, cyhy_period_start, scorecard, location_name, county, county_fips, state_abbreviation,
+            state_fips, state_name, country, country_name, password)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
+            %s, %s, %s, %s, %s, %s, PGP_SYM_ENCRYPT(%s, %s))
             ON CONFLICT (cyhy_db_name)
             DO UPDATE SET
                 name = EXCLUDED.name,
@@ -200,7 +201,15 @@ def insert_cyhy_agencies(conn, cyhy_agency_df):
                 is_parent = EXCLUDED.is_parent,
                 fceb = EXCLUDED.fceb,
                 cyhy_period_start = EXCLUDED.cyhy_period_start,
-                scorecard = EXCLUDED.scorecard
+                scorecard = EXCLUDED.scorecard,
+                location_name = EXCLUDED.location_name,
+                county = EXCLUDED.county,
+                county_fips = EXCLUDED.county_fips,
+                state_abbreviation = EXCLUDED.state_abbreviation,
+                state_fips = EXCLUDED.state_fips,
+                state_name = EXCLUDED.state_name,
+                country = EXCLUDED.country,
+                country_name = EXCLUDED.country_name
             """
             cur.execute(
                 sql,

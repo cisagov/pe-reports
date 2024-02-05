@@ -104,6 +104,30 @@ def get_cyhy_assets(staging=False):
                 "is_parent": len(cyhy_request.get("children", [])) > 0,
                 "fceb": cyhy_request["_id"] in fceb_list,
                 "cyhy_period_start": cyhy_request.get("period_start"),
+                "location_name": cyhy_request["agency"]
+                .get("location", {})
+                .get("name", None),
+                "county": cyhy_request["agency"]
+                .get("location", {})
+                .get("county", None),
+                "county_fips": cyhy_request["agency"]
+                .get("location", {})
+                .get("county_fips", None),
+                "state_abbrevation": cyhy_request["agency"]
+                .get("location", {})
+                .get("state", None),
+                "state_fips": cyhy_request["agency"]
+                .get("location", {})
+                .get("state_fips", None),
+                "state_name": cyhy_request["agency"]
+                .get("location", {})
+                .get("state_name", None),
+                "country": cyhy_request["agency"]
+                .get("location", {})
+                .get("country", None),
+                "country_name": cyhy_request["agency"]
+                .get("location", {})
+                .get("country_name", None),
             }
             cyhy_agencies.append(agency)
 
