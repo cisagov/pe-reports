@@ -182,11 +182,13 @@ def dve_top_cves():
     clean_top_10_cves = []
     for result in result_list:
         cve_id = result.get("name")
-        dynamic_rating = result.get("x_sixgill_info").get("score").get("current")
+        dynamic_rating = result.get("x_sixgill_info").get("rating").get("current")
         if result.get("x_sixgill_info").get("nvd").get("v3") is None:
             nvd_v3_score = None
         else:
-            nvd_v3_score = result.get("x_sixgill_info").get("nvd").get("v3").get("current")
+            nvd_v3_score = (
+                result.get("x_sixgill_info").get("nvd").get("v3").get("current")
+            )
         nvd_base_score = "{'v2': None, 'v3': " + str(nvd_v3_score) + "}"
         clean_cve = {
             "cve_id": cve_id,
@@ -196,6 +198,7 @@ def dve_top_cves():
         clean_top_10_cves.append(clean_cve)
 
     return clean_top_10_cves
+
 
 def credential_auth(params):
     """Get data about a specific CVE."""
@@ -257,7 +260,6 @@ def setOrganizationUsers(org_id):
             or userrole == role2
             and user_id != id_role1
         ):
-
             url = (
                 f"https://api.cybersixgill.com/multi-tenant/organization/"
                 f"{org_id}/user/{user_id}?role_id={userrole}"

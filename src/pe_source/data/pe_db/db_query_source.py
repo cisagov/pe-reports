@@ -17,7 +17,7 @@ import psycopg2.extras as extras
 import requests
 
 # cisagov Libraries
-from pe_reports.data.config import config, staging_config
+from pe_reports.data.config import config, get_hibp_token, staging_config
 from pe_reports.data.db_query import task_api_call
 
 LOGGER = logging.getLogger(__name__)
@@ -1642,3 +1642,154 @@ def query_all_cves(modified_date=None):
     # total_data["first_seen"] = pd.to_datetime(total_data["first_seen"]).dt.date
     # total_data["last_seen"] = pd.to_datetime(total_data["last_seen"]).dt.date
     return total_data
+
+
+def execute_hibp_breach_values(jsonList, table):
+    """Execute breach values."""
+    "SQL 'INSERT' of a datafame"
+    conn = connect()
+    sql = """INSERT INTO public.credential_breaches (
+        breach_name,
+        description,
+        exposed_cred_count,
+        breach_date,
+        added_date,
+        modified_date,
+        data_classes,
+        password_included,
+        is_verified,
+        is_fabricated,
+        is_sensitive,
+        is_retired,
+        is_spam_list,
+        data_source_uid
+    ) VALUES %s
+    ON CONFLICT (breach_name)
+    DO UPDATE SET modified_date = EXCLUDED.modified_date,
+    exposed_cred_count = EXCLUDED.exposed_cred_count,
+    password_included = EXCLUDED.password_included;"""
+    values = [[value for value in dict.values()] for dict in jsonList]
+    cursor = conn.cursor()
+    try:
+        extras.execute_values(cursor, sql, values)
+        conn.commit()
+        LOGGER.info("Data inserted into credential_breaches successfully..")
+    except (Exception, psycopg2.DatabaseError) as err:
+        LOGGER.error(err)
+        cursor.close()
+
+
+def query_db(query, args=(), one=False):
+    """Query the database."""
+    conn = connect()
+    cur = conn.cursor()
+    cur.execute(query, args)
+    r = [
+        {cur.description[i][0]: value for i, value in enumerate(row)}
+        for row in cur.fetchall()
+    ]
+
+    return (r[0] if r else None) if one else r
+
+
+def query_PE_subs(PE_org_id):
+    """Query Posture and Exposure subdomains."""
+    conn = connect()
+    sql = """
+        SELECT sd.sub_domain, rd.root_domain
+        FROM sub_domains sd
+        join root_domains rd on rd.root_domain_uid = sd.root_domain_uid
+        where rd.organizations_uid = %(org_id)s;"""
+    df = pd.read_sql_query(sql, conn, params={"org_id": PE_org_id})
+    return df
+
+
+def get_hibp_breaches():
+    """Get breaches."""
+    Breaches_URL = "https://haveibeenpwned.com/api/v2/breaches"
+    # TODO: Add bearer token
+    token = get_hibp_token()
+    params = {"Authorization": f"Bearer {token}"}
+    breaches = requests.get(Breaches_URL, headers=params)
+    breach_list = []
+    breach_dict = {}
+    if breaches.status_code == 200:
+        jsonResponse = breaches.json()
+        for line in jsonResponse:
+            breach = {
+                "breach_name": line["Name"],
+                "breach_date": line["BreachDate"],
+                "added_date": line["AddedDate"],
+                "exposed_cred_count": line["PwnCount"],
+                "modified_date": line["ModifiedDate"],
+                "data_classes": line["DataClasses"],
+                "description": line["Description"],
+                "is_verified": line["IsVerified"],
+                "is_fabricated": line["IsFabricated"],
+                "is_sensitive": line["IsSensitive"],
+                "is_retired": line["IsRetired"],
+                "is_spam_list": line["IsSpamList"],
+            }
+            if "Passwords" in line["DataClasses"]:
+                breach["password_included"] = True
+            else:
+                breach["password_included"] = False
+            breach_list.append(breach)
+            breach_dict[line["Name"]] = breach
+        return (pd.DataFrame(breach_list), breach_dict)
+    else:
+        print(breaches.text)
+
+
+def get_emails(domain):
+    """Get emails."""
+    Emails_URL = "https://haveibeenpwned.com/api/v2/enterprisesubscriber/domainsearch/"
+    # TODO: Add bearer token
+    token = get_hibp_token()
+    params = {"Authorization": f"Bearer {token}"}
+    run_failed = True
+    counter = 0
+    while run_failed:
+        URL = Emails_URL + domain
+        r = requests.get(URL, headers=params)
+        status = r.status_code
+        counter += 1
+        if status == 200:
+            return r.json()
+        elif counter > 5:
+            run_failed = False
+        else:
+            run_failed = True
+            # LOGGER.info(status)
+            # LOGGER.info(r.text)
+            # LOGGER.info(f"Trying to run on {domain} again")
+            if status == 502:
+                time.sleep(60 * 3)
+
+
+def execute_hibp_emails_values(jsonList):
+    """Execute values."""
+    "SQL 'INSERT' of a datafame"
+    conn = connect()
+    sql = """INSERT INTO public.credential_exposures (
+        email,
+        organizations_uid,
+        root_domain,
+        sub_domain,
+        modified_date,
+        breach_name,
+        credential_breaches_uid,
+        data_source_uid,
+        name
+    ) VALUES %s
+    ON CONFLICT (email, breach_name)
+    DO NOTHING;"""
+    values = [[value for value in dict.values()] for dict in jsonList]
+    cursor = conn.cursor()
+    # try:
+    extras.execute_values(cursor, sql, values)
+    conn.commit()
+    LOGGER.info("\t\tHIBP data inserted into credential_exposures successfully..")
+    # except (Exception, psycopg2.DatabaseError) as err:
+    #     show_psycopg2_exception(err)
+    #     cursor.close()

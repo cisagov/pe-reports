@@ -10,11 +10,11 @@ from .data.pe_db.db_query_source import (
     get_breaches,
     get_data_source_uid,
     get_orgs,
-    insert_sixgill_alerts,
-    insert_sixgill_breaches,
-    insert_sixgill_credentials,
+    insert_sixgill_alerts_tsql,
+    insert_sixgill_breaches_tsql,
+    insert_sixgill_credentials_tsql,
     insert_sixgill_mentions,
-    insert_sixgill_topCVEs,
+    insert_sixgill_topCVEs_tsql,
 )
 from .data.sixgill.api import get_sixgill_organizations
 from .data.sixgill.source import (
@@ -204,19 +204,19 @@ class Cybersixgill:
                 try:
                     alert_id = alert_row["sixgill_id"]
 
-                    # content_snip, asset_mentioned, asset_type = get_alerts_content(
-                    #     sixgill_org_id, alert_id, org_assets_dict
-                    # )
+                    content_snip, asset_mentioned, asset_type = get_alerts_content(
+                        sixgill_org_id, alert_id, org_assets_dict
+                    )
 
                     alerts_df.at[alert_index, "content_snip"] = content_snip
                     alerts_df.at[alert_index, "asset_mentioned"] = asset_mentioned
                     alerts_df.at[alert_index, "asset_type"] = asset_type
                 except Exception as e:
-                    # LOGGER.error(
-                    #     "Failed fetching a specific alert content for %s", org_id
-                    # )
-                    # LOGGER.error(e)
-                    # print(traceback.format_exc())
+                    LOGGER.error(
+                        "Failed fetching a specific alert content for %s", org_id
+                    )
+                    LOGGER.error(e)
+                    print(traceback.format_exc())
                     alerts_df.at[alert_index, "content_snip"] = ""
                     alerts_df.at[alert_index, "asset_mentioned"] = ""
                     alerts_df.at[alert_index, "asset_type"] = ""
@@ -229,7 +229,7 @@ class Cybersixgill:
 
         # Insert alert data into the PE database
         try:
-            insert_sixgill_alerts(alerts_df)
+            insert_sixgill_alerts_tsql(alerts_df)
         except Exception as e:
             LOGGER.error("Failed inserting alert data for %s", org_id)
             LOGGER.error(e)
@@ -410,7 +410,7 @@ class Cybersixgill:
 
         # Insert breach data into the PE database
         try:
-            insert_sixgill_breaches(creds_breach_df)
+            insert_sixgill_breaches_tsql(creds_breach_df)
         except Exception as e:
             LOGGER.error("Failed inserting breaches for %s", org_id)
             LOGGER.error(e)
@@ -443,7 +443,7 @@ class Cybersixgill:
             ]
         ]
         try:
-            insert_sixgill_credentials(creds_df)
+            insert_sixgill_credentials_tsql(creds_df)
         except Exception as e:
             LOGGER.error("Failed inserting credentials for %s", org_id)
             LOGGER.error(e)
@@ -477,7 +477,7 @@ class Cybersixgill:
 
         # Insert credential data into the PE database
         try:
-            insert_sixgill_topCVEs(top_cve_df)
+            insert_sixgill_topCVEs_tsql(top_cve_df)
         except Exception as e:
             LOGGER.error("Failed inserting top CVEs.")
             LOGGER.error(e)

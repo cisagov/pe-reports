@@ -14,11 +14,11 @@ from .data.pe_db.config import get_params
 from .data.pe_db.db_query_source import (
     connect,
     get_data_source_uid,
-    get_intelx_breaches,
+    get_intelx_breaches_tsql,
     get_orgs,
     get_root_domains,
-    insert_intelx_breaches,
-    insert_intelx_credentials,
+    insert_intelx_breaches_tsql,
+    insert_intelx_credentials_tsql,
 )
 
 # Calculate Datetimes for collection period
@@ -99,19 +99,19 @@ class IntelX:
         creds_df, breaches_df = self.process_leaks_results(leaks_json, pe_org_uid)
         # Insert breach data into the PE database
         try:
-            insert_intelx_breaches(breaches_df)
+            insert_intelx_breaches_tsql(breaches_df)
         except Exception as e:
             LOGGER.error("Failed inserting breaches for %s", cyhy_org_id)
             LOGGER.error(e)
             return 1
 
-        breach_dict = get_intelx_breaches(SOURCE_UID)
+        breach_dict = get_intelx_breaches_tsql(SOURCE_UID)
         breach_dict = dict(breach_dict)
         for cred_index, cred_row in creds_df.iterrows():
             breach_uid = breach_dict[cred_row["breach_name"]]
             creds_df.at[cred_index, "credential_breaches_uid"] = breach_uid
         try:
-            insert_intelx_credentials(creds_df)
+            insert_intelx_credentials_tsql(creds_df)
         except Exception as e:
             LOGGER.error("Failed inserting credentials for %s", cyhy_org_id)
             LOGGER.error(e)

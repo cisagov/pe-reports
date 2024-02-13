@@ -78,3 +78,21 @@ def db_password_key(filename=REPORT_DB_CONFIG, section="pe_db_password_key"):
     else:
         raise Exception(f"Section {section} not found in {filename}")
     return db["key"]
+
+
+def get_hibp_token(filename=REPORT_DB_CONFIG, section="hibp"):
+    """Get hibp token."""
+    if os.path.isfile(filename):
+        parser = ConfigParser()
+        parser.read(filename, encoding="utf-8")
+        if parser.has_section(section):
+            params = parser.items(section)
+            _key = params[0]
+            key = _key[1]
+        else:
+            raise Exception(
+                "Section {} not found in the {} file".format(section, filename)
+            )
+    else:
+        raise Exception("Database.ini file not found at this path: {}".format(filename))
+    return key
