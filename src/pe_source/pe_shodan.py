@@ -38,10 +38,13 @@ class Shodan:
 
         # Get list of initialized API objects
         api_list = shodan_api_init()
+        chunked_orgs_list = numpy.array([])
 
-        # Split orgs into chunks. # of chunks = # of valid API keys = # of threads
-        chunk_size = len(api_list)
-        chunked_orgs_list = numpy.array_split(numpy.array(pe_orgs_final), chunk_size)
+        # Split orgs into chunks. # of chunks = # of valid API keys = # of threads 
+        # if list has any valid apis
+        if len(api_list) > 0:
+            chunk_size = len(api_list)
+            chunked_orgs_list = numpy.array_split(numpy.array(pe_orgs_final), chunk_size)
 
         i = 0
         thread_list = []
