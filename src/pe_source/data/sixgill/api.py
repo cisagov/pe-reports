@@ -36,10 +36,9 @@ def org_assets(org_id):
     return resp
 
 
-def intel_post(query, frm, scroll, result_size):
+def intel_post(auth, query, frm, scroll, result_size):
     """Get intel items - advanced variation."""
     url = "https://api.cybersixgill.com/intel/intel_items"
-    auth = cybersix_token()
     headers = {
         "Content-Type": "application/json",
         "Cache-Control": "no-cache",
@@ -59,7 +58,6 @@ def intel_post(query, frm, scroll, result_size):
     }
     resp = requests.post(url, headers=headers, json=payload).json()
     return resp
-
 
 def alerts_list(organization_id, fetch_size, offset):
     """Get actionable alerts by ID using organization_id with optional filters."""
