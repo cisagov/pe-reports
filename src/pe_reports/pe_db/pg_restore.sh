@@ -6,7 +6,9 @@ set -o pipefail
 # Set path to pg dump and globals backup files. ex: /Users/user/Desktop/backups
 path=$PWD
 
-dropdb pe ---host localhost --username postgres --if-exists
+dropdb pe --host localhost --username postgres --if-exists
+
+dropdb rdsadmin --host localhost --username postgres --if-exists
 
 globalsql=$path/pedb_globals.sql
 dumpsql=$path/pedb_dump.sql
